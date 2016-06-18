@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.After;
 import org.junit.Before;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -114,7 +114,7 @@ public abstract class BaseSparkTest  implements Serializable
 
     protected SparkDl4jMultiLayer getBasicNetwork(){
         return new SparkDl4jMultiLayer(sc,getBasicConf(),
-                new VanillaTrainingMaster(true,numExecutors(),10,1,0));
+                new ParameterAveragingTrainingMaster(true,numExecutors(),10,1,0));
     }
 
     protected int numExecutors(){

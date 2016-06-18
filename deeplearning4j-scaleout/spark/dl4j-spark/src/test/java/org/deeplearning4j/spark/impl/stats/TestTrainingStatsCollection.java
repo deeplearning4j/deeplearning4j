@@ -11,9 +11,9 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
-import org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingMasterStats;
-import org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingWorkerStats;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -73,7 +73,7 @@ public class TestTrainingStatsCollection {
         JavaRDD<DataSet> rdd = sc.parallelize(list);
         rdd.repartition(4);
 
-        VanillaTrainingMaster tm = new VanillaTrainingMaster.Builder(nWorkers)
+        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers)
                 .averagingFrequency(averagingFrequency)
                 .batchSizePerWorker(miniBatchSizePerWorker)
                 .saveUpdater(true)
@@ -87,7 +87,7 @@ public class TestTrainingStatsCollection {
 
         //Collect the expected keys:
         List<String> expectedStatNames = new ArrayList<>();
-        Class<?>[] classes = new Class[]{CommonSparkTrainingStats.class, VanillaTrainingMasterStats.class, VanillaTrainingWorkerStats.class};
+        Class<?>[] classes = new Class[]{CommonSparkTrainingStats.class, ParameterAveragingTrainingMasterStats.class, ParameterAveragingTrainingWorkerStats.class};
         String[] fieldNames = new String[]{"columnNames","columnNames","columnNames"};
         for(int i=0; i<classes.length; i++ ){
             Field field = classes[i].getDeclaredField(fieldNames[i]);
@@ -115,25 +115,25 @@ public class TestTrainingStatsCollection {
 
         //Go through nested stats
             //First: master stats
-        assertTrue(stats instanceof VanillaTrainingMasterStats);
-        VanillaTrainingMasterStats masterStats = (VanillaTrainingMasterStats)stats;
-        int[] broadcastCreateTime = masterStats.getVanillaMasterBroadcastCreateTimesMs();
+        assertTrue(stats instanceof ParameterAveragingTrainingMasterStats);
+        ParameterAveragingTrainingMasterStats masterStats = (ParameterAveragingTrainingMasterStats)stats;
+        int[] broadcastCreateTime = masterStats.getParameterAveragingMasterBroadcastCreateTimesMs();
         assertEquals(numberOfAveragings, broadcastCreateTime.length);
         assertGreaterEqZero(broadcastCreateTime);
 
-        int[] fitTimes = masterStats.getVanillaMasterFitTimesMs();
+        int[] fitTimes = masterStats.getParameterAveragingMasterFitTimesMs();
         assertEquals(1, fitTimes.length);   //i.e., number of times fit(JavaRDD<DataSet>) was called
         assertGreaterZero(fitTimes);
 
-        int[] splitTimes = masterStats.getVanillaMasterSplitTimesMs();
+        int[] splitTimes = masterStats.getParameterAveragingMasterSplitTimesMs();
         assertEquals(1, splitTimes.length);     //Splitting of the data set is executed once only (i.e., one fit(JavaRDD<DataSet>) call)
         assertGreaterEqZero(splitTimes);
 
-        int[] aggregateTimesMs = masterStats.getVanillaMasterAggregateTimesMs();
+        int[] aggregateTimesMs = masterStats.getParamaterAveragingMasterAggregateTimesMs();
         assertEquals(numberOfAveragings, aggregateTimesMs.length);
         assertGreaterEqZero(aggregateTimesMs);
 
-        int[] processParamsTimesMs = masterStats.getVanillaMasterProcessParamsUpdaterTimesMs();
+        int[] processParamsTimesMs = masterStats.getParameterAveragingMasterProcessParamsUpdaterTimesMs();
         assertEquals(numberOfAveragings, processParamsTimesMs.length);
         assertGreaterEqZero(processParamsTimesMs);
 
@@ -165,25 +165,25 @@ public class TestTrainingStatsCollection {
         int workerFlatMapCountNoDataInstances = cStats.getWorkerFlatMapCountNoDataInstances();
         assertEquals(0, workerFlatMapCountNoDataInstances);
 
-            //Third: VanillaTrainingWorker stats
-        SparkTrainingStats vanillaStats = cStats.getNestedTrainingStats();
-        assertNotNull(vanillaStats);
-        assertTrue(vanillaStats instanceof VanillaTrainingWorkerStats);
+            //Third: ParameterAveragingTrainingWorker stats
+        SparkTrainingStats paramAvgStats = cStats.getNestedTrainingStats();
+        assertNotNull(paramAvgStats);
+        assertTrue(paramAvgStats instanceof ParameterAveragingTrainingWorkerStats);
 
-        VanillaTrainingWorkerStats vStats = (VanillaTrainingWorkerStats)vanillaStats;
-        int[] vanillaWorkerBroadcastGetValueTimeMs = vStats.getVanillaWorkerBroadcastGetValueTimeMs();
-        assertEquals(numberOfAveragings*nWorkers, vanillaWorkerBroadcastGetValueTimeMs.length);
-        assertGreaterEqZero(vanillaWorkerBroadcastGetValueTimeMs);
+        ParameterAveragingTrainingWorkerStats pStats = (ParameterAveragingTrainingWorkerStats)paramAvgStats;
+        int[] parameterAveragingWorkerBroadcastGetValueTimeMs = pStats.getParameterAveragingWorkerBroadcastGetValueTimeMs();
+        assertEquals(numberOfAveragings*nWorkers, parameterAveragingWorkerBroadcastGetValueTimeMs.length);
+        assertGreaterEqZero(parameterAveragingWorkerBroadcastGetValueTimeMs);
 
-        int[] vanillaWorkerInitTimeMs = vStats.getVanillaWorkerInitTimeMs();
-        assertEquals(numberOfAveragings*nWorkers, vanillaWorkerInitTimeMs.length);
-        assertGreaterEqZero(vanillaWorkerInitTimeMs);
+        int[] parameterAveragingWorkerInitTimeMs = pStats.getParameterAveragingWorkerInitTimeMs();
+        assertEquals(numberOfAveragings*nWorkers, parameterAveragingWorkerInitTimeMs.length);
+        assertGreaterEqZero(parameterAveragingWorkerInitTimeMs);
 
-        int[] vanillaWorkerFitTimesMs = vStats.getVanillaWorkerFitTimesMs();
-        assertEquals(numberOfAveragings*nWorkers*averagingFrequency, vanillaWorkerFitTimesMs.length);
-        assertGreaterEqZero(vanillaWorkerFitTimesMs);
+        int[] parameterAveragingWorkerFitTimesMs = pStats.getParameterAveragingWorkerFitTimesMs();
+        assertEquals(numberOfAveragings*nWorkers*averagingFrequency, parameterAveragingWorkerFitTimesMs.length);
+        assertGreaterEqZero(parameterAveragingWorkerFitTimesMs);
 
-        assertNull(vStats.getNestedTrainingStats());
+        assertNull(pStats.getNestedTrainingStats());
     }
 
     private static void assertGreaterEqZero(int[] array){

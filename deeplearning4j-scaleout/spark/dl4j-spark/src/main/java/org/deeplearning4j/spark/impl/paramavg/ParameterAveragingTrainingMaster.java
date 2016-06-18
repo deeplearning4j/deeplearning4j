@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla;
+package org.deeplearning4j.spark.impl.paramavg;
 
 import lombok.Data;
 import org.apache.spark.api.java.JavaRDD;
@@ -14,10 +14,10 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaAggregationTuple;
-import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementAddFunction;
-import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementCombineFunction;
-import org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingMasterStats;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingAggregationTuple;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementAddFunction;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementCombineFunction;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -27,13 +27,13 @@ import java.lang.reflect.Array;
 import java.util.Iterator;
 
 /**
- * VanillaTrainingMaster: A {@link TrainingMaster} implementation for spark-only training.
+ * ParameterAveragingTrainingMaster: A {@link TrainingMaster} implementation for spark-only training.
  * This is standard parameter averaging, using no
  */
 @Data
-public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResult, VanillaTrainingWorker> {
+public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
-    private static final Logger log = LoggerFactory.getLogger(VanillaTrainingMaster.class);
+    private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
 
     private boolean saveUpdater;
     private int numWorkers;
@@ -41,10 +41,10 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     private int averagingFrequency;
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
-    private VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper stats;
+    private ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper stats;
 
 
-    private VanillaTrainingMaster(Builder builder){
+    private ParameterAveragingTrainingMaster(Builder builder){
         this.saveUpdater = builder.saveUpdater;
         this.numWorkers = builder.numWorkers;
         this.batchSizePerWorker = builder.batchSizePerWorker;
@@ -52,22 +52,22 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         this.prefetchNumBatches = builder.prefetchNumBatches;
     }
 
-    public VanillaTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
+    public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
         this(saveUpdater, numWorkers, batchSizePerWorker, averagingFrequency, prefetchNumBatches, false);
     }
 
-    public VanillaTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches, boolean collectTrainingStats) {
+    public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches, boolean collectTrainingStats) {
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
         this.batchSizePerWorker = batchSizePerWorker;
         this.averagingFrequency = averagingFrequency;
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
-        if(collectTrainingStats) stats = new VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper();
+        if(collectTrainingStats) stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
     }
 
     @Override
-    public VanillaTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
+    public ParameterAveragingTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
         NetBroadcastTuple tuple = new NetBroadcastTuple(network.getNetwork().getLayerWiseConfigurations(),
                 network.getNetwork().params(),
                 network.getNetwork().getUpdater());
@@ -77,13 +77,13 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         if(collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
-        return new VanillaTrainingWorker(broadcast, saveUpdater, configuration);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
     }
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
         if(collectTrainingStats) stats.logFitStart();
-        //For vanilla training, we need to split the full data set into batches of size N, such that we can process the specified
+        //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
         trainingData.persist(StorageLevel.MEMORY_ONLY());
@@ -110,8 +110,8 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
-            FlatMapFunction<Iterator<DataSet>, VanillaTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
-            JavaRDD<VanillaTrainingResult> result = split.mapPartitions(function);
+            FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
+            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
             processResults(network, result, splitNum, splits.length);
 
             splitNum++;
@@ -124,7 +124,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     public void setCollectTrainingStats(boolean collectTrainingStats) {
         this.collectTrainingStats = collectTrainingStats;
         if(collectTrainingStats){
-            if(this.stats == null) this.stats = new VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper();
+            if(this.stats == null) this.stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
         } else {
             this.stats = null;
         }
@@ -142,15 +142,15 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     }
 
 
-    private void processResults(SparkDl4jMultiLayer network, JavaRDD<VanillaTrainingResult> results, int splitNum, int totalSplits) {
+    private void processResults(SparkDl4jMultiLayer network, JavaRDD<ParameterAveragingTrainingResult> results, int splitNum, int totalSplits) {
         //Need to do parameter averaging, and where necessary also do averaging of the updaters
 
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
 
         if(collectTrainingStats) stats.logAggregateStartTime();
-        VanillaAggregationTuple tuple = results.aggregate(null,
-                new VanillaElementAddFunction(),
-                new VanillaElementCombineFunction());
+        ParameterAveragingAggregationTuple tuple = results.aggregate(null,
+                new ParameterAveragingElementAddFunction(),
+                new ParameterAveragingElementCombineFunction());
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
         UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
@@ -245,8 +245,8 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
             return this;
         }
 
-        public VanillaTrainingMaster build(){
-            return new VanillaTrainingMaster(this);
+        public ParameterAveragingTrainingMaster build(){
+            return new ParameterAveragingTrainingMaster(this);
         }
     }
 
