@@ -3141,6 +3141,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(b.transpose().var(1));
     }
 
+    @Test
+    public void testVPull1() {
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.create(new float[]{1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25}).reshape(3,5);
+
+
+        INDArray result = Nd4j.pull(array, 1, new long[]{0, 2, 4});
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+    }
+
+    @Test
+    public void testVPull2() {
+        INDArray array = Nd4j.linspace(1,24,24).reshape(4, 6);
+        INDArray assertion = Nd4j.create(new float[]{1, 7, 13, 19, 3, 9, 15, 21, 4, 10, 16, 22}).reshape(3, 4);
+
+
+        INDArray result = Nd4j.pull(array, 0, new long[]{0, 2, 3});
+        System.out.println(result);
+
+        assertEquals(3, result.rows());
+        assertEquals(4, result.columns());
+        assertEquals(assertion, result);
+    }
+
 
     @Override
     public char ordering() {
