@@ -28,6 +28,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -155,6 +156,16 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
+     * Fit the DataSet RDD. Equivalent to fit(trainingData.toJavaRDD())
+     *
+     * @param trainingData the training data RDD to fitDataSet
+     * @return the MultiLayerNetwork after training
+     */
+    public MultiLayerNetwork fit(RDD<DataSet> trainingData){
+        return fit(trainingData.toJavaRDD());
+    }
+
+    /**
      * Fit the DataSet RDD
      * @param trainingData the training data RDD to fitDataSet
      * @return the MultiLayerNetwork after training
@@ -210,6 +221,21 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.lastScore = lastScore;
     }
 
+    /**
+     * Overload of {@link #calculateScore(JavaRDD, boolean)} for {@code RDD<DataSet>} instead of {@code JavaRDD<DataSet>}
+     */
+    public double calculateScore(RDD<DataSet> data, boolean average){
+        return calculateScore(data.toJavaRDD(), average);
+    }
+
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<DataSet>}, either by summing
+     * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
+     * or one of the similar methods
+     *
+     * @param data       Data to score
+     * @param average    Whether to sum the scores, or averag them
+     */
     public double calculateScore(JavaRDD<DataSet> data, boolean average){
         long n = data.count();
         JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
@@ -218,6 +244,13 @@ public class SparkDl4jMultiLayer implements Serializable {
         for(Double d : scoresList) sum += d;
         if(average) return sum / n;
         return sum;
+    }
+
+    /**
+     *  {@code RDD<DataSet>} overload of {@link #scoreExamples(JavaPairRDD, boolean)}
+     */
+    public JavaDoubleRDD scoreExamples(RDD<DataSet> data, boolean includeRegularizationTerms){
+        return scoreExamples(data.toJavaRDD(), includeRegularizationTerms);
     }
 
     /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
@@ -231,6 +264,13 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms) {
         return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * {@code RDD<DataSet>} overload of {@link #scoreExamples(JavaRDD, boolean, int)}
+     */
+    public JavaDoubleRDD scoreExamples(RDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
+        return scoreExamples(data.toJavaRDD(), includeRegularizationTerms, batchSize);
     }
 
     /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
@@ -279,12 +319,26 @@ public class SparkDl4jMultiLayer implements Serializable {
                 includeRegularizationTerms, batchSize));
     }
 
+    /**
+     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD)}
+     */
+    public Evaluation evaluate(RDD<DataSet> data){
+        return evaluate(data.toJavaRDD());
+    }
+
     /**Evaluate the network (classification performance) in a distributed manner on the provided data
      * @param data Data to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public Evaluation evaluate(JavaRDD<DataSet> data) {
         return evaluate(data, null);
+    }
+
+    /**
+     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD,List)}
+     */
+    public Evaluation evaluate(RDD<DataSet> data, List<String> labelsList){
+        return evaluate(data.toJavaRDD(), labelsList);
     }
 
     /**Evaluate the network (classification performance) in a distributed manner, using default batch size and a provided
