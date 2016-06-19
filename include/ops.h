@@ -1416,7 +1416,7 @@ template<typename T>
 		op_def static T op(T d1, T *params) {
 			T compare = params[0];
 			T set = params[1];
-			T eps = params[3];
+			T eps = params[2];
 			return d1 <= compare + eps && d1 >= compare - eps ? set : d1;
 		}
 	};

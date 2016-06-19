@@ -4289,3 +4289,36 @@ Nd4jPointer NativeOps::getConstantSpace() {
 
 	return dConstAddr;
 }
+
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	float *xBuffer = reinterpret_cast<float *>(x);
+	float *zBuffer = reinterpret_cast<float *>(z);
+	int *zShape = reinterpret_cast<int *>(zShapeInfo);
+	int *xShape = reinterpret_cast<int *>(xShapeInfo);
+
+	long *index = reinterpret_cast<long *>(indexes);
+	int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+	int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+
+	pullRowsKernelFloat<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+}
+
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	double *xBuffer = reinterpret_cast<double *>(x);
+	double *zBuffer = reinterpret_cast<double *>(z);
+	int *zShape = reinterpret_cast<int *>(zShapeInfo);
+	int *xShape = reinterpret_cast<int *>(xShapeInfo);
+
+	long *index = reinterpret_cast<long *>(indexes);
+	int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+	int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+
+	pullRowsKernelDouble<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+}

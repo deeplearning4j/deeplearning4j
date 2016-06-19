@@ -2082,3 +2082,12 @@ Nd4jPointer NativeOps::getConstantSpace() {
     // no-op
     return 0L;
 }
+
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // TODO: to be implemented
+}
+
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // TODO: to be implemented
+}
+

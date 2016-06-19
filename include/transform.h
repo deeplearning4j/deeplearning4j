@@ -1218,6 +1218,55 @@ extern "C" __global__ void concatKernelFloat(int dimension,
 }
 
 
+template <typename T>
+__device__ void pullRowsKernelGeneric(T *x,
+                                     int *xShapeInfo,
+                                     T *z,
+                                     int *zShapeInfo,
+                                     int n,
+                                     long *indexes,
+                                     int *tadShapeInfo,
+                                     int *tadOffsets) {
+
+
+    int xEWS = shape::elementWiseStride(tadShapeInfo);
+    int zEWS = shape::elementWiseStride(zShapeInfo);
+    int tadLength = shape::length(tadShapeInfo);
+
+    for (int idx = blockIdx.x; idx < n; idx += gridDim.x) {
+        int tadOffsetForBlock = tadOffsets[indexes[idx]];
+
+        T *rX = x + tadOffsetForBlock;
+        T *rZ = z + idx * tadLength;
+
+        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            rZ[i * zEWS] = rX[i * xEWS];
+        }
+    }
+}
+
+extern "C" __global__ void pullRowsKernelFloat(float *x,
+                                     int *xShapeInfo,
+                                     float *z,
+                                     int *zShapeInfo,
+                                     int n,
+                                     long *indexes,
+                                     int *tadShapeInfo,
+                                     int *tadOffsets) {
+    pullRowsKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void pullRowsKernelDouble(double *x,
+                                     int *xShapeInfo,
+                                     double *z,
+                                     int *zShapeInfo,
+                                     int n,
+                                     long *indexes,
+                                     int *tadShapeInfo,
+                                     int *tadOffsets) {
+    pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+}
+
 #endif
 
 #endif /* TRANSFORM_H_ */
