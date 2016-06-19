@@ -5,7 +5,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.cli.subcommands.BaseSubCommand;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.util.ModelSerializer;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.dataset.DataSet;

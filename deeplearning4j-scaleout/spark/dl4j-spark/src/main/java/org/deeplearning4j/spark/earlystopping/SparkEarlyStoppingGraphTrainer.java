@@ -24,8 +24,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
