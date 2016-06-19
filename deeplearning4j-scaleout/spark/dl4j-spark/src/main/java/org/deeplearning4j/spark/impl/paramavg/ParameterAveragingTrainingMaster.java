@@ -13,6 +13,8 @@ import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
+import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingAggregationTuple;
 import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementAddFunction;
@@ -20,6 +22,7 @@ import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingEleme
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +122,60 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         if(collectTrainingStats) stats.logFitEnd();
     }
+
+    @Override
+    public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData){
+        JavaRDD<MultiDataSet> mdsTrainingData = trainingData.map(new DataSetToMultiDataSetFn());
+
+        executeTrainingMDS(graph, mdsTrainingData);
+    }
+
+    @Override
+    public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData){
+        if(collectTrainingStats) stats.logFitStart();
+        //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
+        // number of minibatches between averagings
+        //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
+        trainingData.persist(StorageLevel.MEMORY_ONLY());
+
+        //TODO: The assumption here is that each DataSet represents a single example. But this may not always be the case
+        long totalCount = trainingData.count();
+        int examplesPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
+
+        JavaRDD<MultiDataSet>[] splits = randomSplit((int)totalCount, examplesPerSplit, trainingData);
+
+
+        int splitNum = 1;
+        for(JavaRDD<MultiDataSet> split : splits) {
+            log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
+                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+
+            FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(graph));
+            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
+            processResults(network, result, splitNum, splits.length);
+
+            splitNum++;
+        }
+
+        if(collectTrainingStats) stats.logFitEnd();
+    }
+
+    private <T> JavaRDD<T>[] randomSplit(int totalCount, int examplesPerSplit, JavaRDD<T> data){
+        JavaRDD<T>[] splits;
+        if(collectTrainingStats) stats.logSplitStart();
+        if(totalCount <= examplesPerSplit){
+            splits = (JavaRDD<T>[])Array.newInstance(JavaRDD.class,1);
+            splits[0] = data;
+        } else {
+            int numSplits = (int)(totalCount/examplesPerSplit); //Intentional round down
+            double[] weights = new double[numSplits];
+            for( int i=0; i<weights.length; i++ ) weights[i] = 1.0 / numSplits;
+            splits = data.randomSplit(weights);
+        }
+        if(collectTrainingStats) stats.logSplitEnd();
+        return splits;
+    }
+
 
     @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {

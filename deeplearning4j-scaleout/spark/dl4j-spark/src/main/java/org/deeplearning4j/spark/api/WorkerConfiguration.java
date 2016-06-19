@@ -11,6 +11,7 @@ import java.io.Serializable;
 @AllArgsConstructor @Data
 public class WorkerConfiguration implements Serializable {
 
+    protected final boolean isGraphNetwork;
     protected final int batchSizePerWorker;
     protected final int maxBatchesPerWorker;
     protected final int prefetchNumBatches;
