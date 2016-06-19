@@ -58,9 +58,10 @@ import java.util.List;
 /**
  * Master class for spark
  *
- * @author Adam Gibson
+ * @author Adam Gibson, Alex Black
  */
 public class SparkDl4jMultiLayer implements Serializable {
+    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     private transient JavaSparkContext sc;
@@ -70,8 +71,6 @@ public class SparkDl4jMultiLayer implements Serializable {
     private double lastScore;
 
     private List<IterationListener> listeners = new ArrayList<>();
-
-    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
     /**
      * Instantiate a multi layer spark instance
