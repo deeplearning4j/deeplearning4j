@@ -70,16 +70,20 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
         }
 
         // repartition if size is different
-        if(numPartitions != 0 && numPartitions != train.partitions().size()){
-            log.info("Repartitioning training set to {}", numPartitions);
-            this.train = train.repartition(numPartitions);
-        } else {
-            this.train = train;
+        if(numPartitions != 0){
+            if( train != null && numPartitions != train.partitions().size()) {
+                log.info("Repartitioning training set to {}", numPartitions);
+                train = train.repartition(numPartitions);
+            } else if( trainMulti != null && numPartitions != trainMulti.partitions().size()){
+                log.info("Repartitioning training set to {}", numPartitions);
+                trainMulti = trainMulti.repartition(numPartitions);
+            }
         }
 
         this.sc = sc;
         this.esConfig = esConfig;
         this.net = net;
+        this.train = train;
         this.trainMulti = trainMulti;
         this.examplesPerFit = examplesPerFit;
         this.totalExamples = totalExamples;

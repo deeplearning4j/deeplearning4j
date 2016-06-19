@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.util.*;
 
 import org.canova.api.records.reader.impl.CSVRecordReader;
@@ -74,10 +75,10 @@ public class DataSetIteratorTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
 		CSVRecordReader rr = new CSVRecordReader(0,",");
-		rr.initialize(new FileSplit(cpr.getFile()));
-		RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr,0,10);
+		File f = new File("../dl4j-test-resources/src/main/resources/mnist_first_200.txt");
+		rr.initialize(new FileSplit(f));
+		RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr,10,0,10);
 
 		MnistDataSetIterator iter = new MnistDataSetIterator(10,200,false,true,false,0);
 

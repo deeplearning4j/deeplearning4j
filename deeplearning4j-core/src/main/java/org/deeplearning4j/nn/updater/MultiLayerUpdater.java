@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.updater;
 import java.util.Map;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -11,7 +10,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.GradientUpdater;
 
 /**MultiLayerUpdater: Gradient updater for MultiLayerNetworks.
  * Expects backprop gradients for all layers to be in single Gradient object,

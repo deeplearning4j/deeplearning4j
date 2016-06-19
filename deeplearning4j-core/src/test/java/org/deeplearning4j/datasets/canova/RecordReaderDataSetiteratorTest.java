@@ -111,9 +111,9 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSequenceRecordReader() throws Exception {
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -192,9 +192,9 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSequenceRecordReaderRegression() throws Exception{
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequence_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -248,9 +248,9 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSequenceRecordReaderReset() throws Exception {
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -350,9 +350,9 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testVariableLengthSequence() throws Exception{
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -503,7 +503,7 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSequenceRecordReaderSingleReader() throws Exception{
         ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
-        String path = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String path = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
         reader.initialize(new NumberedFileInputSplit(path, 0, 2));
