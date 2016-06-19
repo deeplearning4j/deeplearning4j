@@ -22,6 +22,8 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -35,9 +37,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
+import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -1699,6 +1699,24 @@ public class Nd4j {
         fos.flush();
         fos.close();
     }
+    public static void writeTxt(INDArray write, String filePath) {
+        //TO DO: Add precision support in toString
+        //TO DO: Write to file one line at time
+        String lineOne = "{\n";
+        String lineTwo = "\"filefrom:\" \"dl4j\",\n";
+        String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
+        String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
+        String lineFive = "\"data\":\n";
+        String fileData = write.toString();
+        String fileEnd = "\n}\n";
+
+        String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
+        try {
+            FileUtils.writeStringToFile(new File(filePath), fileBegin + fileData + fileEnd);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing output", e);
+        }
+    }
 
 
 
@@ -1893,16 +1911,95 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
-     * @return the read txt method
+     * @return NDArray
      */
-    public static INDArray readTxt(String filePath) throws IOException {
-        FileInputStream fis = new FileInputStream(filePath);
-        INDArray ret =  read(fis);
-        fis.close();
-        return ret;
+    public static INDArray readTxt(String filePath) {
+         /*
+          We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
+
+          But here we leverage our information of the tostring method to be more efficient
+          With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
+          This is more efficient than setting each value at a time with putScalar.
+          This also means we can read the file one line at a time instead of loading the whole thing into memory
+
+          Future work involves enhancing the write json method to provide more features to make the load more efficient
+         */
+        int lineNum = 0;
+        int rowNum = 0;
+        int tensorNum = 0;
+        char theOrder = 'c';
+        int[] theShape = {1, 1};
+        int rank = 0;
+        double[][] subsetArr = {{0.0, 0.0}, {0.0, 0.0}};
+        INDArray newArr = Nd4j.zeros(2, 2);
+        try {
+            File txtFile = new File(filePath);
+            LineIterator it = FileUtils.lineIterator(txtFile);
+            try {
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    lineNum++;
+                    line = line.replaceAll("\\s", "");
+                    if (line.equals("") || line.equals("}")) continue;
+                    // is it from dl4j?
+                    if (lineNum == 2) {
+                        String[] lineArr = line.split(":");
+                        String fileSource = lineArr[1].replaceAll("\\W", "");
+                        if (!fileSource.equals("dl4j"))
+                            return null;
+                    }
+                    // parse ordering
+                    if (lineNum == 3) {
+                        String[] lineArr = line.split(":");
+                        theOrder = lineArr[1].replace("\\W", "").charAt(0);
+                        continue;
+                    }
+                    // parse shape
+                    if (lineNum == 4) {
+                        String[] lineArr = line.split(":");
+                        String dropJsonComma = lineArr[1].split("]")[0];
+                        String[] shapeString = dropJsonComma.replace("[", "").split(",");
+                        rank = shapeString.length;
+                        theShape = new int[rank];
+                        for (int i = 0; i < rank; i++) {
+                            try {
+                                theShape[i] = Integer.parseInt(shapeString[i]);
+                            } catch (NumberFormatException nfe) {
+                            }
+                            ;
+                        }
+                        subsetArr = new double[theShape[rank-2]][theShape[rank-1]];
+                        newArr = Nd4j.zeros(theShape, theOrder);
+                        continue;
+                    }
+                    //parse data
+                    if (lineNum > 5) {
+                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(",");
+                        for (int i = 0; i < theShape[rank-1]; i++) {
+                            try {
+                                subsetArr[rowNum][i] = Double.parseDouble(entries[i]);
+                            }
+                            catch (NumberFormatException nfe) {}
+                        }
+                        rowNum++;
+                        if (rowNum == theShape[rank-2]) {
+                            INDArray subTensor = Nd4j.create(subsetArr);
+                            newArr.tensorAlongDimension(tensorNum, rank-1,rank-2).addi(subTensor);
+                            rowNum = 0;
+                            tensorNum++;
+                        }
+                    }
+                }
+            } finally {
+                LineIterator.closeQuietly(it);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Error reading input", e);
+        }
+        return newArr;
     }
-
-
 
     private static int[] toIntArray(int length,DataBuffer buffer) {
         int[] ret = new int[length];
