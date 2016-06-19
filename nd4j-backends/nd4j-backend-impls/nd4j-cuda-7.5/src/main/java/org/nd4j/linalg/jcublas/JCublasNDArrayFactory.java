@@ -653,4 +653,76 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return ret;
         //return super.concat(dimension, toConcat);
     }
+
+    /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source          source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes         indexes from source array
+     * @return
+     */
+    @Override
+    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+        int vectorLength = source.shape()[sourceDimension];
+        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        CudaContext context =  allocator.getFlowController().prepareAction(ret, source);
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(source, context);
+        Pointer xShape = AtomicAllocator.getInstance().getPointer(source.shapeInfoDataBuffer(), context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(ret, context);
+        Pointer zShape = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context);
+
+        PointerPointer extras = new PointerPointer(
+                AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
+                context.getOldStream(),
+                allocator.getDeviceIdPointer()
+        );
+
+        CudaDoubleDataBuffer tempIndexes = new CudaDoubleDataBuffer(indexes.length);
+        AtomicAllocator.getInstance().memcpyBlocking(tempIndexes, new LongPointer(indexes), indexes.length * 8, 0);
+
+        Pointer pIndex = AtomicAllocator.getInstance().getPointer(tempIndexes, context);
+
+        TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[]{sourceDimension});
+
+        Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        Pointer tadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
+
+        if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.pullRowsDouble(
+                    extras,
+                    x,
+                    xShape,
+                    z,
+                    zShape,
+                    indexes.length,
+                    pIndex,
+                    tadShapeInfo,
+                    tadOffsets
+            );
+        } else if(ret.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.pullRowsFloat(
+                    extras,
+                    x,
+                    xShape,
+                    z,
+                    zShape,
+                    indexes.length,
+                    pIndex,
+                    tadShapeInfo,
+                    tadOffsets
+            );
+        }
+
+        allocator.registerAction(context, ret, source);
+
+        return ret;
+    }
 }
