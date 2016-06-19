@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -3162,6 +3163,52 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(3, result.rows());
         assertEquals(4, result.columns());
         assertEquals(assertion, result);
+    }
+
+
+    @Test
+    public void testCompareAndSet1() {
+        INDArray array = Nd4j.zeros(25);
+
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, 0.1f);
+        array.putScalar(10, 0.1f);
+        array.putScalar(20, 0.1f);
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 0.1, 0.0, 0.01));
+
+        assertEquals(assertion, array);
+    }
+
+    @Test
+    public void testReplaceNaNs() {
+        INDArray array = Nd4j.zeros(25);
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, Float.NaN);
+        array.putScalar(10, Float.NaN);
+        array.putScalar(20, Float.NaN);
+
+        assertNotEquals(assertion, array);
+
+        Nd4j.getExecutioner().exec(new ReplaceNans(array, 0.0));
+
+        System.out.println("Array After: " + array);
+
+        assertEquals(assertion, array);
+    }
+
+    @Test
+    public void testNaNEquality() {
+        INDArray array = Nd4j.zeros(25);
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, Float.NaN);
+        array.putScalar(10, Float.NaN);
+        array.putScalar(20, Float.NaN);
+
+        assertNotEquals(assertion, array);
     }
 
 

@@ -31,35 +31,27 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class ReplaceNans extends BaseTransformOp {
 
-    private double compare;
     private double set;
-    private double eps;
 
     public ReplaceNans() {
 
     }
 
-    public ReplaceNans(INDArray x, double compare, double set, double eps) {
+    public ReplaceNans(INDArray x, double set) {
         super(x);
-        this.compare = compare;
         this.set = set;
-        this.eps = eps;
         init(x, null, x, x.length());
     }
 
-    public ReplaceNans(INDArray x, INDArray z, double compare, double set, double eps) {
+    public ReplaceNans(INDArray x, INDArray z, double set) {
         super(x,z);
-        this.compare = compare;
         this.set = set;
-        this.eps = eps;
         init(x, null, z, x.length());
     }
 
-    public ReplaceNans(INDArray x, INDArray z, double compare, double set, double eps, long n) {
+    public ReplaceNans(INDArray x, INDArray z, double set, long n) {
         super(x,z,n);
-        this.compare = compare;
         this.set = set;
-        this.eps = eps;
         init(x, null, x, n);
     }
 
@@ -119,9 +111,9 @@ public class ReplaceNans extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
         else
-            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
     }
 
     @Override
@@ -129,16 +121,16 @@ public class ReplaceNans extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
         else
-            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x,y,z,n);
-        this.extraArgs = new Object[]{compare, set, eps, (double) n};
+        this.extraArgs = new Object[]{set, (double) n};
     }
 }
 
