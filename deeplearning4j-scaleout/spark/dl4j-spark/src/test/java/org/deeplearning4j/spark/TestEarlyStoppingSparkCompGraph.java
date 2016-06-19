@@ -41,7 +41,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingGraphTrainer;
 import org.deeplearning4j.spark.earlystopping.SparkLossCalculatorComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

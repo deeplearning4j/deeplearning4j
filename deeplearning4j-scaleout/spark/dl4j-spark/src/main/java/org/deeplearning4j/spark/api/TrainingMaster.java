@@ -2,7 +2,7 @@ package org.deeplearning4j.spark.api;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;

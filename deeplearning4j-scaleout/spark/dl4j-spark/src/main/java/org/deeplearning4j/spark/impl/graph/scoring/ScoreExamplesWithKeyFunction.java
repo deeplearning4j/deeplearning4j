@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.spark.impl.computationgraph.scoring;
+package org.deeplearning4j.spark.impl.graph.scoring;
 
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
