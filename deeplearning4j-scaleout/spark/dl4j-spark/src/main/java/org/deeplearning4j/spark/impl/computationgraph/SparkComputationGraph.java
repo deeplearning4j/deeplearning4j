@@ -124,6 +124,10 @@ public class SparkComputationGraph implements Serializable {
         this.updater = sc.broadcast(network.getUpdater());
     }
 
+    public JavaSparkContext getSparkContext(){
+        return sc;
+    }
+
     /**Train a ComputationGraph network based on data loaded from a text file + {@link RecordReader}.
      * This method splits the data into approximately {@code examplesPerFit} sized splits, and trains on each split.
      * one after the other. See {@link #fitDataSet(JavaRDD, int, int, int)} for further details.<br>

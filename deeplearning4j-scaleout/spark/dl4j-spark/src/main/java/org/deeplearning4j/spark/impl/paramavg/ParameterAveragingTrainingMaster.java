@@ -6,12 +6,15 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
+import org.deeplearning4j.spark.api.worker.ExecuteWorkerMultiDataSetFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
@@ -79,7 +82,21 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
         if(collectTrainingStats) stats.logBroadcastEnd();
 
-        WorkerConfiguration configuration = new WorkerConfiguration(batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
+        WorkerConfiguration configuration = new WorkerConfiguration(false, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
+    }
+
+    @Override
+    public ParameterAveragingTrainingWorker getWorkerInstance(SparkComputationGraph graph) {
+        NetBroadcastTuple tuple = new NetBroadcastTuple(graph.getNetwork().getConfiguration(),
+                graph.getNetwork().params(),
+                graph.getNetwork().getUpdater());
+
+        if(collectTrainingStats) stats.logBroadcastStart();
+        Broadcast<NetBroadcastTuple> broadcast = graph.getSparkContext().broadcast(tuple);
+        if(collectTrainingStats) stats.logBroadcastEnd();
+
+        WorkerConfiguration configuration = new WorkerConfiguration(true, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
     }
 
@@ -115,7 +132,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
             FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
             JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
-            processResults(network, result, splitNum, splits.length);
+            processResults(network, null, result, splitNum, splits.length);
 
             splitNum++;
         }
@@ -150,9 +167,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
-            FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(graph));
+            FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
             JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
-            processResults(network, result, splitNum, splits.length);
+            processResults(null, graph, result, splitNum, splits.length);
 
             splitNum++;
         }
@@ -199,7 +216,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
 
-    private void processResults(SparkDl4jMultiLayer network, JavaRDD<ParameterAveragingTrainingResult> results, int splitNum, int totalSplits) {
+    private void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<ParameterAveragingTrainingResult> results, int splitNum, int totalSplits) {
         //Need to do parameter averaging, and where necessary also do averaging of the updaters
 
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
@@ -214,13 +231,22 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
         if(collectTrainingStats) stats.logAggregationEndTime();
 
-        MultiLayerNetwork net = network.getNetwork();
 
         if(collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
-        Updater updater = updaterAg.getUpdater();
-        net.setParameters(params);
-        net.setUpdater(updater);
+        if(network != null){
+            MultiLayerNetwork net = network.getNetwork();
+            Updater updater = updaterAg.getUpdater();
+            net.setParameters(params);
+            net.setUpdater(updater);
+        } else {
+            ComputationGraph g = graph.getNetwork();
+            ComputationGraphUpdater updater = null; //TODO
+            g.setParams(params);
+            g.setUpdater(updater);
+            throw new RuntimeException("NOT YET IMPLEMENTED");
+        }
+
         if(collectTrainingStats){
             stats.logProcessParamsUpdaterEnd();
             stats.addWorkerStats(aggregatedStats);

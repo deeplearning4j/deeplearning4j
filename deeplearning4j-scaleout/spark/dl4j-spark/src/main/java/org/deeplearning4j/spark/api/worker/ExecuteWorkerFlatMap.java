@@ -4,6 +4,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
@@ -32,6 +33,7 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
     @Override
     public Iterable<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
         WorkerConfiguration dataConfig = worker.getDataConfiguration();
+        final boolean isGraph = dataConfig.isGraphNetwork();
 
         boolean stats = dataConfig.isCollectTrainingStats();
         StatsCalculationHelper s = (stats ? new StatsCalculationHelper() : null);
@@ -52,8 +54,11 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
         }
 
         try {
+            MultiLayerNetwork net = null;
+            ComputationGraph graph = null;
             if(stats) s.logInitialModelBefore();
-            MultiLayerNetwork net = worker.getInitialModel();
+            if(isGraph) graph = worker.getInitialModelGraph();
+            else net = worker.getInitialModel();
             if(stats) s.logInitialModelAfter();
 
             int miniBatchCount = 0;
@@ -66,7 +71,9 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
 
                 if(stats){
                     s.logProcessMinibatchBefore();
-                    Pair<R,SparkTrainingStats> result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
+                    Pair<R,SparkTrainingStats> result;
+                    if(isGraph) result = worker.processMinibatchWithStats(next, graph, !batchedIterator.hasNext());
+                    else result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
                     s.logProcessMinibatchAfter();
                     if(result != null){
                         //Terminate training immediately
@@ -78,7 +85,9 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                         return Collections.singletonList(result.getFirst());
                     }
                 } else {
-                    R result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
+                    R result;
+                    if(isGraph) result = worker.processMinibatch(next, graph, !batchedIterator.hasNext());
+                    else result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
                     if(result != null){
                         //Terminate training immediately
                         return Collections.singletonList(result);
@@ -89,85 +98,20 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
             //For some reason, we didn't return already. Normally this shouldn't happen
             if(stats){
                 s.logReturnTime();
-                Pair<R,SparkTrainingStats> pair = worker.getFinalResultWithStats(net);
+                Pair<R,SparkTrainingStats> pair;
+                if(isGraph) pair = worker.getFinalResultWithStats(graph);
+                else pair = worker.getFinalResultWithStats(net);
                 pair.getFirst().setStats(s.build(pair.getSecond()));
                 return Collections.singletonList(pair.getFirst());
             } else {
-                return Collections.singletonList(worker.getFinalResult(net));
+                if(isGraph) return Collections.singletonList(worker.getFinalResult(graph));
+                else return Collections.singletonList(worker.getFinalResult(net));
             }
         } finally {
             //Make sure we shut down the async thread properly...
             if(batchedIterator instanceof AsyncDataSetIterator){
                 ((AsyncDataSetIterator)batchedIterator).shutdown();
             }
-        }
-    }
-
-
-    private static class StatsCalculationHelper {
-
-        private long methodStartTime;
-        private long returnTime;
-        private long initalModelBefore;
-        private long initialModelAfter;
-        private long lastDataSetBefore;
-        private long lastProcessBefore;
-        private int totalExampleCount;
-        //TODO: This adds more overhead than we want. Replace with a fast int collection (no boxing + conversion!)
-        private List<Integer> dataSetGetTimes = new ArrayList<>();
-        private List<Integer> processMiniBatchTimes = new ArrayList<>();
-
-        private void logMethodStartTime(){
-            methodStartTime = System.currentTimeMillis();
-        }
-
-        private void logReturnTime(){
-            returnTime = System.currentTimeMillis();
-        }
-
-        private void logInitialModelBefore(){
-            initalModelBefore = System.currentTimeMillis();
-        }
-
-        private void logInitialModelAfter(){
-            initialModelAfter = System.currentTimeMillis();
-        }
-
-        private void logNextDataSetBefore(){
-            lastDataSetBefore = System.currentTimeMillis();
-        }
-
-        private void logNextDataSetAfter(int numExamples){
-            long now = System.currentTimeMillis();
-            dataSetGetTimes.add((int)(now-lastDataSetBefore));
-            totalExampleCount += numExamples;
-        }
-
-        private void logProcessMinibatchBefore(){
-            lastProcessBefore = System.currentTimeMillis();
-        }
-
-        private void logProcessMinibatchAfter(){
-            long now = System.currentTimeMillis();
-            processMiniBatchTimes.add((int)(now-lastProcessBefore));
-        }
-
-        private CommonSparkTrainingStats build(SparkTrainingStats masterSpecificStats){
-            //TODO again, do this without the lists...
-            int[] dataSetGetTimesArr = new int[dataSetGetTimes.size()];
-            for( int i=0; i<dataSetGetTimesArr.length; i++ ) dataSetGetTimesArr[i] = dataSetGetTimes.get(i);
-            int[] processMiniBatchTimesArr = new int[processMiniBatchTimes.size()];
-            for( int i=0; i<processMiniBatchTimesArr.length; i++ ) processMiniBatchTimesArr[i] = processMiniBatchTimes.get(i);
-
-            return new CommonSparkTrainingStats.Builder()
-                    .trainingMasterSpecificStats(masterSpecificStats)
-                    .workerFlatMapTotalTimeMs((int)(returnTime-methodStartTime))
-                    .workerFlatMapTotalExampleCount(totalExampleCount)
-                    .workerFlatMapGetInitialModelTimeMs((int)(initialModelAfter-initalModelBefore))
-                    .workerFlatMapDataSetGetTimesMs(dataSetGetTimesArr)
-                    .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimesArr)
-                    .workerFlatMapCountNoDataInstances(dataSetGetTimes.size() == 0 ? 1 : 0)
-                    .build();
         }
     }
 }
