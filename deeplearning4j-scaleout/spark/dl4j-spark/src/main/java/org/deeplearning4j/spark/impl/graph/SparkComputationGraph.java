@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.spark.impl.computationgraph;
+package org.deeplearning4j.spark.impl.graph;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
@@ -42,11 +42,11 @@ import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
 import org.deeplearning4j.spark.impl.common.misc.*;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombinerCG;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombinerCG;
-import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
-import org.deeplearning4j.spark.impl.computationgraph.dataset.PairDataSetToMultiDataSetFn;
-import org.deeplearning4j.spark.impl.computationgraph.gradientaccum.GradientAccumFlatMapCG;
-import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesFunction;
-import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesWithKeyFunction;
+import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.gradientaccum.GradientAccumFlatMapCG;
+import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
+import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
