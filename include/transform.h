@@ -81,7 +81,9 @@
         (41,simdOps::IsMax), \
         (42,simdOps::SpecialDerivative), \
         (43,simdOps::DropOut), \
-        (44,simdOps::DropOutInverted)
+        (44,simdOps::DropOutInverted), \
+        (45,simdOps::CompareAndSet), \
+        (46,simdOps::ReplaceNans)
 
 
 namespace functions {

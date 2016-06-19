@@ -1393,4 +1393,31 @@ template<typename T>
 			return rnd >= prob ? 0 : d1 / prob;
 		}
 	};
+
+
+	template<typename T>
+	class ReplaceNans {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T replacement = params[0];
+			return isnan(d1) ? replacement : d1 ;
+		}
+	};
+
+	template<typename T>
+	class CompareAndSet {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T compare = params[0];
+			T set = params[1];
+			T eps = params[3];
+			return d1 <= compare + eps && d1 >= compare - eps ? set : d1;
+		}
+	};
 }
