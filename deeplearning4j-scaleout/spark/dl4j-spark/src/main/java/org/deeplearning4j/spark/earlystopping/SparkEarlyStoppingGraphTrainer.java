@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.nd4j.linalg.dataset.DataSet;
@@ -38,30 +39,30 @@ public class SparkEarlyStoppingGraphTrainer extends BaseSparkEarlyStoppingTraine
 
     private SparkComputationGraph sparkNet;
 
-    public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+    public SparkEarlyStoppingGraphTrainer(SparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train, int examplesPerFit, int totalExamples) {
-        this(new JavaSparkContext(sc),esConfig,net,train,null);
+        this(new JavaSparkContext(sc), trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train, int examplesPerFit, int totalExamples) {
-        this(sc,esConfig,net,train,null);
+        this(sc, trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+    public SparkEarlyStoppingGraphTrainer(SparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train) {
-        this(new JavaSparkContext(sc),esConfig,net,train,null);
+        this(new JavaSparkContext(sc), trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train) {
-        this(sc,esConfig,net,train,null);
+        this(sc, trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+    public SparkEarlyStoppingGraphTrainer(JavaSparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train, EarlyStoppingListener<ComputationGraph> listener) {
         super(sc, esConfig, net, null, train, listener);
-        this.sparkNet = new SparkComputationGraph(sc,net);
+        this.sparkNet = new SparkComputationGraph(sc, net, trainingMaster);
     }
 
 
@@ -72,7 +73,7 @@ public class SparkEarlyStoppingGraphTrainer extends BaseSparkEarlyStoppingTraine
 
     @Override
     protected void fitMulti(JavaRDD<MultiDataSet> data) {
-        sparkNet.fitMultiDataSet(data, Integer.MAX_VALUE, 0, -1);   //TODO
+        sparkNet.fitMultiDataSet(data);
     }
 
     @Override
