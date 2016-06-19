@@ -807,7 +807,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public INDArray pull(INDArray source, int sourceDimension, long[] indexes) {
+    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
 

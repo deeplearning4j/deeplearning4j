@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -49,9 +48,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.SerializationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -3147,7 +3143,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new float[]{1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25}).reshape(3,5);
 
 
-        INDArray result = Nd4j.pull(array, 1, new long[]{0, 2, 4});
+        INDArray result = Nd4j.pullRows(array, 1, new long[]{0, 2, 4});
 
         assertEquals(3, result.rows());
         assertEquals(5, result.columns());
@@ -3160,7 +3156,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new float[]{1, 7, 13, 19, 3, 9, 15, 21, 4, 10, 16, 22}).reshape(3, 4);
 
 
-        INDArray result = Nd4j.pull(array, 0, new long[]{0, 2, 3});
+        INDArray result = Nd4j.pullRows(array, 0, new long[]{0, 2, 3});
         System.out.println(result);
 
         assertEquals(3, result.rows());
