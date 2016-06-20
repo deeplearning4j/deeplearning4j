@@ -165,7 +165,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
             if(featuresLength > labelsLength ){
                 //Input longer, pad output
                 INDArray newOutput = Nd4j.create(1,outputArr.size(1),featuresLength);
-                newOutput.get(NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.interval(featuresLength-labelsLength,featuresLength))
+                newOutput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(featuresLength-labelsLength,featuresLength))
                         .assign(outputArr);
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
@@ -174,7 +174,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
-                newInput.get(NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.interval(labelsLength-featuresLength,labelsLength))
+                newInput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(labelsLength-featuresLength,labelsLength))
                         .assign(inputArr);
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
@@ -185,7 +185,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
             if(featuresLength > labelsLength ){
                 //Input longer, pad output
                 INDArray newOutput = Nd4j.create(1,outputArr.size(1),featuresLength);
-                newOutput.get(NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.interval(0,labelsLength)).assign(outputArr);
+                newOutput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(0,labelsLength)).assign(outputArr);
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
                 for( int j=0; j<labelsLength; j++ ) outputMask.putScalar(j,1.0);
@@ -193,7 +193,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
-                newInput.get(NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.interval(0,featuresLength)).assign(inputArr);
+                newInput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(0,featuresLength)).assign(inputArr);
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
                 for( int j=0; j<featuresLength; j++ ) inputMask.putScalar(j,1.0);
