@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Iterator;
 
 /**
@@ -50,6 +52,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
     private ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper stats;
+    private Collection<IterationListener> listeners;
+    private int iterationCount = 0;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -261,6 +265,24 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         }
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
+
+        if(listeners != null){
+            if(network != null){
+                MultiLayerNetwork net = network.getNetwork();
+                net.setScore(network.getScore());
+                for(IterationListener il : listeners){
+                    il.iterationDone(net, iterationCount);
+                }
+            } else {
+                ComputationGraph g = graph.getNetwork();
+                g.setScore(graph.getScore());
+                for(IterationListener il : listeners){
+                    il.iterationDone(g, iterationCount);
+                }
+            }
+        }
+
+        iterationCount++;
     }
 
 

@@ -7,6 +7,8 @@ import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
 import org.deeplearning4j.datasets.canova.RecordReaderMultiDataSetIterator;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -68,6 +70,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
 
         SparkComputationGraph scg = new SparkComputationGraph(sc, cg, tm);
+        scg.setListeners(Collections.singleton((IterationListener)new ScoreIterationListener(1)));
 
         JavaRDD<MultiDataSet> rdd = sc.parallelize(list);
         scg.fitMultiDataSet(rdd);
