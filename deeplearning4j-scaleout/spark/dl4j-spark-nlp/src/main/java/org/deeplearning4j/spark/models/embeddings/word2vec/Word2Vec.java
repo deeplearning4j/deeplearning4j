@@ -169,6 +169,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
         vocabCache = vocabCacheBroadcast.getValue();
 
+        log.info("Vocab size: {}", vocabCache.numWords());
+
         //////////////////////////////////////
         log.info("Building Huffman Tree ...");
         // Building Huffman Tree would update the code and point in each of the vocabWord in vocabCache
@@ -233,9 +235,6 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         }
 
         long totals = 0;
-        for (Long up: updaters.values()) {
-            totals += up;
-        }
 
 
 
