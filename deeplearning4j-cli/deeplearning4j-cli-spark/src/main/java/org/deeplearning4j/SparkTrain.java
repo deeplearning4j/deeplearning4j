@@ -5,7 +5,9 @@ import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.cli.subcommands.BaseSubCommand;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
+import org.deeplearning4j.spark.api.TrainingMaster;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.util.ModelSerializer;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,10 +34,17 @@ public class SparkTrain extends BaseSubCommand {
     private int examplesPerFit;
     @Option(name = "--totalExamples", usage = "total number of examples",aliases = "-n", required = true)
     private int totalExamples;
-    @Option(name = "--numPartitions", usage = "number of partitions",aliases = "-p", required = true)
-    private int numPartitions;
+    @Option(name = "--numWorkers", usage = "number of workers",aliases = {"-p", "--numWorkers"}, required = true)
+    private int numWorkers;
     @Option(name = "--output", usage = "output path",aliases = "-o", required = true)
     private String outputPath;
+    @Option(name = "--saveUpdater", usage = "Also save the updater state when training", aliases = "-u")
+    private boolean saveUpdater = true;
+    @Option(name = "--averagingFrequency", usage = "Frequency with which to do parameter averaging", aliases = "-af")
+    private int averagingFrequency = 1;
+    @Option(name = "--workerPrefetchNumBatches", usage = "Number of batches to prefetch (for workers)", aliases = "-pre")
+    private int workerPrefetchNumBatches = 0;
+
     private SparkContext sc;
 
     /**
@@ -99,10 +108,20 @@ public class SparkTrain extends BaseSubCommand {
 
         try {
             graph = getComputationGraph();
-            SparkComputationGraph multiLayer = new SparkComputationGraph(getContext(),graph);
+            TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(numWorkers)
+                    .batchSizePerWorker(examplesPerFit / numWorkers)
+                    .saveUpdater(saveUpdater)
+                    .averagingFrequency(averagingFrequency)
+                    .workerPrefetchNumBatches(workerPrefetchNumBatches)
+                    .build();
+
+            SparkComputationGraph multiLayer = new SparkComputationGraph(getContext(), graph, tm);
             JavaRDD<DataSet> dataSet = getDataSet();
-            //int examplesPerFit, int totalExamples, int numPartitions
-            ComputationGraph newGraph = multiLayer.fitDataSet(dataSet,examplesPerFit,totalExamples,numPartitions);
+            //int examplesPerFit, int totalExamples, int numWorkers
+
+
+
+            ComputationGraph newGraph = multiLayer.fit(dataSet);
             saveGraph(newGraph);
         } catch (IOException e) {
             e.printStackTrace();

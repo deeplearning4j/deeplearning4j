@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.updater;
 
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
@@ -24,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -495,6 +497,70 @@ public class TestDecayPolicies {
             updater.update(net, gradientMLN, i, 1);
             mu = testNesterovsComputation(gradientMLN, gradientExpected, lr, mu, momentumAfter, i);
             assertEquals(mu, net.getLayer(1).conf().getLayer().getMomentum(), 1e-4);
+        }
+    }
+
+
+    @Test
+    public void testUpdatingInConf() throws Exception {
+
+        OptimizationAlgorithm[] optimizationAlgorithms = new OptimizationAlgorithm[]{
+                OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+                OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+                OptimizationAlgorithm.CONJUGATE_GRADIENT,
+                OptimizationAlgorithm.LBFGS};
+
+        for(OptimizationAlgorithm oa : optimizationAlgorithms ) {
+            Map<Integer, Double> momentumSchedule = new HashMap<>();
+            double m = 0.001;
+            for (int i = 0; i <= 100; i++) {
+                momentumSchedule.put(i, Math.min(m, 0.9999));
+                m += 0.001;
+            }
+
+            Map<Integer, Double> learningRateSchedule = new HashMap<>();
+            double lr = 0.1;
+            for (int i = 0; i <= 100; i++) {
+                learningRateSchedule.put(i, lr);
+                lr *= 0.96;
+            }
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(oa)
+                    .iterations(1)
+                    .learningRateDecayPolicy(LearningRatePolicy.Schedule)
+                    .learningRateSchedule(learningRateSchedule)
+                    .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS)
+                    .momentum(0.9)
+                    .momentumAfter(momentumSchedule)
+                    .regularization(true).l2(0.0001)
+                    .list()
+                    .layer(0, new DenseLayer.Builder().nIn(784).nOut(10).build())
+                    .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            int last_layer_index = 1;
+
+            DataSetIterator trainIter = new MnistDataSetIterator(64, true, 12345);
+
+
+            int count = 0;
+            while (trainIter.hasNext()) {
+                net.fit(trainIter.next());
+
+                // always print the same number (0.1 and 0.9)
+                double lrLastLayer = (net.getLayer(last_layer_index)).conf().getLearningRateByParam("W");
+                double mLastLayer = (net.getLayer(last_layer_index)).conf().getLayer().getMomentum();
+
+                assertEquals(learningRateSchedule.get(count), lrLastLayer, 1e-6);
+                assertEquals(momentumSchedule.get(count), mLastLayer, 1e-6);
+
+                if (count++ >= 100) break;
+            }
         }
     }
 
