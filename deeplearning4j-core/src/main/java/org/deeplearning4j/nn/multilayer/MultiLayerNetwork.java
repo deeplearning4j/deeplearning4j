@@ -426,6 +426,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    public boolean isInitCalled(){
+        return initCalled;
+    }
+
     /**
      * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
      */
@@ -881,6 +885,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(flattenedParams != null && params.length() == flattenedParams.length()){
             flattenedParams.assign(params);
         } else {
+            if(flattenedParams == null) flattenedParams = params.dup();
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
