@@ -13,7 +13,6 @@ import java.text.DecimalFormat;
 public class NDArrayStrings {
 
     private String sep = ",";
-    private int precision = 2;
     private int padding = 0;
 
     private String decFormatNum = "#,###,##0";
@@ -22,15 +21,15 @@ public class NDArrayStrings {
 
 
     public NDArrayStrings(String sep) {
-        this.sep = sep;
+        this(", ",2);
     }
 
     public NDArrayStrings(int precision) {
-        this.precision = precision;
+        this(", ",precision);
     }
     
     public NDArrayStrings(String sep, int precision) {
-        this.precision = precision;
+        this.sep = sep;
         if (precision != 0) {
             this.decFormatRest = ".";
             while (precision > 0) {
@@ -42,7 +41,7 @@ public class NDArrayStrings {
     }
 
     public NDArrayStrings() {
-        this(", ",3);
+        this(", ",2);
     }
 
 

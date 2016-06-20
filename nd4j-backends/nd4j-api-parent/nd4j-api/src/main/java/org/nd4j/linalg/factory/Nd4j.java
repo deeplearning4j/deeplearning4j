@@ -1694,23 +1694,18 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
-     * @param split    the split separator
+     * @param split    the split separator, defaults to ", "
+     * @param precision digits after the decimal point, defaults to 2
      * @return the read txt method
      */
-    public static void writeTxt(INDArray write, String filePath, String split) throws IOException {
-        //TO DO: Add precision support in toString
-        //TO DO: Write to file one line at time
-        if (!(split.matches("^\\s*,\\s*$"))) {
-           logger.info("A non-default separator will be used. readTxt does not currently support this.");
-        }
-        //TO DO: Add precision support in toString
+    public static void writeTxt(INDArray write, String filePath, String split, int precision) {
         //TO DO: Write to file one line at time
         String lineOne = "{\n";
         String lineTwo = "\"filefrom:\" \"dl4j\",\n";
         String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
         String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
         String lineFive = "\"data\":\n";
-        String fileData = new NDArrayStrings(split).format(write);
+        String fileData = new NDArrayStrings(split,precision).format(write);
         String fileEnd = "\n}\n";
 
         String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
@@ -1721,23 +1716,17 @@ public class Nd4j {
         }
     }
 
-    public static void writeTxt(INDArray write, String filePath) {
-        //TO DO: Add precision support in toString
-        //TO DO: Write to file one line at time
-        String lineOne = "{\n";
-        String lineTwo = "\"filefrom:\" \"dl4j\",\n";
-        String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
-        String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
-        String lineFive = "\"data\":\n";
-        String fileData = write.toString();
-        String fileEnd = "\n}\n";
+    public static void writeTxt(INDArray write, String filePath, int precision) {
+        writeTxt(write,filePath,", ",precision);
 
-        String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
-        try {
-            FileUtils.writeStringToFile(new File(filePath), fileBegin + fileData + fileEnd);
-        } catch (IOException e) {
-            throw new RuntimeException("Error writing output", e);
-        }
+    }
+
+    public static void writeTxt(INDArray write, String filePath, String split) {
+        writeTxt(write,filePath,split,2);
+    }
+
+    public static void writeTxt(INDArray write, String filePath) {
+        writeTxt(write,filePath,", ",2);
     }
 
 
@@ -1933,9 +1922,10 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
+     * @param  split character, defaults to ","
      * @return NDArray
      */
-    public static INDArray readTxt(String filePath) {
+    public static INDArray readTxt(String filePath,String sep) {
          /*
           We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
 
@@ -1980,7 +1970,7 @@ public class Nd4j {
                     if (lineNum == 4) {
                         String[] lineArr = line.split(":");
                         String dropJsonComma = lineArr[1].split("]")[0];
-                        String[] shapeString = dropJsonComma.replace("[", "").split(",");
+                        String[] shapeString = dropJsonComma.replace("[", "").split(sep);
                         rank = shapeString.length;
                         theShape = new int[rank];
                         for (int i = 0; i < rank; i++) {
@@ -1996,7 +1986,7 @@ public class Nd4j {
                     }
                     //parse data
                     if (lineNum > 5) {
-                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(",");
+                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(sep);
                         for (int i = 0; i < theShape[rank-1]; i++) {
                             try {
                                 subsetArr[rowNum][i] = Double.parseDouble(entries[i]);
@@ -2022,6 +2012,10 @@ public class Nd4j {
         }
         return newArr;
     }
+    public static INDArray readTxt(String filePath) {
+        readTxt(filePath,",");
+    }
+
 
     private static int[] toIntArray(int length,DataBuffer buffer) {
         int[] ret = new int[length];
