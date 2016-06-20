@@ -136,6 +136,20 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         // no-op
     }
 
+    /**
+     *
+     * Shut down the async data set iterator thread
+     * This is not typically necessary if using a single AsyncDataSetIterator
+     * (thread is a daemon thread and so shouldn't block the JVM from exiting)
+     * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
+     */
+    public void shutdown() {
+        if(thread.isAlive()) {
+            runnable.killRunnable = true;
+            thread.interrupt();
+        }
+    }
+
     private class IteratorRunnable implements Runnable {
         private volatile boolean killRunnable = false;
         private volatile boolean isAlive = true;

@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.util;
 
-import org.apache.spark.RangePartitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
