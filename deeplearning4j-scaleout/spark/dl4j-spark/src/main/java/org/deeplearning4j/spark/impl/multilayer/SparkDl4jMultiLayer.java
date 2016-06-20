@@ -218,6 +218,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         this.listeners.clear();
         this.listeners.addAll(listeners);
+        if(trainingMaster != null) trainingMaster.setListeners(this.listeners);
     }
 
     protected void invokeListeners(MultiLayerNetwork network, int iteration) {
