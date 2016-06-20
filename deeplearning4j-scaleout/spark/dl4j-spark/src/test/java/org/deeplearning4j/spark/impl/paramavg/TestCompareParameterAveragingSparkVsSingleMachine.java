@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestCompareParameterAveragingSparkVsSingleMachine {
 
-    private static MultiLayerConfiguration getConf(int seed, Updater updater){
+    private static MultiLayerConfiguration getConf(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -52,7 +52,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static ComputationGraphConfiguration getGraphConf(int seed, Updater updater){
+    private static ComputationGraphConfiguration getGraphConf(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -72,17 +72,21 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, int nWorkers){
+    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, int nWorkers) {
+        return getTrainingMaster(avgFreq, miniBatchSize, nWorkers, true);
+    }
+
+    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, int nWorkers, boolean saveUpdater) {
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers)
                 .averagingFrequency(avgFreq)
                 .batchSizePerWorker(miniBatchSize)
-                .saveUpdater(true)
+                .saveUpdater(saveUpdater)
                 .workerPrefetchNumBatches(0)
                 .build();
         return tm;
     }
 
-    private static JavaSparkContext getContext(int nWorkers){
+    private static JavaSparkContext getContext(int nWorkers) {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + nWorkers + "]");
         sparkConf.setAppName("Test");
@@ -91,114 +95,122 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return sc;
     }
 
-    private List<DataSet> getOneDataSetAsIndividalExamples(int totalExamples, int seed){
+    private List<DataSet> getOneDataSetAsIndividalExamples(int totalExamples, int seed) {
         Nd4j.getRandom().setSeed(seed);
         List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<totalExamples; i++ ){
-            INDArray f = Nd4j.rand(1,10);
-            INDArray l = Nd4j.rand(1,10);
-            DataSet ds = new DataSet(f,l);
+        for (int i = 0; i < totalExamples; i++) {
+            INDArray f = Nd4j.rand(1, 10);
+            INDArray l = Nd4j.rand(1, 10);
+            DataSet ds = new DataSet(f, l);
             list.add(ds);
         }
         return list;
     }
 
-    private DataSet getOneDataSet(int totalExamples, int seed){
+    private DataSet getOneDataSet(int totalExamples, int seed) {
         return DataSet.merge(getOneDataSetAsIndividalExamples(totalExamples, seed));
     }
 
     @Test
-    public void testOneExecutor(){
+    public void testOneExecutor() {
         //Idea: single worker/executor on Spark should give identical results to a single machine
 
         int miniBatchSize = 10;
         int nWorkers = 1;
-        JavaSparkContext sc = getContext(nWorkers);
 
-        try {
-            //Do training locally, for 3 minibatches
-            int[] seeds = {1, 2, 3};
+        for (boolean saveUpdater : new boolean[]{true, false}) {
+            JavaSparkContext sc = getContext(nWorkers);
 
-            MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.RMSPROP));
-            net.init();
-            INDArray initialParams = net.params().dup();
+            try {
+                //Do training locally, for 3 minibatches
+                int[] seeds = {1, 2, 3};
 
-            for (int i = 0; i < seeds.length; i++) {
-                DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
-                net.fit(ds);
+                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.RMSPROP));
+                net.init();
+                INDArray initialParams = net.params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
+                    if (!saveUpdater) net.setUpdater(null);
+                    net.fit(ds);
+                }
+                INDArray finalParams = net.params().dup();
+
+                //Do training on Spark with one executor, for 3 separate minibatches
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers, saveUpdater);
+                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.RMSPROP), tm);
+                sparkNet.setCollectTrainingStats(true);
+                INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSize, seeds[i]);
+                    JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+                    sparkNet.fit(rdd);
+                }
+
+                INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                assertEquals(initialParams, initialSparkParams);
+                assertNotEquals(initialParams, finalParams);
+                assertEquals(finalParams, finalSparkParams);
+            } finally {
+                sc.stop();
             }
-            INDArray finalParams = net.params().dup();
-
-            //Do training on Spark with one executor, for 3 separate minibatches
-            TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers);
-            SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.RMSPROP), tm);
-            sparkNet.setCollectTrainingStats(true);
-            INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
-
-            for (int i = 0; i < seeds.length; i++) {
-                List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSize, seeds[i]);
-                JavaRDD<DataSet> rdd = sc.parallelize(list);
-
-                sparkNet.fit(rdd);
-            }
-
-            INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-            assertEquals(initialParams, initialSparkParams);
-            assertNotEquals(initialParams, finalParams);
-            assertEquals(finalParams, finalSparkParams);
-        } finally {
-            sc.stop();
         }
     }
 
     @Test
-    public void testOneExecutorGraph(){
+    public void testOneExecutorGraph() {
         //Idea: single worker/executor on Spark should give identical results to a single machine
 
         int miniBatchSize = 10;
         int nWorkers = 1;
-        JavaSparkContext sc = getContext(nWorkers);
 
-        try {
-            //Do training locally, for 3 minibatches
-            int[] seeds = {1, 2, 3};
+        for (boolean saveUpdater : new boolean[]{true, false}) {
+            JavaSparkContext sc = getContext(nWorkers);
 
-            ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.RMSPROP));
-            net.init();
-            INDArray initialParams = net.params().dup();
+            try {
+                //Do training locally, for 3 minibatches
+                int[] seeds = {1, 2, 3};
 
-            for (int i = 0; i < seeds.length; i++) {
-                DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
-                net.fit(ds);
+                ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.RMSPROP));
+                net.init();
+                INDArray initialParams = net.params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
+                    if (!saveUpdater) net.setUpdater(null);
+                    net.fit(ds);
+                }
+                INDArray finalParams = net.params().dup();
+
+                //Do training on Spark with one executor, for 3 separate minibatches
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers, saveUpdater);
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
+                sparkNet.setCollectTrainingStats(true);
+                INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSize, seeds[i]);
+                    JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+                    sparkNet.fit(rdd);
+                }
+
+                INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                assertEquals(initialParams, initialSparkParams);
+                assertNotEquals(initialParams, finalParams);
+                assertEquals(finalParams, finalSparkParams);
+            } finally {
+                sc.stop();
             }
-            INDArray finalParams = net.params().dup();
-
-            //Do training on Spark with one executor, for 3 separate minibatches
-            TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers);
-            SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
-            sparkNet.setCollectTrainingStats(true);
-            INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
-
-            for (int i = 0; i < seeds.length; i++) {
-                List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSize, seeds[i]);
-                JavaRDD<DataSet> rdd = sc.parallelize(list);
-
-                sparkNet.fit(rdd);
-            }
-
-            INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-            assertEquals(initialParams, initialSparkParams);
-            assertNotEquals(initialParams, finalParams);
-            assertEquals(finalParams, finalSparkParams);
-        } finally {
-            sc.stop();
         }
     }
 
     @Test
-    public void testAverageEveryStep(){
+    public void testAverageEveryStep() {
         //Idea: averaging every step with SGD (SGD updater + optimizer) is mathematically identical to doing the learning
         // on a single machine for synchronous distributed training
         //BUT: This is *ONLY* the case if all workers get an identical number of examples. This won't be the case if
@@ -208,54 +220,59 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
         int miniBatchSizePerWorker = 10;
         int nWorkers = 4;
-        JavaSparkContext sc = getContext(nWorkers);
 
-        try {
-            //Do training locally, for 3 minibatches
-            int[] seeds = {1, 2, 3};
 
-            MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.SGD));
-            net.init();
-            INDArray initialParams = net.params().dup();
+        for (boolean saveUpdater : new boolean[]{true, false}) {
+            JavaSparkContext sc = getContext(nWorkers);
 
-            for (int i = 0; i < seeds.length; i++) {
-                DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                net.fit(ds);
+            try {
+                //Do training locally, for 3 minibatches
+                int[] seeds = {1, 2, 3};
+
+                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.SGD));
+                net.init();
+                INDArray initialParams = net.params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    if (!saveUpdater) net.setUpdater(null);
+                    net.fit(ds);
+                }
+                INDArray finalParams = net.params().dup();
+
+                //Do training on Spark with one executor, for 3 separate minibatches
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers, saveUpdater);
+                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
+                sparkNet.setCollectTrainingStats(true);
+                INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+                    sparkNet.fit(rdd);
+                }
+
+                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+
+                INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                assertEquals(initialParams, initialSparkParams);
+                assertNotEquals(initialParams, finalParams);
+                assertEquals(finalParams, finalSparkParams);
+
+                double sparkScore = sparkNet.getScore();
+                assertTrue(sparkScore > 0.0);
+
+                assertEquals(net.score(), sparkScore, 1e-3);
+            } finally {
+                sc.stop();
             }
-            INDArray finalParams = net.params().dup();
-
-            //Do training on Spark with one executor, for 3 separate minibatches
-            TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers);
-            SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
-            sparkNet.setCollectTrainingStats(true);
-            INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
-
-            for (int i = 0; i < seeds.length; i++) {
-                List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                JavaRDD<DataSet> rdd = sc.parallelize(list);
-
-                sparkNet.fit(rdd);
-            }
-
-            System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
-
-            INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-            assertEquals(initialParams, initialSparkParams);
-            assertNotEquals(initialParams, finalParams);
-            assertEquals(finalParams, finalSparkParams);
-
-            double sparkScore = sparkNet.getScore();
-            assertTrue(sparkScore > 0.0);
-
-            assertEquals(net.score(), sparkScore, 1e-3);
-        } finally {
-            sc.stop();
         }
     }
 
     @Test
-    public void testAverageEveryStepGraph(){
+    public void testAverageEveryStepGraph() {
         //Idea: averaging every step with SGD (SGD updater + optimizer) is mathematically identical to doing the learning
         // on a single machine for synchronous distributed training
         //BUT: This is *ONLY* the case if all workers get an identical number of examples. This won't be the case if
@@ -265,49 +282,54 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
         int miniBatchSizePerWorker = 10;
         int nWorkers = 4;
-        JavaSparkContext sc = getContext(nWorkers);
 
-        try {
-            //Do training locally, for 3 minibatches
-            int[] seeds = {1, 2, 3};
 
-            ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.SGD));
-            net.init();
-            INDArray initialParams = net.params().dup();
+        for (boolean saveUpdater : new boolean[]{true, false}) {
+            JavaSparkContext sc = getContext(nWorkers);
 
-            for (int i = 0; i < seeds.length; i++) {
-                DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                net.fit(ds);
+            try {
+                //Do training locally, for 3 minibatches
+                int[] seeds = {1, 2, 3};
+
+                ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.SGD));
+                net.init();
+                INDArray initialParams = net.params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    if (!saveUpdater) net.setUpdater(null);
+                    net.fit(ds);
+                }
+                INDArray finalParams = net.params().dup();
+
+                //Do training on Spark with one executor, for 3 separate minibatches
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers, saveUpdater);
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
+                sparkNet.setCollectTrainingStats(true);
+                INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+                    sparkNet.fit(rdd);
+                }
+
+                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+
+                INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                assertEquals(initialParams, initialSparkParams);
+                assertNotEquals(initialParams, finalParams);
+                assertEquals(finalParams, finalSparkParams);
+
+                double sparkScore = sparkNet.getScore();
+                assertTrue(sparkScore > 0.0);
+
+                assertEquals(net.score(), sparkScore, 1e-3);
+            } finally {
+                sc.stop();
             }
-            INDArray finalParams = net.params().dup();
-
-            //Do training on Spark with one executor, for 3 separate minibatches
-            TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers);
-            SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
-            sparkNet.setCollectTrainingStats(true);
-            INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
-
-            for (int i = 0; i < seeds.length; i++) {
-                List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                JavaRDD<DataSet> rdd = sc.parallelize(list);
-
-                sparkNet.fit(rdd);
-            }
-
-            System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
-
-            INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-            assertEquals(initialParams, initialSparkParams);
-            assertNotEquals(initialParams, finalParams);
-            assertEquals(finalParams, finalSparkParams);
-
-            double sparkScore = sparkNet.getScore();
-            assertTrue(sparkScore > 0.0);
-
-            assertEquals(net.score(), sparkScore, 1e-3);
-        } finally {
-            sc.stop();
         }
     }
 }
