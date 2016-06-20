@@ -24,18 +24,17 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.io.File;
@@ -164,7 +163,12 @@ public class Word2VecTest {
     @Test
     @Ignore
     public void testSparkW2VonBiggerCorpus() throws Exception {
-        SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf()
+                .setMaster("local[8]")
+                .setAppName("sparktest")
+                .set("spark.driver.memory", "16g")
+                .set("spark.driver.maxResultSize","16g")
+                .set("spark.executor.memory","16g");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -178,7 +182,7 @@ public class Word2VecTest {
         JavaRDD<String> corpus = sc.textFile(dataPath);
 
         TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
+        t.setTokenPreProcessor(new LowCasePreProcessor());
 
         Word2Vec word2Vec = new Word2Vec.Builder()
                 .setNGrams(1)
@@ -196,11 +200,13 @@ public class Word2VecTest {
                 .iterations(3)
                 .batchSize(100)
                 .minWordFrequency(5)
-                .stopWords(Arrays.asList("three"))
                 .useUnknown(true)
                 .build();
 
         word2Vec.train(corpus);
+
+
+        sc.stop();
 
         WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), "/ext/Temp/sparkRuModel.txt");
     }
