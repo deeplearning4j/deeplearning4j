@@ -204,9 +204,15 @@ public class SparkComputationGraph implements Serializable {
         }
     }
 
-    /** Gets the last (average) minibatch score from calling fit */
+    /** Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
+     * last minibatch executed in each worker
+     */
     public double getScore(){
         return lastScore;
+    }
+
+    public void setScore(double lastScore){
+        this.lastScore = lastScore;
     }
 
     public double calculateScore(JavaRDD<DataSet> data, boolean average){
