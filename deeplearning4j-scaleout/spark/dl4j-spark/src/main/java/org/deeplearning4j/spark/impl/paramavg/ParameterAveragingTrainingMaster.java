@@ -184,7 +184,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             splits = (JavaRDD<T>[])Array.newInstance(JavaRDD.class,1);
             splits[0] = data;
         } else {
-            int numSplits = (int)(totalCount/examplesPerSplit); //Intentional round down
+            int numSplits = totalCount/examplesPerSplit; //Intentional round down
             double[] weights = new double[numSplits];
             for( int i=0; i<weights.length; i++ ) weights[i] = 1.0 / numSplits;
             splits = data.randomSplit(weights);

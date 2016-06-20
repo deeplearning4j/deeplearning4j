@@ -24,34 +24,20 @@ import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.DoubleFunction;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.rdd.RDD;
-import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.impl.common.Adder;
-import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
-import org.deeplearning4j.spark.impl.common.misc.*;
-import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombinerCG;
-import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombinerCG;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
-import org.deeplearning4j.spark.impl.graph.gradientaccum.GradientAccumFlatMapCG;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesWithKeyFunction;
+import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGDataSet;
+import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGMultiDataSet;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -61,7 +47,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Tuple3;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -329,37 +314,5 @@ public class SparkComputationGraph implements Serializable {
     public <K> JavaPairRDD<K,Double> scoreExamplesMultiDataSet(JavaPairRDD<K,MultiDataSet> data, boolean includeRegularizationTerms, int batchSize ){
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
                 includeRegularizationTerms, batchSize));
-    }
-
-    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>>  {
-
-        @Override
-        public double call(Tuple3<INDArray, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
-            return t3._3().getS();
-        }
-    }
-
-    private static class ScoreMappingG implements DoubleFunction<Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>>  {
-
-        @Override
-        public double call(Tuple3<Gradient, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
-            return t3._3().getS();
-        }
-    }
-
-    private static class SMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>>  {
-
-        @Override
-        public double call(Tuple3<INDArray, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
-            return t3._3().getM();
-        }
-    }
-
-    private static class SMappingG implements DoubleFunction<Tuple3<Gradient, ComputationGraphUpdater,ScoreReport>>  {
-
-        @Override
-        public double call(Tuple3<Gradient, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
-            return t3._3().getM();
-        }
     }
 }

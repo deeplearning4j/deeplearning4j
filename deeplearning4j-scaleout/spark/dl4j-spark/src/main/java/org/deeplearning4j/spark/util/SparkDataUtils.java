@@ -1,10 +1,8 @@
 package org.deeplearning4j.spark.util;
 
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.records.reader.RecordReader;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.nd4j.linalg.dataset.DataSet;
 
