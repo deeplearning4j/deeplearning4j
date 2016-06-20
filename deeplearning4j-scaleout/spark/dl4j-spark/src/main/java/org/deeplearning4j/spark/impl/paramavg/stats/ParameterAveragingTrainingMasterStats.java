@@ -7,7 +7,9 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.*;
 
 /**
- * Created by Alex on 17/06/2016.
+ * Statistics colected by a {@link org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster}
+ *
+ * @author Alex Black
  */
 @Data
 public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats {

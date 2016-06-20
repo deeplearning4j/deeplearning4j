@@ -14,7 +14,9 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
- * Created by Alex on 14/06/2016.
+ * ParameterAveragingTrainingWorker implements standard parameter averaging every m iterations.
+ *
+ * @author Alex Black
  */
 public class ParameterAveragingTrainingWorker implements TrainingWorker<ParameterAveragingTrainingResult> {
 

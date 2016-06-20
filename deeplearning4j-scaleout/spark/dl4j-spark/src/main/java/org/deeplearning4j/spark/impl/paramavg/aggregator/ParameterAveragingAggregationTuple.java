@@ -10,7 +10,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 
 /**
- * Created by Alex on 15/06/2016.
+ * Simple helper tuple used to execute parameter averaging
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor @Data
 public class ParameterAveragingAggregationTuple implements Serializable {

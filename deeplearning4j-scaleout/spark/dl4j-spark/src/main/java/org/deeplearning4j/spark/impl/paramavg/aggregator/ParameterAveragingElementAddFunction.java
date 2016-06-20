@@ -8,7 +8,9 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by Alex on 15/06/2016.
+ * Add function for parameter averaging
+ *
+ * @author Alex Black
  */
 public class ParameterAveragingElementAddFunction implements Function2<ParameterAveragingAggregationTuple, ParameterAveragingTrainingResult, ParameterAveragingAggregationTuple> {
 

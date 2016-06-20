@@ -121,18 +121,35 @@ public class SparkDl4jMultiLayer implements Serializable {
         return sc;
     }
 
+    /**
+     * @return The MultiLayerNetwork underlying the SparkDl4jMultiLayer
+     */
     public MultiLayerNetwork getNetwork() {
         return network;
     }
 
+    /**
+     * Set the network that underlies this SparkDl4jMultiLayer instacne
+     * @param network network to set
+     */
     public void setNetwork(MultiLayerNetwork network) {
         this.network = network;
     }
 
+    /**
+     * Set whether training statistics should be collected for debugging purposes. Statistics collection is disabled by default
+     *
+     * @param collectTrainingStats    If true: collect training statistics. If false: don't collect.
+     */
     public void setCollectTrainingStats(boolean collectTrainingStats){
         trainingMaster.setCollectTrainingStats(collectTrainingStats);
     }
 
+    /**
+     * Get the training statistics, after collection of stats has been enabled using {@link #setCollectTrainingStats(boolean)}
+     *
+     * @return Training statistics
+     */
     public SparkTrainingStats getSparkTrainingStats(){
         return trainingMaster.getTrainingStats();
     }

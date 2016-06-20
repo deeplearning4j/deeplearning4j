@@ -3,7 +3,11 @@ package org.deeplearning4j.spark.api;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 
 /**
- * Created by Alex on 14/06/2016.
+ * TrainingResult: a class used by {@link TrainingMaster} implementations
+ *
+ * Each TrainingMaster will have its own type of training result.
+ *
+ * @author Alex Black
  */
 public interface TrainingResult {
 
