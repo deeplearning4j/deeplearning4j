@@ -9,7 +9,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Created by Alex on 16/06/2016.
+ * A {@link SparkTrainingStats} implementation for common stats functionality used by most workers
+ *
+ * @author Alex Black
  */
 @Data
 public class CommonSparkTrainingStats implements SparkTrainingStats {

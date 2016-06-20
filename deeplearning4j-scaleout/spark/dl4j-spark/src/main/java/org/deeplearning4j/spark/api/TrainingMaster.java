@@ -8,18 +8,53 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
- * Created by Alex on 14/06/2016.
+ * A TrainingMaster controls how distributed training is executed in practice<br>
+ * In principle, a large number of different approches can be used in distributed training (synchronous vs. asynchronous,
+ * parameter vs. gradient averaging, etc). Each of these different approaches would be implemented as a TrainingMaster;
+ * this allows {@link SparkDl4jMultiLayer} and {@link SparkComputationGraph} to be used with different training methods.
+ *
+ * @author Alex Black
  */
 public interface TrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>> {
 
+    /**
+     * Get the worker instance for this training master
+     *
+     * @param network Current SparkDl4jMultiLayer
+     * @return Worker instance
+     */
     W getWorkerInstance(SparkDl4jMultiLayer network);
 
+    /**
+     * Get the worker instance for this training master
+     *
+     * @param graph Current SparkComputationGraph
+     * @return Worker instance
+     */
     W getWorkerInstance(SparkComputationGraph graph);
 
+    /**
+     * Train the SparkDl4jMultiLayer with the specified data set
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
     void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData);
 
+    /**
+     * Train the SparkComputationGraph with the specified data set
+     *
+     * @param graph        Current network state
+     * @param trainingData Data to train on
+     */
     void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData);
 
+    /**
+     * Train the SparkComputationGraph with the specified data set
+     *
+     * @param graph        Current network state
+     * @param trainingData Data to train on
+     */
     void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData);
 
     /**

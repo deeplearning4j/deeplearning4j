@@ -34,7 +34,9 @@ import java.util.Iterator;
 
 /**
  * ParameterAveragingTrainingMaster: A {@link TrainingMaster} implementation for spark-only training.
- * This is standard parameter averaging, using no
+ * This is standard parameter averaging with a configurable averaging period.
+ *
+ * @author Alex Black
  */
 @Data
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
@@ -50,7 +52,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper stats;
 
 
-    private ParameterAveragingTrainingMaster(Builder builder){
+    private ParameterAveragingTrainingMaster(Builder builder) {
         this.saveUpdater = builder.saveUpdater;
         this.numWorkers = builder.numWorkers;
         this.batchSizePerWorker = builder.batchSizePerWorker;
@@ -69,7 +71,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.averagingFrequency = averagingFrequency;
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
-        if(collectTrainingStats) stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+        if (collectTrainingStats)
+            stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
     }
 
     @Override
@@ -78,9 +81,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
                 network.getNetwork().params(),
                 network.getNetwork().getUpdater());
 
-        if(collectTrainingStats) stats.logBroadcastStart();
+        if (collectTrainingStats) stats.logBroadcastStart();
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
-        if(collectTrainingStats) stats.logBroadcastEnd();
+        if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(false, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
@@ -92,9 +95,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
                 graph.getNetwork().params(),
                 graph.getNetwork().getUpdater());
 
-        if(collectTrainingStats) stats.logBroadcastStart();
+        if (collectTrainingStats) stats.logBroadcastStart();
         Broadcast<NetBroadcastTuple> broadcast = graph.getSparkContext().broadcast(tuple);
-        if(collectTrainingStats) stats.logBroadcastEnd();
+        if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(true, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
@@ -102,7 +105,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-        if(collectTrainingStats) stats.logFitStart();
+        if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
@@ -113,20 +116,20 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int examplesPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
 
         JavaRDD<DataSet>[] splits;
-        if(collectTrainingStats) stats.logSplitStart();
-        if(totalCount <= examplesPerSplit){
-            splits = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);
+        if (collectTrainingStats) stats.logSplitStart();
+        if (totalCount <= examplesPerSplit) {
+            splits = (JavaRDD<DataSet>[]) Array.newInstance(JavaRDD.class, 1);
             splits[0] = trainingData;
         } else {
-            int numSplits = (int)(totalCount/examplesPerSplit); //Intentional round down
+            int numSplits = (int) (totalCount / examplesPerSplit); //Intentional round down
             double[] weights = new double[numSplits];
-            for( int i=0; i<weights.length; i++ ) weights[i] = 1.0 / numSplits;
+            for (int i = 0; i < weights.length; i++) weights[i] = 1.0 / numSplits;
             splits = trainingData.randomSplit(weights);
         }
-        if(collectTrainingStats) stats.logSplitEnd();
+        if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
-        for(JavaRDD<DataSet> split : splits) {
+        for (JavaRDD<DataSet> split : splits) {
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
@@ -137,19 +140,19 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             splitNum++;
         }
 
-        if(collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd();
     }
 
     @Override
-    public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData){
+    public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
         JavaRDD<MultiDataSet> mdsTrainingData = trainingData.map(new DataSetToMultiDataSetFn());
 
         executeTrainingMDS(graph, mdsTrainingData);
     }
 
     @Override
-    public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData){
-        if(collectTrainingStats) stats.logFitStart();
+    public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
+        if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
@@ -159,11 +162,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         long totalCount = trainingData.count();
         int examplesPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
 
-        JavaRDD<MultiDataSet>[] splits = randomSplit((int)totalCount, examplesPerSplit, trainingData);
+        JavaRDD<MultiDataSet>[] splits = randomSplit((int) totalCount, examplesPerSplit, trainingData);
 
 
         int splitNum = 1;
-        for(JavaRDD<MultiDataSet> split : splits) {
+        for (JavaRDD<MultiDataSet> split : splits) {
             log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
@@ -174,22 +177,22 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             splitNum++;
         }
 
-        if(collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd();
     }
 
-    private <T> JavaRDD<T>[] randomSplit(int totalCount, int examplesPerSplit, JavaRDD<T> data){
+    private <T> JavaRDD<T>[] randomSplit(int totalCount, int examplesPerSplit, JavaRDD<T> data) {
         JavaRDD<T>[] splits;
-        if(collectTrainingStats) stats.logSplitStart();
-        if(totalCount <= examplesPerSplit){
-            splits = (JavaRDD<T>[])Array.newInstance(JavaRDD.class,1);
+        if (collectTrainingStats) stats.logSplitStart();
+        if (totalCount <= examplesPerSplit) {
+            splits = (JavaRDD<T>[]) Array.newInstance(JavaRDD.class, 1);
             splits[0] = data;
         } else {
-            int numSplits = totalCount/examplesPerSplit; //Intentional round down
+            int numSplits = totalCount / examplesPerSplit; //Intentional round down
             double[] weights = new double[numSplits];
-            for( int i=0; i<weights.length; i++ ) weights[i] = 1.0 / numSplits;
+            for (int i = 0; i < weights.length; i++) weights[i] = 1.0 / numSplits;
             splits = data.randomSplit(weights);
         }
-        if(collectTrainingStats) stats.logSplitEnd();
+        if (collectTrainingStats) stats.logSplitEnd();
         return splits;
     }
 
@@ -197,8 +200,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {
         this.collectTrainingStats = collectTrainingStats;
-        if(collectTrainingStats){
-            if(this.stats == null) this.stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+        if (collectTrainingStats) {
+            if (this.stats == null)
+                this.stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
         } else {
             this.stats = null;
         }
@@ -211,7 +215,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public SparkTrainingStats getTrainingStats() {
-        if(stats != null) return stats.build();
+        if (stats != null) return stats.build();
         return null;
     }
 
@@ -221,19 +225,19 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
 
-        if(collectTrainingStats) stats.logAggregateStartTime();
+        if (collectTrainingStats) stats.logAggregateStartTime();
         ParameterAveragingAggregationTuple tuple = results.aggregate(null,
                 new ParameterAveragingElementAddFunction(),
                 new ParameterAveragingElementCombineFunction());
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
         SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
-        if(collectTrainingStats) stats.logAggregationEndTime();
+        if (collectTrainingStats) stats.logAggregationEndTime();
 
 
-        if(collectTrainingStats) stats.logProcessParamsUpdaterStart();
+        if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
-        if(network != null){
+        if (network != null) {
             MultiLayerNetwork net = network.getNetwork();
             UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
             Updater updater = (updaterAg != null ? updaterAg.getUpdater() : null);
@@ -251,7 +255,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }
 
-        if(collectTrainingStats){
+        if (collectTrainingStats) {
             stats.logProcessParamsUpdaterEnd();
             stats.addWorkerStats(aggregatedStats);
         }
@@ -272,19 +276,19 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * Create a builder, where the following number of workers (Spark executors) are used.
          * Note: this should match the
          *
-         * @param numWorkers    Number of Spark executors in the cluster
+         * @param numWorkers Number of Spark executors in the cluster
          */
-        public Builder(int numWorkers){
+        public Builder(int numWorkers) {
             this.numWorkers = numWorkers;
         }
 
         /**
          * Batch size per worker
          *
-         * @param batchSizePerWorker    Size of each minibatch to use for each worker
+         * @param batchSizePerWorker Size of each minibatch to use for each worker
          * @return
          */
-        public Builder batchSizePerWorker(int batchSizePerWorker){
+        public Builder batchSizePerWorker(int batchSizePerWorker) {
             this.batchSizePerWorker = batchSizePerWorker;
             return this;
         }
@@ -295,22 +299,23 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * - Too low (such as 1) can result in a lot of network traffic<br>
          * - Too high (>> 20 or so) can result in accuracy issues or problems with network convergence
          *
-         * @param averagingFrequency    Frequency (in number of minibatches of size 'batchSizePerWorker') to average parameters
+         * @param averagingFrequency Frequency (in number of minibatches of size 'batchSizePerWorker') to average parameters
          */
-        public Builder averagingFrequency(int averagingFrequency){
-            if(averagingFrequency <= 0) throw new IllegalArgumentException("Ivalid input: averaging frequency must be >= 1");
+        public Builder averagingFrequency(int averagingFrequency) {
+            if (averagingFrequency <= 0)
+                throw new IllegalArgumentException("Ivalid input: averaging frequency must be >= 1");
             this.averagingFrequency = averagingFrequency;
             return this;
         }
 
         /**
          * Set the number of minibatches to asynchronously prefetch in the worker.
-         *
+         * <p>
          * Default: 0 (no prefetching)
          *
-         * @param prefetchNumBatches    Number of minibatches (DataSets of size batchSizePerWorker) to fetch
+         * @param prefetchNumBatches Number of minibatches (DataSets of size batchSizePerWorker) to fetch
          */
-        public Builder workerPrefetchNumBatches(int prefetchNumBatches){
+        public Builder workerPrefetchNumBatches(int prefetchNumBatches) {
             this.prefetchNumBatches = prefetchNumBatches;
             return this;
         }
@@ -319,24 +324,21 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * Set whether the updater (i.e., historical state for momentum, adagrad, etc should be saved).
          * <b>NOTE</b>: This can <b>double</b> (or more) the amount of network traffic in each direction, but might
          * improve network training performance (and can be more stable for certain updaters such as adagrad).<br>
-         *
+         * <p>
          * This is <b>enabled</b> by default.
          *
-         * @param saveUpdater    If true: retain the updater state (default). If false, don't retain (updaters will be
-         *                       reinitalized in each worker after averaging).
+         * @param saveUpdater If true: retain the updater state (default). If false, don't retain (updaters will be
+         *                    reinitalized in each worker after averaging).
          */
-        public Builder saveUpdater(boolean saveUpdater){
+        public Builder saveUpdater(boolean saveUpdater) {
             this.saveUpdater = saveUpdater;
             return this;
         }
 
-        public ParameterAveragingTrainingMaster build(){
+        public ParameterAveragingTrainingMaster build() {
             return new ParameterAveragingTrainingMaster(this);
         }
     }
-
-
-
 
 
 }
