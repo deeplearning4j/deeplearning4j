@@ -2013,7 +2013,7 @@ public class Nd4j {
         return newArr;
     }
     public static INDArray readTxt(String filePath) {
-        readTxt(filePath,",");
+        return readTxt(filePath,",");
     }
 
 
