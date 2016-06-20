@@ -23,6 +23,7 @@ import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
@@ -423,6 +424,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 defaultConfiguration.addVariable(i+"_"+s);
             }
         }
+    }
+
+    public boolean isInitCalled(){
+        return initCalled;
     }
 
     /**
@@ -880,6 +885,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(flattenedParams != null && params.length() == flattenedParams.length()){
             flattenedParams.assign(params);
         } else {
+            if(flattenedParams == null) flattenedParams = params.dup();
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
@@ -1010,7 +1016,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(DataSetIterator iterator) {
         DataSetIterator iter;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
-        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator)) {
             iter = new AsyncDataSetIterator(iterator, 10);
         } else iter = iterator;
 
