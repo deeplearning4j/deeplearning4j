@@ -4775,6 +4775,19 @@ public class Nd4j {
                     !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {
                 return;
             }
+
+            if (!System.getProperty("sun.arch.data.model").equals("64")) {
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit JVM");
+                System.out.println("                 Please, consider running this on 64-bit JVM instead");
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                return;
+            }
+
             Nd4j.backend = backend;
             props = Nd4jContext.getInstance().getConf();
             InputStream is = backend.getConfigurationResource().getInputStream();
