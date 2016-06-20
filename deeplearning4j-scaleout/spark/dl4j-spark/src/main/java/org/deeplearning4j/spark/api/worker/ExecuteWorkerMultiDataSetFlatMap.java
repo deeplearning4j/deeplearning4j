@@ -16,7 +16,9 @@ import java.util.Collections;
 import java.util.Iterator;
 
 /**
- * Created by Alex on 14/06/2016.
+ * A FlatMapFunction for executing training on MultiDataSets. Used only in SparkComputationGraph implementation.
+ *
+ * @author Alex Black
  */
 public class ExecuteWorkerMultiDataSetFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<MultiDataSet>, R> {
 

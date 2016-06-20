@@ -17,7 +17,10 @@ import java.util.Collections;
 import java.util.Iterator;
 
 /**
- * Created by Alex on 14/06/2016.
+ * A FlatMapFunction for executing training on DataSets.
+ * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
+ *
+ * @author Alex Black
  */
 public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
 

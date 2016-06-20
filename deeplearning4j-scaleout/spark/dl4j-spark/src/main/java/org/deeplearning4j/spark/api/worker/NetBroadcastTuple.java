@@ -10,7 +10,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 
 /**
- * Created by Alex on 14/06/2016.
+ * A simple class for storing configurations, parameters and updaters in one class (so they can be broadcast together)
+ *
+ * @author Alex Black
  */
 @Data
 public class NetBroadcastTuple implements Serializable {
