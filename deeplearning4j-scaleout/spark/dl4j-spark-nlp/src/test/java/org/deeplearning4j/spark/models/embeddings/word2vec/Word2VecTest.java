@@ -163,6 +163,50 @@ public class Word2VecTest {
 
     @Test
     @Ignore
+    public void testSparkW2VonBiggerCorpus() throws Exception {
+        SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest");
+
+        // Set SparkContext
+        JavaSparkContext sc = new JavaSparkContext(sparkConf);
+
+        // Path of data part-00000
+//        String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
+        String dataPath = "/ext/Temp/SampleRussianCorpus.txt";
+//        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
+
+        // Read in data
+        JavaRDD<String> corpus = sc.textFile(dataPath);
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec word2Vec = new Word2Vec.Builder()
+                .setNGrams(1)
+                //     .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                //     .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                //     .setRemoveStop(false)
+                .tokenizerFactory(t)
+                .seed(42L)
+                .negative(10)
+                .useAdaGrad(false)
+                .layerSize(150)
+                .windowSize(5)
+                .learningRate(0.025)
+                .minLearningRate(0.0001)
+                .iterations(3)
+                .batchSize(100)
+                .minWordFrequency(5)
+                .stopWords(Arrays.asList("three"))
+                .useUnknown(true)
+                .build();
+
+        word2Vec.train(corpus);
+
+        WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), "/ext/Temp/sparkRuModel.txt");
+    }
+
+    @Test
+    @Ignore
     public void testPortugeseW2V() throws Exception {
         WordVectors word2Vec = WordVectorSerializer.loadTxtVectors(new File("/ext/Temp/para.txt"));
         word2Vec.setModelUtils(new FlatModelUtils());
