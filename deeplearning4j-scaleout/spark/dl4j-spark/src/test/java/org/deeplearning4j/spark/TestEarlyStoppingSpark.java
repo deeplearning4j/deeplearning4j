@@ -96,7 +96,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(2.0)    //Intentionally huge LR
+                .updater(Updater.SGD).learningRate(10.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -236,6 +236,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
                 new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0),esConf,net,irisData);
+        trainer.setListener(listener);
 
         trainer.fit();
 

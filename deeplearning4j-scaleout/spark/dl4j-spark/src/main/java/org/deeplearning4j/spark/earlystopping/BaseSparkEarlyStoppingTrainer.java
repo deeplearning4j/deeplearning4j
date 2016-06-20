@@ -107,11 +107,55 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
         while (true) {  //Iterate (do epochs) until termination condition hit
             double lastScore;
             boolean terminate = false;
+            IterationTerminationCondition terminationReason = null;
 
             if(train != null) fit(train);
             else fitMulti(trainMulti);
 
-            //TODO revisit per iteration terminatino condition
+            //TODO revisit per iteration termination conditions, ensuring they are evaluated *per averaging* not per epoch
+            //Check per-iteration termination conditions
+            lastScore = getScore();
+            for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
+                if (c.terminate(lastScore)) {
+                    terminate = true;
+                    terminationReason = c;
+                    break;
+                }
+            }
+
+            if(terminate){
+                //Handle termination condition:
+                log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
+                        epochCount, epochCount, terminationReason);
+
+                if(esConfig.isSaveLastModel()) {
+                    //Save last model:
+                    try {
+                        esConfig.getModelSaver().saveLatestModel(net, 0.0);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error saving most recent model", e);
+                    }
+                }
+
+                T bestModel;
+                try{
+                    bestModel = esConfig.getModelSaver().getBestModel();
+                }catch(IOException e2){
+                    throw new RuntimeException(e2);
+                }
+                EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
+                        EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
+                        terminationReason.toString(),
+                        scoreVsEpoch,
+                        bestModelEpoch,
+                        bestModelScore,
+                        epochCount,
+                        bestModel);
+                if(listener != null) listener.onCompletion(result);
+                return result;
+            }
+
+
 
             log.info("Completed training epoch {}",epochCount);
 
