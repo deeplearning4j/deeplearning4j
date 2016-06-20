@@ -749,6 +749,14 @@ public class ArrayUtil {
         return bytes;
     }
 
+    public static long[] toLongArray(int[] intArray){
+        long[] ret = new long[intArray.length];
+        for (int i = 0; i < intArray.length; i++) {
+            ret[i] = intArray[i];
+        }
+        return ret;
+    }
+
     /**
      *
      * @param byteArray

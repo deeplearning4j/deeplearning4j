@@ -3663,7 +3663,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getRows(int[] rindices) {
-        return get(new SpecifiedIndex(rindices));
+        if (this.rank == 2) {
+            return Nd4j.pullRows(this, 1, ArrayUtil.toLongArray(rindices));
+        } else return get(new SpecifiedIndex(rindices));
     }
 
     /**
