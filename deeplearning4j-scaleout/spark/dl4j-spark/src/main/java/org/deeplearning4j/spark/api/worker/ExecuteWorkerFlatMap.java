@@ -37,9 +37,15 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
         if(stats) s.logMethodStartTime();
 
         if(!dataSetIterator.hasNext()){
-            if(stats) s.logReturnTime();
-            //TODO return the results...
-            return Collections.emptyList();  //Sometimes: no data
+            if(stats){
+                s.logReturnTime();
+
+                Pair<R,SparkTrainingStats> pair = worker.getFinalResultNoDataWithStats();
+                pair.getFirst().setStats(s.build(pair.getSecond()));
+                return Collections.singletonList(pair.getFirst());
+            } else {
+                return Collections.singletonList(worker.getFinalResultNoData());
+            }
         }
 
         int batchSize = dataConfig.getBatchSizePerWorker();

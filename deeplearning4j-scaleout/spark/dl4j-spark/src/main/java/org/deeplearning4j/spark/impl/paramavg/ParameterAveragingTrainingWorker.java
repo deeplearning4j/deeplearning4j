@@ -136,6 +136,16 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     }
 
     @Override
+    public ParameterAveragingTrainingResult getFinalResultNoData(){
+        return new ParameterAveragingTrainingResult(null, null, null, 0.0, null);
+    }
+
+    @Override
+    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats(){
+        return new Pair<>(new ParameterAveragingTrainingResult(null, null, null, 0.0, null),null);
+    }
+
+    @Override
     public Pair<ParameterAveragingTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
         ParameterAveragingTrainingResult result = getFinalResult(network);
         if(result == null) return null;
