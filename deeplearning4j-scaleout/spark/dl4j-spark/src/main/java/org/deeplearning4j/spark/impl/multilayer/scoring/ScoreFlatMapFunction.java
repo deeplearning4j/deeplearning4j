@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.multilayer;
+package org.deeplearning4j.spark.impl.multilayer.scoring;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -18,7 +18,7 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, 
 
     private String json;
     private Broadcast<INDArray> params;
-    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+    private static Logger log = LoggerFactory.getLogger(ScoreFlatMapFunction.class);
 
     public ScoreFlatMapFunction(String json, Broadcast<INDArray> params){
         this.json = json;
