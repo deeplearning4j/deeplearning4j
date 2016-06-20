@@ -11,18 +11,38 @@ import java.text.DecimalFormat;
  * @author Susan Eraly
  */
 public class NDArrayStrings {
-    private DecimalFormat decimalFormat = new DecimalFormat("#,###,##0.00");
-    //String format = "%10.2f\n";
+
     private String sep = ",";
+    private int precision = 2;
     private int padding = 0;
+
+    private String decFormatNum = "#,###,##0";
+    private String decFormatRest = "";
+    private DecimalFormat decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
 
 
     public NDArrayStrings(String sep) {
         this.sep = sep;
     }
 
+    public NDArrayStrings(int precision) {
+        this.precision = precision;
+    }
+    
+    public NDArrayStrings(String sep, int precision) {
+        this.precision = precision;
+        if (precision != 0) {
+            this.decFormatRest = ".";
+            while (precision > 0) {
+                this.decFormatRest += "0";
+                precision--;
+            }
+        }
+        this.decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
+    }
+
     public NDArrayStrings() {
-        this(", ");
+        this(", ",3);
     }
 
 

@@ -4341,8 +4341,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return new NDArrayStrings().format(this);
     }
 
-
-
     /**
      * Returns a scalar (individual element)
      * of a scalar ndarray

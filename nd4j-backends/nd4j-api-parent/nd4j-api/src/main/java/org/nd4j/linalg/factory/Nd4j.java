@@ -21,7 +21,6 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.nd4j.context.Nd4jContext;
@@ -37,17 +36,19 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
@@ -58,14 +59,15 @@ import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.string.NDArrayStrings;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -150,6 +152,8 @@ public class Nd4j {
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
     protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
+
+    private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
     static {
         Nd4j nd4j = new Nd4j();
@@ -1649,7 +1653,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a long row vector of all of the given ndarrays
+     * Create a long row vector of all of the given ndarrays/
      * @param order order in which to flatten ndarrays
      * @param matrices the matrices to create the flattened ndarray for
 
@@ -1694,11 +1698,29 @@ public class Nd4j {
      * @return the read txt method
      */
     public static void writeTxt(INDArray write, String filePath, String split) throws IOException {
-        FileOutputStream fos = new FileOutputStream(filePath);
-        write(fos, write);
-        fos.flush();
-        fos.close();
+        //TO DO: Add precision support in toString
+        //TO DO: Write to file one line at time
+        if (!(split.matches("^\\s*,\\s*$"))) {
+           logger.info("A non-default separator will be used. readTxt does not currently support this.");
+        }
+        //TO DO: Add precision support in toString
+        //TO DO: Write to file one line at time
+        String lineOne = "{\n";
+        String lineTwo = "\"filefrom:\" \"dl4j\",\n";
+        String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
+        String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
+        String lineFive = "\"data\":\n";
+        String fileData = new NDArrayStrings(split).format(write);
+        String fileEnd = "\n}\n";
+
+        String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
+        try {
+            FileUtils.writeStringToFile(new File(filePath), fileBegin + fileData + fileEnd);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing output", e);
+        }
     }
+
     public static void writeTxt(INDArray write, String filePath) {
         //TO DO: Add precision support in toString
         //TO DO: Write to file one line at time
