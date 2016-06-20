@@ -227,7 +227,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
                 new ParameterAveragingElementCombineFunction());
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
-        UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
         SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
         if(collectTrainingStats) stats.logAggregationEndTime();
 
@@ -236,15 +235,20 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         params.divi(aggCount);
         if(network != null){
             MultiLayerNetwork net = network.getNetwork();
-            Updater updater = updaterAg.getUpdater();
+            UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
+            Updater updater = (updaterAg != null ? updaterAg.getUpdater() : null);
             net.setParameters(params);
             net.setUpdater(updater);
+
+            network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         } else {
             ComputationGraph g = graph.getNetwork();
-            ComputationGraphUpdater updater = null; //TODO
+            ComputationGraphUpdater.Aggregator updaterAg = tuple.getUpdaterAggregatorGraph();
+            ComputationGraphUpdater updater = (updaterAg != null ? updaterAg.getUpdater() : null);
             g.setParams(params);
             g.setUpdater(updater);
-            throw new RuntimeException("NOT YET IMPLEMENTED");
+
+            graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }
 
         if(collectTrainingStats){
@@ -253,8 +257,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         }
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
-
-        network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
     }
 
 
