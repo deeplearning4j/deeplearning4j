@@ -84,17 +84,20 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                     + "Expected input shape: [numExamples,1] with each entry being an integer index");
         }
 
-        int[] indexes = new int[input.length()];
+        long[] indexes = new long[input.length()];
         for( int i=0; i<indexes.length; i++ ) indexes[i] = input.getInt(i,0);
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         //INDArray rows = weights.getRows(indexes);
-        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
+/*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
+
         for( int i=0; i<indexes.length; i++ ){
             rows.putRow(i,weights.getRow(indexes[i]));
         }
+        */
+        INDArray rows = Nd4j.pullRows(weights, 1, indexes);
         rows.addiRowVector(bias);
 
         return rows;
