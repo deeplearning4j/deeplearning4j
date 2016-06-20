@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -31,7 +32,7 @@ import java.util.Arrays;
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = new NativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
-    private CpuTADManager tadManager = new CpuTADManager();
+    @Getter private CpuTADManager tadManager = new CpuTADManager();
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);

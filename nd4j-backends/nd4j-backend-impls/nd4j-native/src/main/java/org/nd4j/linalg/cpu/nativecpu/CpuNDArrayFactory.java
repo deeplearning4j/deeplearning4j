@@ -20,6 +20,8 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -29,7 +31,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLapack;
+import org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel1;
@@ -618,5 +622,62 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
         return ret;
         // return super.concat(dimension,toConcat);
+    }
+
+    /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source          source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes         indexes from source array
+     * @return
+     */
+    @Override
+    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+        int vectorLength = source.shape()[sourceDimension];
+        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
+
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
+        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
+
+        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+
+        Pointer pIndex = new LongPointer(indexes);
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
+
+        if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.pullRowsDouble(
+                    dummy,
+                    source.data().addressPointer(),
+                    source.shapeInfoDataBuffer().addressPointer(),
+                    ret.data().addressPointer(),
+                    ret.shapeInfoDataBuffer().addressPointer(),
+                    indexes.length,
+                    pIndex,
+                    hostTadShapeInfo,
+                    hostTadOffsets
+            );
+        }
+        else {
+            nativeOps.pullRowsFloat(
+                    dummy,
+                    source.data().addressPointer(),
+                    source.shapeInfoDataBuffer().addressPointer(),
+                    ret.data().addressPointer(),
+                    ret.shapeInfoDataBuffer().addressPointer(),
+                    indexes.length,
+                    pIndex,
+                    hostTadShapeInfo,
+                    hostTadOffsets
+            );
+
+        }
+
+        return ret;
     }
 }

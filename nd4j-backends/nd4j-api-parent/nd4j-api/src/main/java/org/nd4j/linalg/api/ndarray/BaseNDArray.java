@@ -3784,7 +3784,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
 
-                if ((Double.isNaN(val) && !Double.isNaN(val2)) || (Double.isNaN(val2) && !Double.isNaN(val)))
+                if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
@@ -3792,7 +3792,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
 
-                if ((Double.isNaN(val) && !Double.isNaN(val2)) || (Double.isNaN(val2) && !Double.isNaN(val)))
+                if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
@@ -3804,7 +3804,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
 
-                    if ((Double.isNaN(curr) && !Double.isNaN(comp)) || (Double.isNaN(comp) && !Double.isNaN(curr)))
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
                         return false;
 
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
@@ -3813,7 +3813,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
 
-                    if ((Double.isNaN(curr) && !Double.isNaN(comp)) || (Double.isNaN(comp) && !Double.isNaN(curr)))
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
                         return false;
 
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
@@ -3838,7 +3838,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
 
-                if ((Double.isNaN(val) && !Double.isNaN(val2)) || (Double.isNaN(val2) && !Double.isNaN(val)))
+                if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
@@ -3854,7 +3854,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 double val = getDouble(next);
                 double val2 = n.getDouble(next);
 
-                if ((Double.isNaN(val) && !Double.isNaN(val2)) || (Double.isNaN(val2) && !Double.isNaN(val)))
+                if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
