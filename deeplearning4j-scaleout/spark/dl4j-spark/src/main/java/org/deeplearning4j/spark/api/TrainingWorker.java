@@ -34,6 +34,10 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
 
     R getFinalResult(ComputationGraph graph);
 
+    R getFinalResultNoData();
+
+    Pair<R, SparkTrainingStats> getFinalResultNoDataWithStats();
+
     Pair<R, SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network);
 
     Pair<R, SparkTrainingStats> getFinalResultWithStats(ComputationGraph graph);

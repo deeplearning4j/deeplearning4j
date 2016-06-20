@@ -31,6 +31,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
@@ -182,9 +183,10 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the multi layer network that was fitDataSet
      */
     public MultiLayerNetwork fitLabeledPoint(JavaRDD<LabeledPoint> rdd) {
-        //MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(), batchSize)
-        //return fitDataSet();
-        throw new UnsupportedOperationException("Net yet implemented");
+        int nLayers = network.getLayerWiseConfigurations().getConfs().size();
+        FeedForwardLayer ffl = (FeedForwardLayer)network.getLayerWiseConfigurations().getConf(nLayers-1).getLayer();
+        JavaRDD<DataSet> ds = MLLibUtil.fromLabeledPoint(sc, rdd, ffl.getNOut());
+        return fit(ds);
     }
 
     /**

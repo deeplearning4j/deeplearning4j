@@ -17,6 +17,10 @@ public class ParameterAveragingElementCombineFunction implements Function2<Param
         if(v1 == null) return v2;
         else if(v2 == null) return v1;
 
+        //Handle edge case of less data than executors: in this case, one (or both) of v1 and v2 might not have any contents...
+        if(v1.getParametersSum() == null) return v2;
+        else if(v2.getParametersSum() == null) return v1;
+
         INDArray newParams = v1.getParametersSum().addi(v2.getParametersSum());
 
         UpdaterAggregator updaterAggregator = v1.getUpdaterAggregator();
