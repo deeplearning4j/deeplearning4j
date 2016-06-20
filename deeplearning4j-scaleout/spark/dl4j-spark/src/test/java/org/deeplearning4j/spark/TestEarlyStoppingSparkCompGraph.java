@@ -270,6 +270,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
+        trainer.setListener(listener);
 
         trainer.fit();
 
