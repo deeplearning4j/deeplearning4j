@@ -2,11 +2,14 @@ package org.deeplearning4j.spark.impl.paramavg.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by Alex on 15/06/2016.
+ * Function used in ParameterAveraging TrainingMaster, for doing parameter averaging, and handling updaters
+ *
+ * @author Alex Black
  */
 public class ParameterAveragingElementCombineFunction implements Function2<ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple> {
     @Override
@@ -26,6 +29,16 @@ public class ParameterAveragingElementCombineFunction implements Function2<Param
             combinedAggregator = updaterAggregator;
         }
 
+        ComputationGraphUpdater.Aggregator uAGraph1 = v1.getUpdaterAggregatorGraph();
+        ComputationGraphUpdater.Aggregator uaGraph2 = v2.getUpdaterAggregatorGraph();
+        ComputationGraphUpdater.Aggregator uaGraphCombined;
+        if(uAGraph1 == null) uaGraphCombined = uaGraph2;
+        else if(uaGraph2 == null) uaGraphCombined = uAGraph1;
+        else {
+            uAGraph1.merge(uaGraph2);
+            uaGraphCombined = uAGraph1;
+        }
+
         double scoreSum = v1.getScoreSum() + v2.getScoreSum();
         int aggregationCount = v1.getAggregationsCount() + v2.getAggregationsCount();
 
@@ -35,6 +48,6 @@ public class ParameterAveragingElementCombineFunction implements Function2<Param
             else stats.addOtherTrainingStats(v2.getSparkTrainingStats());
         }
 
-        return new ParameterAveragingAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount, stats);
+        return new ParameterAveragingAggregationTuple(newParams, combinedAggregator, uaGraphCombined, scoreSum, aggregationCount, stats);
     }
 }
