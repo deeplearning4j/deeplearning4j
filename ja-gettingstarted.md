@@ -47,7 +47,7 @@ OpenBlasに関する情報については、[こちらのセクション](#open)
 
          ldconfig /usr/local/cuda/lib64
 
-それでもJcublasをロードできなければ、パラメータの-Dをコードに追加してください（JVM引数です）。
+それでもCUDAをロードできなければ、パラメータの-Dをコードに追加してください（JVM引数です）。
 
          java.library.path (settable via -Djava.librarypath=...) 
          // ^ は書き込み可能なディレクトリ、そして、
@@ -79,7 +79,7 @@ OpenBlasに関する情報については、[こちらのセクション](#open)
 
 ### <a id="open"> OpenBlas </a>
 
-x86のバックエンドにあるライブラリーが動作することを確認するには、システムパスの`/opt/OpenBLAS/lib`が必要です。その後で、以下のコマンドをプロンプトに入力してください。
+`native`のバックエンドにあるライブラリーが動作することを確認するには、システムパスの`/opt/OpenBLAS/lib`が必要です。その後で、以下のコマンドをプロンプトに入力してください。
 
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
