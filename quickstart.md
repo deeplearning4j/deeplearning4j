@@ -124,7 +124,7 @@ Right-click the file to run.
 To run DL4J in your own projects, we highly recommend using Maven for Java users, or a tool such as SBT for Scala. The basic set of dependencies and their versions are shown below. This includes:
 
 - `deeplearning4j-core`, which contains the neural network implementations
-- `nd4j-x86`, the CPU version of the ND4J library that powers DL4J
+- `nd4j-native`, the CPU version of the ND4J library that powers DL4J
 - `canova-api` - Canova is our library vectorizing and loading data
 
 Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml) when you run your examples.
