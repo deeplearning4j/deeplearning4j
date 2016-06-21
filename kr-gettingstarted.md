@@ -49,7 +49,7 @@ OpenBlas에 대한 자세한 정보는 [이 섹션](http://nd4j.org/kr-getstarte
 
 		ldconfig /usr/local/cuda/lib64
 
-위의 단계 이후에도 여전히 Jcublas가 로딩이 되지 않는다면, 여러분의 코드에 옵션 -D를 추가하셔야 합니다(JVM 입력변수입니다).:
+위의 단계 이후에도 여전히 CUDA가 로딩이 되지 않는다면, 여러분의 코드에 옵션 -D를 추가하셔야 합니다(JVM 입력변수입니다).:
 
      	java.library.path (settable via -Djava.librarypath=...) 
      	// ^ for a writable directory, then 
@@ -81,7 +81,7 @@ OpenBlas에 대한 자세한 정보는 [이 섹션](http://nd4j.org/kr-getstarte
 
 ### <a name="openblas">OpenBlas</a>
 
-x86 백엔드 위에서 네이티브 라이브러리를 사용하려면 시스템 경로에 `/opt/OpenBLAS/lib`을 추가해야 합니다. 그리고 프롬프트에서 다음의 커맨드를 입력하십시오.
+`native` 백엔드 위에서 네이티브 라이브러리를 사용하려면 시스템 경로에 `/opt/OpenBLAS/lib`을 추가해야 합니다. 그리고 프롬프트에서 다음의 커맨드를 입력하십시오.
 
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
