@@ -165,10 +165,10 @@ public class Word2VecTest {
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[8]")
-                .setAppName("sparktest")
-                .set("spark.driver.memory", "16g")
+                .setAppName("sparktest");
+/*                .set("spark.driver.memory", "16g")
                 .set("spark.driver.maxResultSize","16g")
-                .set("spark.executor.memory","16g");
+                .set("spark.executor.memory","16g");*/
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
