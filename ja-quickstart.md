@@ -55,17 +55,27 @@ F１スコアは、約0.66と出るはずですが、Irisのような小さな�
 
 ## 依存関係およびバックエンド
 
-バックエンドとは、DL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはチップによって異なります。CPUはx86で、GPUはJcublasで最も高速に動作します。すべてのバックエンドを[Maven Central](https://search.maven.org)で見つけることができます。 「Latest Version」にある最新バージョン番号をクリックし、次の画面の左側にあるdependencyコードをコピーし、プロジェクトルートのpom.xmlにペーストします。 
+バックエンドとは、DL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはチップによって異なります。CPUは`native`で、GPUは`cuda-7.5`で最も高速に動作します。すべてのバックエンドを[Maven Central](https://search.maven.org)で見つけることができます。 「Latest Version」にある最新バージョン番号をクリックし、次の画面の左側にあるdependencyコードをコピーし、プロジェクトルートのpom.xmlにペーストします。 
 
-nd4j-x86のバックエンドは、以下のようになります。
+`nd4j-native`のバックエンドは、以下のようになります。
 
      <dependency>
        <groupId>org.nd4j</groupId>
-       < artifactId > nd 4 j x 86 < / artifactId >
+       <artifactId>nd4j-native</artifactId>
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-x86*はすべてのexampleで動作します。さらに依存関係をインストールするには、OpenBlas、Windows、Linuxのユーザーは[Deepelearining4jをはじめましょう](./gettingstarted.html#open)をお読みください。
+`nd4j-native`はすべてのexampleで動作します。さらに依存関係をインストールするには、OpenBlas、Windows、Linuxのユーザーは[Deepelearining4jをはじめましょう](./gettingstarted.html#open)をお読みください。
+
+## GPUs & CUDA
+
+`nd4j-cuda-7.5`のバックエンドは、以下のようになります。
+
+     <dependency>
+       <groupId>org.nd4j</groupId>
+       <artifactId>nd4j-cuda-7.5</artifactId>
+       <version>${nd4j.version}</version>
+     </dependency>
 
 ## 上級レベル： AWSでのコマンドラインの使用
 
