@@ -16,7 +16,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @RunWith(Parameterized.class)
 public class TestNdArrReadWriteTxtC extends BaseNd4jTest{
 
-    public TestNdArrReadWriteTxt(Nd4jBackend backend) {
+    public TestNdArrReadWriteTxtC(Nd4jBackend backend) {
 
         super(backend);
     }
