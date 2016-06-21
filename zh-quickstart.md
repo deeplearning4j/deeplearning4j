@@ -45,17 +45,17 @@ Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ�
 
 ## 依赖项和后端
 
-后端用于驱动DL4J神经网络背后的线性代数运算。后端根据芯片而不同。就CPU而言，x86速度最快；对GPU而言则是Jcublas。可在[Maven中心](https://search.maven.org)找到所有后端。点击“最新版本”下的版本号；复制下一页左侧的依赖项代码；将之粘贴至IntelliJ中项目根目录下的POM.xml中。
+后端用于驱动DL4J神经网络背后的线性代数运算。后端根据芯片而不同。就CPU而言，`native`速度最快；对GPU而言则是CUDA。可在[Maven中心](https://search.maven.org)找到所有后端。点击“最新版本”下的版本号；复制下一页左侧的依赖项代码；将之粘贴至IntelliJ中项目根目录下的POM.xml中。
 
-nd4j-x86后端应如下所示：
+`nd4j-native`后端应如下所示：
 
      <dependency>
        <groupId>org.nd4j</groupId>
-       <artifactId>nd4j-x86</artifactId>
+       <artifactId>nd4j-native</artifactId>
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-x86*可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](./zh-gettingstarted.html#open)。
+`nd4j-native`可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](./zh-gettingstarted.html#open)。
 
 ## 高级：在AWS上使用命令行
 
@@ -78,6 +78,16 @@ nd4j-x86后端应如下所示：
 ## Scala
 
 示例的Scala版本可[在此获取](https://github.com/kogecoo/dl4j-0.4-examples-scala)。
+
+## GPUs & CUDA
+
+`nd4j-cuda-7.5`后端应如下所示：
+
+     <dependency>
+       <groupId>org.nd4j</groupId>
+       <artifactId>nd4j-cuda-7.5</artifactId>
+       <version>${nd4j.version}</version>
+     </dependency>
 
 ## 后续步骤
 
