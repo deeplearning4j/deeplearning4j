@@ -69,6 +69,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -1997,7 +1998,7 @@ public class Nd4j {
                                 BigDecimal number = (BigDecimal) format.parse(entries[i]);
                                 subsetArr[rowNum][i] = number.doubleValue();
                             }
-                            catch (NumberFormatException e) {
+                            catch (ParseException e) {
                                 e.printStackTrace();
                             }
                         }
