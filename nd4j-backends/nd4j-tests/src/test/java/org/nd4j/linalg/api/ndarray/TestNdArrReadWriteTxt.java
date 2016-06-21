@@ -104,7 +104,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
     public void TestWierdShapeSepPrec() {
         INDArray origArr = Nd4j.rand(1,1,2,1,1).muli(10000); //since we write only two decimal points..
         Nd4j.writeTxt(origArr, "someArr.txt","_",4);
-        INDArray readBack = Nd4j.readTxt("someArr.txt");
+        INDArray readBack = Nd4j.readTxt("someArr.txt","_");
         System.out.println("=========================================================================");
         System.out.println(origArr);
         System.out.println("=========================================================================");

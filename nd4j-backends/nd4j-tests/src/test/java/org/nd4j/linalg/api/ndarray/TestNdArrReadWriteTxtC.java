@@ -1,3 +1,4 @@
+
 package org.nd4j.linalg.api.ndarray;
 
 import org.junit.Test;
@@ -13,8 +14,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * Created by susaneraly on 6/18/16.
  */
 @RunWith(Parameterized.class)
-public class TestNdArrReadWriteTxtC extends BaseNd4jTest{
-    public TestNdArrReadWriteTxtC(Nd4jBackend backend) {
+public class TestNdArrReadWriteTxt extends BaseNd4jTest{
+
+    public TestNdArrReadWriteTxt(Nd4jBackend backend) {
+
         super(backend);
     }
 
@@ -63,13 +66,12 @@ public class TestNdArrReadWriteTxtC extends BaseNd4jTest{
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.01);
     }
 
-
     //Repeating tests with precision and separator
     @Test
     public void TestReadWriteSepPrec() {
-        INDArray origArr = Nd4j.rand('c',10,10).muli(1000); //since we write only four decimal points..
-        Nd4j.writeTxt(origArr, "someArr.txt","_",3);
-        INDArray readBack = Nd4j.readTxt("someArr.txt","_");
+        INDArray origArr = Nd4j.rand('c',3,3).muli(1000); //since we write only four decimal points..
+        Nd4j.writeTxt(origArr, "someArrNew.txt",":",3);
+        INDArray readBack = Nd4j.readTxt("someArrNew.txt",":");
         System.out.println("=========================================================================");
         System.out.println(origArr);
         System.out.println("=========================================================================");
@@ -102,7 +104,7 @@ public class TestNdArrReadWriteTxtC extends BaseNd4jTest{
     public void TestWierdShapeSepPrec() {
         INDArray origArr = Nd4j.rand(1,1,2,1,1).muli(10000); //since we write only two decimal points..
         Nd4j.writeTxt(origArr, "someArr.txt","_",4);
-        INDArray readBack = Nd4j.readTxt("someArr.txt");
+        INDArray readBack = Nd4j.readTxt("someArr.txt","_");
         System.out.println("=========================================================================");
         System.out.println(origArr);
         System.out.println("=========================================================================");
