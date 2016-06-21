@@ -59,13 +59,16 @@ import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.string.NDArrayStrings;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -1705,7 +1708,7 @@ public class Nd4j {
         String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
         String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
         String lineFive = "\"data\":\n";
-        String fileData = new NDArrayStrings(split,precision).format(write);
+        String fileData = new NDArrayStrings(" "+split+" ",precision).format(write);
         String fileEnd = "\n}\n";
 
         String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
@@ -1722,7 +1725,7 @@ public class Nd4j {
     }
 
     public static void writeTxt(INDArray write, String filePath, String split) {
-        writeTxt(write,filePath,split,2);
+        writeTxt(write,filePath," "+split+"",2);
     }
 
     public static void writeTxt(INDArray write, String filePath) {
@@ -1947,6 +1950,8 @@ public class Nd4j {
         try {
             File txtFile = new File(filePath);
             LineIterator it = FileUtils.lineIterator(txtFile);
+            DecimalFormat format = (DecimalFormat) NumberFormat.getInstance(Locale.US);
+            format.setParseBigDecimal(true);
             try {
                 while (it.hasNext()) {
                     String line = it.nextLine();
@@ -1970,7 +1975,7 @@ public class Nd4j {
                     if (lineNum == 4) {
                         String[] lineArr = line.split(":");
                         String dropJsonComma = lineArr[1].split("]")[0];
-                        String[] shapeString = dropJsonComma.replace("[", "").split(sep);
+                        String[] shapeString = dropJsonComma.replace("[", "").split(",");
                         rank = shapeString.length;
                         theShape = new int[rank];
                         for (int i = 0; i < rank; i++) {
@@ -1986,12 +1991,15 @@ public class Nd4j {
                     }
                     //parse data
                     if (lineNum > 5) {
-                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(sep);
+                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\],","").replaceAll("\\]", "").split(sep);
                         for (int i = 0; i < theShape[rank-1]; i++) {
                             try {
-                                subsetArr[rowNum][i] = Double.parseDouble(entries[i]);
+                                BigDecimal number = (BigDecimal) format.parse(entries[i]);
+                                subsetArr[rowNum][i] = number.doubleValue();
                             }
-                            catch (NumberFormatException nfe) {}
+                            catch (NumberFormatException e) {
+                                e.printStackTrace();
+                            }
                         }
                         rowNum++;
                         if (rowNum == theShape[rank-2]) {

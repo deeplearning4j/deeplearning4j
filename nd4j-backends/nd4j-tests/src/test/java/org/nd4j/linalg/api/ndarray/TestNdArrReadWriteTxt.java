@@ -23,7 +23,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
 
     @Test
     public void TestReadWrite() {
-        INDArray origArr = Nd4j.rand('c',10,10).muli(100); //since we write only two decimal points..
+        INDArray origArr = Nd4j.rand('f',10,10).muli(100); //since we write only two decimal points..
         Nd4j.writeTxt(origArr, "someArr.txt");
         INDArray readBack = Nd4j.readTxt("someArr.txt");
         System.out.println("=========================================================================");
@@ -69,9 +69,9 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
     //Repeating tests with precision and separator
     @Test
     public void TestReadWriteSepPrec() {
-        INDArray origArr = Nd4j.rand('c',10,10).muli(1000); //since we write only four decimal points..
-        Nd4j.writeTxt(origArr, "someArr.txt","_",3);
-        INDArray readBack = Nd4j.readTxt("someArr.txt","_");
+        INDArray origArr = Nd4j.rand('f',3,3).muli(1000); //since we write only four decimal points..
+        Nd4j.writeTxt(origArr, "someArrNew.txt",":",3);
+        INDArray readBack = Nd4j.readTxt("someArrNew.txt",":");
         System.out.println("=========================================================================");
         System.out.println(origArr);
         System.out.println("=========================================================================");
