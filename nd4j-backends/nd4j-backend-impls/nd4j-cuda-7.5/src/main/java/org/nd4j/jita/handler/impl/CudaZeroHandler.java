@@ -685,8 +685,17 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair pair = provider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
 
                 if (pair != null) {
+                    Integer deviceId = getDeviceId();
+
                     dstPoint.getPointers().setDevicePointer(pair.getDevicePointer());
                     dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
+
+                    deviceAllocations.get(deviceId).put(dstPoint.getObjectId(), dstPoint.getObjectId());
+
+                    zeroAllocations.get(dstPoint.getBucketId()).remove(dstPoint.getObjectId());
+                    deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, AllocationUtils.getRequiredMemory(dstPoint.getShape()));
+
+
                     dstPoint.tickHostWrite();
                 }
             }
