@@ -53,21 +53,32 @@ Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나�
 
 ## 디펜던시와 백엔드(Dependencies and Backends)
 
-백엔드의 역할은 DL4J 신경망 내부에 필요한 선형 대수 및 행렬 연산을 실제로 수행하는 것 입니다. 백엔드의 성능은 실제로 연산에 사용되는 하드웨어에 따라 달라집니다. CPU를 사용한 연산은 x86 백엔드를, GPU를 사용한 연산은 Jcublas를 사용할 경우 가장 빠르게 작동합니다. [Maven Central 페이지](https://search.maven.org)를 방문하시면 사용 가능한 백엔드 목록을 볼 수 있습니다; “Latest Version" 에 링크된 가장 최신 버전을 클릭하고 그 다음에 나오는 화면의 좌측의 디펜던시 코드를 복사한 뒤 그 코드를 IntelliJ에서 여러분의 프로젝트 루트의 pom.xml 파일에 붙여 넣으십시오.
+백엔드의 역할은 DL4J 신경망 내부에 필요한 선형 대수 및 행렬 연산을 실제로 수행하는 것 입니다. 백엔드의 성능은 실제로 연산에 사용되는 하드웨어에 따라 달라집니다. CPU를 사용한 연산은 `native` 백엔드를, GPU를 사용한 연산은 `cuda-7.5`를 사용할 경우 가장 빠르게 작동합니다. [Maven Central 페이지](https://search.maven.org)를 방문하시면 사용 가능한 백엔드 목록을 볼 수 있습니다; “Latest Version" 에 링크된 가장 최신 버전을 클릭하고 그 다음에 나오는 화면의 좌측의 디펜던시 코드를 복사한 뒤 그 코드를 IntelliJ에서 여러분의 프로젝트 루트의 pom.xml 파일에 붙여 넣으십시오.
 
-nd4j-x86 백엔드는 아래과 같이 쓰여있습니다.
+`nd4j-native` 백엔드는 아래과 같이 쓰여있습니다.
 
 ```
-
 		 <dependency>
 		   <groupId>org.nd4j</groupId>
-		   <artifactId>nd4j-java</artifactId>
+		   <artifactId>nd4j-native</artifactId>
 		   <version>${nd4j.version}</version>
 		 </dependency>
 ```
 
 
-*nd4j-x86*은 모든 예제들과 작동합니다. 추가적인 디펜던시를 설치하기 위해서, OpenBlas, 윈도우, 리눅스 사용자는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하시기 바랍니다.
+*nd4j-native*은 모든 예제들과 작동합니다. 추가적인 디펜던시를 설치하기 위해서, OpenBlas, 윈도우, 리눅스 사용자는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하시기 바랍니다.
+
+## GPUs & CUDA
+
+`nd4j-cuda-7.5` 백엔드는 아래과 같이 쓰여있습니다.
+
+```
+		 <dependency>
+		   <groupId>org.nd4j</groupId>
+		   <artifactId>nd4j-cuda-7.5</artifactId>
+		   <version>${nd4j.version}</version>
+		 </dependency>
+```
 
 ## 고급: AWS의 커맨드 라인(Command Line) 사용 하기
 
