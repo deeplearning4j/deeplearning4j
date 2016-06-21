@@ -158,12 +158,16 @@ Additional links:
 4. Browse the [DL4J documentation](./documentation).
 
 
-## Troubleshooting
+### Troubleshooting
 
-#### Q: I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
+#### **Q:** I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
 
 **A:** You may have incompatible DLLs on your PATH. To tell DL4J to ignore those, you have to add the following as a VM parameter (Run -> Edit Configurations -> VM Options in IntelliJ):
 
 ```
 -Djava.library.path=""
 ```
+
+#### **Q:** I'm getting this error: `Intel MKL FATAL ERROR: Cannot load mkl_intel_thread.dll`. It shuts down the JVM (i.e. doesn't crash it, but simply halts it...).
+
+**A:** With the rc3.10 release currently on Maven central, the library `libnd4j` doesn't load Intel's MKL correctly even when it is found on the path. This can be solved by adding `System.loadLibrary("mkl_rt")`.
