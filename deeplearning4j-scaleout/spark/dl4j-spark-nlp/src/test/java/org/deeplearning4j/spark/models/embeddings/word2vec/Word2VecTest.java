@@ -164,10 +164,10 @@ public class Word2VecTest {
     @Ignore
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf()
-                .setMaster("local[8]")
-                .setAppName("sparktest");
+                .setMaster("local[32]")
+                .setAppName("sparktest")
+                .set("spark.driver.maxResultSize","4g");
 /*                .set("spark.driver.memory", "16g")
-                .set("spark.driver.maxResultSize","16g")
                 .set("spark.executor.memory","16g");*/
 
         // Set SparkContext
@@ -193,7 +193,7 @@ public class Word2VecTest {
                 .seed(42L)
                 .negative(10)
                 .useAdaGrad(false)
-                .layerSize(150)
+                .layerSize(100)
                 .windowSize(5)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
