@@ -5,7 +5,7 @@ title: Getting Started on Windows
 
 # Getting Started on Windows
 
-* To run examples, go to our [quickstart](./quickstart.html). 
+* To run examples, go to our [quickstart](./quickstart). 
 
 * While our Windows install is not always easy, Deeplearning4j is one of the few open-source deep learning projects that actually cares about trying to support the Windows community. Please see the [Windows section of our ND4J page](http://nd4j.org/getstarted.html#windows) for more instructions. 
 
@@ -25,7 +25,7 @@ For OpenBlas (see below) on **Windows**, download this [file](https://www.dropbo
 
 ### <a id="open"> OpenBlas </a>
 
-To make sure the native libs on the x86 backend work, you need `/opt/OpenBLAS/lib` on the system path. After that, enter these commands in the prompt
+To make sure the native libs on the `nd4j-native` backend work, you need `/opt/OpenBLAS/lib` on the system path. After that, enter these commands in the prompt
 
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
@@ -43,4 +43,4 @@ If OpenBlas is not working correctly, follow these steps:
 * `sudo make PREFIX=/usr/local/ install`
 * As a last step, restart your IDE. 
 
-* For a complete review of requirements, see our [getting started page](./gettingstarted.html).
+* For a complete review of requirements, see our [getting started page](./gettingstarted).
