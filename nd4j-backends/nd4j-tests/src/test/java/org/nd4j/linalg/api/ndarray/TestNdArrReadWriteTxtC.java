@@ -14,7 +14,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * Created by susaneraly on 6/18/16.
  */
 @RunWith(Parameterized.class)
-public class TestNdArrReadWriteTxt extends BaseNd4jTest{
+public class TestNdArrReadWriteTxtC extends BaseNd4jTest{
 
     public TestNdArrReadWriteTxt(Nd4jBackend backend) {
 
