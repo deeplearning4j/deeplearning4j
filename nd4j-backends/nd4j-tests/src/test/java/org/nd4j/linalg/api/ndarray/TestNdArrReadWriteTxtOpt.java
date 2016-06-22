@@ -10,6 +10,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Assert;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 /**
  * Created by susaneraly on 6/18/16.
  */
@@ -31,6 +35,12 @@ public class TestNdArrReadWriteTxtOpt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.001);
+        try {
+            Files.delete(Paths.get("someArrNew.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Test
     public void TestReadWriteSimpleSepPrec() {
@@ -42,6 +52,12 @@ public class TestNdArrReadWriteTxtOpt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.001);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Test
     public void TestReadWriteNdSepPrec() {
@@ -53,6 +69,12 @@ public class TestNdArrReadWriteTxtOpt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.0001);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Test
     public void TestWierdShapeSepPrec() {
@@ -64,6 +86,12 @@ public class TestNdArrReadWriteTxtOpt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.0001);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
