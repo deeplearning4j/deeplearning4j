@@ -37,7 +37,7 @@ public class TestJSONC extends BaseNd4jTest{
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
-            Files.delete(Paths.get("someArr.txt"));
+            Files.delete(Paths.get("someArr.json"));
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -57,7 +57,7 @@ public class TestJSONC extends BaseNd4jTest{
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
-            Files.delete(Paths.get("someArr.txt"));
+            Files.delete(Paths.get("someArr.json"));
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -77,7 +77,7 @@ public class TestJSONC extends BaseNd4jTest{
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
-            Files.delete(Paths.get("someArr.txt"));
+            Files.delete(Paths.get("someArr.json"));
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -97,7 +97,7 @@ public class TestJSONC extends BaseNd4jTest{
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
-            Files.delete(Paths.get("someArr.txt"));
+            Files.delete(Paths.get("someArr.json"));
         }
         catch (IOException e) {
             e.printStackTrace();
