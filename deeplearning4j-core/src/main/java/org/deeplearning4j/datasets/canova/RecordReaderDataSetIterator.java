@@ -26,7 +26,7 @@ import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;

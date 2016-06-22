@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph.rnn;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -36,7 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * one of the input time series<br>
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     private String inputName;
@@ -73,7 +74,8 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+                                                                      INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph,name,idx,inputName);
     }
 

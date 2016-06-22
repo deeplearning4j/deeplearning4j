@@ -231,25 +231,16 @@ public class FirstIterationFunction
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[idx], alpha) : (label - expTable[idx]) * alpha;
                 }
 
-                    Nd4j.getBlasWrapper().axpy((float) g,negativeHolder.getSyn1Neg().slice(target),neu1e);
+                    Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, negativeHolder.getSyn1Neg().slice(target),neu1e);
 
-                    Nd4j.getBlasWrapper().axpy((float) g,l1,negativeHolder.getSyn1Neg().slice(target));
+                    Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, l1,negativeHolder.getSyn1Neg().slice(target));
             }
 
 
         // Updated the Syn0 vector based on gradient. Syn0 is not random anymore.
         Nd4j.getBlasWrapper().level1().axpy(vectorLength, 1.0f, neu1e, l1);
 
-        if (aff.get() == 0) {
-            synchronized (this) {
-                cid.set(EnvironmentUtils.buildCId());
-                aff.set(EnvironmentUtils.buildEnvironment().getAvailableMemory());
-            }
-        }
-
         VocabWord word = vocab.elementAtIndex(currentWordIndex);
-        word.setVocabId(cid.get());
-        word.setAffinityId(aff.get());
         indexSyn0VecMap.put(word, l1);
     }
 

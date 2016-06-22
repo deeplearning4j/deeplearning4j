@@ -1,7 +1,9 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.nd4j.linalg.dataset.DataSet;
+
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  *
@@ -19,6 +22,9 @@ import java.util.concurrent.TimeUnit;
  * for example) this may improve performance by loading the next DataSet asynchronously (i.e., while
  * training is continuing on the previous DataSet). Obviously this may use additional memory.<br>
  * Note however that due to asynchronous loading of data, next(int) is not supported.
+ *
+ * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
+ *
  * @author Alex Black
  */
 public class AsyncDataSetIterator implements DataSetIterator {
@@ -48,6 +54,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable();
         thread = new Thread(runnable);
+
+        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+
         thread.setDaemon(true);
         thread.start();
     }
@@ -55,6 +65,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next(int num) {
+        // TODO: why isn't supported? We could just check queue size
         throw new UnsupportedOperationException("Next(int) not supported for AsyncDataSetIterator");
     }
 
@@ -89,6 +100,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
         baseIterator.reset();
         runnable = new IteratorRunnable();
         thread = new Thread(runnable);
+
+        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+
         thread.setDaemon(true);
         thread.start();
     }
@@ -184,9 +199,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     private class IteratorRunnable implements Runnable {
-        private boolean killRunnable = false;
-        private boolean isAlive = true;
-        private RuntimeException exception;
+        private volatile boolean killRunnable = false;
+        private volatile boolean isAlive = true;
+        private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
         @Override
         public void run() {

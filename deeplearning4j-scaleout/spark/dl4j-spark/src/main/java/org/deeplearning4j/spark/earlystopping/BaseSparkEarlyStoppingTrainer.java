@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.spark.earlystopping;
 
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,43 +46,29 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
 
     private static Logger log = LoggerFactory.getLogger(BaseSparkEarlyStoppingTrainer.class);
 
-    private SparkContext sc;
+    private JavaSparkContext sc;
     private final EarlyStoppingConfiguration<T> esConfig;
     private T net;
     private final JavaRDD<DataSet> train;
     private final JavaRDD<MultiDataSet> trainMulti;
-    protected final int examplesPerFit;
-    protected final int totalExamples;
-    protected final int numPartitions;
     private EarlyStoppingListener<T> listener;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
 
-    protected BaseSparkEarlyStoppingTrainer(SparkContext sc, EarlyStoppingConfiguration<T> esConfig, T net, JavaRDD<DataSet> train,
-                                            JavaRDD<MultiDataSet> trainMulti, int examplesPerFit, int totalExamples, int numPartitions,
-                                            EarlyStoppingListener<T> listener) {
+    protected BaseSparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration<T> esConfig, T net,
+                                            JavaRDD<DataSet> train, JavaRDD<MultiDataSet> trainMulti, EarlyStoppingListener<T> listener) {
         if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
                 && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
             throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
                 + "and Epoch termination conditions are null/empty)");
         }
 
-        // repartition if size is different
-        if(numPartitions != 0 && numPartitions != train.partitions().size()){
-            log.info("Repartitioning training set to {}", numPartitions);
-            this.train = train.repartition(numPartitions);
-        } else {
-            this.train = train;
-        }
-
         this.sc = sc;
         this.esConfig = esConfig;
         this.net = net;
+        this.train = train;
         this.trainMulti = trainMulti;
-        this.examplesPerFit = examplesPerFit;
-        this.totalExamples = totalExamples;
-        this.numPartitions = numPartitions;
         this.listener = listener;
     }
 
@@ -123,83 +108,25 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
             double lastScore;
             boolean terminate = false;
             IterationTerminationCondition terminationReason = null;
-            int iterCount = 0;
 
-            //Create random split of RDD:
-            int nSplits;
-            if(totalExamples%examplesPerFit==0){
-                nSplits = (totalExamples / examplesPerFit);
-            } else {
-                nSplits = (totalExamples / examplesPerFit) + 1;
-            }
+            if(train != null) fit(train);
+            else fitMulti(trainMulti);
 
-            JavaRDD<DataSet>[] subsets = null;
-            JavaRDD<MultiDataSet>[] subsetsMulti = null;
-            if(train != null){
-                if(nSplits == 1){
-                    subsets = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);   //new Object[]{train};
-                    subsets[0] = train;
-                } else {
-                    double[] splitWeights = new double[nSplits];
-                    for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
-                    subsets = train.randomSplit(splitWeights);
+            //TODO revisit per iteration termination conditions, ensuring they are evaluated *per averaging* not per epoch
+            //Check per-iteration termination conditions
+            lastScore = getScore();
+            for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
+                if (c.terminate(lastScore)) {
+                    terminate = true;
+                    terminationReason = c;
+                    break;
                 }
-            } else {
-                if(nSplits == 1){
-                    subsetsMulti = (JavaRDD<MultiDataSet>[])Array.newInstance(JavaRDD.class,1);   //new Object[]{train};
-                    subsetsMulti[0] = trainMulti;
-                } else {
-                    double[] splitWeights = new double[nSplits];
-                    for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
-                    subsetsMulti = trainMulti.randomSplit(splitWeights);
-                }
-            }
-
-            int nSubsets = (subsets != null ? subsets.length : subsetsMulti.length);
-
-            for(int i = 0; i<nSubsets; i++) {
-                log.info("Initiating distributed training of subset {} of {}",(i+1),nSubsets);
-                try{
-                    if(subsets != null) fit(subsets[i]);
-                    else fitMulti(subsetsMulti[i]);
-                }catch(Exception e){
-                    log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
-                            epochCount,iterCount,e);
-                    //Load best model to return
-                    T bestModel;
-                    try{
-                        bestModel = esConfig.getModelSaver().getBestModel();
-                    }catch(IOException e2){
-                        throw new RuntimeException(e2);
-                    }
-                    return new EarlyStoppingResult<T>(
-                            EarlyStoppingResult.TerminationReason.Error,
-                            e.toString(),
-                            scoreVsEpoch,
-                            bestModelEpoch,
-                            bestModelScore,
-                            epochCount,
-                            bestModel);
-                }
-
-                //Check per-iteration termination conditions
-                lastScore = getScore();
-                for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
-                    if (c.terminate(lastScore)) {
-                        terminate = true;
-                        terminationReason = c;
-                        break;
-                    }
-                }
-                if(terminate) break;
-
-                iterCount++;
             }
 
             if(terminate){
                 //Handle termination condition:
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
-                        epochCount, iterCount, terminationReason);
+                        epochCount, epochCount, terminationReason);
 
                 if(esConfig.isSaveLastModel()) {
                     //Save last model:
@@ -227,6 +154,8 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
                 if(listener != null) listener.onCompletion(result);
                 return result;
             }
+
+
 
             log.info("Completed training epoch {}",epochCount);
 

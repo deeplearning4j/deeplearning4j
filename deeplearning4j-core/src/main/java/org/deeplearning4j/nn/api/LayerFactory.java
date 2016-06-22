@@ -40,10 +40,12 @@ public interface LayerFactory {
      * @param iterationListeners the list of iterations listners
      * @param index the layer number
      * @param layerParamsView An array where the parameters are stored, in flattened order
+     * @param initializeParams if true: initialize the parameter values (in layerParamsView) using the parameter initializer.
+     *                         If false: make no changes to the values in layerParamsView
      * @return the created layer
      */
     <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index,
-                               INDArray layerParamsView);
+                               INDArray layerParamsView, boolean initializeParams);
 
 
     /**

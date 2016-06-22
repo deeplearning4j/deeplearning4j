@@ -19,7 +19,7 @@
 package org.deeplearning4j.plot;
 
 import org.canova.image.loader.ImageLoader;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -66,7 +66,7 @@ public class ImageRenderTest {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        org.deeplearning4j.nn.layers.feedforward.rbm.RBM da = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params);
+        org.deeplearning4j.nn.layers.feedforward.rbm.RBM da = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
         da.setListeners(new ScoreIterationListener(1));
         mnist = new MnistDataSetIterator(1000,1000);
         da.fit(mnist.next().getFeatureMatrix());

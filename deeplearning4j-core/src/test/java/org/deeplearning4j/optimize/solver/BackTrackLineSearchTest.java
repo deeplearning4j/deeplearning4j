@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.solver;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -157,7 +157,7 @@ public class BackTrackLineSearchTest {
 
         int numParams = LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        return LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params);
+        return LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
     }
 
 ///////////////////////////////////////////////////////////////////////////
