@@ -84,8 +84,8 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     @Override
     public void preProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        toPreProcess.setFeatures(toPreProcess.getFeatures().subRowVector(mean));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().divRowVector(std));
+        toPreProcess.getFeatures().subiRowVector(mean);
+        toPreProcess.getFeatures().diviRowVector(std);
     }
 
     /**

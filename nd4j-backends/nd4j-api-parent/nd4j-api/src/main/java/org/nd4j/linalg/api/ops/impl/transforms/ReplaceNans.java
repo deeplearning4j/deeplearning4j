@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Element-wise Compare-and-set implementation as Op
+ * Element-wise "Replace NaN" implementation as Op
  *
  * @author raver119@gmail.com
  */
