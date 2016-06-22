@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -eu
 
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
@@ -35,7 +35,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname
     fi
     # Make sure we are using 64-bit MinGW-w64
     export PATH=/mingw64/bin/:$PATH
-   CC=/mingw64/bin/gcc
+    CC=/mingw64/bin/gcc
     CXX=/mingw64/bin/g++
     echo "Running windows"
    # export GENERATOR="MSYS Makefiles"
@@ -51,6 +51,9 @@ while [[ $# > 1 ]]
 do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
+BUILD=
+LIBTYPE=
+PACKAGING=
 case $key in
     -b|--build-type)
     BUILD="$2"
