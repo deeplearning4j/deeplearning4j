@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eu
 
 install() {
     echo "RUNNING INSTALL"
