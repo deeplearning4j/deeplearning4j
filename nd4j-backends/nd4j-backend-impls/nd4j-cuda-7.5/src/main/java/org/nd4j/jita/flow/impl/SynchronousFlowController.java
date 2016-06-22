@@ -65,8 +65,8 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void waitTillFinished(AllocationPoint point) {
-       // CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-      //  context.syncOldStream();
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        context.syncOldStream();
     }
 
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
