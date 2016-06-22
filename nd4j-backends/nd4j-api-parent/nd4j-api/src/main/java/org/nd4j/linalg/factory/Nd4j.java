@@ -21,7 +21,6 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.nd4j.context.Nd4jContext;
@@ -37,17 +36,19 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
@@ -58,14 +59,19 @@ import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -150,6 +156,8 @@ public class Nd4j {
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
     protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
+
+    private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
     static {
         Nd4j nd4j = new Nd4j();
@@ -1649,7 +1657,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a long row vector of all of the given ndarrays
+     * Create a long row vector of all of the given ndarrays/
      * @param order order in which to flatten ndarrays
      * @param matrices the matrices to create the flattened ndarray for
 
@@ -1690,24 +1698,18 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
-     * @param split    the split separator
+     * @param split    the split separator, defaults to ", "
+     * @param precision digits after the decimal point, defaults to 2
      * @return the read txt method
      */
-    public static void writeTxt(INDArray write, String filePath, String split) throws IOException {
-        FileOutputStream fos = new FileOutputStream(filePath);
-        write(fos, write);
-        fos.flush();
-        fos.close();
-    }
-    public static void writeTxt(INDArray write, String filePath) {
-        //TO DO: Add precision support in toString
+    public static void writeTxt(INDArray write, String filePath, String split, int precision) {
         //TO DO: Write to file one line at time
         String lineOne = "{\n";
         String lineTwo = "\"filefrom:\" \"dl4j\",\n";
         String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
         String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
         String lineFive = "\"data\":\n";
-        String fileData = write.toString();
+        String fileData = new NDArrayStrings(" "+split+" ",precision).format(write);
         String fileEnd = "\n}\n";
 
         String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
@@ -1716,6 +1718,19 @@ public class Nd4j {
         } catch (IOException e) {
             throw new RuntimeException("Error writing output", e);
         }
+    }
+
+    public static void writeTxt(INDArray write, String filePath, int precision) {
+        writeTxt(write,filePath,", ",precision);
+
+    }
+
+    public static void writeTxt(INDArray write, String filePath, String split) {
+        writeTxt(write,filePath," "+split+"",2);
+    }
+
+    public static void writeTxt(INDArray write, String filePath) {
+        writeTxt(write,filePath,", ",2);
     }
 
 
@@ -1911,9 +1926,10 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
+     * @param  split character, defaults to ","
      * @return NDArray
      */
-    public static INDArray readTxt(String filePath) {
+    public static INDArray readTxt(String filePath,String sep) {
          /*
           We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
 
@@ -1935,6 +1951,8 @@ public class Nd4j {
         try {
             File txtFile = new File(filePath);
             LineIterator it = FileUtils.lineIterator(txtFile);
+            DecimalFormat format = (DecimalFormat) NumberFormat.getInstance(Locale.US);
+            format.setParseBigDecimal(true);
             try {
                 while (it.hasNext()) {
                     String line = it.nextLine();
@@ -1974,12 +1992,15 @@ public class Nd4j {
                     }
                     //parse data
                     if (lineNum > 5) {
-                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(",");
+                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\],","").replaceAll("\\]", "").split(sep);
                         for (int i = 0; i < theShape[rank-1]; i++) {
                             try {
-                                subsetArr[rowNum][i] = Double.parseDouble(entries[i]);
+                                BigDecimal number = (BigDecimal) format.parse(entries[i]);
+                                subsetArr[rowNum][i] = number.doubleValue();
                             }
-                            catch (NumberFormatException nfe) {}
+                            catch (ParseException e) {
+                                e.printStackTrace();
+                            }
                         }
                         rowNum++;
                         if (rowNum == theShape[rank-2]) {
@@ -2000,6 +2021,10 @@ public class Nd4j {
         }
         return newArr;
     }
+    public static INDArray readTxt(String filePath) {
+        return readTxt(filePath,",");
+    }
+
 
     private static int[] toIntArray(int length,DataBuffer buffer) {
         int[] ret = new int[length];
