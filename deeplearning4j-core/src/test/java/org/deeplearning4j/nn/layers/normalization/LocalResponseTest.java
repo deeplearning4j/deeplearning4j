@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -123,7 +123,7 @@ public class LocalResponseTest {
                         .build())
                 .build();
 
-        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, null);
+        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, null, false);
         activationsActual = layer.activate(x);
     }
 

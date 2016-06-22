@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -64,7 +64,7 @@ public class TestRenders extends BaseUiServerTest {
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)
-                ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0, params);
+                ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0, params, true);
         da.setParams(da.params());
         da.fit(input);
     }
@@ -89,7 +89,7 @@ public class TestRenders extends BaseUiServerTest {
         INDArray input = d2.getFeatureMatrix();
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params, true);
         da.setParams(da.params());
         da.fit(input);
     }
@@ -115,7 +115,7 @@ public class TestRenders extends BaseUiServerTest {
         INDArray input = d2.getFeatureMatrix();
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
         da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));
         da.setParams(da.params());
         da.fit(input);

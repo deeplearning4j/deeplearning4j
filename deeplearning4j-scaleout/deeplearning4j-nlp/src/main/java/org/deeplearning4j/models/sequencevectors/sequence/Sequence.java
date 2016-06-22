@@ -144,6 +144,34 @@ public class Sequence<T extends SequenceElement> implements Serializable {
         if (this.label == null) this.label = label;
     }
 
+    /**
+     * Checks, if sequence is empty
+     *
+     * @return TRUE if empty, FALSE otherwise
+     */
+    public boolean isEmpty() {
+        return elements.isEmpty();
+    }
+
+    /**
+     * This method returns number of elements in this sequence
+     *
+     * @return
+     */
+    public int size() {
+        return elements.size();
+    }
+
+    /**
+     * This method returns  sequence element by index
+     *
+     * @param index
+     * @return
+     */
+    public T getElementByIndex(int index) {
+        return elements.get(index);
+    }
+
     @Override
     public String toString() {
         return "Sequence{" +

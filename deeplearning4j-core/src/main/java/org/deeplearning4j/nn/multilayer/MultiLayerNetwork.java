@@ -22,6 +22,9 @@ package org.deeplearning4j.nn.multilayer;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -344,6 +347,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
      */
     public void init() {
+        init(null,false);
+    }
+
+    /**
+     * Initialize the MultiLayerNetwork, optionally with an existing parameters array.
+     * If an existing parameters array is specified, it will be used (and the values will not be modified) in the network;
+     * if no parameters array is specified, parameters will be initialized randomly according to the network configuration.
+     *
+     * @param parameters              Network parameter. May be null. If null: randomly initialize.
+     * @param cloneParametersArray    Whether the parameter array (if any) should be cloned, or used directly
+     */
+    public void init(INDArray parameters, boolean cloneParametersArray){
         if (layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
         if (initCalled)
@@ -352,7 +367,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int nLayers = getnLayers();
 
         if (nLayers < 1)
-            throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
+            throw new IllegalStateException("Unable to create network: number of layers is less than 1");
 
         if (this.layers == null || this.layers[0] == null) {
             if (this.layers == null)
@@ -367,8 +382,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 backpropParamLength += nParamsPerLayer[i];
             }
 
-            //Create parameters array:
-            flattenedParams = Nd4j.create(1,backpropParamLength);
+            //Create parameters array, if required
+            boolean initializeParams;
+            if(parameters != null ){
+                if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+                if(parameters.length() != backpropParamLength) throw new IllegalArgumentException("Invalid parameters: expected length " + backpropParamLength + ", got length " + parameters.length());
+
+                if(cloneParametersArray) flattenedParams = parameters.dup();
+                else flattenedParams = parameters;
+
+                initializeParams = false;
+            } else {
+                flattenedParams = Nd4j.create(1, backpropParamLength);
+                initializeParams = true;
+            }
 
             // construct multi-layer
             int paramCountSoFar = 0;
@@ -382,7 +409,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView);
+                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView, initializeParams);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -397,6 +424,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 defaultConfiguration.addVariable(i+"_"+s);
             }
         }
+    }
+
+    public boolean isInitCalled(){
+        return initCalled;
     }
 
     /**
@@ -854,6 +885,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(flattenedParams != null && params.length() == flattenedParams.length()){
             flattenedParams.assign(params);
         } else {
+            if(flattenedParams == null) flattenedParams = params.dup();
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
@@ -981,7 +1013,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public void fit(DataSetIterator iter) {
+    public void fit(DataSetIterator iterator) {
+        DataSetIterator iter;
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator)) {
+            iter = new AsyncDataSetIterator(iterator, 10);
+        } else iter = iterator;
+
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();

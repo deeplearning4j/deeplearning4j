@@ -50,7 +50,7 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParameters) {
         if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
@@ -67,8 +67,8 @@ public class DefaultParamInitializer implements ParamInitializer {
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
 
 
-        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView));
-        params.put(BIAS_KEY,createBias(conf, biasView));
+        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParameters));
+        params.put(BIAS_KEY,createBias(conf, biasView, initializeParameters));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
     }
@@ -92,27 +92,33 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
 
-    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView) {
+    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView, boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        INDArray ret =  Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
-        biasParamView.assign(ret);
+        if(initializeParameters) {
+            INDArray ret = Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
+            biasParamView.assign(ret);
+        }
         return biasParamView;
     }
 
 
-    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView) {
+    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView, boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
-        Distribution dist = Distributions.createDistribution(layerConf.getDist());
-        INDArray ret =  WeightInitUtil.initWeights(
-                layerConf.getNIn(),
-                layerConf.getNOut(),
-                layerConf.getWeightInit(),
-                dist,
-                weightParamView);
-        return ret;
+        if(initializeParameters) {
+            Distribution dist = Distributions.createDistribution(layerConf.getDist());
+            INDArray ret = WeightInitUtil.initWeights(
+                    layerConf.getNIn(),
+                    layerConf.getNOut(),
+                    layerConf.getWeightInit(),
+                    dist,
+                    weightParamView);
+            return ret;
+        } else {
+            return WeightInitUtil.reshapeWeights(new int[]{layerConf.getNIn(), layerConf.getNOut()}, weightParamView);
+        }
     }
 
 

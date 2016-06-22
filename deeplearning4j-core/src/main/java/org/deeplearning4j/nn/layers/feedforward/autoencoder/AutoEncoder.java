@@ -64,7 +64,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     // Encode
     public INDArray encode(boolean training) {
         if(conf.getLayer().getDropOut() > 0 && training) {
-            dropoutMask = Dropout.applyDropout(input, conf.getLayer().getDropOut(),dropoutMask);
+            Dropout.applyDropout(input, conf.getLayer().getDropOut());
         }
 
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);

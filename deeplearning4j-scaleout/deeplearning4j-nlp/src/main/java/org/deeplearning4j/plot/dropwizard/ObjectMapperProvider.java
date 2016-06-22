@@ -12,6 +12,7 @@ import javax.ws.rs.ext.Provider;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 @Provider
 public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
     @Override

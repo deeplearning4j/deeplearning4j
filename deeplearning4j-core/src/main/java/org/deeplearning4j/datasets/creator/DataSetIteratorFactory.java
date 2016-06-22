@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.datasets.creator;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
  * Base interface for creating datasetiterators
