@@ -194,23 +194,30 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
     @Test
     public void testConstant() {
-        double tolerancePerc = 1.0; // 0.01% of correct value
+        double tolerancePerc = 10.0; // 10% of correct value
         int nSamples = 500;
         int nFeatures = 3;
+        int constant = 100;
 
-        INDArray featureSet = Nd4j.zeros(nSamples,nFeatures).add(100);
+        INDArray featureSet = Nd4j.zeros(nSamples,nFeatures).add(constant);
         INDArray labelSet = Nd4j.zeros(nSamples, 1);
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleDataSet);
+        //Checking if we gets nans
         assertFalse (Double.isNaN(myNormalizer.getStd().getDouble(0)));
+
         myNormalizer.transform(sampleDataSet);
+        //Checking if we gets nans, because std dev is zero
         assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
-        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),0,0.00001);
+        //Checking to see if transformed values are close enough to zero
+        assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0,1).getDouble(0,0),0,constant*tolerancePerc/100.0);
+
         myNormalizer.revert(sampleDataSet);
+        //Checking if we gets nans, because std dev is zero
         assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
-        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),100*nFeatures*nSamples,0.00001);
+        assertEquals(Transforms.abs(sampleDataSet.getFeatures().sub(featureSet)).min(0,1).getDouble(0),0,constant*tolerancePerc/100.0);
     }
 
     public class genRandomDataSet {
