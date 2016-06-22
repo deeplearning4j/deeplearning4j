@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -50,7 +50,7 @@ public class BatchNormalizationTest {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         return layer;
     }
 

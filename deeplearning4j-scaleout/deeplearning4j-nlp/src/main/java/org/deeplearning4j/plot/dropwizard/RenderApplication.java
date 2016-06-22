@@ -39,6 +39,7 @@ import java.io.InputStream;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class RenderApplication extends Application<ApiConfiguration> {
 
     @Override

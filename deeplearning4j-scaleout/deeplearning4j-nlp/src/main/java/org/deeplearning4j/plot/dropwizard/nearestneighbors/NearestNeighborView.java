@@ -23,6 +23,7 @@ import io.dropwizard.views.View;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class NearestNeighborView extends View {
     protected NearestNeighborView() {
         super("");

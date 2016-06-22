@@ -21,7 +21,10 @@ package org.deeplearning4j.nn.graph;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -44,7 +47,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -213,7 +216,19 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Initialize the ComputationGraph network */
-    public void init(){
+    public void init() {
+        init(null, false);
+    }
+
+    /**
+     * Initialize the ComputationGraph, optionally with an existing parameters array.
+     * If an existing parameters array is specified, it will be used (and the values will not be modified) in the network;
+     * if no parameters array is specified, parameters will be initialized randomly according to the network configuration.
+     *
+     * @param parameters              Network parameter. May be null. If null: randomly initialize.
+     * @param cloneParametersArray    Whether the parameter array (if any) should be cloned, or used directly
+     */
+    public void init(INDArray parameters, boolean cloneParametersArray){
         if(initCalled) return;
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
@@ -253,7 +268,21 @@ public class ComputationGraph implements Serializable, Model {
             numParams += numParamsForVertex[i];
             i++;
         }
-        flattenedParams = Nd4j.create(1,numParams);
+
+        boolean initializeParams;
+        if(parameters != null){
+            if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+            if(parameters.length() != numParams) throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length " + parameters.length());
+
+            if(cloneParametersArray) flattenedParams = parameters.dup();
+            else flattenedParams = parameters;
+
+            initializeParams = false;
+        } else {
+            flattenedParams = Nd4j.create(1,numParams);
+            initializeParams = true;
+        }
+
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -275,7 +304,7 @@ public class ComputationGraph implements Serializable, Model {
         for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet() ){
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = n.instantiate(this,name,vertexNumber,paramsViewForVertex[vertexNumber]);
+            GraphVertex gv = n.instantiate(this,name,vertexNumber,paramsViewForVertex[vertexNumber], initializeParams);
 
             if(gv.hasLayer()){
                 numLayers++;
@@ -531,9 +560,15 @@ public class ComputationGraph implements Serializable, Model {
     /** Fit the ComputationGraph using a DataSetIterator.
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
-    public void fit(DataSetIterator dataSetIterator){
+    public void fit(DataSetIterator iterator){
         if(numInputArrays != 1 || numOutputArrays != 1) throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                 + " multiple inputs or outputs using a DataSetIterator");
+
+        DataSetIterator dataSetIterator;
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+            dataSetIterator = new AsyncDataSetIterator(iterator, 10);
+        } else dataSetIterator = iterator;
 
         if(configuration.isPretrain()){
             pretrain(dataSetIterator);
@@ -587,7 +622,13 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Fit the ComputationGraph using a MultiDataSetIterator */
-    public void fit(MultiDataSetIterator multiDataSetIterator){
+    public void fit(MultiDataSetIterator multic){
+
+        MultiDataSetIterator multiDataSetIterator;
+        if (!(multic instanceof AsyncMultiDataSetIterator)) {
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 8);
+        } else multiDataSetIterator = multic;
+
         if(configuration.isPretrain()){
             pretrain(multiDataSetIterator);
         }

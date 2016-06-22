@@ -44,6 +44,7 @@ import javax.ws.rs.core.Response;
  *
  * @author Adam Gibson
  */
+@Deprecated
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
 

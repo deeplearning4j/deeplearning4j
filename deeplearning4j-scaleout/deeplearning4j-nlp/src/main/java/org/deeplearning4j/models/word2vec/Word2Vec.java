@@ -3,6 +3,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
@@ -419,6 +420,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         @Override
         public Builder setVectorsListeners(@NonNull Collection<VectorsListener<VocabWord>> vectorsListeners) {
             super.setVectorsListeners(vectorsListeners);
+            return this;
+        }
+
+        @Override
+        public Builder elementsLearningAlgorithm(@NonNull String algorithm) {
+            super.elementsLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<VocabWord> algorithm) {
+            super.elementsLearningAlgorithm(algorithm);
             return this;
         }
 
