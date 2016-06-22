@@ -34,7 +34,6 @@ import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
 
@@ -1024,11 +1023,22 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("===========INPUT===================\n")
-                .append(getFeatures().toString().replaceAll(";", "\n"))
-                .append("\n=================OUTPUT==================\n")
-                .append(getLabels().toString().replaceAll(";", "\n"));
-        return builder.toString();
+        if (features != null && labels != null) {
+            builder.append("===========INPUT===================\n")
+                    .append(getFeatures().toString().replaceAll(";", "\n"))
+                    .append("\n=================OUTPUT==================\n")
+                    .append(getLabels().toString().replaceAll(";", "\n"));
+            if (featuresMask != null) {
+                builder.append("===========INPUT MASK===================\n")
+                        .append(getFeaturesMaskArray().toString().replaceAll(";","\n"));
+            }
+            if (labelsMask != null) {
+                builder.append("===========OUTPUT MASK===================\n")
+                        .append(getLabelsMaskArray().toString().replaceAll(";","\n"));
+            }
+            return builder.toString();
+        }
+        log.info("Features or labels are null values");
     }
 
 
