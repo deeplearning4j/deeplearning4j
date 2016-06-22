@@ -14,7 +14,7 @@ if [ "$(uname)" == "Darwin" ]; then
     export CXX=clang-omp++
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     # Do something under Windows NT platform
-    if [ "$2" == "cuda" ]; then
+    if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
         export MAKE_COMMAND="nmake"
     else
@@ -47,13 +47,14 @@ fi
 # some arguments don't have a corresponding value to go with it such
 # as in the --default example).
 # note: if this is set to > 0 the /etc/hosts part is not recognized ( may be a bug )
+CHIP=
+BUILD=
+LIBTYPE=
+PACKAGING=
 while [[ $# > 1 ]]
 do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
-BUILD=
-LIBTYPE=
-PACKAGING=
 case $key in
     -b|--build-type)
     BUILD="$2"
