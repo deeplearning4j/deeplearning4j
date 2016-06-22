@@ -69,7 +69,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads= 6;
+    @Getter private int numberOfGcThreads= 10;
 
     /**
      * Deallocation aggressiveness

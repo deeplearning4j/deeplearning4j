@@ -2,6 +2,7 @@ package org.nd4j.jita.handler.impl;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -76,7 +77,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final ContextPool contextPool;
 
-    private final MemoryProvider provider;
+    @Getter private final MemoryProvider memoryProvider;
 
     private final FlowController flowController;
 
@@ -130,13 +131,13 @@ public class CudaZeroHandler implements MemoryHandler {
 
         switch (configuration.getAllocationModel()) {
             case CACHE_ALL:
-                this.provider = new CudaFullCachingProvider();
+                this.memoryProvider = new CudaFullCachingProvider();
                 break;
             case CACHE_HOST:
-                this.provider = new CudaCachingZeroProvider();
+                this.memoryProvider = new CudaCachingZeroProvider();
                 break;
             case DIRECT:
-                this.provider = new CudaDirectProvider();
+                this.memoryProvider = new CudaDirectProvider();
                 break;
             default:
                 throw new RuntimeException("Unknown AllocationModel: ["+ configuration.getAllocationModel()+"]");
@@ -213,7 +214,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 }
 
 
-                PointersPair pair = provider.malloc(shape, point, targetMode);
+                PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
 
 
                 if (initialize) {
@@ -246,7 +247,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
                         point.setDeviceId(deviceId);
-                        PointersPair pair = provider.malloc(shape, point, targetMode);
+                        PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
@@ -310,7 +311,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory) {
-        return provider.pingDeviceForFreeMemory(deviceId, requiredMemory);
+        return memoryProvider.pingDeviceForFreeMemory(deviceId, requiredMemory);
     }
 
     /**
@@ -421,7 +422,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         //zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
 
-        provider.free(point);
+        memoryProvider.free(point);
     }
 
     /**
@@ -674,15 +675,14 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         //log.info("getDevicePointer called");
+/*
         if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED && dstPoint.getAllocationStatus() == AllocationStatus.HOST) {
-
-
 
             // if we have constant buffer (aka shapeInfo or other constant stuff)
             if (buffer.isConstant()) {
                 Nd4j.getConstantHandler().moveToConstantSpace(buffer);
             } else {
-                PointersPair pair = provider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
+                PointersPair pair = memoryProvider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
 
                 if (pair != null) {
                     Integer deviceId = getDeviceId();
@@ -700,7 +700,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 }
             }
         }
-
+*/
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
         if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 && 1 < 0 ) {
             if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
@@ -708,7 +708,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
                 if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), requiredMemory) && pingDeviceForFreeMemory(getDeviceId(), requiredMemory)) {
                     // so, memory is reserved
-                    promoteObject(dstPoint.getObjectId(), dstPoint, dstPoint.getShape());
+                    promoteObject(buffer);
                 }
             }
         }
@@ -762,37 +762,41 @@ public class CudaZeroHandler implements MemoryHandler {
      *
      * PLEASE NOTE:  DO NOT EVER USE THIS METHOD MANUALLY, UNLESS YOU 100% HAVE TO
      *
-     * @param trackingPoint
-     * @param point
-     * @param shape
      * @return
      */
-    public boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
-        try {
-            if (point.getAllocationStatus() != AllocationStatus.HOST)
+    @Override
+    public boolean promoteObject(DataBuffer buffer) {
+        AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+
+        if (dstPoint.getAllocationStatus() != AllocationStatus.HOST)
                 return false;
 
-            long bucketId = point.getBucketId();
-            long threadId = Thread.currentThread().getId();
+        if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED && dstPoint.getAllocationStatus() == AllocationStatus.HOST) {
 
-            point.setDeviceId(getDeviceId());
 
-            PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape, false);
+            // if we have constant buffer (aka shapeInfo or other constant stuff)
+            if (buffer.isConstant()) {
+                Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+            } else {
 
-            if (newPointers != null && newPointers.getDevicePointer() != null) {
-                //relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
-                if (1>0) throw new RuntimeException("Not supported yet");
+                PointersPair pair = memoryProvider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
 
-                point.setAllocationStatus(AllocationStatus.DEVICE);
-                point.getPointers().setDevicePointer(newPointers.getDevicePointer());
+                if (pair != null) {
+                    Integer deviceId = getDeviceId();
 
-                deviceAllocations.get(point.getDeviceId()).put(trackingPoint, trackingPoint);
+                    dstPoint.getPointers().setDevicePointer(pair.getDevicePointer());
+                    dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
 
-                deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
+                    deviceAllocations.get(deviceId).put(dstPoint.getObjectId(), dstPoint.getObjectId());
+
+                    zeroAllocations.get(dstPoint.getBucketId()).remove(dstPoint.getObjectId());
+                    deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, AllocationUtils.getRequiredMemory(dstPoint.getShape()));
+
+
+                    dstPoint.tickHostWrite();
+                } else throw new RuntimeException("PewPew");
+
             }
-            //log.info("Relocation happened!");
-        } catch (Exception e){
-            throw new RuntimeException(e);
         }
 
         return true;
@@ -1101,4 +1105,6 @@ public class CudaZeroHandler implements MemoryHandler {
     public ContextPool getContextPool() {
         return contextPool;
     }
+
+
 }

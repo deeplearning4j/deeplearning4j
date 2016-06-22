@@ -132,7 +132,12 @@ public class AtomicAllocator implements Allocator {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
             UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
+
+            // all GC threads should be attached to default device
+            Nd4j.getAffinityManager().attachThreadToDevice(uThread, getDeviceId());
+
             queueMap.put(i, queue);
+
             uThread.start();
 
             collectorsUnified.put(i, uThread);
@@ -336,7 +341,6 @@ public class AtomicAllocator implements Allocator {
             point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
         } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
             // for DELAYED memory model we allocate only host memory, regardless of firstMemory configuration value
-
             point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST, initialize);
         }
 
@@ -570,6 +574,7 @@ public class AtomicAllocator implements Allocator {
     private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
+        private int deviceId;
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -598,8 +603,8 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             System.gc();
-                            Thread.sleep(2000);
-                        } else Thread.sleep(500);
+                            Thread.sleep(100);
+                        } else Thread.sleep(50);
                     } catch (Exception e) {
 
                     }

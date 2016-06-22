@@ -4,11 +4,18 @@ package org.nd4j.jita.flow.impl;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.handler.MemoryHandler;
+import org.nd4j.jita.memory.MemoryProvider;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -22,6 +29,7 @@ public class SynchronousFlowController implements FlowController {
     private static Logger log = LoggerFactory.getLogger(SynchronousFlowController.class);
     private volatile Allocator allocator;
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    protected Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
     @Override
     public void init(Allocator allocator) {
@@ -57,8 +65,8 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void waitTillFinished(AllocationPoint point) {
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-        context.syncOldStream();
+       // CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+      //  context.syncOldStream();
     }
 
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
@@ -71,12 +79,15 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        if (result != null)
+        if (result != null) {
+            prepareDelayedMemory(result);
             allocator.getAllocationPoint(result).setCurrentContext(context);
+        }
 
         for (INDArray operand: operands) {
             if (operand == null) continue;
 
+            prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
         }
 
@@ -102,5 +113,16 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void commitTransfer(cudaStream_t streamUsed) {
         streamUsed.synchronize();
+    }
+
+    protected void prepareDelayedMemory(INDArray array) {
+        if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
+            prepareDelayedMemory(array.data());
+            prepareDelayedMemory(array.shapeInfoDataBuffer());
+        }
+    }
+
+    protected void prepareDelayedMemory(DataBuffer buffer) {
+        allocator.getMemoryHandler().promoteObject(buffer);
     }
 }

@@ -916,9 +916,9 @@ public class NativeOps extends Pointer {
      */
     public native void initializeDevicesAndFunctions();
 
-    public native Pointer mallocHost(long memorySize, int flags);
+    public synchronized native Pointer mallocHost(long memorySize, int flags);
 
-    public native Pointer mallocDevice(long memorySize, Pointer ptrToDeviceId, int flags);
+    public synchronized native Pointer mallocDevice(long memorySize, Pointer ptrToDeviceId, int flags);
 
     public native int freeHost(Pointer pointer);
 

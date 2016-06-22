@@ -39,7 +39,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @return
      */
     @Override
-    public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
+    public synchronized PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         switch (location) {
             case HOST: {
                 Pointer devicePointer = new Pointer();
@@ -68,7 +68,6 @@ public class CudaDirectProvider implements MemoryProvider {
                 // cudaMalloc call
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
-
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
@@ -101,7 +100,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @param point
      */
     @Override
-    public void free(AllocationPoint point) {
+    public synchronized void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
