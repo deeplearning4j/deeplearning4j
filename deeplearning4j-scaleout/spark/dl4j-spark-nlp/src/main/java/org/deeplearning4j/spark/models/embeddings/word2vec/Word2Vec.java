@@ -204,6 +204,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         JavaRDD< Pair<VocabWord, INDArray> > indexSyn0UpdateEntryRDD =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
 
+        log.info("Collect on results...");
         // Get all the syn0 updates into a list in driver
         List<Pair<VocabWord, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
 
@@ -211,6 +212,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         INDArray syn0 = Nd4j.zeros(vocabCache.numWords(), layerSize);
 
         // Updating syn0 first pass: just add vectors obtained from different nodes
+        log.info("Averaging results...");
         Map<VocabWord, AtomicInteger> updates = new HashMap<>();
         Map<Long, Long> updaters = new HashMap<>();
         for (Pair<VocabWord, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
@@ -236,6 +238,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         long totals = 0;
 
+        log.info("Finished calculations...");
 
 
         vocab = vocabCache;
