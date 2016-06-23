@@ -1,12 +1,14 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,7 +56,16 @@ public class VocabHolder {
     }
 
     public INDArray getSyn1Vector(Integer point) {
-        return null;
+
+        if (!pointSyn1VecMap.containsKey(point)) {
+            synchronized (this) {
+                if (!pointSyn1VecMap.containsKey(point)) {
+                    pointSyn1VecMap.put(point, Nd4j.zeros(1, vectorLength.get()));
+                }
+            }
+        }
+
+        return pointSyn1VecMap.get(point);
     }
 
     private INDArray getRandomSyn0Vec(int vectorLength, long lseed) {
@@ -62,5 +73,11 @@ public class VocabHolder {
             we use wordIndex as part of seed here, to guarantee that during word syn0 initialization on dwo distinct nodes, initial weights will be the same for the same word
          */
         return Nd4j.rand(lseed * seed.get(), new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
+    }
+
+    public Iterable<Map.Entry<VocabWord, INDArray>> getSplit(VocabCache<VocabWord> vocabCache) {
+        Set<Map.Entry<VocabWord, INDArray>> set = new HashSet<>();
+
+        return set;
     }
 }
