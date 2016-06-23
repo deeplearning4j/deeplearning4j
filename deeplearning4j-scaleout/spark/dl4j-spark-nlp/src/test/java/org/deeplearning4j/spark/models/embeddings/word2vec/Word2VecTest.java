@@ -161,7 +161,6 @@ public class Word2VecTest {
     }
 
     @Test
-    @Ignore
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[32]")
@@ -191,13 +190,13 @@ public class Word2VecTest {
                 //     .setRemoveStop(false)
                 .tokenizerFactory(t)
                 .seed(42L)
-                .negative(10)
+                .negative(3)
                 .useAdaGrad(false)
                 .layerSize(100)
                 .windowSize(5)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
-                .iterations(3)
+                .iterations(1)
                 .batchSize(100)
                 .minWordFrequency(5)
                 .useUnknown(true)
