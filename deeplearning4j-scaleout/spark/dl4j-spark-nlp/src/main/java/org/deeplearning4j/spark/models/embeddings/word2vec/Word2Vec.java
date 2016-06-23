@@ -134,6 +134,9 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
     public void train(JavaRDD<String> corpusRDD) throws Exception {
         log.info("Start training ...");
 
+        if (workers > 0)
+            corpusRDD.repartition(workers);
+
         // SparkContext
         final JavaSparkContext sc = new JavaSparkContext(corpusRDD.context());
 
@@ -204,7 +207,6 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         JavaRDD< Pair<VocabWord, INDArray> > indexSyn0UpdateEntryRDD =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
 
-        log.info("Collect on results...");
         // Get all the syn0 updates into a list in driver
         List<Pair<VocabWord, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
 
@@ -276,6 +278,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         protected boolean useUnk = false;
         private String tokenizer = "";
         private String tokenPreprocessor = "";
+        private int workers = 0;
 
         /**
          * Creates Builder instance with default parameters set.
@@ -471,6 +474,20 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         }
 
         /**
+         * Specify number of workers for training process.
+         * This value will be used to repartition RDD.
+         *
+         * PLEASE NOTE: Recommended value is number of vCPU available within your spark cluster.
+         *
+         * @param workers
+         * @return
+         */
+        public Builder workers(int workers) {
+            this.workers = workers;
+            return this;
+        }
+
+        /**
          * Specifies output vector's dimensions
          *
          * @param layerSize
@@ -543,6 +560,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setBatchSize(this.batchSize);
             this.configuration.setStopList(this.stopWords);
+
+            ret.workers = this.workers;
 
             ret.configuration = this.configuration;
 
