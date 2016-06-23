@@ -247,6 +247,7 @@
     </modules>
 
     <properties>
+        <jackson.version>2.5.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>
