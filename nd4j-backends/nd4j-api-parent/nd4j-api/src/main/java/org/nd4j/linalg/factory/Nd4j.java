@@ -1721,18 +1721,99 @@ public class Nd4j {
         }
     }
 
+    /**
+     *
+     * @param write
+     * @param filePath
+     * @param precision
+     */
     public static void writeTxt(INDArray write, String filePath, int precision) {
         writeTxt(write,filePath,", ",precision);
 
     }
 
+    /**
+     *
+     * @param write
+     * @param filePath
+     * @param split
+     */
     public static void writeTxt(INDArray write, String filePath, String split) {
         writeTxt(write,filePath," "+split+"",2);
     }
 
+    /**
+     *
+     * @param write
+     * @param filePath
+     */
     public static void writeTxt(INDArray write, String filePath) {
         writeTxt(write,filePath,", ",2);
     }
+
+
+
+
+
+
+    /**
+     * Output line via input streams
+     *
+     * @param os the outputstream stream ndarray
+     * @param split    the split separator, defaults to ", "
+     * @param precision digits after the decimal point, defaults to 2
+     * @return the read txt method
+     */
+    public static void writeTxtString(INDArray write, OutputStream os, String split, int precision) {
+        //TO DO: Write to file one line at time
+        String lineOne = "{\n";
+        String lineTwo = "\"filefrom:\" \"dl4j\",\n";
+        String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
+        String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
+        String lineFive = "\"data\":\n";
+        String fileData = new NDArrayStrings(" "+split+" ",precision).format(write);
+        String fileEnd = "\n}\n";
+
+        String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
+            writer.write(fileBegin + fileData + fileEnd);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing output", e);
+        }
+    }
+
+    /**
+     *
+     * @param write
+     * @param os
+     * @param precision
+     */
+    public static void writeTxtString(INDArray write, OutputStream os, int precision) {
+        writeTxtString(write,os,", ",precision);
+
+    }
+
+    /**
+     *
+     * @param write
+     * @param os
+     * @param split
+     */
+    public static void writeTxtString(INDArray write,OutputStream os, String split) {
+        writeTxtString(write,os," " + split + "",2);
+    }
+
+    /**
+     *
+     * @param write
+     * @param os
+     */
+    public static void writeTxtString(INDArray write, OutputStream os) {
+        writeTxtString(write,os,", ",2);
+    }
+
+
 
 
 

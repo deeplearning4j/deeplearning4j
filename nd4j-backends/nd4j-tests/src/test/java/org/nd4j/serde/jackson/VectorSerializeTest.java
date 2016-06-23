@@ -37,8 +37,8 @@ public class VectorSerializeTest {
     private static ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule nd4j = new SimpleModule("nd4j");
-        nd4j.addDeserializer(INDArray.class, new NDArrayDeSerializer());
-        nd4j.addSerializer(INDArray.class, new NDArraySerializer());
+        nd4j.addDeserializer(INDArray.class, new VectorDeSerializer());
+        nd4j.addSerializer(INDArray.class, new VectorSerializer());
         mapper.registerModule(nd4j);
         return mapper;
 

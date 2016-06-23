@@ -6,6 +6,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.serde.jackson.ndarray.NDArrayDeSerializer;
+import org.nd4j.serde.jackson.ndarray.NDArraySerializer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,8 +35,8 @@ public class NdArraySerializerTest {
     private static ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule nd4j = new SimpleModule("nd4j");
-        nd4j.addDeserializer(INDArray.class, new VectorDeSerializer());
-        nd4j.addSerializer(INDArray.class, new VectorSerializer());
+        nd4j.addDeserializer(INDArray.class, new NDArrayDeSerializer());
+        nd4j.addSerializer(INDArray.class, new NDArraySerializer());
         mapper.registerModule(nd4j);
         return mapper;
 
