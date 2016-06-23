@@ -77,6 +77,22 @@ public class VocabHolder {
 
     public Iterable<Map.Entry<VocabWord, INDArray>> getSplit(VocabCache<VocabWord> vocabCache) {
         Set<Map.Entry<VocabWord, INDArray>> set = new HashSet<>();
+        set.add(new Map.Entry<VocabWord, INDArray>() {
+            @Override
+            public VocabWord getKey() {
+                return new VocabWord(1.0, "word");
+            }
+
+            @Override
+            public INDArray getValue() {
+                return Nd4j.ones(vectorLength.get());
+            }
+
+            @Override
+            public INDArray setValue(INDArray value) {
+                return value;
+            }
+        });
 
         return set;
     }
