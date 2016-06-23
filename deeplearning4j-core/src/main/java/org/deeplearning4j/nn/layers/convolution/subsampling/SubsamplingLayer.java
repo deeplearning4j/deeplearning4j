@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.util.*;
@@ -44,16 +46,31 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
+    protected static final Logger log = LoggerFactory.getLogger(SubsamplingLayer.class);
+
+    SubsamplingHelper helper = null;
     private INDArray maxIndexes;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
     }
 
     public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        initializeHelper();
     }
 
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
+                    .asSubclass(SubsamplingHelper.class).newInstance();
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not load CudnnSubsamplingHelper", t);
+            }
+        }
+    }
 
     @Override
     public double calcL2() {
@@ -84,6 +101,13 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType());
+            if (ret != null) {
+                return ret;
+            }
+        }
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
@@ -188,6 +212,13 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
+        if (helper != null) {
+            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType());
+            if (ret != null) {
+                return ret;
+            }
+        }
 
         //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
