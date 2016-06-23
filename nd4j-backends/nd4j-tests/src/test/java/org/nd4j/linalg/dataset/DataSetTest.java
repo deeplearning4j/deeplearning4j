@@ -30,7 +30,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -504,6 +503,31 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals("label1", ds.getLabelName(0));
         assertEquals(4, ds.getLabelNamesList().size());
         assertEquals(names, ds.getLabelNames(labels));
+    }
+
+    @Test
+    public void testToString() {
+        org.nd4j.linalg.dataset.api.DataSet ds = new DataSet();
+        //this should not throw a null pointer
+        System.out.println(ds);
+
+        //Checking printing of masks
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int minTSLength = 10;   //Lengths 10, 11, ..., 19
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++ ){
+            INDArray in = Nd4j.rand(new int[]{1,inSize,minTSLength+i});
+            INDArray out = Nd4j.rand(new int[]{1,labelSize,minTSLength+i});
+            list.add(new DataSet(in,out));
+        }
+
+        ds = DataSet.merge(list);
+        System.out.println(ds);
+
     }
 
 
