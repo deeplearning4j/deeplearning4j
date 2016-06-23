@@ -530,6 +530,32 @@ public class DataSetTest extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testGetRangeMask() {
+        org.nd4j.linalg.dataset.api.DataSet ds = new DataSet();
+        //Checking printing of masks
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int minTSLength = 10;   //Lengths 10, 11, ..., 19
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++ ){
+            INDArray in = Nd4j.rand(new int[]{1,inSize,minTSLength+i});
+            INDArray out = Nd4j.rand(new int[]{1,labelSize,minTSLength+i});
+            list.add(new DataSet(in,out));
+        }
+
+        int from = 3;
+        int to = 9;
+        ds = DataSet.merge(list);
+        org.nd4j.linalg.dataset.api.DataSet newDs = ds.getRange(from,to);
+        assertEquals(newDs.getLabelsMaskArray(),newDs.getFeaturesMaskArray());
+        //System.out.println(newDs);
+        assertEquals(newDs.getLabelsMaskArray().sum(1),Nd4j.linspace(numExamples+from,numExamples+to,to-from+1));
+    }
+
 
 
     @Override

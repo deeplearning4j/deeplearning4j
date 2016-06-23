@@ -334,6 +334,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public org.nd4j.linalg.dataset.api.DataSet getRange(int from, int to) {
+        if (hasMaskArrays())
+            return new DataSet(features.get(NDArrayIndex.interval(from,to)),labels.get(NDArrayIndex.interval(from,to)),featuresMask.get(NDArrayIndex.interval(from,to)),labelsMask.get(NDArrayIndex.interval(from,to)));
         return new DataSet(features.get(NDArrayIndex.interval(from,to)),labels.get(NDArrayIndex.interval(from,to)));
     }
 
