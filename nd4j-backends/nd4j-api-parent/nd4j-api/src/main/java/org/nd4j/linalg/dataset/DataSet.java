@@ -1029,17 +1029,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                     .append("\n=================OUTPUT==================\n")
                     .append(getLabels().toString().replaceAll(";", "\n"));
             if (featuresMask != null) {
-                builder.append("===========INPUT MASK===================\n")
+                builder.append("\n===========INPUT MASK===================\n")
                         .append(getFeaturesMaskArray().toString().replaceAll(";","\n"));
             }
             if (labelsMask != null) {
-                builder.append("===========OUTPUT MASK===================\n")
+                builder.append("\n===========OUTPUT MASK===================\n")
                         .append(getLabelsMaskArray().toString().replaceAll(";","\n"));
             }
             return builder.toString();
         }
-        log.info("Features or labels are null values");
+        else {
+            log.info("Features or labels are null values");
+            return "";
+        }
     }
+
 
 
     /**
