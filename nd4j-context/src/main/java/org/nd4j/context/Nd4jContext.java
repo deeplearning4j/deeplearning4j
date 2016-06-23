@@ -37,7 +37,8 @@ public class Nd4jContext implements Serializable {
         try {
             String dType = conf.getProperty("dtype");
             conf.load(inputStream);
-            conf.put("dtype", dType);
+            if (dType != null)
+                conf.put("dtype", dType);
         } catch (IOException e) {
             e.printStackTrace();
         }
