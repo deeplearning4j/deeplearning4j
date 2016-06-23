@@ -37,8 +37,8 @@ public class SecondIterationFunction
     private AtomicLong nextRandom = new AtomicLong(5);
 
     private volatile VocabCache<VocabWord> vocab;
-    private volatile NegativeHolder negativeHolder;
-    private volatile VocabHolder vocabHolder;
+    private transient volatile NegativeHolder negativeHolder;
+    private transient volatile VocabHolder vocabHolder;
     private AtomicLong cid = new AtomicLong(0);
     private AtomicLong aff = new AtomicLong(0);
 
@@ -68,18 +68,24 @@ public class SecondIterationFunction
 
         this.vocab = vocabCacheBroadcast.getValue();
 
+
         if (this.vocab == null) throw new RuntimeException("VocabCache is null");
 
-        if (negative > 0) {
-            negativeHolder = NegativeHolder.getInstance();
-            negativeHolder.initHolder(vocab, expTable, this.vectorLength);
-        }
+
     }
 
 
 
     @Override
     public Iterable<Entry<VocabWord, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
+        this.vocabHolder = VocabHolder.getInstance();
+        this.vocabHolder.setSeed(seed, vectorLength);
+
+        if (negative > 0) {
+            negativeHolder = NegativeHolder.getInstance();
+            negativeHolder.initHolder(vocab, expTable, this.vectorLength);
+        }
+
         while (pairIter.hasNext()) {
             List<Pair<List<VocabWord>, Long>> batch = new ArrayList<>();
             while (pairIter.hasNext() && batch.size() < batchSize) {
@@ -147,7 +153,7 @@ public class SecondIterationFunction
         INDArray neu1e = Nd4j.create(vectorLength);
 
         // First iteration Syn0 is random numbers
-        INDArray l1 = vocabHolder.getSyn0Vector(currentWordIndex);
+        INDArray l1 = vocabHolder.getSyn0Vector(currentWordIndex, vocab);
 
 
         //
