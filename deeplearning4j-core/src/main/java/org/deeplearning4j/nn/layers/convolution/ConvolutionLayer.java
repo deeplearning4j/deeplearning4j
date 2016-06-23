@@ -35,6 +35,8 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -45,12 +47,29 @@ import java.util.Arrays;
  * @author Adam Gibson (original impl), Alex Black (current version)
  */
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
+    protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
+
+    ConvolutionHelper helper = null;
+
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
     }
 
     public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        initializeHelper();
+    }
+
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
+                    .asSubclass(ConvolutionHelper.class).newInstance();
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not load CudnnConvolutionHelper", t);
+            }
+        }
     }
 
     @Override
@@ -109,6 +128,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
                     afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
             delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
+        }
+
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn);
+            if (ret != null) {
+                return ret;
+            }
         }
 
         delta = delta.permute(1,0,2,3); //To shape: [outDepth,miniBatch,outH,outW]
@@ -185,6 +211,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
+        if (helper != null) {
+            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad);
+            if (ret != null) {
+                return ret;
+            }
+        }
+
         //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
@@ -219,6 +252,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
+
+        if (helper != null) {
+            INDArray ret = helper.activate(z, conf.getLayer().getActivationFunction());
+            if (ret != null) {
+                return ret;
+            }
+        }
 
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), z));
         return activation;
