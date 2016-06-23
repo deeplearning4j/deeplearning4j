@@ -30,7 +30,6 @@ public class VocabHolder implements Serializable {
     }
 
     private VocabHolder() {
-        System.out.println("CREATING NEW VOCABHOLDER!!11");
     }
 
     public void setSeed(long seed, int vectorLength) {
