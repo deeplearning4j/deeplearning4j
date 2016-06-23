@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1914,22 +1915,17 @@ public class Nd4j {
 
 
 
-    private static float[] read(String[] split) {
-        float[] ret = new float[split.length];
-        for (int i = 0; i < split.length; i++) {
-            ret[i] = Float.parseFloat(split[i]);
-        }
-        return ret;
-    }
+
+
 
     /**
      * Read line via input streams
      *
-     * @param filePath the input stream ndarray
-     * @param  split character, defaults to ","
+     * @param ndarray the input stream ndarray
+     * @param  sep character, defaults to ","
      * @return NDArray
      */
-    public static INDArray readTxt(String filePath,String sep) {
+    public static INDArray readTxtString(InputStream ndarray,String sep) {
          /*
           We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
 
@@ -1948,79 +1944,108 @@ public class Nd4j {
         int rank = 0;
         double[][] subsetArr = {{0.0, 0.0}, {0.0, 0.0}};
         INDArray newArr = Nd4j.zeros(2, 2);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ndarray));
+        LineIterator it = IOUtils.lineIterator(reader);
+        DecimalFormat format = (DecimalFormat) NumberFormat.getInstance(Locale.US);
+        format.setParseBigDecimal(true);
         try {
-            File txtFile = new File(filePath);
-            LineIterator it = FileUtils.lineIterator(txtFile);
-            DecimalFormat format = (DecimalFormat) NumberFormat.getInstance(Locale.US);
-            format.setParseBigDecimal(true);
-            try {
-                while (it.hasNext()) {
-                    String line = it.nextLine();
-                    lineNum++;
-                    line = line.replaceAll("\\s", "");
-                    if (line.equals("") || line.equals("}")) continue;
-                    // is it from dl4j?
-                    if (lineNum == 2) {
-                        String[] lineArr = line.split(":");
-                        String fileSource = lineArr[1].replaceAll("\\W", "");
-                        if (!fileSource.equals("dl4j"))
-                            return null;
-                    }
-                    // parse ordering
-                    if (lineNum == 3) {
-                        String[] lineArr = line.split(":");
-                        theOrder = lineArr[1].replace("\\W", "").charAt(0);
-                        continue;
-                    }
-                    // parse shape
-                    if (lineNum == 4) {
-                        String[] lineArr = line.split(":");
-                        String dropJsonComma = lineArr[1].split("]")[0];
-                        String[] shapeString = dropJsonComma.replace("[", "").split(",");
-                        rank = shapeString.length;
-                        theShape = new int[rank];
-                        for (int i = 0; i < rank; i++) {
-                            try {
-                                theShape[i] = Integer.parseInt(shapeString[i]);
-                            } catch (NumberFormatException nfe) {
-                            }
-                            ;
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                lineNum++;
+                line = line.replaceAll("\\s", "");
+                if (line.equals("") || line.equals("}")) continue;
+                // is it from dl4j?
+                if (lineNum == 2) {
+                    String[] lineArr = line.split(":");
+                    String fileSource = lineArr[1].replaceAll("\\W", "");
+                    if (!fileSource.equals("dl4j"))
+                        return null;
+                }
+                // parse ordering
+                if (lineNum == 3) {
+                    String[] lineArr = line.split(":");
+                    theOrder = lineArr[1].replace("\\W", "").charAt(0);
+                    continue;
+                }
+                // parse shape
+                if (lineNum == 4) {
+                    String[] lineArr = line.split(":");
+                    String dropJsonComma = lineArr[1].split("]")[0];
+                    String[] shapeString = dropJsonComma.replace("[", "").split(",");
+                    rank = shapeString.length;
+                    theShape = new int[rank];
+                    for (int i = 0; i < rank; i++) {
+                        try {
+                            theShape[i] = Integer.parseInt(shapeString[i]);
+                        } catch (NumberFormatException nfe) {
                         }
-                        subsetArr = new double[theShape[rank-2]][theShape[rank-1]];
-                        newArr = Nd4j.zeros(theShape, theOrder);
-                        continue;
+                        ;
                     }
-                    //parse data
-                    if (lineNum > 5) {
-                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\],","").replaceAll("\\]", "").split(sep);
-                        for (int i = 0; i < theShape[rank-1]; i++) {
-                            try {
-                                BigDecimal number = (BigDecimal) format.parse(entries[i]);
-                                subsetArr[rowNum][i] = number.doubleValue();
-                            }
-                            catch (ParseException e) {
-                                e.printStackTrace();
-                            }
+                    subsetArr = new double[theShape[rank - 2]][theShape[rank-1]];
+                    newArr = Nd4j.zeros(theShape, theOrder);
+                    continue;
+                }
+                //parse data
+                if (lineNum > 5) {
+                    String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\],","").replaceAll("\\]", "").split(sep);
+                    for (int i = 0; i < theShape[rank-1]; i++) {
+                        try {
+                            BigDecimal number = (BigDecimal) format.parse(entries[i]);
+                            subsetArr[rowNum][i] = number.doubleValue();
                         }
-                        rowNum++;
-                        if (rowNum == theShape[rank-2]) {
-                            INDArray subTensor = Nd4j.create(subsetArr);
-                            newArr.tensorAlongDimension(tensorNum, rank-1,rank-2).addi(subTensor);
-                            rowNum = 0;
-                            tensorNum++;
+                        catch (ParseException e) {
+                            e.printStackTrace();
                         }
+                    }
+                    rowNum++;
+                    if (rowNum == theShape[rank-2]) {
+                        INDArray subTensor = Nd4j.create(subsetArr);
+                        newArr.tensorAlongDimension(tensorNum, rank-1,rank-2).addi(subTensor);
+                        rowNum = 0;
+                        tensorNum++;
                     }
                 }
-            } finally {
-                LineIterator.closeQuietly(it);
             }
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Error reading input", e);
+        } finally {
+            LineIterator.closeQuietly(it);
         }
         return newArr;
     }
+
+    /**
+     * Read from a file
+     * @param ndarray the file to read from
+     * @return an ndarray read from a text file
+     */
+    public static INDArray readTxtString(InputStream ndarray) {
+        return readTxtString(ndarray,",");
+    }
+
+
+
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @param  sep character, defaults to ","
+     * @return NDArray
+     */
+    public static INDArray readTxt(String filePath,String sep) {
+        File file = new File(filePath);
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return readTxtString(is,sep);
+    }
+
+    /**
+     * Read from a file
+     * @param filePath the file to read from
+     * @return an ndarray read from a text file
+     */
     public static INDArray readTxt(String filePath) {
         return readTxt(filePath,",");
     }
