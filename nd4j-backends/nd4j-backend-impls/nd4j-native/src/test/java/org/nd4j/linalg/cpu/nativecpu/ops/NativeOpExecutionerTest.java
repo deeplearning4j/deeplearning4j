@@ -3,6 +3,8 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -161,5 +163,34 @@ public class NativeOpExecutionerTest {
         assertArrayEquals(assertion1.data().asFloat(), output1.data().asFloat(), 0.01f);
         assertArrayEquals(assertion1.data().asFloat(), output1T.data().asFloat(), 0.01f);
 
+    }
+
+    @Test
+    public void testNd4jDup() {
+    /* set the dType */
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+
+    /* create NDArray from a double[][] */
+        int cnt = 0;
+        double data[][] = new double[50][50];
+        for (int x = 0; x < 50; x++) {
+            for (int y = 0; y< 50; y++) {
+                data[x][y] = cnt;
+                cnt++;
+            }
+        }
+        INDArray testNDArray = Nd4j.create(data);
+
+    /* print the first row */
+        System.out.println("A: " + testNDArray.getRow(0));
+
+    /* set the dType again! */
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+
+    /* print the first row */
+        System.out.println("B: " + testNDArray.getRow(0));
+
+    /* print the first row dup -- it should be different now! */
+        System.out.println("C: " + testNDArray.getRow(0).dup());
     }
 }
