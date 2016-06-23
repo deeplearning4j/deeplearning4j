@@ -5,10 +5,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -17,10 +15,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class VocabHolder {
+public class VocabHolder implements Serializable {
     private static VocabHolder ourInstance = new VocabHolder();
 
-    private Map<Integer, INDArray> indexSyn0VecMap = new ConcurrentHashMap<>();
+    private Map<VocabWord, INDArray> indexSyn0VecMap = new ConcurrentHashMap<>();
     private Map<Integer, INDArray> pointSyn1VecMap = new ConcurrentHashMap<>();
     private HashSet<Long> workers = new LinkedHashSet<>();
 
@@ -32,7 +30,7 @@ public class VocabHolder {
     }
 
     private VocabHolder() {
-
+        System.out.println("CREATING NEW VOCABHOLDER!!11");
     }
 
     public void setSeed(long seed, int vectorLength) {
@@ -40,19 +38,21 @@ public class VocabHolder {
         this.vectorLength.set(vectorLength);
     }
 
-    public INDArray getSyn0Vector(Integer wordIndex) {
+    public INDArray getSyn0Vector(Integer wordIndex, VocabCache<VocabWord> vocabCache) {
         if (!workers.contains(Thread.currentThread().getId()))
             workers.add(Thread.currentThread().getId());
 
-        if (!indexSyn0VecMap.containsKey(wordIndex)) {
+        VocabWord word = vocabCache.elementAtIndex(wordIndex);
+
+        if (!indexSyn0VecMap.containsKey(word)) {
             synchronized (this) {
-                if (!indexSyn0VecMap.containsKey(wordIndex)) {
-                    indexSyn0VecMap.put(wordIndex, getRandomSyn0Vec(vectorLength.get(), wordIndex));
+                if (!indexSyn0VecMap.containsKey(word)) {
+                    indexSyn0VecMap.put(word, getRandomSyn0Vec(vectorLength.get(), wordIndex));
                 }
             }
         }
 
-        return indexSyn0VecMap.get(wordIndex);
+        return indexSyn0VecMap.get(word);
     }
 
     public INDArray getSyn1Vector(Integer point) {
@@ -77,22 +77,15 @@ public class VocabHolder {
 
     public Iterable<Map.Entry<VocabWord, INDArray>> getSplit(VocabCache<VocabWord> vocabCache) {
         Set<Map.Entry<VocabWord, INDArray>> set = new HashSet<>();
-        set.add(new Map.Entry<VocabWord, INDArray>() {
-            @Override
-            public VocabWord getKey() {
-                return new VocabWord(1.0, "word");
-            }
+        int cnt = 0;
+        for (Map.Entry<VocabWord, INDArray> entry: indexSyn0VecMap.entrySet()) {
+            set.add(entry);
+            cnt++;
+            if (cnt > 10)
+                break;
+        }
 
-            @Override
-            public INDArray getValue() {
-                return Nd4j.ones(vectorLength.get());
-            }
-
-            @Override
-            public INDArray setValue(INDArray value) {
-                return value;
-            }
-        });
+        System.out.println("Returning set: " + set.size());
 
         return set;
     }
