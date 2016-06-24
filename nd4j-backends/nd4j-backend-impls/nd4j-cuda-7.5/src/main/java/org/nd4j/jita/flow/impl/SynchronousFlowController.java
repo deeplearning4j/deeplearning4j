@@ -103,7 +103,7 @@ public class SynchronousFlowController implements FlowController {
             pointData.addThreadToTrace(Thread.currentThread().getId());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0)
-                throw new RuntimeException("O data cId: [" +cId + "] != dId: ["+ pointData.getDeviceId() +"]; " + pointData.getThreadsTrace().toString());
+                throw new RuntimeException("O data cId: [" +cId + "] != dId: ["+ pointData.getDeviceId() +"]; Size: " + AllocationUtils.getRequiredMemory(pointData.getShape()) + "; " + pointData.getThreadsTrace().toString());
 
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0)
