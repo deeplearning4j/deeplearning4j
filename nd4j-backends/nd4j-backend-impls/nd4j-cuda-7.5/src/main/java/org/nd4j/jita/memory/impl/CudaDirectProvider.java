@@ -53,7 +53,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                Pointer pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == null)
-                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
+                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: " + Thread.currentThread().getId());
 
                 Pointer hostPointer = new CudaPointer(pointer);
 
@@ -77,9 +77,10 @@ public class CudaDirectProvider implements MemoryProvider {
 
 //                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
 //                    throw new RuntimeException("Device allocation happened");
-                    log.info("Device [{}] allocation, Thread id: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId());
+
 
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                log.info("Device [{}] allocation, Thread id: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), pointer != null ? pointer.address() : null);
                 if (pointer == null)
                     return null;
                     //throw new RuntimeException("Can't allocate [DEVICE] memory!");

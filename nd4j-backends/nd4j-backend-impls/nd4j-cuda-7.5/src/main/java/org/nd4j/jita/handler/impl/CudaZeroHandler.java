@@ -245,14 +245,14 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 if (reqMemory < configuration.getMaximumSingleHostAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
 
-                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
+                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId, reqMemory)) {
                         point.setDeviceId(deviceId);
                         PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
-                            point.setDeviceId(getDeviceId());
+                            point.setDeviceId(deviceId);
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
 
@@ -271,7 +271,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             System.gc();
                             try {
-                                Thread.sleep(500);
+                                Thread.sleep(100);
                             } catch (Exception e ) {
 
                             }
@@ -280,7 +280,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         log.warn("Hard limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]", deviceId);
                         System.gc();
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (Exception e ) {
 
                         }
@@ -290,7 +290,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     System.gc();
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(100);
                     } catch (Exception e ) {
 
                     }
