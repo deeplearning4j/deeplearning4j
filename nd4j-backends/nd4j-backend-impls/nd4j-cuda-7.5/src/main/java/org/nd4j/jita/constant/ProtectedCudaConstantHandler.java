@@ -45,7 +45,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     private static Logger logger = LoggerFactory.getLogger(ProtectedCudaConstantHandler.class);
 
     private static final int MAX_CONSTANT_LENGTH = 49152;
-    private static final int MAX_BUFFER_LENGTH = 272;
+    private static final int MAX_BUFFER_LENGTH = 0;
 
     protected Semaphore lock = new Semaphore(1);
 
