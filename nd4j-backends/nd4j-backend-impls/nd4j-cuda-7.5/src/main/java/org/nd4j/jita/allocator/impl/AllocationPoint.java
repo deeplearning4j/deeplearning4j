@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
-
+// DO NOT EVER MAKE THIS CLASSS SERIALIZABLE.
 public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
@@ -65,6 +65,8 @@ public class AllocationPoint {
 
     private final AtomicLong accessHostWrite = new AtomicLong(0);
     private final AtomicLong accessDeviceWrite = new AtomicLong(0);
+
+    private final List<Long> threadsTrace = new ArrayList<>();
 
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
@@ -116,6 +118,16 @@ public class AllocationPoint {
                 nativeOps.destroyEvent(lastEvent);
         }
         lastEvent = event;
+    }
+
+    public List<Long> getThreadsTrace() {
+        return threadsTrace;
+    }
+
+    // TODO: to be removed after debug finished
+    public void addThreadToTrace(Long threadId) {
+        if (!threadsTrace.contains(threadId))
+            threadsTrace.add(threadId);
     }
 
     public cudaEvent_t getLastEvent() {
