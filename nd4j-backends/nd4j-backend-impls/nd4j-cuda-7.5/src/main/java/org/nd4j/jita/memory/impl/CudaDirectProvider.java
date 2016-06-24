@@ -75,7 +75,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
+//                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
 //                    throw new RuntimeException("Device allocation happened");
                     log.info("Device [{}] allocation, Thread id: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId());
 
