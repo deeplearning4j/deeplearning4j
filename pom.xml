@@ -173,6 +173,7 @@
         <module>dl4j-test-resources</module>
         <module>dl4j-caffe</module>
         <module>deeplearning4j-ui-parent</module>
+        <module>deeplearning4j-cuda-7.5</module>
     </modules>
 
     <licenses>
