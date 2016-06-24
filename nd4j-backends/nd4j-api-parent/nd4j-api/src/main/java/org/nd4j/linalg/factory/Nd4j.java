@@ -1776,8 +1776,8 @@ public class Nd4j {
 
         String fileBegin = lineOne + lineTwo + lineThree + lineFour + lineFive;
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
-            writer.write(fileBegin + fileData + fileEnd);
+            String toWrite = fileBegin + fileData + fileEnd;
+            os.write(toWrite.getBytes());
         } catch (IOException e) {
             throw new RuntimeException("Error writing output", e);
         }

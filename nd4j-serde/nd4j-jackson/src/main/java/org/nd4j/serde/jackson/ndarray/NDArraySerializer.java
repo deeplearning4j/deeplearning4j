@@ -20,6 +20,7 @@ public class NDArraySerializer extends JsonSerializer<INDArray> {
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Nd4j.writeTxtString(indArray,bos);
+        bos.flush();
         String toWrite = new String(bos.toByteArray());
         jsonGenerator.writeString(toWrite);
     }
