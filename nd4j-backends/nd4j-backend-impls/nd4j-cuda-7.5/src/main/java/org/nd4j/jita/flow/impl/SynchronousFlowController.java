@@ -78,9 +78,16 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        int cId = allocator.getDeviceId();
 
         if (result != null) {
             prepareDelayedMemory(result);
+            if (allocator.getAllocationPoint(result.data()).getDeviceId() != cId)
+                throw new RuntimeException("data cId != dId");
+
+            if (allocator.getAllocationPoint(result.shapeInfoDataBuffer()).getDeviceId() != cId)
+                throw new RuntimeException("shape cId != dId");
+
             allocator.getAllocationPoint(result).setCurrentContext(context);
         }
 
