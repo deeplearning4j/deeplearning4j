@@ -136,6 +136,8 @@ public class Configuration implements Serializable {
 
     @Getter private int commandLanesNumber = 4;
 
+    @Getter private int debugTriggered = 0;
+
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -146,6 +148,11 @@ public class Configuration implements Serializable {
 
     public void setInitialized() {
         this.initialized.compareAndSet(false, true);
+    }
+
+    public Configuration triggerDebug(int code) {
+        this.debugTriggered = code;
+        return this;
     }
 
     public Configuration setMinimumRelocationThreshold(int threshold) {

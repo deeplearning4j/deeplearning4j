@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -73,7 +74,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-                if (reqMem >0 )
+                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
                     throw new RuntimeException("Device allocation happened");
 
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
