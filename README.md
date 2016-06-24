@@ -56,6 +56,16 @@ export TRICK_NVCC=YES
 
 The standard development headers are needed.
 
+#### CentOS 6
+
+```bash
+yum install centos-release-scl-rh epel-release
+yum install devtoolset-3-toolchain maven30 cmake3 git openblas-devel
+scl enable devtoolset-3 maven30 bash
+./buildnativeoperations.sh
+./buildnativeoperations.sh -c cuda
+```
+
 ### Windows
 
 See [Windows.md](windows.md)
