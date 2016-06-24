@@ -1,6 +1,7 @@
 package org.nd4j.jita.flow.impl;
 
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
@@ -79,6 +80,10 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         int cId = allocator.getDeviceId();
+        StringBuilder builder = new StringBuilder();
+        builder.append("threadId: ").append(Thread.currentThread().getId())
+                .append("; cId: ").append(cId);
+
 
         if (result != null) {
             prepareDelayedMemory(result);
@@ -94,12 +99,16 @@ public class SynchronousFlowController implements FlowController {
                 throw new RuntimeException("R shape cId: [" +cId + "] != dId: ["+ pointShape.getDeviceId() +"]");
 */
             allocator.getAllocationPoint(result).setCurrentContext(context);
+
+            builder.append("; R dId: ").append(pointData.getDeviceId());
         }
 
         for (INDArray operand: operands) {
             if (operand == null) continue;
-/*
+
             AllocationPoint pointData = allocator.getAllocationPoint(operand.data());
+/*
+
             pointData.addThreadToTrace(Thread.currentThread().getId());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0)
@@ -111,7 +120,11 @@ public class SynchronousFlowController implements FlowController {
 */
             prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
+
+            builder.append("; O dId: ").append(pointData.getDeviceId());
         }
+
+        log.info(builder.toString());
 
         return context;
     }
