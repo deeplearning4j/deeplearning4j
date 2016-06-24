@@ -84,11 +84,11 @@ public class SynchronousFlowController implements FlowController {
             prepareDelayedMemory(result);
             AllocationPoint pointData = allocator.getAllocationPoint(result.data());
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0)
-                throw new RuntimeException("data cId != dId");
+                throw new RuntimeException("R data cId: [" +cId + "] != dId: ["+ pointData.getDeviceId() +"]");
 
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0)
-                throw new RuntimeException("shape cId != dId");
+                throw new RuntimeException("R shape cId: [" +cId + "] != dId: ["+ pointShape.getDeviceId() +"]");
 
             allocator.getAllocationPoint(result).setCurrentContext(context);
         }
@@ -98,11 +98,11 @@ public class SynchronousFlowController implements FlowController {
 
             AllocationPoint pointData = allocator.getAllocationPoint(operand.data());
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0)
-                throw new RuntimeException("data cId != dId");
+                throw new RuntimeException("O data cId: [" +cId + "] != dId: ["+ pointData.getDeviceId() +"]");
 
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0)
-                throw new RuntimeException("shape cId != dId");
+                throw new RuntimeException("O shape cId: [" +cId + "] != dId: ["+ pointShape.getDeviceId() +"]");
 
             prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
