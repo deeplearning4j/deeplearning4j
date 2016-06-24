@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -75,7 +76,8 @@ public class CudaDirectProvider implements MemoryProvider {
                     reqMem = 1;
 
                 if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
-                    throw new RuntimeException("Device allocation happened");
+//                    throw new RuntimeException("Device allocation happened");
+                    log.info("Device [{}] allocation, Thread id: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId());
 
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
                 if (pointer == null)
