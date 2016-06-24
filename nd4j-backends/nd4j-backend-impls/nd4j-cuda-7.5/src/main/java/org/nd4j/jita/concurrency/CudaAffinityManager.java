@@ -37,7 +37,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public Integer getDeviceForThread(long threadId) {
         if (!affinityMap.containsKey(threadId)) {
-            Integer deviceId = getNextDevice();
+            Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
             return deviceId;
         }
@@ -54,7 +54,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         affinityMap.put(threadId, deviceId);
     }
 
-    protected Integer getNextDevice() {
+    protected Integer getNextDevice(long threadId) {
         List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
         Integer device = null;
         if (!configuration.isForcedSingleGPU()) {
@@ -64,7 +64,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
                 if (devPtr.get() >= devices.size())
                     devPtr.set(0);
 
-                logger.debug("Mapping to device [{}], out of [{}] devices...", device, devices.size());
+                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId , device, devices.size());
             }
         } else {
             device = configuration.getAvailableDevices().get(0);
