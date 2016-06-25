@@ -218,7 +218,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         int labelCount = 0;
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
-            if (current.toString().isEmpty())
+            //ndarray writable is an insane slow down herecd
+            if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
                 continue;
 
             if (regression && j >= labelIndex && j <= labelIndexTo) {
