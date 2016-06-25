@@ -118,14 +118,14 @@ public class SynchronousFlowController implements FlowController {
             if (operand == null) continue;
 
             AllocationPoint pointData = allocator.getAllocationPoint(operand.data());
-            AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
+            AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                allocator.getMemoryHandler().relocateObject(result.data());
+                allocator.getMemoryHandler().relocateObject(operand.data());
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                allocator.getMemoryHandler().relocateObject(result.shapeInfoDataBuffer());
+                allocator.getMemoryHandler().relocateObject(operand.shapeInfoDataBuffer());
             }
 
 /*
