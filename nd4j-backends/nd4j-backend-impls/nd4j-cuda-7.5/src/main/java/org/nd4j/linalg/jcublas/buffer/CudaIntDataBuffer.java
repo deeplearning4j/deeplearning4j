@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -31,6 +33,17 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class CudaIntDataBuffer extends BaseCudaDataBuffer {
+    /**
+     * Meant for creating another view of a buffer
+     *
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length  the length of the view
+     */
+    public CudaIntDataBuffer(Pointer pointer, Indexer indexer, long length) {
+        super(pointer, indexer, length);
+    }
+
     /**
      * Base constructor
      *

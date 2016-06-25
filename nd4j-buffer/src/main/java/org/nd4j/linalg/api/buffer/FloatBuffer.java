@@ -20,6 +20,8 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 
@@ -31,6 +33,17 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class FloatBuffer extends BaseDataBuffer {
+    /**
+     * Meant for creating another view of a buffer
+     *
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length  the length of the view
+     */
+    public FloatBuffer(Pointer pointer, Indexer indexer, long length) {
+        super(pointer, indexer, length);
+    }
+
     /**
      * Create a float buffer with the given length
      * @param length the float buffer with the given length

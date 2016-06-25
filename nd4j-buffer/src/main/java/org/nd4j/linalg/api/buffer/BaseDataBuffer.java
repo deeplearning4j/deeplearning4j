@@ -87,6 +87,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return elementSize;
     }
 
+    /**
+     *
+     * Meant for creating another view of a buffer
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length the length of the view
+     */
+    public BaseDataBuffer(Pointer pointer,Indexer indexer,long length) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
+        this.length = length;
+        this.allocationMode = AllocationMode.JAVACPP;
+        this.underlyingLength = length;
+        this.wrappedDataBuffer = this;
+
+        this.pointer = pointer;
+        this.indexer =  indexer;
+    }
+
 
     /**
      *

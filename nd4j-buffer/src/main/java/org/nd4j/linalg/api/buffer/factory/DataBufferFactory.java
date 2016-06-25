@@ -19,8 +19,9 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -503,5 +504,19 @@ public interface DataBufferFactory {
      */
     DataBuffer createInt(float[] data, boolean copy);
 
+
+    /**
+     * Create a data buffer based on the
+     * given pointer, data buffer type,
+     * and length of the buffer
+     * @param pointer the pointer to use
+     * @param type the type of buffer
+     * @param length the length of the buffer
+     * @param indexer
+     * @return the data buffer
+     * backed by this pointer with the given
+     * type and length.
+     */
+    DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
 
 }
