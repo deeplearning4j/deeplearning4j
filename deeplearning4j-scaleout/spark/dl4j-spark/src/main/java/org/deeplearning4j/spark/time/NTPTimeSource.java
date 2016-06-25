@@ -106,16 +106,15 @@ public class NTPTimeSource implements TimeSource {
         for( int i=0; i<MAX_QUERY_RETRIES; i++ ){
             try {
                 NTPUDPClient client = new NTPUDPClient();
-                client.setDefaultTimeout(DEFAULT_NTP_TIMEOUT_MS);// We want to timeout if a response takes longer than 10 seconds
+                client.setDefaultTimeout(DEFAULT_NTP_TIMEOUT_MS);// Timeout if a response takes longer than 10 seconds
 
                 client.open();
-                InetAddress hostAddr = InetAddress.getByName(ntpServer);
-                System.out.println("> " + hostAddr.getHostName() + "/" + hostAddr.getHostAddress());
-                TimeInfo info = client.getTime(hostAddr);
+                InetAddress address = InetAddress.getByName(ntpServer);
+                TimeInfo info = client.getTime(address);
                 info.computeDetails();
                 Long offset = info.getOffset();
                 if(offset == null){
-                    throw new Exception("Could not calculate time offset");
+                    throw new Exception("Could not calculate time offset (offset is null)");
                 } else {
                     offsetResult = offset;
                     break;
