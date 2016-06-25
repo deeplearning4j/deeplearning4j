@@ -22,6 +22,6 @@ public class NDArraySerializer extends JsonSerializer<INDArray> {
         Nd4j.writeTxtString(indArray,bos);
         bos.flush();
         String toWrite = new String(bos.toByteArray());
-        jsonGenerator.writeString(toWrite);
+        jsonGenerator.writeRaw(toWrite);
     }
 }

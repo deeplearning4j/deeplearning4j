@@ -1891,7 +1891,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
-
         int n = shape.length;
         if (shape.length < 1)
             return create(Nd4j.createBuffer(shape));
