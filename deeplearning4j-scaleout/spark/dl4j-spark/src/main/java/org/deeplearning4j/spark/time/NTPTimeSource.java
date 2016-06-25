@@ -10,12 +10,25 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 /**
- * Created by Alex on 25/06/2016.
+ * A {@link TimeSource} that utilizen Network Time Protocol to determine the system clock offset<br>
+ * Instances should be obvained via {@link #getInstance()} or {@link TimeSourceProvider}; one instance may be
+ * used per machine<br>
+ *
+ * Specifically, the implementation uses Apache Commons Net (already a dependency in Spark) to query a NTP server.
+ * This querying is done periodically (default: once upon initialization and then every 30 minutes thereafter).<br>
+ *
+ * The following configuration options can be set via system properties:<br>
+ * To set the time update frequency (for querying the NTP server, in <b>milliseconds</b>): org.deeplearning4j.spark.time.NTPTimeSource.frequencyms<br>
+ * To set the NTP server address: org.deeplearning4j.spark.time.NTPTimeSource.server<br>
+ * Default NTP server: {@link #DEFAULT_NTP_SERVER}
+ *
+ *
+ * @author Alex Black
  */
 public class NTPTimeSource implements TimeSource {
 
-    public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY = "org.deeplearning4j.time.NTPTimeSource.frequencyms";
-    public static final String NTP_SOURCE_SERVER_PROPERTY = "org.deeplearning4j.time.NTPTimeSource.server";
+    public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY = "org.deeplearning4j.spark.time.NTPTimeSource.frequencyms";
+    public static final String NTP_SOURCE_SERVER_PROPERTY = "org.deeplearning4j.spark.time.NTPTimeSource.server";
     public static final int MAX_QUERY_RETRIES = 10;
     public static final int DEFAULT_NTP_TIMEOUT_MS = 10000;
     public static final long DEFAULT_UPDATE_FREQUENCY = 30*60*1000L;    //30 Minutes
@@ -56,6 +69,7 @@ public class NTPTimeSource implements TimeSource {
         log.debug("Initialized NTPTimeSource with query frequency {} ms using server {}", synchronizationFreqMS, ntpServer);
     }
 
+    //Query and parse the system property
     private static long getUpdateFrequencyConfiguration(){
         String property = System.getProperty(NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY);
         Long parseAttempt = null;
@@ -68,7 +82,7 @@ public class NTPTimeSource implements TimeSource {
             }
             if(parseAttempt != null){
                 if(parseAttempt < MIN_UPDATE_FREQUENCY){
-                    log.info("Invalid update frequency (milliseconds): {} is less than minimum {}", parseAttempt, MIN_UPDATE_FREQUENCY);
+                    log.info("Invalid update frequency (milliseconds): {} is less than minimum {}. Using default update frequency: {} ms", parseAttempt, MIN_UPDATE_FREQUENCY, DEFAULT_UPDATE_FREQUENCY);
                     updateFreq = DEFAULT_UPDATE_FREQUENCY;
                 } else {
                     updateFreq = parseAttempt;
@@ -121,6 +135,7 @@ public class NTPTimeSource implements TimeSource {
         log.debug("Updated local time offset based on NTP server result. Offset = {}", lastOffsetMilliseconds);
     }
 
+    //Timer task to be run periodically
     private class QueryServerTask extends TimerTask {
         public void run() {
             queryServerNow();
