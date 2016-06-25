@@ -277,5 +277,9 @@ public interface MemoryHandler {
 
     boolean promoteObject(DataBuffer buffer);
 
+    void relocateObject(DataBuffer buffer);
+
     ContextPool getContextPool();
+
+
 }

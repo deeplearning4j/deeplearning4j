@@ -91,7 +91,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
             ensureDeviceCacheHolder(point.getDeviceId(), shape);
 
-
             CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
 
             // memory chunks < threshold will be cached no matter what

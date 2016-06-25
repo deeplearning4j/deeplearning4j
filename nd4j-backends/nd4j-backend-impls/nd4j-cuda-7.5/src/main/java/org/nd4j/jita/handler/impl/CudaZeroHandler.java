@@ -757,6 +757,37 @@ public class CudaZeroHandler implements MemoryHandler {
         return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
     }
 
+    @Override
+    public void relocateObject(DataBuffer buffer) {
+        AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+
+        // we don't relocate non-device buffers
+        if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
+            return;
+
+
+        int deviceId = getDeviceId();
+
+
+        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId) {
+            log.info("Skipped relocation");
+            return;
+        }
+
+        // FIXME: cross-thread access, might cause problems
+        if (!dstPoint.isActualOnHostSide())
+            AtomicAllocator.getInstance().synchronizeHostData(buffer);
+
+        if (!dstPoint.isActualOnHostSide())
+            throw new RuntimeException("Buffer synchronization failed");
+
+        if (!buffer.isConstant())
+            memoryProvider.free(dstPoint);
+
+        // we replace original device pointer with new one
+        alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+    }
+
     /**
      * This method moves specific object from zero-copy memory to device memory
      *
