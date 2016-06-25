@@ -774,6 +774,9 @@ public class CudaZeroHandler implements MemoryHandler {
             return;
         }
 
+        StringBuilder builder = new StringBuilder("Relocating for threadId: ").append(Thread.currentThread().getId()).append("; ODP: ").append(dstPoint.getPointers().getDevicePointer().address());
+
+
         // FIXME: cross-thread access, might cause problems
         if (!dstPoint.isActualOnHostSide())
             AtomicAllocator.getInstance().synchronizeHostData(buffer);
@@ -786,6 +789,10 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // we replace original device pointer with new one
         alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+
+        builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
+
+        log.info(builder.toString());
     }
 
     /**
