@@ -111,7 +111,10 @@ public class SynchronousFlowController implements FlowController {
 */
             allocator.getAllocationPoint(result).setCurrentContext(context);
 
-            builder.append("; R dId: ").append(pointData.getDeviceId());
+            builder.append("; R_dId: ").append(pointData.getDeviceId());
+            builder.append("; R_sdId: ").append(pointShape.getDeviceId());
+            builder.append(", R_DPTR: ").append(pointData.getPointers().getDevicePointer().address());
+            builder.append(", R_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
         }
 
         for (INDArray operand: operands) {
@@ -142,7 +145,10 @@ public class SynchronousFlowController implements FlowController {
             prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
 
-            builder.append("; O dId: ").append(pointData.getDeviceId());
+            builder.append("; O_dId: ").append(pointData.getDeviceId());
+            builder.append("; O_sdId: ").append(pointShape.getDeviceId());
+            builder.append(", O_DPTR: ").append(pointData.getPointers().getDevicePointer().address());
+            builder.append(", O_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
         }
 
         log.info(builder.toString());
