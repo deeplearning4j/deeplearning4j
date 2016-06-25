@@ -1767,9 +1767,10 @@ public class Nd4j {
     public static void writeTxtString(INDArray write, OutputStream os, String split, int precision) {
         //TO DO: Write to file one line at time
         String lineOne = "{\n";
-        String lineTwo = "\"filefrom:\" \"dl4j\",\n";
-        String lineThree = "\"ordering:\" \"" + write.ordering() + "\",\n";
-        String lineFour = "\"shape\":\t" + java.util.Arrays.toString(write.shape()) + ",\n";
+        String lineTwo = "\"filefrom\":\"dl4j\",\n";
+
+        String lineThree = "\"ordering\":\"" + write.ordering() + "\",\n";
+        String lineFour = "\"shape\":" + java.util.Arrays.toString(write.shape()) + ",\n";
         String lineFive = "\"data\":\n";
         String fileData = new NDArrayStrings(" "+split+" ",precision).format(write);
         String fileEnd = "\n}\n";
