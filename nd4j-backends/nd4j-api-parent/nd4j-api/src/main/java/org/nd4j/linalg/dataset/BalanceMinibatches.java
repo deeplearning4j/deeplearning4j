@@ -73,7 +73,7 @@ public class BalanceMinibatches {
             List<DataSet> miniBatch = new ArrayList<>();
             while(miniBatch.size() < miniBatchSize && !paths.isEmpty()) {
                 for(int i = 0; i < numLabels; i++) {
-                    if(!paths.get(i).isEmpty()) {
+                    if(paths.get(i) != null && !paths.get(i).isEmpty()) {
                         DataSet d = new DataSet();
                         d.load(paths.get(i).remove(0));
                         miniBatch.add(d);

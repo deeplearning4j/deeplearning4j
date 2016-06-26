@@ -19,12 +19,15 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import org.bytedeco.javacpp.DoublePointer;
+
+import org.bytedeco.javacpp.indexer.DoubleIndexer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.Nd4jTestSuite;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -55,6 +58,15 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
     @Before
     public void before() {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
+    }
+
+    @Test
+    public void testPointerCreation() {
+        DoublePointer floatPointer = new DoublePointer(1,2,3,4);
+        Indexer indexer = DoubleIndexer.create(floatPointer);
+        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.DOUBLE,4,indexer);
+        DataBuffer other = Nd4j.createBuffer(new double[]{1,2,3,4});
+        assertEquals(other,buffer);
     }
 
     @Test

@@ -2105,7 +2105,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-        if (columns() == 1 && rowVector.isScalar()) {
+        if (rank() == 2 && columns() == 1 && rowVector.isScalar()) {
             if (this instanceof IComplexNDArray) {
                 applyScalarOp(rowVector, operation);
             }
