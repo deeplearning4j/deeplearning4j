@@ -369,6 +369,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
     }
 
+
+    @Override
+    public void save(OutputStream to) {
+        try {
+            BufferedOutputStream bos = new BufferedOutputStream(to);
+            DataOutputStream dis = new DataOutputStream(bos);
+            Nd4j.write(getFeatureMatrix(),dis);
+            Nd4j.write(getLabels(),dis);
+            dis.flush();
+            dis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void save(File to) {
         try {
