@@ -12,7 +12,7 @@ public class SystemClockTimeSource implements TimeSource {
         return new SystemClockTimeSource();
     }
 
-    public long getCurrentTimeMillis() {
+    public long currentTimeMillis() {
         return System.currentTimeMillis();
     }
 }

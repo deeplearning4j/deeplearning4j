@@ -2,8 +2,13 @@ package org.deeplearning4j.spark.api.worker;
 
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.stats.BaseEventStats;
+import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.time.TimeSource;
+import org.deeplearning4j.spark.time.TimeSourceProvider;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,60 +24,56 @@ public class StatsCalculationHelper {
     private long lastDataSetBefore;
     private long lastProcessBefore;
     private int totalExampleCount;
-    //TODO: This adds more overhead than we want. Replace with a fast int collection (no boxing + conversion!)
-    private List<Integer> dataSetGetTimes = new ArrayList<>();
-    private List<Integer> processMiniBatchTimes = new ArrayList<>();
+    private List<EventStats> dataSetGetTimes = new ArrayList<>();
+    private List<EventStats> processMiniBatchTimes = new ArrayList<>();
+
+    private TimeSource timeSource = TimeSourceProvider.getInstance();
 
     public void logMethodStartTime(){
-        methodStartTime = System.currentTimeMillis();
+        methodStartTime = timeSource.currentTimeMillis();
     }
 
     public void logReturnTime(){
-        returnTime = System.currentTimeMillis();
+        returnTime = timeSource.currentTimeMillis();
     }
 
     public void logInitialModelBefore(){
-        initalModelBefore = System.currentTimeMillis();
+        initalModelBefore = timeSource.currentTimeMillis();
     }
 
     public void logInitialModelAfter(){
-        initialModelAfter = System.currentTimeMillis();
+        initialModelAfter = timeSource.currentTimeMillis();
     }
 
     public void logNextDataSetBefore(){
-        lastDataSetBefore = System.currentTimeMillis();
+        lastDataSetBefore = timeSource.currentTimeMillis();
     }
 
     public void logNextDataSetAfter(int numExamples){
-        long now = System.currentTimeMillis();
-        dataSetGetTimes.add((int)(now-lastDataSetBefore));
+        long now = timeSource.currentTimeMillis();
+        long duration = now - lastDataSetBefore;
+        dataSetGetTimes.add(new BaseEventStats(lastDataSetBefore,duration));
         totalExampleCount += numExamples;
     }
 
     public void logProcessMinibatchBefore(){
-        lastProcessBefore = System.currentTimeMillis();
+        lastProcessBefore = timeSource.currentTimeMillis();
     }
 
     public void logProcessMinibatchAfter(){
         long now = System.currentTimeMillis();
-        processMiniBatchTimes.add((int)(now-lastProcessBefore));
+        long duration = now - lastProcessBefore;
+        processMiniBatchTimes.add(new BaseEventStats(lastProcessBefore,duration));
     }
 
     public CommonSparkTrainingStats build(SparkTrainingStats masterSpecificStats){
-        //TODO again, do this without the lists...
-        int[] dataSetGetTimesArr = new int[dataSetGetTimes.size()];
-        for( int i=0; i<dataSetGetTimesArr.length; i++ ) dataSetGetTimesArr[i] = dataSetGetTimes.get(i);
-        int[] processMiniBatchTimesArr = new int[processMiniBatchTimes.size()];
-        for( int i=0; i<processMiniBatchTimesArr.length; i++ ) processMiniBatchTimesArr[i] = processMiniBatchTimes.get(i);
 
         return new CommonSparkTrainingStats.Builder()
                 .trainingMasterSpecificStats(masterSpecificStats)
-                .workerFlatMapTotalTimeMs((int)(returnTime-methodStartTime))
-                .workerFlatMapTotalExampleCount(totalExampleCount)
-                .workerFlatMapGetInitialModelTimeMs((int)(initialModelAfter-initalModelBefore))
-                .workerFlatMapDataSetGetTimesMs(dataSetGetTimesArr)
-                .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimesArr)
-                .workerFlatMapCountNoDataInstances(dataSetGetTimes.size() == 0 ? 1 : 0)
+                .workerFlatMapTotalTimeMs(Collections.singletonList((EventStats)new BaseEventStats(methodStartTime,returnTime-methodStartTime)))
+                .workerFlatMapGetInitialModelTimeMs(Collections.singletonList((EventStats)new BaseEventStats(initalModelBefore,initialModelAfter-initalModelBefore)))
+                .workerFlatMapDataSetGetTimesMs(dataSetGetTimes)
+                .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimes)
                 .build();
     }
 }

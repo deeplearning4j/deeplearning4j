@@ -14,7 +14,7 @@ public interface TimeSource {
      * Get the current time in milliseconds, according to this TimeSource
      * @return Current time, since epoch
      */
-    long getCurrentTimeMillis();
+    long currentTimeMillis();
 
     //TODO add methods related to accuracy etc
 

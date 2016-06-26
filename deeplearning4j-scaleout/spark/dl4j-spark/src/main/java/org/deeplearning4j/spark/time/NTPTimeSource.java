@@ -149,7 +149,7 @@ public class NTPTimeSource implements TimeSource {
         return lastOffsetMilliseconds;
     }
 
-    public long getCurrentTimeMillis() {
+    public long currentTimeMillis() {
         long offset = getSystemOffset();
         long systemTime = System.currentTimeMillis();
         return systemTime + offset;
