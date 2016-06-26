@@ -17,7 +17,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
                     "WorkerFlatMapTotalTimeMs",
-                    "WorkerFlatMapTotalExampleCount",
                     "WorkerFlatMapGetInitialModelTimeMs",
                     "WorkerFlatMapDataSetGetTimesMs",
                     "WorkerFlatMapProcessMiniBatchTimesMs"
@@ -25,7 +24,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
     private SparkTrainingStats trainingWorkerSpecificStats;
     private List<EventStats> workerFlatMapTotalTimeMs;
-    private List<EventStats> workerFlatMapTotalExampleCount;
     private List<EventStats> workerFlatMapGetInitialModelTimeMs;
     private List<EventStats> workerFlatMapDataSetGetTimesMs;
     private List<EventStats> workerFlatMapProcessMiniBatchTimesMs;
@@ -40,7 +38,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     private CommonSparkTrainingStats(Builder builder){
         this.trainingWorkerSpecificStats = builder.trainingMasterSpecificStats;
         this.workerFlatMapTotalTimeMs = builder.workerFlatMapTotalTimeMs;
-        this.workerFlatMapTotalExampleCount = builder.workerFlatMapTotalExampleCount;
         this.workerFlatMapGetInitialModelTimeMs = builder.workerFlatMapGetInitialModelTimeMs;
         this.workerFlatMapDataSetGetTimesMs = builder.workerFlatMapDataSetGetTimesMs;
         this.workerFlatMapProcessMiniBatchTimesMs = builder.workerFlatMapProcessMiniBatchTimesMs;
@@ -60,8 +57,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         switch (key){
             case "WorkerFlatMapTotalTimeMs":
                 return workerFlatMapTotalTimeMs;
-            case "WorkerFlatMapTotalExampleCount":
-                return workerFlatMapTotalExampleCount;
             case "WorkerFlatMapGetInitialModelTimeMs":
                 return workerFlatMapGetInitialModelTimeMs;
             case "WorkerFlatMapDataSetGetTimesMs":
@@ -81,7 +76,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         CommonSparkTrainingStats o = (CommonSparkTrainingStats)other;
 
         workerFlatMapTotalTimeMs.addAll(o.workerFlatMapTotalTimeMs);
-        workerFlatMapTotalExampleCount.addAll(o.workerFlatMapTotalExampleCount);
         workerFlatMapGetInitialModelTimeMs.addAll(o.workerFlatMapGetInitialModelTimeMs);
         workerFlatMapDataSetGetTimesMs.addAll(o.workerFlatMapDataSetGetTimesMs);
         workerFlatMapProcessMiniBatchTimesMs.addAll(o.workerFlatMapProcessMiniBatchTimesMs);
@@ -132,7 +126,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     public static class Builder {
         private SparkTrainingStats trainingMasterSpecificStats;
         private List<EventStats> workerFlatMapTotalTimeMs;
-        private List<EventStats> workerFlatMapTotalExampleCount;
         private List<EventStats> workerFlatMapGetInitialModelTimeMs;
         private List<EventStats> workerFlatMapDataSetGetTimesMs;
         private List<EventStats> workerFlatMapProcessMiniBatchTimesMs;
@@ -144,11 +137,6 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
         public Builder workerFlatMapTotalTimeMs(List<EventStats> workerFlatMapTotalTimeMs){
             this.workerFlatMapTotalTimeMs = workerFlatMapTotalTimeMs;
-            return this;
-        }
-
-        public Builder workerFlatMapTotalExampleCount(List<EventStats> workerFlatMapTotalExampleCount){
-            this.workerFlatMapTotalExampleCount = workerFlatMapTotalExampleCount;
             return this;
         }
 
