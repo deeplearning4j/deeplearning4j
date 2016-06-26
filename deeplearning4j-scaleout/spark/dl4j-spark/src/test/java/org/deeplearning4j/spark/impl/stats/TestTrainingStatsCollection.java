@@ -16,6 +16,7 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.StatsUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -112,7 +113,7 @@ public class TestTrainingStatsCollection {
 
             String statsAsString = stats.statsAsString();
             System.out.println(statsAsString);
-//            assertEquals(actualKeySet.size(), statsAsString.split("\n").length);    //One line per stat
+            assertEquals(actualKeySet.size(), statsAsString.split("\n").length);    //One line per stat
 
 
             //Go through nested stats
@@ -210,6 +211,9 @@ public class TestTrainingStatsCollection {
             String tempDir = System.getProperty("java.io.tmpdir");
             String outDir = FilenameUtils.concat(tempDir,"dl4j_testTrainingStatsCollection");
             stats.exportStatFiles(outDir, sc.sc());
+
+            String htmlPlotsPath = FilenameUtils.concat(outDir,"AnalysisPlots.html");
+            StatsUtils.exportStatsAsHtml(stats, htmlPlotsPath, sc);
         } finally {
             sc.stop();
         }
