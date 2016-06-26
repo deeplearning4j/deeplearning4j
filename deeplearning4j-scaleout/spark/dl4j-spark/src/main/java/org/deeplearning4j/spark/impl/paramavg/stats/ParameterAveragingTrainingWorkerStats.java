@@ -4,6 +4,8 @@ import lombok.Data;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.stats.BaseEventStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.time.TimeSource;
+import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -98,33 +100,38 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         //TODO replace with fast int collection (no boxing)
         private List<EventStats> fitTimes = new ArrayList<>();
 
+        private final TimeSource timeSource = TimeSourceProvider.getInstance();
+
 
         public void logBroadcastGetValueStart(){
-            broadcastStartTime = System.currentTimeMillis();
+            broadcastStartTime = timeSource.currentTimeMillis();
         }
 
         public void logBroadcastGetValueEnd(){
-            broadcastEndTime = System.currentTimeMillis();
+            broadcastEndTime = timeSource.currentTimeMillis();
         }
 
         public void logInitEnd(){
-            initEndTime = System.currentTimeMillis();
+            initEndTime = timeSource.currentTimeMillis();
         }
 
         public void logFitStart(){
-            lastFitStartTime = System.currentTimeMillis();
+            lastFitStartTime = timeSource.currentTimeMillis();
         }
 
         public void logFitEnd(){
-            long now = System.currentTimeMillis();
+            long now = timeSource.currentTimeMillis();
             fitTimes.add(new BaseEventStats(lastFitStartTime, now - lastFitStartTime));
         }
 
         public ParameterAveragingTrainingWorkerStats build(){
-            return new ParameterAveragingTrainingWorkerStats(
-                    Collections.singletonList((EventStats)new BaseEventStats(broadcastStartTime,broadcastEndTime-broadcastStartTime)),
-                    Collections.singletonList((EventStats)new BaseEventStats(broadcastEndTime,initEndTime-broadcastEndTime)),   //Init starts at same time that broadcast ends
-                    fitTimes);
+            //Using ArrayList not Collections.singletonList() etc so we can add to them later (during merging)
+            List<EventStats> bList = new ArrayList<>();
+            bList.add(new BaseEventStats(broadcastStartTime,broadcastEndTime-broadcastStartTime));
+            List<EventStats> initList = new ArrayList<>();
+            initList.add(new BaseEventStats(broadcastEndTime,initEndTime-broadcastEndTime));    //Init starts at same time that broadcast ends
+
+            return new ParameterAveragingTrainingWorkerStats(bList, initList, fitTimes);
 
         }
     }

@@ -1,9 +1,12 @@
-package org.deeplearning4j.spark.api.worker;
+package org.deeplearning4j.spark.api.stats;
 
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
+import org.deeplearning4j.spark.api.worker.ExecuteWorkerMultiDataSetFlatMap;
 import org.deeplearning4j.spark.stats.BaseEventStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 
@@ -61,17 +64,22 @@ public class StatsCalculationHelper {
     }
 
     public void logProcessMinibatchAfter(){
-        long now = System.currentTimeMillis();
+        long now = timeSource.currentTimeMillis();
         long duration = now - lastProcessBefore;
         processMiniBatchTimes.add(new BaseEventStats(lastProcessBefore,duration));
     }
 
     public CommonSparkTrainingStats build(SparkTrainingStats masterSpecificStats){
 
+        List<EventStats> totalTime = new ArrayList<>();
+        totalTime.add(new ExampleCountEventStats(methodStartTime,returnTime-methodStartTime, totalExampleCount));
+        List<EventStats> initTime = new ArrayList<>();
+        initTime.add(new BaseEventStats(initalModelBefore,initialModelAfter-initalModelBefore));
+
         return new CommonSparkTrainingStats.Builder()
                 .trainingMasterSpecificStats(masterSpecificStats)
-                .workerFlatMapTotalTimeMs(Collections.singletonList((EventStats)new BaseEventStats(methodStartTime,returnTime-methodStartTime)))
-                .workerFlatMapGetInitialModelTimeMs(Collections.singletonList((EventStats)new BaseEventStats(initalModelBefore,initialModelAfter-initalModelBefore)))
+                .workerFlatMapTotalTimeMs(totalTime)
+                .workerFlatMapGetInitialModelTimeMs(initTime)
                 .workerFlatMapDataSetGetTimesMs(dataSetGetTimes)
                 .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimes)
                 .build();
