@@ -1,9 +1,13 @@
 package org.deeplearning4j.spark.api.stats;
 
 import lombok.Data;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.stats.EventStats;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.spark.stats.StatsUtils;
+import org.deeplearning4j.spark.util.SparkUtils;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -13,6 +17,12 @@ import java.util.*;
  */
 @Data
 public class CommonSparkTrainingStats implements SparkTrainingStats {
+
+    public static final String DEFAULT_DELIMITER = ",";
+    public static final String FILENAME_TOTAL_TIME_STATS = "workerFlatMapTotalTimeMs.txt";
+    public static final String FILENAME_GET_INITIAL_MODEL_STATS = "workerFlatMapGetInitialModelTimeMs.txt";
+    public static final String FILENAME_DATASET_GET_TIME_STATS = "workerFlatMapDataSetGetTimesMs.txt";
+    public static final String FILENAME_PROCESS_MINIBATCH_TIME_STATS = "workerFlatMapProcessMiniBatchTimesMs.txt";
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
@@ -121,6 +131,30 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 //        if(trainingWorkerSpecificStats != null) sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
 
         return sb.toString();
+    }
+
+    @Override
+    public void exportStatFiles(String outputPath, SparkContext sc) throws IOException {
+        String d = DEFAULT_DELIMITER;
+
+
+        //Total time stats (includes total example counts)
+        String totalTimeStatsPath = FilenameUtils.concat(outputPath,FILENAME_TOTAL_TIME_STATS);
+        StatsUtils.exportStats(workerFlatMapTotalTimeMs, totalTimeStatsPath, d, sc);
+
+        //"Get initial model" stats:
+        String getInitialModelStatsPath = FilenameUtils.concat(outputPath,FILENAME_GET_INITIAL_MODEL_STATS);
+        StatsUtils.exportStats(workerFlatMapGetInitialModelTimeMs, getInitialModelStatsPath, d, sc);
+
+        //"DataSet get time" stats:
+        String getDataSetStatsPath = FilenameUtils.concat(outputPath, FILENAME_DATASET_GET_TIME_STATS);
+        StatsUtils.exportStats(workerFlatMapDataSetGetTimesMs, getDataSetStatsPath, d, sc);
+
+        //Process minibatch time stats:
+        String processMiniBatchStatsPath = FilenameUtils.concat(outputPath, FILENAME_PROCESS_MINIBATCH_TIME_STATS);
+        StatsUtils.exportStats(workerFlatMapProcessMiniBatchTimesMs, processMiniBatchStatsPath, d, sc);
+
+        if(trainingWorkerSpecificStats != null) trainingWorkerSpecificStats.exportStatFiles(outputPath, sc);
     }
 
     public static class Builder {

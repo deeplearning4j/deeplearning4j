@@ -1,13 +1,18 @@
 package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.spark.SparkContext;
+import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.stats.BaseEventStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.StatsUtils;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -17,6 +22,11 @@ import java.util.*;
  */
 @Data
 public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats {
+
+    public static final String DEFAULT_DELIMITER = CommonSparkTrainingStats.DEFAULT_DELIMITER;
+    public static final String FILENAME_BROADCAST_GET_STATS = "parameterAveragingWorkerBroadcastGetValueTimeMs.txt";
+    public static final String FILENAME_INIT_STATS = "parameterAveragingWorkerInitTimeMs.txt";
+    public static final String FILENAME_FIT_STATS = "parameterAveragingWorkerFitTimesMs.txt";
 
     private List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs;
     private List<EventStats> parameterAveragingWorkerInitTimeMs;
@@ -90,6 +100,20 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
 //        else sb.append(Arrays.toString(parameterAveragingWorkerFitTimesMs)).append("\n");
 
         return sb.toString();
+    }
+
+    @Override
+    public void exportStatFiles(String outputPath, SparkContext sc) throws IOException {
+        String d = DEFAULT_DELIMITER;
+
+        //Broadcast get time:
+        StatsUtils.exportStats(parameterAveragingWorkerBroadcastGetValueTimeMs,outputPath, FILENAME_BROADCAST_GET_STATS, d, sc);
+
+        //Network init time:
+        StatsUtils.exportStats(parameterAveragingWorkerInitTimeMs,outputPath, FILENAME_INIT_STATS, d, sc);
+
+        //Network fit time:
+        StatsUtils.exportStats(parameterAveragingWorkerFitTimesMs,outputPath, FILENAME_FIT_STATS, d, sc);
     }
 
     public static class ParameterAveragingTrainingWorkerStatsHelper {

@@ -1,9 +1,11 @@
 package org.deeplearning4j.spark.api.stats;
 
+import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.deeplearning4j.spark.stats.EventStats;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
@@ -70,4 +72,11 @@ public interface SparkTrainingStats extends Serializable {
      */
     String statsAsString();
 
+
+    /**
+     * Export the stats as a collection of files. Stats are comma-delimited (CSV) with 1 header line
+     *
+     * @param outputPath    Base directory to write files to
+     */
+    void exportStatFiles(String outputPath, SparkContext sc) throws IOException;
 }
