@@ -19,16 +19,16 @@ import org.slf4j.LoggerFactory;
  * X -> (X - min/(max-min)) * (given_max - given_min) + given_min
  * default given_min,given_max is 0,1
  */
-public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataSetPreProcessor{
+public class NormalizerMinMaxScaler implements DataNormalization {
     private static Logger logger = LoggerFactory.getLogger(NormalizerMinMaxScaler.class);
     private INDArray min,max,maxMinusMin;
     private double minRange,maxRange;
 
     /**
-    * Preprocessor can take a range as minRange and maxRange
-    * @param minRange 
-    * @param maxRange 
-    */
+     * Preprocessor can take a range as minRange and maxRange
+     * @param minRange
+     * @param maxRange
+     */
     public NormalizerMinMaxScaler (double minRange, double maxRange) {
         setMinRange(minRange);
         setMaxRange(maxRange);
@@ -46,12 +46,13 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
         this.maxRange = maxRange;
     }
 
+    @Override
     public void fit(DataSet dataSet) {
         min = dataSet.getFeatureMatrix().min(0);
         max = dataSet.getFeatureMatrix().max(0);
         maxMinusMin = max.sub(min);
         maxMinusMin.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
     }
 
@@ -59,6 +60,7 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
      * Fit the given model
      * @param iterator for the data to iterate over
      */
+    @Override
     public void fit(DataSetIterator iterator) {
         INDArray nextMax, nextMin;
         while(iterator.hasNext()) {
@@ -75,7 +77,7 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
             }
         }
         maxMinusMin = max.sub(min).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
         iterator.reset();
     }
@@ -98,10 +100,12 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
      * Transform the data
      * @param toPreProcess the dataset to transform
      */
+    @Override
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
     }
 
+    @Override
     public void transform(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
             this.preProcess(toPreProcessIter.next());
@@ -143,23 +147,23 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
 
     /**
      * Load the given min and max
-     * @param min the min file
-     * @param max the max file
+     * @param  statistics the statistics to load
      * @throws IOException
      */
-    public void load(File min,File max) throws IOException {
-        this.min = Nd4j.readBinary(min);
-        this.max = Nd4j.readBinary(max);
+    @Override
+    public void load(File...statistics) throws IOException {
+        this.min = Nd4j.readBinary(statistics[0]);
+        this.max = Nd4j.readBinary(statistics[1]);
     }
 
     /**
      * Save the current min and max
-     * @param min the min
-     * @param max the max
+     * @param files the statistics to save
      * @throws IOException
      */
-    public void save(File min,File max) throws IOException {
-        Nd4j.saveBinary(this.min,min);
-        Nd4j.saveBinary(this.max,max);
+    @Override
+    public void save(File...files) throws IOException {
+        Nd4j.saveBinary(this.min,files[0]);
+        Nd4j.saveBinary(this.max,files[1]);
     }
 }

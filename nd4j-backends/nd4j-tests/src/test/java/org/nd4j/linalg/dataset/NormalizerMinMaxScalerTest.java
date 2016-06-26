@@ -6,16 +6,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -139,7 +136,7 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
 
         double givenMin = -1000;
         double givenMax = 1000;
-        NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler(givenMin,givenMax);
+        DataNormalization myNormalizer = new NormalizerMinMaxScaler(givenMin,givenMax);
         DataSet transformed = sampleDataSet.copy();
 
         myNormalizer.fit(sampleDataSet);
