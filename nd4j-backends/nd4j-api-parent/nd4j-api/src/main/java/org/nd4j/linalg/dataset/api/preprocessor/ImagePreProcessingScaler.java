@@ -1,8 +1,12 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by susaneraly on 6/23/16.
@@ -13,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * For values that are already floating point, specify the number of bits as 1
  *
  */
-public class ImagePreProcessingScaler implements org.nd4j.linalg.dataset.api.DataSetPreProcessor {
+public class ImagePreProcessingScaler implements DataNormalization {
 
     private static Logger logger = LoggerFactory.getLogger(NormalizerMinMaxScaler.class);
 
@@ -43,6 +47,29 @@ public class ImagePreProcessingScaler implements org.nd4j.linalg.dataset.api.Dat
         this.maxRange = b;
     }
 
+    /**
+     * Fit a dataset (only compute
+     * based on the statistics from this dataset0
+     *
+     * @param dataSet the dataset to compute on
+     */
+    @Override
+    public void fit(DataSet dataSet) {
+
+    }
+
+    /**
+     * Iterates over a dataset
+     * accumulating statistics for normalization
+     *
+     * @param iterator the iterator to use for
+     *                 collecting statistics.
+     */
+    @Override
+    public void fit(DataSetIterator iterator) {
+
+    }
+
     @Override
     public void preProcess(DataSet toPreProcess) {
         toPreProcess.getFeatureMatrix().divi(this.maxPixelVal); //Scaled to 0->1
@@ -56,6 +83,39 @@ public class ImagePreProcessingScaler implements org.nd4j.linalg.dataset.api.Dat
      */
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
+    }
+
+    /**
+     * Transform the datasets with this iterator
+     *
+     * @param toPreProcessIter
+     */
+    @Override
+    public void transform(DataSetIterator toPreProcessIter) {
+
+    }
+
+    /**
+     * Load the statistics
+     * for the data normalizer
+     *
+     * @param statistics the files to persist
+     * @throws IOException
+     */
+    @Override
+    public void load(File... statistics) throws IOException {
+
+    }
+
+    /**
+     * Save the accumulated statistics
+     *
+     * @param statistics the statistics to save
+     * @throws IOException
+     */
+    @Override
+    public void save(File... statistics) throws IOException {
+
     }
 
 }

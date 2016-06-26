@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class BalanceMinibatches {
     private File rootDir = new File("minibatches");
     private File rootSaveDir = new File("minibatchessave");
     private List<File> labelRootDirs = new ArrayList<>();
+    private DataNormalization dataNormalization;
 
     /**
      * Generate a balanced
@@ -87,6 +89,8 @@ public class BalanceMinibatches {
                 rootSaveDir.mkdirs();
             //save with an incremental count of the number of minibatches saved
             DataSet merge = DataSet.merge(miniBatch);
+            if(dataNormalization != null)
+                dataNormalization.transform(merge);
             merge.save(new File(rootSaveDir,String.format("dataset-%d.bin",numsSaved++)));
 
         }
