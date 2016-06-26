@@ -2,6 +2,10 @@ package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.stats.BaseEventStats;
+import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.time.TimeSource;
+import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -24,16 +28,16 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             )));
 
     private SparkTrainingStats workerStats;
-    private int[] parameterAveragingMasterBroadcastCreateTimesMs;
-    private int[] parameterAveragingMasterFitTimesMs;
-    private int[] parameterAveragingMasterSplitTimesMs;
-    private int[] paramaterAveragingMasterAggregateTimesMs;
-    private int[] parameterAveragingMasterProcessParamsUpdaterTimesMs;
+    private List<EventStats> parameterAveragingMasterBroadcastCreateTimesMs;
+    private List<EventStats> parameterAveragingMasterFitTimesMs;
+    private List<EventStats> parameterAveragingMasterSplitTimesMs;
+    private List<EventStats> paramaterAveragingMasterAggregateTimesMs;
+    private List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs;
 
 
-    public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, int[] parameterAveragingMasterBroadcastCreateTimeMs,
-                                                 int[] parameterAveragingMasterFitTimeMs, int[] parameterAveragingMasterSplitTimeMs,
-                                                 int[] parameterAveragingMasterAggregateTimesMs, int[] parameterAveragingMasterProcessParamsUpdaterTimesMs){
+    public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, List<EventStats> parameterAveragingMasterBroadcastCreateTimeMs,
+                                                 List<EventStats> parameterAveragingMasterFitTimeMs, List<EventStats> parameterAveragingMasterSplitTimeMs,
+                                                 List<EventStats> parameterAveragingMasterAggregateTimesMs, List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs){
         this.workerStats = workerStats;
         this.parameterAveragingMasterBroadcastCreateTimesMs = parameterAveragingMasterBroadcastCreateTimeMs;
         this.parameterAveragingMasterFitTimesMs = parameterAveragingMasterFitTimeMs;
@@ -51,7 +55,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     }
 
     @Override
-    public Object getValue(String key) {
+    public List<EventStats> getValue(String key) {
         switch(key){
             case "ParameterAveragingMasterBroadcastCreateTimesMs":
                 return parameterAveragingMasterBroadcastCreateTimesMs;
@@ -81,8 +85,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             if(o.workerStats != null) workerStats = o.workerStats;
         }
 
-        this.parameterAveragingMasterBroadcastCreateTimesMs = ArrayUtil.combine(parameterAveragingMasterBroadcastCreateTimesMs, o.parameterAveragingMasterBroadcastCreateTimesMs);
-        this.parameterAveragingMasterFitTimesMs = ArrayUtil.combine(parameterAveragingMasterFitTimesMs, o.parameterAveragingMasterFitTimesMs);
+        this.parameterAveragingMasterBroadcastCreateTimesMs.addAll(o.parameterAveragingMasterBroadcastCreateTimesMs);
+        this.parameterAveragingMasterFitTimesMs.addAll(o.parameterAveragingMasterFitTimesMs);
     }
 
     @Override
@@ -95,25 +99,27 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
-        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingMasterBroadcastCreateTimesMs)).append("\n");
+        //TODO
 
-        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
-        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingMasterFitTimesMs)).append("\n");
-
-        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
-        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingMasterSplitTimesMs)).append("\n");
-
-        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
-        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(paramaterAveragingMasterAggregateTimesMs)).append("\n");
-
-        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
-        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingMasterProcessParamsUpdaterTimesMs)).append("\n");
+//        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
+//        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingMasterBroadcastCreateTimesMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
+//        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingMasterFitTimesMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
+//        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingMasterSplitTimesMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
+//        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(paramaterAveragingMasterAggregateTimesMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
+//        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingMasterProcessParamsUpdaterTimesMs)).append("\n");
 
 
         if(workerStats != null) sb.append(workerStats.statsAsString());
@@ -121,7 +127,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         return sb.toString();
     }
 
-    public static class parameterAveragingTrainingMasterStatsHelper {
+    public static class ParameterAveragingTrainingMasterStatsHelper {
 
         private long lastBroadcastStartTime;
         private long lastFitStartTime;
@@ -132,55 +138,58 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         private SparkTrainingStats workerStats;
 
         //TODO use fast int collection here (to avoid boxing cost)
-        private List<Integer> broadcastTimes = new ArrayList<>();
-        private List<Integer> fitTimes = new ArrayList<>();
-        private List<Integer> splitTimes = new ArrayList<>();
-        private List<Integer> aggregateTimes = new ArrayList<>();
-        private List<Integer> processParamsUpdaterTimes = new ArrayList<>();
+        private List<EventStats> broadcastTimes = new ArrayList<>();
+        private List<EventStats> fitTimes = new ArrayList<>();
+        private List<EventStats> splitTimes = new ArrayList<>();
+        private List<EventStats> aggregateTimes = new ArrayList<>();
+        private List<EventStats> processParamsUpdaterTimes = new ArrayList<>();
+
+        private final TimeSource timeSource = TimeSourceProvider.getInstance();
 
         public void logBroadcastStart(){
-            this.lastBroadcastStartTime = System.currentTimeMillis();
+            this.lastBroadcastStartTime = timeSource.currentTimeMillis();
         }
 
         public void logBroadcastEnd(){
-            long now = System.currentTimeMillis();
-            broadcastTimes.add((int)(now - lastBroadcastStartTime));
+            long now = timeSource.currentTimeMillis();
+
+            broadcastTimes.add(new BaseEventStats(lastBroadcastStartTime, now - lastBroadcastStartTime));
         }
 
         public void logFitStart(){
-            lastFitStartTime = System.currentTimeMillis();
+            lastFitStartTime = timeSource.currentTimeMillis();
         }
 
         public void logFitEnd(){
-            long now = System.currentTimeMillis();
-            fitTimes.add((int)(now - lastFitStartTime));
+            long now = timeSource.currentTimeMillis();
+            fitTimes.add(new BaseEventStats(lastFitStartTime,now - lastFitStartTime));
         }
 
         public void logSplitStart(){
-            lastSplitStartTime = System.currentTimeMillis();
+            lastSplitStartTime = timeSource.currentTimeMillis();
         }
 
         public void logSplitEnd(){
-            long now = System.currentTimeMillis();
-            splitTimes.add((int)(now - lastSplitStartTime));
+            long now = timeSource.currentTimeMillis();
+            splitTimes.add(new BaseEventStats(lastSplitStartTime, now - lastSplitStartTime));
         }
 
         public void logAggregateStartTime(){
-            lastAggregateStartTime = System.currentTimeMillis();
+            lastAggregateStartTime = timeSource.currentTimeMillis();
         }
 
         public void logAggregationEndTime(){
-            long now = System.currentTimeMillis();
-            aggregateTimes.add((int)(now - lastAggregateStartTime));
+            long now = timeSource.currentTimeMillis();
+            aggregateTimes.add(new BaseEventStats(lastAggregateStartTime, now - lastAggregateStartTime));
         }
 
         public void logProcessParamsUpdaterStart(){
-            lastProcessParamsUpdaterStartTime = System.currentTimeMillis();
+            lastProcessParamsUpdaterStartTime = timeSource.currentTimeMillis();
         }
 
         public void logProcessParamsUpdaterEnd(){
-            long now = System.currentTimeMillis();
-            processParamsUpdaterTimes.add((int)(now - lastProcessParamsUpdaterStartTime));
+            long now = timeSource.currentTimeMillis();
+            processParamsUpdaterTimes.add(new BaseEventStats(lastProcessParamsUpdaterStartTime, now - lastProcessParamsUpdaterStartTime));
         }
 
         public void addWorkerStats(SparkTrainingStats workerStats){
@@ -189,18 +198,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         }
 
         public ParameterAveragingTrainingMasterStats build(){
-            int[] bcast = new int[broadcastTimes.size()];
-            for( int i=0; i<bcast.length; i++ ) bcast[i] = broadcastTimes.get(i);
-            int[] fit = new int[fitTimes.size()];
-            for( int i=0; i<fit.length; i++ ) fit[i] = fitTimes.get(i);
-            int[] split = new int[splitTimes.size()];
-            for( int i=0; i<split.length; i++ ) split[i] = splitTimes.get(i);
-            int[] agg = new int[aggregateTimes.size()];
-            for( int i=0; i<agg.length; i++ ) agg[i] = aggregateTimes.get(i);
-            int[] proc = new int[processParamsUpdaterTimes.size()];
-            for( int i=0; i<proc.length; i++ ) proc[i] = processParamsUpdaterTimes.get(i);
-
-            return new ParameterAveragingTrainingMasterStats(workerStats,bcast,fit,split,agg, proc);
+            return new ParameterAveragingTrainingMasterStats(workerStats,broadcastTimes,fitTimes,splitTimes,aggregateTimes, processParamsUpdaterTimes);
         }
 
     }

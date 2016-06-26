@@ -51,7 +51,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int averagingFrequency;
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
-    private ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper stats;
+    private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
     private Collection<IterationListener> listeners;
     private int iterationCount = 0;
 
@@ -76,7 +76,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
         if (collectTrainingStats)
-            stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+            stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
 
     @Override
@@ -206,7 +206,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.collectTrainingStats = collectTrainingStats;
         if (collectTrainingStats) {
             if (this.stats == null)
-                this.stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+                this.stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
         } else {
             this.stats = null;
         }
