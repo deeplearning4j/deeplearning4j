@@ -80,13 +80,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
-        this(recordReader, converter, batchSize, -1, 
-        		recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
+        this(recordReader, converter, batchSize, -1,
+                recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
-    
+
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
-        this(recordReader, new SelfWritableConverter(), batchSize, -1, 
-        		recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
+        this(recordReader, new SelfWritableConverter(), batchSize, -1,
+                recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
@@ -166,6 +166,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     Collection<Collection<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
                     sequenceIter = sequenceRecord.iterator();
                 }
+
                 Collection<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
             } else {
@@ -216,6 +217,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         INDArray featureVector = null;
         int featureCount = 0;
         int labelCount = 0;
+
+        //no labels
+        if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
+            NDArrayWritable writable = (NDArrayWritable)currList.get(0);
+            return new DataSet(writable.get(),writable.get());
+        }
+       if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+           if(!regression)
+               label = FeatureUtil.toOutcomeVector(Integer.parseInt(currList.get(1).toString()),numPossibleLabels);
+           else
+               label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+           NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
+           featureVector = ndArrayWritable.get();
+           return new DataSet(featureVector,label);
+       }
+
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
             //ndarray writable is an insane slow down herecd
