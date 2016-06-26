@@ -27,6 +27,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -40,6 +41,8 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
 
     DataSet getRange(int from,int to);
+
+    void load(InputStream from);
 
     void load(File from);
 
