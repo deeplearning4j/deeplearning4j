@@ -342,6 +342,20 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return new DataSet(features.get(NDArrayIndex.interval(from,to)),labels.get(NDArrayIndex.interval(from,to)));
     }
 
+
+    @Override
+    public void load(InputStream from) {
+        try {
+            BufferedInputStream bis = new BufferedInputStream(from);
+            DataInputStream dis = new DataInputStream(bis);
+            features = Nd4j.read(dis);
+            labels = Nd4j.read(dis);
+            dis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void load(File from) {
         try {
@@ -349,6 +363,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             DataInputStream dis = new DataInputStream(bis);
             features = Nd4j.read(dis);
             labels = Nd4j.read(dis);
+            dis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    @Override
+    public void save(OutputStream to) {
+        try {
+            BufferedOutputStream bos = new BufferedOutputStream(to);
+            DataOutputStream dis = new DataOutputStream(bos);
+            Nd4j.write(getFeatureMatrix(),dis);
+            Nd4j.write(getLabels(),dis);
+            dis.flush();
             dis.close();
         } catch (Exception e) {
             e.printStackTrace();
