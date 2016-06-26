@@ -66,7 +66,10 @@ public interface SparkTrainingStats extends Serializable {
 
     /**
      * Get a String representation of the stats. This functionality is implemented as a separate method (as opposed to toString())
-     * as the resulting String can be very large.
+     * as the resulting String can be very large.<br>
+     *
+     * <b>NOTE</b>: The String representation typically includes only duration information. To get full statistics (including
+     * machine IDs, etc) use {@link #getValue(String)} or export full data via {@link #exportStatFiles(String, SparkContext)}
      *
      * @return A String represetation of the training statistics
      */
