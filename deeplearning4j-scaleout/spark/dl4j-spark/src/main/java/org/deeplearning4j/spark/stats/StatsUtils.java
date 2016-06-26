@@ -23,11 +23,21 @@ public class StatsUtils {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(EventStats e : list){
-            if(first) sb.append(e.getStringHeader(delimiter));
+            if(first) sb.append(e.getStringHeader(delimiter)).append("\n");
             sb.append(e.asString(delimiter)).append("\n");
             first = false;
         }
         SparkUtils.writeStringToFile(outputPath, sb.toString(), sc);
     }
 
+    public static String getDurationAsString(List<EventStats> list, String delim){
+        StringBuilder sb = new StringBuilder();
+        int num = list.size();
+        int count = 0;
+        for(EventStats e : list){
+            sb.append(e.getDurationMs());
+            if(count++ < num-1) sb.append(delim);
+        }
+        return sb.toString();
+    }
 }

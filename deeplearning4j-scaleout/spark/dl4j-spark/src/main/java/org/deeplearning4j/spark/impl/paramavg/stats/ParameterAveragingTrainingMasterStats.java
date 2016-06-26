@@ -111,27 +111,25 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        //TODO
+        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
+        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterBroadcastCreateTimesMs,",")).append("\n");
 
-//        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
-//        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingMasterBroadcastCreateTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
-//        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingMasterFitTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
-//        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingMasterSplitTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
-//        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(paramaterAveragingMasterAggregateTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
-//        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingMasterProcessParamsUpdaterTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
+        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterFitTimesMs,",")).append("\n");
+
+        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
+        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterSplitTimesMs,",")).append("\n");
+
+        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
+        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(paramaterAveragingMasterAggregateTimesMs,",")).append("\n");
+
+        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
+        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterProcessParamsUpdaterTimesMs,",")).append("\n");
 
 
         if(workerStats != null) sb.append(workerStats.statsAsString());
