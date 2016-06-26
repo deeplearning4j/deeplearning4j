@@ -176,23 +176,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
         batchNum++;
 
-        List<INDArray> inputs = new ArrayList<>();
-        List<INDArray> labels = new ArrayList<>();
-
-        for (DataSet data : dataSets) {
-            inputs.add(data.getFeatureMatrix());
-            labels.add(data.getLabels());
-        }
-
-
-        if (inputs.isEmpty()) {
-            notOvershot = false;
-            return last;
-        } else if (maxNumBatches > -1 && batchNum >= maxNumBatches) {
-            notOvershot = false;
-        }
-
-        DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
+        DataSet ret = DataSet.merge(dataSets);
         last = ret;
         if (preProcessor != null) preProcessor.preProcess(ret);
         //Add label name values to dataset
