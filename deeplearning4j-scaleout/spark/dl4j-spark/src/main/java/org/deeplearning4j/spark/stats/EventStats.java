@@ -17,4 +17,20 @@ public interface EventStats extends Serializable {
 
     long getDurationMs();
 
+    /**
+     * Get a String representation of the EventStats. This should be a single line delimited representation, suitable
+     * for exporting (such as CSV). Should not contain a new-line character at the end of each line
+     *
+     * @param delimiter Delimiter to use for the data
+     * @return String representation of the EventStats object
+     */
+    String asString(String delimiter);
+
+    /**
+     * Get a header line for exporting the EventStats object, for use with {@link #asString(String)}
+     *
+     * @param delimiter Delimiter to use for the header
+     * @return Header line
+     */
+    String getStringHeader(String delimiter);
 }
