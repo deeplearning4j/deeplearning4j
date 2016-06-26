@@ -86,18 +86,17 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        //TODO
-//        sb.append(String.format(f,"ParameterAveragingWorkerBroadcastGetValueTimeMs"));
-//        if(parameterAveragingWorkerBroadcastGetValueTimeMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingWorkerBroadcastGetValueTimeMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingWorkerInitTimeMs"));
-//        if(parameterAveragingWorkerInitTimeMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingWorkerInitTimeMs)).append("\n");
-//
-//        sb.append(String.format(f,"ParameterAveragingWorkerFitTimesMs"));
-//        if(parameterAveragingWorkerFitTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(parameterAveragingWorkerFitTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingWorkerBroadcastGetValueTimeMs"));
+        if(parameterAveragingWorkerBroadcastGetValueTimeMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerBroadcastGetValueTimeMs,",")).append("\n");
+
+        sb.append(String.format(f,"ParameterAveragingWorkerInitTimeMs"));
+        if(parameterAveragingWorkerInitTimeMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerInitTimeMs,",")).append("\n");
+
+        sb.append(String.format(f,"ParameterAveragingWorkerFitTimesMs"));
+        if(parameterAveragingWorkerFitTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerFitTimesMs,",")).append("\n");
 
         return sb.toString();
     }

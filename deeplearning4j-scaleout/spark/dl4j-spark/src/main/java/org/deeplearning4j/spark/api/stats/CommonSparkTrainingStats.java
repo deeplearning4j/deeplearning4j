@@ -104,31 +104,23 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        //TODO
+        sb.append(String.format(f,"WorkerFlatMapTotalTimeMs"));
+        if(workerFlatMapTotalTimeMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(workerFlatMapTotalTimeMs,",")).append("\n");
 
-//        sb.append(String.format(f,"WorkerFlatMapTotalTimeMs"));
-//        if(workerFlatMapTotalTimeMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(workerFlatMapTotalTimeMs)).append("\n");
-//
-//        sb.append(String.format(f,"WorkerFlatMapTotalExampleCount"));
-//        if(workerFlatMapTotalExampleCount == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(workerFlatMapTotalExampleCount)).append("\n");
-//
-//        sb.append(String.format(f,"WorkerFlatMapGetInitialModelTimeMs"));
-//        if(workerFlatMapGetInitialModelTimeMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(workerFlatMapGetInitialModelTimeMs)).append("\n");
-//
-//        sb.append(String.format(f,"WorkerFlatMapDataSetGetTimesMs"));
-//        if(workerFlatMapDataSetGetTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(workerFlatMapDataSetGetTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"WorkerFlatMapProcessMiniBatchTimesMs"));
-//        if(workerFlatMapProcessMiniBatchTimesMs == null ) sb.append("-\n");
-//        else sb.append(Arrays.toString(workerFlatMapProcessMiniBatchTimesMs)).append("\n");
-//
-//        sb.append(String.format(f,"WorkerFlatMapCountNoDataInstances")).append(workerFlatMapCountNoDataInstances).append("\n");
-//
-//        if(trainingWorkerSpecificStats != null) sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
+        sb.append(String.format(f,"WorkerFlatMapGetInitialModelTimeMs"));
+        if(workerFlatMapGetInitialModelTimeMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(workerFlatMapGetInitialModelTimeMs,",")).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapDataSetGetTimesMs"));
+        if(workerFlatMapDataSetGetTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(workerFlatMapDataSetGetTimesMs,",")).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapProcessMiniBatchTimesMs"));
+        if(workerFlatMapProcessMiniBatchTimesMs == null ) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(workerFlatMapProcessMiniBatchTimesMs,",")).append("\n");
+
+        if(trainingWorkerSpecificStats != null) sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
 
         return sb.toString();
     }
