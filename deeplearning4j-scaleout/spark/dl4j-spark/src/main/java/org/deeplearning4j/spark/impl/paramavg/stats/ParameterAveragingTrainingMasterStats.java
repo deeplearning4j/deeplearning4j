@@ -1,13 +1,18 @@
 package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.spark.SparkContext;
+import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.stats.BaseEventStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.StatsUtils;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -17,6 +22,13 @@ import java.util.*;
  */
 @Data
 public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats {
+
+    public static final String DEFAULT_DELIMITER = CommonSparkTrainingStats.DEFAULT_DELIMITER;
+    public static final String FILENAME_BROADCAST_CREATE = "parameterAveragingMasterBroadcastCreateTimesMs.txt";
+    public static final String FILENAME_FIT_TIME = "parameterAveragingMasterFitTimesMs.txt";
+    public static final String FILENAME_SPLIT_TIME = "parameterAveragingMasterSplitTimesMs.txt";
+    public static final String FILENAME_AGGREGATE_TIME = "parameterAveragingMasterAggregateTimesMs.txt";
+    public static final String FILENAME_PROCESS_PARAMS_TIME = "parameterAveragingMasterProcessParamsUpdaterTimesMs.txt";
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
@@ -125,6 +137,33 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         if(workerStats != null) sb.append(workerStats.statsAsString());
 
         return sb.toString();
+    }
+
+    @Override
+    public void exportStatFiles(String outputPath, SparkContext sc) throws IOException {
+        String d = DEFAULT_DELIMITER;
+
+        //broadcast create time:
+        String broadcastTimePath = FilenameUtils.concat(outputPath,FILENAME_BROADCAST_CREATE);
+        StatsUtils.exportStats(parameterAveragingMasterBroadcastCreateTimesMs, broadcastTimePath, d, sc);
+
+        //Fit time:
+        String fitTimePath = FilenameUtils.concat(outputPath,FILENAME_FIT_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterFitTimesMs, fitTimePath, d, sc);
+
+        //Split time:
+        String splitTimePath = FilenameUtils.concat(outputPath,FILENAME_SPLIT_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterSplitTimesMs, splitTimePath, d, sc);
+
+        //Aggregate time:
+        String aggregatePath = FilenameUtils.concat(outputPath,FILENAME_AGGREGATE_TIME);
+        StatsUtils.exportStats(paramaterAveragingMasterAggregateTimesMs, aggregatePath, d, sc);
+
+        //broadcast create time:
+        String processParamsPath = FilenameUtils.concat(outputPath,FILENAME_PROCESS_PARAMS_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterProcessParamsUpdaterTimesMs, processParamsPath, d, sc);
+
+        if(workerStats != null) workerStats.exportStatFiles(outputPath, sc);
     }
 
     public static class ParameterAveragingTrainingMasterStatsHelper {

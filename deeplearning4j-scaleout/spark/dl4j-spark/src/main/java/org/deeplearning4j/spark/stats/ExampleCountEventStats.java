@@ -19,4 +19,13 @@ public class ExampleCountEventStats extends BaseEventStats {
         this.totalExampleCount = totalExampleCount;
     }
 
+    @Override
+    public String asString(String delimiter){
+        return super.asString(delimiter) + delimiter + totalExampleCount;
+    }
+
+    @Override
+    public String getStringHeader(String delimiter){
+        return super.getStringHeader(delimiter) + delimiter + "totalExampleCount";
+    }
 }

@@ -49,4 +49,14 @@ public class BaseEventStats implements EventStats {
     public long getDurationMs() {
         return durationMs;
     }
+
+    @Override
+    public String asString(String delimiter) {
+        return machineId + delimiter + jvmId + delimiter + threadId + delimiter + startTime + delimiter + durationMs;
+    }
+
+    @Override
+    public String getStringHeader(String delimiter) {
+        return "machineId" + delimiter + "jvmId" + delimiter + "threadId" + delimiter + "startTime" + delimiter + "durationMs";
+    }
 }

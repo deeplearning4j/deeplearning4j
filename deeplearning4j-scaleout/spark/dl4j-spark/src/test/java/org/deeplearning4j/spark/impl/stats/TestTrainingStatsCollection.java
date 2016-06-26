@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.stats;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -203,6 +204,12 @@ public class TestTrainingStatsCollection {
             assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerFitTimesMs,1,1,nWorkers);
 
             assertNull(pStats.getNestedTrainingStats());
+
+
+            //Finally: try exporting stats
+            String tempDir = System.getProperty("java.io.tmpdir");
+            String outDir = FilenameUtils.concat(tempDir,"dl4j_testTrainingStatsCollection");
+            stats.exportStatFiles(outDir, sc.sc());
         } finally {
             sc.stop();
         }
