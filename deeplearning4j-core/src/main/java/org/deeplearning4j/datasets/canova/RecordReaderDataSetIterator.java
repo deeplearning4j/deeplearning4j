@@ -225,7 +225,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
            if(!regression)
-               label = FeatureUtil.toOutcomeVector(Integer.parseInt(currList.get(1).toString()),numPossibleLabels);
+               label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
            else
                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
            NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
