@@ -2,6 +2,8 @@ package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.stats.BaseEventStats;
+import org.deeplearning4j.spark.stats.EventStats;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -14,9 +16,9 @@ import java.util.*;
 @Data
 public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats {
 
-    private int[] parameterAveragingWorkerBroadcastGetValueTimeMs;
-    private int[] parameterAveragingWorkerInitTimeMs;
-    private int[] parameterAveragingWorkerFitTimesMs;
+    private List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs;
+    private List<EventStats> parameterAveragingWorkerInitTimeMs;
+    private List<EventStats> parameterAveragingWorkerFitTimesMs;
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
@@ -25,10 +27,10 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
                     "ParameterAveragingWorkerFitTimesMs"
             )));
 
-    public ParameterAveragingTrainingWorkerStats(int parameterAveragingWorkerBroadcastGetValueTimeMs, int parameterAveragingWorkerInitTimeMs,
-                                                 int[] parameterAveragingWorkerFitTimesMs){
-        this.parameterAveragingWorkerBroadcastGetValueTimeMs = new int[]{parameterAveragingWorkerBroadcastGetValueTimeMs};
-        this.parameterAveragingWorkerInitTimeMs = new int[]{parameterAveragingWorkerInitTimeMs};
+    public ParameterAveragingTrainingWorkerStats(List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs, List<EventStats> parameterAveragingWorkerInitTimeMs,
+                                                 List<EventStats> parameterAveragingWorkerFitTimesMs){
+        this.parameterAveragingWorkerBroadcastGetValueTimeMs = parameterAveragingWorkerBroadcastGetValueTimeMs;
+        this.parameterAveragingWorkerInitTimeMs = parameterAveragingWorkerInitTimeMs;
         this.parameterAveragingWorkerFitTimesMs = parameterAveragingWorkerFitTimesMs;
     }
 
@@ -38,7 +40,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     }
 
     @Override
-    public Object getValue(String key) {
+    public List<EventStats> getValue(String key) {
         switch(key){
             case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
                 return parameterAveragingWorkerBroadcastGetValueTimeMs;
@@ -57,9 +59,9 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
 
         ParameterAveragingTrainingWorkerStats o = (ParameterAveragingTrainingWorkerStats)other;
 
-        this.parameterAveragingWorkerBroadcastGetValueTimeMs = ArrayUtil.combine(parameterAveragingWorkerBroadcastGetValueTimeMs,o.parameterAveragingWorkerBroadcastGetValueTimeMs);
-        this.parameterAveragingWorkerInitTimeMs = ArrayUtil.combine(parameterAveragingWorkerInitTimeMs, o.parameterAveragingWorkerInitTimeMs);
-        this.parameterAveragingWorkerFitTimesMs = ArrayUtil.combine(parameterAveragingWorkerFitTimesMs, o.parameterAveragingWorkerFitTimesMs);
+        this.parameterAveragingWorkerBroadcastGetValueTimeMs.addAll(o.parameterAveragingWorkerBroadcastGetValueTimeMs);
+        this.parameterAveragingWorkerInitTimeMs.addAll(o.parameterAveragingWorkerInitTimeMs);
+        this.parameterAveragingWorkerFitTimesMs.addAll(o.parameterAveragingWorkerFitTimesMs);
     }
 
     @Override
@@ -72,17 +74,18 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f,"ParameterAveragingWorkerBroadcastGetValueTimeMs"));
-        if(parameterAveragingWorkerBroadcastGetValueTimeMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingWorkerBroadcastGetValueTimeMs)).append("\n");
-
-        sb.append(String.format(f,"ParameterAveragingWorkerInitTimeMs"));
-        if(parameterAveragingWorkerInitTimeMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingWorkerInitTimeMs)).append("\n");
-
-        sb.append(String.format(f,"ParameterAveragingWorkerFitTimesMs"));
-        if(parameterAveragingWorkerFitTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(parameterAveragingWorkerFitTimesMs)).append("\n");
+        //TODO
+//        sb.append(String.format(f,"ParameterAveragingWorkerBroadcastGetValueTimeMs"));
+//        if(parameterAveragingWorkerBroadcastGetValueTimeMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingWorkerBroadcastGetValueTimeMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingWorkerInitTimeMs"));
+//        if(parameterAveragingWorkerInitTimeMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingWorkerInitTimeMs)).append("\n");
+//
+//        sb.append(String.format(f,"ParameterAveragingWorkerFitTimesMs"));
+//        if(parameterAveragingWorkerFitTimesMs == null ) sb.append("-\n");
+//        else sb.append(Arrays.toString(parameterAveragingWorkerFitTimesMs)).append("\n");
 
         return sb.toString();
     }
@@ -93,7 +96,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         private long initEndTime;
         private long lastFitStartTime;
         //TODO replace with fast int collection (no boxing)
-        private List<Integer> fitTimes = new ArrayList<>();
+        private List<EventStats> fitTimes = new ArrayList<>();
 
 
         public void logBroadcastGetValueStart(){
@@ -114,15 +117,15 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
 
         public void logFitEnd(){
             long now = System.currentTimeMillis();
-            fitTimes.add((int)(now - lastFitStartTime));
+            fitTimes.add(new BaseEventStats(lastFitStartTime, now - lastFitStartTime));
         }
 
         public ParameterAveragingTrainingWorkerStats build(){
-            int bcast = (int)(broadcastEndTime - broadcastStartTime);
-            int init = (int)(initEndTime - broadcastEndTime);   //Init starts at same time that broadcast ends
-            int[] fitTimesArr = new int[fitTimes.size()];
-            for( int i=0; i<fitTimesArr.length; i++ ) fitTimesArr[i] = fitTimes.get(i);
-            return new ParameterAveragingTrainingWorkerStats(bcast, init, fitTimesArr);
+            return new ParameterAveragingTrainingWorkerStats(
+                    Collections.singletonList((EventStats)new BaseEventStats(broadcastStartTime,broadcastEndTime-broadcastStartTime)),
+                    Collections.singletonList((EventStats)new BaseEventStats(broadcastEndTime,initEndTime-broadcastEndTime)),   //Init starts at same time that broadcast ends
+                    fitTimes);
+
         }
     }
 }

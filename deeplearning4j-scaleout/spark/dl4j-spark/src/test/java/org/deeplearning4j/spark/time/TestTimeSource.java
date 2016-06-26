@@ -17,7 +17,7 @@ public class TestTimeSource {
 
         for(int i=0; i<10; i++ ) {
             long systemTime = System.currentTimeMillis();
-            long ntpTime = timeSource.getCurrentTimeMillis();
+            long ntpTime = timeSource.currentTimeMillis();
             long offset = ntpTime - systemTime;
             System.out.println("System: " + systemTime + "\tNTPTimeSource: " + ntpTime + "\tOffset: " + offset);
             Thread.sleep(500);
@@ -31,7 +31,7 @@ public class TestTimeSource {
 
         for(int i=0; i<10; i++ ) {
             long systemTime = System.currentTimeMillis();
-            long ntpTime = timeSource.getCurrentTimeMillis();
+            long ntpTime = timeSource.currentTimeMillis();
             long offset = ntpTime - systemTime;
             System.out.println("System: " + systemTime + "\tSystemClockTimeSource: " + ntpTime + "\tOffset: " + offset);
             assertEquals(systemTime,ntpTime);
