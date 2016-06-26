@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -46,7 +48,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         if(allocationMode == null) {
             String otherAlloc = System.getProperty("alloc");
             if(otherAlloc.equals("heap"))
-              setAllocationMode(DataBuffer.AllocationMode.HEAP);
+                setAllocationMode(DataBuffer.AllocationMode.HEAP);
             else if(otherAlloc.equals("direct"))
                 setAllocationMode(DataBuffer.AllocationMode.DIRECT);
             else if(otherAlloc.equals("javacpp"))
@@ -123,7 +125,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createDouble(int offset, byte[] data, int length) {
-     return createDouble(offset,ArrayUtil.toDoubleArray(data),true);
+        return createDouble(offset,ArrayUtil.toDoubleArray(data),true);
     }
 
     @Override
@@ -344,5 +346,28 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createInt(float[] data, boolean copy) {
         return new IntBuffer(ArrayUtil.toInts(data), copy);
+    }
+
+    /**
+     * Create a data buffer based on the
+     * given pointer, data buffer type,
+     * and length of the buffer
+     *
+     * @param pointer the pointer to use
+     * @param type    the type of buffer
+     * @param length  the length of the buffer
+     * @param indexer the indexer for the pointer
+     * @return the data buffer
+     * backed by this pointer with the given
+     * type and length.
+     */
+    @Override
+    public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
+        switch(type) {
+            case INT: return new IntBuffer(pointer,indexer,length);
+            case DOUBLE: return new DoubleBuffer(pointer,indexer,length);
+            case FLOAT: return new FloatBuffer(pointer,indexer,length);
+        }
+        throw new IllegalArgumentException("Invalid type " + type);
     }
 }

@@ -21,6 +21,10 @@ package org.nd4j.linalg.api.buffer;
 
 import static org.junit.Assert.*;
 
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -51,6 +55,16 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
     @Before
     public void before() {
         Nd4j.dtype = DataBuffer.Type.FLOAT;
+    }
+
+
+    @Test
+    public void testPointerCreation() {
+        FloatPointer floatPointer = new FloatPointer(1,2,3,4);
+        Indexer indexer = FloatIndexer.create(floatPointer);
+        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.FLOAT,4,indexer);
+        DataBuffer other = Nd4j.createBuffer(new float[]{1,2,3,4});
+        assertEquals(other,buffer);
     }
 
     @Test

@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -33,6 +35,17 @@ import java.nio.ByteOrder;
  * @author Adam Gibson
  */
 public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
+    /**
+     * Meant for creating another view of a buffer
+     *
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length  the length of the view
+     */
+    public CudaDoubleDataBuffer(Pointer pointer, Indexer indexer, long length) {
+        super(pointer, indexer, length);
+    }
+
     /**
      * Base constructor
      *

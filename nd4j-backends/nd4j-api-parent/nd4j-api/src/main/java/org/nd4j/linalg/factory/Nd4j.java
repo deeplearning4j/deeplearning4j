@@ -24,6 +24,8 @@ import com.google.common.primitives.Ints;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -1172,7 +1174,26 @@ public class Nd4j {
         return createBuffer(length, true);
     }
 
-    public static DataBuffer createBuffer(long length, boolean initialize){
+    /**
+     * Create a data buffer
+     * based on a pointer
+     * with the given type and length
+     * @param pointer the pointer to create the buffer for
+     * @param type the type of pointer
+     * @param length the length of the buffer
+     * @param  indexer the indexer to use
+     * @return the data buffer based on the given parameters
+     */
+    public static DataBuffer createBuffer(Pointer pointer, DataBuffer.Type type,long length,Indexer indexer) {
+       return DATA_BUFFER_FACTORY_INSTANCE.create(pointer,type,length,indexer);
+    }
+    /**
+     *
+     * @param length
+     * @param initialize
+     * @return
+     */
+    public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);

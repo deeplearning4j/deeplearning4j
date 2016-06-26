@@ -81,8 +81,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @param labelsMask Mask array for labels, may be null
      */
     public DataSet(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
-        if (features.size(0) != labels.size(0))
-            throw new IllegalStateException("Invalid data transform; features and labels do not have equal rows. First was " + features.size(0) + " labels was " + labels.size(0));
         this.features = features;
         this.labels = labels;
         this.featuresMask = featuresMask;
@@ -97,6 +95,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public static DataSet empty() {
         return new DataSet(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
     }
+
+
     /**
      * Merge the list of datasets in to one list.
      * All the rows are merged in to one dataset
@@ -115,10 +115,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         INDArray[] featuresToMerge = new INDArray[data.size()];
         INDArray[] labelsToMerge = new INDArray[data.size()];
-        int count=0;
+        int count = 0;
         boolean hasFeaturesMaskArray = false;
         boolean hasLabelsMaskArray = false;
-        for(DataSet ds : data){
+        for(DataSet ds : data) {
             featuresToMerge[count] = ds.getFeatureMatrix();
             labelsToMerge[count++] = ds.getLabels();
             if(rankFeatures == 3 || rankLabels == 3) {
@@ -140,7 +140,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             case 3:
                 //Time series data: may also have mask arrays...
                 INDArray[] featuresMasks = null;
-                if(hasFeaturesMaskArray){
+                if(hasFeaturesMaskArray) {
                     featuresMasks = new INDArray[featuresToMerge.length];
                     count = 0;
                     for(DataSet ds : data){
@@ -459,7 +459,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
         Nd4j.shuffle(getLabels(),new Random(seed),nonzeroDimsLab);
         if(getFeaturesMaskArray() != null) {
-            Nd4j.shuffle(getFeaturesMaskArray(),new Random(seed),nonzeroDimsFeat); 
+            Nd4j.shuffle(getFeaturesMaskArray(),new Random(seed),nonzeroDimsFeat);
         }
         if(getLabelsMaskArray() != null) {
             Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
@@ -583,8 +583,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int outcome() {
-        if (this.numExamples() > 1)
-            throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
         return Nd4j.getBlasWrapper().iamax(getLabels());
     }
 
@@ -630,7 +628,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             throw new IllegalArgumentException("invalid example number");
         if(i == 0 && numExamples() == 1)
             return this;
-        return new DataSet(getFeatures().getRow(i), getLabels().getRow(i));
+        if(getFeatureMatrix().rank() == 4) {
+            //ensure rank is preserved
+            INDArray slice = getFeatureMatrix().slice(i);
+            return new DataSet(slice.reshape(ArrayUtil.combine(new int[]{1},slice.shape())),getLabels().slice(i));
+        }
+        return new DataSet(getFeatures().slice(i), getLabels().slice(i));
     }
 
     /**
@@ -1021,7 +1024,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numExamples() {
-        return getFeatures().size(0);
+        return getLabels().size(0);
     }
 
 

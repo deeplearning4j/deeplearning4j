@@ -27,6 +27,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -53,9 +54,14 @@ import java.util.*;
 /**
  * Base class for a data buffer
  *
- * CUDA implementation for DataBuffer always uses JavaCPP as allocationMode, and device access is masked by appropriate allocator mover implementation.
+ * CUDA implementation for DataBuffer always uses JavaCPP
+ * as allocationMode, and device access is masked by
+ * appropriate allocator mover implementation.
  *
- * Memory allocation/deallocation is strictly handled by allocator, since JavaCPP alloc/dealloc has nothing to do with CUDA. But besides that, host pointers obtained from CUDA are 100% compatible with CPU
+ * Memory allocation/deallocation is strictly handled by allocator,
+ * since JavaCPP alloc/dealloc has nothing to do with CUDA.
+ * But besides that, host pointers obtained from CUDA are 100%
+ * compatible with CPU
  *
  * @author Adam Gibson
  * @author raver119@gmail.com
@@ -69,6 +75,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     public BaseCudaDataBuffer() {
+
+    }
+
+    /**
+     * Meant for creating another view of a buffer
+     *
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length  the length of the view
+     */
+    public BaseCudaDataBuffer(Pointer pointer, Indexer indexer, long length) {
+        super(pointer, indexer, length);
+        if(!(pointer instanceof  CudaPointer)) {
+            this.pointer = new CudaPointer(pointer,length * getElementSize(),0);
+        }
+        //cuda specific bits
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+        this.trackingPoint = allocationPoint.getObjectId();
 
     }
 

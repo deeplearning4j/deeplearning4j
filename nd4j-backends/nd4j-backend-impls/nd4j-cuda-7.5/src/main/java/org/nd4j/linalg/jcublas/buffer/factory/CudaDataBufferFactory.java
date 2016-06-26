@@ -19,7 +19,12 @@
 
 package org.nd4j.linalg.jcublas.buffer.factory;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -58,7 +63,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
         if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
-           return new CudaDoubleDataBuffer(underlyingBuffer,length,offset);
+            return new CudaDoubleDataBuffer(underlyingBuffer,length,offset);
         }
         else if(underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
             return new CudaFloatDataBuffer(underlyingBuffer,length,offset);
@@ -344,5 +349,28 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createInt(float[] data, boolean copy) {
         return new CudaIntDataBuffer(ArrayUtil.toInts(data));
+    }
+
+    /**
+     * Create a data buffer based on the
+     * given pointer, data buffer type,
+     * and length of the buffer
+     *
+     * @param pointer the pointer to use
+     * @param type    the type of buffer
+     * @param length  the length of the buffer
+     * @param indexer
+     * @return the data buffer
+     * backed by this pointer with the given
+     * type and length.
+     */
+    @Override
+    public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
+        switch (type) {
+            case INT: return new CudaIntDataBuffer(pointer,indexer,length);
+            case DOUBLE: return new CudaDoubleDataBuffer(pointer,indexer,length);
+            case FLOAT: return new CudaFloatDataBuffer(pointer,indexer,length);
+        }
+        throw new IllegalArgumentException("Illegal type " + type);
     }
 }
