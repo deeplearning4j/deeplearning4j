@@ -21,10 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
-import org.deeplearning4j.ui.components.chart.ChartHistogram;
-import org.deeplearning4j.ui.components.chart.ChartLine;
-import org.deeplearning4j.ui.components.chart.ChartScatter;
-import org.deeplearning4j.ui.components.chart.ChartStackedArea;
+import org.deeplearning4j.ui.components.chart.*;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.component.style.StyleDiv;
@@ -142,6 +139,22 @@ public class TestRendering {
                 .build();
         Component c8 = new ComponentDiv(divStyle, c7, new ComponentText("(Also: it's float right, 30% width, 200 px high )",null));
         list.add(c8);
+
+
+        //Timeline chart:
+        List<ChartTimeline.TimelineEntry> entries = new ArrayList<>();
+        for( int i=0; i<10; i++ ){
+            entries.add(new ChartTimeline.TimelineEntry(String.valueOf(i),10*i,10*i+5));
+        }
+        List<ChartTimeline.TimelineEntry> entries2 = new ArrayList<>();
+        for( int i=0; i<10; i++ ){
+            entries2.add(new ChartTimeline.TimelineEntry(String.valueOf(i),(int)(5*i + 0.2*i*i),(int)(5*i + 0.2*i*i)+3));
+        }
+        Component c9 = new ChartTimeline.Builder("Title",s)
+                .addLane("Lane0",entries)
+                .addLane("Lane1",entries2)
+                .build();
+        list.add(c9);
 
 
 
