@@ -746,11 +746,12 @@ var ChartTimeline = (function (_super) {
             for (var i = 0; i < _this.laneData.length; i++) {
                 for (var j = 0; j < _this.laneData[i].length; j++) {
                     var obj = {};
-                    obj["class"] = "past";
                     obj["start"] = _this.laneData[i][j]["startTimeMs"];
                     obj["end"] = _this.laneData[i][j]["endTimeMs"];
                     obj["id"] = count++;
                     obj["lane"] = i;
+                    obj["color"] = _this.laneData[i][j]["color"];
+                    obj["label"] = _this.laneData[i][j]["entryLabel"];
                     _this.itemData.push(obj);
                 }
             }
@@ -958,6 +959,11 @@ var ChartTimeline = (function (_super) {
                 .attr('width', function (d) { return instance.x1(d.end) - instance.x1(d.start); })
                 .attr('height', function (d) { return ChartTimeline.ENTRY_LANE_HEIGHT_TOTAL_FRACTION * instance.y1(1); })
                 .attr('stroke', 'black')
+                .attr('fill', function (d) {
+                if (d.color)
+                    return d.color;
+                return ChartTimeline.DEFAULT_COLOR;
+            })
                 .attr('stroke-width', 1);
             rects.exit().remove();
             var labels = _this.itemRects.selectAll('text')
@@ -970,7 +976,7 @@ var ChartTimeline = (function (_super) {
                 .attr('fill', 'black');
             labels.enter().append('text')
                 .text(function (d) {
-                return 'Id: ' + d.id;
+                return '' + d.label;
             })
                 .attr('x', function (d) {
                 return instance.x1(Math.max(d.start, minExtent)) + 2;
@@ -1016,6 +1022,7 @@ var ChartTimeline = (function (_super) {
     ChartTimeline.MILLISEC_PER_HOUR = 60 * ChartTimeline.MILLISEC_PER_MINUTE;
     ChartTimeline.MILLISEC_PER_DAY = 24 * ChartTimeline.MILLISEC_PER_HOUR;
     ChartTimeline.MILLISEC_PER_WEEK = 7 * ChartTimeline.MILLISEC_PER_DAY;
+    ChartTimeline.DEFAULT_COLOR = "LightGrey";
     return ChartTimeline;
 }(Chart));
 var StyleChart = (function (_super) {
