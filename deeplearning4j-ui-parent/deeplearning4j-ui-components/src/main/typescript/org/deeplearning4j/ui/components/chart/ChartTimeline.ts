@@ -127,7 +127,9 @@ class ChartTimeline extends Chart implements Renderable {
         this.mainView = svg.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
             .attr('width', widthExMargins)
-            .attr('height', mainHeight);
+            .attr('height', mainHeight)
+            .attr('font-size', '12px')
+            .attr('font', 'sans-serif');
 
         this.miniView = svg.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + margin.top + 25) + ')') //25 being space for ticks/time label
@@ -163,6 +165,7 @@ class ChartTimeline extends Chart implements Renderable {
                 return instance.y1(d.id + .5);
             })
             .attr('text-anchor', 'end')
+            .attr("font","8pt sans-serif")
             .attr('fill', 'black');
 
         // Divider lines for miniView chart

@@ -105,6 +105,25 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     }
 
     @Override
+    public boolean defaultIncludeInPlots(String key){
+        switch(key){
+            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+                return true;
+            case "ParameterAveragingMasterFitTimesMs":
+                return false;
+            case "ParameterAveragingMasterSplitTimesMs":
+                return true;
+            case "ParameterAveragingMasterAggregateTimesMs":
+                return true;
+            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+                return true;
+            default:
+                if(workerStats != null) return workerStats.defaultIncludeInPlots(key);
+                return false;
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof ParameterAveragingTrainingMasterStats)) throw new IllegalArgumentException("Expected ParameterAveragingTrainingMasterStats, got " + (other != null ? other.getClass() : null));
 
