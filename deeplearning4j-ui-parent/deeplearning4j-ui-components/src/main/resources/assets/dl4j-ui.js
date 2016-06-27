@@ -789,7 +789,9 @@ var ChartTimeline = (function (_super) {
             _this.mainView = svg.append('g')
                 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
                 .attr('width', widthExMargins)
-                .attr('height', mainHeight);
+                .attr('height', mainHeight)
+                .attr('font-size', '12px')
+                .attr('font', 'sans-serif');
             _this.miniView = svg.append('g')
                 .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + margin.top + 25) + ')')
                 .attr('width', widthExMargins)
@@ -820,6 +822,7 @@ var ChartTimeline = (function (_super) {
                 return instance.y1(d.id + .5);
             })
                 .attr('text-anchor', 'end')
+                .attr("font", "8pt sans-serif")
                 .attr('fill', 'black');
             _this.miniView.append('g').selectAll('.laneLines')
                 .data(_this.lanes)

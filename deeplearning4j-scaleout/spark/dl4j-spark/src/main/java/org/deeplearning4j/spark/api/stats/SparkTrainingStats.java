@@ -59,6 +59,16 @@ public interface SparkTrainingStats extends Serializable {
     String getShortNameForKey(String key);
 
     /**
+     * When plotting statistics, we don't necessarily want to plot everything.
+     * For example, some statistics/measurements are made up multiple smaller components; it does not always make sense
+     * to plot both the larger stat, and the components that make it up
+     *
+     * @param key Key to check for default plotting behaviour
+     * @return Whether the specified key should be included in plots by default or not
+     */
+    boolean defaultIncludeInPlots(String key);
+
+    /**
      * Combine the two training stats instances. Usually, the two objects must be of the same type
      *
      * @param other Other training stats to return

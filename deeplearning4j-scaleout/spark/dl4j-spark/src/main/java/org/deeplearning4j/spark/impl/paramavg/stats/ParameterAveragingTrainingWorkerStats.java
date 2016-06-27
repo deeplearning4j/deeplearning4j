@@ -80,6 +80,20 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     }
 
     @Override
+    public boolean defaultIncludeInPlots(String key){
+        switch(key){
+            case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
+                return true;
+            case "ParameterAveragingWorkerInitTimeMs":
+                return true;
+            case "ParameterAveragingWorkerFitTimesMs":
+                return true;
+            default:
+                throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof ParameterAveragingTrainingWorkerStats)) throw new IllegalArgumentException("Cannot merge ParameterAveragingTrainingWorkerStats with " + (other != null ? other.getClass() : null));
 

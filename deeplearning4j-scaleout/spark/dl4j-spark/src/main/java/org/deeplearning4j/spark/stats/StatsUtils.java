@@ -61,6 +61,15 @@ public class StatsUtils {
         exportStatsAsHtml(sparkTrainingStats, path, sc.sc());
     }
 
+    /**
+     * Generate and export a HTML representation (including charts, etc) of the Spark training statistics<br>
+     * Note: exporting is done via Spark, so the path here can be a local file, HDFS, etc.
+     *
+     * @param sparkTrainingStats    Stats to generate HTML page for
+     * @param path                  Path to export. May be local or HDFS
+     * @param sc                    Spark context
+     * @throws Exception            IO errors or error generating HTML file
+     */
     public static void exportStatsAsHtml(SparkTrainingStats sparkTrainingStats, String path, SparkContext sc) throws Exception {
         Set<String> keySet = sparkTrainingStats.getKeySet();
 
@@ -69,16 +78,21 @@ public class StatsUtils {
         StyleChart styleChart = new StyleChart.Builder()
                 .backgroundColor(Color.WHITE)
                 .width(800, LengthUnit.Px)
-                .height(450, LengthUnit.Px)
+                .height(400, LengthUnit.Px)
                 .build();
 
         StyleText styleText = new StyleText.Builder()
                 .color(Color.BLACK)
                 .fontSize(20)
                 .build();
-        Component headerText = new ComponentText("Spark Training Analysis Statistics Plots", styleText);
+        Component headerText = new ComponentText("Deeplearning4j - Spark Training Analysis Statistics Plots", styleText);
         Component header = new ComponentDiv(new StyleDiv.Builder().height(40, LengthUnit.Px).width(100, LengthUnit.Percent).build(), headerText);
         components.add(header);
+
+        Set<String> keySetInclude = new HashSet<>();
+        for(String s : keySet) if(sparkTrainingStats.defaultIncludeInPlots(s)) keySetInclude.add(s);
+
+        components.add(getTrainingStatsTimelineChart(sparkTrainingStats, keySetInclude));
 
         for (String s : keySet) {
             List<EventStats> list = new ArrayList<>(sparkTrainingStats.getValue(s));
@@ -96,8 +110,6 @@ public class StatsUtils {
                     .build());
         }
 
-        components.add(getTrainingStatsTimelineChart(sparkTrainingStats));
-
         String html = StaticPageUtil.renderHTML(components);
         SparkUtils.writeStringToFile(path, html, sc);
     }
@@ -111,52 +123,66 @@ public class StatsUtils {
     }
 
 
-    private static Component getTrainingStatsTimelineChart(SparkTrainingStats stats){
-        Set<Tuple3<String,String,Long>> uniqueTuples = new HashSet<>();
+    private static Component getTrainingStatsTimelineChart(SparkTrainingStats stats, Set<String> includeSet) {
+        Set<Tuple3<String, String, Long>> uniqueTuples = new HashSet<>();
+        Set<String> machineIDs = new HashSet<>();
+        Set<String> jvmIDs = new HashSet<>();
 
-        Set<String> keySet = stats.getKeySet();
-        for(String s : keySet){
+        Map<String, String> machineShortNames = new HashMap<>();
+        Map<String, String> jvmShortNames = new HashMap<>();
+
+        for (String s : includeSet) {
             List<EventStats> list = stats.getValue(s);
-            for(EventStats e : list){
+            for (EventStats e : list) {
+                machineIDs.add(e.getMachineID());
+                jvmIDs.add(e.getJvmID());
                 uniqueTuples.add(new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID()));
             }
         }
+        int count = 0;
+        for (String s : machineIDs) {
+            machineShortNames.put(s, "PC " + count++);
+        }
+        count = 0;
+        for (String s : jvmIDs) {
+            jvmShortNames.put(s, "JVM " + count++);
+        }
 
         int nLanes = uniqueTuples.size();
-        List<Tuple3<String,String,Long>> outputOrder = new ArrayList<>(uniqueTuples);
+        List<Tuple3<String, String, Long>> outputOrder = new ArrayList<>(uniqueTuples);
         Collections.sort(outputOrder, new TupleComparator());
 
-        Color[] colors = getRandomColors(keySet.size(), 12345);
-        Map<String,Color> colorMap = new HashMap<>();
-        int count = 0;
-        for( String s : keySet){
+        Color[] colors = getRandomColors(includeSet.size(), 12345);
+        Map<String, Color> colorMap = new HashMap<>();
+        count = 0;
+        for (String s : includeSet) {
             colorMap.put(s, colors[count++]);
         }
 
         List<List<ChartTimeline.TimelineEntry>> entriesByLane = new ArrayList<>();
-        for( int i=0; i<nLanes; i++ ) entriesByLane.add(new ArrayList<ChartTimeline.TimelineEntry>());
-        for(String s : keySet){
+        for (int i = 0; i < nLanes; i++) entriesByLane.add(new ArrayList<ChartTimeline.TimelineEntry>());
+        for (String s : includeSet) {
 
             List<EventStats> list = stats.getValue(s);
-            for(EventStats e : list){
-                if(e.getDurationMs() == 0) continue;
+            for (EventStats e : list) {
+                if (e.getDurationMs() == 0) continue;
 
                 long start = e.getStartTime();
                 long end = start + e.getDurationMs();
 
 
-                Tuple3<String,String,Long> tuple = new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID());
+                Tuple3<String, String, Long> tuple = new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID());
 
                 int idx = outputOrder.indexOf(tuple);
                 Color c = colorMap.get(s);
-                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s),start,end, c);
+                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s), start, end, c);
                 entriesByLane.get(idx).add(entry);
             }
         }
 
         //Sort each lane by start time:
-        for(List<ChartTimeline.TimelineEntry> l : entriesByLane){
-            Collections.sort(l, new Comparator<ChartTimeline.TimelineEntry>(){
+        for (List<ChartTimeline.TimelineEntry> l : entriesByLane) {
+            Collections.sort(l, new Comparator<ChartTimeline.TimelineEntry>() {
                 @Override
                 public int compare(ChartTimeline.TimelineEntry o1, ChartTimeline.TimelineEntry o2) {
                     return Long.compare(o1.getStartTimeMs(), o2.getStartTimeMs());
@@ -165,16 +191,16 @@ public class StatsUtils {
         }
 
         StyleChart sc = new StyleChart.Builder()
-                .width(1024, LengthUnit.Px)
-                .height(50*nLanes+300, LengthUnit.Px)
-                .margin(LengthUnit.Px, 10, 10, 100, 10) //top, bottom, left, right
+                .width(1280, LengthUnit.Px)
+                .height(60 * nLanes + 320, LengthUnit.Px)
+                .margin(LengthUnit.Px, 60, 10, 200, 10) //top, bottom, left, right
                 .build();
 
-        ChartTimeline.Builder b = new ChartTimeline.Builder("Timeline",sc);
-        int i=0;
-        for(List<ChartTimeline.TimelineEntry> l : entriesByLane){
-            Tuple3<String,String,Long> t3 = outputOrder.get(i);
-            String name = t3._1() + "/" + t3._2() + "/" + t3._3();
+        ChartTimeline.Builder b = new ChartTimeline.Builder("Timeline: Training Activities", sc);
+        int i = 0;
+        for (List<ChartTimeline.TimelineEntry> l : entriesByLane) {
+            Tuple3<String, String, Long> t3 = outputOrder.get(i);
+            String name = machineShortNames.get(t3._1()) + ", " + jvmShortNames.get(t3._2()) + ", Thread " + t3._3();
             b.addLane(name, l);
             i++;
         }
@@ -182,12 +208,12 @@ public class StatsUtils {
         return b.build();
     }
 
-    private static class TupleComparator implements Comparator<Tuple3<String,String,Long>>{
+    private static class TupleComparator implements Comparator<Tuple3<String, String, Long>> {
         @Override
         public int compare(Tuple3<String, String, Long> o1, Tuple3<String, String, Long> o2) {
-            if(o1._1().equals(o2._1())){
+            if (o1._1().equals(o2._1())) {
                 //Equal machine IDs, so sort on JVM ids
-                if(o1._2().equals(o2._2())){
+                if (o1._2().equals(o2._2())) {
                     //Equal machine AND JVM IDs, so sort on thread ID
                     return Long.compare(o1._3(), o2._3());
                 } else {
@@ -199,10 +225,10 @@ public class StatsUtils {
         }
     }
 
-    private static Color[] getRandomColors(int nColors, long seed){
+    private static Color[] getRandomColors(int nColors, long seed) {
         Random r = new Random(seed);
         Color[] c = new Color[nColors];
-        for( int i=0; i<nColors; i++ ){
+        for (int i = 0; i < nColors; i++) {
             c[i] = Color.getHSBColor(r.nextFloat(), 0.5f, 0.75f);   //random hue; fixed saturation + variance to (hopefully) ensure readability of labels
         }
         return c;
