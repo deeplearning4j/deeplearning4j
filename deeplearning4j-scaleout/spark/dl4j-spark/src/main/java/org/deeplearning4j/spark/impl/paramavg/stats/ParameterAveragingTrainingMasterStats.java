@@ -86,6 +86,25 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     }
 
     @Override
+    public String getShortNameForKey(String key){
+        switch(key){
+            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+                return "CreateBroadcast";
+            case "ParameterAveragingMasterFitTimesMs":
+                return "Fit";
+            case "ParameterAveragingMasterSplitTimesMs":
+                return "Split";
+            case "ParameterAveragingMasterAggregateTimesMs":
+                return "Aggregate";
+            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+                return "ProcessParams";
+            default:
+                if(workerStats != null) return workerStats.getShortNameForKey(key);
+                throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof ParameterAveragingTrainingMasterStats)) throw new IllegalArgumentException("Expected ParameterAveragingTrainingMasterStats, got " + (other != null ? other.getClass() : null));
 
