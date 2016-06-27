@@ -151,7 +151,7 @@ public class SynchronousFlowController implements FlowController {
             builder.append(", O_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
         }
 
-        log.info(builder.toString());
+//        log.info(builder.toString());
 
         return context;
     }
