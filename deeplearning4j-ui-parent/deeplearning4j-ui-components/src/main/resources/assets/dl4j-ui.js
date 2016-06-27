@@ -49,7 +49,8 @@ var ComponentType;
     ComponentType[ComponentType["ChartLine"] = 5] = "ChartLine";
     ComponentType[ComponentType["ChartScatter"] = 6] = "ChartScatter";
     ComponentType[ComponentType["ChartStackedArea"] = 7] = "ChartStackedArea";
-    ComponentType[ComponentType["DecoratorAccordion"] = 8] = "DecoratorAccordion";
+    ComponentType[ComponentType["ChartTimeline"] = 8] = "ChartTimeline";
+    ComponentType[ComponentType["DecoratorAccordion"] = 9] = "DecoratorAccordion";
 })(ComponentType || (ComponentType = {}));
 var Component = (function () {
     function Component(componentType) {
@@ -80,6 +81,8 @@ var Component = (function () {
                 return new ChartScatter(jsonStr);
             case ComponentType[ComponentType.ChartStackedArea]:
                 return new ChartStackedArea(jsonStr);
+            case ComponentType[ComponentType.ChartTimeline]:
+                return new ChartTimeline(jsonStr);
             case ComponentType[ComponentType.DecoratorAccordion]:
                 return new DecoratorAccordion(jsonStr);
             case ComponentType[ComponentType.ComponentDiv]:
@@ -728,6 +731,292 @@ var ChartStackedArea = (function (_super) {
         this.labels = json['labels'];
     }
     return ChartStackedArea;
+}(Chart));
+var ChartTimeline = (function (_super) {
+    __extends(ChartTimeline, _super);
+    function ChartTimeline(jsonStr) {
+        var _this = this;
+        _super.call(this, ComponentType.ChartTimeline, jsonStr);
+        this.render = function (appendToObject) {
+            var instance = _this;
+            var s = _this.getStyle();
+            var margin = Style.getMargins(s);
+            _this.itemData = [];
+            var count = 0;
+            for (var i = 0; i < _this.laneData.length; i++) {
+                for (var j = 0; j < _this.laneData[i].length; j++) {
+                    var obj = {};
+                    obj["class"] = "past";
+                    obj["start"] = _this.laneData[i][j]["startTimeMs"];
+                    obj["end"] = _this.laneData[i][j]["endTimeMs"];
+                    obj["id"] = count++;
+                    obj["lane"] = i;
+                    _this.itemData.push(obj);
+                }
+            }
+            _this.lanes = [];
+            for (var i = 0; i < _this.laneNames.length; i++) {
+                var obj = {};
+                obj["label"] = _this.laneNames[i];
+                obj["id"] = i;
+                _this.lanes.push(obj);
+            }
+            var svg = d3.select("#" + appendToObject.attr("id"))
+                .append("svg")
+                .style("stroke-width", (s && s.getStrokeWidth() ? s.getStrokeWidth() : ChartConstants.DEFAULT_CHART_STROKE_WIDTH))
+                .style("fill", "none")
+                .attr("width", s.getWidth())
+                .attr("height", s.getHeight())
+                .append("g");
+            var heightExMargins = s.getHeight() - margin.top - margin.bottom;
+            var widthExMargins = s.getWidth() - margin.left - margin.right;
+            var miniHeight = _this.laneNames.length * ChartTimeline.MINI_LANE_HEIGHT_PX;
+            var mainHeight = s.getHeight() - miniHeight - 50 - 250;
+            var minTime = d3.min(_this.itemData, function (d) { return d.start; });
+            var maxTime = d3.max(_this.itemData, function (d) { return d.end; });
+            _this.x = d3.time.scale()
+                .domain([minTime, maxTime])
+                .range([0, widthExMargins]);
+            _this.x1 = d3.time.scale().range([0, widthExMargins]);
+            _this.y1 = d3.scale.linear().domain([0, _this.laneNames.length]).range([0, mainHeight]);
+            _this.y2 = d3.scale.linear().domain([0, _this.laneNames.length]).range([0, miniHeight]);
+            _this.rect = svg.append('defs').append('clipPath')
+                .attr('id', 'clip')
+                .append('rect')
+                .attr('width', widthExMargins)
+                .attr('height', s.getHeight() - 100);
+            _this.mainView = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+                .attr('width', widthExMargins)
+                .attr('height', mainHeight);
+            _this.miniView = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + margin.top + 25) + ')')
+                .attr('width', widthExMargins)
+                .attr('height', miniHeight)
+                .attr('font-size', '10px')
+                .attr('font', 'sans-serif');
+            _this.mainView.append('g').selectAll('.laneLines')
+                .data(_this.lanes)
+                .enter().append('line')
+                .attr('x1', 0)
+                .attr('y1', function (d) {
+                return d3.round(instance.y1(d.id)) + 0.5;
+            })
+                .attr('x2', widthExMargins)
+                .attr('y2', function (d) {
+                return d3.round(instance.y1(d.id)) + 0.5;
+            })
+                .attr('stroke', 'lightgray')
+                .attr('stroke-width', 1);
+            _this.mainView.append('g').selectAll('.laneText')
+                .data(_this.lanes)
+                .enter().append('text')
+                .text(function (d) {
+                return d.label;
+            })
+                .attr('x', -10)
+                .attr('y', function (d) {
+                return instance.y1(d.id + .5);
+            })
+                .attr('text-anchor', 'end')
+                .attr('fill', 'black');
+            _this.miniView.append('g').selectAll('.laneLines')
+                .data(_this.lanes)
+                .enter().append('line')
+                .attr('x1', 0)
+                .attr('y1', function (d) { return d3.round(instance.y2(d.id)) + 0.5; })
+                .attr('x2', widthExMargins)
+                .attr('y2', function (d) { return d3.round(instance.y2(d.id)) + 0.5; })
+                .attr('stroke', 'gray')
+                .attr('stroke-width', 1.0);
+            _this.miniView.append('g').selectAll('.laneText')
+                .data(_this.lanes)
+                .enter().append('text')
+                .text(function (d) {
+                return d.label;
+            })
+                .attr('x', -10)
+                .attr('y', function (d) {
+                return instance.y2(d.id + .5);
+            })
+                .attr('dy', '0.5ex')
+                .attr('text-anchor', 'end')
+                .attr('fill', 'black');
+            _this.xTimeAxis = d3.svg.axis()
+                .scale(_this.x1)
+                .orient('bottom')
+                .ticks(d3.time.days, 1)
+                .tickFormat(d3.time.format('%a %d'))
+                .tickSize(6, 0);
+            var temp = _this.mainView.append('g')
+                .attr('transform', 'translate(0,' + mainHeight + ')')
+                .attr('class', 'timeAxis')
+                .attr('fill', 'black')
+                .style("stroke", "black").style("stroke-width", 1.0).style("fill", "black")
+                .attr("font", "10px sans-serif")
+                .call(_this.xTimeAxis);
+            temp.selectAll('text').style("stroke-width", 0.0).attr('stroke-width', 0.0);
+            _this.itemRects = _this.mainView.append('g')
+                .attr('clip-path', 'url(#clip)');
+            _this.miniView.append('g').selectAll('miniItems')
+                .data(_this.getMiniViewPaths(_this.itemData))
+                .enter().append('path')
+                .attr('class', function (d) {
+                return 'miniItem ' + d.class;
+            })
+                .attr('d', function (d) {
+                return d.path;
+            })
+                .attr('stroke', 'black')
+                .attr('stroke-width', 'black');
+            _this.miniView.append('rect')
+                .attr('pointer-events', 'painted')
+                .attr('width', widthExMargins)
+                .attr('height', miniHeight)
+                .attr('visibility', 'hidden')
+                .on('mouseup', _this.moveBrush);
+            _this.brush = d3.svg.brush()
+                .x(_this.x)
+                .extent([minTime, maxTime])
+                .on("brush", _this.renderChart);
+            _this.miniView.append('g')
+                .attr('class', 'x brush')
+                .call(_this.brush)
+                .selectAll('rect')
+                .attr('y', 1)
+                .attr('height', miniHeight - 1)
+                .style('fill', 'gray')
+                .style('fill-opacity', '0.2')
+                .style('stroke', 'DarkSlateGray')
+                .style('stroke-width', 1);
+            _this.miniView.selectAll('rect.background').remove();
+            _this.renderChart();
+            if (_this.title) {
+                var titleStyle;
+                if (_this.style)
+                    titleStyle = _this.style.getTitleStyle();
+                var text = svg.append("text")
+                    .text(_this.title)
+                    .attr("x", (s.getWidth() / 2))
+                    .attr("y", ((margin.top - 30) / 2))
+                    .attr("text-anchor", "middle");
+                if (titleStyle) {
+                    if (titleStyle.getFont())
+                        text.attr("font-family", titleStyle.getFont);
+                    if (titleStyle.getFontSize() != null)
+                        text.attr("font-size", titleStyle.getFontSize() + "pt");
+                    if (titleStyle.getUnderline() != null)
+                        text.style("text-decoration", "underline");
+                    if (titleStyle.getColor())
+                        text.style("fill", titleStyle.getColor);
+                    else
+                        text.style("fill", ChartConstants.DEFAULT_TITLE_COLOR);
+                }
+                else {
+                    text.style("text-decoration", "underline");
+                    text.style("fill", ChartConstants.DEFAULT_TITLE_COLOR);
+                }
+            }
+        };
+        this.renderChart = function () {
+            var instance = _this;
+            var extent = _this.brush.extent();
+            var minExtent = extent[0];
+            var maxExtent = extent[1];
+            var visibleItems = _this.itemData.filter(function (d) {
+                return d.start < maxExtent && d.end > minExtent;
+            });
+            _this.miniView.select('.brush').call(_this.brush.extent([minExtent, maxExtent]));
+            _this.x1.domain([minExtent, maxExtent]);
+            var range = maxExtent - minExtent;
+            if (range > 2 * ChartTimeline.MILLISEC_PER_WEEK) {
+                _this.xTimeAxis.ticks(d3.time.mondays, 1).tickFormat(d3.time.format('%a %d'));
+            }
+            else if (range > 2 * ChartTimeline.MILLISEC_PER_DAY) {
+                _this.xTimeAxis.ticks(d3.time.days, 1).tickFormat(d3.time.format('%a %d'));
+            }
+            else if (range > 2 * ChartTimeline.MILLISEC_PER_HOUR) {
+                _this.xTimeAxis.ticks(d3.time.hours, 4).tickFormat(d3.time.format('%H %p'));
+            }
+            else if (range > 2 * ChartTimeline.MILLISEC_PER_MINUTE) {
+                _this.xTimeAxis.ticks(d3.time.minutes, 1).tickFormat(d3.time.format('%H:%M'));
+            }
+            else if (range >= 30000) {
+                _this.xTimeAxis.ticks(d3.time.seconds, 10).tickFormat(d3.time.format('%H:%M:%S'));
+            }
+            else {
+                _this.xTimeAxis.ticks(d3.time.seconds, 1).tickFormat(d3.time.format('%H:%M:%S'));
+            }
+            _this.mainView.select('.timeAxis').call(_this.xTimeAxis);
+            var rects = _this.itemRects.selectAll('rect')
+                .data(visibleItems, function (d) { return d.id; })
+                .attr('x', function (d) { return instance.x1(d.start); })
+                .attr('width', function (d) { return instance.x1(d.end) - instance.x1(d.start); });
+            rects.enter().append('rect')
+                .attr('x', function (d) { return instance.x1(d.start); })
+                .attr('y', function (d) { return instance.y1(d.lane) + ChartTimeline.ENTRY_LANE_HEIGHT_OFFSET_FRACTION * instance.y1(1) + 0.5; })
+                .attr('width', function (d) { return instance.x1(d.end) - instance.x1(d.start); })
+                .attr('height', function (d) { return ChartTimeline.ENTRY_LANE_HEIGHT_TOTAL_FRACTION * instance.y1(1); })
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+            rects.exit().remove();
+            var labels = _this.itemRects.selectAll('text')
+                .data(visibleItems, function (d) {
+                return d.id;
+            })
+                .attr('x', function (d) {
+                return instance.x1(Math.max(d.start, minExtent)) + 2;
+            })
+                .attr('fill', 'black');
+            labels.enter().append('text')
+                .text(function (d) {
+                return 'Id: ' + d.id;
+            })
+                .attr('x', function (d) {
+                return instance.x1(Math.max(d.start, minExtent)) + 2;
+            })
+                .attr('y', function (d) {
+                return instance.y1(d.lane) + .4 * instance.y1(1) + 0.5;
+            })
+                .attr('text-anchor', 'start')
+                .attr('class', 'itemLabel')
+                .attr('fill', 'black');
+            labels.exit().remove();
+        };
+        this.moveBrush = function () {
+            var origin = d3.mouse(_this.rect[0]);
+            var time = _this.x.invert(origin[0]).getTime();
+            var halfExtent = (_this.brush.extent()[1].getTime() - _this.brush.extent()[0].getTime()) / 2;
+            _this.brush.extent([new Date(time - halfExtent), new Date(time + halfExtent)]);
+            _this.renderChart();
+        };
+        this.getMiniViewPaths = function (items) {
+            var paths = {}, d, offset = .5 * _this.y2(1) + 0.5, result = [];
+            for (var i = 0; i < items.length; i++) {
+                d = items[i];
+                if (!paths[d.class])
+                    paths[d.class] = '';
+                paths[d.class] += ['M', _this.x(d.start), (_this.y2(d.lane) + offset), 'H', _this.x(d.end)].join(' ');
+            }
+            for (var className in paths) {
+                result.push({ class: className, path: paths[className] });
+            }
+            return result;
+        };
+        var json = JSON.parse(jsonStr);
+        if (!json["componentType"])
+            json = json[ComponentType[ComponentType.ChartTimeline]];
+        this.laneNames = json['laneNames'];
+        this.laneData = json['laneData'];
+    }
+    ChartTimeline.MINI_LANE_HEIGHT_PX = 12;
+    ChartTimeline.ENTRY_LANE_HEIGHT_OFFSET_FRACTION = 0.05;
+    ChartTimeline.ENTRY_LANE_HEIGHT_TOTAL_FRACTION = 0.90;
+    ChartTimeline.MILLISEC_PER_MINUTE = 60 * 1000;
+    ChartTimeline.MILLISEC_PER_HOUR = 60 * ChartTimeline.MILLISEC_PER_MINUTE;
+    ChartTimeline.MILLISEC_PER_DAY = 24 * ChartTimeline.MILLISEC_PER_HOUR;
+    ChartTimeline.MILLISEC_PER_WEEK = 7 * ChartTimeline.MILLISEC_PER_DAY;
+    return ChartTimeline;
 }(Chart));
 var StyleChart = (function (_super) {
     __extends(StyleChart, _super);
