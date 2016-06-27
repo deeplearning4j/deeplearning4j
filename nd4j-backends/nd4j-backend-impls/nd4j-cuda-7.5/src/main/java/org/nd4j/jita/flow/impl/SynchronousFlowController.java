@@ -17,6 +17,7 @@ import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -92,10 +93,9 @@ public class SynchronousFlowController implements FlowController {
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
                 allocator.getMemoryHandler().relocateObject(result.data());
-            }
 
-            if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                allocator.getMemoryHandler().relocateObject(result.shapeInfoDataBuffer());
+                //allocator.getMemoryHandler().relocateObject(result.shapeInfoDataBuffer());
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
             }
 
 
@@ -110,11 +110,6 @@ public class SynchronousFlowController implements FlowController {
                 throw new RuntimeException("R shape cId: [" +cId + "] != dId: ["+ pointShape.getDeviceId() +"]");
 */
             allocator.getAllocationPoint(result).setCurrentContext(context);
-
-            builder.append("; R_dId: ").append(pointData.getDeviceId());
-            builder.append("; R_sdId: ").append(pointShape.getDeviceId());
-            builder.append(", R_DPTR: ").append(pointData.getPointers().getDevicePointer().address());
-            builder.append(", R_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
         }
 
         for (INDArray operand: operands) {
@@ -125,10 +120,9 @@ public class SynchronousFlowController implements FlowController {
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
                 allocator.getMemoryHandler().relocateObject(operand.data());
-            }
 
-            if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                allocator.getMemoryHandler().relocateObject(operand.shapeInfoDataBuffer());
+                //allocator.getMemoryHandler().relocateObject(operand.shapeInfoDataBuffer());
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
             }
 
 /*

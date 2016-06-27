@@ -440,4 +440,14 @@ public class JCublasNDArray extends BaseNDArray {
         
         return super.toString();
     }
+
+    /**
+     *
+     * PLEASE NOTE: Never use this method, unless you 100% have to
+     *
+     * @param buffer
+     */
+    public void setShapeInfoDataBuffer(DataBuffer buffer) {
+        this.shapeInformation = buffer;
+    }
 }

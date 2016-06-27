@@ -719,7 +719,6 @@ public class CudaZeroHandler implements MemoryHandler {
         // if that's device state, we probably might want to update device memory state
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
-                log.info("Updating device copy...");
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
             } else {
               //  log.info("Buffer is actual on device side: " + dstPoint.getShape());
@@ -789,6 +788,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         if (buffer.isConstant()) {
             // we can't relocate or modify buffers
+            throw new RuntimeException("Can't relocateObject() for constant buffer");
         } else {
             memoryProvider.free(dstPoint);
 
@@ -804,7 +804,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
 
-        log.info(builder.toString());
+     //   log.info(builder.toString());
     }
 
     /**

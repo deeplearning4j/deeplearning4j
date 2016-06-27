@@ -13,6 +13,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -127,6 +130,33 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         protector.persistDataBuffer(dataBuffer);
 
         return cAddr;
+    }
+
+    /**
+     * PLEASE NOTE: This method implementation is hardware-dependant.
+     * PLEASE NOTE: This method does NOT allow concurrent use of any array
+     *
+     * @param dataBuffer
+     * @return
+     */
+    @Override
+    public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
+        // we always assume that data is sync, and valid on host side
+        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
+        ensureMaps(deviceId);
+
+        if (dataBuffer instanceof CudaIntDataBuffer) {
+            int[] data = dataBuffer.asInt();
+            return getConstantBuffer(data);
+        } else if (dataBuffer instanceof CudaFloatDataBuffer) {
+            float[] data = dataBuffer.asFloat();
+            return getConstantBuffer(data);
+        } else if (dataBuffer instanceof CudaDoubleDataBuffer) {
+            double[] data = dataBuffer.asDouble();
+            return getConstantBuffer(data);
+        }
+
+        throw new IllegalStateException("Unknown CudaDataBuffer type");
     }
 
     private void ensureMaps(Integer deviceId) {

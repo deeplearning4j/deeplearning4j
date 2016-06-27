@@ -89,8 +89,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     private static final long serialVersionUID = 3285982317165542614L;
 
-    protected transient  DataBuffer shapeInformation;
-    protected transient  DataBuffer data;
+    protected transient volatile DataBuffer shapeInformation;
+    protected transient volatile DataBuffer data;
     protected int rows, columns;
     protected long length = -1;
     protected int rank;
