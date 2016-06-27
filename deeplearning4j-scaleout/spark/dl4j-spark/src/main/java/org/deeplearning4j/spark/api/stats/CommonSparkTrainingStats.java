@@ -97,6 +97,23 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     }
 
     @Override
+    public boolean defaultIncludeInPlots(String key){
+        switch (key){
+            case "WorkerFlatMapTotalTimeMs":
+                return false;
+            case "WorkerFlatMapGetInitialModelTimeMs":
+                return false;   //Covered by worker stats generally
+            case "WorkerFlatMapDataSetGetTimesMs":
+                return true;
+            case "WorkerFlatMapProcessMiniBatchTimesMs":
+                return false;   //Covered by worker stats generally
+            default:
+                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.defaultIncludeInPlots(key);
+                return false;
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof CommonSparkTrainingStats)) throw new IllegalArgumentException("Cannot add other training stats: not an instance of CommonSparkTrainingStats");
 
