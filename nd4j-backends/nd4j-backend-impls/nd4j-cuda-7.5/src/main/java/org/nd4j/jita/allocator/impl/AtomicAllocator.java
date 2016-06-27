@@ -299,11 +299,7 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(DataBuffer buffer) {
         // we don't synchronize constant buffers, since we assume they are always valid on host side
         if (buffer.isConstant()) {
-            //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
-         //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
             return;
-            //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
-            //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
         }
 
         // we actually need synchronization only in device-dependant environment. no-op otherwise

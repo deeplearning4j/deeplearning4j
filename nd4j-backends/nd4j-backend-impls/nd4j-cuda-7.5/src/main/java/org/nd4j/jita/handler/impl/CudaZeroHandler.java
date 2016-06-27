@@ -338,6 +338,8 @@ public class CudaZeroHandler implements MemoryHandler {
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
 
+
+         // TODO: this probably should be removed
          if (point.isConstant()) {
              //log.info("Skipping relocation for constant");
              return;
@@ -717,6 +719,7 @@ public class CudaZeroHandler implements MemoryHandler {
         // if that's device state, we probably might want to update device memory state
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
+                log.info("Updating device copy...");
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
             } else {
               //  log.info("Buffer is actual on device side: " + dstPoint.getShape());
@@ -784,11 +787,20 @@ public class CudaZeroHandler implements MemoryHandler {
         if (!dstPoint.isActualOnHostSide())
             throw new RuntimeException("Buffer synchronization failed");
 
-        if (!buffer.isConstant())
+        if (buffer.isConstant()) {
+            // we can't relocate or modify buffers
+        } else {
             memoryProvider.free(dstPoint);
 
-        // we replace original device pointer with new one
-        alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+            // we replace original device pointer with new one
+            alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+
+            CudaContext context = getCudaContext();
+            nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(), buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
+            context.syncSpecialStream();
+
+            dstPoint.tickHostRead();
+        }
 
         builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
 

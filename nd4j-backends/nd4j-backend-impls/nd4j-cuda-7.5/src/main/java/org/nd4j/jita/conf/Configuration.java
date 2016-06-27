@@ -553,7 +553,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration allowMultiGPU(boolean reallyAllow) {
-        forceSingleGPU = reallyAllow;
+        forceSingleGPU = !reallyAllow;
         return this;
     }
 
