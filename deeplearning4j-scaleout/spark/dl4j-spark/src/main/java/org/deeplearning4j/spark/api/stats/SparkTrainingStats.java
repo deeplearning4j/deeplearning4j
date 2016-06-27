@@ -51,6 +51,14 @@ public interface SparkTrainingStats extends Serializable {
     List<EventStats> getValue(String key);
 
     /**
+     * Return a short (display) name for the given key.
+     *
+     * @param key    Key
+     * @return Short/display name for key
+     */
+    String getShortNameForKey(String key);
+
+    /**
      * Combine the two training stats instances. Usually, the two objects must be of the same type
      *
      * @param other Other training stats to return

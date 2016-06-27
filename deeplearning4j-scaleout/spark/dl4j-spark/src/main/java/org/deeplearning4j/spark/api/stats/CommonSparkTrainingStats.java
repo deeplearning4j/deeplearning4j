@@ -80,6 +80,23 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     }
 
     @Override
+    public String getShortNameForKey(String key){
+        switch (key){
+            case "WorkerFlatMapTotalTimeMs":
+                return "Total";
+            case "WorkerFlatMapGetInitialModelTimeMs":
+                return "GetInitModel";
+            case "WorkerFlatMapDataSetGetTimesMs":
+                return "GetDataSet";
+            case "WorkerFlatMapProcessMiniBatchTimesMs":
+                return "ProcessBatch";
+            default:
+                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getShortNameForKey(key);
+                throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof CommonSparkTrainingStats)) throw new IllegalArgumentException("Cannot add other training stats: not an instance of CommonSparkTrainingStats");
 
