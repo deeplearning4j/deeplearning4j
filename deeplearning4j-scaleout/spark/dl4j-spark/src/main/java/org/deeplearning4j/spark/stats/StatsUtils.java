@@ -126,9 +126,17 @@ public class StatsUtils {
         List<Tuple3<String,String,Long>> outputOrder = new ArrayList<>(uniqueTuples);
         Collections.sort(outputOrder, new TupleComparator());
 
+        Color[] colors = getRandomColors(keySet.size(), 12345);
+        Map<String,Color> colorMap = new HashMap<>();
+        int count = 0;
+        for( String s : keySet){
+            colorMap.put(s, colors[count++]);
+        }
+
         List<List<ChartTimeline.TimelineEntry>> entriesByLane = new ArrayList<>();
         for( int i=0; i<nLanes; i++ ) entriesByLane.add(new ArrayList<ChartTimeline.TimelineEntry>());
         for(String s : keySet){
+
             List<EventStats> list = stats.getValue(s);
             for(EventStats e : list){
                 if(e.getDurationMs() == 0) continue;
@@ -140,7 +148,8 @@ public class StatsUtils {
                 Tuple3<String,String,Long> tuple = new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID());
 
                 int idx = outputOrder.indexOf(tuple);
-                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s),start,end);
+                Color c = colorMap.get(s);
+                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s),start,end, c);
                 entriesByLane.get(idx).add(entry);
             }
         }
@@ -188,5 +197,14 @@ public class StatsUtils {
                 return o1._1().compareTo(o2._1());
             }
         }
+    }
+
+    private static Color[] getRandomColors(int nColors, long seed){
+        Random r = new Random(seed);
+        Color[] c = new Color[nColors];
+        for( int i=0; i<nColors; i++ ){
+            c[i] = Color.getHSBColor(r.nextFloat(), 0.5f, 0.75f);   //random hue; fixed saturation + variance to (hopefully) ensure readability of labels
+        }
+        return c;
     }
 }

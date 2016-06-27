@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.components.chart.ChartHistogram;
 import org.deeplearning4j.ui.components.chart.ChartLine;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.table.ComponentTable;
@@ -36,7 +37,19 @@ public class TestStandAlone {
                 .addSeries("Second",new double[]{0,0.5,1,1.5,2},new double[]{5,10,15,10,5})
                 .build();
 
-        System.out.println(StaticPageUtil.renderHTML(ct,cl));
+        ChartHistogram ch = new ChartHistogram.Builder(
+                "Histogram", new StyleChart.Builder()
+                .axisStrokeWidth(1.0)
+                .seriesColors(Color.MAGENTA)
+                .width(640,LengthUnit.Px)
+                .height(480,LengthUnit.Px)
+                .build())
+                .addBin(0,1,1)
+                .addBin(1,2,2)
+                .addBin(2,3,1)
+                .build();
+
+        System.out.println(StaticPageUtil.renderHTML(ct,cl,ch));
     }
 
 }
