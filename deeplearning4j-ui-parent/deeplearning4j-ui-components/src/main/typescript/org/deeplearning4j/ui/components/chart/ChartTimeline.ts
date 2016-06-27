@@ -49,6 +49,8 @@ class ChartTimeline extends Chart implements Renderable {
     private static MILLISEC_PER_DAY:number = 24 * ChartTimeline.MILLISEC_PER_HOUR;
     private static MILLISEC_PER_WEEK:number = 7 * ChartTimeline.MILLISEC_PER_DAY;
 
+    private static DEFAULT_COLOR = "LightGrey";
+
 
     constructor(jsonStr:string) {
         super(ComponentType.ChartTimeline, jsonStr);
@@ -72,12 +74,12 @@ class ChartTimeline extends Chart implements Renderable {
         for (var i = 0; i < this.laneData.length; i++) {
             for (var j = 0; j < this.laneData[i].length; j++) {
                 var obj = {};
-                obj["class"] = "past";
                 obj["start"] = this.laneData[i][j]["startTimeMs"];
                 obj["end"] = this.laneData[i][j]["endTimeMs"];
                 obj["id"] = count++;
                 obj["lane"] = i;
-
+                obj["color"] = this.laneData[i][j]["color"];
+                obj["label"] = this.laneData[i][j]["entryLabel"];
                 this.itemData.push(obj);
             }
         }
@@ -197,7 +199,7 @@ class ChartTimeline extends Chart implements Renderable {
             .tickFormat(d3.time.format('%a %d'))
             .tickSize(6, 0);
 
-        //Time axis for
+        //Time axis
         var temp:any = this.mainView.append('g')
             .attr('transform', 'translate(0,' + mainHeight + ')')
             // .attr('class', 'mainView axis time')
@@ -322,6 +324,10 @@ class ChartTimeline extends Chart implements Renderable {
             .attr('width', function (d) { return instance.x1(d.end) - instance.x1(d.start); })
             .attr('height', function (d) { return ChartTimeline.ENTRY_LANE_HEIGHT_TOTAL_FRACTION * instance.y1(1); })
             .attr('stroke', 'black')
+            .attr('fill', function(d){
+                if(d.color) return d.color;
+                return ChartTimeline.DEFAULT_COLOR;
+            })
             .attr('stroke-width', 1);
         rects.exit().remove();
 
@@ -337,7 +343,7 @@ class ChartTimeline extends Chart implements Renderable {
 
         labels.enter().append('text')
             .text(function (d) {
-                return 'Id: ' + d.id;
+                return '' + d.label;
             })
             .attr('x', function (d) {
                 return instance.x1(Math.max(d.start, minExtent)) + 2;
