@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.ui.api.Utils;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,10 +64,25 @@ public class ChartTimeline extends Chart {
     }
 
 
-    @AllArgsConstructor @NoArgsConstructor @Data
+    @Data @NoArgsConstructor @AllArgsConstructor
     public static class TimelineEntry {
         private String entryLabel;
         private long startTimeMs;
         private long endTimeMs;
+        private String color;
+
+        public TimelineEntry(String entryLabel, long startTimeMs, long endTimeMs) {
+            this.entryLabel = entryLabel;
+            this.startTimeMs = startTimeMs;
+            this.endTimeMs = endTimeMs;
+        }
+
+        public TimelineEntry(String entryLabel, long startTimeMs, long endTimeMs, Color color) {
+            this.entryLabel = entryLabel;
+            this.startTimeMs = startTimeMs;
+            this.endTimeMs = endTimeMs;
+            this.color = Utils.colorToHex(color);
+        }
+
     }
 }

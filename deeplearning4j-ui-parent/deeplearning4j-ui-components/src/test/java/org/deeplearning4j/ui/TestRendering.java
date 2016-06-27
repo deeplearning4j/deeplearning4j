@@ -39,6 +39,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 
 /**
@@ -144,15 +145,27 @@ public class TestRendering {
         //Timeline chart:
         List<ChartTimeline.TimelineEntry> entries = new ArrayList<>();
         for( int i=0; i<10; i++ ){
-            entries.add(new ChartTimeline.TimelineEntry(String.valueOf(i),10*i,10*i+5));
+            entries.add(new ChartTimeline.TimelineEntry("e0-" + i,10*i,10*i+5, Color.BLUE));
         }
         List<ChartTimeline.TimelineEntry> entries2 = new ArrayList<>();
         for( int i=0; i<10; i++ ){
-            entries2.add(new ChartTimeline.TimelineEntry(String.valueOf(i),(int)(5*i + 0.2*i*i),(int)(5*i + 0.2*i*i)+3));
+            entries2.add(new ChartTimeline.TimelineEntry("e1-" + i,(int)(5*i + 0.2*i*i),(int)(5*i + 0.2*i*i)+3, Color.ORANGE));
+        }
+        List<ChartTimeline.TimelineEntry> entries3 = new ArrayList<>();
+        for( int i=0; i<10; i++ ){
+            entries3.add(new ChartTimeline.TimelineEntry("e2-" + i,(int)(2*i + 0.6*i*i + 3),(int)(2*i + 0.6*i*i + 3) + 2*i + 1));
+        }
+        Color[] c = new Color[]{Color.CYAN, Color.YELLOW, Color.GREEN, Color.PINK};
+        List<ChartTimeline.TimelineEntry> entries4 = new ArrayList<>();
+        Random r = new Random(12345);
+        for( int i=0; i<10; i++ ){
+            entries4.add(new ChartTimeline.TimelineEntry("e3-" + i,(int)(2*i + 0.6*i*i + 3),(int)(2*i + 0.6*i*i + 3) + i + 1, c[r.nextInt(c.length)]));
         }
         Component c9 = new ChartTimeline.Builder("Title",s)
-                .addLane("Lane0",entries)
-                .addLane("Lane1",entries2)
+                .addLane("Lane 0",entries)
+                .addLane("Lane 1",entries2)
+                .addLane("Lane 2",entries3)
+                .addLane("Lane 3",entries4)
                 .build();
         list.add(c9);
 
