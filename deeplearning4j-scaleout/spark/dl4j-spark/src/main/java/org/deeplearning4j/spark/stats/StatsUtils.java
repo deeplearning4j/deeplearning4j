@@ -9,12 +9,14 @@ import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartLine;
+import org.deeplearning4j.ui.components.chart.ChartTimeline;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 import org.deeplearning4j.ui.standalone.StaticPageUtil;
+import scala.Tuple3;
 
 import java.awt.*;
 import java.io.IOException;
@@ -94,6 +96,8 @@ public class StatsUtils {
                     .build());
         }
 
+        components.add(getTrainingStatsTimelineChart(sparkTrainingStats));
+
         String html = StaticPageUtil.renderHTML(components);
         SparkUtils.writeStringToFile(path, html, sc);
     }
@@ -103,6 +107,86 @@ public class StatsUtils {
         @Override
         public int compare(EventStats o1, EventStats o2) {
             return Long.compare(o1.getStartTime(), o2.getStartTime());
+        }
+    }
+
+
+    private static Component getTrainingStatsTimelineChart(SparkTrainingStats stats){
+        Set<Tuple3<String,String,Long>> uniqueTuples = new HashSet<>();
+
+        Set<String> keySet = stats.getKeySet();
+        for(String s : keySet){
+            List<EventStats> list = stats.getValue(s);
+            for(EventStats e : list){
+                uniqueTuples.add(new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID()));
+            }
+        }
+
+        int nLanes = uniqueTuples.size();
+        List<Tuple3<String,String,Long>> outputOrder = new ArrayList<>(uniqueTuples);
+        Collections.sort(outputOrder, new TupleComparator());
+
+        List<List<ChartTimeline.TimelineEntry>> entriesByLane = new ArrayList<>();
+        for( int i=0; i<nLanes; i++ ) entriesByLane.add(new ArrayList<ChartTimeline.TimelineEntry>());
+        for(String s : keySet){
+            List<EventStats> list = stats.getValue(s);
+            for(EventStats e : list){
+                if(e.getDurationMs() == 0) continue;
+
+                long start = e.getStartTime();
+                long end = start + e.getDurationMs();
+
+
+                Tuple3<String,String,Long> tuple = new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID());
+
+                int idx = outputOrder.indexOf(tuple);
+                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s),start,end);
+                entriesByLane.get(idx).add(entry);
+            }
+        }
+
+        //Sort each lane by start time:
+        for(List<ChartTimeline.TimelineEntry> l : entriesByLane){
+            Collections.sort(l, new Comparator<ChartTimeline.TimelineEntry>(){
+                @Override
+                public int compare(ChartTimeline.TimelineEntry o1, ChartTimeline.TimelineEntry o2) {
+                    return Long.compare(o1.getStartTimeMs(), o2.getStartTimeMs());
+                }
+            });
+        }
+
+        StyleChart sc = new StyleChart.Builder()
+                .width(1024, LengthUnit.Px)
+                .height(50*nLanes+300, LengthUnit.Px)
+                .margin(LengthUnit.Px, 10, 10, 100, 10) //top, bottom, left, right
+                .build();
+
+        ChartTimeline.Builder b = new ChartTimeline.Builder("Timeline",sc);
+        int i=0;
+        for(List<ChartTimeline.TimelineEntry> l : entriesByLane){
+            Tuple3<String,String,Long> t3 = outputOrder.get(i);
+            String name = t3._1() + "/" + t3._2() + "/" + t3._3();
+            b.addLane(name, l);
+            i++;
+        }
+
+        return b.build();
+    }
+
+    private static class TupleComparator implements Comparator<Tuple3<String,String,Long>>{
+        @Override
+        public int compare(Tuple3<String, String, Long> o1, Tuple3<String, String, Long> o2) {
+            if(o1._1().equals(o2._1())){
+                //Equal machine IDs, so sort on JVM ids
+                if(o1._2().equals(o2._2())){
+                    //Equal machine AND JVM IDs, so sort on thread ID
+                    return Long.compare(o1._3(), o2._3());
+                } else {
+                    return o1._2().compareTo(o2._2());
+                }
+            } else {
+                return o1._1().compareTo(o2._1());
+            }
         }
     }
 }

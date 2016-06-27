@@ -66,6 +66,20 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     }
 
     @Override
+    public String getShortNameForKey(String key){
+        switch(key){
+            case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
+                return "BroadcastGetVal";
+            case "ParameterAveragingWorkerInitTimeMs":
+                return "ModelInit";
+            case "ParameterAveragingWorkerFitTimesMs":
+                return "Fit";
+            default:
+                throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
+        }
+    }
+
+    @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if(!(other instanceof ParameterAveragingTrainingWorkerStats)) throw new IllegalArgumentException("Cannot merge ParameterAveragingTrainingWorkerStats with " + (other != null ? other.getClass() : null));
 
