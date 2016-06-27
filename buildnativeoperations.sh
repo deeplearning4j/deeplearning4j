@@ -22,7 +22,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname
         export MAKE_COMMAND="make"
     fi
     # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
-    if [ -z "$VCINSTALLDIR" ]; then
+    if [ -z "${VCINSTALLDIR:-}" ]; then
         export VisualStudioVersion=12.0
         export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
         export VCINSTALLDIR="$VSINSTALLDIR\\VC"
