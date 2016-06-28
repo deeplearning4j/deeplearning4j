@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -65,11 +66,19 @@ public interface DataBuffer extends Serializable {
      */
     Pointer pointer();
 
+
     /**
      * Returns the address of the pointer wrapped in a Pointer
      * @return the address of the pointer wrapped in a Pointer
      */
     Pointer addressPointer();
+
+    /**
+     * Returns the indexer for the buffer
+     * @return
+     */
+    Indexer indexer();
+
 
     /**
      * Returns the address of the pointer

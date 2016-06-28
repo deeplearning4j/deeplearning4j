@@ -10,6 +10,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Assert;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 /**
  * Created by susaneraly on 6/18/16.
  */
@@ -23,7 +27,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
 
     @Test
     public void TestReadWrite() {
-        INDArray origArr = Nd4j.rand('c',10,10).muli(100); //since we write only two decimal points..
+        INDArray origArr = Nd4j.rand('f',10,10).muli(100); //since we write only two decimal points..
         Nd4j.writeTxt(origArr, "someArr.txt");
         INDArray readBack = Nd4j.readTxt("someArr.txt");
         System.out.println("=========================================================================");
@@ -31,6 +35,12 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.01);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+           e.printStackTrace();
+        }
     }
     @Test
     public void TestReadWriteSimple() {
@@ -42,6 +52,12 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.01);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Test
     public void TestReadWriteNd() {
@@ -53,6 +69,12 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.01);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Test
     public void TestWierdShape() {
@@ -64,8 +86,13 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest{
         System.out.println("=========================================================================");
         System.out.println(readBack);
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.01);
+        try {
+            Files.delete(Paths.get("someArr.txt"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-
     @Override
     public char ordering() {
         return 'f';

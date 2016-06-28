@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
  */
-public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSetPreProcessor {
+public class NormalizerStandardize implements DataNormalization {
     private static Logger logger = LoggerFactory.getLogger(NormalizerStandardize.class);
     private INDArray mean,std;
     private int runningTotal = 0;
@@ -25,13 +25,13 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     /**
      * Fit the given model with dataset
      * to calculate mean and std dev with
-     * @param dataset
+     * @param dataSet
      */
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);
         std = dataSet.getFeatureMatrix().std(0);
         std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
     }
 
@@ -76,7 +76,7 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
         std.divi(runningTotal);
         std = Transforms.sqrt(std);
         std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
         iterator.reset();
     }
@@ -90,7 +90,7 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
 
     /**
      * Transform the given dataset
-     * @param toPreProcess 
+     * @param toPreProcess
      */
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
@@ -99,7 +99,7 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     /**
      * Transform the dataset from given iterator
      * Need not set preprocessor on the iterator in this case
-     * @param toPreProcess the dataset to transform
+     * @param toPreProcessIter the dataset to transform
      */
     public void transform(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
@@ -107,6 +107,8 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
         }
         toPreProcessIter.reset();
     }
+
+
 
     public void revertPreProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
@@ -139,23 +141,23 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
 
     /**
      * Load the given mean and std
-     * @param mean the mean file
-     * @param std the std file
+     *@param statistics the statistics to laod
      * @throws IOException
      */
-    public void load(File mean,File std) throws IOException {
-        this.mean = Nd4j.readBinary(mean);
-        this.std = Nd4j.readBinary(std);
+    @Override
+    public void load(File...statistics) throws IOException {
+        this.mean = Nd4j.readBinary(statistics[0]);
+        this.std = Nd4j.readBinary(statistics[1]);
     }
 
     /**
      * Save the current mean and std
-     * @param mean the mean
-     * @param std the std
+     * @param statistics the statistics to save
      * @throws IOException
      */
-    public void save(File mean,File std) throws IOException {
-        Nd4j.saveBinary(this.mean,mean);
-        Nd4j.saveBinary(this.std,std);
+    @Override
+    public void save(File...statistics) throws IOException {
+        Nd4j.saveBinary(this.mean,statistics[0]);
+        Nd4j.saveBinary(this.std,statistics[1]);
     }
 }

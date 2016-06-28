@@ -372,6 +372,30 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         }
         return out;
     }
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        int totalEntries = numFeatureArrays();
+        if (totalEntries != numLabelsArrays()) {
+            return "";
+        }
+        for (int i=0; i < totalEntries; i++) {
+            builder.append("\n=========== ENTRY "+i+" =================\n");
+            builder.append("\n=== INPUT ===\n")
+                 .append(getFeatures(i).toString().replaceAll(";", "\n"))
+                 .append("\n=== OUTPUT ===\n")
+                 .append(getLabels(i).toString().replaceAll(";", "\n"));
+            if (getFeaturesMaskArray(i) != null) {
+                builder.append("\n=== INPUT MASK ===\n")
+                        .append(getFeaturesMaskArray(i).toString().replaceAll(";", "\n"));
+            }
+            if (getLabelsMaskArray(i) != null) {
+                builder.append("\n=== OUTPUT MASK ===\n")
+                        .append(getLabelsMaskArray(i).toString().replaceAll(";", "\n"));
+            }
+        }
+        return builder.toString();
+    }
 
 
 }

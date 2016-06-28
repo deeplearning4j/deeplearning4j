@@ -13,7 +13,9 @@
 
     <modules>
         <module>nd4j-native</module>
+        <module>nd4j-native-platform</module>
         <module>nd4j-cuda-7.5</module>
+        <module>nd4j-cuda-7.5-platform</module>
     </modules>
     <dependencies>
         <dependency>
@@ -29,6 +31,16 @@
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
+        <javacpp.platform0></javacpp.platform0>
+        <javacpp.platform1>linux-x86_64</javacpp.platform1>
+        <javacpp.platform2>macosx-x86_64</javacpp.platform2>
+        <javacpp.platform3>windows-x86_64</javacpp.platform3>
+        <javacpp.platform4>linux-ppc64le</javacpp.platform4>
+        <javacpp.platform5></javacpp.platform5>
+        <javacpp.platform6></javacpp.platform6>
+        <javacpp.platform7></javacpp.platform7>
+        <javacpp.platform8></javacpp.platform8>
+        <javacpp.platform9></javacpp.platform9>
     </properties>
 
 
@@ -116,5 +128,82 @@
                 <dependency.classifier />
             </properties>
         </profile>
+
+        <profile>
+            <id>javacpp-platform-zero</id>
+            <activation>
+                <file>
+                    <exists>${user.dir}</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform0>${javacpp.platform}</javacpp.platform0>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>javacpp-platform-one</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform0>${javacpp.platform}</javacpp.platform0>
+                <javacpp.platform1>${javacpp.platform}</javacpp.platform1>
+                <javacpp.platform2>${javacpp.platform}</javacpp.platform2>
+                <javacpp.platform3>${javacpp.platform}</javacpp.platform3>
+                <javacpp.platform4>${javacpp.platform}</javacpp.platform4>
+                <javacpp.platform5>${javacpp.platform}</javacpp.platform5>
+                <javacpp.platform6>${javacpp.platform}</javacpp.platform6>
+                <javacpp.platform7>${javacpp.platform}</javacpp.platform7>
+                <javacpp.platform8>${javacpp.platform}</javacpp.platform8>
+                <javacpp.platform9>${javacpp.platform}</javacpp.platform9>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>javacpp-platform-none</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>none</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform0></javacpp.platform0>
+                <javacpp.platform1></javacpp.platform1>
+                <javacpp.platform2></javacpp.platform2>
+                <javacpp.platform3></javacpp.platform3>
+                <javacpp.platform4></javacpp.platform4>
+                <javacpp.platform5></javacpp.platform5>
+                <javacpp.platform6></javacpp.platform6>
+                <javacpp.platform7></javacpp.platform7>
+                <javacpp.platform8></javacpp.platform8>
+                <javacpp.platform9></javacpp.platform9>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>javacpp-platform-build</id>
+            <activation>
+                <file>
+                    <exists>${basedir}</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform0></javacpp.platform0>
+                <javacpp.platform1></javacpp.platform1>
+                <javacpp.platform2></javacpp.platform2>
+                <javacpp.platform3></javacpp.platform3>
+                <javacpp.platform4></javacpp.platform4>
+                <javacpp.platform5></javacpp.platform5>
+                <javacpp.platform6></javacpp.platform6>
+                <javacpp.platform7></javacpp.platform7>
+                <javacpp.platform8></javacpp.platform8>
+                <javacpp.platform9></javacpp.platform9>
+            </properties>
+        </profile>
     </profiles>
+
 </project>

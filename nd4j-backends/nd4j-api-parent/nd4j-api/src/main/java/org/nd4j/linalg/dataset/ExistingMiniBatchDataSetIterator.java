@@ -27,16 +27,8 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     public ExistingMiniBatchDataSetIterator(File rootDir) {
         this.rootDir = rootDir;
         this.paths = new ArrayList<>();
-        Set<String> dataUUIDs = new HashSet<>();
-        if(!rootDir.exists())
-            throw new IllegalArgumentException("Illegal directory  " + rootDir.getAbsolutePath());
-        for(File f : rootDir.listFiles()) {
-           dataUUIDs.add(f.getName().replace(".labels.bin","").replace(".bin",""));
-        }
-        for(String uuid : dataUUIDs) {
-            paths.add(new String[]{new File(rootDir,uuid + ".bin").getAbsolutePath(),new File(rootDir,uuid + ".labels.bin").getAbsolutePath()});
-        }
-
+        if(totalBatches < 1)
+            totalBatches = rootDir.list().length;
     }
 
     @Override
@@ -57,7 +49,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalOutcomes() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -67,7 +59,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public int batch() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -120,13 +112,9 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     private DataSet read(int idx) throws IOException {
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(paths.get(idx)[0]));
-        DataInputStream dis = new DataInputStream(bis);
-        BufferedInputStream labelInputStream = new BufferedInputStream(new FileInputStream(paths.get(idx)[1]));
-        DataInputStream labelDis = new DataInputStream(labelInputStream);
-        DataSet d = new DataSet(Nd4j.read(dis),Nd4j.read(labelDis));
-        dis.close();
-        labelDis.close();
+        File path = new File(rootDir,String.format("dataset-%d.bin",idx));
+        DataSet d = new DataSet();
+        d.load(path);
         return d;
     }
 }

@@ -23,10 +23,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -87,6 +84,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return elementSize;
     }
 
+    /**
+     *
+     * Meant for creating another view of a buffer
+     * @param pointer the underlying buffer to create a view from
+     * @param indexer the indexer for the pointer
+     * @param length the length of the view
+     */
+    public BaseDataBuffer(Pointer pointer,Indexer indexer,long length) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
+        this.length = length;
+        this.allocationMode = AllocationMode.JAVACPP;
+        this.underlyingLength = length;
+        this.wrappedDataBuffer = this;
+
+        this.pointer = pointer;
+        this.indexer =  indexer;
+    }
+
 
     /**
      *
@@ -122,15 +139,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             pointer = underlyingBuffer.pointer();
-            indexer = DoubleIndexer.create((DoublePointer)pointer);
+            indexer = underlyingBuffer.indexer();
         }
         else if(underlyingBuffer.dataType() == Type.FLOAT) {
             pointer = underlyingBuffer.pointer();
-            indexer = FloatIndexer.create((FloatPointer)pointer);
+            indexer = underlyingBuffer.indexer();
         }
         else if(underlyingBuffer.dataType() == Type.INT) {
             pointer = underlyingBuffer.pointer();
-            indexer = IntIndexer.create((IntPointer)pointer);
+            indexer = underlyingBuffer.indexer();
         }
     }
 
@@ -349,12 +366,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
+    /**
+     *
+     * @param data
+     * @param length
+     */
     public BaseDataBuffer(byte[] data, long length) {
         this(ByteBuffer.wrap(data),length);
     }
 
 
-
+    /**
+     * Returns the indexer for the buffer
+     *
+     * @return
+     */
+    @Override
+    public Indexer indexer() {
+        return indexer;
+    }
 
     @Override
     public Pointer pointer() {
@@ -726,15 +756,39 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public double getDouble(long i) {
         if(dataType() == Type.FLOAT) {
             dirty.set(false);
-            return ((FloatIndexer)indexer).get(offset() + i);
+            if(indexer instanceof FloatIndexer) {
+                return ((FloatIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (double) other.get(offset() + i);
+
+            }
         }
         else if(dataType() == Type.INT) {
             dirty.set(false);
-            return ((IntIndexer)indexer).get(offset() + i);
+            if(indexer instanceof IntIndexer) {
+                return ((IntIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (double) other.get(offset() + i);
+
+            }
         }
         else {
             dirty.set(false);
-            return ((DoubleIndexer)indexer).get(offset() + i);
+            if(indexer instanceof DoubleIndexer) {
+                return ((DoubleIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (double) other.get(offset() + i);
+
+            }
         }
     }
 
@@ -742,15 +796,36 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public float getFloat(long i) {
         if(dataType() == Type.DOUBLE) {
             dirty.set(false);
-            return (float)((DoubleIndexer)indexer).get(offset() + i);
+            if(indexer instanceof  DoubleIndexer)
+                return (float)((DoubleIndexer)indexer).get(offset() + i);
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (float) other.get(offset() + i);
+
+            }
         }
         else if(dataType() == Type.INT) {
             dirty.set(false);
-            return ((IntIndexer)indexer).get(offset() + i);
+            if(indexer instanceof  IntIndexer) {
+                return ((IntIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (float) other.get(offset() + i);
+
+            }
         }
         else {
             dirty.set(false);
-            return ((FloatIndexer)indexer).get(offset() + i);
+            if(indexer instanceof FloatIndexer) {
+                return ((FloatIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (float) other.get(offset() + i);
+            }
         }
     }
 
@@ -758,15 +833,36 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public int getInt(long i) {
         if(dataType() == Type.DOUBLE) {
             dirty.set(false);
-            return (int)((DoubleIndexer)indexer).get(offset() + i);
+            if(indexer instanceof DoubleIndexer) {
+                return (int)((DoubleIndexer)indexer).get(offset() + i);
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return other.get(offset() + i);
+
+            }
         }
         else if(dataType() == Type.INT) {
             dirty.set(false);
-            return ((IntIndexer)indexer).get(offset() + i);
+            if(indexer instanceof IntIndexer) {
+                return ((IntIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return (int) other.get(offset() + i);
+
+            }
         }
         else {
-            dirty.set(false);
-            return (int)((FloatIndexer)indexer).get(offset() + i);
+            if(indexer instanceof FloatIndexer) {
+                return (int)((FloatIndexer)indexer).get(offset() + i);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                return  other.get(offset() + i);
+            }
         }
     }
 
@@ -782,13 +878,37 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void put(long i, float element) {
         if(dataType() == Type.DOUBLE) {
-            ((DoubleIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof  DoubleIndexer) {
+                ((DoubleIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+
+            }
         }
         else if(dataType() == Type.INT) {
-            ((IntIndexer)indexer).put(offset() + i, (int)element);
+            if(indexer instanceof  IntIndexer) {
+                ((IntIndexer)indexer).put(offset() + i, (int)element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+
+            }
         }
         else {
-            ((FloatIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof FloatIndexer) {
+                ((FloatIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+
+            }
         }
 
         dirty.set(true);
@@ -797,13 +917,35 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void put(long i, double element) {
         if(dataType() == Type.DOUBLE) {
-            ((DoubleIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof DoubleIndexer) {
+                ((DoubleIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+
+            }
         }
         else if(dataType() == Type.INT) {
-            ((IntIndexer)indexer).put(offset() + i, (int)element);
+            if(indexer instanceof IntIndexer) {
+                ((IntIndexer)indexer).put(offset() + i, (int)element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+            }
         }
         else {
-            ((FloatIndexer)indexer).put(offset() + i, (float)element);
+            if(indexer instanceof FloatIndexer) {
+                ((FloatIndexer)indexer).put(offset() + i, (float)element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+            }
         }
 
         dirty.set(true);
@@ -812,13 +954,34 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void put(long i, int element) {
         if(dataType() == Type.DOUBLE) {
-            ((DoubleIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof DoubleIndexer) {
+                ((DoubleIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+            }
         }
         else if(dataType() == Type.INT) {
-            ((IntIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof IntIndexer) {
+                ((IntIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+            }
         }
         else {
-            ((FloatIndexer)indexer).put(offset() + i, element);
+            if(indexer instanceof FloatIndexer) {
+                ((FloatIndexer)indexer).put(offset() + i, element);
+
+            }
+            else {
+                UByteRawIndexer other = (UByteRawIndexer) indexer;
+                other.put(offset() + i,(int) element);
+            }
         }
 
         dirty.set(true);
@@ -911,7 +1074,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             DataOutputStream dos2 = new DataOutputStream(dos);
             try {
 
-                write( dos2);
+                write(dos2);
             } catch (IOException e) {
                 throw new IllegalStateException("IO Exception writing buffer",e);
             }

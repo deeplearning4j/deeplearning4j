@@ -1630,6 +1630,20 @@ public class Shape {
         return ret;
     }
 
+
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static int elementWiseStride(DataBuffer buffer) {
+        int length2 = shapeInfoLength(buffer.getInt(0));
+        return buffer.getInt(length2 - 2);
+    }
+
     /**
      * Get the element wise stride for the
      * shape info buffer
