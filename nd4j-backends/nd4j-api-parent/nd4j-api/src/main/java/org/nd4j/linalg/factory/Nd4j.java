@@ -116,7 +116,7 @@ public class Nd4j {
     public static IComplexNumber UNIT;
     public static IComplexNumber ZERO;
     public static IComplexNumber NEG_UNIT;
-    public static double EPS_THRESHOLD = 1e-5f;
+    public static double EPS_THRESHOLD = 1e-5;
     //number of elements to print in begin and end
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
