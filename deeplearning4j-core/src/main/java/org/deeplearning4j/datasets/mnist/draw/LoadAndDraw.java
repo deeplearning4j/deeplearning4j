@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.mnist.draw;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -40,8 +41,11 @@ public class LoadAndDraw {
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[0]));
 		
 		BasePretrainNetwork network = (BasePretrainNetwork) ois.readObject();
-		
-		
+		try {
+			ois.close();
+		} catch (IOException e) {
+		}
+
 		DataSet test = null;
 		while(iter.hasNext()) {
 			test = iter.next();
