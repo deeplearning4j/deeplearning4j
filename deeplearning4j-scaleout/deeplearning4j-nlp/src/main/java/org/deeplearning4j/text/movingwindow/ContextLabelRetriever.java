@@ -106,7 +106,7 @@ public class ContextLabelRetriever {
         }
 
         //now join the output
-        StringBuffer strippedSentence = new StringBuffer();
+        StringBuilder strippedSentence = new StringBuilder();
         for(Pair<String,List<String>> tokensWithLabel : tokensWithSameLabel) {
             String joinedSentence = StringUtils.join(tokensWithLabel.getSecond()," ");
             //spaces between separate parts of the sentence
