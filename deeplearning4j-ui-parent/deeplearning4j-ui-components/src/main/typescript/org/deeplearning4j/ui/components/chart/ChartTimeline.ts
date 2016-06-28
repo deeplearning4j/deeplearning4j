@@ -105,7 +105,7 @@ class ChartTimeline extends Chart implements Renderable {
         var heightExMargins = s.getHeight() - margin.top - margin.bottom;
         var widthExMargins = s.getWidth() - margin.left - margin.right;
         var miniHeight = this.laneNames.length * ChartTimeline.MINI_LANE_HEIGHT_PX;
-        var mainHeight = s.getHeight() - miniHeight - 50 - 250;
+        var mainHeight = s.getHeight() - miniHeight - margin.top - margin.bottom - 25;
 
         var minTime:number = d3.min(this.itemData, function (d:any) { return d.start; });
         var maxTime:number = d3.max(this.itemData, function (d:any) { return d.end; });
