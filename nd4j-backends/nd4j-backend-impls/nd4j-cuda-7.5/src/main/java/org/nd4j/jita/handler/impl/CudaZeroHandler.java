@@ -249,9 +249,11 @@ public class CudaZeroHandler implements MemoryHandler {
                         point.setDeviceId(deviceId);
                         PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
+                          //  log.info("PEWPEW");
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
+                            point.getPointers().setDevicePointer(pair.getDevicePointer());
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
 
@@ -776,7 +778,7 @@ public class CudaZeroHandler implements MemoryHandler {
             return;
         }
 
-        StringBuilder builder = new StringBuilder("Relocating for threadId: ").append(Thread.currentThread().getId()).append("; ODP: ").append(dstPoint.getPointers().getDevicePointer().address());
+  //      StringBuilder builder = new StringBuilder("Relocating for threadId: ").append(Thread.currentThread().getId()).append("; ODP: ").append(dstPoint.getPointers().getDevicePointer().address());
 
 
         // FIXME: cross-thread access, might cause problems
@@ -795,16 +797,19 @@ public class CudaZeroHandler implements MemoryHandler {
             // we replace original device pointer with new one
             alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
 
+         //   log.info("Pointer after alloc: {}", dstPoint.getPointers().getDevicePointer().address());
+
             CudaContext context = getCudaContext();
             nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(), buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
             context.syncSpecialStream();
 
+            dstPoint.tickDeviceRead();
             dstPoint.tickHostRead();
         }
 
-        builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
+   //     builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
 
-     //   log.info(builder.toString());
+  //      log.info(builder.toString());
     }
 
     /**

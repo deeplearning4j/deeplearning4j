@@ -23,7 +23,7 @@ public class WeirdSparkTests {
 
     @Before
     public void setUp() {
-        CudaEnvironment.getInstance().getConfiguration().setAllocationModel(Configuration.AllocationModel.DIRECT);
+        CudaEnvironment.getInstance().getConfiguration().setAllocationModel(Configuration.AllocationModel.CACHE_ALL);
     }
 
     @Test
@@ -36,6 +36,8 @@ public class WeirdSparkTests {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
+                System.out.println("--------------------------------------------");
+                System.out.println("           External thread started");
                 array1.putScalar(0, 0f);
                 float sum = array1.sumNumber().floatValue();
                 assertEquals(14f, sum, 0.001f);
@@ -45,6 +47,9 @@ public class WeirdSparkTests {
         Nd4j.getAffinityManager().attachThreadToDevice(thread, 1);
         thread.start();
         thread.join();
+
+        System.out.println("--------------------------------------------");
+        System.out.println("            Back to main thread");
 
         sum = array1.sumNumber().floatValue();
         assertEquals(14f, sum, 0.001f);
