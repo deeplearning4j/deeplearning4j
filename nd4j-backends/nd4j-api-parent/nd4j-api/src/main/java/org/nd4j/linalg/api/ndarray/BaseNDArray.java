@@ -717,6 +717,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
+    
+
     @Override
     public int elementWiseStride() {
         /*
@@ -730,7 +732,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
         */
-        return Shape.elementWiseStride(shapeInfo());
+        return Shape.elementWiseStride(shapeInfoDataBuffer());
     }
 
     @Override
