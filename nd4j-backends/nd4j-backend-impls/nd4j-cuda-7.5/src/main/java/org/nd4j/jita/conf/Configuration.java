@@ -69,7 +69,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads = 1;
+    @Getter private int numberOfGcThreads = 8;
 
     /**
      * Deallocation aggressiveness
@@ -376,7 +376,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        this.executionModel = executionModel;
+        this.executionModel = ExecutionModel.SEQUENTIAL;
 
         return this;
     }

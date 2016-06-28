@@ -27,7 +27,7 @@ public class WeirdSparkTests {
     }
 
     @Test
-    public void aestMultithreadedTup1() throws Exception {
+    public void testMultithreaded1() throws Exception {
         final INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         float sum = array1.sumNumber().floatValue();
@@ -62,8 +62,32 @@ public class WeirdSparkTests {
     public void testMultithreadedDup1() throws Exception {
         final INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
-     //   float sum = array1.sumNumber().floatValue();
-    //    assertEquals(15f, sum, 0.001f);
+       float sum = array1.sumNumber().floatValue();
+        assertEquals(15f, sum, 0.001f);
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("--------------------------------------------");
+                System.out.println("           External thread started");
+                INDArray array = array1.dup();
+
+                float sum = array.sumNumber().floatValue();
+                assertEquals(15f, sum, 0.001f);
+            }
+        });
+
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, 1);
+        thread.start();
+        thread.join();
+
+        sum = array1.sumNumber().floatValue();
+        assertEquals(15f, sum, 0.001f);
+    }
+
+    @Test
+    public void testMultithreadedDup2() throws Exception {
+        final INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         Thread thread = new Thread(new Runnable() {
             @Override
