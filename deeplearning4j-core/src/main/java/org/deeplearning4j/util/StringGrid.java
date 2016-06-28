@@ -445,7 +445,7 @@ public class StringGrid extends ArrayList<List<String>> {
     public List<String> toLines() {
         List<String> lines = new ArrayList<String>();
         for(List<String> list : this) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for(String s : list) {
                 sb.append(s.replaceAll(sep," "));
                 sb.append(sep);
@@ -472,7 +472,7 @@ public class StringGrid extends ArrayList<List<String>> {
 
         if(column1 != column2)
             for(List<String> list : this) {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 sb.append(list.get(column1));
                 sb.append(list.get(column2));
                 list.set(Math.min(column1,column2),sb.toString().replaceAll("\"","").replace(sep," "));

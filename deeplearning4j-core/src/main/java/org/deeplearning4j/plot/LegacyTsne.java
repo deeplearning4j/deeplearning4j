@@ -399,7 +399,7 @@ public class LegacyTsne implements Serializable {
             String word = labels.get(i);
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray wordVector = y.getRow(i);
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));
