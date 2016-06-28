@@ -103,15 +103,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
+    protected DataBuffer shape;
+    protected DataBuffer stride;
+
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
     private static final int[][] tadFinalPermuteDimensions;
     static{
         tadFinalPermuteDimensions = new int[32][0];
         tadFinalPermuteDimensions[1] = new int[]{1,0};  //Edge case for 1d tensors: selectively apply to column vectors
-        for( int i=2; i<32; i++ ){
+        for( int i = 2; i < 32; i++) {
             tadFinalPermuteDimensions[i] = new int[i];
-            for( int k=i-1, j=0; k>=0; k--, j++) tadFinalPermuteDimensions[i][j] = k;
+            for( int k= i - 1, j = 0; k >= 0; k--, j++) tadFinalPermuteDimensions[i][j] = k;
         }
     }
 
@@ -714,6 +717,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
+    
+
     @Override
     public int elementWiseStride() {
         /*
@@ -727,7 +732,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
         */
-        return Shape.elementWiseStride(shapeInfo());
+        return Shape.elementWiseStride(shapeInfoDataBuffer());
     }
 
     @Override
@@ -1532,11 +1537,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             isScalar = false;
         }
         else if (Shape.rank(shapeInformation) == 1) {
-            isScalar = Shape.shapeOf(shapeInformation).getInt(0) == 1;
+            isScalar = shapeOf().getInt(0) == 1;
         }
         else if (Shape.rank(shapeInformation) == 2) {
-            isScalar = Shape.shapeOf(shapeInformation).getInt(0) == 1
-                    && Shape.shapeOf(shapeInformation).getInt(1) == 1;
+            isScalar = shapeOf().getInt(0) == 1
+                    && shapeOf().getInt(1) == 1;
         }
 
         else
@@ -1873,7 +1878,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (shape.length == rank() && Shape.contentEquals(shape, Shape.shapeOf(shapeInformation))) {
+        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -1899,7 +1904,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (Shape.contentEquals(shape,Shape.shapeOf(shapeInformation))) {
+        if (Shape.contentEquals(shape,shapeOf())) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -2201,14 +2206,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
     }
+    protected DataBuffer shapeOf() {
+        if(shape == null)
+            shape = Shape.shapeOf(shapeInfoDataBuffer());
+        return shape;
+    }
 
+    protected DataBuffer strideOf() {
+        if(stride == null)
+            stride = Shape.stride(shapeInfoDataBuffer());
+        return stride;
+    }
 
     @Override
     public int stride(int dimension) {
         int rank = Shape.rank(shapeInformation);
         if(dimension < 0)
-            return Shape.stride(shapeInformation).getInt(dimension + rank);
-        return Shape.stride(shapeInformation).getInt(dimension);
+            return strideOf().getInt(dimension + rank);
+        return strideOf().getInt(dimension);
     }
 
     @Override
@@ -3918,14 +3933,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(dimension < 0) {
-            return Shape.shapeOf(shapeInformation).getInt(dimension + Shape.rank(shapeInformation));
+            return shapeOf().getInt(dimension + Shape.rank(shapeInformation));
         }
 
         if(dimension >= rank())
             throw new IllegalArgumentException("Invalid size index " + dimension + " wher it's >= rank " + rank());
 
 
-        return Shape.shapeOf(shapeInformation).getInt(dimension);
+        return shapeOf().getInt(dimension);
     }
 
     @Override
@@ -4177,8 +4192,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         checkArrangeArray(rearrange);
-        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation), rearrange);
-        int[] newStride = doPermuteSwap(Shape.stride(shapeInformation), rearrange);
+        int[] newShape = doPermuteSwap(shapeOf(), rearrange);
+        int[] newStride = doPermuteSwap(strideOf(), rearrange);
 
         char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
