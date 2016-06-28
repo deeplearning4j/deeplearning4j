@@ -103,8 +103,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
-    protected DataBuffer shape;
-    protected DataBuffer stride;
+    protected transient DataBuffer shape;
+    protected transient DataBuffer stride;
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
