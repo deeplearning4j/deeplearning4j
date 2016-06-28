@@ -4263,6 +4263,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.numLeadingOnes = -1;
         this.numTrailingOnes = -1;
 
+        this.shape = null;
+        this.stride = null;
+
         return this;
     }
 
