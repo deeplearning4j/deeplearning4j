@@ -19,6 +19,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -36,6 +38,9 @@ import java.util.*;
  **/
 
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
+    protected static final Logger log = LoggerFactory.getLogger(BatchNormalization.class);
+
+    BatchNormalizationHelper helper = null;
     protected int index = 0;
     protected List<IterationListener> listeners = new ArrayList<>();
     protected int[] shape;
@@ -49,6 +54,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     public BatchNormalization(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
+    }
+
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
+                    .asSubclass(BatchNormalizationHelper.class).newInstance();
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not load CudnnBatchNormalizationHelper", t);
+            }
+        }
     }
 
     @Override
@@ -88,6 +105,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         INDArray dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
         INDArray dBetaView = gradientViews.get(BatchNormalizationParamInitializer.BETA);
+
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon,
+                    shape, gamma, dGammaView, dBetaView, layerConf.getEps());
+            if (ret != null) {
+                return ret;
+            }
+        }
 
         // paper and long calculation
         if (epsilon.rank() == 2) {
@@ -204,6 +229,20 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             beta = getParam(BatchNormalizationParamInitializer.BETA);
+        }
+
+        if (helper != null) {
+            double decay = setMeanVar ? 1 : layerConf.getDecay();
+            if (setMeanVar){
+                this.mean = this.mean == null? Nd4j.zeros(mean.shape()): this.mean;
+                this.var = this.var == null? Nd4j.valueArrayOf(var.shape(), layerConf.getEps()): this.var;
+                setMeanVar = false;
+            }
+            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN && layerConf.isUseBatchMean(),
+                    shape, gamma, beta, this.mean, this.var, decay, layerConf.getEps());
+            if (ret != null) {
+                return ret;
+            }
         }
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
