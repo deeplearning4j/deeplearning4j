@@ -68,7 +68,7 @@ public class InputHomogenization {
 	 * @return the normalized text passed in via constructor
 	 */
 	public String transform() {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for(int i = 0; i < input.length(); i++) {
 			if(ignoreCharactersContaining != null && ignoreCharactersContaining.contains(String.valueOf(input.charAt(i))))
 				sb.append(input.charAt(i));

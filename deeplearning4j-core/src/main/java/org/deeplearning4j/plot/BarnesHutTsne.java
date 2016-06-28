@@ -527,7 +527,7 @@ public class BarnesHutTsne extends Tsne implements Model {
             String word = labels.get(i);
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray wordVector = Y.getRow(i);
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));
