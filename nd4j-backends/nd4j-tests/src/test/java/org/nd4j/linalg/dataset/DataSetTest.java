@@ -551,9 +551,43 @@ public class DataSetTest extends BaseNd4jTest {
         int to = 9;
         ds = DataSet.merge(list);
         org.nd4j.linalg.dataset.api.DataSet newDs = ds.getRange(from,to);
+        //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(),newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
         assertEquals(newDs.getLabelsMaskArray().sum(1),Nd4j.linspace(numExamples+from,numExamples+to,to-from+1));
+    }
+
+    @Test
+    public void testAsList() {
+        org.nd4j.linalg.dataset.api.DataSet ds = new DataSet();
+        //Comparing merge with asList
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int minTSLength = 10;   //Lengths 10, 11, ..., 19
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for (int i = 0; i < numExamples; i++) {
+            INDArray in = Nd4j.rand(new int[]{1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new int[]{1, labelSize, minTSLength + i});
+            list.add(new DataSet(in, out));
+        }
+
+        //Merged dataset and dataset list
+        ds = DataSet.merge(list);
+        List<DataSet> dsList = ds.asList();
+        //Reset seed
+        Nd4j.getRandom().setSeed(12345);
+        for (int i = 0; i < numExamples; i++) {
+            INDArray in = Nd4j.rand(new int[]{1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new int[]{1, labelSize, minTSLength + i});
+            DataSet iDataSet = new DataSet(in, out);
+            assertEquals(iDataSet.getFeatures(), dsList.get(i).getFeatures());
+            assertEquals(iDataSet.getFeaturesMaskArray(), dsList.get(i).getFeaturesMaskArray());
+            assertEquals(iDataSet.getLabels(), dsList.get(i).getLabels());
+            assertEquals(iDataSet.getLabelsMaskArray(), dsList.get(i).getLabelsMaskArray());
+        }
     }
 
 
