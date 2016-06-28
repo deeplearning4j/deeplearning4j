@@ -92,6 +92,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             point.setConstant(true);
             point.tickDeviceWrite();
             point.tickHostRead();
+            point.setDeviceId(deviceId);
 
             protector.persistDataBuffer(dataBuffer);
 
@@ -110,6 +111,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             point.setConstant(true);
             point.tickDeviceWrite();
             point.tickHostRead();
+            point.setDeviceId(deviceId);
 
             protector.persistDataBuffer(dataBuffer);
 
@@ -124,6 +126,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);
         point.tickDeviceWrite();
+        point.setDeviceId(deviceId);
         point.tickHostRead();
 
 

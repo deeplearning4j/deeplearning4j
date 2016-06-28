@@ -95,6 +95,10 @@ public class SynchronousFlowController implements FlowController {
                 allocator.getMemoryHandler().relocateObject(result.data());
 
                 //allocator.getMemoryHandler().relocateObject(result.shapeInfoDataBuffer());
+            }
+
+            if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
+                log.info("rShape");
                 ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
             }
 
@@ -122,6 +126,10 @@ public class SynchronousFlowController implements FlowController {
                 allocator.getMemoryHandler().relocateObject(operand.data());
 
                 //allocator.getMemoryHandler().relocateObject(operand.shapeInfoDataBuffer());
+            }
+
+            if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
+                log.info("oShape");
                 ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
             }
 
