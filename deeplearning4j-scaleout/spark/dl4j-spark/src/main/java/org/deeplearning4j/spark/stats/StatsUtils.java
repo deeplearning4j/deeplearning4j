@@ -3,11 +3,11 @@ package org.deeplearning4j.spark.stats;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.components.chart.ChartHistogram;
 import org.deeplearning4j.ui.components.chart.ChartLine;
 import org.deeplearning4j.ui.components.chart.ChartTimeline;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -77,7 +77,7 @@ public class StatsUtils {
 
         StyleChart styleChart = new StyleChart.Builder()
                 .backgroundColor(Color.WHITE)
-                .width(800, LengthUnit.Px)
+                .width(700, LengthUnit.Px)
                 .height(400, LengthUnit.Px)
                 .build();
 
@@ -92,7 +92,7 @@ public class StatsUtils {
         Set<String> keySetInclude = new HashSet<>();
         for(String s : keySet) if(sparkTrainingStats.defaultIncludeInPlots(s)) keySetInclude.add(s);
 
-        components.add(getTrainingStatsTimelineChart(sparkTrainingStats, keySetInclude));
+        Collections.addAll(components, getTrainingStatsTimelineChart(sparkTrainingStats, keySetInclude));
 
         for (String s : keySet) {
             List<EventStats> list = new ArrayList<>(sparkTrainingStats.getValue(s));
@@ -105,9 +105,21 @@ public class StatsUtils {
                 duration[i] = list.get(i).getDurationMs();
             }
 
-            components.add(new ChartLine.Builder(s, styleChart)
+            Component line = new ChartLine.Builder(s, styleChart)
                     .addSeries("Duration", x, duration)
-                    .build());
+                    .build();
+
+            //Also build a histogram...
+            Component hist = getHistogram(duration, 20, s, styleChart);
+
+            Component[] temp;
+            if(hist != null){
+                temp = new Component[]{line,hist};
+            } else {
+                temp = new Component[]{line};
+            }
+
+            components.add( new ComponentDiv(new StyleDiv.Builder().width(100,LengthUnit.Percent).build(),temp) );
         }
 
         String html = StaticPageUtil.renderHTML(components);
@@ -123,7 +135,7 @@ public class StatsUtils {
     }
 
 
-    private static Component getTrainingStatsTimelineChart(SparkTrainingStats stats, Set<String> includeSet) {
+    private static Component[] getTrainingStatsTimelineChart(SparkTrainingStats stats, Set<String> includeSet) {
         Set<Tuple3<String, String, Long>> uniqueTuples = new HashSet<>();
         Set<String> machineIDs = new HashSet<>();
         Set<String> jvmIDs = new HashSet<>();
@@ -152,12 +164,28 @@ public class StatsUtils {
         List<Tuple3<String, String, Long>> outputOrder = new ArrayList<>(uniqueTuples);
         Collections.sort(outputOrder, new TupleComparator());
 
-        Color[] colors = getRandomColors(includeSet.size(), 12345);
+        Color[] colors = getColors(includeSet.size());
         Map<String, Color> colorMap = new HashMap<>();
         count = 0;
         for (String s : includeSet) {
             colorMap.put(s, colors[count++]);
         }
+
+        //Create key for charts:
+        List<Component> tempList = new ArrayList<>();
+        for(String s : includeSet){
+            String key = stats.getShortNameForKey(s) + " - " + s;
+
+            tempList.add(new ComponentDiv(
+                            new StyleDiv.Builder()
+                            .backgroundColor(colorMap.get(s))
+                            .width(33.3,LengthUnit.Percent)
+                            .height(25, LengthUnit.Px)
+                            .floatValue(StyleDiv.FloatValue.left)
+                            .build(),
+                            new ComponentText(key,new StyleText.Builder().fontSize(11).build())));
+        }
+        Component key = new ComponentDiv(new StyleDiv.Builder().width(100,LengthUnit.Percent).build(), tempList);
 
         List<List<ChartTimeline.TimelineEntry>> entriesByLane = new ArrayList<>();
         for (int i = 0; i < nLanes; i++) entriesByLane.add(new ArrayList<ChartTimeline.TimelineEntry>());
@@ -205,7 +233,7 @@ public class StatsUtils {
             i++;
         }
 
-        return b.build();
+        return new Component[]{b.build(), key};
     }
 
     private static class TupleComparator implements Comparator<Tuple3<String, String, Long>> {
@@ -225,12 +253,46 @@ public class StatsUtils {
         }
     }
 
-    private static Color[] getRandomColors(int nColors, long seed) {
-        Random r = new Random(seed);
+    private static Color[] getColors(int nColors) {
         Color[] c = new Color[nColors];
+        double step;
+        if(nColors <= 1) step = 1.0;
+        else step = 1.0 / (nColors+1);
         for (int i = 0; i < nColors; i++) {
-            c[i] = Color.getHSBColor(r.nextFloat(), 0.5f, 0.75f);   //random hue; fixed saturation + variance to (hopefully) ensure readability of labels
+            c[i] = Color.getHSBColor((float)step*i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
         }
         return c;
+    }
+
+    private static Component getHistogram(double[] data, int nBins, String title, StyleChart styleChart){
+        double min = Double.MAX_VALUE;
+        double max = -Double.MAX_VALUE;
+        for( double d : data){
+            min = Math.min(min, d);
+            max = Math.max(max, d);
+        }
+
+        if(min == max) return null;
+        double[] bins = new double[nBins+1];
+        int[] counts = new int[nBins];
+        double step = (max-min)/nBins;
+        for( int i=0; i<bins.length; i++ ) bins[i] = min + i*step;
+
+        for( double d : data ){
+            for( int i=0; i<bins.length-1; i++ ){
+                if(d >= bins[i] && d < bins[i+1]){
+                    counts[i]++;
+                    break;
+                }
+            }
+            if(d == bins[bins.length-1]) counts[counts.length-1]++;
+        }
+
+        ChartHistogram.Builder b = new ChartHistogram.Builder(title, styleChart);
+        for( int i=0; i<bins.length-1; i++ ){
+            b.addBin(bins[i],bins[i+1],counts[i]);
+        }
+
+        return b.build();
     }
 }
