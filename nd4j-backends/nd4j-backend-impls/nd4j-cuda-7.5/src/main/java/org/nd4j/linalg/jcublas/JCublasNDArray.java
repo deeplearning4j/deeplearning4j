@@ -30,12 +30,16 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 import java.util.List;
 
@@ -438,5 +442,10 @@ public class JCublasNDArray extends BaseNDArray {
     public String toString() {
         
         return super.toString();
+    }
+	
+    private Object writeReplace()
+        throws java.io.ObjectStreamException {
+        return new BaseNDArrayProxy(this);
     }
 }
