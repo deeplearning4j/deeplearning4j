@@ -19,6 +19,7 @@
 package org.deeplearning4j.text.corpora.sentiwordnet;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.*;
@@ -62,9 +63,9 @@ public class SWN3 implements Serializable {
 		HashMap<String, List<Double>> _temp = new HashMap<String, List<Double>>();
 
 		ClassPathResource resource = new ClassPathResource(sentiWordNetPath);
-
+		BufferedReader csv = null;
 		try{
-			BufferedReader csv =  new BufferedReader(new InputStreamReader(resource.getInputStream()));
+			csv =  new BufferedReader(new InputStreamReader(resource.getInputStream()));
 			String line = "";           
 			while((line = csv.readLine()) != null) {
 				if(line.isEmpty())
@@ -117,7 +118,15 @@ public class SWN3 implements Serializable {
 		}
 		catch(Exception e) {
 			throw new RuntimeException(e);
-		}        
+		} finally {
+			if (csv != null) {
+				try {
+					csv.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	
