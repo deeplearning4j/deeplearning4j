@@ -1697,8 +1697,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isMatrix() {
         if(isMatrix != null)
             return isMatrix;
-        isMatrix = (Shape.rank(shapeInformation) == 2
-                && (size(0) != 1 && size(1) != 1));
+        isMatrix = (rank == 2 && (size(0) != 1 && size(1) != 1));
         return isMatrix;
     }
 
@@ -3557,14 +3556,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int columns() {
-        if (isMatrix()) {
-            if (shape().length == 2)
-                return  size(1);
-        }
-        if (isVector()) {
+        if (isMatrix()) return  size(1);
+        else if (isVector()) {
             if (isColumnVector())
                 return 1;
-            else if(isRowVector() && Shape.rank(shapeInformation) > 1)
+            else if(isRowVector() && rank > 1)
                 return size(1);
             else
                 return size(0);
@@ -3582,11 +3578,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int rows() {
-        if (isMatrix()) {
-            if (shape().length == 2)
-                return size(0);
-        }
-
+        if (isMatrix()) return size(0);
         else if (isVector()) {
             if (isRowVector())
                 return 1;
