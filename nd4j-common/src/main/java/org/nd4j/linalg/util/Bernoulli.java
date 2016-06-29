@@ -25,6 +25,8 @@ package org.nd4j.linalg.util;
  */
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -36,7 +38,7 @@ class Bernoulli {
      * The list of all Bernoulli numbers as a vector, n=0,2,4,....
      */
 
-    static Vector<Rational> a = new Vector<Rational>();
+    static List<Rational> a = new ArrayList<Rational>();
 
     public Bernoulli() {
         if (a.size() == 0) {
@@ -81,7 +83,7 @@ class Bernoulli {
                     set(i, doubleSum(i));
                 }
             }
-            return a.elementAt(nindx);
+            return a.get(nindx);
         }
     }
     /* Generate a new B_n by a standard double sum.

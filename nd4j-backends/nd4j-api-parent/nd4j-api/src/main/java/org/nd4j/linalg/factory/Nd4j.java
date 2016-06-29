@@ -1951,7 +1951,7 @@ public class Nd4j {
     public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
         for (int i = 0; i < write.rows(); i++) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray row = write.getRow(i);
             for (int j = 0; j < row.columns(); j++) {
                 sb.append(row.getDouble(j));

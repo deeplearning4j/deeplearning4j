@@ -1258,7 +1258,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public String toString() {
-        StringBuffer ret = new StringBuffer();
+        StringBuilder ret = new StringBuilder();
         ret.append("[");
         for(int i = 0; i < length(); i++) {
             ret.append(getNumber(i));

@@ -205,7 +205,7 @@ public final class LibUtils
         String resourceFolder = os + "-" + arch;
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
-        StringBuffer sb = new StringBuffer()
+        StringBuilder sb = new StringBuilder()
                 .append(libName.getPackage().getName().replace(".","/") + "/")
                 .append(resourceFolder).append("/").append(libPrefix).append("jni" + libName.getSimpleName() + ".")
                 .append(libExtension);

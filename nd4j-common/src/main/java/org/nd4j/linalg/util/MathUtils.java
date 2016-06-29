@@ -1126,7 +1126,7 @@ public class MathUtils {
      * double in the vector
      */
     public static int distanceFinderZValue(double[] vector) {
-        StringBuffer binaryBuffer = new StringBuffer();
+        StringBuilder binaryBuffer = new StringBuilder();
         List<String> binaryReps = new ArrayList<String>(vector.length);
         for (int i = 0; i < vector.length; i++) {
             double d = vector[i];

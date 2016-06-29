@@ -60,7 +60,7 @@ public class NDArrayStrings {
     }
 
     private String format(INDArray arr,int rank, int offset) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if(arr.isScalar()) {
             if(arr instanceof IComplexNDArray)
                 return ((IComplexNDArray) arr).getComplex(0).toString();
