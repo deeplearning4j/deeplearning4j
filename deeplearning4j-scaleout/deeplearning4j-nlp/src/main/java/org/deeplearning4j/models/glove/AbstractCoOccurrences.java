@@ -64,7 +64,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
     // this method should be private, to avoid non-configured instantiation
     private AbstractCoOccurrences() {
-        ;
     }
 
     /**

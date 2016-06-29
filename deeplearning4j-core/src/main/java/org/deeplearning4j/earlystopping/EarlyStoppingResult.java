@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @Data
 public class EarlyStoppingResult<T extends Model> implements Serializable {
-    public enum TerminationReason {Error, IterationTerminationCondition, EpochTerminationCondition};
+    public enum TerminationReason {Error, IterationTerminationCondition, EpochTerminationCondition}
 
     private TerminationReason terminationReason;
     private String terminationDetails;

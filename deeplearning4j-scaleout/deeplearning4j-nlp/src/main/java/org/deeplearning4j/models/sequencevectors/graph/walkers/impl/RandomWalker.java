@@ -101,7 +101,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                 case RANDOM: {
                         int[] nextHops = sourceGraph.getConnectedVertexIndices(currentPosition);
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
-                    };
+                    }
                     break;
                 case FORWARD_ONLY: {
                         // here we remove only last hop
@@ -132,7 +132,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                                     throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                             }
                         }
-                    };
+                    }
                     break;
                 case FORWARD_UNIQUE: {
                     // here we remove all previously visited hops, and we don't get  back to them ever
@@ -164,7 +164,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                                 throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                         }
                     }
-                };
+                }
                 break;
                 case FORWARD_PREFERRED: {
                         // here we remove all previously visited hops, and if there's no next unique hop available - we fallback to anything, but the last one
