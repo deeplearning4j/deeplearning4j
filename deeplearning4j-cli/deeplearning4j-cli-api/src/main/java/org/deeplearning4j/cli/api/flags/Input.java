@@ -33,7 +33,7 @@ public abstract class Input extends BaseIOFlag {
     public <E> E value(String value) throws Exception {
         URI uri = URI.create(value);
         String path = uri.getPath();
-        String extension = path.substring(path.lastIndexOf(".") + 1);
+        String extension = path.substring(path.lastIndexOf('.') + 1);
 
         return (E) createReader(uri);
     }
