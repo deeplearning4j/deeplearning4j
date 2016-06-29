@@ -254,8 +254,10 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
-                            if (point.getPointers() != null)
-                                point.getPointers().setDevicePointer(pair.getDevicePointer());
+                            if (point.getPointers() == null)
+                                throw new RuntimeException("WTF?");
+
+                            point.getPointers().setDevicePointer(pair.getDevicePointer());
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
 
@@ -782,6 +784,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         StringBuilder builder = new StringBuilder("Relocating for threadId: ").append(Thread.currentThread().getId()).append("; ODP: ").append(dstPoint.getPointers().getDevicePointer().address());
 
+        long odp = dstPoint.getPointers().getDevicePointer().address();
 
         // FIXME: cross-thread access, might cause problems
         if (!dstPoint.isActualOnHostSide())
@@ -794,6 +797,7 @@ public class CudaZeroHandler implements MemoryHandler {
             // we can't relocate or modify buffers
             throw new RuntimeException("Can't relocateObject() for constant buffer");
         } else {
+            log.info("Freeing memory pointer: {}", dstPoint.getPointers().getDevicePointer().address());
             memoryProvider.free(dstPoint);
 
             // we replace original device pointer with new one
@@ -810,8 +814,11 @@ public class CudaZeroHandler implements MemoryHandler {
         }
 
         builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
-
+        long ndp = dstPoint.getPointers().getDevicePointer().address();
         log.info(builder.toString());
+
+    //    if (odp == ndp)
+    //        throw new RuntimeException("ODP equals to NDP");
     }
 
     /**

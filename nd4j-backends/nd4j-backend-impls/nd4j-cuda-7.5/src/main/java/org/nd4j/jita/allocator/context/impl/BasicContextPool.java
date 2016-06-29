@@ -93,7 +93,7 @@ public class BasicContextPool implements ContextPool {
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
+                        logger.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -144,7 +144,7 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected CudaContext createNewStream(Integer deviceId) {
-        logger.debug("Creating new stream for device ["+deviceId+"]...");
+        logger.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);
         nativeOps.setDevice(new CudaPointer(deviceId));
 

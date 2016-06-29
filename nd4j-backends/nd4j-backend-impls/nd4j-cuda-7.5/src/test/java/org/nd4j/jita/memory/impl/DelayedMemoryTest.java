@@ -109,7 +109,7 @@ public class DelayedMemoryTest extends TestCase {
 
                     cards[cnt] = allocator.getDeviceId();
 
-                    assertEquals(15f, sum, 0.001f);
+                    assertEquals("Failed on C: " + cnt,15f, sum, 0.001f);
                 }
             });
 

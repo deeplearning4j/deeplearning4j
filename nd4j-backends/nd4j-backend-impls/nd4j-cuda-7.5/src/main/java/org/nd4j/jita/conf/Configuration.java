@@ -39,7 +39,7 @@ public class Configuration implements Serializable {
 
     @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
+    @Getter private AllocationModel allocationModel = AllocationModel.DIRECT;
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
@@ -189,7 +189,7 @@ public class Configuration implements Serializable {
         nativeOps.setGridLimit(maximumGridSize);
 
         // if we have multi-gpu system - force DELAYED memory model by default
-        if (cnt > 1)
+        if (cnt > 1 && !forceSingleGPU)
             this.memoryModel = MemoryModel.DELAYED;
     }
 
