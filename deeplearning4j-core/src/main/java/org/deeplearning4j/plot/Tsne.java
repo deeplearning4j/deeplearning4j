@@ -62,7 +62,6 @@ public class Tsne {
     protected static final Logger logger = LoggerFactory.getLogger(Tsne.class);
 
     protected Tsne() {
-        ;
     }
 
     protected void init() {
@@ -189,7 +188,7 @@ public class Tsne {
             String word = labels.get(i);
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray wordVector = Y.getRow(i);
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));

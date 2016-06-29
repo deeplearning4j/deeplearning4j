@@ -39,7 +39,6 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
 
     protected GraphTransformer() {
-        ;
     }
 
     /**

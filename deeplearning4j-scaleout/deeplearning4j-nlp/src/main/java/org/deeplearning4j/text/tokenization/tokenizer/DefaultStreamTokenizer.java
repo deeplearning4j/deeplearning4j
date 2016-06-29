@@ -103,7 +103,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
      * @return
      */
     private String nextTokenFromStream() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
 
         if(streamTokenizer.ttype == StreamTokenizer.TT_WORD) {

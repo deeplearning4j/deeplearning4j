@@ -19,14 +19,10 @@
 package org.deeplearning4j.text.corpora.sentiwordnet;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
@@ -64,12 +60,12 @@ public class SWN3 implements Serializable {
 	public SWN3(String sentiWordNetPath) {
 
 		_dict = new HashMap<String, Double>();
-		HashMap<String, Vector<Double>> _temp = new HashMap<String, Vector<Double>>();
+		HashMap<String, List<Double>> _temp = new HashMap<String, List<Double>>();
 
 		ClassPathResource resource = new ClassPathResource(sentiWordNetPath);
-
+		BufferedReader csv = null;
 		try{
-			BufferedReader csv =  new BufferedReader(new InputStreamReader(resource.getInputStream()));
+			csv =  new BufferedReader(new InputStreamReader(resource.getInputStream()));
 			String line = "";           
 			while((line = csv.readLine()) != null) {
 				if(line.isEmpty())
@@ -88,19 +84,19 @@ public class SWN3 implements Serializable {
 					w_n[0] += "#"+data[0];
 					int index = Integer.parseInt(w_n[1])-1;
 					if(_temp.containsKey(w_n[0])) {
-						Vector<Double> v = _temp.get(w_n[0]);
-						if(index>v.size())
-							for(int i = v.size();i<index; i++)
-								v.add(0.0);
-						v.add(index, score);
-						_temp.put(w_n[0], v);
+						List<Double> l = _temp.get(w_n[0]);
+						if(index>l.size())
+							for(int i = l.size();i<index; i++)
+								l.add(0.0);
+						l.add(index, score);
+						_temp.put(w_n[0], l);
 					}
 					else {
-						Vector<Double> v = new Vector<Double>();
+						List<Double> l = new ArrayList<Double>();
 						for(int i = 0;i<index; i++)
-							v.add(0.0);
-						v.add(index, score);
-						_temp.put(w_n[0], v);
+							l.add(0.0);
+						l.add(index, score);
+						_temp.put(w_n[0], l);
 					}
 				}
 			}
@@ -109,12 +105,12 @@ public class SWN3 implements Serializable {
 			Set<String> temp = _temp.keySet();
 			for (Iterator<String> iterator = temp.iterator(); iterator.hasNext(); ) {
 				String word = iterator.next();
-				Vector<Double> v = _temp.get(word);
+				List<Double> l = _temp.get(word);
 				double score = 0.0;
 				double sum = 0.0;
-				for(int i = 0; i < v.size(); i++)
-					score += ((double)1/(double)(i+1))*v.get(i);
-				for(int i = 1; i<=v.size(); i++)
+				for(int i = 0; i < l.size(); i++)
+					score += ((double)1/(double)(i+1))*l.get(i);
+				for(int i = 1; i<=l.size(); i++)
 					sum += (double)1/(double)i;
 				score /= sum;
 				_dict.put(word, score);
@@ -122,7 +118,15 @@ public class SWN3 implements Serializable {
 		}
 		catch(Exception e) {
 			throw new RuntimeException(e);
-		}        
+		} finally {
+			if (csv != null) {
+				try {
+					csv.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	

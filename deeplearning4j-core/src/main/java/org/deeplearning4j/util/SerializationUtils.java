@@ -18,13 +18,8 @@
 
 package org.deeplearning4j.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
+
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -36,11 +31,19 @@ public class SerializationUtils {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T readObject(File file) {
+		ObjectInputStream ois = null;
 		try {
-			ObjectInputStream ois = new ObjectInputStream(FileUtils.openInputStream(file));
+			ois = new ObjectInputStream(FileUtils.openInputStream(file));
 			return (T) ois.readObject();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		} finally {
+			if (ois != null)
+				try {
+					ois.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
 		
 	}

@@ -67,7 +67,6 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
     }
 
     public Graph() {
-        ;
     }
 
     public void addVertex(Vertex<V> vertex, Edge<E> edge) {

@@ -138,7 +138,6 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         protected List<String> stopWords = new ArrayList<>();
 
         public Builder() {
-            ;
         }
 
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
