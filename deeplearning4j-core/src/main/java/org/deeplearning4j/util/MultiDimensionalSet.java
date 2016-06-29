@@ -36,19 +36,19 @@ public class MultiDimensionalSet<K,V> implements Set<Pair<K,V>> {
     }
 
     public static <K,V> MultiDimensionalSet<K,V> hashSet() {
-        return new MultiDimensionalSet<K,V>(new HashSet<Pair<K,V>>());
+        return new MultiDimensionalSet<>(new HashSet<Pair<K, V>>());
     }
 
 
     public static <K,V> MultiDimensionalSet<K,V> treeSet() {
-        return new MultiDimensionalSet<K,V>(new TreeSet<Pair<K,V>>());
+        return new MultiDimensionalSet<>(new TreeSet<Pair<K, V>>());
     }
 
 
 
 
     public static <K,V> MultiDimensionalSet<K,V> concurrentSkipListSet() {
-        return new MultiDimensionalSet<K,V>(new ConcurrentSkipListSet<Pair<K,V>>());
+        return new MultiDimensionalSet<>(new ConcurrentSkipListSet<Pair<K, V>>());
     }
 
     /**

@@ -31,7 +31,7 @@ public class RandomWalkerTest {
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
-            graph = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
+            graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 10; i++) {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
@@ -41,7 +41,7 @@ public class RandomWalkerTest {
                 graph.addEdge(i, x, 1.0, false);
             }
 
-            graphDirected = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
+            graphDirected = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 10; i++) {
                 graphDirected.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
@@ -51,7 +51,7 @@ public class RandomWalkerTest {
                 graphDirected.addEdge(i, x, 1.0, true);
             }
 
-            graphBig = new Graph<VocabWord, Double>(1000, false, new AbstractVertexFactory<VocabWord>());
+            graphBig = new Graph<>(1000, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 1000; i++) {
                 graphBig.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
@@ -65,7 +65,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphCreation() throws Exception {
-        Graph<VocabWord, Double> graph = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
+        Graph<VocabWord, Double> graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());
 
         // we have 10 elements
         assertEquals(10,graph.numVertices());
@@ -80,7 +80,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom1() throws Exception {
-        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<VocabWord>(graph)
+        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED)
                 .setWalkLength(3)
                 .build();
@@ -104,7 +104,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom2() throws Exception {
-        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<VocabWord>(graph)
+        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED)
                 .setWalkLength(20)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
@@ -130,7 +130,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom3() throws Exception {
-        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<VocabWord>(graph)
+        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED)
                 .setWalkLength(20)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
@@ -154,7 +154,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom4() throws Exception {
-        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<VocabWord>(graphBig)
+        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graphBig)
                 .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED)
                 .setWalkLength(20)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
@@ -172,7 +172,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom5() throws Exception {
-        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<VocabWord>(graphBig)
+        RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graphBig)
                 .setWalkLength(20)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
@@ -189,7 +189,7 @@ public class RandomWalkerTest {
 
     @Test
     public void testGraphTraverseRandom6() throws Exception {
-        GraphWalker<VocabWord> walker =  new RandomWalker.Builder<VocabWord>(graphDirected)
+        GraphWalker<VocabWord> walker = new RandomWalker.Builder<>(graphDirected)
                 .setWalkLength(20)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)

@@ -44,14 +44,14 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
 
     @SuppressWarnings("unchecked")
     public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges){
-        this.vertices = new ArrayList<Vertex<V>>(vertices);
+        this.vertices = new ArrayList<>(vertices);
         this.allowMultipleEdges = allowMultipleEdges;
         edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
     }
 
     @SuppressWarnings("unchecked")
     public Graph(Collection<V> elements, boolean allowMultipleEdges) {
-        this.vertices = new ArrayList<Vertex<V>>();
+        this.vertices = new ArrayList<>();
         this.allowMultipleEdges = allowMultipleEdges;
         int idx = 0;
         for (V element: elements) {
@@ -140,7 +140,7 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
      */
     @Override
     public void addEdge(int from, int to, E value, boolean directed) {
-        addEdge(new Edge<E>(from, to, value, directed));
+        addEdge(new Edge<>(from, to, value, directed));
     }
 
     @Override

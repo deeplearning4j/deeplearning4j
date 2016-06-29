@@ -29,7 +29,7 @@ public class ZookeeperPathBuilder {
 	private List<String> paths;
 
 	public ZookeeperPathBuilder() {
-		paths = new ArrayList<String>();
+		paths = new ArrayList<>();
 	}
 
 	public ZookeeperPathBuilder setPort(int port) {

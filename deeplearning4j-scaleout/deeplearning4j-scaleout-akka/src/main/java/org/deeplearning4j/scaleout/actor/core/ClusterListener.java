@@ -39,7 +39,7 @@ public class ClusterListener extends UntypedActor {
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	public final static String TOPICS = "topics";
-	private List<String> topics = new ArrayList<String>();
+	private List<String> topics = new ArrayList<>();
 	private Cancellable topicTask;
 	//subscribe to cluster changes
 	@Override

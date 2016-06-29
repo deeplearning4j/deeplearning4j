@@ -41,7 +41,7 @@ public class NGramTokenizer implements Tokenizer {
         }
         if (maxN != 1) {
             this.originalTokens = this.tokens;
-            this.tokens = new ArrayList<String>();
+            this.tokens = new ArrayList<>();
             Integer nOriginalTokens = this.originalTokens.size();
             Integer min = Math.min(maxN + 1, nOriginalTokens + 1);
             for (int i = minN; i < min; i++) {
