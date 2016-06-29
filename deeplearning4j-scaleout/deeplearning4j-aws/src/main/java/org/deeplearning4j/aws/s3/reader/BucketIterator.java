@@ -53,7 +53,7 @@ public class BucketIterator implements Iterator<InputStream> {
 			this.s3 = new S3Downloader();
         else
             this.s3 = s3;
-		currList = s3.listObjects(bucket);
+		currList = this.s3.listObjects(bucket);
 		currObjects = currList.getObjectSummaries();
 
 	}

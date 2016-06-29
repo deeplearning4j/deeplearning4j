@@ -63,12 +63,13 @@ public class LuceneSentenceIterator implements SentenceIterator {
         try {
             doc = reader.document(docs.get(index));
             index++;
+            String[] values = doc.getValues(WORD_FIELD);
+            return StringUtils.join(values," ");
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
 
-        String[] values = doc.getValues(WORD_FIELD);
-        return StringUtils.join(values," ");
     }
 
     @Override
