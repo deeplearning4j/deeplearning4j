@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class ElementWiseVertex extends BaseGraphVertex {
 
-    public enum Op {Add, Subtract, Product};
+    public enum Op {Add, Subtract, Product}
 
     private Op op;
     private int nInForwardPass;

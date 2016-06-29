@@ -122,7 +122,6 @@ public class ApiResource extends FileResource {
                     // scan along Y dimension
                     axisY[cnt] = Double.valueOf(split[1]);
                 } catch (Exception e) {
-                    ; //
                 }
                 cnt++;
             }
@@ -157,7 +156,6 @@ public class ApiResource extends FileResource {
                         }
                     }
                 } catch (Exception e) {
-                    ; //
                 }
             }
 
