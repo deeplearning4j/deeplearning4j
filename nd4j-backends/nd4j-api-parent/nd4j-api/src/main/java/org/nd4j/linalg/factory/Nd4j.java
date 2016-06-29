@@ -2140,6 +2140,14 @@ public class Nd4j {
             is = new FileInputStream(file);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         return readTxtString(is,sep);
     }

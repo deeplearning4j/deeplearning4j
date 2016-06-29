@@ -32,6 +32,12 @@ public class Nd4jSerializer extends Serializer<INDArray> {
             Nd4j.write(object,dos);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            try {
+                dos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -57,6 +63,12 @@ public class Nd4jSerializer extends Serializer<INDArray> {
             return Nd4j.read(dis);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            try {
+                dis.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
