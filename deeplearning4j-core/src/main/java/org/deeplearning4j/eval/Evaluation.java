@@ -23,6 +23,9 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Evaluation metrics: precision, recall, f1
+ * Evaluation metrics:
+ * precision, recall, f1
  *
  * @author Adam Gibson
  */
@@ -53,10 +57,24 @@ public class Evaluation implements Serializable {
     }
 
     // Constructor that takes number of output classes
+
+    /**
+     * The number of classes to account
+     * for in the evaluation
+     * @param numClasses the number of classes to account for in the evaluation
+     */
     public Evaluation(int numClasses) {
         this(createLabels(numClasses));
     }
 
+    /**
+     * The labels to include with the evaluation.
+     * This constructor can be used for
+     * generating labeled output rather than just
+     * numbers for the labels
+     * @param labels the labels to use
+     *               for the output
+     */
     public Evaluation(List<String> labels) {
         this.labelsList = labels;
         if(labels != null){
@@ -65,6 +83,12 @@ public class Evaluation implements Serializable {
 
     }
 
+    /**
+     * Use a map to generate labels
+     * Pass in a label index with the actual label
+     * you want to use for output
+     * @param labels a map of label index to label value
+     */
     public Evaluation(Map<Integer, String> labels) {
         this(createLabelsFromMap(labels));
     }
@@ -81,7 +105,7 @@ public class Evaluation implements Serializable {
     private static List<String> createLabelsFromMap(Map<Integer,String> labels ){
         int size = labels.size();
         List<String> labelsList = new ArrayList<>(size);
-        for( int i=0; i<size; i++ ){
+        for( int i = 0; i < size; i++) {
             String str = labels.get(i);
             if(str == null) throw new IllegalArgumentException("Invalid labels map: missing key for class " + i + " (expect integers 0 to " + (size-1) + ")");
             labelsList.add(str);
@@ -89,12 +113,45 @@ public class Evaluation implements Serializable {
         return labelsList;
     }
 
-    private void createConfusion(int nClasses){
+    private void createConfusion(int nClasses) {
         List<Integer> classes = new ArrayList<>();
         for (int i = 0; i < nClasses; i++) {
             classes.add(i);
         }
+
         confusion = new ConfusionMatrix<>(classes);
+    }
+
+
+    /**
+     * Evaluate the output
+     * using the given true labels,
+     * the input to the multi layer network
+     * and the multi layer network to
+     * use for evaluation
+     * @param trueLabels the labels to ise
+     * @param input the input to the network to use
+     *              for evaluation
+     * @param network the network to use for output
+     */
+    public void eval(INDArray trueLabels,INDArray input,ComputationGraph network) {
+        eval(trueLabels,network.output(false,input)[0]);
+    }
+
+
+    /**
+     * Evaluate the output
+     * using the given true labels,
+     * the input to the multi layer network
+     * and the multi layer network to
+     * use for evaluation
+     * @param trueLabels the labels to ise
+     * @param input the input to the network to use
+     *              for evaluation
+     * @param network the network to use for output
+     */
+    public void eval(INDArray trueLabels,INDArray input,MultiLayerNetwork network) {
+        eval(trueLabels,network.output(input, Layer.TrainingMode.TEST));
     }
 
 
@@ -117,7 +174,7 @@ public class Evaluation implements Serializable {
             int nClasses = realOutcomes.columns();
             if(nClasses == 1) nClasses = 2;     //Binary (single output variable) case
             labelsList = new ArrayList<>(nClasses);
-            for( int i=0; i<nClasses; i++ ) labelsList.add(String.valueOf(i));
+            for( int i = 0; i<nClasses; i++ ) labelsList.add(String.valueOf(i));
             createConfusion(nClasses);
         }
 
