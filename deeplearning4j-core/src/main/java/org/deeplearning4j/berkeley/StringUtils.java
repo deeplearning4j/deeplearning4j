@@ -683,7 +683,7 @@ public class StringUtils {
 		String[] props = str.trim().split(",\\s*");
 		for (int i = 0; i < props.length; i++) {
 			String term = props[i];
-			int divLoc = term.indexOf("=");
+			int divLoc = term.indexOf('=');
 			String key;
 			String value;
 			if (divLoc >= 0) {
