@@ -122,10 +122,10 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
         if (sequenceLearningAlgorithm == null) {
-            sequenceLearningAlgorithm = new DBOW<VocabWord>();
+            sequenceLearningAlgorithm = new DBOW<>();
             sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
         }
-        Sequence<VocabWord> sequence = new Sequence<VocabWord>();
+        Sequence<VocabWord> sequence = new Sequence<>();
         sequence.addElements(document);
         sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
 
@@ -570,7 +570,7 @@ public class ParagraphVectors extends Word2Vec {
                         .iterator(labelAwareIterator)
                         .tokenizerFactory(tokenizerFactory)
                         .build();
-                this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+                this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
             ret.numEpochs = this.numEpochs;

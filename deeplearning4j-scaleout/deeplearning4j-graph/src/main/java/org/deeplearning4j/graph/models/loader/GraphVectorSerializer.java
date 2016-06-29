@@ -76,7 +76,7 @@ public class GraphVectorSerializer {
         InMemoryGraphLookupTable table = new InMemoryGraphLookupTable(nVertices,vecSize,null,0.01);
         table.setVertexVectors(vectors);
 
-        return new GraphVectorsImpl<Object,Object>(null,table);
+        return new GraphVectorsImpl<>(null, table);
     }
 
 }

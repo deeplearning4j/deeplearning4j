@@ -100,7 +100,7 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
         if(!initCalled) initialize(graph);
         //First: create iterators, one for each thread
 
-        GraphWalkIteratorProvider<V> iteratorProvider = new RandomWalkGraphIteratorProvider<V>(graph,walkLength,seed,
+        GraphWalkIteratorProvider<V> iteratorProvider = new RandomWalkGraphIteratorProvider<>(graph, walkLength, seed,
                 NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED);
 
         fit(iteratorProvider);
