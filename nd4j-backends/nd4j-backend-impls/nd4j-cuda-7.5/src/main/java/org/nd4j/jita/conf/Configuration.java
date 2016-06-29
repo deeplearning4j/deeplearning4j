@@ -189,8 +189,8 @@ public class Configuration implements Serializable {
         nativeOps.setGridLimit(maximumGridSize);
 
         // if we have multi-gpu system - force DELAYED memory model by default
-        if (cnt > 1 && !forceSingleGPU)
-            this.memoryModel = MemoryModel.DELAYED;
+        //if (cnt > 1 && !forceSingleGPU)
+            //this.memoryModel = MemoryModel.DELAYED;
     }
 
     /**
