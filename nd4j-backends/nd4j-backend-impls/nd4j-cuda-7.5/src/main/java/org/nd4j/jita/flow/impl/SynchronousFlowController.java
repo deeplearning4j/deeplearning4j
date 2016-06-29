@@ -182,12 +182,24 @@ public class SynchronousFlowController implements FlowController {
 
     protected void prepareDelayedMemory(INDArray array) {
         if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
-            prepareDelayedMemory(array.data());
-            prepareDelayedMemory(array.shapeInfoDataBuffer());
+            AllocationPoint pointData = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
+            AllocationPoint pointShape = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
+
+            if (pointData.getAllocationStatus() != AllocationStatus.DEVICE)
+                prepareDelayedMemory(array.data());
+
+            if (pointShape.getAllocationStatus() == AllocationStatus.HOST) {
+                DataBuffer oShape = array.shapeInfoDataBuffer();
+                DataBuffer nShape = Nd4j.getConstantHandler().relocateConstantSpace(oShape);
+                if (nShape == oShape)
+                    Nd4j.getConstantHandler().moveToConstantSpace(nShape);
+                ((JCublasNDArray) array).setShapeInfoDataBuffer(nShape);
+            }
         }
     }
 
     protected void prepareDelayedMemory(DataBuffer buffer) {
+
         allocator.getMemoryHandler().promoteObject(buffer);
     }
 }

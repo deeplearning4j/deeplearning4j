@@ -725,6 +725,7 @@ public class CudaZeroHandler implements MemoryHandler {
         // if that's device state, we probably might want to update device memory state
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
+                log.info("Relocating to GPU");
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
             } else {
               //  log.info("Buffer is actual on device side: " + dstPoint.getShape());
@@ -847,6 +848,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 if (pair != null) {
                     Integer deviceId = getDeviceId();
+                    log.info("Promoting object to device: [{}]", deviceId);
 
                     dstPoint.getPointers().setDevicePointer(pair.getDevicePointer());
                     dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
