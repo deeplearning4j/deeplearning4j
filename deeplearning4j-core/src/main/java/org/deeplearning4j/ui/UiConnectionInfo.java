@@ -59,7 +59,7 @@ public class UiConnectionInfo {
 
         if (nPath != null) {
             nPath = nPath.replaceFirst("^/", "");
-            builder.append(path.endsWith("/") ? nPath : ("/" + nPath)).append("/");
+            builder.append(nPath.startsWith("/") ? nPath : ("/" + nPath)).append("/");
         }
 
 
