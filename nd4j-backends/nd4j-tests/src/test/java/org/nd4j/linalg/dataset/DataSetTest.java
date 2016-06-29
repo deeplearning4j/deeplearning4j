@@ -583,10 +583,10 @@ public class DataSetTest extends BaseNd4jTest {
             INDArray in = Nd4j.rand(new int[]{1, inSize, minTSLength + i});
             INDArray out = Nd4j.rand(new int[]{1, labelSize, minTSLength + i});
             DataSet iDataSet = new DataSet(in, out);
-            assertEquals(iDataSet.getFeatures(), dsList.get(numExamples-i-1).getFeatures());
-            assertEquals(iDataSet.getFeaturesMaskArray(), dsList.get(numExamples-i-1).getFeaturesMaskArray());
-            assertEquals(iDataSet.getLabels(), dsList.get(numExamples-i-1).getLabels());
-            assertEquals(iDataSet.getLabelsMaskArray(), dsList.get(numExamples-i-1).getLabelsMaskArray());
+
+            //Checking if the features and labels are equal
+            assertEquals(iDataSet.getFeatures(), dsList.get(i).getFeatures().get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,minTSLength+i)));
+            assertEquals(iDataSet.getLabels(), dsList.get(i).getLabels().get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,minTSLength+i)));
         }
     }
 
