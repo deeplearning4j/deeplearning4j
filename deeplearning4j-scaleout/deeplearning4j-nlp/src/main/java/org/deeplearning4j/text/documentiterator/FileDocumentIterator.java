@@ -84,9 +84,9 @@ public class FileDocumentIterator implements DocumentIterator {
 
             }
 
-            if(lineIterator.hasNext())
-
+            if(lineIterator != null && lineIterator.hasNext()) {
                 return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
+            }
         } catch (Exception e) {
            log.warn("Error reading input stream...this is just a warning..Going to return",e);
             return null;

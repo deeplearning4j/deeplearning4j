@@ -270,7 +270,9 @@ public class Train extends BaseSubCommand {
         }
         try {
             this.configProps.load(in);
-            in.close();
+            if (in != null) {
+                in.close();
+            }
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
