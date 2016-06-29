@@ -38,7 +38,7 @@ public class ElementWiseVertex extends GraphVertex {
         this.op = op;
     }
 
-    public enum Op {Add, Subtract, Product};
+    public enum Op {Add, Subtract, Product}
 
     protected Op op;
 

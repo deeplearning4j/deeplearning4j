@@ -31,7 +31,7 @@ import java.io.Serializable;
 public abstract class InputType implements Serializable {
 
     /** The type of activations in/out of a given GraphVertex. */
-    public enum Type {FF, RNN, CNN};
+    public enum Type {FF, RNN, CNN}
 
 
     public abstract Type getType();

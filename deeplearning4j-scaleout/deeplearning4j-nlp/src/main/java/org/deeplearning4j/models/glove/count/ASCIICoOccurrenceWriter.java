@@ -45,13 +45,11 @@ public class ASCIICoOccurrenceWriter<T extends SequenceElement> implements CoOcc
         try {
                 writer.flush();
         } catch (Exception e) {
-            ;
         }
 
         try {
             writer.close();
         } catch (Exception e) {
-            ;
         }
     }
 }
