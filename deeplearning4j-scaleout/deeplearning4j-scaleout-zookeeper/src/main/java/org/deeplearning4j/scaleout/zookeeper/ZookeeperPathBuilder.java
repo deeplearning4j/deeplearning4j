@@ -60,7 +60,7 @@ public class ZookeeperPathBuilder {
 	}
 
 	public String build() {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append("/" + host + ":" + port);
 		for(String s : paths) {
 			sb.append("/" + s);

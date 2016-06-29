@@ -127,7 +127,7 @@ public class LocalUnstructuredDataFormatter {
         int startOfFormat = path.lastIndexOf('.');
         if(startOfFormat < 0)
             throw new IllegalStateException("Illegal path; no format found");
-        StringBuffer label = new StringBuffer();
+        StringBuilder label = new StringBuilder();
         while(path.charAt(startOfFormat) != '-') {
             label.append(path.charAt(startOfFormat));
             startOfFormat--;

@@ -248,7 +248,6 @@ public class ConvolutionalIterationListener implements IterationListener {
                     singleArrow = ImageIO.read(resource.getInputStream());
                     multipleArrows = ImageIO.read(resource2.getInputStream());
                 } catch (Exception e) {
-                    ;
                 }
 
                 graphics2D.drawImage(sourceImage, (padding_col / 2) - (sourceImage.getWidth() / 2),  (maxHeight / 2) - (sourceImage.getHeight() / 2), null );
@@ -268,7 +267,6 @@ public class ConvolutionalIterationListener implements IterationListener {
                     singleArrow = ImageIO.read(resource.getInputStream());
                     multipleArrows = ImageIO.read(resource2.getInputStream());
                 } catch (Exception e) {
-                    ;
                 }
 
                 graphics2D.drawImage(sourceImage, (totalWidth / 2) - (sourceImage.getWidth() / 2),  (padding_col / 2) - (sourceImage.getHeight() / 2), null );
@@ -284,7 +282,6 @@ public class ConvolutionalIterationListener implements IterationListener {
             iOffset += padding_col;
         } catch (Exception e) {
             // if we can't load images - ignore them
-            ;
         }
 
 

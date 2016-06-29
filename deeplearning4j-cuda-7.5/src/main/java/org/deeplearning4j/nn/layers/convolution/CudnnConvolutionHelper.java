@@ -185,6 +185,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         Pointer deltaData = allocator.getPointer(delta, context);
         Pointer dstData = allocator.getPointer(epsNext, context);
 
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         checkCudnn(cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
@@ -248,6 +249,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         Pointer biasData = allocator.getPointer(bias, context);
         Pointer dstData = allocator.getPointer(z, context);
 
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnGetConvolutionForwardWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
                 cudnnContext.filterDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, algo[0], sizeInBytes));
         if (sizeInBytes.get(0) > workSpace.capacity()) {
@@ -274,6 +276,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         CudaContext context = allocator.getFlowController().prepareAction(z);
         Pointer dstData = allocator.getPointer(z, context);
 
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         switch (afn) {
             case "identity":
                 break;

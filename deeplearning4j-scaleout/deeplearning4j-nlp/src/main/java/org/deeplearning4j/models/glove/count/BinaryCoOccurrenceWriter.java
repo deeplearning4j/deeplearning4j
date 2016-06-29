@@ -51,13 +51,11 @@ public class BinaryCoOccurrenceWriter<T extends SequenceElement> implements CoOc
         try {
             outputStream.flush();
         } catch (Exception e) {
-            ;
         }
 
         try {
             outputStream.close();
         } catch (Exception e) {
-            ;
         }
     }
 }

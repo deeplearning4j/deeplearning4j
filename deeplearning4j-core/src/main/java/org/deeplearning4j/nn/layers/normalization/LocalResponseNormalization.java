@@ -12,6 +12,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -40,6 +42,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Created by nyghtowl on 10/29/15.
  */
 public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization>{
+    protected static final Logger log = LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
+
+    LocalResponseNormalizationHelper helper = null;
 
     private double k;
     private double n;
@@ -50,10 +55,23 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
 
     public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        initializeHelper();
     }
 
     public LocalResponseNormalization(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
+    }
+
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
+                    .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not load CudnnLocalResponseNormalizationHelper", t);
+            }
+        }
     }
 
     @Override
@@ -75,6 +93,13 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     public void fit(INDArray input) {}
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
+            if (ret != null) {
+                return ret;
+            }
+        }
+
         int channel = input.shape()[1];
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
@@ -134,6 +159,14 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         alpha = layerConf().getAlpha();
         beta = layerConf().getBeta();
         halfN = (int) n/2;
+
+        if (helper != null) {
+            activations = helper.activate(input, training, k, n, alpha, beta);
+            if (activations != null) {
+                return activations;
+            }
+        }
+
         int channel = input.shape()[1];
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2

@@ -133,7 +133,7 @@ public class StringUtils {
 	 */
 	public static String slurpReader(Reader reader) {
 		BufferedReader r = new BufferedReader(reader);
-		StringBuffer buff = new StringBuffer();
+		StringBuilder buff = new StringBuilder();
 		try {
 			char[] chars = new char[SLURPBUFFSIZE];
 			while (true) {
@@ -239,7 +239,7 @@ public class StringUtils {
 		}
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding));
 		String temp;
-		StringBuffer buff = new StringBuffer(16000); // make biggish
+		StringBuilder buff = new StringBuilder(16000); // make biggish
 		while ((temp = br.readLine()) != null) {
 			buff.append(temp);
 			buff.append(lineSeparator);
@@ -257,7 +257,7 @@ public class StringUtils {
 		InputStream is = uc.getInputStream();
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));
 		String temp;
-		StringBuffer buff = new StringBuffer(16000); // make biggish
+		StringBuilder buff = new StringBuilder(16000); // make biggish
 		while ((temp = br.readLine()) != null) {
 			buff.append(temp);
 			buff.append(lineSeparator);
@@ -305,7 +305,7 @@ public class StringUtils {
 	 * <tt>join(numbers, ", ")</tt>.
 	 */
 	public static String join(Iterable l, String glue) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (Object o : l) {
 			if (!first) {
@@ -324,7 +324,7 @@ public class StringUtils {
 	 * <tt>join(numbers, ", ")</tt>.
 	 */
 	public static String join(List<?> l, String glue) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < l.size(); i++) {
 			if (i > 0) {
 				sb.append(glue);
@@ -389,7 +389,7 @@ public class StringUtils {
 		if (str == null)
 			str = "null";
 		int slen = str.length();
-		StringBuffer sb = new StringBuffer(str);
+		StringBuilder sb = new StringBuilder(str);
 		for (int i = 0; i < totalChars - slen; i++) {
 			sb.append(" ");
 		}
@@ -414,7 +414,7 @@ public class StringUtils {
 			str = "null";
 		int leng = str.length();
 		if (leng < num) {
-			StringBuffer sb = new StringBuffer(str);
+			StringBuilder sb = new StringBuilder(str);
 			for (int i = 0; i < num - leng; i++) {
 				sb.append(" ");
 			}
@@ -440,7 +440,7 @@ public class StringUtils {
 	public static String padLeft(String str, int totalChars) {
 		if (str == null)
 			str = "null";
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < totalChars - str.length(); i++) {
 			sb.append(" ");
 		}
@@ -480,7 +480,7 @@ public class StringUtils {
 	 */
 	public static String fileNameClean(String s) {
 		char[] chars = s.toCharArray();
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < chars.length; i++) {
 			char c = chars[i];
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
@@ -683,7 +683,7 @@ public class StringUtils {
 		String[] props = str.trim().split(",\\s*");
 		for (int i = 0; i < props.length; i++) {
 			String term = props[i];
-			int divLoc = term.indexOf("=");
+			int divLoc = term.indexOf('=');
 			String key;
 			String value;
 			if (divLoc >= 0) {
@@ -780,7 +780,7 @@ public class StringUtils {
 	}
 
 	public static String stripNonAlphaNumerics(String orig) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		char c;
 		for (int i = 0; i < orig.length(); i++) {
 			c = orig.charAt(i);
@@ -799,7 +799,7 @@ public class StringUtils {
 	}
 
 	public static String escapeString(String s, char[] charsToEscape, char escapeChar) {
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 		for (int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);
 			if (c == escapeChar) {
@@ -834,14 +834,14 @@ public class StringUtils {
 		List<String> result = new ArrayList<String>();
 		int i = 0;
 		int length = s.length();
-		StringBuffer b = new StringBuffer();
+		StringBuilder b = new StringBuilder();
 		while (i < length) {
 			char curr = s.charAt(i);
 			if (curr == splitChar) {
 				// add last buffer
 				if (b.length() > 0) {
 					result.add(b.toString());
-					b = new StringBuffer();
+					b = new StringBuilder();
 				}
 				i++;
 			} else if (curr == quoteChar) {
