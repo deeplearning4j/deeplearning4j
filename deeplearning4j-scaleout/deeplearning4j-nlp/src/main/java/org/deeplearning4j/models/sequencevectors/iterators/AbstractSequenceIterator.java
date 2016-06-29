@@ -73,7 +73,7 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
          * @return
          */
         public AbstractSequenceIterator<T> build() {
-            AbstractSequenceIterator<T> iterator = new AbstractSequenceIterator<T>(underlyingIterable);
+            AbstractSequenceIterator<T> iterator = new AbstractSequenceIterator<>(underlyingIterable);
 
             return iterator;
         }

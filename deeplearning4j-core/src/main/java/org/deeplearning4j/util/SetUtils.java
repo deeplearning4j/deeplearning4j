@@ -30,7 +30,7 @@ public class SetUtils
 
 	public static <T> Set<T> intersection(Collection<T> parentCollection, Collection<T> removeFromCollection)
 	{
-		Set<T> results = new HashSet<T>(parentCollection) ;
+		Set<T> results = new HashSet<>(parentCollection) ;
 		results.retainAll(removeFromCollection) ;
 		return results ;
 	}
@@ -47,7 +47,7 @@ public class SetUtils
 
 	public static <T> Set<T> union(Set<? extends T> s1, Set<? extends T> s2)
 	{
-		Set<T> s3 = new HashSet<T>(s1) ;
+		Set<T> s3 = new HashSet<>(s1) ;
 		s3.addAll(s2) ;
 		return s3 ;
 	}
@@ -56,7 +56,7 @@ public class SetUtils
 
 	public static <T> Set<T> difference(Collection<? extends T> s1, Collection<? extends T> s2)
 	{
-		Set<T> s3 = new HashSet<T>(s1) ;
+		Set<T> s3 = new HashSet<>(s1) ;
 		s3.removeAll(s2) ;
 		return s3 ;
 	}

@@ -45,7 +45,7 @@ public class InMemoryLookupTableTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
@@ -100,7 +100,7 @@ public class InMemoryLookupTableTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
@@ -135,7 +135,7 @@ public class InMemoryLookupTableTest {
                 .tokenizerFactory(t)
                 .build();
 
-        sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()

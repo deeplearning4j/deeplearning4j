@@ -108,7 +108,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
         List<CoOccurrencesCalculatorThread> threads = new ArrayList<>();
         for (int x = 0; x < workers; x++) {
-            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<T>(new SynchronizedSequenceIterator<T>(sequenceIterator), vocabCache), processedSequences));
+            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<>(new SynchronizedSequenceIterator<>(sequenceIterator), vocabCache), processedSequences));
             threads.get(x).start();
         }
 
@@ -162,7 +162,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 T element2 = vocabCache.elementAtIndex(Integer.valueOf(strings[1]));
                 Double weight = Double.valueOf(strings[2]);
 
-                return new Pair<>(new Pair<T, T>(element1, element2), weight);
+                return new Pair<>(new Pair<>(element1, element2), weight);
             }
 
             @Override
@@ -202,7 +202,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         }
 
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
-            this.sequenceIterator = new SynchronizedSequenceIterator<T>(iterator);
+            this.sequenceIterator = new SynchronizedSequenceIterator<>(iterator);
             return this;
         }
 
@@ -474,7 +474,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                  localMap = coOccurrenceCounts;
 
                 // set new CountMap, and release write lock
-                coOccurrenceCounts = new CountMap<T>();
+                coOccurrenceCounts = new CountMap<>();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
