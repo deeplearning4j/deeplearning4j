@@ -666,7 +666,7 @@ public class TestOptimizers {
                 }
 
                 @Override
-                public Boolean apply(IComplexNumber input){ throw new UnsupportedOperationException(); };
+                public Boolean apply(IComplexNumber input){ throw new UnsupportedOperationException(); }
             });
 
             int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);

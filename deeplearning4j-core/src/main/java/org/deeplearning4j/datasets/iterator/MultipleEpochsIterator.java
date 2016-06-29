@@ -79,7 +79,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
             if(num == -1) {
                 next = ds;
                 if (epochs < numEpochs)
-                    trackEpochs();;
+                    trackEpochs();
             }
             // return DataSet broken into batches
             else {

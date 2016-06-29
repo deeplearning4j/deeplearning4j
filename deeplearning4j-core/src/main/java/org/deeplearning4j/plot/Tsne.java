@@ -62,7 +62,6 @@ public class Tsne {
     protected static final Logger logger = LoggerFactory.getLogger(Tsne.class);
 
     protected Tsne() {
-        ;
     }
 
     protected void init() {

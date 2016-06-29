@@ -467,7 +467,7 @@ public class ModelSerializer {
                         }
                     } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
                 } catch (Exception e) {
-                    ; // do nothing here
+                    // do nothing here
                 }
             } else if (model instanceof MultiLayerNetwork) {
                 task.setNetworkType(Task.NetworkType.MultilayerNetwork);
@@ -489,7 +489,7 @@ public class ModelSerializer {
                         }
                     } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
                 } catch (Exception e) {
-                    ; // do nothing here
+                    // do nothing here
                 }
             }
             return task;

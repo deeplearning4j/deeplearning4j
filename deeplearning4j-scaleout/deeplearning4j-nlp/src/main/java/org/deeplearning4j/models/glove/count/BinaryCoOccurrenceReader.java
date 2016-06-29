@@ -159,7 +159,6 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
             } catch (Exception e) {
                 return false;
             } finally {
-                ;
             }
         }
     }

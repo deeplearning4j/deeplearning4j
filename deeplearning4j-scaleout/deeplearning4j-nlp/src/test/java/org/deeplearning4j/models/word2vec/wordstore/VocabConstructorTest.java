@@ -167,7 +167,7 @@ public class VocabConstructorTest {
                         throw new UnsupportedOperationException();
                     }
                 };
-            };
+            }
         };
 
 
@@ -218,7 +218,7 @@ public class VocabConstructorTest {
                         throw new UnsupportedOperationException();
                     }
                 };
-            };
+            }
         };
 
 
