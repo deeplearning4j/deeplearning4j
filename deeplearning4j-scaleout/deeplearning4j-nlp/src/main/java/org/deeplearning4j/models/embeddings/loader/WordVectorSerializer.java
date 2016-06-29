@@ -515,7 +515,6 @@ public class WordVectorSerializer {
             try {
                 reader.close();
             } catch (Exception e) {
-                ;
             }
 
             return vectors;
@@ -979,7 +978,6 @@ public class WordVectorSerializer {
         try {
             writer.flush();
         } catch (Exception e) {
-            ;
         }
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
     }
@@ -1070,7 +1068,6 @@ public class WordVectorSerializer {
                     try {
                         reader.close();
                     } catch (Exception ex) {
-                        ;
                     }
                 }
             }
@@ -1135,7 +1132,6 @@ public class WordVectorSerializer {
         try {
             reader.close();
         } catch (Exception e) {
-            ;
         }
 
         return new Pair<>(lookupTable, cache);

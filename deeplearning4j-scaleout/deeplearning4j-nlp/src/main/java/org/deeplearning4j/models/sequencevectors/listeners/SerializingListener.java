@@ -29,7 +29,6 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
     private Semaphore locker = new Semaphore(1);
 
     protected SerializingListener() {
-        ;
     }
 
     /**

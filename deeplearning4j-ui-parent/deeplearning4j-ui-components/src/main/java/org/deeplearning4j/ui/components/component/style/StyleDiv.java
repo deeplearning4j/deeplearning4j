@@ -32,7 +32,7 @@ import org.deeplearning4j.ui.api.Style;
 public class StyleDiv extends Style {
 
     /** Enumeration: possible values for float style option */
-    public enum FloatValue {non, left, right, initial, inherit};
+    public enum FloatValue {non, left, right, initial, inherit}
 
     private FloatValue floatValue;
 

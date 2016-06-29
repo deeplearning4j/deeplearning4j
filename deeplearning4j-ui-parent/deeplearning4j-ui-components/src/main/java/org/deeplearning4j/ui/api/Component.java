@@ -39,6 +39,7 @@ import org.deeplearning4j.ui.components.text.ComponentText;
         @JsonSubTypes.Type(value = ChartLine.class, name = "ChartLine"),
         @JsonSubTypes.Type(value = ChartScatter.class, name = "ChartScatter"),
         @JsonSubTypes.Type(value = ChartStackedArea.class, name = "ChartStackedArea"),
+        @JsonSubTypes.Type(value = ChartTimeline.class, name = "ChartTimeline"),
         @JsonSubTypes.Type(value = ComponentDiv.class, name = "ComponentDiv"),
         @JsonSubTypes.Type(value = DecoratorAccordion.class, name = "DecoratorAccordion"),
         @JsonSubTypes.Type(value = ComponentTable.class, name = "ComponentTable"),

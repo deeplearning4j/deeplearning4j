@@ -113,8 +113,6 @@ public class ManualTests {
                 .pretrain(true).backprop(false)
                 .build();
 
-        ;
-
         UiServer server = UiServer.getInstance();
         UiConnectionInfo connectionInfo = server.getConnectionInfo();
         connectionInfo.setSessionId("my session here");
@@ -184,8 +182,6 @@ public class ManualTests {
                         .nIn(200).nOut(outputNum).build())
                 .pretrain(true).backprop(false)
                 .build();
-
-        ;
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();

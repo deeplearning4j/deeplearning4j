@@ -272,7 +272,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray getParam(String param) {
         //Get params for MultiLayerNetwork sub layers.
         //Parameter keys here: same as MultiLayerNetwork.backprop().
-        int idx = param.indexOf("_");
+        int idx = param.indexOf('_');
         if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+param+"\"");
         int layerIdx = Integer.parseInt(param.substring(0, idx));
         String newKey = param.substring(idx+1);
@@ -309,7 +309,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setParam(String key, INDArray val) {
         //Set params for MultiLayerNetwork sub layers.
         //Parameter keys here: same as MultiLayerNetwork.backprop().
-        int idx = key.indexOf("_");
+        int idx = key.indexOf('_');
         if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
         int layerIdx = Integer.parseInt(key.substring(0, idx));
         String newKey = key.substring(idx+1);

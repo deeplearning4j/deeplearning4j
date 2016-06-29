@@ -235,7 +235,7 @@ public class HeadWordFinder  {
     }
 
     int findHead3(String lhs, List<String> rhss) {
-        StringBuffer keyBuffer = new StringBuffer(lhs + " ->");
+        StringBuilder keyBuffer = new StringBuilder(lhs + " ->");
         for (String rhs : rhss)
             keyBuffer.append(" " + rhs);
         String key = keyBuffer.toString();
