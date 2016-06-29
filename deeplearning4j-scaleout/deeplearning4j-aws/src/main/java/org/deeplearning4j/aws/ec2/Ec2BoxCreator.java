@@ -91,7 +91,7 @@ public class Ec2BoxCreator extends BaseS3 {
 		launchSpecification.setInstanceType("t1.micro");
 
 		// Add the security group to the request.
-		List<String> securityGroups = new ArrayList<String>();
+		List<String> securityGroups = new ArrayList<>();
 		securityGroups.add("GettingStartedGroup");
 		launchSpecification.setSecurityGroups(securityGroups);
 

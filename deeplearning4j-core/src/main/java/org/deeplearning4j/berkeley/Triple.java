@@ -110,7 +110,7 @@ public class Triple<S,T,U>  implements Serializable {
 
 	public static <S,T,U> Triple<S,T,U> makeTriple(S s, T t, U u) {
 		// TODO Auto-generated method stub
-		return new Triple<S, T, U>(s,t,u);
+		return new Triple<>(s, t, u);
 	}
 	
 }

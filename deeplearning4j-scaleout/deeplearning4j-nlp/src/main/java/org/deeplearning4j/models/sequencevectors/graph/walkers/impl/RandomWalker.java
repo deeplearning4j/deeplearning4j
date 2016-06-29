@@ -66,7 +66,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         int[] visitedHops = new int[walkLength];
         Arrays.fill(visitedHops, -1);
 
-        Sequence<T> sequence = new Sequence<T>();
+        Sequence<T> sequence = new Sequence<>();
 
         int startPosition = position.getAndIncrement();
         int lastId = -1;
@@ -309,7 +309,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
          * @return
          */
         public RandomWalker<T> build() {
-            RandomWalker<T> walker = new RandomWalker<T>();
+            RandomWalker<T> walker = new RandomWalker<>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;

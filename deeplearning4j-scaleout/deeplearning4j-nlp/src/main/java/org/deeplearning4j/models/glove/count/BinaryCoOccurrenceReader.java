@@ -40,7 +40,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
         this.vocabCache = vocabCache;
         this.file = file;
         this.countMap = map;
-        buffer = new ArrayBlockingQueue<CoOccurrenceWeight<T>>(200000);
+        buffer = new ArrayBlockingQueue<>(200000);
 
         try {
             inputStream = new BufferedInputStream(new FileInputStream(this.file), 100 * 1024 * 1024);
@@ -200,7 +200,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
                 double eW = bB.getDouble( position + 8);
 
 
-                CoOccurrenceWeight<T> object = new CoOccurrenceWeight<T>();
+                CoOccurrenceWeight<T> object = new CoOccurrenceWeight<>();
                 object.setElement1(vocabCache.elementAtIndex(e1idx));
                 object.setElement2(vocabCache.elementAtIndex(e2idx));
 

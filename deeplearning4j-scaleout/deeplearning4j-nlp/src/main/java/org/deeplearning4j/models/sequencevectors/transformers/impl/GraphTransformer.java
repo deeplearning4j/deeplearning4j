@@ -140,7 +140,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         }
 
         public GraphTransformer<T> build() {
-            GraphTransformer<T> transformer = new GraphTransformer<T>();
+            GraphTransformer<T> transformer = new GraphTransformer<>();
             transformer.sourceGraph = this.sourceGraph;
             transformer.labelsProvider = this.labelsProvider;
             transformer.shuffle = this.shuffle;

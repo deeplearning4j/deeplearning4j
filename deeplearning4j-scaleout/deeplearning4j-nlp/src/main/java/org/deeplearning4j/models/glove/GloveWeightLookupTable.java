@@ -329,7 +329,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
         }
 
         public GloveWeightLookupTable<T> build() {
-            return new GloveWeightLookupTable<T>(vocabCache,vectorLength,useAdaGrad,lr,gen,negative,xMax,maxCount);
+            return new GloveWeightLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, xMax, maxCount);
         }
     }
 

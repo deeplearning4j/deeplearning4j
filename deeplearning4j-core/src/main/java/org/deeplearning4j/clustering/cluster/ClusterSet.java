@@ -106,7 +106,7 @@ public class ClusterSet implements Serializable {
 			}
 		}
 
-		return new Pair<Cluster, Double>(nearestCluster, minDistance);
+		return new Pair<>(nearestCluster, minDistance);
 
 	}
 
@@ -145,7 +145,7 @@ public class ClusterSet implements Serializable {
 	}
 
 	public List<Cluster> getMostPopulatedClusters(int count) {
-		List<Cluster> mostPopulated = new ArrayList<Cluster>(clusters);
+		List<Cluster> mostPopulated = new ArrayList<>(clusters);
 		Collections.sort(mostPopulated, new Comparator<Cluster>() {
 			public int compare(Cluster o1, Cluster o2) {
 				return new Integer(o1.getPoints().size()).compareTo(new Integer(o2.getPoints().size()));
@@ -155,7 +155,7 @@ public class ClusterSet implements Serializable {
 	}
 
 	public List<Cluster> removeEmptyClusters() {
-		List<Cluster> emptyClusters = new ArrayList<Cluster>();
+		List<Cluster> emptyClusters = new ArrayList<>();
 		for (Cluster cluster : clusters)
 			if (cluster.isEmpty())
 				emptyClusters.add(cluster);
