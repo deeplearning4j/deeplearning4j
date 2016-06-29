@@ -116,7 +116,7 @@ public class StringGrid extends ArrayList<List<String>> {
         for(int i = 0;i< list.size(); i++) {
             String line = list.get(i).trim();
             //text delimiter
-            if(line.indexOf("\"") > 0) {
+            if(line.indexOf('\"') > 0) {
                 Counter<Character> counter = new Counter<>();
                 for(int j = 0; j <  line.length(); j++) {
                     counter.incrementCount(line.charAt(j),1.0);
