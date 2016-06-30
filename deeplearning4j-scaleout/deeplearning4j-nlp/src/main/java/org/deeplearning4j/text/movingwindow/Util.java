@@ -31,9 +31,8 @@ import org.deeplearning4j.berkeley.MapFactory;
 public class Util {
 
 
-
-
-
+    private Util() {
+    }
 
     /**
      * Returns a thread safe counter map

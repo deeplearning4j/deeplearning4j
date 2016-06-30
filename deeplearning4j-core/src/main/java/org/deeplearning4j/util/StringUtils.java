@@ -42,6 +42,9 @@ public class StringUtils {
         decimalFormat.applyPattern("#.##");
     }
 
+    private StringUtils() {
+    }
+
     /**
      * Make a string representation of the exception.
      * @param e The exception to stringify
