@@ -26,6 +26,9 @@ import org.deeplearning4j.util.SerializationUtils;
 
 public class MnistDataSetCreator {
 
+	private MnistDataSetCreator() {
+	}
+
 	/**
 	 * @param args
 	 */

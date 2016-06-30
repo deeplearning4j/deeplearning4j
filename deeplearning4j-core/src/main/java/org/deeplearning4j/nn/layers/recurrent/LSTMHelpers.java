@@ -43,6 +43,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 public class LSTMHelpers {
 
+    private LSTMHelpers() {
+    }
+
     /**
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all

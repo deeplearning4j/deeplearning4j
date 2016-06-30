@@ -28,6 +28,9 @@ import org.deeplearning4j.nn.conf.layers.*;
  * @author Adam Gibson
  */
 public class LayerFactories {
+    private LayerFactories() {
+    }
+
     /**
      * Get the factory based on the passed in class
      * @param conf the clazz to get the layer factory for

@@ -44,6 +44,9 @@ public class ReflectionUtils {
     private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
             new ConcurrentHashMap<>();
 
+    private ReflectionUtils() {
+    }
+
 
     /**
      * This code is to support backward compatibility and break the compile
