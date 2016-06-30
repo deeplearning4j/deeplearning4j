@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -eu
 
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
@@ -14,7 +14,7 @@ if [ "$(uname)" == "Darwin" ]; then
     export CXX=clang-omp++
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     # Do something under Windows NT platform
-    if [ "$2" == "cuda" ]; then
+    if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
         export MAKE_COMMAND="nmake"
     else
@@ -22,7 +22,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname
         export MAKE_COMMAND="make"
     fi
     # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
-    if [ -z "$VCINSTALLDIR" ]; then
+    if [ -z "${VCINSTALLDIR:-}" ]; then
         export VisualStudioVersion=12.0
         export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
         export VCINSTALLDIR="$VSINSTALLDIR\\VC"
@@ -35,7 +35,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname
     fi
     # Make sure we are using 64-bit MinGW-w64
     export PATH=/mingw64/bin/:$PATH
-   CC=/mingw64/bin/gcc
+    CC=/mingw64/bin/gcc
     CXX=/mingw64/bin/g++
     echo "Running windows"
    # export GENERATOR="MSYS Makefiles"
@@ -47,6 +47,10 @@ fi
 # some arguments don't have a corresponding value to go with it such
 # as in the --default example).
 # note: if this is set to > 0 the /etc/hosts part is not recognized ( may be a bug )
+CHIP=
+BUILD=
+LIBTYPE=
+PACKAGING=
 while [[ $# > 1 ]]
 do
 key="$1"
