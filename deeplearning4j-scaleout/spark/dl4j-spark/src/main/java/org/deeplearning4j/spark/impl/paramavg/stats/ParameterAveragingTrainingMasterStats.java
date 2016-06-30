@@ -2,12 +2,11 @@ package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math.stat.StatUtils;
 import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.stats.BaseEventStats;
-import org.deeplearning4j.spark.stats.EventStats;
-import org.deeplearning4j.spark.stats.StatsUtils;
+import org.deeplearning4j.spark.stats.*;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -27,6 +26,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     public static final String FILENAME_BROADCAST_CREATE = "parameterAveragingMasterBroadcastCreateTimesMs.txt";
     public static final String FILENAME_FIT_TIME = "parameterAveragingMasterFitTimesMs.txt";
     public static final String FILENAME_SPLIT_TIME = "parameterAveragingMasterSplitTimesMs.txt";
+    public static final String FILENAME_MAP_PARTITIONS_TIME = "parameterAveragingMasterMapPartitionsTimesMs.txt";
     public static final String FILENAME_AGGREGATE_TIME = "parameterAveragingMasterAggregateTimesMs.txt";
     public static final String FILENAME_PROCESS_PARAMS_TIME = "parameterAveragingMasterProcessParamsUpdaterTimesMs.txt";
     public static final String FILENAME_REPARTITION_STATS = "parameterAveragingMasterRepartitionTimesMs.txt";
@@ -36,6 +36,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
                     "ParameterAveragingMasterBroadcastCreateTimesMs",
                     "ParameterAveragingMasterFitTimesMs",
                     "ParameterAveragingMasterSplitTimesMs",
+                    "ParameterAveragingMasterMapPartitionsTimesMs",
                     "ParameterAveragingMasterAggregateTimesMs",
                     "ParameterAveragingMasterProcessParamsUpdaterTimesMs",
                     "ParameterAveragingMasterRepartitionTimesMs"
@@ -45,6 +46,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     private List<EventStats> parameterAveragingMasterBroadcastCreateTimesMs;
     private List<EventStats> parameterAveragingMasterFitTimesMs;
     private List<EventStats> parameterAveragingMasterSplitTimesMs;
+    private List<EventStats> parameterAveragingMasterMapPartitionsTimesMs;
     private List<EventStats> paramaterAveragingMasterAggregateTimesMs;
     private List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs;
     private List<EventStats> parameterAveragingMasterRepartitionTimesMs;
@@ -52,12 +54,13 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
     public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, List<EventStats> parameterAveragingMasterBroadcastCreateTimeMs,
                                                  List<EventStats> parameterAveragingMasterFitTimeMs, List<EventStats> parameterAveragingMasterSplitTimeMs,
-                                                 List<EventStats> parameterAveragingMasterAggregateTimesMs, List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs,
-                                                 List<EventStats> parameterAveragingMasterRepartitionTimesMs) {
+                                                 List<EventStats> parameterAveragingMasterMapPartitionsTimesMs, List<EventStats> parameterAveragingMasterAggregateTimesMs,
+                                                 List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs, List<EventStats> parameterAveragingMasterRepartitionTimesMs) {
         this.workerStats = workerStats;
         this.parameterAveragingMasterBroadcastCreateTimesMs = parameterAveragingMasterBroadcastCreateTimeMs;
         this.parameterAveragingMasterFitTimesMs = parameterAveragingMasterFitTimeMs;
         this.parameterAveragingMasterSplitTimesMs = parameterAveragingMasterSplitTimeMs;
+        this.parameterAveragingMasterMapPartitionsTimesMs = parameterAveragingMasterMapPartitionsTimesMs;
         this.paramaterAveragingMasterAggregateTimesMs = parameterAveragingMasterAggregateTimesMs;
         this.parameterAveragingMasterProcessParamsUpdaterTimesMs = parameterAveragingMasterProcessParamsUpdaterTimesMs;
         this.parameterAveragingMasterRepartitionTimesMs = parameterAveragingMasterRepartitionTimesMs;
@@ -80,6 +83,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
                 return parameterAveragingMasterFitTimesMs;
             case "ParameterAveragingMasterSplitTimesMs":
                 return parameterAveragingMasterSplitTimesMs;
+            case "ParameterAveragingMasterMapPartitionsTimesMs":
+                return parameterAveragingMasterMapPartitionsTimesMs;
             case "ParameterAveragingMasterAggregateTimesMs":
                 return paramaterAveragingMasterAggregateTimesMs;
             case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
@@ -101,6 +106,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
                 return "Fit";
             case "ParameterAveragingMasterSplitTimesMs":
                 return "Split";
+            case "ParameterAveragingMasterMapPartitionsTimesMs":
+                return "MapPart";
             case "ParameterAveragingMasterAggregateTimesMs":
                 return "Aggregate";
             case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
@@ -122,6 +129,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
                 return false;
             case "ParameterAveragingMasterSplitTimesMs":
                 return true;
+            case "ParameterAveragingMasterMapPartitionsTimesMs":
+                return false;
             case "ParameterAveragingMasterAggregateTimesMs":
                 return true;
             case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
@@ -181,6 +190,10 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         if (parameterAveragingMasterSplitTimesMs == null) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterSplitTimesMs, ",")).append("\n");
 
+        sb.append(String.format(f, "ParameterAveragingMasterMapPartitionsTimesMs"));
+        if (parameterAveragingMasterMapPartitionsTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterMapPartitionsTimesMs, ",")).append("\n");
+
         sb.append(String.format(f, "ParameterAveragingMasterAggregateTimesMs"));
         if (paramaterAveragingMasterAggregateTimesMs == null) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(paramaterAveragingMasterAggregateTimesMs, ",")).append("\n");
@@ -216,6 +229,10 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         String splitTimePath = FilenameUtils.concat(outputPath, FILENAME_SPLIT_TIME);
         StatsUtils.exportStats(parameterAveragingMasterSplitTimesMs, splitTimePath, d, sc);
 
+        //Map partitions:
+        String mapPartitionsPath = FilenameUtils.concat(outputPath, FILENAME_MAP_PARTITIONS_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterMapPartitionsTimesMs, mapPartitionsPath, d, sc);
+
         //Aggregate time:
         String aggregatePath = FilenameUtils.concat(outputPath, FILENAME_AGGREGATE_TIME);
         StatsUtils.exportStats(paramaterAveragingMasterAggregateTimesMs, aggregatePath, d, sc);
@@ -239,6 +256,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         private long lastRepartitionStartTime;
         private long lastFitStartTime;
         private long lastSplitStartTime;
+        private long lastMapPartitionsStartTime;
         private long lastAggregateStartTime;
         private long lastProcessParamsUpdaterStartTime;
 
@@ -249,6 +267,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         private List<EventStats> repartitionTimes = new ArrayList<>();
         private List<EventStats> fitTimes = new ArrayList<>();
         private List<EventStats> splitTimes = new ArrayList<>();
+        private List<EventStats> mapPartitions = new ArrayList<>();
         private List<EventStats> aggregateTimes = new ArrayList<>();
         private List<EventStats> processParamsUpdaterTimes = new ArrayList<>();
 
@@ -277,9 +296,9 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             lastFitStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logFitEnd() {
+        public void logFitEnd(int examplesCount) {
             long now = timeSource.currentTimeMillis();
-            fitTimes.add(new BaseEventStats(lastFitStartTime, now - lastFitStartTime));
+            fitTimes.add(new ExampleCountEventStats(lastFitStartTime, now - lastFitStartTime, examplesCount));
         }
 
         public void logSplitStart() {
@@ -289,6 +308,15 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         public void logSplitEnd() {
             long now = timeSource.currentTimeMillis();
             splitTimes.add(new BaseEventStats(lastSplitStartTime, now - lastSplitStartTime));
+        }
+
+        public void logMapPartitionsStart(){
+            lastMapPartitionsStartTime = timeSource.currentTimeMillis();
+        }
+
+        public void logMapPartitionsEnd(int nPartitions){
+            long now = timeSource.currentTimeMillis();
+            mapPartitions.add(new PartitionCountEventStats(lastMapPartitionsStartTime, (now-lastMapPartitionsStartTime), nPartitions));
         }
 
         public void logAggregateStartTime() {
@@ -315,8 +343,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         }
 
         public ParameterAveragingTrainingMasterStats build() {
-            return new ParameterAveragingTrainingMasterStats(workerStats, broadcastTimes, fitTimes, splitTimes, aggregateTimes,
-                    processParamsUpdaterTimes, repartitionTimes);
+            return new ParameterAveragingTrainingMasterStats(workerStats, broadcastTimes, fitTimes, splitTimes, mapPartitions,
+                    aggregateTimes, processParamsUpdaterTimes, repartitionTimes);
         }
 
     }

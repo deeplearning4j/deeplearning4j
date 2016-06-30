@@ -139,15 +139,17 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaRDD<DataSet> split : splits) {
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+            if(collectTrainingStats) stats.logMapPartitionsStart();
 
             JavaRDD<DataSet> splitData = split;
 
+            int nPartitions = split.partitions().size();
             switch (repartition){
                 case Never:
                     break;
 
                 case NumPartitionsExecutorsDiffers:
-                    int nPartitions = split.partitions().size();
+
                     if(nPartitions == numWorkers) break;
                 case Always:
                     //Repartition: either always, or nPartitions != numWorkers
@@ -164,9 +166,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             processResults(network, null, result, splitNum, splits.length);
 
             splitNum++;
+            if(collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
         }
 
-        if (collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd((int)totalCount);
     }
 
     @Override
@@ -195,15 +198,35 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaRDD<MultiDataSet> split : splits) {
             log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+            if(collectTrainingStats) stats.logMapPartitionsStart();
+
+            JavaRDD<MultiDataSet> splitData = split;
+
+            int nPartitions = split.partitions().size();
+            switch (repartition){
+                case Never:
+                    break;
+                case NumPartitionsExecutorsDiffers:
+                    if(nPartitions == numWorkers) break;
+                case Always:
+                    //Repartition: either always, or nPartitions != numWorkers
+                    if(collectTrainingStats) stats.logRepartitionStart();
+                    splitData = split.repartition(numWorkers);
+                    if(collectTrainingStats) stats.logRepartitionEnd();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown setting for repartition: " + repartition);
+            }
 
             FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
-            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
+            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
             processResults(null, graph, result, splitNum, splits.length);
 
             splitNum++;
+            if(collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
         }
 
-        if (collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd((int)totalCount);
     }
 
     private <T> JavaRDD<T>[] randomSplit(int totalCount, int examplesPerSplit, JavaRDD<T> data) {
