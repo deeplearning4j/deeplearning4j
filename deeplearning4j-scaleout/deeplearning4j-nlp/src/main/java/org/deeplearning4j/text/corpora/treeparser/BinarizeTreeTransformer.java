@@ -46,7 +46,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
     public Tree transform(Tree t) {
         if (t == null)
             return null;
-        Stack<Pair<Tree,String>> stack = new Stack<>();
+        Deque<Pair<Tree,String>> stack = new ArrayDeque<>();
         stack.add(new Pair<>(t,t.label()));
         String originalLabel = t.label();
         while (!stack.isEmpty()) {

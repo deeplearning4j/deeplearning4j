@@ -90,7 +90,7 @@ public class SequenceVectorsTest {
         /*
             And we pack that transformer into AbstractSequenceIterator
          */
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
 
@@ -203,7 +203,7 @@ public class SequenceVectorsTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
@@ -268,7 +268,7 @@ public class SequenceVectorsTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VectorsConfiguration configuration = new VectorsConfiguration();
@@ -351,7 +351,7 @@ public class SequenceVectorsTest {
                 .build();
 */
 
-        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
+        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<>(graph)
                 .setGraphWalker(walker)
                 .shuffleOnReset(true)
                 .setVocabCache(vocabCache)
@@ -363,7 +363,7 @@ public class SequenceVectorsTest {
         logger.info("Blogger: " + blogger);
 
 
-        AbstractSequenceIterator<Blogger> sequenceIterator = new AbstractSequenceIterator.Builder<Blogger>(graphTransformer)
+        AbstractSequenceIterator<Blogger> sequenceIterator = new AbstractSequenceIterator.Builder<>(graphTransformer)
                 .build();
 
         WeightLookupTable<Blogger> lookupTable = new InMemoryLookupTable.Builder<Blogger>()
@@ -473,7 +473,7 @@ public class SequenceVectorsTest {
 
         reader.close();
 
-        Graph<Blogger, Double> graph = new Graph<Blogger, Double>(bloggers, true);
+        Graph<Blogger, Double> graph = new Graph<>(bloggers, true);
 
         // load edges
         File edges = new File("/ext/Temp/BlogCatalog/edges.csv");

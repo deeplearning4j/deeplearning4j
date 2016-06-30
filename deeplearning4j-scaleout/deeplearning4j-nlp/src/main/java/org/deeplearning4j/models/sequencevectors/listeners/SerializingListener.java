@@ -29,7 +29,6 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
     private Semaphore locker = new Semaphore(1);
 
     protected SerializingListener() {
-        ;
     }
 
     /**
@@ -139,7 +138,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
          * @return
          */
         public SerializingListener<T> build() {
-            SerializingListener<T> listener = new SerializingListener<T>();
+            SerializingListener<T> listener = new SerializingListener<>();
             listener.modelPrefix = this.modelPrefix;
             listener.targetFolder = this.targetFolder;
             listener.useBinarySerialization = this.useBinarySerialization;

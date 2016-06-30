@@ -88,7 +88,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                 case FORWARD_UNIQUE:
                 case FORWARD_PREFERRED: {
                         // we get  popularity of each node connected to the current node.
-                        PriorityQueue<Node<T>> queue = new PriorityQueue<Node<T>>();
+                        PriorityQueue<Node<T>> queue = new PriorityQueue<>();
 
                         // ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
                         int[] connections = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
@@ -126,7 +126,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                             //logger.info("Queue: " + queue);
                             //logger.info("Queue size: " + queue.size());
 
-                            List<Node<T>> list = new ArrayList<Node<T>>();
+                            List<Node<T>> list = new ArrayList<>();
                             double[] weights = new double[cSpread];
 
                             int fcnt = 0;
@@ -320,7 +320,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
          */
         @Override
         public PopularityWalker<T> build() {
-            PopularityWalker<T> walker = new PopularityWalker<T>();
+            PopularityWalker<T> walker = new PopularityWalker<>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;

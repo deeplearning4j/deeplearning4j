@@ -34,7 +34,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>1.0.4</hadoop.version>
-        <spark.version>1.4.0</spark.version>
+        <spark.version>1.5.2</spark.version>
     </properties>
 
     <profiles>
@@ -156,13 +156,11 @@
             <artifactId>spark-core_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
             <exclusions>
-
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
-
         </dependency>
 
         <dependency>
@@ -203,6 +201,13 @@
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui-components</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

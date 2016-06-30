@@ -24,6 +24,8 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.Style;
 
+import java.util.Collection;
+
 /**
  * Div component (as in, HTML div)
  *
@@ -44,5 +46,9 @@ public class ComponentDiv extends Component {
     public ComponentDiv(Style style, Component... components) {
         super(COMPONENT_TYPE, style);
         this.components = components;
+    }
+
+    public ComponentDiv(Style style, Collection<Component> componentCollection){
+        this(style, (componentCollection == null ? null : componentCollection.toArray(new Component[componentCollection.size()])));
     }
 }

@@ -47,7 +47,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     .iterator(sentenceIter)
                     .tokenizerFactory(this.tokenizerFactory)
                     .build();
-            this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+            this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         }
     }
 
@@ -64,7 +64,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     .iterator(iterator)
                     .tokenizerFactory(tokenizerFactory)
                     .build();
-            this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+            this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         }
     }
 
@@ -447,7 +447,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                         .iterator(sentenceIterator)
                         .tokenizerFactory(tokenizerFactory)
                         .build();
-                this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+                this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
             ret.numEpochs = this.numEpochs;

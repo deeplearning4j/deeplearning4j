@@ -49,7 +49,7 @@ public class RandomWalkGraphIteratorProvider<V> implements GraphWalkIteratorProv
             int to = Math.min(nVertices,from+verticesPerIter);
             if(i == numIterators - 1) to = nVertices;
 
-            GraphWalkIterator<V> iter = new RandomWalkIterator<V>(graph,walkLength,rng.nextLong(),mode,from,to);
+            GraphWalkIterator<V> iter = new RandomWalkIterator<>(graph, walkLength, rng.nextLong(), mode, from, to);
             list.add(iter);
             last = to;
         }

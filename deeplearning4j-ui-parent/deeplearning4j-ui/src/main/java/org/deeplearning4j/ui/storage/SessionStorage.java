@@ -23,7 +23,6 @@ public class SessionStorage {
     private ReentrantReadWriteLock singleLock = new ReentrantReadWriteLock();
 
     private SessionStorage() {
-        ;
     }
 
     public static SessionStorage getInstance() {

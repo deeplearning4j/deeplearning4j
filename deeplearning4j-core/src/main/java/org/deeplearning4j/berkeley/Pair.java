@@ -49,7 +49,7 @@ public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
 	}
 
 	public Pair<S, F> reverse() {
-		return new Pair<S, F>(second, first);
+		return new Pair<>(second, first);
 	}
 
 	public boolean equals(Object o) {
@@ -154,12 +154,12 @@ public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
 	}
 
 	public static <S, T> Pair<S, T> newPair(S first, T second) {
-		return new Pair<S, T>(first, second);
+		return new Pair<>(first, second);
 	}
 	// Duplicate method to faccilitate backwards compatibility
 	// - aria42
 	public static <S, T> Pair<S, T> makePair(S first, T second) {
-		return new Pair<S, T>(first, second);
+		return new Pair<>(first, second);
 	}
 
 	public static class LexicographicPairComparator<F,S>  implements Comparator<Pair<F,S>> {
