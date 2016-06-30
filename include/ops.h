@@ -1204,7 +1204,9 @@ namespace simdOps {
 			return old + opOutput;
 		}
 
-		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
+		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
+			
+		}
 		
 
 #ifdef __CUDACC__
