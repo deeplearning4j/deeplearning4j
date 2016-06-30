@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * PLEASE NOTE: UNDER CONSTRUCTION, DO NOT USE THIS CLASS
+ * This is simple data-parallel wrapper suitable for multi-cpu/multi-gpu environments.
  *
  * @author raver119@gmail.com
  */
@@ -136,20 +136,26 @@ public class ParallelWrapper {
         }
     }
 
-    protected void averageModels(Model... models) {
-
-    }
-
     public static class Builder {
         private Model model;
         private int workers = 2;
         private int prefetchSize = 2;
         private int averagingFrequency = 1;
 
+        /**
+         * Build ParallelWrapper for MultiLayerNetwork
+         *
+         * @param mln
+         */
         public Builder(@NonNull MultiLayerNetwork mln) {
             model = mln;
         }
 
+        /**
+         * Build ParallelWrapper for ComputationGraph
+         *
+         * @param graph
+         */
         public Builder(@NonNull ComputationGraph graph) {
             model = graph;
         }
@@ -197,6 +203,11 @@ public class ParallelWrapper {
             return this;
         }
 
+        /**
+         * This method returns ParallelWrapper instance
+         *
+         * @return
+         */
         public ParallelWrapper build() {
             ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize);
             wrapper.averagingFrequency = this.averagingFrequency;
