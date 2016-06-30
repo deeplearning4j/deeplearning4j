@@ -237,4 +237,16 @@ public class DelayedMemoryTest extends TestCase {
         assertEquals(AllocationStatus.DEVICE, dupArray.getAllocationStatus());
         assertEquals(AllocationStatus.CONSTANT, dupShape.getAllocationStatus());
     }
+
+    @Test
+    public void testDelayedZeroes1() throws Exception {
+        INDArray zeroes = Nd4j.zeros(10);
+
+        zeroes.putScalar(1, 1f);
+        zeroes.putScalar(2, 1f);
+
+        float sum = zeroes.sumNumber().floatValue();
+
+        assertEquals(2f, sum, 0.0001f);
+    }
 }

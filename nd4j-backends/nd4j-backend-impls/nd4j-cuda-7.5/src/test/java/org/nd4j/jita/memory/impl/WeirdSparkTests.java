@@ -3,8 +3,11 @@ package org.nd4j.jita.memory.impl;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -23,7 +26,9 @@ public class WeirdSparkTests {
 
     @Before
     public void setUp() {
-        CudaEnvironment.getInstance().getConfiguration().setAllocationModel(Configuration.AllocationModel.CACHE_ALL);
+        CudaEnvironment.getInstance().getConfiguration()
+                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
+                .setMemoryModel(Configuration.MemoryModel.DELAYED);
     }
 
     @Test
@@ -107,6 +112,33 @@ public class WeirdSparkTests {
 
         float sum = array1.sumNumber().floatValue();
         assertEquals(15f, sum, 0.001f);
+    }
+
+    @Test
+    @Ignore
+    public void testMultithreadedFree1() throws Exception {
+        final DataBuffer buffer = Nd4j.createBuffer(500000000,0);
+
+        Thread.sleep(5000);
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Current device: " + AtomicAllocator.getInstance().getDeviceId());
+                AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+                AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().free(point);
+
+                System.out.println("Pointer released");
+                try {
+                    Thread.sleep(100000);
+                } catch (Exception e) {
+
+                }
+            }
+        });
+
+        thread.start();
+        thread.join();
     }
 }
 

@@ -10,7 +10,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
-import org.nd4j.jita.allocator.context.impl.BasicContextPool;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
@@ -122,7 +122,7 @@ public class CudaZeroHandler implements MemoryHandler {
             break;
             case SEQUENTIAL: {
                 this.flowController = new SynchronousFlowController();
-                this.contextPool = new BasicContextPool();
+                this.contextPool = new LimitedContextPool();
             }
             break;
             default:
@@ -241,6 +241,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     returnPair.setHostPointer(tmpPair.getHostPointer());
 
                     point.setAllocationStatus(AllocationStatus.HOST);
+                    point.setPointers(tmpPair);
                 }
 
                 if (reqMemory < configuration.getMaximumSingleHostAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
@@ -770,7 +771,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public void relocateObject(DataBuffer buffer) {
         AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
 
-        // we don't relocate non-device buffers
+        // we don't relocate non-DEVICE buffers (i.e HOST or CONSTANT)
         if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 

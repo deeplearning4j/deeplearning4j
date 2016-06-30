@@ -81,9 +81,9 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         int cId = allocator.getDeviceId();
-        StringBuilder builder = new StringBuilder();
-        builder.append("threadId: ").append(Thread.currentThread().getId())
-                .append("; cId: ").append(cId);
+  //      StringBuilder builder = new StringBuilder();
+  //      builder.append("threadId: ").append(Thread.currentThread().getId())
+  //              .append("; cId: ").append(cId);
 
 
         if (result != null) {
@@ -123,7 +123,7 @@ public class SynchronousFlowController implements FlowController {
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
+//                log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
 
                 allocator.getMemoryHandler().relocateObject(operand.data());
 
@@ -148,10 +148,10 @@ public class SynchronousFlowController implements FlowController {
             prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
 
-            builder.append("; O_dId: ").append(pointData.getDeviceId());
-            builder.append("; O_sdId: ").append(pointShape.getDeviceId());
-            builder.append(", O_DPTR: ").append(pointData.getPointers().getDevicePointer().address());
-            builder.append(", O_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
+      //      builder.append("; O_dId: ").append(pointData.getDeviceId());
+      //      builder.append("; O_sdId: ").append(pointShape.getDeviceId());
+      //      builder.append(", O_DPTR: ").append(pointData.getPointers().getDevicePointer().address());
+      //      builder.append(", O_SPTR: ").append(pointShape.getPointers().getDevicePointer().address());
         }
 
 //        log.info(builder.toString());

@@ -2,6 +2,7 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
@@ -39,7 +40,7 @@ public class Configuration implements Serializable {
 
     @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.DIRECT;
+    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
@@ -69,7 +70,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads = 8;
+    @Getter private int numberOfGcThreads = 6;
 
     /**
      * Deallocation aggressiveness
@@ -138,6 +139,8 @@ public class Configuration implements Serializable {
 
     @Getter private int debugTriggered = 0;
 
+    @Getter private int poolSize = 32;
+
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -150,6 +153,19 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
+    /**
+     * Per-device resources pool size. Streams, utility memory
+     *
+     * @param poolSize
+     * @return
+     */
+    public Configuration setPoolSize(int poolSize) {
+        if (poolSize < 8)
+            throw new IllegalStateException("poolSize can't be lower then 8");
+        this.poolSize = poolSize;
+        return this;
+    }
+
     public Configuration triggerDebug(int code) {
         this.debugTriggered = code;
         return this;
@@ -158,6 +174,17 @@ public class Configuration implements Serializable {
     public Configuration setMinimumRelocationThreshold(int threshold) {
         this.maximumDeviceAllocation = Math.max(2, threshold);
 
+        return this;
+    }
+
+    /**
+     * This method allows you to specify maximum memory cache per device
+     *
+     * @param maxCache
+     * @return
+     */
+    public Configuration setMaximumDeviceCache(long maxCache) {
+        this.maximumDeviceCache = maxCache;
         return this;
     }
 

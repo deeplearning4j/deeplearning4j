@@ -29,6 +29,7 @@ import java.util.concurrent.Semaphore;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class BasicContextPool implements ContextPool {
     // TODO: number of max threads should be device-dependant
     protected static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
@@ -46,6 +47,10 @@ public class BasicContextPool implements ContextPool {
     protected static Logger logger = LoggerFactory.getLogger(BasicContextPool.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+    public BasicContextPool() {
+
+    }
 
     public boolean containsContextForThread(long threadId) {
         return contextsPool.containsKey(threadId);
@@ -158,11 +163,15 @@ public class BasicContextPool implements ContextPool {
         return context;
     }
 
+    protected cublasHandle_t createNewCublasHandle() {
+        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
+
+        return handle;
+    }
+
+
     protected cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
         cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
-        //JCublas2.cublasCreate(handle);
-        //JCublas2.cublasSetStream(handle,stream);
-        //nativeOps.setBlasStream(handle, stream));
 
         return handle;
     }
@@ -243,15 +252,6 @@ public class BasicContextPool implements ContextPool {
         if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
-   //     Pointer dPtr = new Pointer();
-   //     Pointer hPtr = new CudaPointer(scalarPointer);
-
-/*
-        JCuda.cudaHostGetDevicePointer(
-                dPtr,
-                hPtr,
-                0);
-*/
         context.setBufferScalar(scalarPointer);
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
@@ -259,16 +259,7 @@ public class BasicContextPool implements ContextPool {
         Pointer  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
-/*
-        dPtr = new Pointer();
-        hPtr = new Pointer(specialPointer);
 
-        JCuda.cudaHostGetDevicePointer(
-                dPtr,
-                hPtr,
-                0);
-*/
-//        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
         nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream());
 
         context.setBufferSpecial(specialPointer);

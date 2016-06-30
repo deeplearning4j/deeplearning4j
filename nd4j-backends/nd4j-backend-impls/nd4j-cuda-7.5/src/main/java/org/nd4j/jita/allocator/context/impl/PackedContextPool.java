@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class PackedContextPool extends BasicContextPool implements ContextPool {
 
     protected static final int LANES_PER_THREAD = CudaEnvironment.getInstance().getConfiguration().getCommandLanesNumber();

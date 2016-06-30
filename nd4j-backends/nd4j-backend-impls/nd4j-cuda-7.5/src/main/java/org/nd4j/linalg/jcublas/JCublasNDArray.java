@@ -416,8 +416,9 @@ public class JCublasNDArray extends BaseNDArray {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
                 } else {
                     // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
-                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE)
+                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE) {
                         allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+                    }
 
                     NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
                 }
