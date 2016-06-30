@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -54,6 +55,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
     private Collection<IterationListener> listeners;
     private int iterationCount = 0;
+    private Repartition repartition;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -62,6 +64,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.batchSizePerWorker = builder.batchSizePerWorker;
         this.averagingFrequency = builder.averagingFrequency;
         this.prefetchNumBatches = builder.prefetchNumBatches;
+        this.repartition = builder.repartition;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
@@ -136,6 +139,23 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaRDD<DataSet> split : splits) {
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+
+            switch (repartition){
+                case Never:
+                    break;
+
+                case NumPartitionsExecutorsDiffers:
+                    int nPartitions = split.partitions().size();
+                    if(nPartitions == numWorkers) break;
+                case Always:
+                    //Repartition: either always, or nPartitions != numWorkers
+                    if(collectTrainingStats) stats.logRepartitionStart();
+                    split.repartition(numWorkers);
+                    if(collectTrainingStats) stats.logRepartitionEnd();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown setting for repartition: " + repartition);
+            }
 
             FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
             JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
@@ -293,6 +313,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private int batchSizePerWorker = 16;
         private int averagingFrequency = 5;
         private int prefetchNumBatches = 0;
+        private Repartition repartition = Repartition.Never;
 
         /**
          * Create a builder, where the following number of workers (Spark executors) are used.
@@ -354,6 +375,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder saveUpdater(boolean saveUpdater) {
             this.saveUpdater = saveUpdater;
+            return this;
+        }
+
+        public Builder repartionData(Repartition repartition){
+            this.repartition = repartition;
             return this;
         }
 
