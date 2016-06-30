@@ -37,7 +37,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
                     "ParameterAveragingMasterFitTimesMs",
                     "ParameterAveragingMasterSplitTimesMs",
                     "ParameterAveragingMasterAggregateTimesMs",
-                    "ParameterAveragingMasterProcessParamsUpdaterTimesMs"
+                    "ParameterAveragingMasterProcessParamsUpdaterTimesMs",
+                    "ParameterAveragingMasterRepartitionTimesMs"
             )));
 
     private SparkTrainingStats workerStats;
