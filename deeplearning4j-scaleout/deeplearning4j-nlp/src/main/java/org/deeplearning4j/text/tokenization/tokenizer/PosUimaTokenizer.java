@@ -59,7 +59,7 @@ public class PosUimaTokenizer  implements Tokenizer {
         if(PosUimaTokenizer.engine == null)
             PosUimaTokenizer.engine = engine;
         this.allowedPosTags = allowedPosTags;
-        this.tokens = new ArrayList<String>();
+        this.tokens = new ArrayList<>();
         this.stripNones = stripNones;
         try {
             if(cas == null)
@@ -122,7 +122,7 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     @Override
     public List<String> getTokens() {
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         while(hasMoreTokens()) {
             String nextT = nextToken();
             if (stripNones && nextT.equals("NONE"))

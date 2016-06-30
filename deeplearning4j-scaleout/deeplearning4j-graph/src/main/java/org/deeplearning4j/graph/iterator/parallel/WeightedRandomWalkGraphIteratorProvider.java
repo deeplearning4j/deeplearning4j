@@ -52,7 +52,7 @@ public class WeightedRandomWalkGraphIteratorProvider<V> implements GraphWalkIter
             int to = Math.min(nVertices,from+verticesPerIter);
             if(i == numIterators - 1) to = nVertices;
 
-            GraphWalkIterator<V> iter = new WeightedRandomWalkIterator<V>(graph,walkLength,rng.nextLong(),mode,from,to);
+            GraphWalkIterator<V> iter = new WeightedRandomWalkIterator<>(graph, walkLength, rng.nextLong(), mode, from, to);
             list.add(iter);
             last = to;
         }

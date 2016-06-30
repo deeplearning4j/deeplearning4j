@@ -241,7 +241,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
     public void setLookupTable(@NonNull WeightLookupTable lookupTable) {
         this.lookupTable = lookupTable;
-        if (modelUtils == null) this.modelUtils = new BasicModelUtils<T>();
+        if (modelUtils == null) this.modelUtils = new BasicModelUtils<>();
 
         this.modelUtils.init(lookupTable);
     }

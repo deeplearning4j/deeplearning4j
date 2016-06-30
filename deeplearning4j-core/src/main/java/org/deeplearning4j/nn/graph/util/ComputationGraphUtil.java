@@ -71,7 +71,7 @@ public class ComputationGraphUtil {
 
         @Override
         public void reset() {
-            iter.reset();;
+            iter.reset();
         }
 
         @Override

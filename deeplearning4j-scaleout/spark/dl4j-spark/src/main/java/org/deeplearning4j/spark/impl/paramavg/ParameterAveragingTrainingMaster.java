@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -51,9 +52,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int averagingFrequency;
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
-    private ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper stats;
+    private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
     private Collection<IterationListener> listeners;
     private int iterationCount = 0;
+    private Repartition repartition;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -62,6 +64,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.batchSizePerWorker = builder.batchSizePerWorker;
         this.averagingFrequency = builder.averagingFrequency;
         this.prefetchNumBatches = builder.prefetchNumBatches;
+        this.repartition = builder.repartition;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
@@ -76,7 +79,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
         if (collectTrainingStats)
-            stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+            stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
 
     @Override
@@ -136,15 +139,36 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaRDD<DataSet> split : splits) {
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+            if(collectTrainingStats) stats.logMapPartitionsStart();
+
+            JavaRDD<DataSet> splitData = split;
+
+            int nPartitions = split.partitions().size();
+            switch (repartition){
+                case Never:
+                    break;
+
+                case NumPartitionsExecutorsDiffers:
+                    if(nPartitions == numWorkers) break;
+                case Always:
+                    //Repartition: either always, or nPartitions != numWorkers
+                    if(collectTrainingStats) stats.logRepartitionStart();
+                    splitData = split.repartition(numWorkers);
+                    if(collectTrainingStats) stats.logRepartitionEnd();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown setting for repartition: " + repartition);
+            }
 
             FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
-            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
+            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
             processResults(network, null, result, splitNum, splits.length);
 
             splitNum++;
+            if(collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
         }
 
-        if (collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd((int)totalCount);
     }
 
     @Override
@@ -173,15 +197,35 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaRDD<MultiDataSet> split : splits) {
             log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
+            if(collectTrainingStats) stats.logMapPartitionsStart();
+
+            JavaRDD<MultiDataSet> splitData = split;
+
+            int nPartitions = split.partitions().size();
+            switch (repartition){
+                case Never:
+                    break;
+                case NumPartitionsExecutorsDiffers:
+                    if(nPartitions == numWorkers) break;
+                case Always:
+                    //Repartition: either always, or nPartitions != numWorkers
+                    if(collectTrainingStats) stats.logRepartitionStart();
+                    splitData = split.repartition(numWorkers);
+                    if(collectTrainingStats) stats.logRepartitionEnd();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown setting for repartition: " + repartition);
+            }
 
             FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
-            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
+            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
             processResults(null, graph, result, splitNum, splits.length);
 
             splitNum++;
+            if(collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
         }
 
-        if (collectTrainingStats) stats.logFitEnd();
+        if (collectTrainingStats) stats.logFitEnd((int)totalCount);
     }
 
     private <T> JavaRDD<T>[] randomSplit(int totalCount, int examplesPerSplit, JavaRDD<T> data) {
@@ -206,7 +250,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.collectTrainingStats = collectTrainingStats;
         if (collectTrainingStats) {
             if (this.stats == null)
-                this.stats = new ParameterAveragingTrainingMasterStats.parameterAveragingTrainingMasterStatsHelper();
+                this.stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
         } else {
             this.stats = null;
         }
@@ -293,6 +337,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private int batchSizePerWorker = 16;
         private int averagingFrequency = 5;
         private int prefetchNumBatches = 0;
+        private Repartition repartition = Repartition.Never;
 
         /**
          * Create a builder, where the following number of workers (Spark executors) are used.
@@ -354,6 +399,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder saveUpdater(boolean saveUpdater) {
             this.saveUpdater = saveUpdater;
+            return this;
+        }
+
+        public Builder repartionData(Repartition repartition){
+            this.repartition = repartition;
             return this;
         }
 

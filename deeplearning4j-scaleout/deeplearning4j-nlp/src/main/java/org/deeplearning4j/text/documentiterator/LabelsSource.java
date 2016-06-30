@@ -97,7 +97,7 @@ public class LabelsSource implements Serializable {
      * @param label
      */
     public synchronized void storeLabel(String label) {
-        if (labels == null) labels = new ArrayList<String>();
+        if (labels == null) labels = new ArrayList<>();
 
         if (!labels.contains(label)) labels.add(label);
     }

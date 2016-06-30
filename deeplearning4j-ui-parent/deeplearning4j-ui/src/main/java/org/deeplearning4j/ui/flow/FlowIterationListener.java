@@ -199,7 +199,6 @@ public class FlowIterationListener implements IterationListener {
                 try {
                     UiUtils.tryOpenBrowser(path, log);
                 } catch (Exception e) {
-                    ;
                 }
                 firstIteration = false;
             }
@@ -378,7 +377,6 @@ public class FlowIterationListener implements IterationListener {
         try {
             info.setName(layer.conf().getLayer().getLayerName());
         } catch (Exception e) {
-            ;
         }
         if (info.getName() == null || info.getName().isEmpty()) info.setName("unnamed");
 

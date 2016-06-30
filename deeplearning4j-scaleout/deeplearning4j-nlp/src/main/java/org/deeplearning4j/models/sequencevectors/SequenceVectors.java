@@ -276,8 +276,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected String STOP = configuration.getSTOP();
 
         // defaults values for learning algorithms are set here
-        protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
-        protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<T>();
+        protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
+        protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
 
         protected Set<VectorsListener<T>> vectorsListeners = new HashSet<>();
 

@@ -515,7 +515,6 @@ public class WordVectorSerializer {
             try {
                 reader.close();
             } catch (Exception e) {
-                ;
             }
 
             return vectors;
@@ -712,7 +711,7 @@ public class WordVectorSerializer {
 
 
 
-        List<VocabWord> words = new ArrayList<VocabWord>(vocabCache.vocabWords());
+        List<VocabWord> words = new ArrayList<>(vocabCache.vocabWords());
         for (SequenceElement word: words) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount(vocabCache.wordFrequency(word.getLabel()));
@@ -979,7 +978,6 @@ public class WordVectorSerializer {
         try {
             writer.flush();
         } catch (Exception e) {
-            ;
         }
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
     }
@@ -1070,7 +1068,6 @@ public class WordVectorSerializer {
                     try {
                         reader.close();
                     } catch (Exception ex) {
-                        ;
                     }
                 }
             }
@@ -1135,7 +1132,6 @@ public class WordVectorSerializer {
         try {
             reader.close();
         } catch (Exception e) {
-            ;
         }
 
         return new Pair<>(lookupTable, cache);

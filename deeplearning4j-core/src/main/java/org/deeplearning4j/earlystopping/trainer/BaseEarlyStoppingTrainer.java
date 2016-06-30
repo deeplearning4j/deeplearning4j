@@ -123,7 +123,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     } catch (IOException e2) {
                         throw new RuntimeException(e2);
                     }
-                    return new EarlyStoppingResult<T>(
+                    return new EarlyStoppingResult<>(
                             EarlyStoppingResult.TerminationReason.Error,
                             e.toString(),
                             scoreVsEpoch,
