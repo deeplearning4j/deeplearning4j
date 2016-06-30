@@ -132,7 +132,8 @@ public class StatsUtils {
                     .build();
 
             //Also build a histogram...
-            Component hist = getHistogram(duration, 20, s, styleChart);
+            Component hist = null;
+            if(minDur != maxDur && list.size() > 0) hist = getHistogram(duration, 20, s, styleChart);
 
             Component[] temp;
             if (hist != null) {
@@ -166,7 +167,8 @@ public class StatsUtils {
 
 
                 //Also build a histogram...
-                Component hist2 = getHistogram(y, 20, title, styleChart);
+                Component hist2 = null;
+                if(miny != maxy) hist2 = getHistogram(y, 20, title, styleChart);
 
                 Component[] temp2;
                 if (hist2 != null) {
