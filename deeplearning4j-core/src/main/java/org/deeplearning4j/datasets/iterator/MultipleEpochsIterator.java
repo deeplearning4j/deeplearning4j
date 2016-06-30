@@ -56,7 +56,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.numEpochs = numEpochs;
         this.iter = iter;
         this.queueSize = queueSize;
-        this.async = true;
+        this.async = queueSize == 1? false: true;
     }
 
     public MultipleEpochsIterator(int numEpochs,DataSet ds) {
@@ -80,7 +80,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
             if(num == -1) {
                 next = ds;
                 if (epochs < numEpochs)
-                    trackEpochs();;
+                    trackEpochs();
             }
             // return DataSet broken into batches
             else {

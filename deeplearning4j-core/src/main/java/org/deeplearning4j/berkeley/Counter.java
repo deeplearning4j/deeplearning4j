@@ -307,7 +307,7 @@ public class Counter<E> implements Serializable {
 
 	public List<E> getSortedKeys() {
 		PriorityQueue<E> pq = this.asPriorityQueue();
-		List<E> keys = new ArrayList<E>();
+		List<E> keys = new ArrayList<>();
 		while (pq.hasNext()) {
 			keys.add(pq.next());
 		}
@@ -370,7 +370,7 @@ public class Counter<E> implements Serializable {
 		NumberFormat f = NumberFormat.getInstance();
 		f.setMaximumFractionDigits(5);
 		int numKeysPrinted = 0;
-		for (E element : new TreeSet<E>(keySet())) {
+		for (E element : new TreeSet<>(keySet())) {
 
 			sb.append(element.toString());
 			sb.append(" : ");
@@ -411,7 +411,7 @@ public class Counter<E> implements Serializable {
 	 * whose priorities are those elements' counts in the counter.
 	 */
 	public PriorityQueue<E> asPriorityQueue() {
-		PriorityQueue<E> pq = new PriorityQueue<E>(entries.size());
+		PriorityQueue<E> pq = new PriorityQueue<>(entries.size());
 		for (Map.Entry<E, Double> entry : entries.entrySet()) {
 			pq.add(entry.getKey(), entry.getValue());
 		}
@@ -425,7 +425,7 @@ public class Counter<E> implements Serializable {
 	 * @return
 	 */
 	public PriorityQueue<E> asMinPriorityQueue() {
-		PriorityQueue<E> pq = new PriorityQueue<E>(entries.size());
+		PriorityQueue<E> pq = new PriorityQueue<>(entries.size());
 		for (Map.Entry<E, Double> entry : entries.entrySet()) {
 			pq.add(entry.getKey(), -entry.getValue());
 		}
@@ -448,7 +448,7 @@ public class Counter<E> implements Serializable {
 
 	public Counter(Map<? extends E, Double> mapCounts) {
 		this(false);
-		this.entries = new HashMap<E, Double>();
+		this.entries = new HashMap<>();
 		for (Entry<? extends E, Double> entry : mapCounts.entrySet()) {
 			incrementCount(entry.getKey(), entry.getValue());
 		}
@@ -490,7 +490,7 @@ public class Counter<E> implements Serializable {
 	}
 
 	public static void main(String[] args) {
-		Counter<String> counter = new Counter<String>();
+		Counter<String> counter = new Counter<>();
 		System.out.println(counter);
 		counter.incrementCount("planets", 7);
 		System.out.println(counter);
@@ -518,7 +518,7 @@ public class Counter<E> implements Serializable {
 	}
 
 	private void keepKeysHelper(int keepN, boolean top) {
-		Counter<E> tmp = new Counter<E>();
+		Counter<E> tmp = new Counter<>();
 
 		int n = 0;
 		for (E e : Iterators.able(top ? asPriorityQueue() : asMinPriorityQueue())) {
@@ -565,7 +565,7 @@ public class Counter<E> implements Serializable {
 	}
 
 	public Counter<E> scaledClone(double c) {
-		Counter<E> newCounter = new Counter<E>();
+		Counter<E> newCounter = new Counter<>();
 
 		for (Map.Entry<E, Double> entry : getEntrySet()) {
 			newCounter.setCount(entry.getKey(), entry.getValue() * c);
@@ -575,7 +575,7 @@ public class Counter<E> implements Serializable {
 	}
 
 	public Counter<E> difference(Counter<E> counter) {
-		Counter<E> clone = new Counter<E>(this);
+		Counter<E> clone = new Counter<>(this);
 		for (E key : counter.keySet()) {
 			double count = counter.getCount(key);
 			clone.incrementCount(key, -1 * count);
@@ -584,7 +584,7 @@ public class Counter<E> implements Serializable {
 	}
 
 	public Counter<E> toLogSpace() {
-		Counter<E> newCounter = new Counter<E>(this);
+		Counter<E> newCounter = new Counter<>(this);
 		for (E key : newCounter.keySet()) {
 			newCounter.setCount(key, Math.log(getCount(key)));
 		}

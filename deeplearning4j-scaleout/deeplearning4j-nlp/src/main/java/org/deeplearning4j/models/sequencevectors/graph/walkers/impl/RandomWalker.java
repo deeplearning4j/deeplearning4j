@@ -66,7 +66,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         int[] visitedHops = new int[walkLength];
         Arrays.fill(visitedHops, -1);
 
-        Sequence<T> sequence = new Sequence<T>();
+        Sequence<T> sequence = new Sequence<>();
 
         int startPosition = position.getAndIncrement();
         int lastId = -1;
@@ -101,7 +101,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                 case RANDOM: {
                         int[] nextHops = sourceGraph.getConnectedVertexIndices(currentPosition);
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
-                    };
+                    }
                     break;
                 case FORWARD_ONLY: {
                         // here we remove only last hop
@@ -132,7 +132,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                                     throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                             }
                         }
-                    };
+                    }
                     break;
                 case FORWARD_UNIQUE: {
                     // here we remove all previously visited hops, and we don't get  back to them ever
@@ -164,7 +164,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                                 throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                         }
                     }
-                };
+                }
                 break;
                 case FORWARD_PREFERRED: {
                         // here we remove all previously visited hops, and if there's no next unique hop available - we fallback to anything, but the last one
@@ -309,7 +309,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
          * @return
          */
         public RandomWalker<T> build() {
-            RandomWalker<T> walker = new RandomWalker<T>();
+            RandomWalker<T> walker = new RandomWalker<>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;

@@ -29,7 +29,7 @@ public class GraphTransformerTest {
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
-            graph = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
+            graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 10; i++) {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
@@ -43,11 +43,11 @@ public class GraphTransformerTest {
 
     @Test
     public void testGraphTransformer1() throws Exception {
-        GraphWalker<VocabWord> walker = new RandomWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new RandomWalker.Builder<>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .build();
 
-        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<VocabWord>(graph)
+        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<>(graph)
                 .setGraphWalker(walker)
                 .build();
 

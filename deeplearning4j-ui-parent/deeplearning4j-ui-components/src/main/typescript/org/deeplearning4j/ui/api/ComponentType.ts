@@ -27,5 +27,6 @@ enum ComponentType {
     ChartLine,
     ChartScatter,
     ChartStackedArea,
+    ChartTimeline,
     DecoratorAccordion
 }

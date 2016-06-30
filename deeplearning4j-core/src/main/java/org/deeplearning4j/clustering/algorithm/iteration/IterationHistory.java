@@ -25,7 +25,7 @@ import org.deeplearning4j.clustering.cluster.info.ClusterSetInfo;
 
 public class IterationHistory {
 
-	private Map<Integer, IterationInfo> iterationsInfos = new HashMap<Integer, IterationInfo>();
+	private Map<Integer, IterationInfo> iterationsInfos = new HashMap<>();
 	
 	public ClusterSetInfo getMostRecentClusterSetInfo() {
 		IterationInfo iterationInfo = getMostRecentIterationInfo();

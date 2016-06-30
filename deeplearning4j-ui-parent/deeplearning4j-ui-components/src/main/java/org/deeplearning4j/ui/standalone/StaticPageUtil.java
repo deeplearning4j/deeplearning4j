@@ -28,6 +28,10 @@ import java.util.*;
  */
 public class StaticPageUtil {
 
+    public static String renderHTML(Collection<Component> components) throws Exception {
+        return renderHTML(components.toArray(new Component[components.size()]));
+    }
+
     public static String renderHTML(Component... components) throws Exception {
 
         ObjectMapper mapper = new ObjectMapper();

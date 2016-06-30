@@ -20,5 +20,19 @@ Providing help for tuning neural networks can be quite time consuming for the de
 3. We generally won't answer questions that can be easily answered by searching Google or reading something like http://cs231n.github.io/ or http://www.deeplearningbook.org/
 4. For some questions/issues, it may not be possible to provide a short/simple answer to your question. In these cases, we might decide to answer your question by improving our documentation, instead of answering your question directly in Gitter. Please understand that improving our documentation helps *everyone* and is a better use of the team's time than answering one-off questions.
 5. Generally: feel free to open issues (https://github.com/deeplearning4j/deeplearning4j/issues) if you feel our documentation (troubleshooting/tuning) is lacking or doesn't answer common questions
+6. Upon entering the room, only saying "hi" gets you a ban. Please keep the content relevant.
+ Please note the below channels for different parts of the conversation:
+
+7. 
+Due to the community growing, we have also added new channels:
+Contributors/building from source: https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters
+
+Tuning help/beginners:
+https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp
+
+Casual conversation:
+https://gitter.im/eeplearning4j/deeplearning4jconvos
+
+
 
 If you require commercial support for tuning your neural network models, please contact us via http://www.skymind.io/contact/ or help@skymind.io

@@ -245,6 +245,10 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         vocab = vocabCache;
         InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
+        Environment env = EnvironmentUtils.buildEnvironment();
+        env.setNumCores(maxRep);
+        env.setAvailableMemory(totals);
+        update(env, Event.SPARK);
         inMemoryLookupTable.setVocab(vocabCache);
         inMemoryLookupTable.setVectorLength(layerSize);
         inMemoryLookupTable.setSyn0(syn0);

@@ -388,7 +388,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         }
 
         public GloVe<T> build() {
-            GloVe<T> ret = new GloVe<T>();
+            GloVe<T> ret = new GloVe<>();
             ret.symmetric = this.symmetric;
             ret.shuffle = this.shuffle;
             ret.xMax = this.xMax;

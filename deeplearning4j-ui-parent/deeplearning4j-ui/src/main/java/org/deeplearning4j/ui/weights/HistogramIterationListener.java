@@ -216,7 +216,7 @@ public class HistogramIterationListener implements IterationListener {
     }
 
     private int indexFromString(String str) {
-        int underscore = str.indexOf("_");
+        int underscore = str.indexOf('_');
         if (underscore == -1) {
             if (!layerNameIndexes.containsKey(str)) {
                 layerNames.add(str);

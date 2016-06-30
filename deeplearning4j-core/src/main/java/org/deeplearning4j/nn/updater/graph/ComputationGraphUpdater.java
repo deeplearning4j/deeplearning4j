@@ -59,7 +59,7 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             String key = gradientPair.getKey();
-            int idx = key.lastIndexOf("_");
+            int idx = key.lastIndexOf('_');
             if( idx == -1 ) throw new IllegalStateException("Invalid key: ComputationGraph Gradient key does not have layer separator: \""+key+"\"");
 
             String layerName = key.substring(0,idx);

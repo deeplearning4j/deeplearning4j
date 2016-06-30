@@ -6,39 +6,6 @@
             height: 100%;
         }
 
-        .bgcolor {
-            background-color: #FFFFFF;
-        }
-
-        .hd {
-            background-color: #000000;
-            font-size: 18px;
-            color: #FFFFFF;
-        }
-
-        .sectionheader {
-            background-color: #888888;
-            width:100%;
-            font-size: 16px;
-            font-style: bold;
-            color: #FFFFFF;
-            /*padding-left: 40px;*/
-            /*padding-right: 8px;*/
-            /*padding-top: 2px;*/
-            /*padding-bottom: 2px;*/
-
-        }
-
-        .subsectiontop {
-            background-color: #F5F5FF;
-            height: 300px;
-        }
-
-        .subsectionbottom {
-            background-color: #F5F5FF;
-            height: 540px;
-        }
-
         h1 {
             font-family: Georgia, Times, 'Times New Roman', serif;
             font-size: 28px;
@@ -56,44 +23,6 @@
             font-weight: 500;
             line-height: 26.4px;
         }
-
-        div.outerelements {
-            padding-bottom: 30px;
-        }
-
-        /** Line charts */
-        path {
-            stroke: steelblue;
-            stroke-width: 2;
-            fill: none;
-        }
-
-        .axis path, .axis line {
-            fill: none;
-            stroke: #000;
-            shape-rendering: crispEdges;
-        }
-
-        .tick line {
-            opacity: 0.2;
-            shape-rendering: crispEdges;
-        }
-
-        /** Bar charts */
-        .bar {
-            fill: steelblue;
-        }
-
-        rect {
-            fill: steelblue;
-        }
-
-        .legend rect {
-            fill:white;
-            stroke:black;
-            opacity:0.8;
-        }
-
     </style>
     <title>Data Analysis</title>
 

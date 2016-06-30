@@ -91,7 +91,7 @@ public class TestGraph {
         }
 
         int walkLength = 4;
-        RandomWalkIterator<String> iter = new RandomWalkIterator<String>(graph, walkLength, 1235, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
+        RandomWalkIterator<String> iter = new RandomWalkIterator<>(graph, walkLength, 1235, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
 
         int count = 0;
         Set<Integer> startIdxSet = new HashSet<>();
@@ -164,7 +164,7 @@ public class TestGraph {
         }
 
         int walkLength = 5;
-        WeightedRandomWalkIterator<String> iterator = new WeightedRandomWalkIterator<String>(graph, walkLength, 12345);
+        WeightedRandomWalkIterator<String> iterator = new WeightedRandomWalkIterator<>(graph, walkLength, 12345);
 
         int walkCount = 0;
         Set<Integer> set = new HashSet<>();

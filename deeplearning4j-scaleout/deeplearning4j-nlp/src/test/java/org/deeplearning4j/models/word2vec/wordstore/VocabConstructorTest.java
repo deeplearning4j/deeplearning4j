@@ -82,7 +82,7 @@ public class VocabConstructorTest {
         /*
             And we pack that transformer into AbstractSequenceIterator
          */
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
@@ -113,7 +113,7 @@ public class VocabConstructorTest {
                 .build();
 
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
@@ -167,7 +167,7 @@ public class VocabConstructorTest {
                         throw new UnsupportedOperationException();
                     }
                 };
-            };
+            }
         };
 
 
@@ -218,7 +218,7 @@ public class VocabConstructorTest {
                         throw new UnsupportedOperationException();
                     }
                 };
-            };
+            }
         };
 
 
@@ -259,7 +259,7 @@ public class VocabConstructorTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
@@ -301,7 +301,7 @@ public class VocabConstructorTest {
                 .tokenizerFactory(t)
                 .build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
@@ -323,7 +323,7 @@ public class VocabConstructorTest {
                 .tokenizerFactory(t)
                 .build();
 
-        sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
                 .build();
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()

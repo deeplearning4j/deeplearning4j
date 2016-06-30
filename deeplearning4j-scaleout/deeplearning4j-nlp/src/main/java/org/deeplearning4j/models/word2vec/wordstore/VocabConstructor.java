@@ -398,7 +398,7 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         public VocabConstructor<T> build() {
-            VocabConstructor<T> constructor = new VocabConstructor<T>();
+            VocabConstructor<T> constructor = new VocabConstructor<>();
             constructor.sources = this.sources;
             constructor.cache = this.cache;
             constructor.stopWords = this.stopWords;

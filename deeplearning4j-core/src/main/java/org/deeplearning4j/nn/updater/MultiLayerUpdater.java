@@ -50,7 +50,7 @@ public class MultiLayerUpdater implements Updater {
 		
 		for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
 			String key = gradientPair.getKey();
-			int idx = key.indexOf("_");
+			int idx = key.indexOf('_');
 			if( idx == -1 ) throw new IllegalStateException("Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \""+key+"\"");
 			int layerIdx = Integer.parseInt(key.substring(0, idx));
 			
