@@ -430,6 +430,8 @@ public class CudaZeroHandler implements MemoryHandler {
             //deviceAllocations.get(point.getDeviceId()).remove(point.getObjectId());
 
         //zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+            deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), point.getDeviceId(), AllocationUtils.getRequiredMemory(point.getShape()));
 
         memoryProvider.free(point);
     }
@@ -801,6 +803,7 @@ public class CudaZeroHandler implements MemoryHandler {
         } else {
             //log.info("Freeing memory pointer: {}", dstPoint.getPointers().getDevicePointer().address());
             memoryProvider.free(dstPoint);
+            deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
 
             // we replace original device pointer with new one
             alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
