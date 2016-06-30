@@ -202,7 +202,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
-        FlatMapFunction firstIterFunc = new SecondIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
+        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
         @SuppressWarnings("unchecked")
         JavaRDD< Pair<VocabWord, INDArray> > indexSyn0UpdateEntryRDD =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
@@ -245,10 +245,6 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         vocab = vocabCache;
         InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
-        Environment env = EnvironmentUtils.buildEnvironment();
-        env.setNumCores(maxRep);
-        env.setAvailableMemory(totals);
-        update(env, Event.SPARK);
         inMemoryLookupTable.setVocab(vocabCache);
         inMemoryLookupTable.setVectorLength(layerSize);
         inMemoryLookupTable.setSyn0(syn0);
