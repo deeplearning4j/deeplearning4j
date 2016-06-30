@@ -248,6 +248,7 @@ public class StatsUtils {
 
                 int idx = outputOrder.indexOf(tuple);
                 Color c = colorMap.get(s);
+//                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(null, start, end, c);
                 ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s), start, end, c);
                 entriesByLane.get(chartIdx).get(idx).add(entry);
             }
@@ -312,7 +313,9 @@ public class StatsUtils {
         if (nColors <= 1) step = 1.0;
         else step = 1.0 / (nColors + 1);
         for (int i = 0; i < nColors; i++) {
-            c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+//            c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+            if(i%2 == 0) c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+            else c[i] = Color.getHSBColor((float) step * i,1.0f, 1.0f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
         }
         return c;
     }
