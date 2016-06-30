@@ -144,6 +144,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             JavaRDD<DataSet> splitData = split;
 
             int nPartitions = split.partitions().size();
+            log.info("nPartitions = {}, numWorkers = {}, repartition setting = {}", nPartitions, numWorkers, repartition);
             switch (repartition){
                 case Never:
                     break;
