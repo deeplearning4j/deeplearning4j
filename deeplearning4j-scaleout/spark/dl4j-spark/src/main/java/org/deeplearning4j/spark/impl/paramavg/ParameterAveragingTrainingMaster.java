@@ -140,6 +140,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
                     splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
+            JavaRDD<DataSet> splitData = split;
+
             switch (repartition){
                 case Never:
                     break;
@@ -150,7 +152,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
                 case Always:
                     //Repartition: either always, or nPartitions != numWorkers
                     if(collectTrainingStats) stats.logRepartitionStart();
-                    split.repartition(numWorkers);
+                    splitData = split.repartition(numWorkers);
                     if(collectTrainingStats) stats.logRepartitionEnd();
                     break;
                 default:
@@ -158,7 +160,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             }
 
             FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
-            JavaRDD<ParameterAveragingTrainingResult> result = split.mapPartitions(function);
+            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
             processResults(network, null, result, splitNum, splits.length);
 
             splitNum++;
