@@ -149,12 +149,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
                     break;
 
                 case NumPartitionsExecutorsDiffers:
-
                     if(nPartitions == numWorkers) break;
                 case Always:
                     //Repartition: either always, or nPartitions != numWorkers
                     if(collectTrainingStats) stats.logRepartitionStart();
                     splitData = split.repartition(numWorkers);
+                    log.info("Repartitioned training data. Partitions before: {}. Partitions after: {}", nPartitions, splitData.partitions().size());
                     if(collectTrainingStats) stats.logRepartitionEnd();
                     break;
                 default:
