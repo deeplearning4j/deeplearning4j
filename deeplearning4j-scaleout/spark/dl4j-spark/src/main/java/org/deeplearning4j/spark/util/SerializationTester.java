@@ -14,6 +14,9 @@ import akka.serialization.Serializer;
 public class SerializationTester {
 
 
+    private SerializationTester() {
+    }
+
     /**
      * Testing akka serialization
      * @param system the system to test on

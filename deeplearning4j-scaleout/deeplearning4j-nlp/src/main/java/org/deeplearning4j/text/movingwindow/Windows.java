@@ -36,6 +36,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 public class Windows {
 
 
+    private Windows() {
+    }
+
     /**
      * Constructs a list of window of size windowSize.
      * Note that padding for each window is created as well.

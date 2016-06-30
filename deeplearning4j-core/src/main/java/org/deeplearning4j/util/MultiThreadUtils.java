@@ -29,7 +29,10 @@ public class MultiThreadUtils {
 	private static Logger log = LoggerFactory.getLogger(MultiThreadUtils.class);
 
 	private static ExecutorService instance;
-	
+
+	private MultiThreadUtils() {
+	}
+
 	public static synchronized ExecutorService newExecutorService() {
 		int nThreads = Runtime.getRuntime().availableProcessors();
 		return new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS,

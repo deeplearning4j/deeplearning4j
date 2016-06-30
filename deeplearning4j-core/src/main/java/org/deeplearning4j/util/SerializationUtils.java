@@ -29,6 +29,9 @@ import org.apache.commons.io.FileUtils;
  */
 public class SerializationUtils {
 
+	private SerializationUtils() {
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T> T readObject(File file) {
 		ObjectInputStream ois = null;
