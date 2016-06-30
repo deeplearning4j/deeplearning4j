@@ -116,13 +116,19 @@ public class StatsUtils {
 
             double[] x = new double[list.size()];
             double[] duration = new double[list.size()];
+            double minDur = Double.MAX_VALUE;
+            double maxDur = -Double.MAX_VALUE;
             for (int i = 0; i < duration.length; i++) {
                 x[i] = i;
                 duration[i] = list.get(i).getDurationMs();
+                minDur = Math.min(minDur, duration[i]);
+                maxDur = Math.max(maxDur, duration[i]);
             }
 
             Component line = new ChartLine.Builder(s, styleChart)
                     .addSeries("Duration", x, duration)
+                    .setYMin(minDur == maxDur ? minDur-1 : null)
+                    .setYMax(minDur == maxDur ? minDur+1 : null)
                     .build();
 
             //Also build a histogram...
@@ -136,6 +142,41 @@ public class StatsUtils {
             }
 
             components.add(new ComponentDiv(new StyleDiv.Builder().width(100, LengthUnit.Percent).build(), temp));
+
+
+            //TODO this is really ugly
+            if(list.size() > 0 && (list.get(0) instanceof ExampleCountEventStats || list.get(0) instanceof PartitionCountEventStats)){
+                boolean exCount = list.get(0) instanceof ExampleCountEventStats;
+
+                double[] y = new double[list.size()];
+                double miny = Double.MAX_VALUE;
+                double maxy = -Double.MAX_VALUE;
+                for( int i=0; i<y.length; i++ ){
+                    y[i] = (exCount ? ((ExampleCountEventStats)list.get(i)).getTotalExampleCount() : ((PartitionCountEventStats)list.get(i)).getNumPartitions());
+                    miny = Math.min(miny, y[i]);
+                    maxy = Math.max(maxy, y[i]);
+                }
+
+                String title = s + " / " + (exCount ? "Number of Examples" : "Number of Partitions");
+                Component line2 = new ChartLine.Builder(title, styleChart)
+                        .addSeries((exCount ? "Examples" : "Partitions"), x, y)
+                        .setYMin(miny == maxy ? miny-1 : null)
+                        .setYMax(miny == maxy ? miny+1 : null)
+                        .build();
+
+
+                //Also build a histogram...
+                Component hist2 = getHistogram(y, 20, title, styleChart);
+
+                Component[] temp2;
+                if (hist2 != null) {
+                    temp2 = new Component[]{line2, hist2};
+                } else {
+                    temp2 = new Component[]{line2};
+                }
+
+                components.add(new ComponentDiv(new StyleDiv.Builder().width(100, LengthUnit.Percent).build(), temp2));
+            }
         }
 
         String html = StaticPageUtil.renderHTML(components);
