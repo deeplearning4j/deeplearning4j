@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -81,6 +82,7 @@ public class TestTrainingStatsCollection {
                     .batchSizePerWorker(miniBatchSizePerWorker)
                     .saveUpdater(true)
                     .workerPrefetchNumBatches(0)
+                    .repartionData(Repartition.Always)
                     .build();
 
             SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
