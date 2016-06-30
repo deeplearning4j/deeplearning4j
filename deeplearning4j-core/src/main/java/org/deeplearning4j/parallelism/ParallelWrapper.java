@@ -6,6 +6,9 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -13,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -41,13 +45,9 @@ public class ParallelWrapper {
 
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
-            zoo[cnt] = new Trainer(model);
+            zoo[cnt] = new Trainer(cnt, model);
             zoo[cnt].start();
         }
-    }
-
-    protected void fit(@NonNull DataSet dataSet) {
-
     }
 
     /**
@@ -94,7 +94,7 @@ public class ParallelWrapper {
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 || !iterator.hasNext()) {
                     double score = 0.0;
-                    INDArray result = Nd4j.create(model.params().shape());
+                    INDArray result = Nd4j.zeros(model.params().shape());
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                         INDArray params = zoo[cnt].getModel().params();
                         result.addi(params);
@@ -104,14 +104,27 @@ public class ParallelWrapper {
                     model.setParams(result);
                     score /= Math.min(workers, locker.get());
 
-                    logger.info("Score: " + score);
+                    // TODO: improve this
+                    logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
+                        UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
+
+                        for (int cnt = 0; cnt < workers; cnt++) {
+                            uag.merge(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getAggregator(true));
+                        }
 
                         ((MultiLayerNetwork) model).setScore(score);
+                        ((MultiLayerNetwork) model).setUpdater(uag.getUpdater());
                     } else if (model instanceof ComputationGraph) {
+                        ComputationGraphUpdater.Aggregator uag = ((ComputationGraph)zoo[0].getModel()).getUpdater().getAggregator(false);
+
+                        for (int cnt = 0; cnt < workers; cnt++) {
+                            uag.merge(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getAggregator(true));
+                        }
 
                         ((ComputationGraph) model).setScore(score);
+                        ((ComputationGraph) model).setUpdater(uag.getUpdater());
                     }
 
                     for (int i = 0; i < workers; i++) {
@@ -196,14 +209,29 @@ public class ParallelWrapper {
         private Model originalModel;
         private Model replicatedModel;
         private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
-        private AtomicBoolean running = new AtomicBoolean(false);
+        private AtomicInteger running = new AtomicInteger(0);
+        private int threadId;
 
-        public Trainer(Model model) {
-            updateModel(model);
+        public Trainer(int threadId, Model model) {
+            this.threadId = threadId;
             this.setDaemon(true);
+
+            this.originalModel = model;
+            if (model instanceof MultiLayerNetwork) {
+                this.replicatedModel = ((MultiLayerNetwork) model).clone();
+
+                if (threadId != 0)
+                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+            } else if (model instanceof ComputationGraph) {
+                this.replicatedModel = ((ComputationGraph) model).clone();
+
+                if (threadId != 0)
+                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+            }
         }
 
         public void feedDataSet(@NonNull DataSet dataSet) {
+            running.incrementAndGet();
             queue.add(dataSet);
         }
 
@@ -212,31 +240,29 @@ public class ParallelWrapper {
         }
 
         public void updateModel(@NonNull Model model) {
-            this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
-                this.replicatedModel = ((MultiLayerNetwork) model).clone();
-            } else if (model instanceof ComputationGraph) {
-                this.replicatedModel = ((ComputationGraph) model).clone();
+                replicatedModel = ((MultiLayerNetwork) model).clone();
+            } else if (model instanceof  ComputationGraph) {
+                replicatedModel = ((ComputationGraph) model).clone();
             }
         }
 
         public boolean isRunning(){
-            return running.get();
+            return running.get() == 0;
         }
 
         @Override
         public void run() {
             try {
                 while (true) {
-                    DataSet dataSet = queue.poll(3, TimeUnit.SECONDS);
+                    DataSet dataSet = queue.poll(1, TimeUnit.SECONDS);
                     if (dataSet != null) {
-                        running.set(true);
                         if (replicatedModel instanceof MultiLayerNetwork) {
                             ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                         } else if (replicatedModel instanceof ComputationGraph) {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
-                        running.set(false);
+                        running.decrementAndGet();
                     }
                 }
             } catch (Exception e) {
@@ -246,7 +272,7 @@ public class ParallelWrapper {
         }
 
         public void waitTillRunning() {
-            while (running.get()) {
+            while (running.get() != 0) {
                 try {
                     Thread.sleep(50);
                 } catch (Exception e) {
