@@ -291,7 +291,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
         if((j = tracker.jobFor(id)) == null) {
             //inconsistent state
-            if(!isWorking.get() && j != null)  {
+            if(!isWorking.get())  {
                 tracker.clearJob(id);
                 log.info("Clearing stale job " + id);
             }
@@ -310,11 +310,9 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
         }
 
 
-        if(j != null && getCurrentJob() == null) {
+        if(getCurrentJob() == null) {
             log.info("Assigning job for worker " + id);
             setCurrentJob(j);
-
-
         }
 
     }

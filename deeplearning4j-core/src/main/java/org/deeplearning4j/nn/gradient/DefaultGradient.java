@@ -58,7 +58,7 @@ public class DefaultGradient implements Gradient {
         } else {
             for(String s : order){
                 if (!gradients.containsKey(s)) continue;
-                if(flatteningOrders != null && flatteningOrders.containsKey(s) && flatteningOrders.get(s) != DEFAULT_FLATTENING_ORDER){
+                if (flatteningOrders.containsKey(s) && flatteningOrders.get(s) != DEFAULT_FLATTENING_ORDER) {
                     //Arrays with non-default order get flattened to row vector first, then everything is flattened to f order
                     //TODO revisit this, and make more efficient
                     toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(s),gradients.get(s)));
