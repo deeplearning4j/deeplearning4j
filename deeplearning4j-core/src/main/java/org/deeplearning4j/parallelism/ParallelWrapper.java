@@ -13,20 +13,26 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * PLEASE NOTE: UNDER CONSTRUCTION, DO NOT USE THIS CLASS
  *
  * @author raver119@gmail.com
  */
-@Deprecated
 public class ParallelWrapper {
     private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
     private int workers = 2;
     private int prefetchSize = 2;
+    private int averagingFrequency = 1;
     private Trainer zoo[];
+    private AtomicLong iterationsCounter = new AtomicLong(0);
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -36,6 +42,7 @@ public class ParallelWrapper {
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
             zoo[cnt] = new Trainer(model);
+            zoo[cnt].start();
         }
     }
 
@@ -56,6 +63,7 @@ public class ParallelWrapper {
 
         AtomicInteger locker = new AtomicInteger(0);
 
+
         iterator.reset();
         while (iterator.hasNext()) {
             DataSet dataSet = iterator.next();
@@ -65,16 +73,16 @@ public class ParallelWrapper {
             */
             int pos = locker.getAndIncrement();
             zoo[pos].feedDataSet(dataSet);
-            zoo[pos].updateModel(model);
-            zoo[pos].start();
 
             /*
                 if all workers are dispatched now, join till all are finished
             */
             if (pos + 1 == workers || !iterator.hasNext()) {
+                iterationsCounter.incrementAndGet();
+
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
                     try {
-                        zoo[cnt].join();
+                        zoo[cnt].waitTillRunning();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -84,31 +92,31 @@ public class ParallelWrapper {
                 /*
                     average model, and propagate it to whole
                 */
+                if (iterationsCounter.get() % averagingFrequency == 0 || !iterator.hasNext()) {
+                    double score = 0.0;
+                    INDArray result = Nd4j.create(model.params().shape());
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        INDArray params = zoo[cnt].getModel().params();
+                        result.addi(params);
+                        score += zoo[cnt].getModel().score();
+                    }
+                    result.divi(Math.min(workers, locker.get()));
+                    model.setParams(result);
+                    score /= Math.min(workers, locker.get());
 
-                double score = 0.0;
-                INDArray result = Nd4j.create(model.params().shape());
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    INDArray params = zoo[cnt].getModel().params();
-                    result.addi(params);
-                    score += zoo[cnt].getModel().score();
-                }
-                result.divi(Math.min(workers, locker.get()));
-                model.setParams(result);
-                score /= Math.min(workers, locker.get());
+                    logger.info("Score: " + score);
 
-                logger.info("Score: " + score);
+                    if (model instanceof MultiLayerNetwork) {
 
-                if (model instanceof MultiLayerNetwork) {
+                        ((MultiLayerNetwork) model).setScore(score);
+                    } else if (model instanceof ComputationGraph) {
 
-                    ((MultiLayerNetwork) model).setScore(score);
-                } else if (model instanceof ComputationGraph) {
+                        ((ComputationGraph) model).setScore(score);
+                    }
 
-                    ((ComputationGraph) model).setScore(score);
-                }
-
-
-                for (int cnt = 0; cnt < workers; cnt++) {
-                    zoo[cnt] = new Trainer(model);
+                    for (int i = 0; i < workers; i++) {
+                        zoo[i].updateModel(model);
+                    }
                 }
                 locker.set(0);
             }
@@ -123,6 +131,7 @@ public class ParallelWrapper {
         private Model model;
         private int workers = 2;
         private int prefetchSize = 2;
+        private int averagingFrequency = 1;
 
         public Builder(@NonNull MultiLayerNetwork mln) {
             model = mln;
@@ -147,6 +156,17 @@ public class ParallelWrapper {
         }
 
         /**
+         * Model averaging frequency.
+         *
+         * @param freq number of iterations between averagin
+         * @return
+         */
+        public Builder averagingFrequency(int freq) {
+            this.averagingFrequency = freq;
+            return this;
+        }
+
+        /**
          * Size of prefetch buffer that will be used for background data prefetching.
          * Usually it's better to keep this value equal to the number of workers.
          *
@@ -166,6 +186,7 @@ public class ParallelWrapper {
 
         public ParallelWrapper build() {
             ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize);
+            wrapper.averagingFrequency = this.averagingFrequency;
 
             return wrapper;
         }
@@ -174,14 +195,16 @@ public class ParallelWrapper {
     private static class Trainer extends Thread implements Runnable {
         private Model originalModel;
         private Model replicatedModel;
-        private DataSet dataSet;
+        private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+        private AtomicBoolean running = new AtomicBoolean(false);
 
         public Trainer(Model model) {
-            this.originalModel = model;
+            updateModel(model);
+            this.setDaemon(true);
         }
 
         public void feedDataSet(@NonNull DataSet dataSet) {
-            this.dataSet = dataSet;
+            queue.add(dataSet);
         }
 
         public Model getModel() {
@@ -197,15 +220,38 @@ public class ParallelWrapper {
             }
         }
 
+        public boolean isRunning(){
+            return running.get();
+        }
+
         @Override
         public void run() {
-            if (dataSet == null)
-                throw new IllegalStateException("DataSet is NULL");
+            try {
+                while (true) {
+                    DataSet dataSet = queue.poll(3, TimeUnit.SECONDS);
+                    if (dataSet != null) {
+                        running.set(true);
+                        if (replicatedModel instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) replicatedModel).fit(dataSet);
+                        } else if (replicatedModel instanceof ComputationGraph) {
+                            ((ComputationGraph) replicatedModel).fit(dataSet);
+                        }
+                        running.set(false);
+                    }
+                }
+            } catch (Exception e) {
+                //
+            }
+            logger.info("Finished training thread...");
+        }
 
-            if (originalModel instanceof MultiLayerNetwork) {
-                ((MultiLayerNetwork) replicatedModel).fit(dataSet);
-            } else if (originalModel instanceof ComputationGraph) {
-                ((ComputationGraph) replicatedModel).fit(dataSet);
+        public void waitTillRunning() {
+            while (running.get()) {
+                try {
+                    Thread.sleep(50);
+                } catch (Exception e) {
+                    ;
+                }
             }
         }
     }
