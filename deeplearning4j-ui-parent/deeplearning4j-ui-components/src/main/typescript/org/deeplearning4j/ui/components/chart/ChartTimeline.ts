@@ -158,7 +158,8 @@ class ChartTimeline extends Chart implements Renderable {
             .data(this.lanes)
             .enter().append('text')
             .text(function (d:any) {
-                return d.label;
+                if(d.label) return d.label;
+                return "";
             })
             .attr('x', -10)
             .attr('y', function (d:any) {
@@ -184,7 +185,8 @@ class ChartTimeline extends Chart implements Renderable {
             .data(this.lanes)
             .enter().append('text')
             .text(function (d:any) {
-                return d.label;
+                if(d.label) return d.label;
+                return "";
             })
             .attr('x', -10)
             .attr('y', function (d:any) {
@@ -346,7 +348,9 @@ class ChartTimeline extends Chart implements Renderable {
 
         labels.enter().append('text')
             .text(function (d) {
-                return '' + d.label;
+                if(instance.x1(d.end) - instance.x1(d.start) <= 30) return "";
+                if(d.label) return d.label;
+                return "";
             })
             .attr('x', function (d) {
                 return instance.x1(Math.max(d.start, minExtent)) + 2;
