@@ -1,3 +1,8 @@
+---
+title: Introduction to the Core DL4J Concepts
+layout: default
+---
+
 # WORK IN PROGRESS
 
 # Introduction to the Core DL4J Concepts
