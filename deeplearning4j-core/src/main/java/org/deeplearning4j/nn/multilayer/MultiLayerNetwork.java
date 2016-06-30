@@ -847,7 +847,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
             INDArray layerParams;
-            if( layer instanceof BasePretrainNetwork && backwardOnly)
+            if(layer instanceof BasePretrainNetwork)
                 layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
             else
                 layerParams = layer.params();
