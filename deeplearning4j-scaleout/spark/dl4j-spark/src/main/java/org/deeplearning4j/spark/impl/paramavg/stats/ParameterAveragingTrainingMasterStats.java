@@ -157,6 +157,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         }
 
         this.parameterAveragingMasterBroadcastCreateTimesMs.addAll(o.parameterAveragingMasterBroadcastCreateTimesMs);
+        this.parameterAveragingMasterRepartitionTimesMs.addAll(o.parameterAveragingMasterRepartitionTimesMs);
         this.parameterAveragingMasterFitTimesMs.addAll(o.parameterAveragingMasterFitTimesMs);
         if (parameterAveragingMasterRepartitionTimesMs == null) {
             if (o.parameterAveragingMasterRepartitionTimesMs != null)
@@ -181,6 +182,11 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         if (parameterAveragingMasterBroadcastCreateTimesMs == null) sb.append("-\n");
         else
             sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterBroadcastCreateTimesMs, ",")).append("\n");
+
+        sb.append(String.format(f, "ParameterAveragingMasterRepartitionTimesMs"));
+        if (parameterAveragingMasterRepartitionTimesMs == null) sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
 
         sb.append(String.format(f, "ParameterAveragingMasterFitTimesMs"));
         if (parameterAveragingMasterFitTimesMs == null) sb.append("-\n");
@@ -220,6 +226,10 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         //broadcast create time:
         String broadcastTimePath = FilenameUtils.concat(outputPath, FILENAME_BROADCAST_CREATE);
         StatsUtils.exportStats(parameterAveragingMasterBroadcastCreateTimesMs, broadcastTimePath, d, sc);
+
+        //repartition
+        String repartitionTime = FilenameUtils.concat(outputPath, FILENAME_REPARTITION_STATS);
+        StatsUtils.exportStats(parameterAveragingMasterRepartitionTimesMs, repartitionTime, d, sc);
 
         //Fit time:
         String fitTimePath = FilenameUtils.concat(outputPath, FILENAME_FIT_TIME);
