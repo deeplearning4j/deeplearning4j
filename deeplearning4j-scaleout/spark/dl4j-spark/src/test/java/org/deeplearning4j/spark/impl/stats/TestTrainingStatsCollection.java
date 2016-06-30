@@ -152,6 +152,12 @@ public class TestTrainingStatsCollection {
             assertNonNullFields(processParamsTimesMs);
             assertExpectedNumberMachineIdsJvmIdsThreadIds(processParamsTimesMs,1,1,1);   //only 1 thread for master
 
+            List<EventStats> repartitionTimesMs = masterStats.getParameterAveragingMasterRepartitionTimesMs();
+            assertEquals(numberOfAveragings, repartitionTimesMs.size());
+            assertDurationGreaterEqZero(repartitionTimesMs);
+            assertNonNullFields(repartitionTimesMs);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(repartitionTimesMs,1,1,1);   //only 1 thread for master
+
             //Second: Common spark training stats
             SparkTrainingStats commonStats = masterStats.getNestedTrainingStats();
             assertNotNull(commonStats);

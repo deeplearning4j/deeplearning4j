@@ -36,8 +36,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
             new LinkedHashSet<>(Arrays.asList(
                     "ParameterAveragingWorkerBroadcastGetValueTimeMs",
                     "ParameterAveragingWorkerInitTimeMs",
-                    "ParameterAveragingWorkerFitTimesMs",
-                    "ParameterAveragingWorkerRepartitionTimesMs"
+                    "ParameterAveragingWorkerFitTimesMs"
             )));
 
     public ParameterAveragingTrainingWorkerStats(List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs, List<EventStats> parameterAveragingWorkerInitTimeMs,
