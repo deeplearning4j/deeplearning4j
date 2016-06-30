@@ -1,19 +1,22 @@
 package org.nd4j.jita.allocator.context.impl;
 
+import lombok.NonNull;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
+import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
+import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.lang.ref.ReferenceQueue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -30,10 +33,22 @@ public class LimitedContextPool extends BasicContextPool {
     // pool of used pools
     protected Map<Long, CudaContext> acquired = new ConcurrentHashMap<>();
     protected AtomicInteger currentPoolSize = new AtomicInteger(0);
+    protected Map<Integer, ResourceGarbageCollectorThread> collectors = new HashMap<>();
+    protected Map<Integer, ReferenceQueue<Thread>> queueMap = new HashMap<>();
 
     public LimitedContextPool() {
 
         int perDevicePool = CudaEnvironment.getInstance().getConfiguration().getPoolSize();
+
+        for (int i = 0; i < 4; i++) {
+            ReferenceQueue<Thread> queue = new ReferenceQueue<>();
+            ResourceGarbageCollectorThread collector = new ResourceGarbageCollectorThread(i, queue);
+            collector.start();
+
+            collectors.put(i, collector);
+            queueMap.put(i, queue);
+        }
+
         addResourcesToPool(perDevicePool, false);
         currentPoolSize.set(perDevicePool);
     }
@@ -76,7 +91,6 @@ public class LimitedContextPool extends BasicContextPool {
         long threadIdx = Thread.currentThread().getId();
         if (acquired.containsKey(threadIdx)) {
             context = acquired.get(threadIdx);
-            logger.info("Serving context from cache");
             return context;
         }
 
@@ -84,7 +98,14 @@ public class LimitedContextPool extends BasicContextPool {
 
         context = pool.get(deviceId).poll();
         if (context != null) {
-            logger.info("Grabbing one context from pool");
+            int col = RandomUtils.nextInt(0, collectors.size());
+            collectors.get(col);
+
+            GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
+            context.attachReference(reference);
+            //Garba reference = new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+            //point.attachReference(reference);
+
             acquired.put(threadIdx, context);
             return context;
         } else {
@@ -114,5 +135,34 @@ public class LimitedContextPool extends BasicContextPool {
         return acquireContextForDevice(deviceId);
     }
 
+    private class ResourceGarbageCollectorThread extends Thread implements Runnable {
+        private final ReferenceQueue<Thread> queue;
 
+        public ResourceGarbageCollectorThread(int threadId, @NonNull ReferenceQueue<Thread> queue) {
+            this.queue = queue;
+            this.setDaemon(true);
+            this.setName("ResourceGC thread " + threadId);
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                GarbageResourceReference reference = (GarbageResourceReference) queue.poll();
+                if (reference != null) {
+                    CudaContext context = reference.getContext();
+                    Long threadId = reference.getThreadId();
+                    int deviceId = reference.getDeviceId();
+
+                    pool.get(deviceId).add(context);
+                    acquired.remove(threadId);
+                } else {
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+    }
 }

@@ -4,38 +4,27 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.enums.SyncState;
-import org.nd4j.jita.allocator.garbage.GarbageReference;
+import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
-import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.TimeProvider;
-import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class describes top-level allocation unit.
@@ -102,7 +91,7 @@ public class AllocationPoint {
 
     private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
 
-    private volatile GarbageReference garbageReference;
+    private volatile GarbageBufferReference garbageBufferReference;
 
     private cudaEvent_t lastEvent;
 
@@ -144,8 +133,8 @@ public class AllocationPoint {
         originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
     }
 
-    public void attachReference(GarbageReference reference) {
-        garbageReference = reference;
+    public void attachReference(GarbageBufferReference reference) {
+        garbageBufferReference = reference;
     }
 
     /**

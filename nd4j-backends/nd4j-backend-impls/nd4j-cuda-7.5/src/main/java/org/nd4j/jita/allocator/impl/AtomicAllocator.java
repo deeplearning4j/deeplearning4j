@@ -9,7 +9,7 @@ import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.garbage.GarbageReference;
+import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -369,7 +368,7 @@ public class AtomicAllocator implements Allocator {
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
-        GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+        GarbageBufferReference reference = new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
         point.attachReference(reference);
         point.setDeviceId(-1);
 
@@ -582,7 +581,7 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             while (true) {
-                GarbageReference reference = (GarbageReference) queue.poll();
+                GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
                 if (reference != null) {
                     AllocationPoint point = reference.getPoint();
 
