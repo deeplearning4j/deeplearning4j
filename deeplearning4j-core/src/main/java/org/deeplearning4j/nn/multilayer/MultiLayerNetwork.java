@@ -824,6 +824,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             ret = constructor.newInstance(getLayerWiseConfigurations().clone());
             ret.update(this);
             ret.setParameters(params().dup());
+            ret.listeners = this.listeners;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clone network",e);
         }

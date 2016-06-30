@@ -1018,7 +1018,7 @@ public class ComputationGraph implements Serializable, Model {
         ComputationGraph cg = new ComputationGraph(configuration.clone());
         cg.init();
         cg.setParams(params().dup());
-
+        cg.listeners = this.listeners;
         return cg;
     }
 
