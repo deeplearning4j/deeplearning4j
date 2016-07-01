@@ -172,6 +172,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             splitData = repartitionIfRequired(splitData);
             int nPartitions = split.partitions().size();
 
+            System.out.println("SPLIT SIZE: " + splitData.count());
+
             FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
             JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
             processResults(network, null, result, splitNum, splits.length);
