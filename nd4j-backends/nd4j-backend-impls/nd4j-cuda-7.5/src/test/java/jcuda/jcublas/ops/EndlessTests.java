@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class EndlessTests {
-    private static final int RUN_LIMIT = 1000000;
+    private static final int RUN_LIMIT = 1000;
 
     @Before
     public void setUp() {
@@ -30,8 +30,7 @@ public class EndlessTests {
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
-                .setMaximumBlockSize(256)
-                .enableDebug(false)
+                .enableDebug(true)
                 .setVerbose(false);
 
 
@@ -208,6 +207,44 @@ public class EndlessTests {
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             Nd4j.getBlasWrapper().level1().axpy(100,1,first,second);
+        }
+    }
+
+    @Test
+    public void testConcatForever1() {
+        INDArray[] arr = new INDArray[3];
+        arr[0] = Nd4j.linspace(0,49,50).reshape('c',5,10);
+        arr[1] = Nd4j.linspace(50,59,10);
+        arr[2] = Nd4j.linspace(60,99,40).reshape('c',4,10);
+
+        INDArray expected = Nd4j.linspace(0,99,100).reshape('c',10,10);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            INDArray actual = Nd4j.vstack(arr);
+            assertEquals("Failed on [" + i + "] iteration",expected, actual);
+            if (i % 500 == 0)
+                System.out.println("Iteration " + i + " passed");
+        }
+    }
+
+    @Test
+    public void testConcatForever2() {
+        INDArray expected = Nd4j.linspace(1,9,9).reshape('c',3,3);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            for(char order : new char[]{'c','f'}){
+                Nd4j.factory().setOrder(order);
+
+                INDArray arr1 = Nd4j.linspace(1,6,6).reshape('c',2,3);
+                INDArray arr2 = Nd4j.linspace(7,9,3).reshape('c',1,3);
+
+                INDArray merged = Nd4j.vstack(arr1,arr2);
+
+                assertEquals("Failed on [" + i + "] iteration", expected, merged);
+            }
+
+            if (i % 500 == 0)
+                System.out.println("Iteration " + i + " passed");
         }
     }
 }
