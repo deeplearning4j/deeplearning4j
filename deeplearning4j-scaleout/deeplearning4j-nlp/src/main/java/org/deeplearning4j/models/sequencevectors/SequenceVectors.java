@@ -185,16 +185,16 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
 
             // TODO: fix this to non-exclusive termination
-            if (trainElementsVectors && elementsLearningAlgorithm != null) {
-                if (!trainSequenceVectors || sequenceLearningAlgorithm == null) {
-                    if (elementsLearningAlgorithm.isEarlyTerminationHit()) break;
-                }
+            if (trainElementsVectors && elementsLearningAlgorithm != null
+                    && (!trainSequenceVectors || sequenceLearningAlgorithm == null)
+                    && elementsLearningAlgorithm.isEarlyTerminationHit()) {
+                break;
             }
 
-            if (trainSequenceVectors && sequenceLearningAlgorithm!= null) {
-                if (!trainElementsVectors || elementsLearningAlgorithm == null) {
-                    if (sequenceLearningAlgorithm.isEarlyTerminationHit()) break;
-                }
+            if (trainSequenceVectors && sequenceLearningAlgorithm!= null
+                    && (!trainElementsVectors || elementsLearningAlgorithm == null)
+                    && sequenceLearningAlgorithm.isEarlyTerminationHit()) {
+                break;
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
 
@@ -663,18 +663,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .build();
             }
 
-            if (trainElementsVectors) {
-                if (elementsLearningAlgorithm == null) {
-                    // create default implementation of ElementsLearningAlgorithm
-                    elementsLearningAlgorithm = new SkipGram<>();
-                }
+            if (trainElementsVectors && elementsLearningAlgorithm == null) {
+                // create default implementation of ElementsLearningAlgorithm
+                elementsLearningAlgorithm = new SkipGram<>();
             }
 
-            if (trainSequenceVectors) {
-                if (sequenceLearningAlgorithm == null) {
-                    // create default implementation of SequenceLearningAlgorithm
-                    sequenceLearningAlgorithm = new DBOW<>();
-                }
+            if (trainSequenceVectors && sequenceLearningAlgorithm == null) {
+                sequenceLearningAlgorithm = new DBOW<>();
             }
 
             this.modelUtils.init(lookupTable);
