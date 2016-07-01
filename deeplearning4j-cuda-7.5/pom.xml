@@ -72,6 +72,11 @@
     <build>
         <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
 
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../dl4j-test-resources/src/main/resources</directory>
+            </testResource>
+        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
