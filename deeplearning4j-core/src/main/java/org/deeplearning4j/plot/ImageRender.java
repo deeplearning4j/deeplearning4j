@@ -32,7 +32,10 @@ import java.io.IOException;
  * @author Adam Gibson
  */
 public class ImageRender {
-    public static void render(INDArray image,String path) throws IOException {
+    private ImageRender() {
+    }
+
+    public static void render(INDArray image, String path) throws IOException {
         BufferedImage imageToRender = null;
         if(image.rank() == 3) {
             ImageLoader loader = new ImageLoader(image.size(-1),image.size(-2),image.size(-3));
