@@ -243,6 +243,14 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         return matrix.equals(c.matrix) && classes.equals(c.classes);
     }
 
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + (matrix == null? 0 : matrix.hashCode());
+        result = 31 * result + (classes == null? 0 : classes.hashCode());
+        return result;
+    }
+
     public static void main(String[] args) {
         ConfusionMatrix<String> confusionMatrix = new ConfusionMatrix<>(Arrays.asList("a", "b", "c"));
 

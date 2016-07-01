@@ -257,4 +257,13 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
         }
         return vertices.equals(g.vertices);
     }
+
+    @Override
+    public int hashCode() {
+        int result = 23;
+        result = 31 * result + (allowMultipleEdges? 1 : 0);
+        result = 31 * result + Arrays.hashCode(edges);
+        result = 31 * result + vertices.hashCode();
+        return result;
+    }
 }
