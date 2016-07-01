@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -50,7 +52,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseDataBuffer implements DataBuffer {
 
     protected Type type;
-    protected final Type globalType = DataTypeUtil.getDtypeFromContext();
+    protected Type globalType = DataTypeUtil.getDtypeFromContext();
     protected long length;
     protected long underlyingLength;
     protected long offset;
@@ -70,6 +72,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Long trackingPoint;
 
     protected transient boolean constant = false;
+
+    private static Logger log = LoggerFactory.getLogger(BaseDataBuffer.class);
 
     public BaseDataBuffer() {
     }
@@ -1225,7 +1229,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
             if (currentType != globalType)
-                System.out.println("API_WARNING: Loading a data stream with type different from what is set globally");
+                log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
             pointerIndexerByGlobalType(currentType);
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
