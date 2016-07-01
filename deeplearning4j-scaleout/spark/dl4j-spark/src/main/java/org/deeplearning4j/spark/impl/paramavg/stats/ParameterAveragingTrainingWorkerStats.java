@@ -32,11 +32,14 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     private List<EventStats> parameterAveragingWorkerInitTimeMs;
     private List<EventStats> parameterAveragingWorkerFitTimesMs;
 
+    public static final String PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS = "ParameterAveragingWorkerBroadcastGetValueTimeMs";
+    public static final String PARAMETER_AVERAGING_WORKER_INIT_TIME_MS = "ParameterAveragingWorkerInitTimeMs";
+    public static final String PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS = "ParameterAveragingWorkerFitTimesMs";
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
-                    "ParameterAveragingWorkerBroadcastGetValueTimeMs",
-                    "ParameterAveragingWorkerInitTimeMs",
-                    "ParameterAveragingWorkerFitTimesMs"
+                    PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS,
+                    PARAMETER_AVERAGING_WORKER_INIT_TIME_MS,
+                    PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS
             )));
 
     public ParameterAveragingTrainingWorkerStats(List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs, List<EventStats> parameterAveragingWorkerInitTimeMs,
@@ -54,11 +57,11 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     @Override
     public List<EventStats> getValue(String key) {
         switch (key) {
-            case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
+            case PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS:
                 return parameterAveragingWorkerBroadcastGetValueTimeMs;
-            case "ParameterAveragingWorkerInitTimeMs":
+            case PARAMETER_AVERAGING_WORKER_INIT_TIME_MS:
                 return parameterAveragingWorkerInitTimeMs;
-            case "ParameterAveragingWorkerFitTimesMs":
+            case PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS:
                 return parameterAveragingWorkerFitTimesMs;
             default:
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
@@ -68,11 +71,11 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     @Override
     public String getShortNameForKey(String key) {
         switch (key) {
-            case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
+            case PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS:
                 return "BroadcastGet";
-            case "ParameterAveragingWorkerInitTimeMs":
+            case PARAMETER_AVERAGING_WORKER_INIT_TIME_MS:
                 return "ModelInit";
-            case "ParameterAveragingWorkerFitTimesMs":
+            case PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS:
                 return "Fit";
             default:
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
@@ -82,11 +85,11 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     @Override
     public boolean defaultIncludeInPlots(String key) {
         switch (key) {
-            case "ParameterAveragingWorkerBroadcastGetValueTimeMs":
+            case PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS:
                 return true;
-            case "ParameterAveragingWorkerInitTimeMs":
+            case PARAMETER_AVERAGING_WORKER_INIT_TIME_MS:
                 return true;
-            case "ParameterAveragingWorkerFitTimesMs":
+            case PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS:
                 return true;
             default:
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
@@ -115,16 +118,16 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f, "ParameterAveragingWorkerBroadcastGetValueTimeMs"));
+        sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS));
         if (parameterAveragingWorkerBroadcastGetValueTimeMs == null) sb.append("-\n");
         else
             sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerBroadcastGetValueTimeMs, ",")).append("\n");
 
-        sb.append(String.format(f, "ParameterAveragingWorkerInitTimeMs"));
+        sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_INIT_TIME_MS));
         if (parameterAveragingWorkerInitTimeMs == null) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerInitTimeMs, ",")).append("\n");
 
-        sb.append(String.format(f, "ParameterAveragingWorkerFitTimesMs"));
+        sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS));
         if (parameterAveragingWorkerFitTimesMs == null) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerFitTimesMs, ",")).append("\n");
 
