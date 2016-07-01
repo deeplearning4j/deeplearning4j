@@ -56,9 +56,8 @@ public class DiskBasedQueue<E> implements Queue<E>,Serializable {
 
     public DiskBasedQueue(File dir) {
         this.dir = dir;
-        if(!dir.exists()) {
-            if(dir.isDirectory())
-                throw new IllegalArgumentException("Illegal queue: must be a directory");
+        if(!dir.exists() && dir.isDirectory()) {
+            throw new IllegalArgumentException("Illegal queue: must be a directory");
         }
 
         if(!dir.exists())
