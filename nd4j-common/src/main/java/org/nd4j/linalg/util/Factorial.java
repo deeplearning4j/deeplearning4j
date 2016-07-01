@@ -25,6 +25,8 @@ package org.nd4j.linalg.util;
  */
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -35,7 +37,7 @@ class Factorial {
     /**
      * The list of all factorials as a vector.
      */
-    static Vector<BigInteger> a = new Vector<>();
+    static List<BigInteger> a = new ArrayList<>();
 
     /**
      * ctor().
@@ -58,8 +60,8 @@ class Factorial {
         while (a.size() <= n) {
             final int lastn = a.size() - 1;
             final BigInteger nextn = new BigInteger("" + (lastn + 1));
-            a.add(a.elementAt(lastn).multiply(nextn));
+            a.add(a.get(lastn).multiply(nextn));
         }
-        return a.elementAt(n);
+        return a.get(n);
     }
 } /* Factorial */

@@ -118,7 +118,7 @@ public class Nd4j {
     public static IComplexNumber UNIT;
     public static IComplexNumber ZERO;
     public static IComplexNumber NEG_UNIT;
-    public static double EPS_THRESHOLD = 1e-5f;
+    public static double EPS_THRESHOLD = 1e-5;
     //number of elements to print in begin and end
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
@@ -1953,7 +1953,7 @@ public class Nd4j {
     public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
         for (int i = 0; i < write.rows(); i++) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray row = write.getRow(i);
             for (int j = 0; j < row.columns(); j++) {
                 sb.append(row.getDouble(j));
