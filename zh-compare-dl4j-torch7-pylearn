@@ -34,7 +34,7 @@ Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他
 * TensorFlow的用途不止于深度学习。TensorFlow其实还有支持强化学习和其他算法的工具。
 * 谷歌似乎也已承认TF的目标是招募人才。众所周知，他们最近公布了为期一年的谷歌大脑（Google Brain）人才培训项目。真是明智的举措。
 * TensorFlow不提供商业支持，而谷歌也不太可能会从事支持开源企业软件的业务。谷歌的角色是为研究者提供一种新工具。 
-* 和Theano一样，TensforFlow会生成计算图（如一系列矩阵运算，例如z = simoid(x)，其中x和z均为矩阵），自动求导。自动求导很重要，否则每尝试一种新的神经网络设计就要手动编写新的反向传播算法，没人愿意这样做。在谷歌的生态系统中，这些计算图会被谷歌大脑用于繁重作业，但谷歌还没有开放相关工具的源代码。TensorFlow可以算是谷歌内部深度学习解决方案的一半。 
+* 和Theano一样，TensforFlow会生成计算图（如一系列矩阵运算，例如z = simoid(x)，其中x和z均为矩阵），自动求导。自动求导很重要，否则每尝试一种新的神经网络设计就要手动编写新的反向传播算法，没人愿意这样做。在谷歌的生态系统中，这些计算图会被谷歌大脑用于高强度计算，但谷歌还没有开放相关工具的源代码。TensorFlow可以算是谷歌内部深度学习解决方案的一半。 
 * 从企业的角度看，许多公司需要思考的问题在于是否要依靠谷歌来提供这些工具。 
 
 利与弊
@@ -137,7 +137,7 @@ Deeplearning4j的所有功能参见[功能介绍](./features.html)。
 
 生态系统也是为Java增添人气的优势之一。[Hadoop](https://hadoop.apache.org/)是用Java实施的；[Spark](https://spark.apache.org/)在Hadoop的Yarn运行时中运行；[Akka](https://www.typesafe.com/community/core-projects/akka)等开发库让我们能够为Deeplearning4j开发分布式系统。总之，对几乎所有应用而言，Java的基础架构都经过反复测试，用Java编写的深度学习网络可以靠近数据，方便广大程序员的工作。Deeplearning4j可以作为YARN的应用来运行和预配。
 
-Scala、Clojure、Python和Ruby等其他通行的语言中也可以在本地调用Java。我们选择Java，也是为了尽可能多地覆盖主要的程序员群体。 
+Scala、Clojure、Python和Ruby等其他通行的语言也可以原生支持Java。我们选择Java，也是为了尽可能多地覆盖主要的程序员群体。 
 
 虽然Java的速度不及C和C++，但它仍比许多人想象得要快，而我们建立的分布式系统可以通过增加节点来提升速度，节点可以是GPU或者CPU。也就是说，如果要速度快，多加几盒处理器就好了。 
 
