@@ -32,6 +32,9 @@ public class StatsUtils {
 
     public static final long DEFAULT_MAX_TIMELINE_SIZE_MS = 20 * 60 * 1000;  //20 minutes
 
+    private StatsUtils() {
+    }
+
     public static void exportStats(List<EventStats> list, String outputDirectory, String filename, String delimiter, SparkContext sc) throws IOException {
         String path = FilenameUtils.concat(outputDirectory, filename);
         exportStats(list, path, delimiter, sc);

@@ -53,6 +53,9 @@ import java.util.List;
 public class MLLibUtil {
 
 
+    private MLLibUtil() {
+    }
+
     /**
      * This is for the edge case where
      * you have a single output layer

@@ -27,6 +27,9 @@ import java.util.zip.ZipOutputStream;
  */
 public class ModelSerializer {
 
+    private ModelSerializer() {
+    }
+
     /**
      * Write a model to a file
      * @param model the model to write

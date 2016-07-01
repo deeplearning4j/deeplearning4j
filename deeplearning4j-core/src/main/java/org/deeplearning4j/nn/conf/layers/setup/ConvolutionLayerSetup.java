@@ -405,7 +405,7 @@ public class ConvolutionLayerSetup {
 
     private void getConvolutionOutputSize(int[] input, int[] kernel, int[] padding, int[] stride) {
         int[] ret = new int[input.length];
-        new KernelValidationUtil().validateShapes(input[0], input[1],
+        KernelValidationUtil.validateShapes(input[0], input[1],
                 kernel[0], kernel[1], stride[0], stride[1],padding[0], padding[1]);
 
         for(int i = 0; i < ret.length; i++) {
