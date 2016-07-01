@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 
 public class UiUtils {
 
+    private UiUtils() {
+    }
+
     public static void tryOpenBrowser(String path, Logger log){
         try{
             UiUtils.openBrowser(new URI(path));

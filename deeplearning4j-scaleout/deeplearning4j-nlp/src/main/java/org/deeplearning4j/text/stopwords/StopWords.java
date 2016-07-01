@@ -33,6 +33,9 @@ public class StopWords {
 
 	private static List<String> stopWords;
 
+	private StopWords() {
+	}
+
 	@SuppressWarnings("unchecked")
 	public static List<String> getStopWords() {
 

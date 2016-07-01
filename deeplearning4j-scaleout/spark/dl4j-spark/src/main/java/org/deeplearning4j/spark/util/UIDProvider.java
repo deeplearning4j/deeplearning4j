@@ -79,6 +79,8 @@ public class UIDProvider {
         }
     }
 
+    private UIDProvider() {
+    }
 
 
     public static String getJVMUID(){

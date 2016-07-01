@@ -8,8 +8,11 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
  */
 public class KernelValidationUtil {
 
+    private KernelValidationUtil() {
+    }
+
     public static void validateShapes(int inHeight, int inWidth, int kernelHeight, int kernelWidth, int strideHeight,
-                               int strideWidth, int padHeight, int padWidth) {
+                                      int strideWidth, int padHeight, int padWidth) {
 
         // Check filter > size + padding
         if (kernelHeight > (inHeight + 2*padHeight))

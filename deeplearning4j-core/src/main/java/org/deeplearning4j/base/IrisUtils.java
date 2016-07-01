@@ -30,7 +30,10 @@ import org.nd4j.linalg.io.ClassPathResource;
 
 public class IrisUtils {
 
-    public static List<DataSet> loadIris(int from,int to) throws IOException {
+    private IrisUtils() {
+    }
+
+    public static List<DataSet> loadIris(int from, int to) throws IOException {
         ClassPathResource resource = new ClassPathResource("/iris.dat");
         @SuppressWarnings("unchecked")
         List<String> lines = IOUtils.readLines(resource.getInputStream());
