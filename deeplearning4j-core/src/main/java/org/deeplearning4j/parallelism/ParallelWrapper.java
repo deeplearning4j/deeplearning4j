@@ -251,8 +251,12 @@ public class ParallelWrapper {
         }
 
         public void updateModel(@NonNull Model model) {
+
+
             if (model instanceof MultiLayerNetwork) {
                 replicatedModel = ((MultiLayerNetwork) model).clone();
+//                replicatedModel.setParams(model.params().dup());
+//                ((MultiLayerNetwork) replicatedModel).setUpdater(((MultiLayerNetwork)model).getUpdater().clone());
             } else if (model instanceof  ComputationGraph) {
                 replicatedModel = ((ComputationGraph) model).clone();
             }
@@ -279,13 +283,12 @@ public class ParallelWrapper {
             } catch (Exception e) {
                 //
             }
-            logger.info("Finished training thread...");
         }
 
         public void waitTillRunning() {
             while (running.get() != 0) {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(10);
                 } catch (Exception e) {
                     ;
                 }
