@@ -66,7 +66,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         Indexer indexer = DoubleIndexer.create(floatPointer);
         DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.DOUBLE,4,indexer);
         DataBuffer other = Nd4j.createBuffer(new double[]{1,2,3,4});
-        assertEquals(other,buffer);
+        assertArrayEquals(other.asDouble(),buffer.asDouble(), 0.001);
     }
 
     @Test
