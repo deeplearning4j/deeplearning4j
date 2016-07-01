@@ -189,10 +189,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public INDArray preOutput(boolean training) {
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-        if(conf.isUseDropConnect() && training) {
-            if (conf.getLayer().getDropOut() > 0) {
-                weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
-            }
+        if(conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
         }
 
         int miniBatch = input.size(0);
