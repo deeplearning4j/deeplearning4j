@@ -362,20 +362,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public Number readByType(DataInputStream s,Type currentType) {
-        Number element;
+        Number anElement = 0;
         try {
             if (currentType == Type.INT)
-                element = s.readInt();
-            else {
-                if (currentType == Type.FLOAT)
-                    element = s.readFloat();
-                else if (currentType == Type.DOUBLE)
-                    element = s.readDouble();
-            }
-            return element;
+                anElement = s.readInt();
+            else if (currentType == Type.DOUBLE)
+                anElement = s.readDouble();
+            else 
+                anElement = s.readFloat();
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
+        } finally {
+			return anElement;
+		}
+		
     }
 
     @Override
@@ -677,9 +677,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
             //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
-            if (t != globalType && t!= Type.INT)
+            if (t != globalType && t!= Type.INT) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
-            if(t == Type.INT) {
+				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
+		   	}
+            if(t == Type.INT || globalType == Type.INT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 this.trackingPoint = allocationPoint.getObjectId();
@@ -690,7 +692,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 int[] array = new int[(int) length];
 
                 for (int i = 0; i < length(); i++) {
-                    array[i] = (int) readByType(s,type);
+                    array[i] = (int) readByType(s,t);
                 }
                 setData(array);
             }
@@ -706,7 +708,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 double[] array = new double[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,type).doubleValue();
+                    array[i] = readByType(s,t).doubleValue();
                 }
                 setData(array);
 
@@ -722,7 +724,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 float[] array = new float[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,type).floatValue();
+                    array[i] = readByType(s,t).floatValue();
                 }
                 setData(array);
             }

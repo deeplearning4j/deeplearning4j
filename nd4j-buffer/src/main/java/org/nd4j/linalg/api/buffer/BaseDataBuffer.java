@@ -1228,8 +1228,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 8;
             else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
-            if (currentType != globalType && currentType != Type.INT)
+            if (currentType != globalType && currentType != Type.INT) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
+			    if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
+			}
             pointerIndexerByGlobalType(currentType);
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
