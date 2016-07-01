@@ -2089,7 +2089,7 @@ void pullRowsGeneric(T *x,
                      T *z,
                      int *zShapeInfo,
                      const int n,
-                     long *indexes,
+                     int *indexes,
                      int *tadShapeInfo,
                      int *tadOffsets) {
     const int xEWS = shape::elementWiseStride(tadShapeInfo);
@@ -2125,7 +2125,7 @@ void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPoi
     int *zShape = reinterpret_cast<int *>(zShapeInfo);
     int *xShape = reinterpret_cast<int *>(xShapeInfo);
 
-    long *index = reinterpret_cast<long *>(indexes);
+    int *index = reinterpret_cast<int *>(indexes);
     int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
     int *tadOffset = reinterpret_cast<int *>(tadOffsets);
 
@@ -2138,7 +2138,7 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
     int *zShape = reinterpret_cast<int *>(zShapeInfo);
     int *xShape = reinterpret_cast<int *>(xShapeInfo);
 
-    long *index = reinterpret_cast<long *>(indexes);
+    int *index = reinterpret_cast<int *>(indexes);
     int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
     int *tadOffset = reinterpret_cast<int *>(tadOffsets);
 

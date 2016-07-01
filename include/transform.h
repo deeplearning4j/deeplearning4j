@@ -1224,7 +1224,7 @@ __device__ void pullRowsKernelGeneric(T *x,
                                      T *z,
                                      int *zShapeInfo,
                                      int n,
-                                     long *indexes,
+                                     int *indexes,
                                      int *tadShapeInfo,
                                      int *tadOffsets) {
 
@@ -1250,7 +1250,7 @@ extern "C" __global__ void pullRowsKernelFloat(float *x,
                                      float *z,
                                      int *zShapeInfo,
                                      int n,
-                                     long *indexes,
+                                     int *indexes,
                                      int *tadShapeInfo,
                                      int *tadOffsets) {
     pullRowsKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
@@ -1261,7 +1261,7 @@ extern "C" __global__ void pullRowsKernelDouble(double *x,
                                      double *z,
                                      int *zShapeInfo,
                                      int n,
-                                     long *indexes,
+                                     int *indexes,
                                      int *tadShapeInfo,
                                      int *tadOffsets) {
     pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
