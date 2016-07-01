@@ -22,6 +22,9 @@ public class GraphVectorSerializer {
     private static final Logger log = LoggerFactory.getLogger(GraphVectorSerializer.class);
     private static final String DELIM = "\t";
 
+    private GraphVectorSerializer() {
+    }
+
     public static void writeGraphVectors(DeepWalk deepWalk, String path) throws IOException {
 
         int nVertices = deepWalk.numVertices();
