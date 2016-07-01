@@ -93,7 +93,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         network.init();
         System.out.println("Initializing network");
 
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -138,7 +138,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -153,7 +153,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
 
-        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,5,1,0));
         MultiLayerNetwork networkCopy = sparkNetCopy.fit(data);
 
         INDArray expectedParams = networkCopy.params();
@@ -236,7 +236,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .build())
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,10,1,0));
 
         Nd4j.getRandom().setSeed(12345);
         DataSet d1 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
@@ -269,7 +269,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                 .pretrain(false)
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,10,1,0));
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         int nRows = 100;
