@@ -894,15 +894,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public void putByGlobalType (long i, Number element) {
         if (globalType == Type.INT || type == Type.INT) {
-                System.out.println("I AM AN INT");
                 put(i, (Integer) element);
         }
         else if (globalType == Type.FLOAT) {
-                System.out.println("I AM A FLOAT");
                 put(i, element.floatValue());
         }
         else if (globalType == Type.DOUBLE) {
-            System.out.println("I AM A DOUBLE");
             put(i, element.doubleValue());
         }
     }
@@ -1217,7 +1214,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void read(DataInputStream s) {
         try {
-            System.out.println("INFO..................\n Inside Read Data Input Stream!!!!\n\n");
             referencing = Collections.synchronizedSet(new HashSet<String>());
             dirty = new AtomicBoolean(false);
             allocationMode = AllocationMode.valueOf(s.readUTF());
@@ -1229,7 +1225,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
             if (currentType != globalType)
-               System.out.println("INFO..................\n Forcing data type.\nData Input Stream is of a different type than "+ globalType+" which is what is set");
+                System.out.println("API_WARNING: Loading a data stream with type different from what is set globally");
             pointerIndexerByGlobalType(currentType);
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
