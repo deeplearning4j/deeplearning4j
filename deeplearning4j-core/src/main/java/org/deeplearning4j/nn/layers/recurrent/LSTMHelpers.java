@@ -89,10 +89,8 @@ public class LSTMHelpers {
 
 
         //Apply dropconnect to input (not recurrent) weights only:
-        if (conf.isUseDropConnect() && training) {
-            if (conf.getLayer().getDropOut() > 0) {
-                inputWeights = Dropout.applyDropConnect(layer, inputWeightKey);
-            }
+        if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+            inputWeights = Dropout.applyDropConnect(layer, inputWeightKey);
         }
 
 

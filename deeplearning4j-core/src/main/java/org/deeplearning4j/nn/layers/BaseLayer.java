@@ -352,10 +352,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect() && training) {
-            if (conf.getLayer().getDropOut() > 0) {
-                W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-            }
+        if(conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
 
         INDArray ret = input.mmul(W).addiRowVector(b);
