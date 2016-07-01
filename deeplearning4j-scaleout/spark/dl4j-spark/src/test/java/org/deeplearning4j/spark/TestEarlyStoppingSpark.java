@@ -67,7 +67,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,4,150/4,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster(true,4,1,150/4,1,0),esConf,net,irisData);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
@@ -116,7 +116,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,4,150/4,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster(true,4,1,150/4,1,0),esConf,net,irisData);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
@@ -154,7 +154,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,4,150/15,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster(true,4,1,150/15,1,0),esConf,net,irisData);
         long startTime = System.currentTimeMillis();
         EarlyStoppingResult result = trainer.fit();
         long endTime = System.currentTimeMillis();
@@ -198,7 +198,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,4,150/10,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster(true,4,1,150/10,1,0),esConf,net,irisData);
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
@@ -235,7 +235,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),1,10,1,0),esConf,net,irisData);
         trainer.setListener(listener);
 
         trainer.fit();
