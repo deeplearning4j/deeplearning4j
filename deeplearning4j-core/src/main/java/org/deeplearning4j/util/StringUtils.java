@@ -279,7 +279,7 @@ public class StringUtils {
      */
     public static String[] getStrings(String str){
         Collection<String> values = getStringCollection(str);
-        if(values.size() == 0) {
+        if(values.isEmpty()) {
             return null;
         }
         return values.toArray(new String[values.size()]);
