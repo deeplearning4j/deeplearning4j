@@ -193,7 +193,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
-            if(layerwise.size() == 0) throw new IllegalStateException("Invalid configuration: no layers defined");
+            if(layerwise.isEmpty()) throw new IllegalStateException("Invalid configuration: no layers defined");
             for(int i = 0; i < layerwise.size(); i++) {
                 if(layerwise.get(i) == null){
                     throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "

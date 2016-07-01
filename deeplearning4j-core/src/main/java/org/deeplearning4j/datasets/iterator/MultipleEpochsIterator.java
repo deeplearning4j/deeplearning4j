@@ -216,7 +216,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
             newEpoch = false;
         }
         if (iter == null)
-            return (epochs < numEpochs) && ((batchedDS.size() != 0 && batchedDS.size() > batch) || batchedDS.size() == 0);
+            return (epochs < numEpochs) && ((!batchedDS.isEmpty() && batchedDS.size() > batch) || batchedDS.isEmpty());
         else
             // either there are still epochs to complete or its the first epoch
             return (epochs < numEpochs) || (iter.hasNext() && (epochs == 0 || epochs == numEpochs));

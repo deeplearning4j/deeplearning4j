@@ -158,7 +158,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         }
 
         public String nextLine() {
-            if (buffer.size() > 0)
+            if (!buffer.isEmpty())
                 return buffer.poll();
 
             try {
@@ -169,11 +169,11 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         }
 
         public boolean hasMoreLines() {
-            if (buffer.size() > 0) return true;
+            if (!buffer.isEmpty()) return true;
 
             try {
                 this.lock.readLock().lock();
-                return iterator.hasNext() || buffer.size() > 0;
+                return iterator.hasNext() || !buffer.isEmpty();
             } finally {
                 this.lock.readLock().unlock();
             }

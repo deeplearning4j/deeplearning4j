@@ -28,6 +28,9 @@ public class StringCleaning {
 
     private static final Pattern punctPattern = Pattern.compile("[\\d\\.:,\"\'\\(\\)\\[\\]|/?!;]+");
 
+    private StringCleaning() {
+    }
+
     /**
      * Strip punctuation
      * @param base the base string

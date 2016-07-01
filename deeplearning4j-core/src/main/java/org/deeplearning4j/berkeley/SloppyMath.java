@@ -35,7 +35,10 @@ import java.util.Map;
  */
 public final class SloppyMath {
 
-	  public static double abs(double x) {
+    private SloppyMath() {
+    }
+
+    public static double abs(double x) {
 		    if (x > 0)
 		      return x;
 		    return -1.0 * x;

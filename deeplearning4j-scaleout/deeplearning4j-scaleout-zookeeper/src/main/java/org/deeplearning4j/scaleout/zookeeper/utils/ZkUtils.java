@@ -26,6 +26,9 @@ import java.io.Serializable;
 
 public class ZkUtils {
 
+	private ZkUtils() {
+	}
+
 	public static byte[] toBytes(Serializable ser) throws Exception {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream ois = new ObjectOutputStream(bos);

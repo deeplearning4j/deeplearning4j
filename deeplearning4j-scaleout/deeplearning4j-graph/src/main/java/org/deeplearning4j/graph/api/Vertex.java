@@ -33,4 +33,12 @@ public class Vertex<T> {
         if ((value == null && v.value != null) || (value != null && v.value == null)) return false;
         return value == null || value.equals(v.value);
     }
+
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + idx;
+        result = 31 * result + (value==null? 0 : value.hashCode());
+        return result;
+    }
 }
