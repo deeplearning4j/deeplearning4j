@@ -4640,7 +4640,7 @@ public class Nd4j {
      * @param indexes indexes from source array
      * @return
      */
-    public static INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+    public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes);
         logCreationIfNecessary(ret);
         return ret;

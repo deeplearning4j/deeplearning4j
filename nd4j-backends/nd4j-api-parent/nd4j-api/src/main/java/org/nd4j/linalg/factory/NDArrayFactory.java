@@ -389,7 +389,7 @@ public interface NDArrayFactory {
      * @param indexes indexes from source array
      * @return
      */
-    INDArray pullRows(INDArray source, int sourceDimension, long[] indexes);
+    INDArray pullRows(INDArray source, int sourceDimension, int[] indexes);
 
     /**
      * Concatneate ndarrays along a dimension

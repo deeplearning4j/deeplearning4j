@@ -50,7 +50,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
-    private boolean forceSingleGPU = false;
+    private boolean forceSingleGPU = true;
 
     /**
      * Keep this value between 0.01 and 0.95 please

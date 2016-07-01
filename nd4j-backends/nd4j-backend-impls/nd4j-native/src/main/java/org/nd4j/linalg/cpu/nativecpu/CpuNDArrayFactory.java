@@ -21,6 +21,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -45,6 +46,7 @@ import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -633,7 +635,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
 
@@ -645,7 +647,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
-        Pointer pIndex = new LongPointer(indexes);
+        IntPointer pIndex = new IntPointer(indexes);
 
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();

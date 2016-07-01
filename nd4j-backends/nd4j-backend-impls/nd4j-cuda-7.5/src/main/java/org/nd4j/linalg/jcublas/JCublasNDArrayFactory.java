@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -663,7 +665,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
 
@@ -681,8 +683,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 allocator.getDeviceIdPointer()
         );
 
-        CudaDoubleDataBuffer tempIndexes = new CudaDoubleDataBuffer(indexes.length);
-        AtomicAllocator.getInstance().memcpyBlocking(tempIndexes, new LongPointer(indexes), indexes.length * 8, 0);
+        CudaFloatDataBuffer tempIndexes = new CudaFloatDataBuffer(indexes.length);
+        AtomicAllocator.getInstance().memcpyBlocking(tempIndexes, new IntPointer(indexes), indexes.length * 4, 0);
 
         Pointer pIndex = AtomicAllocator.getInstance().getPointer(tempIndexes, context);
 
