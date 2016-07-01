@@ -67,11 +67,12 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
 
     private static final long serialVersionUID = -4385335922485305364L;
+    public static final String MASTER = "master";
     private transient ActorSystem system;
     private ActorRef mediator;
     private static final Logger log = LoggerFactory.getLogger(DeepLearning4jDistributed.class);
     private static String systemName = "ClusterSystem";
-    private String type = "master";
+    private String type = MASTER;
     private Address masterAddress;
     private JobIterator iter;
     protected ActorRef masterActor;
@@ -101,7 +102,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
      * @param iter the dataset to use
      */
     public DeepLearning4jDistributed(JobIterator iter,StateTracker stateTracker) {
-        this("master",iter);
+        this(MASTER,iter);
         this.stateTracker = stateTracker;
     }
 
@@ -110,7 +111,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
      * @param iter the dataset to use
      */
     public DeepLearning4jDistributed(JobIterator iter) {
-        this("master",iter);
+        this(MASTER,iter);
     }
 
 
@@ -193,7 +194,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         }, 10, TimeUnit.SECONDS);
 
         masterActor = system.actorOf(
-                ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
+                ClusterSingletonManager.defaultProps(masterProps, MASTER, PoisonPill.getInstance(), MASTER));
 
         log.info("Started master with address " + realJoinAddress.toString());
         c.set(MASTER_PATH,ActorRefUtils.absPath(masterActor, system));
@@ -210,7 +211,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         ActorRefUtils.addShutDownForSystem(system);
         mediator = DistributedPubSubExtension.get(system).mediator();
 
-        if(type.equals("master")) {
+        if(type.equals(MASTER)) {
 
             if(iter == null)
                 throw new IllegalStateException("Unable to initialize no dataset to iterate");
@@ -335,7 +336,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         }
 
         //only start dropwizard on the master
-        if(type.equals("master")) {
+        if(type.equals(MASTER)) {
             stateTracker.startRestApi();
         }
 

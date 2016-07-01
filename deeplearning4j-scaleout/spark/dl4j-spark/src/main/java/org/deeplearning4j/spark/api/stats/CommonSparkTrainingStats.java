@@ -24,12 +24,16 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     public static final String FILENAME_DATASET_GET_TIME_STATS = "workerFlatMapDataSetGetTimesMs.txt";
     public static final String FILENAME_PROCESS_MINIBATCH_TIME_STATS = "workerFlatMapProcessMiniBatchTimesMs.txt";
 
+    public static final String WORKER_FLAT_MAP_TOTAL_TIME_MS = "WorkerFlatMapTotalTimeMs";
+    public static final String WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS = "WorkerFlatMapGetInitialModelTimeMs";
+    public static final String WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS = "WorkerFlatMapDataSetGetTimesMs";
+    public static final String WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS = "WorkerFlatMapProcessMiniBatchTimesMs";
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
-                    "WorkerFlatMapTotalTimeMs",
-                    "WorkerFlatMapGetInitialModelTimeMs",
-                    "WorkerFlatMapDataSetGetTimesMs",
-                    "WorkerFlatMapProcessMiniBatchTimesMs"
+                    WORKER_FLAT_MAP_TOTAL_TIME_MS,
+                    WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS,
+                    WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS,
+                    WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS
             )));
 
     private SparkTrainingStats trainingWorkerSpecificStats;
@@ -65,13 +69,13 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public List<EventStats> getValue(String key) {
         switch (key){
-            case "WorkerFlatMapTotalTimeMs":
+            case WORKER_FLAT_MAP_TOTAL_TIME_MS:
                 return workerFlatMapTotalTimeMs;
-            case "WorkerFlatMapGetInitialModelTimeMs":
+            case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
                 return workerFlatMapGetInitialModelTimeMs;
-            case "WorkerFlatMapDataSetGetTimesMs":
+            case WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS:
                 return workerFlatMapDataSetGetTimesMs;
-            case "WorkerFlatMapProcessMiniBatchTimesMs":
+            case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return workerFlatMapProcessMiniBatchTimesMs;
             default:
                 if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getValue(key);
@@ -82,13 +86,13 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public String getShortNameForKey(String key){
         switch (key){
-            case "WorkerFlatMapTotalTimeMs":
+            case WORKER_FLAT_MAP_TOTAL_TIME_MS:
                 return "Total";
-            case "WorkerFlatMapGetInitialModelTimeMs":
+            case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
                 return "GetInitModel";
-            case "WorkerFlatMapDataSetGetTimesMs":
+            case WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS:
                 return "GetDataSet";
-            case "WorkerFlatMapProcessMiniBatchTimesMs":
+            case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return "ProcessBatch";
             default:
                 if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getShortNameForKey(key);
@@ -99,13 +103,13 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public boolean defaultIncludeInPlots(String key){
         switch (key){
-            case "WorkerFlatMapTotalTimeMs":
+            case WORKER_FLAT_MAP_TOTAL_TIME_MS:
                 return false;
-            case "WorkerFlatMapGetInitialModelTimeMs":
+            case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
                 return false;   //Covered by worker stats generally
-            case "WorkerFlatMapDataSetGetTimesMs":
+            case WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS:
                 return true;
-            case "WorkerFlatMapProcessMiniBatchTimesMs":
+            case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return false;   //Covered by worker stats generally
             default:
                 if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.defaultIncludeInPlots(key);
@@ -138,19 +142,19 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f,"WorkerFlatMapTotalTimeMs"));
+        sb.append(String.format(f, WORKER_FLAT_MAP_TOTAL_TIME_MS));
         if(workerFlatMapTotalTimeMs == null ) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(workerFlatMapTotalTimeMs,",")).append("\n");
 
-        sb.append(String.format(f,"WorkerFlatMapGetInitialModelTimeMs"));
+        sb.append(String.format(f, WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS));
         if(workerFlatMapGetInitialModelTimeMs == null ) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(workerFlatMapGetInitialModelTimeMs,",")).append("\n");
 
-        sb.append(String.format(f,"WorkerFlatMapDataSetGetTimesMs"));
+        sb.append(String.format(f, WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS));
         if(workerFlatMapDataSetGetTimesMs == null ) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(workerFlatMapDataSetGetTimesMs,",")).append("\n");
 
-        sb.append(String.format(f,"WorkerFlatMapProcessMiniBatchTimesMs"));
+        sb.append(String.format(f, WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS));
         if(workerFlatMapProcessMiniBatchTimesMs == null ) sb.append("-\n");
         else sb.append(StatsUtils.getDurationAsString(workerFlatMapProcessMiniBatchTimesMs,",")).append("\n");
 
