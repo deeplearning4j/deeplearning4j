@@ -677,7 +677,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
             //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
-            if (t != globalType)
+            if (t != globalType && t!= Type.INT)
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
             if(t == Type.INT) {
                 this.elementSize = 4;
