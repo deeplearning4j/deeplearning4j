@@ -60,7 +60,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     public void reset() {
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
-        if(runnable.isAlive) thread.interrupt();
+        if(runnable.isAlive) {
+            thread.interrupt();
+        }
         //Wait for runnable to exit, but should only have to wait very short period of time
         //This probably isn't necessary, but is included as a safeguard against race conditions
         try{
@@ -92,7 +94,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             //either way: there's at least 1 more element to come
             return true;
         } else {
-            if(!runnable.killRunnable && runnable.exception != null ) throw runnable.exception;   //Something went wrong
+            if(!runnable.killRunnable && runnable.exception != null ) {
+                throw runnable.exception;   //Something went wrong
+            }
             //Runnable has exited, presumably because it has fetched all elements
             return !queue.isEmpty();
         }
@@ -100,9 +104,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next() {
-        if(!hasNext()) throw new NoSuchElementException();
+        if(!hasNext()) {
+            throw new NoSuchElementException();
+        }
 
-        if(runnable.exception != null) throw runnable.exception;
+        if(runnable.exception != null) {
+            throw runnable.exception;
+        }
 
         if(!queue.isEmpty()){
             return queue.poll();    //non-blocking, but returns null if empty
@@ -118,7 +126,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             // blockingQueue.take() is called? In this case, next() will never return
             while(runnable.exception == null ){
                 MultiDataSet ds = queue.poll(5, TimeUnit.SECONDS);
-                if(ds != null) return ds;
+                if(ds != null) {
+                    return ds;
+                }
                 if(runnable.killRunnable){
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
@@ -163,7 +173,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 }
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
-                if(killRunnable) return;
+                if(killRunnable) {
+                    return;
+                }
                 else exception = new RuntimeException("Runnable interrupted unexpectedly",e); //Something else interrupted
             } catch(RuntimeException e ){
                 exception = e;
