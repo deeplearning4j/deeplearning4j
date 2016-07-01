@@ -114,7 +114,7 @@ public abstract class BaseSparkTest  implements Serializable
 
     protected SparkDl4jMultiLayer getBasicNetwork(){
         return new SparkDl4jMultiLayer(sc,getBasicConf(),
-                new ParameterAveragingTrainingMaster(true,numExecutors(),10,1,0));
+                new ParameterAveragingTrainingMaster(true,numExecutors(),1,10,1,0));
     }
 
     protected int numExecutors(){

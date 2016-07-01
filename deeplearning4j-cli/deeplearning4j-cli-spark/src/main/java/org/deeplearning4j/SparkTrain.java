@@ -108,7 +108,7 @@ public class SparkTrain extends BaseSubCommand {
 
         try {
             graph = getComputationGraph();
-            TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(numWorkers)
+            TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, 1)
                     .batchSizePerWorker(examplesPerFit / numWorkers)
                     .saveUpdater(saveUpdater)
                     .averagingFrequency(averagingFrequency)
