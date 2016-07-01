@@ -105,7 +105,7 @@ public class HistogramIterationListener implements IterationListener {
 
 //            log.warn("Starting report building...");
 
-                if (meanMagHistoryParams.size() == 0) {
+                if (meanMagHistoryParams.isEmpty()) {
                     //Initialize:
                     int maxLayerIdx = -1;
                     for (String s : grad.keySet()) {
