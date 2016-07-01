@@ -886,8 +886,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
-                int range = (layer instanceof BasePretrainNetwork ?
-                        ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+                int range = layer.numParams();
                 if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
                 INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
                 layer.setParams(get);
