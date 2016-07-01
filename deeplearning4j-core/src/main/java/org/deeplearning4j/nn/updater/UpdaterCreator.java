@@ -12,6 +12,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
  */
 public class UpdaterCreator {
 
+    private UpdaterCreator() {
+    }
+
     /**
      * Create an updater based on the configuration
      * @param conf the configuration to get the updater for

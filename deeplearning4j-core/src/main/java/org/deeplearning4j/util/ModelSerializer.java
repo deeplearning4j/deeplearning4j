@@ -27,6 +27,11 @@ import java.util.zip.ZipOutputStream;
  */
 public class ModelSerializer {
 
+    public static final String UPDATER_BIN = "updater.bin";
+
+    private ModelSerializer() {
+    }
+
     /**
      * Write a model to a file
      * @param model the model to write
@@ -90,7 +95,7 @@ public class ModelSerializer {
         writeEntry(inputStream, zipfile);
 
         if (saveUpdater) {
-            ZipEntry updater = new ZipEntry("updater.bin");
+            ZipEntry updater = new ZipEntry(UPDATER_BIN);
             zipfile.putNextEntry(updater);
 
 
@@ -170,7 +175,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry updaters = zipFile.getEntry("updater.bin");
+        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
         if (updaters != null) {
             InputStream stream = zipFile.getInputStream(updaters);
             ObjectInputStream ois = new ObjectInputStream(stream);
@@ -233,7 +238,7 @@ public class ModelSerializer {
                     params = Nd4j.read(dis2);
                     gotCoefficients = true;
                     break;
-                case "updater.bin":
+                case UPDATER_BIN:
                     ObjectInputStream ois = new ObjectInputStream(zipFile);
 
                     try {
@@ -324,7 +329,7 @@ public class ModelSerializer {
 
                     gotCoefficients = true;
                     break;
-                case "updater.bin":
+                case UPDATER_BIN:
                     ObjectInputStream ois = new ObjectInputStream(zis);
 
                     try {
@@ -407,7 +412,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry updaters = zipFile.getEntry("updater.bin");
+        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
         if (updaters != null) {
             InputStream stream = zipFile.getInputStream(updaters);
             ObjectInputStream ois = new ObjectInputStream(stream);

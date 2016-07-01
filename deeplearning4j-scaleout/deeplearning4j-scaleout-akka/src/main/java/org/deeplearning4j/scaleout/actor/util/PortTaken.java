@@ -22,6 +22,9 @@ import java.net.ServerSocket;
 
 public class PortTaken {
 
+	private PortTaken() {
+	}
+
 	public static boolean portTaken(int port) {
 		try {
 			ServerSocket s = new ServerSocket(port);

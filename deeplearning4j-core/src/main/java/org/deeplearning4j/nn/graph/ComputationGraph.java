@@ -383,7 +383,7 @@ public class ComputationGraph implements Serializable, Model {
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
-            if(thisVertexOutputsTo == null || thisVertexOutputsTo.size() == 0 ) continue;   //Output vertex
+            if(thisVertexOutputsTo == null || thisVertexOutputsTo.isEmpty()) continue;   //Output vertex
             VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j=0;
             for( String s : thisVertexOutputsTo ){
@@ -404,8 +404,10 @@ public class ComputationGraph implements Serializable, Model {
 
     /**
      * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
+     * As a general rule, this shouldn't ever need to be called manually when doing training via fit(DataSet), fit(DataSetIterator)
+     * or fit(MultiDataSet) methods
      */
-    protected void initGradientsView(){
+    public void initGradientsView(){
         if(!initCalled) init();
 
         //Go through layers, and work out total number of parameters. Then allocate full parameters array
@@ -751,7 +753,7 @@ public class ComputationGraph implements Serializable, Model {
             int idx = vertexNamesMap2.get(thisVertexName);
             List<String> inputsToThisVertex = configuration.getVertexInputs().get(thisVertexName);
 
-            if(inputsToThisVertex == null || inputsToThisVertex.size() == 0){
+            if(inputsToThisVertex == null || inputsToThisVertex.isEmpty()){
                 inputEdges.put(idx,null);
                 continue;
             }
@@ -778,12 +780,12 @@ public class ComputationGraph implements Serializable, Model {
         LinkedList<Integer> noIncomingEdges = new LinkedList<>();
         for( Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet() ) {
             Set<Integer> inputsFrom = entry.getValue();
-            if(inputsFrom == null || inputsFrom.size() == 0) {
+            if(inputsFrom == null || inputsFrom.isEmpty()) {
                 noIncomingEdges.add(entry.getKey());
             }
         }
 
-        while(noIncomingEdges.size() > 0) {
+        while(!noIncomingEdges.isEmpty()) {
             int next = noIncomingEdges.removeFirst();
             out[outCounter++] = next;   //Add to sorted list
 
@@ -794,7 +796,7 @@ public class ComputationGraph implements Serializable, Model {
                 for( Integer v : vertexOutputsTo){
                     Set<Integer> set = inputEdges.get(v);
                     set.remove(next);
-                    if (set.size() == 0) {
+                    if (set.isEmpty()) {
                         noIncomingEdges.add(v); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
@@ -805,7 +807,7 @@ public class ComputationGraph implements Serializable, Model {
         for(Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet()){
             Set<Integer> set = entry.getValue();
             if(set == null) continue;
-            if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+            if(!set.isEmpty()) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
                     + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey()) + "\")");
         }
 

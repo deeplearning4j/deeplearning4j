@@ -28,6 +28,9 @@ import java.util.*;
  */
 public class StaticPageUtil {
 
+    private StaticPageUtil() {
+    }
+
     public static String renderHTML(Collection<Component> components) throws Exception {
         return renderHTML(components.toArray(new Component[components.size()]));
     }

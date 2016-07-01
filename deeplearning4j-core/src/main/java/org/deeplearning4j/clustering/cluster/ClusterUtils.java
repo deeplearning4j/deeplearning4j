@@ -207,7 +207,7 @@ public class ClusterUtils {
 			info.getPointDistancesFromCenter().put(point.getId(), distance);
 			info.setTotalPointDistanceFromCenter(info.getTotalPointDistanceFromCenter() + distance);
 		}
-		if (cluster.getPoints().size() > 0)
+		if (!cluster.getPoints().isEmpty())
 			info.setAveragePointDistanceFromCenter(info.getTotalPointDistanceFromCenter()/ cluster.getPoints().size());
 		return info;
 	}

@@ -183,7 +183,7 @@ public class Counter<E> implements Serializable {
 		double total = totalCount();
 		if (total <= 0.0) {
 			throw new RuntimeException(String.format(
-					"Attempting to sample() with totalCount() %.3f\n", total));
+					"Attempting to sample() with totalCount() %.3f%n", total));
 		}
 		double sum = 0.0;
 		double r = rand.nextDouble();

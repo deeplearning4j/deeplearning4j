@@ -43,6 +43,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 public class LSTMHelpers {
 
+    public static final String SIGMOID = "sigmoid";
+
+    private LSTMHelpers() {
+    }
+
     /**
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
@@ -152,14 +157,14 @@ public class LSTMHelpers {
             INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
             l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, forgetGateActivations));
             if (forBackprop) toReturn.fa[time] = forgetGateActivations;
 
 
             INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize));
             INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
             l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, inputModGateActivations));
             if (forBackprop) toReturn.ga[time] = inputModGateActivations;
 
             //Memory cell state
@@ -177,7 +182,7 @@ public class LSTMHelpers {
             INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
             INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, outputGateActivations));
             if (forBackprop) toReturn.oa[time] = outputGateActivations;
 
             //LSTM unit outputs:

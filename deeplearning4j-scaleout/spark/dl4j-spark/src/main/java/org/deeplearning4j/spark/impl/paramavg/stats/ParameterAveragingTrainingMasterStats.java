@@ -2,12 +2,11 @@ package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math.stat.StatUtils;
 import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.stats.BaseEventStats;
-import org.deeplearning4j.spark.stats.EventStats;
-import org.deeplearning4j.spark.stats.StatsUtils;
+import org.deeplearning4j.spark.stats.*;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -27,120 +26,158 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     public static final String FILENAME_BROADCAST_CREATE = "parameterAveragingMasterBroadcastCreateTimesMs.txt";
     public static final String FILENAME_FIT_TIME = "parameterAveragingMasterFitTimesMs.txt";
     public static final String FILENAME_SPLIT_TIME = "parameterAveragingMasterSplitTimesMs.txt";
+    public static final String FILENAME_MAP_PARTITIONS_TIME = "parameterAveragingMasterMapPartitionsTimesMs.txt";
     public static final String FILENAME_AGGREGATE_TIME = "parameterAveragingMasterAggregateTimesMs.txt";
     public static final String FILENAME_PROCESS_PARAMS_TIME = "parameterAveragingMasterProcessParamsUpdaterTimesMs.txt";
+    public static final String FILENAME_REPARTITION_STATS = "parameterAveragingMasterRepartitionTimesMs.txt";
+
+    public static final String PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS = "ParameterAveragingMasterBroadcastCreateTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS = "ParameterAveragingMasterFitTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS = "ParameterAveragingMasterSplitTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS = "ParameterAveragingMasterMapPartitionsTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS = "ParameterAveragingMasterAggregateTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS = "ParameterAveragingMasterProcessParamsUpdaterTimesMs";
+    public static final String PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS = "ParameterAveragingMasterRepartitionTimesMs";
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
-                    "ParameterAveragingMasterBroadcastCreateTimesMs",
-                    "ParameterAveragingMasterFitTimesMs",
-                    "ParameterAveragingMasterSplitTimesMs",
-                    "ParameterAveragingMasterAggregateTimesMs",
-                    "ParameterAveragingMasterProcessParamsUpdaterTimesMs"
+                    PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS,
+                    PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS
             )));
 
     private SparkTrainingStats workerStats;
     private List<EventStats> parameterAveragingMasterBroadcastCreateTimesMs;
     private List<EventStats> parameterAveragingMasterFitTimesMs;
     private List<EventStats> parameterAveragingMasterSplitTimesMs;
+    private List<EventStats> parameterAveragingMasterMapPartitionsTimesMs;
     private List<EventStats> paramaterAveragingMasterAggregateTimesMs;
     private List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs;
+    private List<EventStats> parameterAveragingMasterRepartitionTimesMs;
 
 
     public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, List<EventStats> parameterAveragingMasterBroadcastCreateTimeMs,
                                                  List<EventStats> parameterAveragingMasterFitTimeMs, List<EventStats> parameterAveragingMasterSplitTimeMs,
-                                                 List<EventStats> parameterAveragingMasterAggregateTimesMs, List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs){
+                                                 List<EventStats> parameterAveragingMasterMapPartitionsTimesMs, List<EventStats> parameterAveragingMasterAggregateTimesMs,
+                                                 List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs, List<EventStats> parameterAveragingMasterRepartitionTimesMs) {
         this.workerStats = workerStats;
         this.parameterAveragingMasterBroadcastCreateTimesMs = parameterAveragingMasterBroadcastCreateTimeMs;
         this.parameterAveragingMasterFitTimesMs = parameterAveragingMasterFitTimeMs;
         this.parameterAveragingMasterSplitTimesMs = parameterAveragingMasterSplitTimeMs;
+        this.parameterAveragingMasterMapPartitionsTimesMs = parameterAveragingMasterMapPartitionsTimesMs;
         this.paramaterAveragingMasterAggregateTimesMs = parameterAveragingMasterAggregateTimesMs;
         this.parameterAveragingMasterProcessParamsUpdaterTimesMs = parameterAveragingMasterProcessParamsUpdaterTimesMs;
+        this.parameterAveragingMasterRepartitionTimesMs = parameterAveragingMasterRepartitionTimesMs;
     }
 
 
     @Override
     public Set<String> getKeySet() {
         Set<String> out = new LinkedHashSet<>(columnNames);
-        if(workerStats != null) out.addAll(workerStats.getKeySet());
+        if (workerStats != null) out.addAll(workerStats.getKeySet());
         return out;
     }
 
     @Override
     public List<EventStats> getValue(String key) {
-        switch(key){
-            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+        switch (key) {
+            case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
                 return parameterAveragingMasterBroadcastCreateTimesMs;
-            case "ParameterAveragingMasterFitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS:
                 return parameterAveragingMasterFitTimesMs;
-            case "ParameterAveragingMasterSplitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
                 return parameterAveragingMasterSplitTimesMs;
-            case "ParameterAveragingMasterAggregateTimesMs":
+            case PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS:
+                return parameterAveragingMasterMapPartitionsTimesMs;
+            case PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS:
                 return paramaterAveragingMasterAggregateTimesMs;
-            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+            case PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS:
                 return parameterAveragingMasterProcessParamsUpdaterTimesMs;
+            case PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS:
+                return parameterAveragingMasterRepartitionTimesMs;
             default:
-                if(workerStats != null) return workerStats.getValue(key);
+                if (workerStats != null) return workerStats.getValue(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
         }
     }
 
     @Override
-    public String getShortNameForKey(String key){
-        switch(key){
-            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+    public String getShortNameForKey(String key) {
+        switch (key) {
+            case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
                 return "CreateBroadcast";
-            case "ParameterAveragingMasterFitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS:
                 return "Fit";
-            case "ParameterAveragingMasterSplitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
                 return "Split";
-            case "ParameterAveragingMasterAggregateTimesMs":
+            case PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS:
+                return "MapPart";
+            case PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS:
                 return "Aggregate";
-            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+            case PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS:
                 return "ProcessParams";
+            case PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS:
+                return "Repartition";
             default:
-                if(workerStats != null) return workerStats.getShortNameForKey(key);
+                if (workerStats != null) return workerStats.getShortNameForKey(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
         }
     }
 
     @Override
-    public boolean defaultIncludeInPlots(String key){
-        switch(key){
-            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+    public boolean defaultIncludeInPlots(String key) {
+        switch (key) {
+            case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
                 return true;
-            case "ParameterAveragingMasterFitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS:
                 return false;
-            case "ParameterAveragingMasterSplitTimesMs":
+            case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
                 return true;
-            case "ParameterAveragingMasterAggregateTimesMs":
+            case PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS:
+                return false;
+            case PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS:
                 return true;
-            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+            case PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS:
+                return true;
+            case PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS:
                 return true;
             default:
-                if(workerStats != null) return workerStats.defaultIncludeInPlots(key);
+                if (workerStats != null) return workerStats.defaultIncludeInPlots(key);
                 return false;
         }
     }
 
     @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
-        if(!(other instanceof ParameterAveragingTrainingMasterStats)) throw new IllegalArgumentException("Expected ParameterAveragingTrainingMasterStats, got " + (other != null ? other.getClass() : null));
+        if (!(other instanceof ParameterAveragingTrainingMasterStats))
+            throw new IllegalArgumentException("Expected ParameterAveragingTrainingMasterStats, got " + (other != null ? other.getClass() : null));
 
         ParameterAveragingTrainingMasterStats o = (ParameterAveragingTrainingMasterStats) other;
 
-        if(workerStats != null){
-            if(o.workerStats != null ) workerStats.addOtherTrainingStats(o.workerStats);
+        if (workerStats != null) {
+            if (o.workerStats != null) workerStats.addOtherTrainingStats(o.workerStats);
         } else {
-            if(o.workerStats != null) workerStats = o.workerStats;
+            if (o.workerStats != null) workerStats = o.workerStats;
         }
 
         this.parameterAveragingMasterBroadcastCreateTimesMs.addAll(o.parameterAveragingMasterBroadcastCreateTimesMs);
+        this.parameterAveragingMasterRepartitionTimesMs.addAll(o.parameterAveragingMasterRepartitionTimesMs);
         this.parameterAveragingMasterFitTimesMs.addAll(o.parameterAveragingMasterFitTimesMs);
+        if (parameterAveragingMasterRepartitionTimesMs == null) {
+            if (o.parameterAveragingMasterRepartitionTimesMs != null)
+                parameterAveragingMasterRepartitionTimesMs = o.parameterAveragingMasterRepartitionTimesMs;
+        } else {
+            if (o.parameterAveragingMasterRepartitionTimesMs != null)
+                parameterAveragingMasterRepartitionTimesMs.addAll(o.parameterAveragingMasterRepartitionTimesMs);
+        }
     }
 
     @Override
-    public SparkTrainingStats getNestedTrainingStats(){
+    public SparkTrainingStats getNestedTrainingStats() {
         return workerStats;
     }
 
@@ -149,28 +186,43 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
-        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterBroadcastCreateTimesMs,",")).append("\n");
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS));
+        if (parameterAveragingMasterBroadcastCreateTimesMs == null) sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterBroadcastCreateTimesMs, ",")).append("\n");
 
-        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
-        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterFitTimesMs,",")).append("\n");
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS));
+        if (parameterAveragingMasterRepartitionTimesMs == null) sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
 
-        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
-        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterSplitTimesMs,",")).append("\n");
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS));
+        if (parameterAveragingMasterFitTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterFitTimesMs, ",")).append("\n");
 
-        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
-        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(paramaterAveragingMasterAggregateTimesMs,",")).append("\n");
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS));
+        if (parameterAveragingMasterSplitTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterSplitTimesMs, ",")).append("\n");
 
-        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
-        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterProcessParamsUpdaterTimesMs,",")).append("\n");
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS));
+        if (parameterAveragingMasterMapPartitionsTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterMapPartitionsTimesMs, ",")).append("\n");
+
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS));
+        if (paramaterAveragingMasterAggregateTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(paramaterAveragingMasterAggregateTimesMs, ",")).append("\n");
+
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS));
+        if (parameterAveragingMasterProcessParamsUpdaterTimesMs == null) sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterProcessParamsUpdaterTimesMs, ",")).append("\n");
 
 
-        if(workerStats != null) sb.append(workerStats.statsAsString());
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS));
+        if (parameterAveragingMasterRepartitionTimesMs == null) sb.append("-\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
+
+        if (workerStats != null) sb.append(workerStats.statsAsString());
 
         return sb.toString();
     }
@@ -180,33 +232,49 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         String d = DEFAULT_DELIMITER;
 
         //broadcast create time:
-        String broadcastTimePath = FilenameUtils.concat(outputPath,FILENAME_BROADCAST_CREATE);
+        String broadcastTimePath = FilenameUtils.concat(outputPath, FILENAME_BROADCAST_CREATE);
         StatsUtils.exportStats(parameterAveragingMasterBroadcastCreateTimesMs, broadcastTimePath, d, sc);
 
+        //repartition
+        String repartitionTime = FilenameUtils.concat(outputPath, FILENAME_REPARTITION_STATS);
+        StatsUtils.exportStats(parameterAveragingMasterRepartitionTimesMs, repartitionTime, d, sc);
+
         //Fit time:
-        String fitTimePath = FilenameUtils.concat(outputPath,FILENAME_FIT_TIME);
+        String fitTimePath = FilenameUtils.concat(outputPath, FILENAME_FIT_TIME);
         StatsUtils.exportStats(parameterAveragingMasterFitTimesMs, fitTimePath, d, sc);
 
         //Split time:
-        String splitTimePath = FilenameUtils.concat(outputPath,FILENAME_SPLIT_TIME);
+        String splitTimePath = FilenameUtils.concat(outputPath, FILENAME_SPLIT_TIME);
         StatsUtils.exportStats(parameterAveragingMasterSplitTimesMs, splitTimePath, d, sc);
 
+        //Map partitions:
+        String mapPartitionsPath = FilenameUtils.concat(outputPath, FILENAME_MAP_PARTITIONS_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterMapPartitionsTimesMs, mapPartitionsPath, d, sc);
+
         //Aggregate time:
-        String aggregatePath = FilenameUtils.concat(outputPath,FILENAME_AGGREGATE_TIME);
+        String aggregatePath = FilenameUtils.concat(outputPath, FILENAME_AGGREGATE_TIME);
         StatsUtils.exportStats(paramaterAveragingMasterAggregateTimesMs, aggregatePath, d, sc);
 
         //broadcast create time:
-        String processParamsPath = FilenameUtils.concat(outputPath,FILENAME_PROCESS_PARAMS_TIME);
+        String processParamsPath = FilenameUtils.concat(outputPath, FILENAME_PROCESS_PARAMS_TIME);
         StatsUtils.exportStats(parameterAveragingMasterProcessParamsUpdaterTimesMs, processParamsPath, d, sc);
 
-        if(workerStats != null) workerStats.exportStatFiles(outputPath, sc);
+        //Repartition
+        if (parameterAveragingMasterRepartitionTimesMs != null) {
+            String repartitionPath = FilenameUtils.concat(outputPath, FILENAME_REPARTITION_STATS);
+            StatsUtils.exportStats(parameterAveragingMasterRepartitionTimesMs, repartitionPath, d, sc);
+        }
+
+        if (workerStats != null) workerStats.exportStatFiles(outputPath, sc);
     }
 
     public static class ParameterAveragingTrainingMasterStatsHelper {
 
         private long lastBroadcastStartTime;
+        private long lastRepartitionStartTime;
         private long lastFitStartTime;
         private long lastSplitStartTime;
+        private long lastMapPartitionsStartTime;
         private long lastAggregateStartTime;
         private long lastProcessParamsUpdaterStartTime;
 
@@ -214,66 +282,87 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
         //TODO use fast int collection here (to avoid boxing cost)
         private List<EventStats> broadcastTimes = new ArrayList<>();
+        private List<EventStats> repartitionTimes = new ArrayList<>();
         private List<EventStats> fitTimes = new ArrayList<>();
         private List<EventStats> splitTimes = new ArrayList<>();
+        private List<EventStats> mapPartitions = new ArrayList<>();
         private List<EventStats> aggregateTimes = new ArrayList<>();
         private List<EventStats> processParamsUpdaterTimes = new ArrayList<>();
 
         private final TimeSource timeSource = TimeSourceProvider.getInstance();
 
-        public void logBroadcastStart(){
+        public void logBroadcastStart() {
             this.lastBroadcastStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logBroadcastEnd(){
+        public void logBroadcastEnd() {
             long now = timeSource.currentTimeMillis();
 
             broadcastTimes.add(new BaseEventStats(lastBroadcastStartTime, now - lastBroadcastStartTime));
         }
 
-        public void logFitStart(){
+        public void logRepartitionStart() {
+            lastRepartitionStartTime = timeSource.currentTimeMillis();
+        }
+
+        public void logRepartitionEnd() {
+            long now = timeSource.currentTimeMillis();
+            repartitionTimes.add(new BaseEventStats(lastRepartitionStartTime, now - lastRepartitionStartTime));
+        }
+
+        public void logFitStart() {
             lastFitStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logFitEnd(){
+        public void logFitEnd(int examplesCount) {
             long now = timeSource.currentTimeMillis();
-            fitTimes.add(new BaseEventStats(lastFitStartTime,now - lastFitStartTime));
+            fitTimes.add(new ExampleCountEventStats(lastFitStartTime, now - lastFitStartTime, examplesCount));
         }
 
-        public void logSplitStart(){
+        public void logSplitStart() {
             lastSplitStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logSplitEnd(){
+        public void logSplitEnd() {
             long now = timeSource.currentTimeMillis();
             splitTimes.add(new BaseEventStats(lastSplitStartTime, now - lastSplitStartTime));
         }
 
-        public void logAggregateStartTime(){
+        public void logMapPartitionsStart(){
+            lastMapPartitionsStartTime = timeSource.currentTimeMillis();
+        }
+
+        public void logMapPartitionsEnd(int nPartitions){
+            long now = timeSource.currentTimeMillis();
+            mapPartitions.add(new PartitionCountEventStats(lastMapPartitionsStartTime, (now-lastMapPartitionsStartTime), nPartitions));
+        }
+
+        public void logAggregateStartTime() {
             lastAggregateStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logAggregationEndTime(){
+        public void logAggregationEndTime() {
             long now = timeSource.currentTimeMillis();
             aggregateTimes.add(new BaseEventStats(lastAggregateStartTime, now - lastAggregateStartTime));
         }
 
-        public void logProcessParamsUpdaterStart(){
+        public void logProcessParamsUpdaterStart() {
             lastProcessParamsUpdaterStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logProcessParamsUpdaterEnd(){
+        public void logProcessParamsUpdaterEnd() {
             long now = timeSource.currentTimeMillis();
             processParamsUpdaterTimes.add(new BaseEventStats(lastProcessParamsUpdaterStartTime, now - lastProcessParamsUpdaterStartTime));
         }
 
-        public void addWorkerStats(SparkTrainingStats workerStats){
-            if(this.workerStats == null) this.workerStats = workerStats;
-            else if(workerStats != null) this.workerStats.addOtherTrainingStats(workerStats);
+        public void addWorkerStats(SparkTrainingStats workerStats) {
+            if (this.workerStats == null) this.workerStats = workerStats;
+            else if (workerStats != null) this.workerStats.addOtherTrainingStats(workerStats);
         }
 
-        public ParameterAveragingTrainingMasterStats build(){
-            return new ParameterAveragingTrainingMasterStats(workerStats,broadcastTimes,fitTimes,splitTimes,aggregateTimes, processParamsUpdaterTimes);
+        public ParameterAveragingTrainingMasterStats build() {
+            return new ParameterAveragingTrainingMasterStats(workerStats, broadcastTimes, fitTimes, splitTimes, mapPartitions,
+                    aggregateTimes, processParamsUpdaterTimes, repartitionTimes);
         }
 
     }

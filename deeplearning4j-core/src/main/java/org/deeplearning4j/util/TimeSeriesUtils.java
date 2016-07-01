@@ -30,6 +30,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 public class TimeSeriesUtils {
 
 
+    private TimeSeriesUtils() {
+    }
+
     /**
      * Calculate a moving average given the length
      * @param toAvg the array to average

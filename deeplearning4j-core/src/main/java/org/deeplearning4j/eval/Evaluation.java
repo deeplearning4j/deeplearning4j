@@ -362,17 +362,17 @@ public class Evaluation implements Serializable {
                 int count = confusion.getCount(clazz, clazz2);
                 if (count != 0) {
                     expected = resolveLabelForClass(clazz2);
-                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times\n", actual, expected, count));
+                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual, expected, count));
                 }
             }
 
             //Output possible warnings regarding precision/recall calculation
             if (!suppressWarnings && truePositives.getCount(clazz) == 0) {
                 if (falsePositives.getCount(clazz) == 0) {
-                    warnings.append(String.format("Warning: class %s was never predicted by the model. This class was excluded from the average precision\n", actual));
+                    warnings.append(String.format("Warning: class %s was never predicted by the model. This class was excluded from the average precision%n", actual));
                 }
                 if (falseNegatives.getCount(clazz) == 0) {
-                    warnings.append(String.format("Warning: class %s has never appeared as a true label. This class was excluded from the average recall\n", actual));
+                    warnings.append(String.format("Warning: class %s has never appeared as a true label. This class was excluded from the average recall%n", actual));
                 }
             }
         }

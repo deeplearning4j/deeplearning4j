@@ -149,19 +149,16 @@ public class MasterActor extends  UntypedActor implements DeepLearningConfigurab
                         try {
                             long now = System.currentTimeMillis();
                             Map<String,Long> heartbeats = MasterActor.this.stateTracker.getHeartBeats();
-                            for(String key : heartbeats.keySet()) {
-                                long lastChecked = heartbeats.get(key);
+                            for (Map.Entry<String, Long> entry : heartbeats.entrySet()) {
+                                String key = entry.getKey();
+                                long lastChecked = entry.getValue();
                                 long diff = now - lastChecked;
                                 long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
                                 if(seconds >= 120) {
                                     log.info("Removing stale worker " + key);
                                     MasterActor.this.stateTracker.removeWorker(key);
                                 }
-
                             }
-
-
-
                         }catch(Exception e) {
                             throw new RuntimeException(e);
                         }

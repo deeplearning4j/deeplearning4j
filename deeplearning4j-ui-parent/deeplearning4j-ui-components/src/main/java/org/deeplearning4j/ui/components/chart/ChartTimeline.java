@@ -64,7 +64,7 @@ public class ChartTimeline extends Chart {
     }
 
 
-    @Data @NoArgsConstructor @AllArgsConstructor
+    @Data @NoArgsConstructor @AllArgsConstructor @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class TimelineEntry {
         private String entryLabel;
         private long startTimeMs;

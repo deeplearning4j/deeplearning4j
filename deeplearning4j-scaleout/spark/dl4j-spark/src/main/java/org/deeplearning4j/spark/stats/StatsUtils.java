@@ -32,6 +32,9 @@ public class StatsUtils {
 
     public static final long DEFAULT_MAX_TIMELINE_SIZE_MS = 20 * 60 * 1000;  //20 minutes
 
+    private StatsUtils() {
+    }
+
     public static void exportStats(List<EventStats> list, String outputDirectory, String filename, String delimiter, SparkContext sc) throws IOException {
         String path = FilenameUtils.concat(outputDirectory, filename);
         exportStats(list, path, delimiter, sc);
@@ -116,17 +119,24 @@ public class StatsUtils {
 
             double[] x = new double[list.size()];
             double[] duration = new double[list.size()];
+            double minDur = Double.MAX_VALUE;
+            double maxDur = -Double.MAX_VALUE;
             for (int i = 0; i < duration.length; i++) {
                 x[i] = i;
                 duration[i] = list.get(i).getDurationMs();
+                minDur = Math.min(minDur, duration[i]);
+                maxDur = Math.max(maxDur, duration[i]);
             }
 
             Component line = new ChartLine.Builder(s, styleChart)
                     .addSeries("Duration", x, duration)
+                    .setYMin(minDur == maxDur ? minDur-1 : null)
+                    .setYMax(minDur == maxDur ? minDur+1 : null)
                     .build();
 
             //Also build a histogram...
-            Component hist = getHistogram(duration, 20, s, styleChart);
+            Component hist = null;
+            if(minDur != maxDur && !list.isEmpty()) hist = getHistogram(duration, 20, s, styleChart);
 
             Component[] temp;
             if (hist != null) {
@@ -136,6 +146,42 @@ public class StatsUtils {
             }
 
             components.add(new ComponentDiv(new StyleDiv.Builder().width(100, LengthUnit.Percent).build(), temp));
+
+
+            //TODO this is really ugly
+            if(!list.isEmpty() && (list.get(0) instanceof ExampleCountEventStats || list.get(0) instanceof PartitionCountEventStats)){
+                boolean exCount = list.get(0) instanceof ExampleCountEventStats;
+
+                double[] y = new double[list.size()];
+                double miny = Double.MAX_VALUE;
+                double maxy = -Double.MAX_VALUE;
+                for( int i=0; i<y.length; i++ ){
+                    y[i] = (exCount ? ((ExampleCountEventStats)list.get(i)).getTotalExampleCount() : ((PartitionCountEventStats)list.get(i)).getNumPartitions());
+                    miny = Math.min(miny, y[i]);
+                    maxy = Math.max(maxy, y[i]);
+                }
+
+                String title = s + " / " + (exCount ? "Number of Examples" : "Number of Partitions");
+                Component line2 = new ChartLine.Builder(title, styleChart)
+                        .addSeries((exCount ? "Examples" : "Partitions"), x, y)
+                        .setYMin(miny == maxy ? miny-1 : null)
+                        .setYMax(miny == maxy ? miny+1 : null)
+                        .build();
+
+
+                //Also build a histogram...
+                Component hist2 = null;
+                if(miny != maxy) hist2 = getHistogram(y, 20, title, styleChart);
+
+                Component[] temp2;
+                if (hist2 != null) {
+                    temp2 = new Component[]{line2, hist2};
+                } else {
+                    temp2 = new Component[]{line2};
+                }
+
+                components.add(new ComponentDiv(new StyleDiv.Builder().width(100, LengthUnit.Percent).build(), temp2));
+            }
         }
 
         String html = StaticPageUtil.renderHTML(components);
@@ -248,6 +294,7 @@ public class StatsUtils {
 
                 int idx = outputOrder.indexOf(tuple);
                 Color c = colorMap.get(s);
+//                ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(null, start, end, c);
                 ChartTimeline.TimelineEntry entry = new ChartTimeline.TimelineEntry(stats.getShortNameForKey(s), start, end, c);
                 entriesByLane.get(chartIdx).get(idx).add(entry);
             }
@@ -312,7 +359,9 @@ public class StatsUtils {
         if (nColors <= 1) step = 1.0;
         else step = 1.0 / (nColors + 1);
         for (int i = 0; i < nColors; i++) {
-            c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+//            c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+            if(i%2 == 0) c[i] = Color.getHSBColor((float) step * i, 0.4f, 0.75f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
+            else c[i] = Color.getHSBColor((float) step * i,1.0f, 1.0f);   //step hue; fixed saturation + variance to (hopefully) ensure readability of labels
         }
         return c;
     }
