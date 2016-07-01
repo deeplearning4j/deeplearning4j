@@ -53,7 +53,7 @@ public class LimitedContextPool extends BasicContextPool {
         currentPoolSize.set(perDevicePool);
     }
 
-    protected void addResourcesToPool(int numResources, boolean restoreDevice) {
+    protected synchronized void addResourcesToPool(int numResources, boolean restoreDevice) {
         List<Integer> devices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices();
 
         int cDevice = 0;
@@ -115,6 +115,13 @@ public class LimitedContextPool extends BasicContextPool {
                     if (context != null) {
                         acquired.put(threadIdx, context);
                         return context;
+                    } else {
+                        if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize() * 3) {
+                            addResourcesToPool(16, true);
+
+                            // there's possible race condition, but we don't really care
+                            currentPoolSize.addAndGet(16);
+                        }
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
