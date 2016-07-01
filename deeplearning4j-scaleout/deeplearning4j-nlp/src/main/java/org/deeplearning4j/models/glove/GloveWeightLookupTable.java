@@ -217,8 +217,10 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
 
     private static INDArray weights(GloveWeightLookupTable glove,Map<String,float[]> data,VocabCache vocab) {
         INDArray ret = Nd4j.create(data.size(),glove.layerSize());
-        for(String key : data.keySet()) {
-            INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
+
+        for (Map.Entry<String, float[]> entry : data.entrySet()) {
+            String key = entry.getKey();
+            INDArray row = Nd4j.create(Nd4j.createBuffer(entry.getValue()));
             if(row.length() != glove.layerSize())
                 continue;
             if(vocab.indexOf(key) >= data.size())
