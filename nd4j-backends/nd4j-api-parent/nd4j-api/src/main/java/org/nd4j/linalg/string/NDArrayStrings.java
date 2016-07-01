@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 
 /**
  * @author Adam Gibson
@@ -18,7 +19,6 @@ public class NDArrayStrings {
     private String decFormatNum = "#,###,##0";
     private String decFormatRest = "";
     private DecimalFormat decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
-
 
     public NDArrayStrings(String sep) {
         this(", ",2);
@@ -38,6 +38,10 @@ public class NDArrayStrings {
             }
         }
         this.decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
+        DecimalFormatSymbols sepNgroup = DecimalFormatSymbols.getInstance();
+        sepNgroup.setDecimalSeparator('.');
+        sepNgroup.setGroupingSeparator(',');
+        decimalFormat.setDecimalFormatSymbols(sepNgroup);
     }
 
     public NDArrayStrings() {
