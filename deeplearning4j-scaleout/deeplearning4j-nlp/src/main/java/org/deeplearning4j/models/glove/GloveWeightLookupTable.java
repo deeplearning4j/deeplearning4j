@@ -69,21 +69,21 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
             this.rng = Nd4j.getRandom();
 
         //note the +2 which is the unk vocab word and the bias
-        if(syn0 == null || syn0 != null && reset) {
+        if(syn0 == null || reset) {
             syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi((double) vectorLength);
             INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
             putVector(Word2Vec.DEFAULT_UNK, randUnk);
         }
-        if(weightAdaGrad == null || weightAdaGrad != null && reset) {
+        if(weightAdaGrad == null || reset) {
             weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength}, lr.get());
         }
 
 
         //right after unknown
-        if(bias == null || bias != null && reset)
+        if(bias == null || reset)
             bias = Nd4j.create(syn0.rows());
 
-        if(biasAdaGrad == null || biasAdaGrad != null && reset) {
+        if(biasAdaGrad == null || reset) {
             biasAdaGrad = new AdaGrad(bias.shape(), lr.get());
         }
 

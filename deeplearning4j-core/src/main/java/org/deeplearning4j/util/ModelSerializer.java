@@ -231,7 +231,7 @@ public class ModelSerializer {
                 case "configuration.json":
                     DataInputStream dis = new DataInputStream(zipFile);
                     params = Nd4j.read(dis);
-                    gotCoefficients = true;
+                    gotConfig = true;
                     break;
                 case "coefficients.bin":
                     DataInputStream dis2 = new DataInputStream(zipFile);
