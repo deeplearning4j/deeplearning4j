@@ -248,6 +248,13 @@ public abstract class BaseUpdater implements Updater {
     }
 
     @Override
+    public int hashCode() {
+        int result = 19;
+        result = 31 * result + (updaterForVariable == null? 0 : updaterForVariable.hashCode());
+        return result;
+    }
+
+    @Override
     public Updater clone(){
         Map<String,GradientUpdater> newMap = new HashMap<>();
         for( String s : updaterForVariable.keySet()){
