@@ -49,6 +49,7 @@ import javax.ws.rs.core.Response;
 public class StateTrackerDropWizardResource extends Application<HazelCastConf> implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(StateTrackerDropWizardResource.class);
+    public static final String STATUS = "status";
 
     private StateTracker stateTracker;
     private Environment env;
@@ -83,7 +84,7 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
     @Path("/minibatch/{num}")
     public Response setMiniBatchSizeRest(@PathParam("num") int num) {
         stateTracker.setMiniBatchSize(num);
-        return Response.ok(Collections.singletonMap("status","mini batch to " + num)).build();
+        return Response.ok(Collections.singletonMap(STATUS,"mini batch to " + num)).build();
     }
 
     @GET
@@ -146,10 +147,10 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
             SerializationUtils.saveObject(u,new File("savedmodel.ser"));
 
         }catch(Exception e) {
-            return Response.ok(Collections.singletonMap("status", e.getMessage())).build();
+            return Response.ok(Collections.singletonMap(STATUS, e.getMessage())).build();
 
         }
-        return Response.ok(Collections.singletonMap("status", "saved")).build();
+        return Response.ok(Collections.singletonMap(STATUS, "saved")).build();
     }
 
 

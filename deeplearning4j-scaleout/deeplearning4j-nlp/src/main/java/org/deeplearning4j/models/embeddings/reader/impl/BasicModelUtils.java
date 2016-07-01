@@ -28,6 +28,9 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
+    public static final String EXISTS = "exists";
+    public static final String CORRECT = "correct";
+    public static final String WRONG = "wrong";
     protected volatile VocabCache<T> vocabCache;
     protected volatile WeightLookupTable<T> lookupTable;
 
@@ -61,7 +64,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public double similarity( String label1, String label2) {
         if (label1 == null || label2 == null) {
-            System.out.println("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
+            System.out.println("LABELS: " + label1 + ": " + (label1 == null ? "null": EXISTS)+ ";" + label2 +" vec2:" + (label2 == null ? "null": EXISTS));
             return Double.NaN;
         }
 
@@ -70,7 +73,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
 
         if (vec1 == null || vec2 == null) {
-            System.out.println(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
+            System.out.println(label1 + ": " + (vec1 == null ? "null": EXISTS)+ ";" + label2 +" vec2:" + (vec2 == null ? "null": EXISTS));
             return Double.NaN;
         }
 
@@ -101,8 +104,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         String analogyType = "";
         for(String s : questions) {
             if(s.startsWith(":")) {
-                double correct = right.getCount("correct");
-                double wrong = right.getCount("wrong");
+                double correct = right.getCount(CORRECT);
+                double wrong = right.getCount(WRONG);
                 if(analogyType.isEmpty()){
                     analogyType=s;
                     continue;
@@ -122,13 +125,13 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
                 if(predicted.equals(w))
                     right.incrementCount("right",1.0);
                 else
-                    right.incrementCount("wrong",1.0);
+                    right.incrementCount(WRONG,1.0);
 
             }
         }
         if(!analogyType.isEmpty()){
-            double correct = right.getCount("correct");
-            double wrong = right.getCount("wrong");
+            double correct = right.getCount(CORRECT);
+            double wrong = right.getCount(WRONG);
             double accuracyRet = 100.0 * correct / (correct + wrong);
             accuracy.put(analogyType,accuracyRet);
         }
