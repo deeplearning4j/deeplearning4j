@@ -42,9 +42,8 @@ public class Index implements Serializable {
     Map<Object,Integer> indexes = new ConcurrentHashMap<>();
 
     public synchronized boolean add(Object o,int idx) {
-        if(o instanceof String) {
-            if(o.toString().isEmpty())
-                throw new IllegalArgumentException("Unable to add the empty string");
+        if(o instanceof String && o.toString().isEmpty()) {
+            throw new IllegalArgumentException("Unable to add the empty string");
         }
 
         Integer index = indexes.get(o);
@@ -58,9 +57,8 @@ public class Index implements Serializable {
     }
 
     public synchronized boolean add(Object o) {
-        if(o instanceof String) {
-            if(o.toString().isEmpty())
-                throw new IllegalArgumentException("Unable to add the empty string");
+        if(o instanceof String && o.toString().isEmpty()) {
+            throw new IllegalArgumentException("Unable to add the empty string");
         }
         Integer index = indexes.get(o);
         if (index == null) {

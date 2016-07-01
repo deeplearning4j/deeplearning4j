@@ -256,10 +256,8 @@ public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GR
 //		INDArray wC = recurrentWeights.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
 		
 		//Apply dropconnect to input (not recurrent) weights only:
-		if(conf.isUseDropConnect() && training) {
-			if (conf.getLayer().getDropOut() > 0) {
-				inputWeights = Dropout.applyDropConnect(this,GRUParamInitializer.INPUT_WEIGHT_KEY);
-			}
+		if(conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+			inputWeights = Dropout.applyDropConnect(this,GRUParamInitializer.INPUT_WEIGHT_KEY);
 		}
 		
 		//Allocate arrays for activations:
