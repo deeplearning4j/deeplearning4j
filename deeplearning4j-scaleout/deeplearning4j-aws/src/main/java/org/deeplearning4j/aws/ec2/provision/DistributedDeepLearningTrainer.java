@@ -20,6 +20,9 @@ package org.deeplearning4j.aws.ec2.provision;
 
 public class DistributedDeepLearningTrainer {
 
+	private DistributedDeepLearningTrainer() {
+	}
+
 	/**
 	 * @param args
 	 */
