@@ -32,6 +32,9 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 
 public class LoadAndDraw {
 
+	private LoadAndDraw() {
+	}
+
 	/**
 	 * @param args
 	 */

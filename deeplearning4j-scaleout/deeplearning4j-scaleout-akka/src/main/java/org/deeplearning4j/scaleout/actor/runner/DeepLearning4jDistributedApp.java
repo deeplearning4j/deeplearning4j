@@ -77,11 +77,12 @@ import org.slf4j.LoggerFactory;
  */
 public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 	protected static final Logger log = LoggerFactory.getLogger(DeepLearning4jDistributedApp.class);
+	public static final String MASTER = "master";
 
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	protected String host = "localhost";
 	@Option(name="-t",usage="type of worker")
-	protected String type = "master";
+	protected String type = MASTER;
 	@Option(name="-ad",usage="address of master worker")
 	protected String address;
 	@Option(name = "-stp",usage="state tracker port")
@@ -113,7 +114,7 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 		//to applyTransformToDestination everything up
 		if(type != null && type.equals("worker"))  {
 			log.info("Initializing conf from zookeeper at " + host);
-			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
+			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, MASTER);
 			Configuration conf = retriever.retrieve();
 			String address = conf.get(MASTER_URL);
             log.info("Creating hazel cast state tracker... " + conf.get(STATE_TRACKER_CONNECTION_STRING));
@@ -133,7 +134,7 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
             iter = factory.create();
 
 			//run the master
-			runner = new DeepLearning4jDistributed("master",iter);
+			runner = new DeepLearning4jDistributed(MASTER,iter);
 			runner.setStateTrackerPort(stateTrackerPort);
 			runner.setup(conf);
 		}
@@ -164,7 +165,7 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 	public static void main(String[] args) throws Exception {
 		DeepLearning4jDistributedApp app = new DeepLearning4jDistributedApp(args);
 		app.exec();
-		if(app.type.equals("master"))
+		if(app.type.equals(MASTER))
 			app.train();
 	}
 

@@ -47,7 +47,9 @@ public class ASCIICoOccurrenceReader<T extends SequenceElement> implements CoOcc
     @Override
     public CoOccurrenceWeight<T> nextObject() {
         String line = iterator.nextSentence();
-        if (line == null || line.isEmpty()) return null;
+        if (line == null || line.isEmpty()) {
+            return null;
+        }
         String[] strings = line.split(" ");
 
         CoOccurrenceWeight<T> object = new CoOccurrenceWeight<>();

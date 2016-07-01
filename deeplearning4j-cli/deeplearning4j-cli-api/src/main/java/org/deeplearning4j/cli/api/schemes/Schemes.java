@@ -25,6 +25,9 @@ import org.deeplearning4j.cli.files.FileScheme;
  * @author sonali
  */
 public class Schemes {
+    private Schemes() {
+    }
+
     /**
      * Selects appropriate Scheme for reading/writing data
      * @param scheme
