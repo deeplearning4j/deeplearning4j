@@ -27,6 +27,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.Updater;
@@ -38,10 +39,15 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -329,6 +335,56 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             assertEquals(localScoresNoRegDouble[i],scoresNoReg.get(i),1e-5);
 
             //System.out.println(localScoresWithRegDouble[i] + "\t" + scoresWithReg.get(i) + "\t" + localScoresNoRegDouble[i] + "\t" + scoresNoReg.get(i));
+        }
+    }
+
+
+
+    @Test
+    public void testParameterAveragingMultipleExamplesPerDataSet() throws Exception {
+
+        List<DataSet> list = new ArrayList<>();
+        DataSetIterator iter = new MnistDataSetIterator(10,1000,false);
+        while(iter.hasNext()){
+            list.add(iter.next());
+        }
+
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(Runtime.getRuntime().availableProcessors(), 10)
+                    .batchSizePerWorker(20)
+                    .averagingFrequency(1)
+                    .repartionData(Repartition.Always)
+                    .build());
+        sparkNet.setCollectTrainingStats(true);
+
+        JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+        sparkNet.fit(rdd);
+
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+
+        List<EventStats> eventStats = stats.getValue("ParameterAveragingWorkerFitTimesMs");
+        assertEquals(50, eventStats.size()); //1000 examples, 20 minibatch size per worker
+
+        for( EventStats e : eventStats){
+            ExampleCountEventStats eces = (ExampleCountEventStats)e;
+            assertEquals(20,eces.getTotalExampleCount());
         }
     }
 }
