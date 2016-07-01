@@ -211,7 +211,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        if (newEpoch || epochs == numEpochs) {
+        if (newEpoch) {
             log.info("Epoch " + epochs + ", number of batches completed " + lastBatch);
             newEpoch = false;
         }
