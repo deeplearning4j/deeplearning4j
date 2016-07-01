@@ -244,8 +244,8 @@ public class MultiLayerTestRNN {
 
     	//Check clearing and setting of state:
     	mln.rnnClearPreviousState();
-    	assertTrue(mln.rnnGetPreviousState(0).size()==0);
-    	assertTrue(mln.rnnGetPreviousState(1).size()==0);
+    	assertTrue(mln.rnnGetPreviousState(0).isEmpty());
+    	assertTrue(mln.rnnGetPreviousState(1).isEmpty());
 
     	mln.rnnSetPreviousState(0, currStateL0);
     	assertTrue(mln.rnnGetPreviousState(0).size()==2);
