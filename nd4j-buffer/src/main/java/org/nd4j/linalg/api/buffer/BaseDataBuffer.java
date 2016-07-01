@@ -24,21 +24,20 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
-import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.util.ArrayUtil;
-
 
 import java.io.*;
-import java.lang.reflect.Field;
-import java.nio.*;
+import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseDataBuffer implements DataBuffer {
 
     protected Type type;
+    protected final Type globalType = DataTypeUtil.getDtypeFromContext();
     protected long length;
     protected long underlyingLength;
     protected long offset;
@@ -875,6 +875,38 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return getFloat(i);
     }
 
+    public void pointerIndexerByGlobalType (Type currentType) {
+        if (currentType == Type.INT) {
+            pointer = new IntPointer(length());
+            indexer = IntIndexer.create((IntPointer) pointer);
+            type = Type.INT;
+        }
+        else {
+            if (globalType == Type.DOUBLE) {
+                pointer = new DoublePointer(length());
+                indexer = DoubleIndexer.create((DoublePointer) pointer);
+            } else if (globalType == Type.FLOAT) {
+                pointer = new FloatPointer(length());
+                indexer = FloatIndexer.create((FloatPointer) pointer);
+            }
+        }
+    }
+
+    public void putByGlobalType (long i, Number element) {
+        if (globalType == Type.INT || type == Type.INT) {
+                System.out.println("I AM AN INT");
+                put(i, (Integer) element);
+        }
+        else if (globalType == Type.FLOAT) {
+                System.out.println("I AM A FLOAT");
+                put(i, element.floatValue());
+        }
+        else if (globalType == Type.DOUBLE) {
+            System.out.println("I AM A DOUBLE");
+            put(i, element.doubleValue());
+        }
+    }
+
     @Override
     public void put(long i, float element) {
         if(dataType() == Type.DOUBLE) {
@@ -900,7 +932,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            if(indexer instanceof FloatIndexer) {
+            if(indexer instanceof FloatIndexer)  {
                 ((FloatIndexer)indexer).put(offset() + i, element);
 
             }
@@ -1185,40 +1217,34 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void read(DataInputStream s) {
         try {
+            System.out.println("INFO..................\n Inside Read Data Input Stream!!!!\n\n");
             referencing = Collections.synchronizedSet(new HashSet<String>());
             dirty = new AtomicBoolean(false);
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
-            type = Type.valueOf(s.readUTF());
-            if(type == Type.DOUBLE)
+            Type currentType = Type.valueOf(s.readUTF());
+            type = globalType;
+            if(currentType == Type.DOUBLE)
                 elementSize = 8;
-            else if(type == Type.FLOAT || type == Type.INT)
+            else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
-
-            if(type == Type.DOUBLE) {
-                pointer = new DoublePointer(length());
-                indexer = DoubleIndexer.create((DoublePointer) pointer);
-                for(int i = 0; i < length(); i++) {
-                    put(i,s.readDouble());
+            if (currentType != globalType)
+               System.out.println("INFO..................\n Forcing data type.\nData Input Stream is of a different type than "+ globalType+" which is what is set");
+            pointerIndexerByGlobalType(currentType);
+            if (currentType == Type.DOUBLE) {
+                for (int i = 0; i < length(); i++) {
+                    putByGlobalType(i, s.readDouble());
                 }
-                wrappedBuffer = pointer.asByteBuffer();
-            }
-            else if(type == Type.FLOAT) {
-                pointer = new FloatPointer(length());
-                indexer = FloatIndexer.create((FloatPointer) pointer);
-                for(int i = 0; i < length(); i++) {
-                    put(i,s.readFloat());
+            } else if (currentType == Type.FLOAT) {
+                for (int i = 0; i < length(); i++) {
+                    putByGlobalType(i, s.readFloat());
                 }
-                wrappedBuffer = pointer.asByteBuffer();
-            }
-            else {
-                pointer = new IntPointer(length());
-                indexer = IntIndexer.create((IntPointer) pointer);
-                for(int i = 0; i < length(); i++) {
-                    put(i,s.readInt());
+            } else {
+                for (int i = 0; i < length(); i++) {
+                    putByGlobalType(i,s.readInt());
                 }
-                wrappedBuffer = pointer.asByteBuffer();
             }
+            wrappedBuffer = pointer.asByteBuffer();
 
         } catch (Exception e) {
             throw new RuntimeException(e);
