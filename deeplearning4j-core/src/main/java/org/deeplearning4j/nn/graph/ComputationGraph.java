@@ -1322,8 +1322,7 @@ public class ComputationGraph implements Serializable, Model {
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
-            int range = (layer instanceof BasePretrainNetwork ?
-                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+            int range = layer.numParams();
             if(range <= 0) continue;    //Some layers: no parameters (subsampling etc)
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
