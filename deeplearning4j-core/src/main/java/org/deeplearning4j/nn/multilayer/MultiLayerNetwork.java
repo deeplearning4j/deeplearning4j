@@ -432,8 +432,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /**
      * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
+     * As a general rule, this shouldn't ever need to be called manually when doing training via fit(DataSet) or fit(DataSetIterator)
      */
-    protected void initGradientsView(){
+    public void initGradientsView(){
         if(layers == null) init();
 
         int nLayers = layers.length;

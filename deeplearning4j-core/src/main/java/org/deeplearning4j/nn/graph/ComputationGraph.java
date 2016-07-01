@@ -404,8 +404,10 @@ public class ComputationGraph implements Serializable, Model {
 
     /**
      * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
+     * As a general rule, this shouldn't ever need to be called manually when doing training via fit(DataSet), fit(DataSetIterator)
+     * or fit(MultiDataSet) methods
      */
-    protected void initGradientsView(){
+    public void initGradientsView(){
         if(!initCalled) init();
 
         //Go through layers, and work out total number of parameters. Then allocate full parameters array
