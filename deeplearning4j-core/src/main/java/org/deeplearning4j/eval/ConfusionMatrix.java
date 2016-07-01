@@ -186,7 +186,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         builder.append("<table>\n");
         builder.append("<tr><th class=\"empty-space\" colspan=\"2\" rowspan=\"2\">");
         builder.append(String.format(
-                "<th class=\"predicted-class-header\" colspan=\"%d\">Predicted Class</th></tr>\n",
+                "<th class=\"predicted-class-header\" colspan=\"%d\">Predicted Class</th></tr>%n",
                 numClasses + 1));
 
         // Predicted Classes Header Row
