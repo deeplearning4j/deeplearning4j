@@ -84,7 +84,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                     + "Expected input shape: [numExamples,1] with each entry being an integer index");
         }
 
-        long[] indexes = new long[input.length()];
+        int[] indexes = new int[input.length()];
         for( int i=0; i<indexes.length; i++ ) indexes[i] = input.getInt(i,0);
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
