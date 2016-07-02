@@ -788,16 +788,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public double[] getDoublesAt(long offset, long inc, int length) {
-        return super.getDoublesAt(offset, inc, length);
-    }
-
-    @Override
-    public double[] getDoublesAt(long offset, int length) {
-        return super.getDoublesAt(offset, length);
-    }
-
-    @Override
     public float getFloat(long i) {
         allocator.synchronizeHostData(this);
 
@@ -805,16 +795,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         return super.getFloat(i);
         //return wrappedBuffer.getFloat((int)(offset + i) * getElementSize());
-    }
-
-    @Override
-    public float[] getFloatsAt(long offset, long inc, int length) {
-        return super.getFloatsAt(offset, inc, length);
-    }
-
-    @Override
-    public float[] getFloatsAt(long offset, int length) {
-        return super.getFloatsAt(offset, length);
     }
 
     @Override

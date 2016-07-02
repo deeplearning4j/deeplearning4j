@@ -133,11 +133,6 @@ public class LogSoftMax extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-    }
-
-    @Override
     public boolean isExecSpecial() {
         return true;
     }
