@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.api;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.input.PortableDataStream;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -43,6 +45,15 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * @param trainingData Data to train on
      */
     void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData);
+
+
+    /**
+     * Train the SparkDl4jMultiLayer with the specified
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData);
 
     /**
      * Train the SparkComputationGraph with the specified data set
