@@ -352,13 +352,8 @@ public class StringGrid extends ArrayList<List<String>> {
             if(list.get(list.size() -1).toLowerCase().equals("the")) {
                 continue;
             }
-            //first selection that's valid
-            if(max == null) {
-                max = value;
-                chosenKey = key;
-            }
-            //count is higher
-            else if(!allLower && value > max) {
+            //first selection that's valid or count is higher
+            if(max == null || (!allLower && value > max)) {
                 max = value;
                 chosenKey = key;
             }
