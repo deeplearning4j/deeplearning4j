@@ -898,13 +898,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public void putByGlobalType (long i, Number element) {
         if (globalType == Type.INT || type == Type.INT) {
-                put(i, (Integer) element);
+            int anElement = element.intValue();
+            put(i, anElement);
         }
         else if (globalType == Type.FLOAT) {
-                put(i, element.floatValue());
+            float anElement = element.floatValue();
+            put(i, anElement);
         }
         else if (globalType == Type.DOUBLE) {
-            put(i, element.doubleValue());
+            double anElement = element.doubleValue();
+            put(i, anElement);
         }
     }
 
