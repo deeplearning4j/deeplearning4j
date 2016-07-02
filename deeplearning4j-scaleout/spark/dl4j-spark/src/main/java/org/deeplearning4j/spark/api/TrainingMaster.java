@@ -48,7 +48,8 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
 
 
     /**
-     * Train the SparkDl4jMultiLayer with the specified
+     * Train the SparkDl4jMultiLayer with the specified <i>serialized DataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for DataSet objects, one per file.
      *
      * @param network      Current network state
      * @param trainingData Data to train on
@@ -64,12 +65,30 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
     void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData);
 
     /**
+     * Train the SparkComputationGraph with the specified <i>serialized DataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for DataSet objects, one per file.
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTraining(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
+
+    /**
      * Train the SparkComputationGraph with the specified data set
      *
      * @param graph        Current network state
      * @param trainingData Data to train on
      */
     void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData);
+
+    /**
+     * Train the SparkComputationGraph with the specified <i>serialized MultiDataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for MultiDataSet objects, one per file.
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
 
     /**
      * Set whether the training statistics should be collected. Training statistics may include things like per-epoch run times,
