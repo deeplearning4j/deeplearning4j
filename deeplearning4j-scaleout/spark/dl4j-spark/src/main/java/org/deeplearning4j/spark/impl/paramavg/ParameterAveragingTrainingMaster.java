@@ -236,7 +236,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
-        //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
+        //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
         trainingData.persist(StorageLevel.MEMORY_ONLY());
 
         long totalDataSetObjectCount = trainingData.count();
@@ -247,24 +247,70 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int splitNum = 1;
         for (JavaRDD<MultiDataSet> split : splits) {
-            log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
-                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalDataSetObjectCount, numWorkers);
-            if (collectTrainingStats) stats.logMapPartitionsStart();
-
-            JavaRDD<MultiDataSet> splitData = split;
-
-            splitData = repartitionIfRequired(splitData);
-            int nPartitions = split.partitions().size();
-
-            FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
-            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-            processResults(null, graph, result, splitNum, splits.length);
-
-            splitNum++;
-            if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+//            log.info("Starting graph training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
+//                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalDataSetObjectCount, numWorkers);
+//            if (collectTrainingStats) stats.logMapPartitionsStart();
+//
+//            JavaRDD<MultiDataSet> splitData = split;
+//
+//            splitData = repartitionIfRequired(splitData);
+//            int nPartitions = split.partitions().size();
+//
+//            FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
+//            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+//            processResults(null, graph, result, splitNum, splits.length);
+//
+//            splitNum++;
+//            if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+            doIteration(graph, split, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    @Override
+    public void executeTraining(SparkComputationGraph graph, JavaPairRDD<String,PortableDataStream> trainingData){
+        if (collectTrainingStats) stats.logFitStart();
+        //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
+        // number of minibatches between averagings
+        //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
+
+        long totalDataSetObjectCount = trainingData.count();
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
+
+        JavaPairRDD<String,PortableDataStream>[] splits = randomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+
+
+        int splitNum = 1;
+        for (JavaPairRDD<String,PortableDataStream> split : splits) {
+            JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
+            JavaRDD<MultiDataSet> splitData2 = splitData.map(new DataSetToMultiDataSetFn());
+            doIteration(graph, splitData2, splitNum++, splits.length);
+        }
+
+        if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits){
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} executors",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<MultiDataSet> splitData = split;
+
+        splitData = repartitionIfRequired(splitData);
+        int nPartitions = split.partitions().size();
+
+        FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(null, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    @Override
+    public void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData){
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     private <T> JavaRDD<T>[] randomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data) {
