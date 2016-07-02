@@ -1,9 +1,11 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import lombok.Data;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -18,6 +20,7 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerMultiDataSetFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
+import org.deeplearning4j.spark.impl.common.LoadSerializedDataSetFunction;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -163,23 +166,59 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int splitNum = 1;
         for (JavaRDD<DataSet> split : splits) {
-            log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
-                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalDataSetObjectCount, numWorkers);
-            if (collectTrainingStats) stats.logMapPartitionsStart();
+//            log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
+//                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalDataSetObjectCount, numWorkers);
+//            if (collectTrainingStats) stats.logMapPartitionsStart();
+//
+//            JavaRDD<DataSet> splitData = split;
+//
+//            splitData = repartitionIfRequired(splitData);
+//            int nPartitions = split.partitions().size();
+//
+//            FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
+//            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+//            processResults(network, null, result, splitNum, splits.length);
+//
+//            splitNum++;
+//            if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+            doIteration(network, split, splitNum++, splits.length);
+        }
 
-            JavaRDD<DataSet> splitData = split;
+        if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
 
+    private void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits){
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} executors",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<DataSet> splitData = split;
+
+        splitData = repartitionIfRequired(splitData);
+        int nPartitions = split.partitions().size();
+
+        FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(network, null, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    @Override
+    public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData){
+        long totalDataSetObjectCount = trainingData.count();
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaPairRDD<String,PortableDataStream>[] splits = randomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        if (collectTrainingStats) stats.logSplitEnd();
+
+        int splitNum = 1;
+        for (JavaPairRDD<String,PortableDataStream> split : splits) {
+
+            JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
             splitData = repartitionIfRequired(splitData);
-            int nPartitions = split.partitions().size();
 
-            System.out.println("SPLIT SIZE: " + splitData.count());
-
-            FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
-            JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-            processResults(network, null, result, splitNum, splits.length);
-
-            splitNum++;
-            if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+            doIteration(network, splitData, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
@@ -239,6 +278,24 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             double[] weights = new double[numSplits];
             for (int i = 0; i < weights.length; i++) weights[i] = 1.0 / numSplits;
             splits = data.randomSplit(weights);
+        }
+        if (collectTrainingStats) stats.logSplitEnd();
+        return splits;
+    }
+
+    private <T,U> JavaPairRDD<T,U>[] randomSplit(int totalObjectCount, int numObjectsPerSplit, JavaPairRDD<T,U> data) {
+        JavaPairRDD<T,U>[] splits;
+        if (collectTrainingStats) stats.logSplitStart();
+        if (totalObjectCount <= numObjectsPerSplit) {
+            splits = (JavaPairRDD<T,U>[]) Array.newInstance(JavaPairRDD.class, 1);
+            splits[0] = data;
+        } else {
+            int numSplits = totalObjectCount / numObjectsPerSplit; //Intentional round down
+            double[] weights = new double[numSplits];
+            for (int i = 0; i < weights.length; i++) weights[i] = 1.0 / numSplits;
+            //TODO: no randomSplit method available...
+//            splits = data.randomSplit(weights);
+            throw new RuntimeException("Not yet implemented");
         }
         if (collectTrainingStats) stats.logSplitEnd();
         return splits;
