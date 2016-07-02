@@ -131,18 +131,13 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     @Override
     public boolean defaultIncludeInPlots(String key) {
         switch (key) {
-            case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
-                return true;
             case PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS:
-                return false;
-            case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
-                return true;
             case PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS:
                 return false;
+            case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
+            case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
             case PARAMETER_AVERAGING_MASTER_AGGREGATE_TIMES_MS:
-                return true;
             case PARAMETER_AVERAGING_MASTER_PROCESS_PARAMS_UPDATER_TIMES_MS:
-                return true;
             case PARAMETER_AVERAGING_MASTER_REPARTITION_TIMES_MS:
                 return true;
             default:

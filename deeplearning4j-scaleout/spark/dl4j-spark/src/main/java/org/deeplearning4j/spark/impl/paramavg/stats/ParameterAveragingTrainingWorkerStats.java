@@ -86,9 +86,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     public boolean defaultIncludeInPlots(String key) {
         switch (key) {
             case PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS:
-                return true;
             case PARAMETER_AVERAGING_WORKER_INIT_TIME_MS:
-                return true;
             case PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS:
                 return true;
             default:
