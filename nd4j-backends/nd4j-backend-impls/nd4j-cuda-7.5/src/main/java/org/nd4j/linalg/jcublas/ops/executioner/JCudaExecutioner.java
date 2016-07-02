@@ -712,9 +712,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
         else {
-            if (dimension == null)
-                dimension = new int[] {0};
-
             Arrays.sort(dimension);
 
             Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
