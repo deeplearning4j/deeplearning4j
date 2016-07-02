@@ -54,7 +54,7 @@ public class BaseNDArrayProxy implements java.io.Serializable {
     }
 	// READ DONE HERE - return an NDArray using the available backend
 	private Object readResolve() throws java.io.ObjectStreamException {
-        return Nd4j.create(this.data,this.arrayShape,this.arrayOrdering);
+        return Nd4j.create(this.data,this.arrayShape);
     }
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
         try {
