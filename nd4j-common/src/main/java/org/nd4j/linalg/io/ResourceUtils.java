@@ -72,11 +72,11 @@ public abstract class ResourceUtils {
             if(url == null) {
                 throw new FileNotFoundException(description + " cannot be resolved to absolute file path " + "because it does not reside in the file system");
             } else {
-                return getFile((URL)url, description);
+                return getFile(url, description);
             }
         } else {
             try {
-                return getFile((URL)(new URL(resourceLocation)));
+                return getFile(new URL(resourceLocation));
             } catch (MalformedURLException var4) {
                 return new File(resourceLocation);
             }
@@ -84,7 +84,7 @@ public abstract class ResourceUtils {
     }
 
     public static File getFile(URL resourceUrl) throws FileNotFoundException {
-        return getFile((URL)resourceUrl, "URL");
+        return getFile(resourceUrl, "URL");
     }
 
     public static File getFile(URL resourceUrl, String description) throws FileNotFoundException {
@@ -93,7 +93,7 @@ public abstract class ResourceUtils {
             throw new FileNotFoundException(description + " cannot be resolved to absolute file path " + "because it does not reside in the file system: " + resourceUrl);
         } else {
             try {
-                return new File(toURI((URL)resourceUrl).getSchemeSpecificPart());
+                return new File(toURI(resourceUrl).getSchemeSpecificPart());
             } catch (URISyntaxException var3) {
                 return new File(resourceUrl.getFile());
             }
@@ -101,7 +101,7 @@ public abstract class ResourceUtils {
     }
 
     public static File getFile(URI resourceUri) throws FileNotFoundException {
-        return getFile((URI)resourceUri, "URI");
+        return getFile(resourceUri, "URI");
     }
 
     public static File getFile(URI resourceUri, String description) throws FileNotFoundException {
@@ -144,7 +144,7 @@ public abstract class ResourceUtils {
     }
 
     public static URI toURI(URL url) throws URISyntaxException {
-        return toURI((String)url.toString());
+        return toURI(url.toString());
     }
 
     public static URI toURI(String location) throws URISyntaxException {

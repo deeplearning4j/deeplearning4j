@@ -83,7 +83,7 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     @Override
     public float op(float origin, float other) {
-        return (float) (num.floatValue() / origin);
+        return num.floatValue() / origin;
     }
 
     @Override

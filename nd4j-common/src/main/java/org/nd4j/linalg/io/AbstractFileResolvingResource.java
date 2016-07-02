@@ -15,21 +15,21 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
 
     public File getFile() throws IOException {
         URL url = this.getURL();
-        return url.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource((URL)url).getFile():ResourceUtils.getFile(url, this.getDescription());
+        return url.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(url).getFile():ResourceUtils.getFile(url, this.getDescription());
     }
 
     protected File getFileForLastModifiedCheck() throws IOException {
         URL url = this.getURL();
         if(ResourceUtils.isJarURL(url)) {
             URL actualUrl = ResourceUtils.extractJarFileURL(url);
-            return actualUrl.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource((URL)actualUrl).getFile():ResourceUtils.getFile(actualUrl, "Jar URL");
+            return actualUrl.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(actualUrl).getFile():ResourceUtils.getFile(actualUrl, "Jar URL");
         } else {
             return this.getFile();
         }
     }
 
     protected File getFile(URI uri) throws IOException {
-        return uri.getScheme().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource((URI)uri).getFile():ResourceUtils.getFile(uri, this.getDescription());
+        return uri.getScheme().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(uri).getFile():ResourceUtils.getFile(uri, this.getDescription());
     }
 
     public boolean exists() {

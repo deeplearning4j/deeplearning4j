@@ -99,7 +99,7 @@ public class StandardDeviation extends Variance {
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
         for( int i = 0; i < nOps; i++) {
-            double d = Nd4j.getExecutioner().execAndReturn((StandardDeviation) opForDimension(i,dimension)).getFinalResult().doubleValue();
+            double d = Nd4j.getExecutioner().execAndReturn(opForDimension(i,dimension)).getFinalResult().doubleValue();
             z.putScalar(i,d);
         }
     }

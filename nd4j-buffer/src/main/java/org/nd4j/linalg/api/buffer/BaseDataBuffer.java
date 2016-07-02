@@ -850,7 +850,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (int) other.get(offset() + i);
+                return other.get(offset() + i);
 
             }
         }
@@ -960,7 +960,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i,(int) element);
+                other.put(offset() + i, element);
             }
         }
         else if(dataType() == Type.INT) {
@@ -970,7 +970,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i,(int) element);
+                other.put(offset() + i, element);
             }
         }
         else {
@@ -980,7 +980,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i,(int) element);
+                other.put(offset() + i, element);
             }
         }
 

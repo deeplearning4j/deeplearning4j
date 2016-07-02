@@ -170,7 +170,7 @@ public class Configuration implements Serializable {
     }
 
     public Configuration() {
-        int cnt = (int) nativeOps.getAvailableDevices();
+        int cnt = nativeOps.getAvailableDevices();
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 

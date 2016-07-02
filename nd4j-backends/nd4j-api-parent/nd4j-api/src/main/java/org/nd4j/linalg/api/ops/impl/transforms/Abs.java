@@ -95,7 +95,7 @@ public class Abs extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-        return (float) FastMath.abs(origin);
+        return FastMath.abs(origin);
     }
 
     @Override

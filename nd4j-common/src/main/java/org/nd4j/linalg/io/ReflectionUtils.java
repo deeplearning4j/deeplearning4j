@@ -34,7 +34,7 @@ public abstract class ReflectionUtils {
     }
 
     public static Field findField(Class<?> clazz, String name) {
-        return findField(clazz, name, (Class)null);
+        return findField(clazz, name, null);
     }
 
     public static Field findField(Class<?> clazz, String name, Class<?> type) {
@@ -249,7 +249,7 @@ public abstract class ReflectionUtils {
     }
 
     public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc) throws IllegalArgumentException {
-        doWithMethods(clazz, mc, (ReflectionUtils.MethodFilter)null);
+        doWithMethods(clazz, mc, null);
     }
 
     public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc, ReflectionUtils.MethodFilter mf) throws IllegalArgumentException {
@@ -328,7 +328,7 @@ public abstract class ReflectionUtils {
     }
 
     public static void doWithFields(Class<?> clazz, ReflectionUtils.FieldCallback fc) throws IllegalArgumentException {
-        doWithFields(clazz, fc, (ReflectionUtils.FieldFilter)null);
+        doWithFields(clazz, fc, null);
     }
 
     public static void doWithFields(Class<?> clazz, ReflectionUtils.FieldCallback fc, ReflectionUtils.FieldFilter ff) throws IllegalArgumentException {
@@ -365,7 +365,7 @@ public abstract class ReflectionUtils {
         } else {
             doWithFields(src.getClass(), new ReflectionUtils.FieldCallback() {
                 public void doWith(Field field) throws IllegalArgumentException, IllegalAccessException {
-                    ReflectionUtils.makeAccessible((Field)field);
+                    ReflectionUtils.makeAccessible(field);
                     Object srcValue = field.get(src);
                     field.set(dest, srcValue);
                 }
