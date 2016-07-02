@@ -23,6 +23,9 @@ import java.util.List;
  * @author Alex Black
  */
 public class NDArrayCreationUtil {
+    private NDArrayCreationUtil() {
+    }
+
     /** Get an array of INDArrays (2d) all with the specified shape. Pair<INDArray,String> returned to aid
      * debugging: String contains information on how to reproduce the matrix (i.e., which function, and arguments)
      * Each NDArray in the returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,

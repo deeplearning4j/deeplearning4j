@@ -15,6 +15,9 @@ import org.nd4j.bytebuddy.arithmetic.ByteBuddyIntArithmetic;
  * @author Adam Gibson
  */
 public class OpStackManipulation {
+    private OpStackManipulation() {
+    }
+
     /**
      * Stack manipulation for addition
      * @return

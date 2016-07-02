@@ -12,6 +12,9 @@ import java.util.Arrays;
  */
 public class OpExecutionerUtil {
 
+    private OpExecutionerUtil() {
+    }
+
     /** Can we do the op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first?
      * In general, this is possible if the elements of X are contiguous in the buffer, OR if every element
      * of X is at position offset+i*elementWiseStride in the buffer

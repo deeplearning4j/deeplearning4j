@@ -10,6 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class NDArrayUtil {
 
+    private NDArrayUtil() {
+    }
+
     public static INDArray toNDArray(int[][] nums) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);

@@ -6,6 +6,9 @@ package org.nd4j.linalg.jcublas.util;
  */
 public class OpUtil {
 
+    private OpUtil() {
+    }
+
     /**
      * Return op for the given character
      * throws an @link{IllegalArgumentException}

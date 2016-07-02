@@ -10,6 +10,9 @@ import java.util.Arrays;
 public class NDArrayMath {
 
 
+    private NDArrayMath() {
+    }
+
     /**
      * Compute the offset for a given slice
      * @param arr the array to compute
