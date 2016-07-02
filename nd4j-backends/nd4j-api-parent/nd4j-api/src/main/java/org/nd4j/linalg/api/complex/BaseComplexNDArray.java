@@ -3288,12 +3288,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public boolean equals(Object o) {
-        IComplexNDArray n = null;
-        if (!(o instanceof IComplexNDArray))
+        if (!(o instanceof IComplexNDArray)) {
             return false;
-
-        if (n == null)
-            n = (IComplexNDArray) o;
+        }
+        IComplexNDArray n = (IComplexNDArray) o;
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {

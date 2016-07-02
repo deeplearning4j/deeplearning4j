@@ -9,7 +9,10 @@ import java.io.IOException;
  * Created by susaneraly on 6/18/16.
  */
 public class NdArrayJSONWriter {
-    public static void write(INDArray thisnD,String filePath) {
+    private NdArrayJSONWriter() {
+    }
+
+    public static void write(INDArray thisnD, String filePath) {
         //TO DO: Add precision support in toString
         //TO DO: Write to file one line at time
         String lineOne = "{\n";

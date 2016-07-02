@@ -33,6 +33,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class PCA {
 
+    private PCA() {
+    }
+
     /**
      * Reduce the dimension of x
      * to the specified number of dimensions.

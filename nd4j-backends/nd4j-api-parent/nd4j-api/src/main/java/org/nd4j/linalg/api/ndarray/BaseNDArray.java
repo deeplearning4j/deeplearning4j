@@ -3776,13 +3776,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean equals(Object o) {
-        INDArray n = null;
-
         if (!(o instanceof INDArray))
             return false;
 
-        if (n == null)
-            n = (INDArray) o;
+        INDArray n = (INDArray) o;
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {

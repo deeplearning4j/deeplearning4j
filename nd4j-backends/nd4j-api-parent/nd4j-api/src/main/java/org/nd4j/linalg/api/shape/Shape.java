@@ -50,6 +50,9 @@ public class Shape {
 
     private static Logger logger = LoggerFactory.getLogger(Shape.class);
 
+    private Shape() {
+    }
+
     /**
      * Create a copy of the matrix
      * where the new offset is zero

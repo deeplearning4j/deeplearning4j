@@ -13,6 +13,9 @@ import java.io.*;
  */
 public class Nd4jBase64 {
 
+    private Nd4jBase64() {
+    }
+
     /**
      * Returns a set of arrays
      * from base 64 that is tab delimited.

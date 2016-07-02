@@ -9,6 +9,9 @@ import java.nio.*;
  */
 public class NioUtil {
 
+    private NioUtil() {
+    }
+
     public enum BufferType {
         INT,FLOAT,DOUBLE
     }

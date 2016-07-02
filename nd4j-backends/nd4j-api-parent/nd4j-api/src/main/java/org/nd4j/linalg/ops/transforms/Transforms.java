@@ -49,6 +49,8 @@ import java.util.List;
 public class Transforms {
 
 
+    private Transforms() {
+    }
 
     /**
      * Cosine similarity

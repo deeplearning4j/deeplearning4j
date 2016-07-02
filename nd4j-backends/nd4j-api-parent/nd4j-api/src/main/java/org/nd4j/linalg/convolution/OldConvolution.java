@@ -7,6 +7,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 public class OldConvolution {
 
+    private OldConvolution() {
+    }
+
     /**
      *
      * @param col

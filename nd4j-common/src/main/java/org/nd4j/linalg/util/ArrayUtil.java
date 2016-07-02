@@ -807,9 +807,6 @@ public class ArrayUtil {
 
         if (index >= data.length)
             throw new IllegalArgumentException("Unable to remove index " + index + " was >= data.length");
-
-        if (data == null)
-            return null;
         if (data.length < 1)
             return data;
         if (index < 0)

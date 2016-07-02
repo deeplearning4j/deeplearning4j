@@ -29,6 +29,9 @@ import java.io.*;
  */
 public class SerializationUtils {
 
+	private SerializationUtils() {
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T> T readObject(File file) {
 		try {
