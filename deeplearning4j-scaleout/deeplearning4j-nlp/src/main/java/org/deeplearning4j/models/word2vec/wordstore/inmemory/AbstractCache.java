@@ -62,7 +62,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public boolean vocabExists() {
-        return vocabulary.size() > 0;
+        return !vocabulary.isEmpty();
     }
 
     /**
@@ -376,7 +376,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         for (T element: vocabulary.values()) {
             long value = (long) element.getElementFrequency();
 
-            if (value > 0) totalWordCount.addAndGet(value);
+            if (value > 0) {
+                totalWordCount.addAndGet(value);
+            }
         }
         logger.info("Updated counter: ["+ totalWordCount.get()+"]");
     }

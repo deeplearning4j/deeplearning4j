@@ -27,6 +27,9 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 public class ComputationGraphUtil {
 
+    private ComputationGraphUtil() {
+    }
+
     /** Convert a DataSet to the equivalent MultiDataSet */
     public static MultiDataSet toMultiDataSet(DataSet dataSet){
         INDArray f = dataSet.getFeatureMatrix();

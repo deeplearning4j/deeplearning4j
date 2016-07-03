@@ -48,7 +48,9 @@ public class BackPropMLPTest {
         network.init();
         DataSetIterator iter = new IrisDataSetIterator(10,100);
 
-        while( iter.hasNext() ) network.fit(iter.next());
+        while(iter.hasNext()) {
+            network.fit(iter.next());
+        }
     }
 
     @Test
@@ -61,7 +63,9 @@ public class BackPropMLPTest {
 
         DataSetIterator iter = new IrisDataSetIterator(12,120);
 
-        while( iter.hasNext() ) network.fit(iter.next());
+        while(iter.hasNext()) {
+            network.fit(iter.next());
+        }
     }
 
     @Test
@@ -101,7 +105,9 @@ public class BackPropMLPTest {
 
             float[] outputPreSoftmax = new float[3];
             //Normally a matrix multiplication here, but only one hidden unit in this trivial example
-            for( int i=0; i<3; i++ ) outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloatArray[i];
+            for( int i=0; i<3; i++ ) {
+                outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloatArray[i];
+            }
             float[] outputPostSoftmax = softmax(outputPreSoftmax);
 
             //Do backward pass:
@@ -202,7 +208,9 @@ public class BackPropMLPTest {
         if( totalExamples > 150) {
             totalExamples = miniBatchSize * (150/miniBatchSize);
         }
-        if( miniBatchSize > 150 ) fail();
+        if( miniBatchSize > 150 ) {
+            fail();
+        }
         DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,"sigmoid"));
@@ -339,7 +347,9 @@ public class BackPropMLPTest {
 
     public static float[] sigmoid(float[] in) {
         float[] out = new float[in.length];
-        for( int i=0; i<in.length; i++ ) out[i] = sigmoid(in[i]);
+        for( int i=0; i<in.length; i++ ) {
+            out[i] = sigmoid(in[i]);
+        }
         return out;
     }
 
@@ -351,21 +361,29 @@ public class BackPropMLPTest {
 
     public static float[] derivOfSigmoid( float[] in) {
         float[] out = new float[in.length];
-        for( int i=0; i<in.length; i++ ) out[i] = derivOfSigmoid(in[i]);
+        for( int i=0; i<in.length; i++ ) {
+            out[i] = derivOfSigmoid(in[i]);
+        }
         return out;
     }
 
     public static float[] softmax( float[] in) {
         float[] out = new float[in.length];
         float sumExp = 0.0f;
-        for( int i=0; i<in.length; i++ ) sumExp += Math.exp(in[i]);
-        for( int i=0; i<in.length; i++ ) out[i] = (float)Math.exp(in[i])/sumExp;
+        for( int i=0; i<in.length; i++ ) {
+            sumExp += Math.exp(in[i]);
+        }
+        for( int i=0; i<in.length; i++ ) {
+            out[i] = (float)Math.exp(in[i])/sumExp;
+        }
         return out;
     }
 
     public static float[] vectorDifference(float[] x, float[] y){
         float[] out = new float[x.length];
-        for( int i=0; i<x.length; i++ ) out[i] = x[i]-y[i];
+        for( int i=0; i<x.length; i++ ) {
+            out[i] = x[i]-y[i];
+        }
         return out;
     }
 

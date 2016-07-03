@@ -298,20 +298,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), lr.get()) : (1 - code - f) * alpha;
 
-            if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
-
-            }
-
-             else {
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, syn1, neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, l1, syn1);
-
-            }
-
-
-
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
 
         }
 

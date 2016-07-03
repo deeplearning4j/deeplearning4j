@@ -492,7 +492,7 @@ public class GravesBidirectionalLSTMTest {
         for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
             net.fit(ds);
 
-            System.out.print(String.format("score is %f\n",score));
+            System.out.print(String.format("score is %f%n",score));
 
             assertTrue(!Double.isNaN(score));
 

@@ -35,7 +35,9 @@ public class AdamUpdater extends BaseUpdater {
     @Override
     public UpdaterAggregator getAggregator(boolean addThis){
         AdamAggregator ag = new AdamAggregator();
-        if(addThis) ag.aggregate(this);
+        if(addThis) {
+            ag.aggregate(this);
+        }
         return ag;
     }
 

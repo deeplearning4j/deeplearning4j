@@ -89,7 +89,7 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
             List<? extends Edge<? extends Number>> edgeList = graph.getEdgesOut(currVertexIdx);
 
             //First: check if there are any outgoing edges from this vertex. If not: handle the situation
-            if(edgeList == null || edgeList.size() == 0){
+            if(edgeList == null || edgeList.isEmpty()){
                 switch (mode) {
                     case SELF_LOOP_ON_DISCONNECTED:
                         for (int j = i; j < walkLength; j++) indices[j] = currVertexIdx;

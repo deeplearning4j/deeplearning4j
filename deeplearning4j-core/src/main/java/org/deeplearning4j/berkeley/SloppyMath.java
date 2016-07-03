@@ -35,7 +35,10 @@ import java.util.Map;
  */
 public final class SloppyMath {
 
-	  public static double abs(double x) {
+    private SloppyMath() {
+    }
+
+    public static double abs(double x) {
 		    if (x > 0)
 		      return x;
 		    return -1.0 * x;
@@ -252,9 +255,7 @@ public final class SloppyMath {
       max = ly;
       negDiff = lx - ly;
     }
-    if (max == Double.NEGATIVE_INFINITY) {
-      return max;
-    } else if (negDiff < -LOGTOLERANCE_F) {
+    if (max == Double.NEGATIVE_INFINITY || negDiff < -LOGTOLERANCE_F) {
       return max;
     } else {
       return max + (float)Math.log(1.0f + Math.exp(negDiff));
@@ -285,9 +286,7 @@ public final class SloppyMath {
       max = ly;
       negDiff = lx - ly;
     }
-    if (max == Double.NEGATIVE_INFINITY) {
-      return max;
-    } else if (negDiff < -LOGTOLERANCE) {
+    if (max == Double.NEGATIVE_INFINITY || negDiff < -LOGTOLERANCE) {
       return max;
     } else {
       return max + Math.log(1.0 + Math.exp(negDiff));

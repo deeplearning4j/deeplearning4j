@@ -324,8 +324,9 @@ public class StringGrid extends ArrayList<List<String>> {
     private void modifyRows(Set<Integer> alreadyDeDupped,Integer column,List<Integer> rows,Map<String,Integer> cluster) {
         String chosenKey = null;
         Integer max = null;
-
-        for(String key : cluster.keySet()) {
+        for (Map.Entry<String, Integer> entry : cluster.entrySet()) {
+            String key = entry.getKey();
+            int value = entry.getValue();
             StringTokenizer val = new StringTokenizer(key);
             List<String> list = new ArrayList<>();
             boolean allLower = true;
@@ -351,14 +352,9 @@ public class StringGrid extends ArrayList<List<String>> {
             if(list.get(list.size() -1).toLowerCase().equals("the")) {
                 continue;
             }
-            //first selection that's valid
-            if(max == null) {
-                max = cluster.get(key);
-                chosenKey = key;
-            }
-            //count is higher
-            else if(!allLower && cluster.get(key) > max) {
-                max = cluster.get(key);
+            //first selection that's valid or count is higher
+            if(max == null || (!allLower && value > max)) {
+                max = value;
                 chosenKey = key;
             }
         }
@@ -407,8 +403,8 @@ public class StringGrid extends ArrayList<List<String>> {
 
     private String maximalValue(Map<String,Integer> map) {
         Counter<String> counter = new Counter<>();
-        for(String s : map.keySet()) {
-            counter.incrementCount(s,map.get(s));
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            counter.incrementCount(entry.getKey(), map.get(entry.getValue()));
         }
         return counter.argMax();
     }
@@ -559,8 +555,9 @@ public class StringGrid extends ArrayList<List<String>> {
         }
 
         //prevent concurrent modification
-        for(Integer i : replace.keySet())
-            set(i,replace.get(i));
+        for (Map.Entry<Integer, List<String>> entry : replace.entrySet()) {
+            set(entry.getKey(), entry.getValue());
+        }
     }
 
     public void filterBySimilarity(double threshold,int firstColumn,int secondColumn) {
