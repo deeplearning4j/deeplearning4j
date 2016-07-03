@@ -142,20 +142,27 @@ public class SparkUtils {
     }
 
 
-
-
-    public static <T> JavaRDD<T> repartitionIfRequired(JavaRDD<T> rdd, Repartition repartition, int objectsPerPartition, int numPartitions){
-        int nPartitions = rdd.partitions().size();
+    /**
+     * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately {@code numPartitions} partitions,
+     * each of which has {@code objectsPerPartition} objects.
+     *
+     * @param rdd                    RDD to repartition
+     * @param repartition            Repartitioning setting
+     * @param objectsPerPartition    Number of objects we want in each partition
+     * @param numPartitions          Number of partitions to have
+     * @param <T>                    Type of RDD
+     * @return                       Repartitioned RDD, or the original RDD if no repartitioning was performed
+     */
+    public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition, int objectsPerPartition, int numPartitions){
+        int origNumPartitions = rdd.partitions().size();
         switch (repartition) {
             case Never:
                 return rdd;
-            case NumPartitionsExecutorsDiffers:
-                if (nPartitions == numPartitions) return rdd;
+            case NumPartitionsWorkersDiffers:
+                if (origNumPartitions == numPartitions) return rdd;
             case Always:
-                //Repartition: either always, or nPartitions != numWorkers
+                //Repartition: either always, or origNumPartitions != numWorkers
                 JavaRDD<T> temp;
-//                if (collectTrainingStats) stats.logRepartitionStart();
-
                 //First: count number of elements in each partition. Need to know this so we can work out how to properly index each example,
                 // so we can in turn create properly balanced partitions after repartitioning
                 //Because the objects (DataSets etc) should be small, this should be OK
@@ -196,34 +203,37 @@ public class SparkUtils {
 
                 pairIndexed = pairIndexed.partitionBy(new BalancedPartitioner(numPartitions, numStandardPartitions, objectsPerPartition));
 
-                temp = pairIndexed.values();
-
-//                if (collectTrainingStats) stats.logRepartitionEnd();
-                return temp;
+                return pairIndexed.values();
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);
         }
     }
 
     /**
+     * Random split the specified RDD into a number of RDDs, where each has {@code numObjectsPerSplit} in them.
      *
-     * This is pretty much how RDD.randomSplit works (i.e., split via filtering), but this should result in more
+     * This similar to how RDD.randomSplit works (i.e., split via filtering), but this should result in more
      * equal splits (instead of independent binomial sampling that is used there, based on weighting)
-     * This balanced splitting approach is important when the number of DataSet objects is small, as random sampling variance
-     * of {@link JavaRDD#randomSplit(double[])} is quite large relative to the total number of examples.
+     * This balanced splitting approach is important when the number of DataSet objects we want in each split is small,
+     * as random sampling variance of {@link JavaRDD#randomSplit(double[])} is quite large relative to the number of examples
+     * in each split.
      *
-     * Downside is we need total object count (whereas {@link JavaRDD#randomSplit(double[])} does not)
+     * Downside is we need total object count (whereas {@link JavaRDD#randomSplit(double[])} does not). However, randomSplit
+     * requires a full pass of the data anyway (in order to do filtering upon it) so this should not add much overhead in practice
      *
-     * @param totalObjectCount
-     * @param numObjectsPerSplit
-     * @param data
-     * @param <T>
-     * @return
+     * @param totalObjectCount      Total number of objects in the RDD to split
+     * @param numObjectsPerSplit    Number of objects in each split
+     * @param data                  Data to split
+     * @param <T>                   Generic type for the RDD
+     * @return                      The RDD split up (without replacetement) into a number of smaller RDDs
      */
     public static <T> JavaRDD<T>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data) {
         return balancedRandomSplit(totalObjectCount, numObjectsPerSplit, data, new Random().nextLong());
     }
 
+    /**
+     * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} with control over the RNG seed
+     */
     public static <T> JavaRDD<T>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data, long rngSeed) {
         JavaRDD<T>[] splits;
         if (totalObjectCount <= numObjectsPerSplit) {
@@ -240,10 +250,16 @@ public class SparkUtils {
         return splits;
     }
 
+    /**
+     * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} but for Pair RDDs
+     */
     public static <T,U> JavaPairRDD<T,U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaPairRDD<T,U> data) {
         return balancedRandomSplit(totalObjectCount, numObjectsPerSplit, data, new Random().nextLong());
     }
 
+    /**
+     * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} but for pair RDDs, and with control over the RNG seed
+     */
     public static <T,U> JavaPairRDD<T,U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaPairRDD<T,U> data, long rngSeed) {
         JavaPairRDD<T,U>[] splits;
         if (totalObjectCount <= numObjectsPerSplit) {

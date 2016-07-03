@@ -9,7 +9,9 @@ import scala.Tuple2;
 import java.io.InputStream;
 
 /**
- * Created by Alex on 02/07/2016.
+ * This is a function that is used to load a {@link DataSet} object using {@link DataSet#load(InputStream)}.
+ *
+ * @author Alex Black
  */
 public class LoadSerializedDataSetFunction implements Function<Tuple2<String,PortableDataStream>,DataSet> {
     @Override

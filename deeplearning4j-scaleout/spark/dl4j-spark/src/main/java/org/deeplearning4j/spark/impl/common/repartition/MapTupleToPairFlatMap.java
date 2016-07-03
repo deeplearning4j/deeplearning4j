@@ -9,7 +9,10 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by Alex on 03/07/2016.
+ * This is a simple function used to convert a {@code JavaRDD<Tuple2<T,U>>} to a {@code JavaPairRDD<T,U>} via a
+ * {JavaRDD.mappartitionsToPair()} call.
+ *
+ * @author Alex Black
  */
 public class MapTupleToPairFlatMap<T,U> implements PairFlatMapFunction<Iterator<Tuple2<T,U>>,T,U> {
 
