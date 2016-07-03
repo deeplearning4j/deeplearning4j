@@ -185,8 +185,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
         sb.append(String.format(f, "ParameterAveragingMasterRepartitionTimesMs"));
         if (parameterAveragingMasterRepartitionTimesMs == null) sb.append("-\n");
-        else
-            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
+        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
 
         sb.append(String.format(f, "ParameterAveragingMasterFitTimesMs"));
         if (parameterAveragingMasterFitTimesMs == null) sb.append("-\n");
@@ -208,11 +207,6 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         if (parameterAveragingMasterProcessParamsUpdaterTimesMs == null) sb.append("-\n");
         else
             sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterProcessParamsUpdaterTimesMs, ",")).append("\n");
-
-
-        sb.append(String.format(f, "ParameterAveragingMasterRepartitionTimesMs"));
-        if (parameterAveragingMasterRepartitionTimesMs == null) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterRepartitionTimesMs, ",")).append("\n");
 
         if (workerStats != null) sb.append(workerStats.statsAsString());
 
@@ -320,13 +314,13 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             splitTimes.add(new BaseEventStats(lastSplitStartTime, now - lastSplitStartTime));
         }
 
-        public void logMapPartitionsStart(){
+        public void logMapPartitionsStart() {
             lastMapPartitionsStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logMapPartitionsEnd(int nPartitions){
+        public void logMapPartitionsEnd(int nPartitions) {
             long now = timeSource.currentTimeMillis();
-            mapPartitions.add(new PartitionCountEventStats(lastMapPartitionsStartTime, (now-lastMapPartitionsStartTime), nPartitions));
+            mapPartitions.add(new PartitionCountEventStats(lastMapPartitionsStartTime, (now - lastMapPartitionsStartTime), nPartitions));
         }
 
         public void logAggregateStartTime() {
