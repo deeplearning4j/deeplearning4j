@@ -148,7 +148,7 @@ public class TextPipeline {
 
     public void filterMinWordAddVocab(Counter<String> wordFreq) {
 
-        if (wordFreq.size() == 0) {
+        if (wordFreq.isEmpty()) {
             throw new IllegalStateException("IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 

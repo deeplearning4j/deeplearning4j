@@ -248,14 +248,9 @@ public class LegacyTsne implements Serializable {
         p.muli(4);
 
         //init adagrad where needed
-        if(useAdaGrad) {
-            if(adaGrad == null) {
-                adaGrad = new AdaGrad(learningRate);
-            }
+        if(useAdaGrad && adaGrad == null) {
+            adaGrad = new AdaGrad(learningRate);
         }
-
-
-
 
         for(int i = 0; i < maxIter; i++) {
             step(p,i);

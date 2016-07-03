@@ -76,8 +76,7 @@ public class InputHomogenization {
 				sb.append("d");
 			else if(Character.isUpperCase(input.charAt(i)) && !preserveCase)
 					sb.append(Character.toLowerCase(input.charAt(i)));
-
-			else 
+			else
 				sb.append(input.charAt(i));
 
 		}

@@ -53,6 +53,7 @@ import java.util.*;
  */
 @Path("/word2vec")
 public class NearestNeighborsResource extends FileResource {
+    public static final String UPLOADED_FILE = "UploadedFile";
     private SessionStorage storage = SessionStorage.getInstance();
 
     private static final Logger logger = LoggerFactory.getLogger(NearestNeighborsResource.class);
@@ -73,7 +74,7 @@ public class NearestNeighborsResource extends FileResource {
     @Path("/vocab")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVocab() {
-        WordVectors vectors = (WordVectors) storage.getObject("UploadedFile", ObjectType.WORD2VEC);
+        WordVectors vectors = (WordVectors) storage.getObject(UPLOADED_FILE, ObjectType.WORD2VEC);
         if (vectors == null) return Response.noContent().build();
 
         List<String> words = new ArrayList<>();
@@ -87,7 +88,7 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/words")
     public Response getWords(NearestNeighborsQuery query) {
-        WordVectors vectors = (WordVectors) storage.getObject("UploadedFile", ObjectType.WORD2VEC);
+        WordVectors vectors = (WordVectors) storage.getObject(UPLOADED_FILE, ObjectType.WORD2VEC);
         if (vectors == null) return Response.noContent().build();
 
         Collection<String> nearestNeighors = vectors.wordsNearest(query.getWord(),query.getNumWords());
@@ -112,7 +113,7 @@ public class NearestNeighborsResource extends FileResource {
             }
             vectors.setModelUtils(new BasicModelUtils());
 
-            storage.putObject("UploadedFile", ObjectType.WORD2VEC, vectors);
+            storage.putObject(UPLOADED_FILE, ObjectType.WORD2VEC, vectors);
         } catch (Exception e) {
             e.printStackTrace();
         }

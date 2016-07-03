@@ -194,6 +194,11 @@ public class TestAsyncIterator {
         }
 
         @Override
+        public DataSetPreProcessor getPreProcessor() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public List<String> getLabels() {
             return null;
         }
