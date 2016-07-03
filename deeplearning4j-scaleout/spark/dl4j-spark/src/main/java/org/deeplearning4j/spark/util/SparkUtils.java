@@ -10,7 +10,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
-import org.deeplearning4j.spark.impl.common.SplitPartitions;
+import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
@@ -183,17 +183,18 @@ public class SparkUtils {
                     totalObjects += t2._2();
                 }
 
-//                while(numPartitions*objectsPerPartition < totalObjects) objectsPerPartition++;
                 if(numPartitions*objectsPerPartition < totalObjects){
                     int add = (totalObjects-numPartitions*objectsPerPartition)/numPartitions;
-                    if(add < 1) add++;
-                    numPartitions += add;
+                    int mod = (totalObjects-numPartitions*objectsPerPartition)%numPartitions;
+                    if(mod != 0) add++; //round up
+                    objectsPerPartition += add;
 
                     allCorrectSize = true;
                     for(Tuple2<Integer,Integer> t2 : partitionCounts){
                         allCorrectSize &= (t2._2() == objectsPerPartition);
                     }
                 }
+                if(numPartitions*objectsPerPartition < totalObjects) throw new RuntimeException();
 
                 if(initialPartitions == numPartitions && allCorrectSize){
                     //Don't need to do any repartitioning here - already in the format we want
@@ -228,7 +229,7 @@ public class SparkUtils {
      * equal splits (instead of independent binomial sampling that is used there, based on weighting)
      * This balanced splitting approach is important when the number of DataSet objects we want in each split is small,
      * as random sampling variance of {@link JavaRDD#randomSplit(double[])} is quite large relative to the number of examples
-     * in each split.
+     * in each split. Note however that this method doesn't <i>guarantee</i> that partitions will be balanced
      *
      * Downside is we need total object count (whereas {@link JavaRDD#randomSplit(double[])} does not). However, randomSplit
      * requires a full pass of the data anyway (in order to do filtering upon it) so this should not add much overhead in practice
@@ -255,7 +256,7 @@ public class SparkUtils {
             int numSplits = totalObjectCount / numObjectsPerSplit; //Intentional round down
             splits = (JavaRDD<T>[]) Array.newInstance(JavaRDD.class, numSplits);
             for( int i=0; i<numSplits; i++ ){
-                splits[i] = data.mapPartitionsWithIndex(new SplitPartitions<T>(i,numSplits,rngSeed),true);
+                splits[i] = data.mapPartitionsWithIndex(new SplitPartitionsFunction<T>(i,numSplits,rngSeed),true);
             }
 
         }
