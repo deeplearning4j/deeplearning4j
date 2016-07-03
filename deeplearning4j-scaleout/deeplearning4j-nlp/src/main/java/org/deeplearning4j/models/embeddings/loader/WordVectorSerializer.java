@@ -80,6 +80,9 @@ public class WordVectorSerializer {
     private static final String whitespaceReplacement = "_Az92_";
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
+    private WordVectorSerializer() {
+    }
+
     /**
      * Loads the google model
      *

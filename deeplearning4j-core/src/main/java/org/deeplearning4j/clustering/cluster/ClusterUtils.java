@@ -40,6 +40,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ClusterUtils {
 
+	private ClusterUtils() {
+	}
+
 	/** Classify the set of points base on cluster centers. This also adds each point to the ClusterSet */
 	public static ClusterSetInfo classifyPoints(final ClusterSet clusterSet, List<Point> points,
 												ExecutorService executorService) {
@@ -207,7 +210,7 @@ public class ClusterUtils {
 			info.getPointDistancesFromCenter().put(point.getId(), distance);
 			info.setTotalPointDistanceFromCenter(info.getTotalPointDistanceFromCenter() + distance);
 		}
-		if (cluster.getPoints().size() > 0)
+		if (!cluster.getPoints().isEmpty())
 			info.setAveragePointDistanceFromCenter(info.getTotalPointDistanceFromCenter()/ cluster.getPoints().size());
 		return info;
 	}

@@ -120,7 +120,9 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public void setInput(int inputNumber, INDArray input){
-        if(inputNumber >= getNumInputArrays()) throw new IllegalArgumentException("Invalid input number");
+        if(inputNumber >= getNumInputArrays()) {
+            throw new IllegalArgumentException("Invalid input number");
+        }
         inputs[inputNumber] = input;
     }
 
@@ -135,20 +137,36 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public void clear(){
-        for (int i = 0; i < inputs.length; i++) inputs[i] = null;
-        for (int i = 0; i < epsilons.length; i++) epsilons[i] = null;
+        for (int i = 0; i < inputs.length; i++) {
+            inputs[i] = null;
+        }
+        for (int i = 0; i < epsilons.length; i++) {
+            epsilons[i] = null;
+        }
     }
 
     @Override
     public boolean canDoForward(){
-        for (INDArray input : inputs) if (input == null) return false;
+        for (INDArray input : inputs) {
+            if (input == null) {
+                return false;
+            }
+        }
         return true;
     }
 
     @Override
     public boolean canDoBackward(){
-        for (INDArray input : inputs) if (input == null) return false;
-        for (INDArray epsilon : epsilons) if (epsilon == null) return false;
+        for (INDArray input : inputs) {
+            if (input == null) {
+                return false;
+            }
+        }
+        for (INDArray epsilon : epsilons) {
+            if (epsilon == null) {
+                return false;
+            }
+        }
         return true;
     }
 

@@ -38,6 +38,7 @@ import java.util.List;
  */
 public class VPTree {
 
+    public static final String EUCLIDEAN = "euclidean";
     private List<DataPoint> items;
     private double tau;
     private Node root;
@@ -114,16 +115,16 @@ public class VPTree {
 
 
     public VPTree(INDArray items) {
-        this(items,"euclidean");
+        this(items, EUCLIDEAN);
     }
 
     public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances) {
-        this(items,distances,"euclidean");
+        this(items,distances, EUCLIDEAN);
 
     }
 
     public VPTree(List<DataPoint> items) {
-        this(items,"euclidean");
+        this(items, EUCLIDEAN);
     }
 
     public static INDArray buildFromData(List<DataPoint> data) {

@@ -32,6 +32,9 @@ public class StatsUtils {
 
     public static final long DEFAULT_MAX_TIMELINE_SIZE_MS = 20 * 60 * 1000;  //20 minutes
 
+    private StatsUtils() {
+    }
+
     public static void exportStats(List<EventStats> list, String outputDirectory, String filename, String delimiter, SparkContext sc) throws IOException {
         String path = FilenameUtils.concat(outputDirectory, filename);
         exportStats(list, path, delimiter, sc);
@@ -133,7 +136,7 @@ public class StatsUtils {
 
             //Also build a histogram...
             Component hist = null;
-            if(minDur != maxDur && list.size() > 0) hist = getHistogram(duration, 20, s, styleChart);
+            if(minDur != maxDur && !list.isEmpty()) hist = getHistogram(duration, 20, s, styleChart);
 
             Component[] temp;
             if (hist != null) {
@@ -146,7 +149,7 @@ public class StatsUtils {
 
 
             //TODO this is really ugly
-            if(list.size() > 0 && (list.get(0) instanceof ExampleCountEventStats || list.get(0) instanceof PartitionCountEventStats)){
+            if(!list.isEmpty() && (list.get(0) instanceof ExampleCountEventStats || list.get(0) instanceof PartitionCountEventStats)){
                 boolean exCount = list.get(0) instanceof ExampleCountEventStats;
 
                 double[] y = new double[list.size()];

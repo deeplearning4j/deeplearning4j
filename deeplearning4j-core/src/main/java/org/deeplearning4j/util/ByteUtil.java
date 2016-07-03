@@ -22,6 +22,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 public class ByteUtil {
+	private ByteUtil() {
+	}
+
 	/**
 	 *
 	 * 

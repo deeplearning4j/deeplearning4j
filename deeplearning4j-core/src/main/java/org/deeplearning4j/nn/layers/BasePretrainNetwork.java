@@ -122,7 +122,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
     }
 
-    public INDArray paramsBackprop(){
+    public INDArray params(){
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
             if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
@@ -133,7 +133,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
      * @return the number of parameters for the model (ex. visible bias)
      */
-    public int numParamsBackprop() {
+    public int numParams() {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
             if(PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;

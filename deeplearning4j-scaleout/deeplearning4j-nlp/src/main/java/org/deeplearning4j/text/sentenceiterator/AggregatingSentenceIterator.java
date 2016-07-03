@@ -23,7 +23,9 @@ public class AggregatingSentenceIterator implements SentenceIterator {
 
     @Override
     public String nextSentence() {
-        if (!backendIterators.get(position.get()).hasNext() && position.get() < backendIterators.size()) position.incrementAndGet();
+        if (!backendIterators.get(position.get()).hasNext() && position.get() < backendIterators.size()) {
+            position.incrementAndGet();
+        }
 
         return (preProcessor == null) ? backendIterators.get(position.get()).nextSentence() : preProcessor.preProcess(backendIterators.get(position.get()).nextSentence());
     }
@@ -31,7 +33,9 @@ public class AggregatingSentenceIterator implements SentenceIterator {
     @Override
     public boolean hasNext() {
         for (SentenceIterator iterator: backendIterators) {
-            if (iterator.hasNext()) return true;
+            if (iterator.hasNext()) {
+                return true;
+            }
         }
         return false;
     }
@@ -86,7 +90,9 @@ public class AggregatingSentenceIterator implements SentenceIterator {
 
         public AggregatingSentenceIterator build() {
             AggregatingSentenceIterator sentenceIterator = new AggregatingSentenceIterator(this.backendIterators);
-            if (this.preProcessor != null) sentenceIterator.setPreProcessor(this.preProcessor);
+            if (this.preProcessor != null) {
+                sentenceIterator.setPreProcessor(this.preProcessor);
+            }
             return sentenceIterator;
         }
     }

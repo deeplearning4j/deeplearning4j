@@ -747,9 +747,7 @@ public class MathUtils  {
      * @return the entropy of the given vector
      */
     public static double entropy(double[] vector) {
-        if(vector==null)
-            return 0;
-        else if(vector.length < 1)
+        if(vector==null || vector.length < 1)
             return 0;
         else {
             double ret=0;
