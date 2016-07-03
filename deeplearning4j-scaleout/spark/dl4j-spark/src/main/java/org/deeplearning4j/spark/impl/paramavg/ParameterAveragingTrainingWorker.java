@@ -77,7 +77,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
         network.fit(dataSet);
-        if(configuration.isCollectTrainingStats()) stats.logFitEnd();
+        if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
 
         if(isLast) return getFinalResult(network);
 
@@ -93,7 +93,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast){
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
         graph.fit(dataSet);
-        if(configuration.isCollectTrainingStats()) stats.logFitEnd();
+        if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));
 
         if(isLast) return getFinalResult(graph);
 
