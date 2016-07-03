@@ -78,7 +78,7 @@ public abstract class Assert {
     }
 
     public static void notEmpty(Object[] array) {
-        notEmpty((Object[])array, "[Assertion failed] - this array must not be empty: it must contain at least 1 element");
+        notEmpty(array, "[Assertion failed] - this array must not be empty: it must contain at least 1 element");
     }
 
     public static void noNullElements(Object[] array, String message) {
@@ -107,7 +107,7 @@ public abstract class Assert {
     }
 
     public static void notEmpty(Collection collection) {
-        notEmpty((Collection)collection, "[Assertion failed] - this collection must not be empty: it must contain at least 1 element");
+        notEmpty(collection, "[Assertion failed] - this collection must not be empty: it must contain at least 1 element");
     }
 
     public static void notEmpty(Map map, String message) {
@@ -117,7 +117,7 @@ public abstract class Assert {
     }
 
     public static void notEmpty(Map map) {
-        notEmpty((Map)map, "[Assertion failed] - this map must not be empty; it must contain at least one entry");
+        notEmpty(map, "[Assertion failed] - this map must not be empty; it must contain at least one entry");
     }
 
     public static void isInstanceOf(Class<?> clazz, Object obj) {

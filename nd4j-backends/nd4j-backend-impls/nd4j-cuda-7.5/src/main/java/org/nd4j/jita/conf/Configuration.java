@@ -2,6 +2,7 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
@@ -49,7 +50,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
-    private boolean forceSingleGPU = false;
+    private boolean forceSingleGPU = true;
 
     /**
      * Keep this value between 0.01 and 0.95 please
@@ -69,7 +70,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads= 6;
+    @Getter private int numberOfGcThreads = 6;
 
     /**
      * Deallocation aggressiveness
@@ -136,6 +137,10 @@ public class Configuration implements Serializable {
 
     @Getter private int commandLanesNumber = 4;
 
+    @Getter private int debugTriggered = 0;
+
+    @Getter private int poolSize = 32;
+
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -148,9 +153,38 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
+    /**
+     * Per-device resources pool size. Streams, utility memory
+     *
+     * @param poolSize
+     * @return
+     */
+    public Configuration setPoolSize(int poolSize) {
+        if (poolSize < 8)
+            throw new IllegalStateException("poolSize can't be lower then 8");
+        this.poolSize = poolSize;
+        return this;
+    }
+
+    public Configuration triggerDebug(int code) {
+        this.debugTriggered = code;
+        return this;
+    }
+
     public Configuration setMinimumRelocationThreshold(int threshold) {
         this.maximumDeviceAllocation = Math.max(2, threshold);
 
+        return this;
+    }
+
+    /**
+     * This method allows you to specify maximum memory cache per device
+     *
+     * @param maxCache
+     * @return
+     */
+    public Configuration setMaximumDeviceCache(long maxCache) {
+        this.maximumDeviceCache = maxCache;
         return this;
     }
 
@@ -170,7 +204,7 @@ public class Configuration implements Serializable {
     }
 
     public Configuration() {
-        int cnt = (int) nativeOps.getAvailableDevices();
+        int cnt = nativeOps.getAvailableDevices();
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 
@@ -182,8 +216,8 @@ public class Configuration implements Serializable {
         nativeOps.setGridLimit(maximumGridSize);
 
         // if we have multi-gpu system - force DELAYED memory model by default
-        if (cnt > 1)
-            this.memoryModel = MemoryModel.DELAYED;
+        //if (cnt > 1 && !forceSingleGPU)
+            //this.memoryModel = MemoryModel.DELAYED;
     }
 
     /**
@@ -369,7 +403,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        this.executionModel = executionModel;
+        this.executionModel = ExecutionModel.SEQUENTIAL;
 
         return this;
     }
@@ -546,7 +580,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration allowMultiGPU(boolean reallyAllow) {
-        forceSingleGPU = reallyAllow;
+        forceSingleGPU = !reallyAllow;
         return this;
     }
 

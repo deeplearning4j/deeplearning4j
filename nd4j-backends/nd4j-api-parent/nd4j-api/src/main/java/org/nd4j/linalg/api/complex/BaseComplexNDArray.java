@@ -1332,7 +1332,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         else {
 
             assert Shape.shapeEquals(view.shape(),put.shape());
-            IComplexNDArray linear = (IComplexNDArray)view.linearView();
+            IComplexNDArray linear = view.linearView();
             IComplexNDArray putLinearView = put.linearView();
             for(int i = 0; i < linear.length(); i++) {
                 linear.putScalar(i,putLinearView.getComplex(i));
@@ -3288,12 +3288,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public boolean equals(Object o) {
-        IComplexNDArray n = null;
-        if (!(o instanceof IComplexNDArray))
+        if (!(o instanceof IComplexNDArray)) {
             return false;
-
-        if (n == null)
-            n = (IComplexNDArray) o;
+        }
+        IComplexNDArray n = (IComplexNDArray) o;
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {

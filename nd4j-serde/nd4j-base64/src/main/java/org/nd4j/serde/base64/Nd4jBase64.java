@@ -13,6 +13,9 @@ import java.io.*;
  */
 public class Nd4jBase64 {
 
+    private Nd4jBase64() {
+    }
+
     /**
      * Returns a set of arrays
      * from base 64 that is tab delimited.
@@ -40,7 +43,7 @@ public class Nd4jBase64 {
      * @throws IOException
      */
     public static String arraysToBase64(INDArray[] arrays) throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         //tab separate the outputs for de serialization
         for(INDArray outputArr : arrays) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();

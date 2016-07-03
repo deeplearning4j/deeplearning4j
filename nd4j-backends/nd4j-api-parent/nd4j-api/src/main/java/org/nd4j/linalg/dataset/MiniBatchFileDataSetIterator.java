@@ -129,6 +129,11 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public DataSetPreProcessor getPreProcessor() {
+        return dataSetPreProcessor;
+    }
+
+    @Override
     public List<String> getLabels() {
         return null;
     }

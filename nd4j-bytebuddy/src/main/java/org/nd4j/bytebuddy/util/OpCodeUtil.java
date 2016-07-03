@@ -7,6 +7,9 @@ package org.nd4j.bytebuddy.util;
  */
 public class OpCodeUtil {
 
+    private OpCodeUtil() {
+    }
+
     /**
      * Get the a load reference code starting at 42.
      * See:

@@ -50,6 +50,9 @@ public class Shape {
 
     private static Logger logger = LoggerFactory.getLogger(Shape.class);
 
+    private Shape() {
+    }
+
     /**
      * Create a copy of the matrix
      * where the new offset is zero
@@ -1586,7 +1589,7 @@ public class Shape {
         IntBuffer shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         IntBuffer strideBuff = stride(buffer);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("Rank: " + rank + ",");
         sb.append("Offset: " + Shape.offset(buffer) + "\n");
         sb.append(" Order: " + Shape.order(buffer));
@@ -1790,7 +1793,7 @@ public class Shape {
      * @return
      */
     public static String toString(IntBuffer buffer) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for(int i = 0; i < buffer.capacity(); i++) {
             sb.append(buffer.get(i));
             if(i < buffer.capacity() - 1)

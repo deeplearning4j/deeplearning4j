@@ -134,6 +134,11 @@ public class SamplingDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public DataSetPreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    @Override
     public List<String> getLabels() {
         return null;
     }

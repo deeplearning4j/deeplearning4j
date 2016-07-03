@@ -9,7 +9,7 @@ import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.garbage.GarbageReference;
+import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +131,12 @@ public class AtomicAllocator implements Allocator {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
             UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
+
+            // all GC threads should be attached to default device
+            Nd4j.getAffinityManager().attachThreadToDevice(uThread, getDeviceId());
+
             queueMap.put(i, queue);
+
             uThread.start();
 
             collectorsUnified.put(i, uThread);
@@ -294,11 +298,7 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(DataBuffer buffer) {
         // we don't synchronize constant buffers, since we assume they are always valid on host side
         if (buffer.isConstant()) {
-            //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
-         //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
             return;
-            //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
-            //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
         }
 
         // we actually need synchronization only in device-dependant environment. no-op otherwise
@@ -336,7 +336,6 @@ public class AtomicAllocator implements Allocator {
             point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
         } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
             // for DELAYED memory model we allocate only host memory, regardless of firstMemory configuration value
-
             point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST, initialize);
         }
 
@@ -369,9 +368,9 @@ public class AtomicAllocator implements Allocator {
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
-        GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+        GarbageBufferReference reference = new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
         point.attachReference(reference);
-        point.setDeviceId(getDeviceId());
+        point.setDeviceId(-1);
 
 
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
@@ -570,6 +569,7 @@ public class AtomicAllocator implements Allocator {
     private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
+        private int deviceId;
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -581,7 +581,7 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             while (true) {
-                GarbageReference reference = (GarbageReference) queue.poll();
+                GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
                 if (reference != null) {
                     AllocationPoint point = reference.getPoint();
 
@@ -598,8 +598,8 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             System.gc();
-                            Thread.sleep(2000);
-                        } else Thread.sleep(500);
+                            Thread.sleep(100);
+                        } else Thread.sleep(50);
                     } catch (Exception e) {
 
                     }

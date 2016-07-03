@@ -749,6 +749,14 @@ public class ArrayUtil {
         return bytes;
     }
 
+    public static long[] toLongArray(int[] intArray){
+        long[] ret = new long[intArray.length];
+        for (int i = 0; i < intArray.length; i++) {
+            ret[i] = intArray[i];
+        }
+        return ret;
+    }
+
     /**
      *
      * @param byteArray
@@ -807,9 +815,6 @@ public class ArrayUtil {
 
         if (index >= data.length)
             throw new IllegalArgumentException("Unable to remove index " + index + " was >= data.length");
-
-        if (data == null)
-            return null;
         if (data.length < 1)
             return data;
         if (index < 0)

@@ -102,7 +102,7 @@ public class BaseDatasetIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+        this.preProcessor = preProcessor;
     }
 
 	@Override
@@ -119,9 +119,10 @@ public class BaseDatasetIterator implements DataSetIterator {
             preProcessor.preProcess(next);
         return next;
 	}
-	
-	
 
-	
 
+	@Override
+	public DataSetPreProcessor getPreProcessor() {
+		return preProcessor;
+	}
 }

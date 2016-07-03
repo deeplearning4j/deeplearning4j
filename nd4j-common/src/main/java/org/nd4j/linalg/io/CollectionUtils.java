@@ -111,7 +111,7 @@ public abstract class CollectionUtils {
     }
 
     public static boolean containsAny(Collection source, Collection candidates) {
-        if(!isEmpty((Collection)source) && !isEmpty((Collection)candidates)) {
+        if(!isEmpty(source) && !isEmpty(candidates)) {
             Iterator i$ = candidates.iterator();
 
             Object candidate;
@@ -130,7 +130,7 @@ public abstract class CollectionUtils {
     }
 
     public static Object findFirstMatch(Collection source, Collection candidates) {
-        if(!isEmpty((Collection)source) && !isEmpty((Collection)candidates)) {
+        if(!isEmpty(source) && !isEmpty(candidates)) {
             Iterator i$ = candidates.iterator();
 
             Object candidate;
@@ -177,7 +177,7 @@ public abstract class CollectionUtils {
 
             for(int i$ = 0; i$ < len$; ++i$) {
                 Class type = arr$[i$];
-                Object value = findValueOfType(collection, (Class)type);
+                Object value = findValueOfType(collection, type);
                 if(value != null) {
                     return value;
                 }
@@ -190,7 +190,7 @@ public abstract class CollectionUtils {
     }
 
     public static boolean hasUniqueObject(Collection collection) {
-        if(isEmpty((Collection)collection)) {
+        if(isEmpty(collection)) {
             return false;
         } else {
             boolean hasCandidate = false;
@@ -212,7 +212,7 @@ public abstract class CollectionUtils {
     }
 
     public static Class<?> findCommonElementType(Collection collection) {
-        if(isEmpty((Collection)collection)) {
+        if(isEmpty(collection)) {
             return null;
         } else {
             Class candidate = null;
@@ -275,17 +275,17 @@ public abstract class CollectionUtils {
         }
 
         public void add(K key, V value) {
-            List<V> values = (List)this.map.get(key);
+            List<V> values = this.map.get(key);
             if(values == null) {
                 values = new LinkedList<>();
                 this.map.put(key, values);
             }
 
-            ((List)values).add(value);
+            values.add(value);
         }
 
         public V getFirst(K key) {
-            List values = (List)this.map.get(key);
+            List values = this.map.get(key);
             return values != null? (V) values.get(0): null;
         }
 
@@ -334,15 +334,15 @@ public abstract class CollectionUtils {
         }
 
         public List<V> get(Object key) {
-            return (List)this.map.get(key);
+            return this.map.get(key);
         }
 
         public List<V> put(K key, List<V> value) {
-            return (List)this.map.put(key, value);
+            return this.map.put(key, value);
         }
 
         public List<V> remove(Object key) {
-            return (List)this.map.remove(key);
+            return this.map.remove(key);
         }
 
         public void putAll(Map<? extends K, ? extends List<V>> m) {

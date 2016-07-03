@@ -11,6 +11,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.flow.FlowController;
+import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -272,5 +273,13 @@ public interface MemoryHandler {
 
     FlowController getFlowController();
 
+    MemoryProvider getMemoryProvider();
+
+    boolean promoteObject(DataBuffer buffer);
+
+    void relocateObject(DataBuffer buffer);
+
     ContextPool getContextPool();
+
+
 }

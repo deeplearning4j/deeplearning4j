@@ -20,6 +20,16 @@ public interface ConstantHandler {
     long moveToConstantSpace(DataBuffer dataBuffer);
 
     /**
+     *
+     * PLEASE NOTE: This method implementation is hardware-dependant.
+     * PLEASE NOTE: This method does NOT allow concurrent use of any array
+     *
+     * @param dataBuffer
+     * @return
+     */
+    DataBuffer relocateConstantSpace(DataBuffer dataBuffer);
+
+    /**
      * This method returns DataBuffer with contant equal to input array.
      *
      * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer

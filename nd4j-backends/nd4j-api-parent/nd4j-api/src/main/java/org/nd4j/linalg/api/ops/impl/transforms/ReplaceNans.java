@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,94 +25,95 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Copy operation
+ * Element-wise "Replace NaN" implementation as Op
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
-public class CopyOp extends BaseTransformOp {
-    public CopyOp() {
+public class ReplaceNans extends BaseTransformOp {
+
+    private double set;
+
+    public ReplaceNans() {
+
     }
 
-    public CopyOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public CopyOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public CopyOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public CopyOp(INDArray x) {
+    public ReplaceNans(INDArray x, double set) {
         super(x);
+        this.set = set;
+        init(x, null, x, x.length());
     }
 
-    public CopyOp(INDArray x, INDArray xDup, INDArray z) {
-        super(x, xDup, z, x.lengthLong());
+    public ReplaceNans(INDArray x, INDArray z, double set) {
+        super(x,z);
+        this.set = set;
+        init(x, null, z, x.length());
+    }
+
+    public ReplaceNans(INDArray x, INDArray z, double set, long n) {
+        super(x,z,n);
+        this.set = set;
+        init(x, null, x, n);
     }
 
     @Override
     public int opNum() {
-        return 1;
+        return 46;
     }
 
     @Override
     public String name() {
-        return "copy";
+        return "replace_nans";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin;
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin;
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return other;
+        return null;
     }
 
     @Override
     public float op(float origin, float other) {
-        return other;
+        return 0;
     }
 
     @Override
     public double op(double origin, double other) {
-        return other;
+        return 0;
     }
 
     @Override
     public double op(double origin) {
-        return origin;
+        return 0;
     }
 
     @Override
     public float op(float origin) {
-        return origin;
+        return 0;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
+        return null;
 
+    }
 
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CopyOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
         else
-            return new CopyOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
     }
 
     @Override
@@ -120,19 +121,16 @@ public class CopyOp extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CopyOp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
         else
-            return new CopyOp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
 
     }
 
     @Override
-    public void exec() {
-        z.assign(x);
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return false;
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
+        super.init(x,y,z,n);
+        this.extraArgs = new Object[]{set, (double) n};
     }
 }
+

@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.context;
 import lombok.Data;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -51,6 +52,7 @@ public class CudaContext {
     private Pointer bufferAllocation;
     private Pointer bufferScalar;
     private Pointer bufferSpecial;
+    private GarbageResourceReference reference;
 
     private int laneId = 0;
 
@@ -60,6 +62,10 @@ public class CudaContext {
     public CudaContext(boolean free) {
         this();
         this.free = free;
+    }
+
+    public void attachReference(GarbageResourceReference ref) {
+        reference = ref;
     }
 
 

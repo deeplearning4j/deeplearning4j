@@ -164,11 +164,6 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-    }
-
-    @Override
     public double combineSubResults(double first, double second){
         return first + second;
     }

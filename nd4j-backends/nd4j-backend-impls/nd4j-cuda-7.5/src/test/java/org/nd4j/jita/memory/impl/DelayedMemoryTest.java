@@ -39,7 +39,8 @@ public class DelayedMemoryTest extends TestCase {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMemoryModel(Configuration.MemoryModel.DELAYED)
-                .allowMultiGPU(true);
+                .allowMultiGPU(true)
+                .enableDebug(true);
     }
 
     /**
@@ -74,6 +75,9 @@ public class DelayedMemoryTest extends TestCase {
 
         assertEquals(0.0f, sum, 0.0001f);
 
+        shapePointer = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
+        pointer = allocator.getAllocationPoint(array);
+
         assertEquals(AllocationStatus.CONSTANT, shapePointer.getAllocationStatus());
         assertEquals(AllocationStatus.DEVICE, pointer.getAllocationStatus());
 
@@ -97,8 +101,14 @@ public class DelayedMemoryTest extends TestCase {
             assertEquals(AllocationStatus.HOST, allocator.getAllocationPoint(arrays[c]).getAllocationStatus());
             assertEquals(AllocationStatus.HOST, allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getAllocationStatus());
         }
+/*
+        for (int c = 0; c < arrays.length; c++) {
+            System.out.println(arrays[c]);
 
-
+            assertEquals(AllocationStatus.DEVICE, allocator.getAllocationPoint(arrays[c]).getAllocationStatus());
+            assertEquals(AllocationStatus.CONSTANT, allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getAllocationStatus());
+        }
+*/
 
         for (int c = 0; c < arrays.length; c++) {
             final int cnt = c;
@@ -109,7 +119,7 @@ public class DelayedMemoryTest extends TestCase {
 
                     cards[cnt] = allocator.getDeviceId();
 
-                    assertEquals(15f, sum, 0.001f);
+                    assertEquals("Failed on C: " + cnt,15f, sum, 0.001f);
                 }
             });
 
@@ -213,6 +223,9 @@ public class DelayedMemoryTest extends TestCase {
 
         float sum = array.sumNumber().floatValue();
 
+        pointShape = AtomicAllocator.getInstance().getAllocationPoint(array.shapeInfoDataBuffer());
+        pointArray = AtomicAllocator.getInstance().getAllocationPoint(array);
+
         assertEquals(AllocationStatus.DEVICE, pointArray.getAllocationStatus());
         assertEquals(AllocationStatus.CONSTANT, pointShape.getAllocationStatus());
 
@@ -223,5 +236,17 @@ public class DelayedMemoryTest extends TestCase {
 
         assertEquals(AllocationStatus.DEVICE, dupArray.getAllocationStatus());
         assertEquals(AllocationStatus.CONSTANT, dupShape.getAllocationStatus());
+    }
+
+    @Test
+    public void testDelayedZeroes1() throws Exception {
+        INDArray zeroes = Nd4j.zeros(10);
+
+        zeroes.putScalar(1, 1f);
+        zeroes.putScalar(2, 1f);
+
+        float sum = zeroes.sumNumber().floatValue();
+
+        assertEquals(2f, sum, 0.0001f);
     }
 }

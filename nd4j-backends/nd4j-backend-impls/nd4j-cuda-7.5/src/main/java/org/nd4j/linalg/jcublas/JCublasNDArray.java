@@ -371,18 +371,23 @@ public class JCublasNDArray extends BaseNDArray {
             Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
             if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE && configuration.getFirstMemory() == AllocationStatus.DEVICE) {
+//                log.info("Path 0");
                 allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context), this.data.length() * this.data().getElementSize(), 0, context);
             } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED || configuration.getFirstMemory() == AllocationStatus.HOST) {
                 AllocationPoint pointSrc = allocator.getAllocationPoint(this);
                 AllocationPoint pointDst = allocator.getAllocationPoint(array);
 
                 if (pointSrc.getAllocationStatus() == AllocationStatus.HOST) {
+//                    log.info("Path A");
                     NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
                 } else {
+//                    log.info("Path B. SRC dId: [{}], DST dId: [{}], cId: [{}]", pointSrc.getDeviceId(), pointDst.getDeviceId(), allocator.getDeviceId());
                     // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
-                    allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE) {
+                        allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+                    }
 
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
                 }
             }
 
@@ -393,7 +398,6 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup(char order) {
-
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), order);
@@ -412,16 +416,18 @@ public class JCublasNDArray extends BaseNDArray {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
                 } else {
                     // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
-                    allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE) {
+                        allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+                    }
 
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
                 }
             }
 
             allocator.getFlowController().registerAction(context, array, this);
 
             return array;
-        } else  return super.dup(order);
+        } else return super.dup(order);
     }
 
     @Override
@@ -438,5 +444,15 @@ public class JCublasNDArray extends BaseNDArray {
     public String toString() {
         
         return super.toString();
+    }
+
+    /**
+     *
+     * PLEASE NOTE: Never use this method, unless you 100% have to
+     *
+     * @param buffer
+     */
+    public void setShapeInfoDataBuffer(DataBuffer buffer) {
+        this.shapeInformation = buffer;
     }
 }

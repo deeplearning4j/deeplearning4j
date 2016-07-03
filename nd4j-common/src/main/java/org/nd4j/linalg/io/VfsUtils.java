@@ -104,7 +104,7 @@ public abstract class VfsUtils {
     }
 
     static Object getRelative(URL url) throws IOException {
-        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, (Object)null, new Object[]{url});
+        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, null, new Object[]{url});
     }
 
     static Object getChild(Object vfsResource, String path) throws IOException {
@@ -113,11 +113,11 @@ public abstract class VfsUtils {
 
     static File getFile(Object vfsResource) throws IOException {
         if(VfsUtils.VFS_VER.V2.equals(version)) {
-            if(((Boolean)invokeVfsMethod(VFS_UTILS_METHOD_IS_NESTED_FILE, (Object)null, new Object[]{vfsResource})).booleanValue()) {
+            if(((Boolean)invokeVfsMethod(VFS_UTILS_METHOD_IS_NESTED_FILE, null, new Object[]{vfsResource})).booleanValue()) {
                 throw new IOException("File resolution not supported for nested resource: " + vfsResource);
             } else {
                 try {
-                    return new File((URI)invokeVfsMethod(VFS_UTILS_METHOD_GET_COMPATIBLE_URI, (Object)null, new Object[]{vfsResource}));
+                    return new File((URI)invokeVfsMethod(VFS_UTILS_METHOD_GET_COMPATIBLE_URI, null, new Object[]{vfsResource}));
                 } catch (Exception var2) {
                     throw new IOException("Failed to obtain File reference for " + vfsResource, var2);
                 }
@@ -128,15 +128,15 @@ public abstract class VfsUtils {
     }
 
     static Object getRoot(URI url) throws IOException {
-        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URI, (Object)null, new Object[]{url});
+        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URI, null, new Object[]{url});
     }
 
     protected static Object getRoot(URL url) throws IOException {
-        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, (Object)null, new Object[]{url});
+        return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, null, new Object[]{url});
     }
 
     protected static Object doGetVisitorAttribute() {
-        return ReflectionUtils.getField(VISITOR_ATTRIBUTES_FIELD_RECURSE, (Object)null);
+        return ReflectionUtils.getField(VISITOR_ATTRIBUTES_FIELD_RECURSE, null);
     }
 
     protected static String doGetPath(Object resource) {

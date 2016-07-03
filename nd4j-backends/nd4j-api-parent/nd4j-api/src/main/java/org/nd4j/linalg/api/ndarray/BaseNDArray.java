@@ -89,8 +89,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     private static final long serialVersionUID = 3285982317165542614L;
 
-    protected transient  DataBuffer shapeInformation;
-    protected transient  DataBuffer data;
+    protected transient volatile DataBuffer shapeInformation;
+    protected transient volatile DataBuffer data;
     protected int rows, columns;
     protected long length = -1;
     protected int rank;
@@ -103,8 +103,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
-    protected DataBuffer shape;
-    protected DataBuffer stride;
+    protected transient DataBuffer shape;
+    protected transient DataBuffer stride;
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
@@ -1697,8 +1697,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isMatrix() {
         if(isMatrix != null)
             return isMatrix;
-        isMatrix = (Shape.rank(shapeInformation) == 2
-                && (size(0) != 1 && size(1) != 1));
+        isMatrix = (rank == 2 && (size(0) != 1 && size(1) != 1));
         return isMatrix;
     }
 
@@ -3557,14 +3556,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int columns() {
-        if (isMatrix()) {
-            if (shape().length == 2)
-                return  size(1);
-        }
-        if (isVector()) {
+        if (isMatrix()) return  size(1);
+        else if (isVector()) {
             if (isColumnVector())
                 return 1;
-            else if(isRowVector() && Shape.rank(shapeInformation) > 1)
+            else if(isRowVector() && rank > 1)
                 return size(1);
             else
                 return size(0);
@@ -3582,11 +3578,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int rows() {
-        if (isMatrix()) {
-            if (shape().length == 2)
-                return size(0);
-        }
-
+        if (isMatrix()) return size(0);
         else if (isVector()) {
             if (isRowVector())
                 return 1;
@@ -3784,23 +3776,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean equals(Object o) {
-        INDArray n = null;
-
         if (!(o instanceof INDArray))
             return false;
 
-        if (n == null)
-            n = (INDArray) o;
+        INDArray n = (INDArray) o;
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             } else {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             }
 
@@ -3809,11 +3806,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 if (data.dataType() == DataBuffer.Type.FLOAT) {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
+
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
+                        return false;
+
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 } else {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
+
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
+                        return false;
+
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 }
@@ -3835,6 +3840,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for(int i = 0; i < length(); i++) {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
                     return false;
                 }
@@ -3847,6 +3856,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 int[] next = iter.next();
                 double val = getDouble(next);
                 double val2 = n.getDouble(next);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
                     return false;
                 }
@@ -4262,6 +4275,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.columns = size(1);
         this.numLeadingOnes = -1;
         this.numTrailingOnes = -1;
+
+        this.shape = null;
+        this.stride = null;
 
         return this;
     }

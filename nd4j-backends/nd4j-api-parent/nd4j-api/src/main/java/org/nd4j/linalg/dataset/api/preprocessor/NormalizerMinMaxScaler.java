@@ -87,13 +87,13 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         if (maxRange - minRange < 0) throw new RuntimeException("API_USE_ERROR: The given max value minus min value has to be greater than 0");
         // subtract by dataset min
-        toPreProcess.setFeatures(toPreProcess.getFeatures().subRowVector(min));
+        toPreProcess.getFeatures().subiRowVector(min);
         // scale by dataset range
-        toPreProcess.setFeatures(toPreProcess.getFeatures().divRowVector(maxMinusMin));
+        toPreProcess.getFeatures().diviRowVector(maxMinusMin);
         // scale by given or default feature range
-        toPreProcess.setFeatures(toPreProcess.getFeatures().div(maxRange - minRange + Nd4j.EPS_THRESHOLD));
+        toPreProcess.getFeatures().divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
         // offset by given min feature value
-        toPreProcess.setFeatures(toPreProcess.getFeatures().add(minRange));
+        toPreProcess.getFeatures().addi(minRange);
     }
 
     /**
@@ -116,10 +116,10 @@ public class NormalizerMinMaxScaler implements DataNormalization {
     public void revertPreProcess(DataSet toPreProcess) {
         if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
 
-        toPreProcess.setFeatures(toPreProcess.getFeatures().sub(minRange));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().mul(maxRange - minRange + Nd4j.EPS_THRESHOLD));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().mulRowVector(maxMinusMin));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().addRowVector(min));
+        toPreProcess.getFeatures().subi(minRange);
+        toPreProcess.getFeatures().muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+        toPreProcess.getFeatures().muliRowVector(maxMinusMin);
+        toPreProcess.getFeatures().addiRowVector(min);
     }
 
     /**

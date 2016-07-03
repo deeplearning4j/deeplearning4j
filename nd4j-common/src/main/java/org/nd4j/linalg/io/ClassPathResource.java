@@ -12,7 +12,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     private Class<?> clazz;
 
     public ClassPathResource(String path) {
-        this(path, (ClassLoader)((ClassLoader)null));
+        this(path, (ClassLoader) null);
     }
 
     public ClassPathResource(String path, ClassLoader classLoader) {

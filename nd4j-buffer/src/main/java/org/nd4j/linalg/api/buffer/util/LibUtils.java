@@ -86,27 +86,17 @@ public final class LibUtils
         String libName = LibUtils.createLibName(baseName);
 
         Throwable throwable = null;
-        final boolean tryResource = true;
-        if (tryResource)
-        {
-            try
-            {
-                loadLibraryResource(libName);
-                return;
-            }
-            catch (Throwable t)
-            {
-                throwable = t;
-            }
+        try {
+            loadLibraryResource(libName);
+            return;
+        } catch (Throwable t) {
+            throwable = t;
         }
 
-        try
-        {
+        try {
             System.loadLibrary(libName);
             return;
-        }
-        catch (Throwable t)
-        {
+        } catch (Throwable t) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
 
@@ -205,7 +195,7 @@ public final class LibUtils
         String resourceFolder = os + "-" + arch;
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
-        StringBuffer sb = new StringBuffer()
+        StringBuilder sb = new StringBuilder()
                 .append(libName.getPackage().getName().replace(".","/") + "/")
                 .append(resourceFolder).append("/").append(libPrefix).append("jni" + libName.getSimpleName() + ".")
                 .append(libExtension);

@@ -84,7 +84,7 @@ public abstract class ClassUtils {
         Assert.notNull(name, "Name must not be null");
         Class clazz = resolvePrimitiveClassName(name);
         if(clazz == null) {
-            clazz = (Class)commonClassCache.get(name);
+            clazz = commonClassCache.get(name);
         }
 
         if(clazz != null) {
@@ -143,7 +143,7 @@ public abstract class ClassUtils {
     public static Class<?> resolvePrimitiveClassName(String name) {
         Class result = null;
         if(name != null && name.length() <= 8) {
-            result = (Class)primitiveTypeNameMap.get(name);
+            result = primitiveTypeNameMap.get(name);
         }
 
         return result;
@@ -217,7 +217,7 @@ public abstract class ClassUtils {
     }
 
     public static String getShortName(Class<?> clazz) {
-        return getShortName((String)getQualifiedName(clazz));
+        return getShortName(getQualifiedName(clazz));
     }
 
     public static String getShortNameAsProperty(Class<?> clazz) {
@@ -236,7 +236,7 @@ public abstract class ClassUtils {
 
     public static String getPackageName(Class<?> clazz) {
         Assert.notNull(clazz, "Class must not be null");
-        return getPackageName((String)clazz.getName());
+        return getPackageName(clazz.getName());
     }
 
     public static String getPackageName(String fqClassName) {
@@ -458,7 +458,7 @@ public abstract class ClassUtils {
     }
 
     private static boolean isOverridable(Method method, Class targetClass) {
-        return Modifier.isPrivate(method.getModifiers())?false:(!Modifier.isPublic(method.getModifiers()) && !Modifier.isProtected(method.getModifiers())?getPackageName((Class)method.getDeclaringClass()).equals(getPackageName((Class)targetClass)):true);
+        return Modifier.isPrivate(method.getModifiers())?false:(!Modifier.isPublic(method.getModifiers()) && !Modifier.isProtected(method.getModifiers())?getPackageName((Class)method.getDeclaringClass()).equals(getPackageName(targetClass)):true);
     }
 
     public static Method getStaticMethod(Class<?> clazz, String methodName, Class<?>... args) {
@@ -506,7 +506,7 @@ public abstract class ClassUtils {
         } else {
             Class resolvedWrapper;
             if(lhsType.isPrimitive()) {
-                resolvedWrapper = (Class)primitiveWrapperTypeMap.get(rhsType);
+                resolvedWrapper = primitiveWrapperTypeMap.get(rhsType);
                 if(resolvedWrapper != null && lhsType.equals(resolvedWrapper)) {
                     return true;
                 }
@@ -581,7 +581,7 @@ public abstract class ClassUtils {
     }
 
     public static Class<?>[] toClassArray(Collection<Class<?>> collection) {
-        return collection == null?null:(Class[])collection.toArray(new Class[collection.size()]);
+        return collection == null?null:collection.toArray(new Class[collection.size()]);
     }
 
     public static Class<?>[] getAllInterfaces(Object instance) {
@@ -590,7 +590,7 @@ public abstract class ClassUtils {
     }
 
     public static Class<?>[] getAllInterfacesForClass(Class<?> clazz) {
-        return getAllInterfacesForClass(clazz, (ClassLoader)null);
+        return getAllInterfacesForClass(clazz, null);
     }
 
     public static Class<?>[] getAllInterfacesForClass(Class<?> clazz, ClassLoader classLoader) {
@@ -604,7 +604,7 @@ public abstract class ClassUtils {
     }
 
     public static Set<Class> getAllInterfacesForClassAsSet(Class clazz) {
-        return getAllInterfacesForClassAsSet(clazz, (ClassLoader)null);
+        return getAllInterfacesForClassAsSet(clazz, null);
     }
 
     public static Set<Class> getAllInterfacesForClassAsSet(Class clazz, ClassLoader classLoader) {

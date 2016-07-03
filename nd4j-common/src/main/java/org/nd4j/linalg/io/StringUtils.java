@@ -36,7 +36,7 @@ public abstract class StringUtils {
     }
 
     public static boolean hasText(CharSequence str) {
-        if(!hasLength((CharSequence)str)) {
+        if(!hasLength(str)) {
             return false;
         } else {
             int strLen = str.length();
@@ -56,7 +56,7 @@ public abstract class StringUtils {
     }
 
     public static boolean containsWhitespace(CharSequence str) {
-        if(!hasLength((CharSequence)str)) {
+        if(!hasLength(str)) {
             return false;
         } else {
             int strLen = str.length();
@@ -76,7 +76,7 @@ public abstract class StringUtils {
     }
 
     public static String trimWhitespace(String str) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -94,7 +94,7 @@ public abstract class StringUtils {
     }
 
     public static String trimAllWhitespace(String str) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -113,7 +113,7 @@ public abstract class StringUtils {
     }
 
     public static String trimLeadingWhitespace(String str) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -127,7 +127,7 @@ public abstract class StringUtils {
     }
 
     public static String trimTrailingWhitespace(String str) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -141,7 +141,7 @@ public abstract class StringUtils {
     }
 
     public static String trimLeadingCharacter(String str, char leadingCharacter) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -155,7 +155,7 @@ public abstract class StringUtils {
     }
 
     public static String trimTrailingCharacter(String str, char trailingCharacter) {
-        if(!hasLength((String)str)) {
+        if(!hasLength(str)) {
             return str;
         } else {
             StringBuilder sb = new StringBuilder(str);
@@ -227,7 +227,7 @@ public abstract class StringUtils {
     }
 
     public static String replace(String inString, String oldPattern, String newPattern) {
-        if(hasLength((String)inString) && hasLength((String)oldPattern) && newPattern != null) {
+        if(hasLength(inString) && hasLength(oldPattern) && newPattern != null) {
             StringBuilder sb = new StringBuilder();
             int pos = 0;
             int index = inString.indexOf(oldPattern);
@@ -250,7 +250,7 @@ public abstract class StringUtils {
     }
 
     public static String deleteAny(String inString, String charsToDelete) {
-        if(hasLength((String)inString) && hasLength((String)charsToDelete)) {
+        if(hasLength(inString) && hasLength(charsToDelete)) {
             StringBuilder sb = new StringBuilder();
 
             for(int i = 0; i < inString.length(); ++i) {
@@ -433,7 +433,7 @@ public abstract class StringUtils {
     }
 
     public static String toLanguageTag(Locale locale) {
-        return locale.getLanguage() + (hasText((String)locale.getCountry())?"-" + locale.getCountry():"");
+        return locale.getLanguage() + (hasText(locale.getCountry())?"-" + locale.getCountry():"");
     }
 
     public static String[] addStringToArray(String[] array, String str) {
@@ -478,7 +478,7 @@ public abstract class StringUtils {
                 }
             }
 
-            return toStringArray((Collection)result);
+            return toStringArray(result);
         }
     }
 
@@ -492,7 +492,7 @@ public abstract class StringUtils {
     }
 
     public static String[] toStringArray(Collection<String> collection) {
-        return collection == null?null:(String[])collection.toArray(new String[collection.size()]);
+        return collection == null?null:collection.toArray(new String[collection.size()]);
     }
 
     public static String[] toStringArray(Enumeration<String> enumeration) {
@@ -532,12 +532,12 @@ public abstract class StringUtils {
                 set.add(element);
             }
 
-            return toStringArray((Collection)set);
+            return toStringArray(set);
         }
     }
 
     public static String[] split(String toSplit, String delimiter) {
-        if(hasLength((String)toSplit) && hasLength((String)delimiter)) {
+        if(hasLength(toSplit) && hasLength(delimiter)) {
             int offset = toSplit.indexOf(delimiter);
             if(offset < 0) {
                 return null;
@@ -552,7 +552,7 @@ public abstract class StringUtils {
     }
 
     public static Properties splitArrayElementsIntoProperties(String[] array, String delimiter) {
-        return splitArrayElementsIntoProperties(array, delimiter, (String)null);
+        return splitArrayElementsIntoProperties(array, delimiter, null);
     }
 
     public static Properties splitArrayElementsIntoProperties(String[] array, String delimiter, String charsToDelete) {
@@ -601,12 +601,12 @@ public abstract class StringUtils {
                 }
             }
 
-            return toStringArray((Collection)tokens);
+            return toStringArray(tokens);
         }
     }
 
     public static String[] delimitedListToStringArray(String str, String delimiter) {
-        return delimitedListToStringArray(str, delimiter, (String)null);
+        return delimitedListToStringArray(str, delimiter, null);
     }
 
     public static String[] delimitedListToStringArray(String str, String delimiter, String charsToDelete) {
@@ -632,7 +632,7 @@ public abstract class StringUtils {
                 }
             }
 
-            return toStringArray((Collection)result);
+            return toStringArray(result);
         }
     }
 

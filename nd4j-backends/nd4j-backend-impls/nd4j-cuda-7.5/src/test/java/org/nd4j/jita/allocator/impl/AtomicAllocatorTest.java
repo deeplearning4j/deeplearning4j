@@ -344,7 +344,7 @@ public class AtomicAllocatorTest {
 
         assertFalse(point.isActualOnHostSide());
 
-        ((CudaZeroHandler) allocator.getMemoryHandler()).promoteObject(objectId, point, point.getShape());
+//        ((CudaZeroHandler) allocator.getMemoryHandler()).promoteObject(objectId, point, point.getShape());
 
         assertFalse(point.isActualOnHostSide());
 

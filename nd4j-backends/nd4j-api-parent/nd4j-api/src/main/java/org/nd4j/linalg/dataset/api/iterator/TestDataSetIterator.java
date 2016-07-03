@@ -105,8 +105,13 @@ public class TestDataSetIterator implements DataSetIterator {
 
    @Override
    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
-       this.preProcessor = (DataSetPreProcessor) preProcessor;
+       this.preProcessor = preProcessor;
    }
+
+	@Override
+	public DataSetPreProcessor getPreProcessor() {
+		return preProcessor;
+	}
 
 	@Override
 	public List<String> getLabels() {

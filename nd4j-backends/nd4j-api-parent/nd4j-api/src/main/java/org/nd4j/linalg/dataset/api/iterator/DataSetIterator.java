@@ -118,6 +118,13 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
     void setPreProcessor(DataSetPreProcessor preProcessor);
 
     /**
+     * Returns preprocessors, if defined
+     *
+     * @return
+     */
+    DataSetPreProcessor getPreProcessor();
+
+    /**
      * Get dataset iterator record reader labels
      *
      */

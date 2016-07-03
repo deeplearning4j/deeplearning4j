@@ -203,6 +203,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         INDArray labelSet = Nd4j.zeros(nSamples, 1);
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
+
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleDataSet);
         //Checking if we gets nans

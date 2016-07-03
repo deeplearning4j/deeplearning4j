@@ -33,6 +33,9 @@ public class Paths {
 
     public final static String PATH_ENV_VARIABLE  = "PATH";
 
+    private Paths() {
+    }
+
     /**
      * Check if a file exists in the path
      * @param name the name of the file
