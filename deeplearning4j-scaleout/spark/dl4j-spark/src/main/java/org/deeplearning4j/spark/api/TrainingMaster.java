@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.api;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.input.PortableDataStream;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -8,6 +10,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
+import java.io.OutputStream;
 import java.util.Collection;
 
 /**
@@ -44,6 +47,16 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      */
     void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData);
 
+
+    /**
+     * Train the SparkDl4jMultiLayer with the specified <i>serialized DataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for DataSet objects, one per file.
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData);
+
     /**
      * Train the SparkComputationGraph with the specified data set
      *
@@ -53,12 +66,31 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
     void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData);
 
     /**
+     * Train the SparkComputationGraph with the specified <i>serialized DataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for DataSet objects, one per file, and that these have been
+     * serialized using {@link DataSet#save(OutputStream)}
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTraining(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
+
+    /**
      * Train the SparkComputationGraph with the specified data set
      *
      * @param graph        Current network state
      * @param trainingData Data to train on
      */
     void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData);
+
+    /**
+     * Train the SparkComputationGraph with the specified <i>serialized MultiDataSet objects</i>. The assumption
+     * here is that the PortableDataStreams are for MultiDataSet objects, one per file.
+     *
+     * @param network      Current network state
+     * @param trainingData Data to train on
+     */
+    void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
 
     /**
      * Set whether the training statistics should be collected. Training statistics may include things like per-epoch run times,
