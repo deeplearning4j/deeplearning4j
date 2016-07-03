@@ -70,7 +70,7 @@ public class Cluster implements Serializable {
 	}
 
 	public boolean isEmpty() {
-		return points == null || points.size() == 0;
+		return points == null || points.isEmpty();
 	}
 
 	public Point getPoint(String id) {

@@ -150,10 +150,8 @@ public class ApiResource extends FileResource {
                     // scan along Y dimension
                     double y = Double.valueOf(split[1]);
 
-                    if (x >= x15 && x <= x85 ) {
-                        if (y >= y15 && y <= y85) {
-                            filtered.add(line);
-                        }
+                    if (x >= x15 && x <= x85 && y >= y15 && y <= y85) {
+                        filtered.add(line);
                     }
                 } catch (Exception e) {
                 }

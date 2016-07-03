@@ -229,7 +229,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //Check: each layer & node has at least one input
         for (Map.Entry<String, List<String>> e : vertexInputs.entrySet()) {
             String nodeName = e.getKey();
-            if (e.getValue() == null || e.getValue().size() == 0) {
+            if (e.getValue() == null || e.getValue().isEmpty()) {
                 throw new IllegalStateException("Invalid configuration: vertex \"" + nodeName + "\" has no inputs");
             }
             for (String inputName : e.getValue()) {
@@ -299,18 +299,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             inputEdges.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
 
-        while (noIncomingEdges.size() > 0) {
+        while (!noIncomingEdges.isEmpty()) {
             String next = noIncomingEdges.removeFirst();
             topologicalOrdering.add(next);
 
             //Remove edges next -> vertexOuputsTo[...] from graph;
             List<String> nextEdges = verticesOutputTo.get(next);
 
-            if (nextEdges != null && nextEdges.size() > 0) {
+            if (nextEdges != null && !nextEdges.isEmpty()) {
                 for (String s : nextEdges) {
                     Set<String> set = inputEdges.get(s);
                     set.remove(next);
-                    if (set.size() == 0) {
+                    if (set.isEmpty()) {
                         noIncomingEdges.add(s); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
@@ -321,7 +321,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         for (Map.Entry<String, Set<String>> entry : inputEdges.entrySet()) {
             Set<String> set = entry.getValue();
             if (set == null) continue;
-            if (set.size() > 0)
+            if (!set.isEmpty())
                 throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
                         + "cycle includes vertex \"" + entry.getKey() + "\")");
         }
@@ -687,7 +687,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.validate();    //throws exception for invalid configuration
 
             //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
-            if (networkInputTypes.size() > 0) {
+            if (!networkInputTypes.isEmpty()) {
                 conf.addPreProcessors(networkInputTypes.toArray(new InputType[networkInputs.size()]));
             }
 

@@ -20,6 +20,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected DataSet ds;
     protected List<DataSet> batchedDS = Lists.newArrayList();
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
-    protected DataSetPreProcessor preProcessor;
+    @Getter protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;
     protected int queueSize = 1;
     protected boolean async = false;
@@ -211,12 +212,12 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        if (newEpoch || (newEpoch && epochs == numEpochs)) {
+        if (newEpoch) {
             log.info("Epoch " + epochs + ", number of batches completed " + lastBatch);
             newEpoch = false;
         }
         if (iter == null)
-            return (epochs < numEpochs) && ((batchedDS.size() != 0 && batchedDS.size() > batch) || batchedDS.size() == 0);
+            return (epochs < numEpochs) && ((!batchedDS.isEmpty() && batchedDS.size() > batch) || batchedDS.isEmpty());
         else
             // either there are still epochs to complete or its the first epoch
             return (epochs < numEpochs) || (iter.hasNext() && (epochs == 0 || epochs == numEpochs));

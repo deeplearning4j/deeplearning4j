@@ -234,8 +234,8 @@ public abstract class BaseUpdater implements Updater {
 
         protected Updater setUpdaterState(BaseUpdater updater){
             updater.updaterForVariable = new LinkedHashMap<>();
-            for(String s : this.aggregatorMap.keySet() ){
-                updater.updaterForVariable.put(s,this.aggregatorMap.get(s).getUpdater());
+            for (Map.Entry<String, GradientUpdaterAggregator> entry : aggregatorMap.entrySet()) {
+                updater.updaterForVariable.put(entry.getKey(), entry.getValue().getUpdater());
             }
             return updater;
         }
@@ -248,10 +248,17 @@ public abstract class BaseUpdater implements Updater {
     }
 
     @Override
+    public int hashCode() {
+        int result = 19;
+        result = 31 * result + (updaterForVariable == null? 0 : updaterForVariable.hashCode());
+        return result;
+    }
+
+    @Override
     public Updater clone(){
         Map<String,GradientUpdater> newMap = new HashMap<>();
-        for( String s : updaterForVariable.keySet()){
-            newMap.put(s, updaterForVariable.get(s).getAggregator(true).getUpdater());
+        for (Map.Entry<String, GradientUpdater> entry : updaterForVariable.entrySet()) {
+            newMap.put(entry.getKey(), entry.getValue().getAggregator(true).getUpdater());
         }
 
         BaseUpdater updater;

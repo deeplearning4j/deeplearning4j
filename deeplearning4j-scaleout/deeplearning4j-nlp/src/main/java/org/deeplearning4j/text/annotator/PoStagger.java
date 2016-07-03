@@ -156,9 +156,9 @@ public class PoStagger extends CasAnnotator_ImplBase {
 
 	    for (AnnotationIteratorPair annotationIteratorPair : comboIterator) {
 	      
-	      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<AnnotationFS>();
+	      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<>();
 
-	      final List<String> sentenceTokenList = new LinkedList<String>();
+	      final List<String> sentenceTokenList = new LinkedList<>();
 
 	      for (AnnotationFS tokenAnnotation : annotationIteratorPair.getSubIterator()) {
 

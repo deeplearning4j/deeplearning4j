@@ -93,7 +93,7 @@ public class TestDeepWalk {
 
         Random r = new Random(12345);
 
-        Graph<String,String> graph = new Graph<String, String>(nVertices,new StringVertexFactory());
+        Graph<String,String> graph = new Graph<>(nVertices, new StringVertexFactory());
         for( int i=0; i<nVertices; i++ ){
             for( int j=0; j<nEdgesPerVertex; j++ ){
                 int to = r.nextInt(nVertices);
@@ -250,7 +250,7 @@ public class TestDeepWalk {
         //Create GraphWalkIteratorProvider. The GraphWalkIteratorProvider is used to create multiple GraphWalkIterator objects.
         //Here, it is used to create a GraphWalkIterator, one for each thread
         int walkLength = 5;
-        GraphWalkIteratorProvider<String> iteratorProvider = new WeightedRandomWalkGraphIteratorProvider<String>(graph,walkLength);
+        GraphWalkIteratorProvider<String> iteratorProvider = new WeightedRandomWalkGraphIteratorProvider<>(graph, walkLength);
 
         //Fit in parallel
         deepWalk.fit(iteratorProvider);

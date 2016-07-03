@@ -45,4 +45,14 @@ public class Edge<T> {
         if((value != null && e.value == null) || (value == null && e.value != null)) return false;
         return value == null || value.equals(e.value);
     }
+
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + (directed? 1 : 0);
+        result = 31 * result + from;
+        result = 31 * result + to;
+        result = 31 * result + (value==null? 0 : value.hashCode());
+        return result;
+    }
 }

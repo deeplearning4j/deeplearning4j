@@ -60,11 +60,9 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
         if (sentence != null && !sentence.isEmpty()) {
             for (int i = 0; i < sentence.size(); i++) {
                 VocabWord vocabWord = sentence.get(i);
-                if (vocabWord != null) {
-                    if (vocabWord.getWord().endsWith("STOP")) {
-                        nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                        skipGram(param, i, sentence, (int) nextRandom.get() % param.getWindow(), alpha, changed);
-                    }
+                if (vocabWord != null && vocabWord.getWord().endsWith("STOP")) {
+                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    skipGram(param, i, sentence, (int) nextRandom.get() % param.getWindow(), alpha, changed);
                 }
             }
         }

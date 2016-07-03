@@ -169,9 +169,9 @@ public class ParamAndGradientIterationListener implements IterationListener {
 
 
         //Calculate actual values for parameters and gradients
-        for (String s : params.keySet()) {
-            INDArray currParams = params.get(s);
-            INDArray currGrad = grads.get(s);
+        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
+            INDArray currParams = entry.getValue();
+            INDArray currGrad = grads.get(entry.getKey());
 
             //Parameters:
             if (printMean) {

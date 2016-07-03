@@ -12,6 +12,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Dropout {
 
+    private Dropout() {
+    }
+
     /**
      * Apply drop connect to the given variable
      * @param layer the layer with the variables

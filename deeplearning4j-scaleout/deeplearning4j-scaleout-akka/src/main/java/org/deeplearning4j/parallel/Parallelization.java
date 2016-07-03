@@ -38,6 +38,9 @@ public class Parallelization {
 
     private static final Logger log = LoggerFactory.getLogger(Parallelization.class);
 
+    private Parallelization() {
+    }
+
     public interface RunnableWithParams<E> {
         void run(E currentItem,Object[] args);
     }

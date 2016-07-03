@@ -26,7 +26,7 @@ public class PopularityWalkerTest {
     @Before
     public void setUp() {
         if (graph == null) {
-            graph = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
+            graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 10; i++) {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
@@ -48,7 +48,7 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalkerCreation() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
                 .setWalkDirection(WalkDirection.FORWARD_ONLY)
                 .setWalkLength(10)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
@@ -59,7 +59,7 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalker1() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
                 .setWalkDirection(WalkDirection.FORWARD_ONLY)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .setWalkLength(10)
@@ -81,7 +81,7 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalker2() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
                 .setWalkDirection(WalkDirection.FORWARD_ONLY)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .setWalkLength(10)
@@ -102,7 +102,7 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalker3() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
                 .setWalkDirection(WalkDirection.FORWARD_ONLY)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .setWalkLength(10)
@@ -139,7 +139,7 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalker4() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
                 .setWalkDirection(WalkDirection.FORWARD_ONLY)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .setWalkLength(10)

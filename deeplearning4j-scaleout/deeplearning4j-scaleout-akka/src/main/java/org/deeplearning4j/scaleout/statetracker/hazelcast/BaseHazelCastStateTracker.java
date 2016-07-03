@@ -74,6 +74,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public final static String NUM_BATCHES_SO_FAR_RAN = "numbatches";
     public final static String GLOBAL_REFERENCE = "globalreference";
     public final static String RECENTLY_CLEARED = "recentlycleared";
+    public static final String MASTER = "master";
 
     private volatile transient IAtomicReference<Serializable> master;
     private volatile transient IList<Job> jobs;
@@ -102,7 +103,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     private transient Config config;
     public final static int DEFAULT_HAZELCAST_PORT = 2510;
     private transient HazelcastInstance h;
-    private String type = "master";
+    private String type = MASTER;
     private int hazelCastPort = -1;
     private String connectionString;
     private Map<String,Long> heartbeat;
@@ -474,7 +475,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
      * @throws Exception
      */
     public BaseHazelCastStateTracker(int stateTrackerPort) throws Exception {
-        this("master","master",stateTrackerPort);
+        this(MASTER, MASTER,stateTrackerPort);
 
     }
 
@@ -497,9 +498,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         log.info("Setting up hazelcast with type " + type + " connection string " + connectionString + " and port " + stateTrackerPort);
 
 
-        if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
+        if(type.equals(MASTER) && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
-            if(connectionString.equals("master")) {
+            if(connectionString.equals(MASTER)) {
                 String hazelCastHost;
                 try {
                     //try localhost fall back to 0.0.0.0
@@ -545,7 +546,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         }
 
-        else if(type.equals("master") && PortTaken.portTaken(stateTrackerPort))
+        else if(type.equals(MASTER) && PortTaken.portTaken(stateTrackerPort))
             throw new IllegalStateException("Specified type was master and the port specified was taken, please specify a different port");
 
         else {
@@ -584,7 +585,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         references = h.getMap(GLOBAL_REFERENCE);
 
         //applyTransformToDestination defaults only when master, otherwise, overrides previous values
-        if(type.equals("master")) {
+        if(type.equals(MASTER)) {
             begunTraining.set(false);
             saver = createUpdateSaver();
             numTimesPretrainRan.set(0);

@@ -126,7 +126,7 @@ public class LayerVertex extends GraphVertex {
             //First: check that the kernel size/stride/padding is valid
             int inHeight = afterPreProcessor.getHeight();
             int inWidth = afterPreProcessor.getWidth();
-            new KernelValidationUtil().validateShapes(inHeight, inWidth,
+            KernelValidationUtil.validateShapes(inHeight, inWidth,
                     kernel[0], kernel[1], stride[0], stride[1],padding[0], padding[1]);
 
             int outWidth = (inWidth - kernel[1] + 2 * padding[1]) / stride[1] + 1;

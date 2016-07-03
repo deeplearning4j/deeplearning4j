@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 
+import lombok.Getter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.DataSet;
@@ -43,7 +44,7 @@ public class ListDataSetIterator implements DataSetIterator {
 	private int curr = 0;
 	private int batch = 10;
 	private List<DataSet> list;
-	private DataSetPreProcessor preProcessor;
+	@Getter private DataSetPreProcessor preProcessor;
 
 	public ListDataSetIterator(Collection<DataSet> coll,int batch) {
 		list = new ArrayList<>(coll);

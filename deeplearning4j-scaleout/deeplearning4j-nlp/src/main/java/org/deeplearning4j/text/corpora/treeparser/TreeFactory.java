@@ -44,6 +44,8 @@ import java.util.List;
 public class TreeFactory {
 
 
+    private TreeFactory() {
+    }
 
     /**
      * Builds a tree recursively

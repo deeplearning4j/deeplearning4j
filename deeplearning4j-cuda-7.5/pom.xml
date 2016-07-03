@@ -63,5 +63,34 @@
             <artifactId>cuda</artifactId>
             <version>7.5-1.2</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
+
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../dl4j-test-resources/src/main/resources</directory>
+            </testResource>
+        </testResources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.18.1</version>
+                    <configuration>
+                        <additionalClasspathElements>
+                            <additionalClasspathElement>../dl4j-test-resources/src/main/resources</additionalClasspathElement>
+                        </additionalClasspathElements>
+                        <argLine>-Ddtype=double</argLine>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

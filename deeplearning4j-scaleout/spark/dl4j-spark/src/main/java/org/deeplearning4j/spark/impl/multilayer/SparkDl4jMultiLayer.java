@@ -25,6 +25,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -52,6 +53,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -78,17 +80,19 @@ public class SparkDl4jMultiLayer implements Serializable {
      * Instantiate a multi layer spark instance
      * with the given context and network.
      * This is the prediction constructor
-     * @param sparkContext  the spark context to use
-     * @param network the network to use
+     *
+     * @param sparkContext the spark context to use
+     * @param network      the network to use
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network, TrainingMaster trainingMaster) {
-        this(new JavaSparkContext(sparkContext),network, trainingMaster);
+        this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
     /**
      * Training constructor. Instantiate with a configuration
+     *
      * @param sparkContext the spark context to use
-     * @param conf the configuration of the network
+     * @param conf         the configuration of the network
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf, TrainingMaster trainingMaster) {
         this(new JavaSparkContext(sparkContext), initNetwork(conf), trainingMaster);
@@ -96,28 +100,29 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**
      * Training constructor. Instantiate with a configuration
-     * @param sc the spark context to use
+     *
+     * @param sc   the spark context to use
      * @param conf the configuration of the network
      */
     public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster trainingMaster) {
-        this(sc.sc(),conf, trainingMaster);
+        this(sc.sc(), conf, trainingMaster);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network, TrainingMaster trainingMaster){
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network, TrainingMaster trainingMaster) {
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
-        if(!network.isInitCalled()) network.init();
+        if (!network.isInitCalled()) network.init();
         this.trainingMaster = trainingMaster;
     }
 
-    private static MultiLayerNetwork initNetwork(MultiLayerConfiguration conf){
+    private static MultiLayerNetwork initNetwork(MultiLayerConfiguration conf) {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         return net;
     }
 
-    public JavaSparkContext getSparkContext(){
+    public JavaSparkContext getSparkContext() {
         return sc;
     }
 
@@ -130,6 +135,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**
      * Set the network that underlies this SparkDl4jMultiLayer instacne
+     *
      * @param network network to set
      */
     public void setNetwork(MultiLayerNetwork network) {
@@ -139,9 +145,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     /**
      * Set whether training statistics should be collected for debugging purposes. Statistics collection is disabled by default
      *
-     * @param collectTrainingStats    If true: collect training statistics. If false: don't collect.
+     * @param collectTrainingStats If true: collect training statistics. If false: don't collect.
      */
-    public void setCollectTrainingStats(boolean collectTrainingStats){
+    public void setCollectTrainingStats(boolean collectTrainingStats) {
         trainingMaster.setCollectTrainingStats(collectTrainingStats);
     }
 
@@ -150,12 +156,13 @@ public class SparkDl4jMultiLayer implements Serializable {
      *
      * @return Training statistics
      */
-    public SparkTrainingStats getSparkTrainingStats(){
+    public SparkTrainingStats getSparkTrainingStats() {
         return trainingMaster.getTrainingStats();
     }
 
     /**
      * Predict the given feature matrix
+     *
      * @param features the given feature matrix
      * @return the predictions
      */
@@ -166,6 +173,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**
      * Predict the given vector
+     *
      * @param point the vector to predict
      * @return the predicted vector
      */
@@ -179,36 +187,52 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param trainingData the training data RDD to fitDataSet
      * @return the MultiLayerNetwork after training
      */
-    public MultiLayerNetwork fit(RDD<DataSet> trainingData){
+    public MultiLayerNetwork fit(RDD<DataSet> trainingData) {
         return fit(trainingData.toJavaRDD());
     }
 
     /**
      * Fit the DataSet RDD
+     *
      * @param trainingData the training data RDD to fitDataSet
      * @return the MultiLayerNetwork after training
      */
     public MultiLayerNetwork fit(JavaRDD<DataSet> trainingData) {
-        trainingMaster.executeTraining(this,trainingData);
+        trainingMaster.executeTraining(this, trainingData);
+        return network;
+    }
+
+    /**
+     * Fit the SparkDl4jMultiLayer network using a directory of serialized DataSet objects
+     * The assumption here is that the directory contains a number of {@link DataSet} objects, each serialized using
+     * {@link DataSet#save(OutputStream)}
+     *
+     * @param path Path to the directory containing the serialized DataSet objcets
+     * @return The MultiLayerNetwork after training
+     */
+    public MultiLayerNetwork fit(String path) {
+        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
+        trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
 
     /**
      * Fit a MultiLayerNetwork using Spark MLLib LabeledPoint instances.
      * This will convert the labeled points to the internal DL4J data format and train the model on that
+     *
      * @param rdd the rdd to fitDataSet
      * @return the multi layer network that was fitDataSet
      */
     public MultiLayerNetwork fitLabeledPoint(JavaRDD<LabeledPoint> rdd) {
         int nLayers = network.getLayerWiseConfigurations().getConfs().size();
-        FeedForwardLayer ffl = (FeedForwardLayer)network.getLayerWiseConfigurations().getConf(nLayers-1).getLayer();
+        FeedForwardLayer ffl = (FeedForwardLayer) network.getLayerWiseConfigurations().getConf(nLayers - 1).getLayer();
         JavaRDD<DataSet> ds = MLLibUtil.fromLabeledPoint(sc, rdd, ffl.getNOut());
         return fit(ds);
     }
 
     /**
      * This method allows you to specify IterationListeners for this model.
-     *
+     * <p>
      * PLEASE NOTE:
      * 1. These iteration listeners should be configured to use remote UiServer
      * 2. Remote UiServer should be accessible via network from Spark master node.
@@ -218,11 +242,11 @@ public class SparkDl4jMultiLayer implements Serializable {
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         this.listeners.clear();
         this.listeners.addAll(listeners);
-        if(trainingMaster != null) trainingMaster.setListeners(this.listeners);
+        if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
     }
 
     protected void invokeListeners(MultiLayerNetwork network, int iteration) {
-        for (IterationListener listener: listeners) {
+        for (IterationListener listener : listeners) {
             try {
                 listener.iterationDone(network, iteration);
             } catch (Exception e) {
@@ -232,21 +256,22 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
     }
 
-    /** Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
+    /**
+     * Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
      * last minibatch executed in each worker
      */
-    public double getScore(){
+    public double getScore() {
         return lastScore;
     }
 
-    public void setScore(double lastScore){
+    public void setScore(double lastScore) {
         this.lastScore = lastScore;
     }
 
     /**
      * Overload of {@link #calculateScore(JavaRDD, boolean)} for {@code RDD<DataSet>} instead of {@code JavaRDD<DataSet>}
      */
-    public double calculateScore(RDD<DataSet> data, boolean average){
+    public double calculateScore(RDD<DataSet> data, boolean average) {
         return calculateScore(data.toJavaRDD(), average);
     }
 
@@ -255,37 +280,39 @@ public class SparkDl4jMultiLayer implements Serializable {
      * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
      * or one of the similar methods
      *
-     * @param data       Data to score
-     * @param average    Whether to sum the scores, or averag them
+     * @param data    Data to score
+     * @param average Whether to sum the scores, or averag them
      */
-    public double calculateScore(JavaRDD<DataSet> data, boolean average){
+    public double calculateScore(JavaRDD<DataSet> data, boolean average) {
         long n = data.count();
         JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
         List<Double> scoresList = scores.collect();
         double sum = 0.0;
-        for(Double d : scoresList) sum += d;
-        if(average) return sum / n;
+        for (Double d : scoresList) sum += d;
+        if (average) return sum / n;
         return sum;
     }
 
     /**
-     *  {@code RDD<DataSet>} overload of {@link #scoreExamples(JavaPairRDD, boolean)}
+     * {@code RDD<DataSet>} overload of {@link #scoreExamples(JavaPairRDD, boolean)}
      */
-    public JavaDoubleRDD scoreExamples(RDD<DataSet> data, boolean includeRegularizationTerms){
+    public JavaDoubleRDD scoreExamples(RDD<DataSet> data, boolean includeRegularizationTerms) {
         return scoreExamples(data.toJavaRDD(), includeRegularizationTerms);
     }
 
-    /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     * Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately. If scoring is needed for specific examples use either
      * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
      * a key for each example.
-     * @param data Data to score
+     *
+     * @param data                       Data to score
      * @param includeRegularizationTerms If  true: include the l1/l2 regularization terms with the score (if any)
      * @return A JavaDoubleRDD containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms) {
-        return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+        return scoreExamples(data, includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
     /**
@@ -295,13 +322,15 @@ public class SparkDl4jMultiLayer implements Serializable {
         return scoreExamples(data.toJavaRDD(), includeRegularizationTerms, batchSize);
     }
 
-    /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     * Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately. If scoring is needed for specific examples use either
      * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
      * a key for each example.
-     * @param data Data to score
+     *
+     * @param data                       Data to score
      * @param includeRegularizationTerms If  true: include the l1/l2 regularization terms with the score (if any)
-     * @param batchSize Batch size to use when doing scoring
+     * @param batchSize                  Batch size to use when doing scoring
      * @return A JavaDoubleRDD containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
@@ -310,33 +339,37 @@ public class SparkDl4jMultiLayer implements Serializable {
                 includeRegularizationTerms, batchSize));
     }
 
-    /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     * Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately<br>
      * Note: The provided JavaPairRDD has a key that is associated with each example and returned score.<br>
      * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
      * between keys and data sets to score)
-     * @param data Data to score
+     *
+     * @param data                       Data to score
      * @param includeRegularizationTerms If  true: include the l1/l2 regularization terms with the score (if any)
-     * @param <K> Key type
+     * @param <K>                        Key type
      * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
-    public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,DataSet> data, boolean includeRegularizationTerms){
-        return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms) {
+        return scoreExamples(data, includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
-    /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     * Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately<br>
      * Note: The provided JavaPairRDD has a key that is associated with each example and returned score.<br>
      * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
      * between keys and data sets to score)
-     * @param data Data to score
+     *
+     * @param data                       Data to score
      * @param includeRegularizationTerms If  true: include the l1/l2 regularization terms with the score (if any)
-     * @param <K> Key type
+     * @param <K>                        Key type
      * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
-    public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,DataSet> data, boolean includeRegularizationTerms, int batchSize ){
+    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
                 includeRegularizationTerms, batchSize));
     }
@@ -344,11 +377,13 @@ public class SparkDl4jMultiLayer implements Serializable {
     /**
      * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD)}
      */
-    public Evaluation evaluate(RDD<DataSet> data){
+    public Evaluation evaluate(RDD<DataSet> data) {
         return evaluate(data.toJavaRDD());
     }
 
-    /**Evaluate the network (classification performance) in a distributed manner on the provided data
+    /**
+     * Evaluate the network (classification performance) in a distributed manner on the provided data
+     *
      * @param data Data to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
@@ -357,20 +392,22 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD,List)}
+     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD, List)}
      */
-    public Evaluation evaluate(RDD<DataSet> data, List<String> labelsList){
+    public Evaluation evaluate(RDD<DataSet> data, List<String> labelsList) {
         return evaluate(data.toJavaRDD(), labelsList);
     }
 
-    /**Evaluate the network (classification performance) in a distributed manner, using default batch size and a provided
+    /**
+     * Evaluate the network (classification performance) in a distributed manner, using default batch size and a provided
      * list of labels
-     * @param data Data to evaluate on
+     *
+     * @param data       Data to evaluate on
      * @param labelsList List of labels used for evaluation
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList) {
-        return evaluate(data,labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+        return evaluate(data, labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
     private void update(int mr, long mg) {
@@ -381,14 +418,16 @@ public class SparkDl4jMultiLayer implements Serializable {
         Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
     }
 
-    /**Evaluate the network (classification performance) in a distributed manner, using specified batch size and a provided
+    /**
+     * Evaluate the network (classification performance) in a distributed manner, using specified batch size and a provided
      * list of labels
-     * @param data Data to evaluate on
-     * @param labelsList List of labels used for evaluation
+     *
+     * @param data          Data to evaluate on
+     * @param labelsList    List of labels used for evaluation
      * @param evalBatchSize Batch size to use when conducting evaluations
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize ){
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize) {
         Broadcast<List<String>> listBroadcast = (labelsList == null ? null : sc.broadcast(labelsList));
         JavaRDD<Evaluation> evaluations = data.mapPartitions(new EvaluateFlatMapFunction(sc.broadcast(conf.toJson()),
                 sc.broadcast(network.params()), evalBatchSize, listBroadcast));

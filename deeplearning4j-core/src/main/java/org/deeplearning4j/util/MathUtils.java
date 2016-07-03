@@ -206,8 +206,8 @@ public class MathUtils  {
     public static double stringSimilarity(String...strings) {
         if(strings==null)
             return 0;
-        Counter<String> counter = new Counter<String>();
-        Counter<String> counter2 = new Counter<String>();
+        Counter<String> counter = new Counter<>();
+        Counter<String> counter2 = new Counter<>();
 
         for(int i = 0; i < strings[0].length(); i++)
             counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0);
@@ -563,7 +563,7 @@ public class MathUtils  {
     public static List<double[]> coordSplit(double[] vector) {
 
         if(vector==null) return null;
-        List<double[]> ret = new ArrayList<double[]>();
+        List<double[]> ret = new ArrayList<>();
 		/* x coordinates */
         double[] xVals = new double[vector.length/2];
 		/* y coordinates */
@@ -747,9 +747,7 @@ public class MathUtils  {
      * @return the entropy of the given vector
      */
     public static double entropy(double[] vector) {
-        if(vector==null)
-            return 0;
-        else if(vector.length < 1)
+        if(vector==null || vector.length < 1)
             return 0;
         else {
             double ret=0;
