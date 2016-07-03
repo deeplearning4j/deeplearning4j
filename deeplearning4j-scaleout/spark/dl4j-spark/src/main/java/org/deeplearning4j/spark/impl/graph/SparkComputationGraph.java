@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -48,6 +49,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -144,6 +146,20 @@ public class SparkComputationGraph implements Serializable {
     }
 
     /**
+     * Fit the SparkComputationGraph network using a directory of serialized DataSet objects
+     * The assumption here is that the directory contains a number of {@link DataSet} objects, each serialized using
+     * {@link DataSet#save(OutputStream)}
+     *
+     * @param path Path to the directory containing the serialized DataSet objcets
+     * @return The MultiLayerNetwork after training
+     */
+    public ComputationGraph fit(String path) {
+        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
+        trainingMaster.executeTraining(this, serializedDataSets);
+        return network;
+    }
+
+    /**
      * Fit the ComputationGraph with the given data set
      *
      * @param rdd Data to train on
@@ -161,6 +177,19 @@ public class SparkComputationGraph implements Serializable {
      */
     public ComputationGraph fitMultiDataSet(JavaRDD<MultiDataSet> rdd) {
         trainingMaster.executeTrainingMDS(this, rdd);
+        return network;
+    }
+
+    /**
+     * Fit the SparkComputationGraph network using a directory of serialized MultiDataSet objects
+     * The assumption here is that the directory contains a number of serialized {@link MultiDataSet} objects
+     *
+     * @param path Path to the directory containing the serialized MultiDataSet objcets
+     * @return The MultiLayerNetwork after training
+     */
+    public ComputationGraph fitMultiDataSet(String path) {
+        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
+        trainingMaster.executeTrainingMDS(this, serializedDataSets);
         return network;
     }
 
