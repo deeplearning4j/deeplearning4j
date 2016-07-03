@@ -235,10 +235,7 @@ public class BackTrackLineSearch implements LineOptimizer {
             log.debug("Model score after step = {}", score);
 
             //Score best step size for use if we terminate on maxIterations
-            if( minObjectiveFunction && score < bestScore ){
-            	bestScore = score;
-            	bestStepSize = step;
-            } else if( !minObjectiveFunction && score > bestScore ){
+            if( (minObjectiveFunction && score < bestScore) || (!minObjectiveFunction && score > bestScore)) {
             	bestScore = score;
             	bestStepSize = step;
             }
