@@ -29,6 +29,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 public class ConvolutionUtils {
 
 
+    private ConvolutionUtils() {
+    }
+
     /**
      * Get the height and width
      * from the configuration

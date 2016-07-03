@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.canova;
 
 import com.google.common.annotations.VisibleForTesting;
+import lombok.Getter;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.io.converters.SelfWritableConverter;
 import org.canova.api.io.converters.WritableConverterException;
@@ -58,7 +59,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected DataSet last;
     protected boolean useCurrent = false;
     protected boolean regression = false;
-    protected DataSetPreProcessor preProcessor;
+    @Getter protected DataSetPreProcessor preProcessor;
 
 
 

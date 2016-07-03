@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
@@ -56,10 +57,21 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
+    protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
+    protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
 
 
 
     @Setter protected transient Set<VectorsListener<T>> eventListeners;
+
+
+    public double getElementsScore() {
+        return scoreElements.get();
+    }
+
+    public double getSequencesScore() {
+        return scoreSequences.get();
+    }
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -185,20 +197,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
 
             // TODO: fix this to non-exclusive termination
-            if (trainElementsVectors && elementsLearningAlgorithm != null) {
-                if (!trainSequenceVectors || sequenceLearningAlgorithm == null) {
-                    if (elementsLearningAlgorithm.isEarlyTerminationHit()) break;
-                }
+            if (trainElementsVectors && elementsLearningAlgorithm != null
+                    && (!trainSequenceVectors || sequenceLearningAlgorithm == null)
+                    && elementsLearningAlgorithm.isEarlyTerminationHit()) {
+                break;
             }
 
-            if (trainSequenceVectors && sequenceLearningAlgorithm!= null) {
-                if (!trainElementsVectors || elementsLearningAlgorithm == null) {
-                    if (sequenceLearningAlgorithm.isEarlyTerminationHit()) break;
-                }
+            if (trainSequenceVectors && sequenceLearningAlgorithm!= null
+                    && (!trainElementsVectors || elementsLearningAlgorithm == null)
+                    && sequenceLearningAlgorithm.isEarlyTerminationHit()) {
+                break;
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
 
-            if (eventListeners != null && eventListeners.size() > 0) {
+            if (eventListeners != null && !eventListeners.isEmpty()) {
                 for (VectorsListener listener: eventListeners) {
                     if (listener.validateEvent(ListenerEvent.EPOCH, currentEpoch))
                         listener.processEvent(ListenerEvent.EPOCH, this, currentEpoch);
@@ -210,19 +222,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected void trainSequence(@NonNull Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
 
-        if (sequence.getElements().size() == 0) return;
+        if (sequence.getElements().isEmpty()) return;
 
         if (trainElementsVectors) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
 
         if (trainSequenceVectors)  {
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            //dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
-            if (!sequenceLearningAlgorithm.isEarlyTerminationHit()) sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!sequenceLearningAlgorithm.isEarlyTerminationHit()) scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
     }
 
@@ -663,18 +674,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .build();
             }
 
-            if (trainElementsVectors) {
-                if (elementsLearningAlgorithm == null) {
-                    // create default implementation of ElementsLearningAlgorithm
-                    elementsLearningAlgorithm = new SkipGram<>();
-                }
+            if (trainElementsVectors && elementsLearningAlgorithm == null) {
+                // create default implementation of ElementsLearningAlgorithm
+                elementsLearningAlgorithm = new SkipGram<>();
             }
 
-            if (trainSequenceVectors) {
-                if (sequenceLearningAlgorithm == null) {
-                    // create default implementation of SequenceLearningAlgorithm
-                    sequenceLearningAlgorithm = new DBOW<>();
-                }
+            if (trainSequenceVectors && sequenceLearningAlgorithm == null) {
+                sequenceLearningAlgorithm = new DBOW<>();
             }
 
             this.modelUtils.init(lookupTable);
@@ -827,7 +833,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         }
 
                         // due to subsampling and null words, new sequence size CAN be 0, so there's no need to insert empty sequence into processing chain
-                        if (newSequence.getElements().size() > 0) buffer.add(newSequence);
+                        if (!newSequence.getElements().isEmpty()) buffer.add(newSequence);
 
                         linesLoaded.incrementAndGet();
                     }
@@ -844,7 +850,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         public boolean hasMoreLines() {
             // statement order does matter here, since there's possible race condition
-            return buffer.size() > 0 || isRunning.get();
+            return !buffer.isEmpty() || isRunning.get();
         }
 
         public Sequence<T> nextSentence() {
@@ -907,7 +913,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                       */
                     double alpha = 0.025;
 
-                    if (sequences.size() == 0) {
+                    if (sequences.isEmpty()) {
                         continue;
                     }
 
@@ -925,11 +931,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             this.wordsCounter.addAndGet(sequence.getElements().size());
 
                             if (totalLines.get() % 100000 == 0) log.info("Epoch: [" + this.epochNumber+ "]; Words vectorized so far: [" + this.wordsCounter.get() + "];  Lines vectorized so far: [" + this.totalLines.get() + "]; learningRate: [" + alpha + "]");
-                            if (eventListeners != null && eventListeners.size() > 0) {
+                            if (eventListeners != null && !eventListeners.isEmpty()) {
                                 for (VectorsListener listener: eventListeners) {
                                     if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
                                         listener.processEvent(ListenerEvent.LINE, SequenceVectors.this, totalLines.get());
                                 }
+                            }
+                        }
+
+                        if (eventListeners != null && eventListeners.size() > 0) {
+                            for (VectorsListener listener: eventListeners) {
+                                if (listener.validateEvent(ListenerEvent.ITERATION, i))
+                                    listener.processEvent(ListenerEvent.ITERATION, SequenceVectors.this, i);
                             }
                         }
                     }

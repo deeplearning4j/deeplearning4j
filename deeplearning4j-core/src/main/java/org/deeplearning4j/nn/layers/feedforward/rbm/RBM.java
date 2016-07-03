@@ -316,14 +316,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * @param v the visible layer
      * @return the approximated activations of the visible layer
      */
-    public INDArray propUp(INDArray v,boolean training) {
+    public INDArray propUp(INDArray v, boolean training) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if(training) {
-            if(conf.isUseDropConnect() && training) {
-                if (conf.getLayer().getDropOut() > 0 && training) {
-                    W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-                }
-            }
+        if(training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
+            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 

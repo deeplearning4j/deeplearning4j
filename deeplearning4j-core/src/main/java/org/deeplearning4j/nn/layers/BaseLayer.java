@@ -352,10 +352,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect() && training) {
-            if (conf.getLayer().getDropOut() > 0) {
-                W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-            }
+        if(conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
 
         INDArray ret = input.mmul(W).addiRowVector(b);
@@ -477,8 +475,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
             layer = (Layer) c.newInstance(conf);
             Map<String,INDArray> linkedTable = new LinkedHashMap<>();
-            for(String s: params.keySet())
-                linkedTable.put(s,params.get(s).dup());
+            for (Map.Entry<String, INDArray> entry : params.entrySet()) {
+                linkedTable.put(entry.getKey(),entry.getValue().dup());
+            }
             layer.setParamTable(linkedTable);
         } catch (Exception e) {
             e.printStackTrace();

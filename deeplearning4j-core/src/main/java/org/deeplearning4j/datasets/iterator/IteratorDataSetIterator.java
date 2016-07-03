@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -19,7 +20,7 @@ public class IteratorDataSetIterator implements DataSetIterator {
     private final Iterator<DataSet> iterator;
     private final int batchSize;
     private final LinkedList<DataSet> queued; //Used when splitting larger examples than we want to return in a batch
-    private DataSetPreProcessor preProcessor;
+    @Getter private DataSetPreProcessor preProcessor;
 
     private int inputColumns = -1;
     private int totalOutcomes = -1;

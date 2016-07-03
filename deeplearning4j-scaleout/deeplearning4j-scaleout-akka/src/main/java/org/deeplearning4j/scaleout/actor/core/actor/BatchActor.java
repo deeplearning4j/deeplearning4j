@@ -165,10 +165,8 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
         while(workers.isEmpty()) {
             //always update
             for(String s : stateTracker.workers()) {
-                if(stateTracker.jobFor(s) == null) {
-                    if(!workers.contains(s))
-                        workers.add(s);
-
+                if(stateTracker.jobFor(s) == null && !workers.contains(s)) {
+                    workers.add(s);
                 }
             }
 

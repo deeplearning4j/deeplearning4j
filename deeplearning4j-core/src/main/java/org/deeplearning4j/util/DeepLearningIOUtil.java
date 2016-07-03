@@ -26,6 +26,9 @@ import java.io.InputStream;
 
 public class DeepLearningIOUtil {
 
+	private DeepLearningIOUtil() {
+	}
+
 	public static InputStream inputStreamFromPath(String path)  {
 		try {
 			return new BufferedInputStream(new FileInputStream(new File(path)));

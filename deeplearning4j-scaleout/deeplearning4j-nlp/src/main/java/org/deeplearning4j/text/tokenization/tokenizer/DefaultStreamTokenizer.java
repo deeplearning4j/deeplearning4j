@@ -70,7 +70,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
     @Override
     public boolean hasMoreTokens() {
         log.info("Tokens size: [" + tokens.size()+"], position: ["+ position.get()+"]");
-        if (tokens.size() > 0) return position.get() < tokens.size();
+        if (!tokens.isEmpty()) return position.get() < tokens.size();
             else return streamHasMoreTokens();
     }
 
@@ -93,7 +93,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
      */
     @Override
     public String nextToken() {
-        if (tokens.size() > 0 && position.get() < tokens.size()) return tokens.get(position.getAndIncrement());
+        if (!tokens.isEmpty() && position.get() < tokens.size()) return tokens.get(position.getAndIncrement());
         return nextTokenFromStream();
     }
 
@@ -137,7 +137,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
     @Override
     public List<String> getTokens() {
         //List<String> tokens = new ArrayList<>();
-        if (tokens.size() > 0) return tokens;
+        if (!tokens.isEmpty()) return tokens;
 
         log.info("Starting prebuffering...");
         while(streamHasMoreTokens()) {
