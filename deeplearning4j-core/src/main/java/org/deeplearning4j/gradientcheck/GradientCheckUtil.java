@@ -31,6 +31,9 @@ public class GradientCheckUtil {
 
     private static Logger log = LoggerFactory.getLogger(GradientCheckUtil.class);
 
+    private GradientCheckUtil() {
+    }
+
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.

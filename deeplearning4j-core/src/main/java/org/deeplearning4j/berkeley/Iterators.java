@@ -36,7 +36,7 @@ public class Iterators {
 	}
 
 	public static <T> List<T> fillList(Iterator<? extends T> it) {
-		List<T> lst = new ArrayList<T>();
+		List<T> lst = new ArrayList<>();
 		fillList(it, lst);
 		return lst;
 	}
@@ -115,7 +115,7 @@ public class Iterators {
 	 */
 	public static <T> Iterator<T> thread(final Iterator<T> base) {
 		return new Iterator<T>() {
-			ArrayBlockingQueue<T> els = new ArrayBlockingQueue<T>(2);
+			ArrayBlockingQueue<T> els = new ArrayBlockingQueue<>(2);
 			private boolean finishedLoading = false;
 			private boolean running = false;
 
@@ -307,7 +307,7 @@ public class Iterators {
 	}
 
 	public static <T> Iterator<T> filter(Iterator<T> iterator, Filter<T> filter) {
-		return new FilteredIterator<T>(filter, iterator);
+		return new FilteredIterator<>(filter, iterator);
 	}
 
 	public static <T> Iterator<T> concat(Iterable<Iterator<? extends T>> args) {
@@ -318,7 +318,7 @@ public class Iterators {
 			}
 
 		};
-		return new IteratorIterator<T>(Arrays.asList(args).iterator(), factory);
+		return new IteratorIterator<>(Arrays.asList(args).iterator(), factory);
 	}
 
 	public static <T> Iterator<T> concat(Iterator<? extends T>... args) {
@@ -329,7 +329,7 @@ public class Iterators {
 			}
 
 		};
-		return new IteratorIterator<T>(Arrays.asList(args).iterator(), factory);
+		return new IteratorIterator<>(Arrays.asList(args).iterator(), factory);
 	}
 
 	public static <U> Iterator<U> oneItemIterator(final U item) {
@@ -374,7 +374,7 @@ public class Iterators {
 	}
 
 	public static <T> List<T> nextList(List<Iterator<T>> iterators) {
-		List<T> items = new ArrayList<T>(iterators.size());
+		List<T> items = new ArrayList<>(iterators.size());
 		for (Iterator<T> iter : iterators) {
 			items.add(iter.next());
 		}

@@ -36,6 +36,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 public class Windows {
 
 
+    private Windows() {
+    }
+
     /**
      * Constructs a list of window of size windowSize.
      * Note that padding for each window is created as well.
@@ -81,7 +84,7 @@ public class Windows {
      */
     public static List<Window> windows(String words,int windowSize) {
         StringTokenizer tokenizer = new StringTokenizer(words);
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         while(tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
         return windows(list,windowSize);
@@ -116,7 +119,7 @@ public class Windows {
      */
     public static List<Window> windows(String words) {
         StringTokenizer tokenizer = new StringTokenizer(words);
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         while(tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
         return windows(list,5);

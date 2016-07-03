@@ -59,7 +59,7 @@ public class TextPipeline {
     private Broadcast<List<String>> stopWordBroadCast;
     // Return values
     private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
-    private VocabCache<VocabWord> vocabCache = new AbstractCache<VocabWord>();
+    private VocabCache<VocabWord> vocabCache = new AbstractCache<>();
     private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;
@@ -148,7 +148,7 @@ public class TextPipeline {
 
     public void filterMinWordAddVocab(Counter<String> wordFreq) {
 
-        if (wordFreq.size() == 0) {
+        if (wordFreq.isEmpty()) {
             throw new IllegalStateException("IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 

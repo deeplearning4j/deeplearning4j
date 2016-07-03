@@ -52,9 +52,9 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	private Word2Vec vec;
 	private static Pattern begin = Pattern.compile("<[A-Z]+>");
 	private static Pattern end = Pattern.compile("</[A-Z]+>");
-	private List<String> labels = new ArrayList<String>();
+	private List<String> labels = new ArrayList<>();
 	private int batch;
-	private List<Window> cache = new ArrayList<Window>();
+	private List<Window> cache = new ArrayList<>();
 	private static final Logger log = LoggerFactory.getLogger(Word2VecDataFetcher.class);
 	private int totalExamples;
 	private String path;

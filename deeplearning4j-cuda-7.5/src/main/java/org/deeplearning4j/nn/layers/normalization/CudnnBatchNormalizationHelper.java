@@ -211,13 +211,13 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         if (training) {
-            if (meanCache.capacity() < mean.data().length()) {
+            if (meanCache.capacity() < mean.data().length() * mean.data().getElementSize()) {
                 meanCache.deallocate();
-                meanCache = new Cache(mean.data().length());
+                meanCache = new Cache(mean.data().length() * mean.data().getElementSize());
             }
-            if (varCache.capacity() < var.data().length()) {
+            if (varCache.capacity() < var.data().length() * mean.data().getElementSize()) {
                 varCache.deallocate();
-                varCache = new Cache(var.data().length());
+                varCache = new Cache(var.data().length() * mean.data().getElementSize());
             }
             checkCudnn(cudnnBatchNormalizationForwardTraining(cudnnContext, batchNormMode, this.alpha, this.beta,
                     cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,

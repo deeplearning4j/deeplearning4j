@@ -44,14 +44,14 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
 
     @SuppressWarnings("unchecked")
     public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges){
-        this.vertices = new ArrayList<Vertex<V>>(vertices);
+        this.vertices = new ArrayList<>(vertices);
         this.allowMultipleEdges = allowMultipleEdges;
         edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
     }
 
     @SuppressWarnings("unchecked")
     public Graph(Collection<V> elements, boolean allowMultipleEdges) {
-        this.vertices = new ArrayList<Vertex<V>>();
+        this.vertices = new ArrayList<>();
         this.allowMultipleEdges = allowMultipleEdges;
         int idx = 0;
         for (V element: elements) {
@@ -140,7 +140,7 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
      */
     @Override
     public void addEdge(int from, int to, E value, boolean directed) {
-        addEdge(new Edge<E>(from, to, value, directed));
+        addEdge(new Edge<>(from, to, value, directed));
     }
 
     @Override
@@ -159,7 +159,7 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
     @Override
     public Vertex<V> getRandomConnectedVertex(int vertex, Random rng) throws NoEdgesException {
         if(vertex < 0 || vertex >= vertices.size() ) throw new IllegalArgumentException("Invalid vertex index: " + vertex);
-        if(edges[vertex] == null || edges[vertex].size() == 0)
+        if(edges[vertex] == null || edges[vertex].isEmpty())
             throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex + " has no outgoing/undirected edges");
         int connectedVertexNum = rng.nextInt(edges[vertex].size());
         Edge<E> edge = edges[vertex].get(connectedVertexNum);
@@ -256,5 +256,14 @@ public class Graph<V extends SequenceElement, E extends Number> implements IGrap
             if(!edges[i].equals(g.edges[i])) return false;
         }
         return vertices.equals(g.vertices);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 23;
+        result = 31 * result + (allowMultipleEdges? 1 : 0);
+        result = 31 * result + Arrays.hashCode(edges);
+        result = 31 * result + vertices.hashCode();
+        return result;
     }
 }

@@ -30,6 +30,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class MultiLayerUtil {
+    private MultiLayerUtil() {
+    }
+
     /**
      * Return the weight matrices for a multi layer network
      * @param network the network to get the weights for

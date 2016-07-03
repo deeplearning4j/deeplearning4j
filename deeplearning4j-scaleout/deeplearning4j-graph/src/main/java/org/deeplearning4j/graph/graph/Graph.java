@@ -5,10 +5,7 @@ import org.deeplearning4j.graph.exception.NoEdgesException;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /** Graph, where all edges and vertices are stored in-memory.<br>
  * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
@@ -120,7 +117,7 @@ public class Graph<V, E> extends BaseGraph<V,E> {
     @Override
     public Vertex<V> getRandomConnectedVertex(int vertex, Random rng) throws NoEdgesException {
         if(vertex < 0 || vertex >= vertices.size() ) throw new IllegalArgumentException("Invalid vertex index: " + vertex);
-        if(edges[vertex] == null || edges[vertex].size() == 0)
+        if(edges[vertex] == null || edges[vertex].isEmpty())
             throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex + " has no outgoing/undirected edges");
         int connectedVertexNum = rng.nextInt(edges[vertex].size());
         Edge<E> edge = edges[vertex].get(connectedVertexNum);
@@ -217,5 +214,14 @@ public class Graph<V, E> extends BaseGraph<V,E> {
             if(!edges[i].equals(g.edges[i])) return false;
         }
         return vertices.equals(g.vertices);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 23;
+        result = 31 * result + (allowMultipleEdges? 1 : 0);
+        result = 31 * result + Arrays.hashCode(edges);
+        result = 31 * result + vertices.hashCode();
+        return result;
     }
 }

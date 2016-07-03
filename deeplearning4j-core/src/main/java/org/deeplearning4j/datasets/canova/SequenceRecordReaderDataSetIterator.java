@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.canova;
 
+import lombok.Getter;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
@@ -57,7 +58,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private int totalOutcomes = -1;
     private boolean useStored = false;
     private DataSet stored = null;
-    private DataSetPreProcessor preProcessor;
+    @Getter private DataSetPreProcessor preProcessor;
     private AlignmentMode alignmentMode;
 
     private final boolean singleSequenceReaderMode;

@@ -243,4 +243,9 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
     public void remove() {
         // no-op
     }
+
+    @Override
+    public DataSetPreProcessor getPreProcessor() {
+        return preProcessor;
+    }
 }

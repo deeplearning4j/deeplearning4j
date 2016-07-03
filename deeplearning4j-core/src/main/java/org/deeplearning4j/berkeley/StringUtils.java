@@ -590,15 +590,15 @@ public class StringUtils {
 	 */
 	public static Map<String, String[]> argsToMap(String[] args,
 			Map<String, Integer> flagsToNumArgs) {
-		Map<String, String[]> result = new HashMap<String, String[]>();
-		List<String> remainingArgs = new ArrayList<String>();
+		Map<String, String[]> result = new HashMap<>();
+		List<String> remainingArgs = new ArrayList<>();
 		String key;
 		for (int i = 0; i < args.length; i++) {
 			key = args[i];
 			if (key.charAt(0) == '-') { // found a flag
 				Integer maxFlagArgs = flagsToNumArgs.get(key);
 				int max = maxFlagArgs == null ? 0 : maxFlagArgs.intValue();
-				List<String> flagArgs = new ArrayList<String>();
+				List<String> flagArgs = new ArrayList<>();
 				for (int j = 0; j < max && i + 1 < args.length && args[i + 1].charAt(0) != '-'; i++, j++) {
 					flagArgs.add(args[i + 1]);
 				}
@@ -638,7 +638,7 @@ public class StringUtils {
 	 */
 	public static Properties argsToProperties(String[] args, Map flagsToNumArgs) {
 		Properties result = new Properties();
-		List<String> remainingArgs = new ArrayList<String>();
+		List<String> remainingArgs = new ArrayList<>();
 		String key;
 		for (int i = 0; i < args.length; i++) {
 			key = args[i];
@@ -647,11 +647,11 @@ public class StringUtils {
 
 				Integer maxFlagArgs = (Integer) flagsToNumArgs.get(key);
 				int max = maxFlagArgs == null ? 1 : maxFlagArgs.intValue();
-				List<String> flagArgs = new ArrayList<String>();
+				List<String> flagArgs = new ArrayList<>();
 				for (int j = 0; j < max && i + 1 < args.length && args[i + 1].charAt(0) != '-'; i++, j++) {
 					flagArgs.add(args[i + 1]);
 				}
-				if (flagArgs.size() == 0) {
+				if (flagArgs.isEmpty()) {
 					result.setProperty(key, "true");
 				} else {
 					result.setProperty(key, join(flagArgs, " "));
@@ -758,7 +758,7 @@ public class StringUtils {
 	 * @return A Map from keys to possible values (String or null)
 	 */
 	public static Map parseCommandLineArguments(String[] args) {
-		Map<String, String> result = new HashMap<String, String>();
+		Map<String, String> result = new HashMap<>();
 		String key, value;
 		for (int i = 0; i < args.length; i++) {
 			key = args[i];
@@ -831,7 +831,7 @@ public class StringUtils {
 	 */
 	public static String[] splitOnCharWithQuoting(String s, char splitChar, char quoteChar,
 			char escapeChar) {
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		int i = 0;
 		int length = s.length();
 		StringBuilder b = new StringBuilder();
@@ -1030,7 +1030,7 @@ public class StringUtils {
 
   public static List<Matcher> allMatches(String str, String regex) {
     Pattern p = Pattern.compile(regex);
-    List<Matcher> matches = new ArrayList<Matcher>();
+    List<Matcher> matches = new ArrayList<>();
     while (true) {
       Matcher m = p.matcher(str);
       if (!m.find()) break;

@@ -133,7 +133,7 @@ public class ActorRefUtils implements DeepLearningConfigurable {
 	 */
 	public static String absPath(ActorRef self,ActorSystem system) {
 		String address = Cluster.get(system).selfAddress().toString();
-		List<String> path2 = new ArrayList<String>();
+		List<String> path2 = new ArrayList<>();
 		scala.collection.immutable.Iterable<String> elements = self.path().elements();
 		scala.collection.Iterator<String> iter = elements.iterator();
 		while(iter.hasNext())

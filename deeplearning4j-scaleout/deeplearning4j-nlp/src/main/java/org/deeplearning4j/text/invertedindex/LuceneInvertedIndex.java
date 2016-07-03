@@ -891,10 +891,10 @@ public class LuceneInvertedIndex<T extends SequenceElement> implements InvertedI
         public InvertedIndex<T> build() {
             LuceneInvertedIndex<T> ret;
             if(indexDir != null) {
-                ret = new LuceneInvertedIndex<T>(vocabCache,cache,indexDir.getAbsolutePath());
+                ret = new LuceneInvertedIndex<>(vocabCache, cache, indexDir.getAbsolutePath());
             }
             else
-                ret = new LuceneInvertedIndex<T>(vocabCache);
+                ret = new LuceneInvertedIndex<>(vocabCache);
             try {
                 ret.batchSize = batchSize;
 

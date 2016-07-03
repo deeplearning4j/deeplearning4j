@@ -87,7 +87,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
 
@@ -139,7 +139,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true,numExecutors(),10,1,0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true,numExecutors(),1, 10,1,0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
@@ -180,7 +180,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         long startTime = System.currentTimeMillis();
@@ -227,7 +227,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
@@ -267,7 +267,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm, esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         trainer.setListener(listener);

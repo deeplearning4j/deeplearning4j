@@ -67,7 +67,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         SparkComputationGraph scg = new SparkComputationGraph(sc, cg, tm);
         scg.setListeners(Collections.singleton((IterationListener)new ScoreIterationListener(1)));
@@ -108,7 +108,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                 .pretrain(false)
                 .build();
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 10, 1, 0);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf, tm);
         ComputationGraph netCopy = sparkNet.getNetwork().clone();

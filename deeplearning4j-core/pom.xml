@@ -25,6 +25,11 @@
         <version>0.4-rc3.11-SNAPSHOT</version>
     </parent>
     <build>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../dl4j-test-resources/src/main/resources</directory>
+            </testResource>
+        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -56,6 +61,12 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-native</artifactId>
+                <version>${nd4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-cuda-7.5</artifactId>
                 <version>${nd4j.version}</version>
                 <scope>test</scope>
             </dependency>

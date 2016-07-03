@@ -36,8 +36,8 @@ import java.util.List;
 public class WindowConverter {
 
 
-
-
+    private WindowConverter() {
+    }
 
     /**
      * Converts a window (each word in the window)

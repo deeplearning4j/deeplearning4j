@@ -121,13 +121,13 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
      * @param learningRate
      */
     @Override
-    public synchronized void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
+    public synchronized double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
         /*
                 GloVe learning algorithm is implemented like a hack over settled ElementsLearningAlgorithm mechanics. It's called in SequenceVectors context, but actually only for the first call.
                 All subsequent calls will met early termination condition, and will be successfully ignored. But since elements vectors will be updated within first call,
                 this will allow compatibility with everything beyond this implementaton
          */
-        if (isTerminate.get()) return;
+        if (isTerminate.get()) return 0;
 
         final AtomicLong pairsCount = new AtomicLong(0);
         final Counter<Integer> errorCounter = new Counter<>();
@@ -162,6 +162,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         }
 
         isTerminate.set(true);
+        return 0;
     }
 
     /**
@@ -387,7 +388,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         }
 
         public GloVe<T> build() {
-            GloVe<T> ret = new GloVe<T>();
+            GloVe<T> ret = new GloVe<>();
             ret.symmetric = this.symmetric;
             ret.shuffle = this.shuffle;
             ret.xMax = this.xMax;

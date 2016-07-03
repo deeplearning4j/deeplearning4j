@@ -37,6 +37,9 @@ public class WeightInitUtil {
      */
     public static final char DEFAULT_WEIGHT_INIT_ORDER = 'f';
 
+    private WeightInitUtil() {
+    }
+
 //    /**
 //     * Normalized weight init
 //     *
