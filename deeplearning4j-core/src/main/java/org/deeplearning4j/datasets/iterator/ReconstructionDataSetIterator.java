@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -34,7 +35,7 @@ import java.util.List;
 public class ReconstructionDataSetIterator implements DataSetIterator {
 
     private DataSetIterator iter;
-    private DataSetPreProcessor preProcessor;
+    @Getter private DataSetPreProcessor preProcessor;
     public ReconstructionDataSetIterator(DataSetIterator iter) {
         this.iter = iter;
     }
@@ -122,8 +123,8 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
     }
 
     @Override

@@ -120,14 +120,21 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      * @param learningRate
      */
     @Override
-    public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, @NonNull double learningRate) {
+    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, @NonNull double learningRate) {
         Sequence<T> tempSequence = sequence;
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
 
+        double score = 0.0;
+
         for(int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
+            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
+
+//        if (tempSequence.getElements().size() > 0)
+//            score /= tempSequence.getElements().size();
+
+        return score;
     }
 
     /**
@@ -140,10 +147,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return false;
     }
 
-    private void skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
+    private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
         final T word = sentence.get(i);
         if(word == null || sentence.isEmpty())
-            return;
+            return 0.0;
+
+        double score = 0.0;
+        int cnt = 0;
 
         int end =  window * 2 + 1 - b;
         for(int a = b; a < end; a++) {
@@ -151,18 +161,24 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
-                    iterateSample(word,lastWord,nextRandom,alpha);
+                    score = iterateSample(word,lastWord,nextRandom,alpha);
+//                    cnt++;
                 }
             }
         }
+//        if (cnt > 0)
+//            score /= cnt;
+
+        return score;
     }
 
-    public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
+    public double iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
         if(w1 == null || w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
-            return;
+            return 0.0;
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
+        double score = 0.0;
 
         //error for current word and context
         INDArray neu1e = Nd4j.create(configuration.getLayersSize());
@@ -189,7 +205,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 continue;
 
             //score
-            double f =  expTable[idx];
+            double f = expTable[idx];
+
+
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
@@ -198,10 +216,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
 
+        score /= w1.getCodeLength();
+
         int target = w1.getIndex();
         int label;
         //negative sampling
-        if(negative > 0)
+        if(negative > 0) {
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)
                     label = 1;
@@ -218,15 +238,16 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     label = 0;
                 }
 
-                if(target >= syn1Neg.rows() || target < 0)
+                if (target >= syn1Neg.rows() || target < 0)
                     continue;
 
-                double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
+                double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg.slice(target));
+
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) * alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  lookupTable.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ? lookupTable.getGradient(target, alpha) : alpha);
                 else {
                     int idx = (int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2));
                     if (idx >= expTable.length)
@@ -235,10 +256,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[idx]) : (label - expTable[idx]) * alpha;
                 }
 
-               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,syn1Neg.slice(target),neu1e);
-               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,l1,syn1Neg.slice(target));
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target), neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, l1, syn1Neg.slice(target));
             }
 
-            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0,neu1e,l1);
+        }
+
+        return score;
     }
 }
