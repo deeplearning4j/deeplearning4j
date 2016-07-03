@@ -1,7 +1,8 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
-import lombok.AllArgsConstructor;
 import org.apache.spark.Partitioner;
+
+import java.util.Random;
 
 /**
  * This is a custom partitioner (used in conjunction with {@link AssignIndexFunction} to repartition a RDD.
@@ -13,11 +14,18 @@ import org.apache.spark.Partitioner;
  *
  * @author Alex Black
  */
-@AllArgsConstructor
 public class BalancedPartitioner extends Partitioner {
     private final int numPartitions;            //Total number of partitions
     private final int numStandardPartitions;    //Number of partitions of standard size; these are 1 larger than the others (==numPartitions where total number of examples is divisible into numPartitions without remainder)
     private final int elementsPerPartition;
+    private Random r;
+
+    public BalancedPartitioner(int numPartitions, int numStandardPartitions, int elementsPerPartition) {
+        if(numStandardPartitions > numPartitions) throw new IllegalArgumentException("Invalid input: numStandardPartitions > numPartitions");
+        this.numPartitions = numPartitions;
+        this.numStandardPartitions = numStandardPartitions;
+        this.elementsPerPartition = elementsPerPartition;
+    }
 
     @Override
     public int numPartitions() {
@@ -35,13 +43,28 @@ public class BalancedPartitioner extends Partitioner {
         //Work out: which partition it belongs to...
         if(elementIdx <= elementsPerPartition * numStandardPartitions){
             //This goes into one of the standard partitions (of size 'elementsPerPartition')
-            return elementIdx / elementsPerPartition;
+            int outputPartition = elementIdx / elementsPerPartition;
+            if(outputPartition >= numPartitions){
+                //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
+                outputPartition = getRandom().nextInt(numPartitions);
+            }
+            return outputPartition;
         } else {
             //This goes into one of the smaller partitions (of size elementsPerPartition - 1)
             int numValsInStdPartitions = elementsPerPartition * numStandardPartitions;
             int idxInSmallerPartitions = elementIdx - numValsInStdPartitions;
             int smallPartitionIdx = idxInSmallerPartitions / (elementsPerPartition-1);
-            return numStandardPartitions + smallPartitionIdx;
+            int outputPartition = numStandardPartitions + smallPartitionIdx;
+            if(outputPartition >= numPartitions){
+                //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
+                outputPartition = getRandom().nextInt(numPartitions);
+            }
+            return outputPartition;
         }
+    }
+
+    private synchronized Random getRandom(){
+        if(r == null) r = new Random();
+        return r;
     }
 }
