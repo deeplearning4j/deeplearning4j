@@ -66,6 +66,12 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-cuda-7.5</artifactId>
+                <version>${nd4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
                 <artifactId>canova-nd4j-image</artifactId>
                 <version>${canova.version}</version>
             </dependency>

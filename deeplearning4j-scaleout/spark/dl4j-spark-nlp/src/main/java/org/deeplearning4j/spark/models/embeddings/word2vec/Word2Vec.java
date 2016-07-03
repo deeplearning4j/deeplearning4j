@@ -134,6 +134,9 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
     public void train(JavaRDD<String> corpusRDD) throws Exception {
         log.info("Start training ...");
 
+        if (workers > 0)
+            corpusRDD.repartition(workers);
+
         // SparkContext
         final JavaSparkContext sc = new JavaSparkContext(corpusRDD.context());
 
@@ -168,6 +171,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         // Get vocabCache and broad-casted vocabCache
         Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
         vocabCache = vocabCacheBroadcast.getValue();
+
+        log.info("Vocab size: {}", vocabCache.numWords());
 
         //////////////////////////////////////
         log.info("Building Huffman Tree ...");
@@ -209,6 +214,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         INDArray syn0 = Nd4j.zeros(vocabCache.numWords(), layerSize);
 
         // Updating syn0 first pass: just add vectors obtained from different nodes
+        log.info("Averaging results...");
         Map<VocabWord, AtomicInteger> updates = new HashMap<>();
         Map<Long, Long> updaters = new HashMap<>();
         for (Pair<VocabWord, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
@@ -233,14 +239,12 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         }
 
         long totals = 0;
-        for (Long up: updaters.values()) {
-            totals += up;
-        }
 
+        log.info("Finished calculations...");
 
 
         vocab = vocabCache;
-        InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<>();
+        InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
         Environment env = EnvironmentUtils.buildEnvironment();
         env.setNumCores(maxRep);
         env.setAvailableMemory(totals);
@@ -274,6 +278,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         protected boolean useUnk = false;
         private String tokenizer = "";
         private String tokenPreprocessor = "";
+        private int workers = 0;
 
         /**
          * Creates Builder instance with default parameters set.
@@ -469,6 +474,20 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         }
 
         /**
+         * Specify number of workers for training process.
+         * This value will be used to repartition RDD.
+         *
+         * PLEASE NOTE: Recommended value is number of vCPU available within your spark cluster.
+         *
+         * @param workers
+         * @return
+         */
+        public Builder workers(int workers) {
+            this.workers = workers;
+            return this;
+        }
+
+        /**
          * Specifies output vector's dimensions
          *
          * @param layerSize
@@ -541,6 +560,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setBatchSize(this.batchSize);
             this.configuration.setStopList(this.stopWords);
+
+            ret.workers = this.workers;
 
             ret.configuration = this.configuration;
 

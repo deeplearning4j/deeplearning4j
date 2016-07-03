@@ -75,7 +75,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     @Override
-    public void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
 
@@ -83,6 +83,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             cbow(i, tempSequence.getElements(),  (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
+
+        return 0;
     }
 
     @Override
