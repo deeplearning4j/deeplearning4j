@@ -27,6 +27,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.Updater;
@@ -38,10 +39,15 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -93,7 +99,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         network.init();
         System.out.println("Initializing network");
 
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,numExecutors(),1,5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -138,7 +144,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,numExecutors(),1,5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -153,7 +159,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
 
-        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,numExecutors(),1,5,1,0));
         MultiLayerNetwork networkCopy = sparkNetCopy.fit(data);
 
         INDArray expectedParams = networkCopy.params();
@@ -236,7 +242,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .build())
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,numExecutors(),1,10,1,0));
 
         Nd4j.getRandom().setSeed(12345);
         DataSet d1 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
@@ -269,7 +275,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                 .pretrain(false)
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,numExecutors(),1,10,1,0));
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         int nRows = 100;
@@ -329,6 +335,63 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             assertEquals(localScoresNoRegDouble[i],scoresNoReg.get(i),1e-5);
 
             //System.out.println(localScoresWithRegDouble[i] + "\t" + scoresWithReg.get(i) + "\t" + localScoresNoRegDouble[i] + "\t" + scoresNoReg.get(i));
+        }
+    }
+
+
+
+    @Test
+    public void testParameterAveragingMultipleExamplesPerDataSet() throws Exception {
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        List<DataSet> list = new ArrayList<>();
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,1000,false);
+        while(iter.hasNext()){
+            list.add(iter.next());
+        }
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                    .batchSizePerWorker(batchSizePerExecutor)
+                    .averagingFrequency(1)
+                    .repartionData(Repartition.Always)
+                    .build());
+        sparkNet.setCollectTrainingStats(true);
+
+        JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+        sparkNet.fit(rdd);
+
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+
+        List<EventStats> mapPartitionStats = stats.getValue("ParameterAveragingMasterMapPartitionsTimesMs");
+        int numSplits = list.size()*dataSetObjSize / (numExecutors()*batchSizePerExecutor);   //For an averaging frequency of 1
+        assertEquals(numSplits, mapPartitionStats.size());
+
+
+        List<EventStats> workerFitStats = stats.getValue("ParameterAveragingWorkerFitTimesMs");
+        for( EventStats e : workerFitStats){
+            ExampleCountEventStats eces = (ExampleCountEventStats)e;
+            System.out.println(eces.getTotalExampleCount());
+        }
+
+        for( EventStats e : workerFitStats){
+            ExampleCountEventStats eces = (ExampleCountEventStats)e;
+            assertEquals(batchSizePerExecutor,eces.getTotalExampleCount());
         }
     }
 }

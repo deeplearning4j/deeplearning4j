@@ -7,6 +7,7 @@ import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.stats.BaseEventStats;
 import org.deeplearning4j.spark.stats.EventStats;
+import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.deeplearning4j.spark.stats.StatsUtils;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
@@ -173,9 +174,9 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
             lastFitStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logFitEnd() {
+        public void logFitEnd(int numExamples) {
             long now = timeSource.currentTimeMillis();
-            fitTimes.add(new BaseEventStats(lastFitStartTime, now - lastFitStartTime));
+            fitTimes.add(new ExampleCountEventStats(lastFitStartTime, now - lastFitStartTime, numExamples));
         }
 
         public ParameterAveragingTrainingWorkerStats build() {
@@ -186,7 +187,6 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
             initList.add(new BaseEventStats(broadcastEndTime, initEndTime - broadcastEndTime));    //Init starts at same time that broadcast ends
 
             return new ParameterAveragingTrainingWorkerStats(bList, initList, fitTimes);
-
         }
     }
 }

@@ -77,7 +77,7 @@ public class TestTrainingStatsCollection {
             JavaRDD<DataSet> rdd = sc.parallelize(list);
             rdd.repartition(4);
 
-            ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers)
+            ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers, 1)
                     .averagingFrequency(averagingFrequency)
                     .batchSizePerWorker(miniBatchSizePerWorker)
                     .saveUpdater(true)
