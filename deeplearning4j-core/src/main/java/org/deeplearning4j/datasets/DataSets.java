@@ -26,6 +26,9 @@ import org.nd4j.linalg.dataset.DataSet;
 
 public class DataSets {
 
+	private DataSets() {
+	}
+
 	public static DataSet mnist() {
 		return mnist(60000);
 	}

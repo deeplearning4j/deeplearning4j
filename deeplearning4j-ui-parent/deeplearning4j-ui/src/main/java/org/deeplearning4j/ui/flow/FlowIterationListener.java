@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 public class FlowIterationListener implements IterationListener {
+    public static final String LOCALHOST = "localhost";
+    public static final String INPUT = "INPUT";
     // TODO: basic auth should be considered here as well
     private String remoteAddr;
     private int remotePort;
@@ -74,7 +76,7 @@ public class FlowIterationListener implements IterationListener {
      * @param frequency update frequency
      */
     public FlowIterationListener(int frequency) {
-        this("localhost", 0, frequency);
+        this(LOCALHOST, 0, frequency);
     }
 
     /**
@@ -90,9 +92,9 @@ public class FlowIterationListener implements IterationListener {
         this.frequency = frequency;
         UiConnectionInfo info = null;
 
-        if (address.equals("localhost") || address.equals("127.0.0.1") || address.isEmpty()) {
+        if (address.equals(LOCALHOST) || address.equals("127.0.0.1") || address.isEmpty()) {
             try {
-                this.remoteAddr = "localhost";
+                this.remoteAddr = LOCALHOST;
                 this.remotePort = UiServer.getInstance().getPort();
                 info = UiServer.getInstance().getConnectionInfo();
             } catch (Exception e) {
@@ -280,7 +282,7 @@ public class FlowIterationListener implements IterationListener {
                 info.setName(input);
                 info.setY(0);
                 info.setX(x);
-                info.setLayerType("INPUT");
+                info.setLayerType(INPUT);
                 info.setDescription(new Description());
                 info.getDescription().setMainLine("Model input");
                 modelInfo.addLayer(info);
@@ -318,7 +320,7 @@ public class FlowIterationListener implements IterationListener {
             info.setName("Input");
             info.setY(0);
             info.setX(0);
-            info.setLayerType("INPUT");
+            info.setLayerType(INPUT);
             info.setDescription(new Description());
             info.getDescription().setMainLine("Model input");
             info.addConnection(0, 1);
@@ -353,7 +355,7 @@ public class FlowIterationListener implements IterationListener {
             String curColor = colors.get(cnt.getAndIncrement());
             if (cnt.get() >= colors.size()) cnt.set(0);
             for (LayerInfo layerInfo: modelInfo.getLayersByType(layerType)) {
-                if (layerType.equals("INPUT")) {
+                if (layerType.equals(INPUT)) {
                     layerInfo.setColor("#99ff66");
                 } else if (layerType.equals("OUTPUT")) {
                     layerInfo.setColor("#e6e6e6");

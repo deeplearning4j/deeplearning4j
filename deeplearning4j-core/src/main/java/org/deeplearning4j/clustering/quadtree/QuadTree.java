@@ -181,8 +181,7 @@ public class QuadTree implements Serializable {
 
     private boolean insertIntoOneOf(int index) {
         boolean success = false;
-        if(!success)
-            success = northWest.insert(index);
+        success = northWest.insert(index);
         if(!success)
             success = northEast.insert(index);
         if(!success)

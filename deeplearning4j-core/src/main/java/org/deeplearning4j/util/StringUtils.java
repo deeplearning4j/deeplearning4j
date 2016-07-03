@@ -42,6 +42,9 @@ public class StringUtils {
         decimalFormat.applyPattern("#.##");
     }
 
+    private StringUtils() {
+    }
+
     /**
      * Make a string representation of the exception.
      * @param e The exception to stringify
@@ -276,7 +279,7 @@ public class StringUtils {
      */
     public static String[] getStrings(String str){
         Collection<String> values = getStringCollection(str);
-        if(values.size() == 0) {
+        if(values.isEmpty()) {
             return null;
         }
         return values.toArray(new String[values.size()]);

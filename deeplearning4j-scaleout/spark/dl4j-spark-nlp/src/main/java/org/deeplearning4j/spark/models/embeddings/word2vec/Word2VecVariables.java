@@ -44,6 +44,9 @@ public class Word2VecVariables {
         put(SEED, 42L);
     }};
 
+    private Word2VecVariables() {
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T getDefault(String variableName) {
         return (T) defaultVals.get(variableName);

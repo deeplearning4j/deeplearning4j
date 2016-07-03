@@ -38,6 +38,9 @@ public class ArchiveUtils {
 
     private static final Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
 
+    private ArchiveUtils() {
+    }
+
     /**
      * Extracts files to the specified destination
      * @param file the file to extract to

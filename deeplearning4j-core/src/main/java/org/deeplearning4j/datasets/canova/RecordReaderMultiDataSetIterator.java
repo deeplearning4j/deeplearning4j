@@ -488,13 +488,13 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         /** Create the RecordReaderMultiDataSetIterator */
         public RecordReaderMultiDataSetIterator build(){
             //Validate input:
-            if(recordReaders.size() == 0 && sequenceRecordReaders.size() == 0){
+            if(recordReaders.isEmpty() && sequenceRecordReaders.isEmpty()){
                 throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with no readers");
             }
 
             if(batchSize <= 0) throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with batch size <= 0");
 
-            if(inputs.size() == 0 && outputs.size() == 0){
+            if(inputs.isEmpty() && outputs.isEmpty()){
                 throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with no inputs/outputs");
             }
 

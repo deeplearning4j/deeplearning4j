@@ -17,6 +17,9 @@ import java.util.List;
  */
 public class SparkUtils {
 
+    private SparkUtils() {
+    }
+
     /**
      * Write a String to a file (on HDFS or local) in UTF-8 format
      *

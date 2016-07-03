@@ -26,7 +26,10 @@ public class StepFunctions {
     private static final GradientStepFunction GRADIENT_STEP_FUNCTION_INSTANCE = new GradientStepFunction();
     private static final NegativeDefaultStepFunction NEGATIVE_DEFAULT_STEP_FUNCTION_INSTANCE = new NegativeDefaultStepFunction();
     private static final NegativeGradientStepFunction NEGATIVE_GRADIENT_STEP_FUNCTION_INSTANCE = new NegativeGradientStepFunction();
-    
+
+    private StepFunctions() {
+    }
+
     public static StepFunction createStepFunction(org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction) {
     	if(stepFunction == null ) return null;
         if(stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction)

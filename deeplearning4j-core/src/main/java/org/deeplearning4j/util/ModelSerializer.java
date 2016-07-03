@@ -11,7 +11,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
@@ -27,6 +26,11 @@ import java.util.zip.ZipOutputStream;
  * @author raver119@gmail.com
  */
 public class ModelSerializer {
+
+    public static final String UPDATER_BIN = "updater.bin";
+
+    private ModelSerializer() {
+    }
 
     /**
      * Write a model to a file
@@ -91,7 +95,7 @@ public class ModelSerializer {
         writeEntry(inputStream, zipfile);
 
         if (saveUpdater) {
-            ZipEntry updater = new ZipEntry("updater.bin");
+            ZipEntry updater = new ZipEntry(UPDATER_BIN);
             zipfile.putNextEntry(updater);
 
 
@@ -173,7 +177,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry updaters = zipFile.getEntry("updater.bin");
+        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
         if (updaters != null) {
             InputStream stream = zipFile.getInputStream(updaters);
             ObjectInputStream ois = new ObjectInputStream(stream);
@@ -245,14 +249,14 @@ public class ModelSerializer {
                 case "configuration.json":
                     DataInputStream dis = new DataInputStream(zipFile);
                     params = Nd4j.read(dis);
-                    gotCoefficients = true;
+                    gotConfig = true;
                     break;
                 case "coefficients.bin":
                     DataInputStream dis2 = new DataInputStream(zipFile);
                     params = Nd4j.read(dis2);
                     gotCoefficients = true;
                     break;
-                case "updater.bin": {
+                case UPDATER_BIN: {
                     ObjectInputStream ois = new ObjectInputStream(zipFile);
 
                     try {
@@ -358,7 +362,7 @@ public class ModelSerializer {
 
                     gotCoefficients = true;
                     break;
-                case "updater.bin": {
+                case UPDATER_BIN:{
                     ObjectInputStream ois = new ObjectInputStream(zis);
 
                     try {
@@ -457,7 +461,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry updaters = zipFile.getEntry("updater.bin");
+        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
         if (updaters != null) {
             InputStream stream = zipFile.getInputStream(updaters);
             ObjectInputStream ois = new ObjectInputStream(stream);

@@ -651,7 +651,7 @@ public class StringUtils {
 				for (int j = 0; j < max && i + 1 < args.length && args[i + 1].charAt(0) != '-'; i++, j++) {
 					flagArgs.add(args[i + 1]);
 				}
-				if (flagArgs.size() == 0) {
+				if (flagArgs.isEmpty()) {
 					result.setProperty(key, "true");
 				} else {
 					result.setProperty(key, join(flagArgs, " "));

@@ -58,10 +58,9 @@ public class Word2VecChange implements Serializable {
      *              to apply the changes to
      */
     public void apply(InMemoryLookupTable table) {
-
-        for(Integer i : changes.keySet()) {
-            Set<INDArray> changes = this.changes.get(i);
-            INDArray toChange = table.getSyn0().slice(i);
+        for (Map.Entry<Integer, Set<INDArray>> entry : changes.entrySet()) {
+            Set<INDArray> changes = entry.getValue();
+            INDArray toChange = table.getSyn0().slice(entry.getKey());
             for(INDArray syn1 : changes)
                 Nd4j.getBlasWrapper().level1().axpy(toChange.length(), 1, syn1, toChange);
         }
