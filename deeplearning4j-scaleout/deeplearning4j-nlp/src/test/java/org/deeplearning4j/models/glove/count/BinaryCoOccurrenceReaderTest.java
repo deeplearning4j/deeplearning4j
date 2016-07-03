@@ -48,14 +48,14 @@ public class BinaryCoOccurrenceReaderTest {
 
         BinaryCoOccurrenceWriter<VocabWord> writer = new BinaryCoOccurrenceWriter<>(tempFile);
 
-        CoOccurrenceWeight<VocabWord> object1 = new CoOccurrenceWeight<VocabWord>();
+        CoOccurrenceWeight<VocabWord> object1 = new CoOccurrenceWeight<>();
         object1.setElement1(word1);
         object1.setElement2(word2);
         object1.setWeight(3.14159265);
 
         writer.writeObject(object1);
 
-        CoOccurrenceWeight<VocabWord> object2 = new CoOccurrenceWeight<VocabWord>();
+        CoOccurrenceWeight<VocabWord> object2 = new CoOccurrenceWeight<>();
         object2.setElement1(word2);
         object2.setElement2(word3);
         object2.setWeight(0.197);
@@ -99,21 +99,21 @@ public class BinaryCoOccurrenceReaderTest {
 
         BinaryCoOccurrenceWriter<VocabWord> writer = new BinaryCoOccurrenceWriter<>(tempFile);
 
-        CoOccurrenceWeight<VocabWord> object1 = new CoOccurrenceWeight<VocabWord>();
+        CoOccurrenceWeight<VocabWord> object1 = new CoOccurrenceWeight<>();
         object1.setElement1(word1);
         object1.setElement2(word2);
         object1.setWeight(3.14159265);
 
         writer.writeObject(object1);
 
-        CoOccurrenceWeight<VocabWord> object2 = new CoOccurrenceWeight<VocabWord>();
+        CoOccurrenceWeight<VocabWord> object2 = new CoOccurrenceWeight<>();
         object2.setElement1(word2);
         object2.setElement2(word3);
         object2.setWeight(0.197);
 
         writer.writeObject(object2);
 
-        CoOccurrenceWeight<VocabWord> object3 = new CoOccurrenceWeight<VocabWord>();
+        CoOccurrenceWeight<VocabWord> object3 = new CoOccurrenceWeight<>();
         object3.setElement1(word1);
         object3.setElement2(word3);
         object3.setWeight(0.001);

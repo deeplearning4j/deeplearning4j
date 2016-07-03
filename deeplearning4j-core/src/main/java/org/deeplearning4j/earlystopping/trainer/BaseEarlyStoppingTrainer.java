@@ -96,7 +96,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             }
         }
 
-        if (listener != null) listener.onStart(esConfig, model);
+        if (listener != null) {
+            listener.onStart(esConfig, model);
+        }
 
         Map<Integer, Double> scoreVsEpoch = new LinkedHashMap<>();
 
@@ -123,7 +125,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     } catch (IOException e2) {
                         throw new RuntimeException(e2);
                     }
-                    return new EarlyStoppingResult<T>(
+                    return new EarlyStoppingResult<>(
                             EarlyStoppingResult.TerminationReason.Error,
                             e.toString(),
                             scoreVsEpoch,
@@ -142,7 +144,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                         break;
                     }
                 }
-                if (terminate) break;
+                if (terminate) {
+                    break;
+                }
 
                 iterCount++;
             }
@@ -176,7 +180,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                         bestModelScore,
                         epochCount,
                         bestModel);
-                if (listener != null) listener.onCompletion(result);
+                if (listener != null) {
+                    listener.onCompletion(result);
+                }
                 return result;
             }
 
@@ -217,7 +223,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     }
                 }
 
-                if (listener != null) listener.onEpoch(epochCount, score, esConfig, model);
+                if (listener != null) {
+                    listener.onEpoch(epochCount, score, esConfig, model);
+                }
 
                 //Check per-epoch termination conditions:
                 boolean epochTerminate = false;
@@ -245,7 +253,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                             bestModelScore,
                             epochCount + 1,
                             bestModel);
-                    if (listener != null) listener.onCompletion(result);
+                    if (listener != null) {
+                        listener.onCompletion(result);
+                    }
 
                     return result;
                 }
@@ -261,8 +271,12 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
     }
 
     protected void reset() {
-        if (train != null) train.reset();
-        if (trainMulti != null) trainMulti.reset();
+        if (train != null) {
+            train.reset();
+        }
+        if (trainMulti != null) {
+            trainMulti.reset();
+        }
     }
 
 

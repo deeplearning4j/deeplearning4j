@@ -80,6 +80,9 @@ public class WordVectorSerializer {
     private static final String whitespaceReplacement = "_Az92_";
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
+    private WordVectorSerializer() {
+    }
+
     /**
      * Loads the google model
      *
@@ -711,7 +714,7 @@ public class WordVectorSerializer {
 
 
 
-        List<VocabWord> words = new ArrayList<VocabWord>(vocabCache.vocabWords());
+        List<VocabWord> words = new ArrayList<>(vocabCache.vocabWords());
         for (SequenceElement word: words) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount(vocabCache.wordFrequency(word.getLabel()));

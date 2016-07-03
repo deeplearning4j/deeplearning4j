@@ -22,6 +22,9 @@ public class GraphVectorSerializer {
     private static final Logger log = LoggerFactory.getLogger(GraphVectorSerializer.class);
     private static final String DELIM = "\t";
 
+    private GraphVectorSerializer() {
+    }
+
     public static void writeGraphVectors(DeepWalk deepWalk, String path) throws IOException {
 
         int nVertices = deepWalk.numVertices();
@@ -76,7 +79,7 @@ public class GraphVectorSerializer {
         InMemoryGraphLookupTable table = new InMemoryGraphLookupTable(nVertices,vecSize,null,0.01);
         table.setVertexVectors(vectors);
 
-        return new GraphVectorsImpl<Object,Object>(null,table);
+        return new GraphVectorsImpl<>(null, table);
     }
 
 }

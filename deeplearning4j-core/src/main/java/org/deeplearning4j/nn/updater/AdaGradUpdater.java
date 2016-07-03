@@ -36,7 +36,9 @@ public class AdaGradUpdater extends BaseUpdater {
     @Override
     public UpdaterAggregator getAggregator(boolean addThis){
         AdaGradAggregator ag = new AdaGradAggregator();
-        if(addThis) ag.aggregate(this);
+        if(addThis) {
+            ag.aggregate(this);
+        }
         return ag;
     }
 

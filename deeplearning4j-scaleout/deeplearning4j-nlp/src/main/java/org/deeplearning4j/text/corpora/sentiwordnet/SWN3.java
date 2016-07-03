@@ -59,8 +59,8 @@ public class SWN3 implements Serializable {
 	
 	public SWN3(String sentiWordNetPath) {
 
-		_dict = new HashMap<String, Double>();
-		HashMap<String, List<Double>> _temp = new HashMap<String, List<Double>>();
+		_dict = new HashMap<>();
+		HashMap<String, List<Double>> _temp = new HashMap<>();
 
 		ClassPathResource resource = new ClassPathResource(sentiWordNetPath);
 		BufferedReader csv = null;
@@ -92,7 +92,7 @@ public class SWN3 implements Serializable {
 						_temp.put(w_n[0], l);
 					}
 					else {
-						List<Double> l = new ArrayList<Double>();
+						List<Double> l = new ArrayList<>();
 						for(int i = 0;i<index; i++)
 							l.add(0.0);
 						l.add(index, score);
@@ -179,7 +179,7 @@ public class SWN3 implements Serializable {
 
 	public double scoreTokens(List<Token> tokens) {
 		double totalScore = 0.0;
-		Set<String> negativeWords = new HashSet<String>();
+		Set<String> negativeWords = new HashSet<>();
 		double scoreForSentence = 0.0;
 		for(Token token : tokens) {
 			scoreForSentence += extract(token.getCoveredText().toLowerCase());

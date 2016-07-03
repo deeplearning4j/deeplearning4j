@@ -59,7 +59,7 @@ public class PosUimaTokenizer  implements Tokenizer {
         if(PosUimaTokenizer.engine == null)
             PosUimaTokenizer.engine = engine;
         this.allowedPosTags = allowedPosTags;
-        this.tokens = new ArrayList<String>();
+        this.tokens = new ArrayList<>();
         this.stripNones = stripNones;
         try {
             if(cas == null)
@@ -94,9 +94,8 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     private boolean valid(Token token) {
         String check = token.getCoveredText();
-        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
-            return false;
-        else if(token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
+        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>")
+                || (token.getPos() != null && !this.allowedPosTags.contains(token.getPos())))
             return false;
         return true;
     }
@@ -122,7 +121,7 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     @Override
     public List<String> getTokens() {
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         while(hasMoreTokens()) {
             String nextT = nextToken();
             if (stripNones && nextT.equals("NONE"))

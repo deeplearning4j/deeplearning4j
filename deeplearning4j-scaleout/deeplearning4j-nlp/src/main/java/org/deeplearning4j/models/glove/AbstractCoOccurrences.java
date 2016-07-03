@@ -108,7 +108,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
         List<CoOccurrencesCalculatorThread> threads = new ArrayList<>();
         for (int x = 0; x < workers; x++) {
-            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<T>(new SynchronizedSequenceIterator<T>(sequenceIterator), vocabCache), processedSequences));
+            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<>(new SynchronizedSequenceIterator<>(sequenceIterator), vocabCache), processedSequences));
             threads.get(x).start();
         }
 
@@ -162,7 +162,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 T element2 = vocabCache.elementAtIndex(Integer.valueOf(strings[1]));
                 Double weight = Double.valueOf(strings[2]);
 
-                return new Pair<>(new Pair<T, T>(element1, element2), weight);
+                return new Pair<>(new Pair<>(element1, element2), weight);
             }
 
             @Override
@@ -202,7 +202,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         }
 
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
-            this.sequenceIterator = new SynchronizedSequenceIterator<T>(iterator);
+            this.sequenceIterator = new SynchronizedSequenceIterator<>(iterator);
             return this;
         }
 
@@ -221,7 +221,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * @return
          */
         public Builder<T> maxMemory(int gbytes) {
-            if (gbytes > 0) this.maxmemory = Math.max(gbytes - 1, 1) * 1024 * 1024 * 1024L;
+            if (gbytes > 0) {
+                this.maxmemory = Math.max(gbytes - 1, 1) * 1024 * 1024 * 1024L;
+            }
 
             return this;
         }
@@ -258,7 +260,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.symmetric = this.symmetric;
             ret.workers = this.workers;
 
-            if (this.maxmemory < 1) this.maxmemory = Runtime.getRuntime().maxMemory();
+            if (this.maxmemory < 1) {
+                this.maxmemory = Runtime.getRuntime().maxMemory();
+            }
             ret.memory_threshold = this.maxmemory;
 
 
@@ -266,7 +270,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
             // use temp file, if no target file was specified
             try {
-                if (this.target == null) this.target = File.createTempFile("cooccurrence", "map");
+                if (this.target == null) {
+                    this.target = File.createTempFile("cooccurrence", "map");
+                }
                 this.target.deleteOnExit();
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -301,7 +307,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     //            logger.info("Tokens size: " + tokens.size());
                 for (int x = 0; x < sequence.getElements().size(); x++) {
                     int wordIdx = vocabCache.indexOf(tokens.get(x));
-                    if (wordIdx < 0) continue;
+                    if (wordIdx < 0) {
+                        continue;
+                    }
                     String w1 = vocabCache.wordFor(tokens.get(x)).getLabel();
 
                     // THIS iS SAFE TO REMOVE, NO CHANCE WE'll HAVE UNK WORD INSIDE SEQUENCE
@@ -312,7 +320,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     int windowStop = Math.min(x + windowSize + 1,tokens.size());
                     for(int j = x; j < windowStop; j++) {
                         int otherWord = vocabCache.indexOf(tokens.get(j));
-                        if (otherWord < 0) continue;
+                        if (otherWord < 0) {
+                            continue;
+                        }
                         String w2 = vocabCache.wordFor(tokens.get(j)).getLabel();
 
                         if(w2.equals(Glove.DEFAULT_UNK) || otherWord == wordIdx) {
@@ -331,7 +341,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 int size = coOccurrenceCounts.size();
                                 lock.readLock().unlock();
                                 */
-                                if (threadId == 0) logger.debug("Memory consuimption > threshold: {footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
+                                if (threadId == 0) {
+                                    logger.debug("Memory consuimption > threshold: {footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
+                                }
                                 Thread.sleep(10000);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
@@ -446,7 +458,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * Please note: this method is synchronized and will block, until complete
          */
         public synchronized void invokeBlocking() {
-            if (getMemoryFootprint() < getMemoryThreshold() && !isFinished.get()) return;
+            if (getMemoryFootprint() < getMemoryThreshold() && !isFinished.get()) {
+                return;
+            }
 
             int numberOfLinesSaved = 0;
 
@@ -474,7 +488,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                  localMap = coOccurrenceCounts;
 
                 // set new CountMap, and release write lock
-                coOccurrenceCounts = new CountMap<T>();
+                coOccurrenceCounts = new CountMap<>();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
@@ -608,7 +622,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * Please note: it's blocking call, since it requires for final merge.
          */
         public void finish() {
-            if (this.isFinished.get()) return;
+            if (this.isFinished.get()) {
+                return;
+            }
 
             this.isFinished.set(true);
             invokeBlocking();

@@ -73,7 +73,7 @@ public class ClusterSetInfo {
 	}
 
 	public double getAveragePointDistanceFromClusterCenter() {
-		if (clustersInfos == null || clustersInfos.size() == 0)
+		if (clustersInfos == null || clustersInfos.isEmpty())
 			return 0;
 
 		double average = 0;
@@ -83,7 +83,7 @@ public class ClusterSetInfo {
 	}
 	
 	public double getPointDistanceFromClusterVariance() {
-		if (clustersInfos == null || clustersInfos.size() == 0)
+		if (clustersInfos == null || clustersInfos.isEmpty())
 			return 0;
 
 		double average = 0;

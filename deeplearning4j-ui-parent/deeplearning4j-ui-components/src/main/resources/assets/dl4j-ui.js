@@ -815,7 +815,9 @@ var ChartTimeline = (function (_super) {
                 .data(_this.lanes)
                 .enter().append('text')
                 .text(function (d) {
-                return d.label;
+                if (d.label)
+                    return d.label;
+                return "";
             })
                 .attr('x', -10)
                 .attr('y', function (d) {
@@ -837,7 +839,9 @@ var ChartTimeline = (function (_super) {
                 .data(_this.lanes)
                 .enter().append('text')
                 .text(function (d) {
-                return d.label;
+                if (d.label)
+                    return d.label;
+                return "";
             })
                 .attr('x', -10)
                 .attr('y', function (d) {
@@ -979,7 +983,11 @@ var ChartTimeline = (function (_super) {
                 .attr('fill', 'black');
             labels.enter().append('text')
                 .text(function (d) {
-                return '' + d.label;
+                if (instance.x1(d.end) - instance.x1(d.start) <= 30)
+                    return "";
+                if (d.label)
+                    return d.label;
+                return "";
             })
                 .attr('x', function (d) {
                 return instance.x1(Math.max(d.start, minExtent)) + 2;

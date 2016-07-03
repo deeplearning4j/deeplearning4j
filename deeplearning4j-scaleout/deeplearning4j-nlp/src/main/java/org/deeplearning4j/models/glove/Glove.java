@@ -366,7 +366,7 @@ public class Glove extends SequenceVectors<VocabWord> {
                         .iterator(sentenceIterator)
                         .tokenizerFactory(tokenFactory)
                         .build();
-                this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+                this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
 
