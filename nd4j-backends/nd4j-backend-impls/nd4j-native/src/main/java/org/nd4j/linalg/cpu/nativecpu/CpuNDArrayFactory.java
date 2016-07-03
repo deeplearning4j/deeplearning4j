@@ -583,10 +583,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             dataPointers.put(i, toConcat[i].data().addressPointer());
             sumAlongDim += toConcat[i].size(dimension);
             for(int j = 0; j < toConcat[i].rank(); j++)
-                if(j != dimension) {
-                    if(toConcat[i].size(j) != outputShape[j]) {
-                        throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
-                    }
+                if(j != dimension && toConcat[i].size(j) != outputShape[j]) {
+                    throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
                 }
         }
 

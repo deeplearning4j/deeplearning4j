@@ -39,12 +39,12 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
      * @param labelsMaskArrays The mask arrays for the labels. May be null. Typically used with variable-length time series models, etc
      */
     public MultiDataSet(INDArray[] features, INDArray[] labels, INDArray[] featuresMaskArrays, INDArray[] labelsMaskArrays ){
-        if(features != null && featuresMaskArrays != null){
-            if(features.length != featuresMaskArrays.length) throw new IllegalArgumentException("Invalid features / features mask arrays combination: "
+        if(features != null && featuresMaskArrays != null && features.length != featuresMaskArrays.length){
+            throw new IllegalArgumentException("Invalid features / features mask arrays combination: "
                     + "features and features mask arrays must not be different lengths");
         }
-        if(labels != null && labelsMaskArrays != null ){
-            if(labels.length != labelsMaskArrays.length) throw new IllegalArgumentException("Invalid labels / labels mask arrays combination: "
+        if(labels != null && labelsMaskArrays != null && labels.length != labelsMaskArrays.length){
+            throw new IllegalArgumentException("Invalid labels / labels mask arrays combination: "
                     + "labels and labels mask arrays must not be different lengths");
         }
 
