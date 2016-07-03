@@ -89,10 +89,7 @@ public class ZookeeperBuilder implements Watcher {
 		if(event.getState() == KeeperState.SyncConnected) {
 			log.info("Synced");	
 		}
-		else if(event.getState() == KeeperState.Disconnected) {
-			keeper = build();
-		}
-		else if(event.getState() == KeeperState.Expired) {
+		else if(event.getState() == KeeperState.Disconnected || event.getState() == KeeperState.Expired) {
 			keeper = build();
 		}
 		if(watcher!=null)

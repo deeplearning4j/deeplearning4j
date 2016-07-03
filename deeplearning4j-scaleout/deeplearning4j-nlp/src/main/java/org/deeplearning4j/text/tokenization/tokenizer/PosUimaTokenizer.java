@@ -94,9 +94,8 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     private boolean valid(Token token) {
         String check = token.getCoveredText();
-        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
-            return false;
-        else if(token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
+        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>")
+                || (token.getPos() != null && !this.allowedPosTags.contains(token.getPos())))
             return false;
         return true;
     }

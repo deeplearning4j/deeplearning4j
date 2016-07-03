@@ -104,13 +104,11 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     public boolean defaultIncludeInPlots(String key){
         switch (key){
             case WORKER_FLAT_MAP_TOTAL_TIME_MS:
-                return false;
             case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
+            case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return false;   //Covered by worker stats generally
             case WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS:
                 return true;
-            case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
-                return false;   //Covered by worker stats generally
             default:
                 if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.defaultIncludeInPlots(key);
                 return false;
