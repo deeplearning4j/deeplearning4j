@@ -128,9 +128,8 @@ public class SigmoidDerivative extends BaseTransformOp {
     private static double sigmoidDeriv(double input) {
         double sigmoid = 1 / (1 + FastMath.exp(-input));
     	double out = sigmoid * (1.0 - sigmoid);
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY) {
-            if (Double.isNaN(out) || Double.isInfinite(out))
-                out = Nd4j.EPS_THRESHOLD;
+        if (Nd4j.ENFORCE_NUMERICAL_STABILITY && (Double.isNaN(out) || Double.isInfinite(out))) {
+            out = Nd4j.EPS_THRESHOLD;
         }
         return out;
     }

@@ -513,9 +513,8 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
-        if(Shape.isMatrix(shape)) {
-            if(indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll)
-                Collections.reverse(accumShape);
+        if(Shape.isMatrix(shape) && indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll) {
+            Collections.reverse(accumShape);
         }
 
         if(arr.isMatrix() && indexes[0] instanceof PointIndex && indexes[1] instanceof IntervalIndex) {

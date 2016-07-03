@@ -649,19 +649,14 @@ public class Shape {
      * @return whether the shapes are equivalent
      */
     public static boolean shapeEquals(int[] shape1, int[] shape2) {
-        if (isColumnVectorShape(shape1)) {
-            if (isColumnVectorShape(shape2)) {
-                return Arrays.equals(shape1, shape2);
-            }
-
+        if (isColumnVectorShape(shape1) && isColumnVectorShape(shape2)) {
+            return Arrays.equals(shape1, shape2);
         }
 
-        if (isRowVectorShape(shape1)) {
-            if (isRowVectorShape(shape2)) {
-                int[] shape1Comp = squeeze(shape1);
-                int[] shape2Comp = squeeze(shape2);
-                return Arrays.equals(shape1Comp, shape2Comp);
-            }
+        if (isRowVectorShape(shape1) && isRowVectorShape(shape2)) {
+            int[] shape1Comp = squeeze(shape1);
+            int[] shape2Comp = squeeze(shape2);
+            return Arrays.equals(shape1Comp, shape2Comp);
         }
 
         shape1 = squeeze(shape1);
@@ -679,12 +674,10 @@ public class Shape {
      * @return whether the 2 shapes are equal based on scalar rules
      */
     public static boolean scalarEquals(int[] shape1, int[] shape2) {
-        if (shape1.length == 0) {
-            if (shape2.length == 1 && shape2[0] == 1)
-                return true;
-        } else if (shape2.length == 0) {
-            if (shape1.length == 1 && shape1[0] == 1)
-                return true;
+        if (shape1.length == 0 && shape2.length == 1 && shape2[0] == 1) {
+            return true;
+        } else if (shape2.length == 0 && shape1.length == 1 && shape1[0] == 1) {
+            return true;
         }
 
         return false;
@@ -904,9 +897,8 @@ public class Shape {
         } else {
             last_stride = stride[shape.length - 1];
         }
-        if (isFOrder) {
-            if (ni >= 1)
-                last_stride *= newShape[ni - 1];
+        if (isFOrder && ni >= 1) {
+            last_stride *= newShape[ni - 1];
         }
         for (nk = ni; nk < newShapeRank; nk++) {
             newStrides[nk] = last_stride;
@@ -1027,9 +1019,8 @@ public class Shape {
         else {
             last_stride = arr.elementStride();
         }
-        if (isFOrder) {
-            if(ni >= 1)
-                last_stride *= newShape[ni - 1];
+        if (isFOrder && ni >= 1) {
+            last_stride *= newShape[ni - 1];
         }
         for (nk = ni; nk < newShape.length; nk++) {
             newStrides[nk] = last_stride;
