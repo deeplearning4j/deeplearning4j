@@ -162,7 +162,7 @@ public class SparkUtils {
                 if (origNumPartitions == numPartitions) return rdd;
             case Always:
                 //Repartition: either always, or origNumPartitions != numWorkers
-                JavaRDD<T> temp;
+
                 //First: count number of elements in each partition. Need to know this so we can work out how to properly index each example,
                 // so we can in turn create properly balanced partitions after repartitioning
                 //Because the objects (DataSets etc) should be small, this should be OK
@@ -181,6 +181,18 @@ public class SparkUtils {
                     countPerPartition[x++] = partitionSize;
                     allCorrectSize &= (partitionSize == objectsPerPartition);
                     totalObjects += t2._2();
+                }
+
+//                while(numPartitions*objectsPerPartition < totalObjects) objectsPerPartition++;
+                if(numPartitions*objectsPerPartition < totalObjects){
+                    int add = (totalObjects-numPartitions*objectsPerPartition)/numPartitions;
+                    if(add < 1) add++;
+                    numPartitions += add;
+
+                    allCorrectSize = true;
+                    for(Tuple2<Integer,Integer> t2 : partitionCounts){
+                        allCorrectSize &= (t2._2() == objectsPerPartition);
+                    }
                 }
 
                 if(initialPartitions == numPartitions && allCorrectSize){
