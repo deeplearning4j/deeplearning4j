@@ -62,7 +62,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public boolean vocabExists() {
-        return vocabulary.size() > 0;
+        return !vocabulary.isEmpty();
     }
 
     /**

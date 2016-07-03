@@ -117,7 +117,7 @@ public class Graph<V, E> extends BaseGraph<V,E> {
     @Override
     public Vertex<V> getRandomConnectedVertex(int vertex, Random rng) throws NoEdgesException {
         if(vertex < 0 || vertex >= vertices.size() ) throw new IllegalArgumentException("Invalid vertex index: " + vertex);
-        if(edges[vertex] == null || edges[vertex].size() == 0)
+        if(edges[vertex] == null || edges[vertex].isEmpty())
             throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex + " has no outgoing/undirected edges");
         int connectedVertexNum = rng.nextInt(edges[vertex].size());
         Edge<E> edge = edges[vertex].get(connectedVertexNum);

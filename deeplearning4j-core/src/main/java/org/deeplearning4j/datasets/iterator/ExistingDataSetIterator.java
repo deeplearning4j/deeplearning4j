@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.dataset.api.*;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -16,7 +17,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class ExistingDataSetIterator implements DataSetIterator {
-    private transient DataSetPreProcessor preProcessor;
+    @Getter private DataSetPreProcessor preProcessor;
 
     private transient Iterable<DataSet> iterable;
     private transient Iterator<DataSet> iterator;

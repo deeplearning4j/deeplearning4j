@@ -55,10 +55,10 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
     @Override
     public boolean hasMoreObjects() {
 
-        if (buffer.size() > 0) return true;
+        if (!buffer.isEmpty()) return true;
 
         try {
-            return readerThread.hasMoreObjects() || buffer.size() > 0;
+            return readerThread.hasMoreObjects() || !buffer.isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
             //return false;
@@ -67,7 +67,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
 
     @Override
     public CoOccurrenceWeight<T> nextObject() {
-        if (buffer.size() > 0) {
+        if (!buffer.isEmpty()) {
             return buffer.poll();
         } else {
             // buffer can be starved, or we're already at the end of file.

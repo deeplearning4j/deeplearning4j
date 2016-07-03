@@ -383,7 +383,7 @@ public class ComputationGraph implements Serializable, Model {
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
-            if(thisVertexOutputsTo == null || thisVertexOutputsTo.size() == 0 ) continue;   //Output vertex
+            if(thisVertexOutputsTo == null || thisVertexOutputsTo.isEmpty()) continue;   //Output vertex
             VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j=0;
             for( String s : thisVertexOutputsTo ){
@@ -569,7 +569,7 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
         if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
-            dataSetIterator = new AsyncDataSetIterator(iterator, 10);
+            dataSetIterator = new AsyncDataSetIterator(iterator, 2);
         } else dataSetIterator = iterator;
 
         if(configuration.isPretrain()){
@@ -628,7 +628,7 @@ public class ComputationGraph implements Serializable, Model {
 
         MultiDataSetIterator multiDataSetIterator;
         if (!(multic instanceof AsyncMultiDataSetIterator)) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 8);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 2);
         } else multiDataSetIterator = multic;
 
         if(configuration.isPretrain()){
@@ -753,7 +753,7 @@ public class ComputationGraph implements Serializable, Model {
             int idx = vertexNamesMap2.get(thisVertexName);
             List<String> inputsToThisVertex = configuration.getVertexInputs().get(thisVertexName);
 
-            if(inputsToThisVertex == null || inputsToThisVertex.size() == 0){
+            if(inputsToThisVertex == null || inputsToThisVertex.isEmpty()){
                 inputEdges.put(idx,null);
                 continue;
             }
@@ -780,12 +780,12 @@ public class ComputationGraph implements Serializable, Model {
         LinkedList<Integer> noIncomingEdges = new LinkedList<>();
         for( Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet() ) {
             Set<Integer> inputsFrom = entry.getValue();
-            if(inputsFrom == null || inputsFrom.size() == 0) {
+            if(inputsFrom == null || inputsFrom.isEmpty()) {
                 noIncomingEdges.add(entry.getKey());
             }
         }
 
-        while(noIncomingEdges.size() > 0) {
+        while(!noIncomingEdges.isEmpty()) {
             int next = noIncomingEdges.removeFirst();
             out[outCounter++] = next;   //Add to sorted list
 
@@ -796,7 +796,7 @@ public class ComputationGraph implements Serializable, Model {
                 for( Integer v : vertexOutputsTo){
                     Set<Integer> set = inputEdges.get(v);
                     set.remove(next);
-                    if (set.size() == 0) {
+                    if (set.isEmpty()) {
                         noIncomingEdges.add(v); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
@@ -807,7 +807,7 @@ public class ComputationGraph implements Serializable, Model {
         for(Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet()){
             Set<Integer> set = entry.getValue();
             if(set == null) continue;
-            if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+            if(!set.isEmpty()) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
                     + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey()) + "\")");
         }
 
@@ -1020,7 +1020,7 @@ public class ComputationGraph implements Serializable, Model {
         ComputationGraph cg = new ComputationGraph(configuration.clone());
         cg.init();
         cg.setParams(params().dup());
-
+        cg.listeners = this.listeners;
         return cg;
     }
 
@@ -1322,8 +1322,7 @@ public class ComputationGraph implements Serializable, Model {
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
-            int range = (layer instanceof BasePretrainNetwork ?
-                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+            int range = layer.numParams();
             if(range <= 0) continue;    //Some layers: no parameters (subsampling etc)
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);

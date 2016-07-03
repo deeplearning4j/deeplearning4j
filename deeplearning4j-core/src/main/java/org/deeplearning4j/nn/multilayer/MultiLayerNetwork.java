@@ -825,6 +825,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             ret = constructor.newInstance(getLayerWiseConfigurations().clone());
             ret.update(this);
             ret.setParameters(params().dup());
+            ret.listeners = this.listeners;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clone network",e);
         }
@@ -847,11 +848,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
-            INDArray layerParams;
-            if( layer instanceof BasePretrainNetwork && backwardOnly)
-                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
-            else
-                layerParams = layer.params();
+            INDArray layerParams = layer.params();
             if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
         }
 
@@ -890,8 +887,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
-                int range = (layer instanceof BasePretrainNetwork ?
-                        ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+                int range = layer.numParams();
                 if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
                 INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
                 layer.setParams(get);
@@ -1018,7 +1014,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         DataSetIterator iter;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
         if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator)) {
-            iter = new AsyncDataSetIterator(iterator, 10);
+            iter = new AsyncDataSetIterator(iterator, 2);
         } else iter = iterator;
 
         if (layerWiseConfigurations.isPretrain()) {

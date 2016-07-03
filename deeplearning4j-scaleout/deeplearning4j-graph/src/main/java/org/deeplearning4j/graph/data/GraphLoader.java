@@ -19,6 +19,9 @@ import java.util.List;
  */
 public class GraphLoader {
 
+    private GraphLoader() {
+    }
+
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
      * per line with a delimiter in between<br>
      * This method assumes that all lines in the file are of the form {@code i<delim>j} where i and j are integers
