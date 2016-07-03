@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -169,9 +168,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         if (collectTrainingStats) stats.logSplitStart();
         JavaRDD<DataSet>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
-        for( int i=0; i<splits.length; i++ ){
-            System.out.println("SPLIT: " + i + ", SIZE (nObjects) = " + splits[i].collect().size());
-        }
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -188,17 +184,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logMapPartitionsStart();
 
         JavaRDD<DataSet> splitData = split;
-
-        for( int i=0; i<splitData.partitions().size(); i++ ){
-            List<DataSet>[] temp = splitData.collectPartitions(new int[]{i});
-            System.out.println("BEFORE Partition " + i + " size: " + splitData.collectPartitions(new int[]{i})[0].size());
-        }
-
-        splitData = SparkUtils.repartitionIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
+        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
         int nPartitions = split.partitions().size();
-        for( int i=0; i<nPartitions; i++ ){
-            System.out.println("Partition " + i + " size: " + splitData.collectPartitions(new int[]{i})[0].size());
-        }
 
         FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
         JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
@@ -221,7 +208,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
 
             JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
-            splitData = SparkUtils.repartitionIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
+            splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
 
             doIteration(network, splitData, splitNum++, splits.length);
         }
@@ -253,7 +240,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         JavaRDD<MultiDataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
 
-
         int splitNum = 1;
         for (JavaRDD<MultiDataSet> split : splits) {
             doIteration(graph, split, splitNum++, splits.length);
@@ -276,7 +262,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         JavaPairRDD<String,PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
 
-
         int splitNum = 1;
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
             JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
@@ -294,7 +279,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         JavaRDD<MultiDataSet> splitData = split;
 
-        splitData = SparkUtils.repartitionIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
+        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
         int nPartitions = split.partitions().size();
 
         FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
