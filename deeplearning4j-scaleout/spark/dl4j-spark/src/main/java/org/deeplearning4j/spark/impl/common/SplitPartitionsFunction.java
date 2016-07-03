@@ -6,7 +6,7 @@ import org.apache.spark.api.java.function.Function2;
 import java.util.*;
 
 /**
- * SplitPartitions is used to split a RDD (using {@link org.apache.spark.api.java.JavaRDD#mapPartitionsWithIndex(Function2, boolean)}
+ * SplitPartitionsFunction is used to split a RDD (using {@link org.apache.spark.api.java.JavaRDD#mapPartitionsWithIndex(Function2, boolean)}
  * via filtering.<br>
  * It is similar in design to {@link org.apache.spark.api.java.JavaRDD#randomSplit(double[])} however it is less prone to
  * producing imbalanced splits that that method. Specifically, {@link org.apache.spark.api.java.JavaRDD#randomSplit(double[])}
@@ -16,7 +16,7 @@ import java.util.*;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SplitPartitions<T> implements Function2<Integer, Iterator<T>, Iterator<T>> {
+public class SplitPartitionsFunction<T> implements Function2<Integer, Iterator<T>, Iterator<T>> {
     private final int splitIndex;
     private final int numSplits;
     private final long baseRngSeed;
@@ -34,9 +34,9 @@ public class SplitPartitions<T> implements Function2<Integer, Iterator<T>, Itera
         List<T> outputList = new ArrayList<>();
         int i=0;
         while(iter.hasNext()){
-            T next = iter.next();
             if(i%numSplits == 0) Collections.shuffle(list, r);
 
+            T next = iter.next();
             if(list.get(i%numSplits) == splitIndex) outputList.add(next);
             i++;
         }

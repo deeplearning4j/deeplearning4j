@@ -7,7 +7,7 @@ import scala.Tuple2;
 import java.util.*;
 
 /**
- * Equivelent to {@link SplitPartitions}, but for {@code JavaPairRDD}s
+ * Equivelent to {@link SplitPartitionsFunction}, but for {@code JavaPairRDD}s
  *
  * @author Alex Black
  */
@@ -32,7 +32,8 @@ public class SplitPartitionsFunction2<T,U> implements Function2<Integer, Iterato
         while(iter.hasNext()){
             if(i%numSplits == 0) Collections.shuffle(list, r);
 
-            if(i%numSplits == splitIndex) outputList.add(iter.next());
+            Tuple2<T,U> next = iter.next();
+            if(list.get(i%numSplits) == splitIndex) outputList.add(next);
             i++;
         }
 
