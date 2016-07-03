@@ -67,7 +67,10 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                new ParameterAveragingTrainingMaster(true,4,1,150/4,1,0),esConf,net,irisData);
+                new ParameterAveragingTrainingMaster.Builder(irisBatchSize())
+                .saveUpdater(true)
+                .averagingFrequency(1)
+                .build(),esConf,net,irisData);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
@@ -271,11 +274,15 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         }
     }
 
+    private int irisBatchSize(){
+        return 1;
+    }
+
     private JavaRDD<DataSet> getIris(){
 
         JavaSparkContext sc = getContext();
 
-        IrisDataSetIterator iter = new IrisDataSetIterator(1,150);
+        IrisDataSetIterator iter = new IrisDataSetIterator(irisBatchSize(),150);
         List<DataSet> list = new ArrayList<>(150);
         while(iter.hasNext()) list.add(iter.next());
 
