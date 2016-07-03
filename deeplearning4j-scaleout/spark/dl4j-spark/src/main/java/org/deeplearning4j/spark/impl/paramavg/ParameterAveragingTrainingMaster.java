@@ -52,7 +52,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
 
     private boolean saveUpdater;
-    private int numWorkers;
+    private Integer numWorkers;
     private int rddDataSetNumExamples;
     private int batchSizePerWorker;
     private int averagingFrequency;
@@ -74,7 +74,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.repartition = builder.repartition;
     }
 
-    public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
+    public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
                                             int averagingFrequency, int prefetchNumBatches) {
         this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, false);
     }
@@ -89,7 +89,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      * @param prefetchNumBatches       Number of batches to asynchronously prefetch (0: disable)
      * @param collectTrainingStats     If true: collect training statistics for debugging/optimization purposes
      */
-    public ParameterAveragingTrainingMaster(boolean saveUpdater, int numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
+    public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
                                             int averagingFrequency, int prefetchNumBatches, boolean collectTrainingStats) {
         if(numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
         if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
@@ -156,6 +156,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
+        if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
@@ -192,7 +194,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             System.out.println("BEFORE Partition " + i + " size: " + splitData.collectPartitions(new int[]{i})[0].size());
         }
 
-//        splitData = repartitionIfRequired(splitData, numObjectsEachWorker());
         splitData = SparkUtils.repartitionIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
         int nPartitions = split.partitions().size();
         for( int i=0; i<nPartitions; i++ ){
@@ -208,6 +209,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData){
+        if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
         if (collectTrainingStats) stats.logSplitStart();
@@ -218,7 +221,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
 
             JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
-//            splitData = repartitionIfRequired(splitData, numObjectsEachWorker());
             splitData = SparkUtils.repartitionIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
 
             doIteration(network, splitData, splitNum++, splits.length);
@@ -229,6 +231,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
+        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+
         JavaRDD<MultiDataSet> mdsTrainingData = trainingData.map(new DataSetToMultiDataSetFn());
 
         executeTrainingMDS(graph, mdsTrainingData);
@@ -236,6 +240,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
+        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
@@ -258,6 +264,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTraining(SparkComputationGraph graph, JavaPairRDD<String,PortableDataStream> trainingData){
+        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
@@ -298,6 +306,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData){
+        if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -387,14 +397,23 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
 
     public static class Builder {
-
         private boolean saveUpdater;
-        private int numWorkers;
+        private Integer numWorkers;
         private int rddDataSetNumExamples;
         private int batchSizePerWorker = 16;
         private int averagingFrequency = 5;
         private int prefetchNumBatches = 0;
-        private Repartition repartition = Repartition.Never;
+        private Repartition repartition = Repartition.Always;
+
+
+        /**
+         * Same as {@link #Builder(Integer, int)} but automatically set number of workers based on JavaSparkContext.defaultParallelism()
+         *
+         * @param rddDataSetNumExamples    Number of examples in each DataSet object in the {@code RDD<DataSet>}
+         */
+        public Builder(int rddDataSetNumExamples) {
+            this(null,rddDataSetNumExamples);
+        }
 
         /**
          * Create a builder, where the following number of workers (Spark executors * number of threads per executor) are
@@ -410,10 +429,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          *     typically have exactly 1 example in each DataSet object. In this case, rddDataSetNumExamples should be set to 1
          *
          *
-         * @param numWorkers Number of Spark execution threads in the cluster
+         * @param numWorkers Number of Spark execution threads in the cluster. May be null. If null: number of workers will
+         *                   be obtained from JavaSparkContext.defaultParallelism(), which should provide the number of cores
+         *                   in the cluster.
          * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
-        public Builder(int numWorkers, int rddDataSetNumExamples) {
+        public Builder(Integer numWorkers, int rddDataSetNumExamples) {
             if(numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
             if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
             this.numWorkers = numWorkers;
@@ -475,7 +496,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         /**
          * Set if and how repartitioning should be conducted for the training data.<br>
-         * Default value: no repartitioning.
+         * Default value: always repartition (if required to guarantee correct number of partitions and correct number
+         * of examples in each partition).
          *
          * @param repartition Setting for repartitioning
          */
