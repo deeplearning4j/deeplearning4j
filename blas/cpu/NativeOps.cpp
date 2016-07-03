@@ -2082,3 +2082,66 @@ Nd4jPointer NativeOps::getConstantSpace() {
     // no-op
     return 0L;
 }
+
+template<typename T>
+void pullRowsGeneric(T *x,
+                     int *xShapeInfo,
+                     T *z,
+                     int *zShapeInfo,
+                     const int n,
+                     int *indexes,
+                     int *tadShapeInfo,
+                     int *tadOffsets) {
+    const int xEWS = shape::elementWiseStride(tadShapeInfo);
+    const int zEWS = shape::elementWiseStride(zShapeInfo);
+    const int tadLength = shape::length(tadShapeInfo);
+
+#pragma omp parallel for schedule(guided) if (n > 16)
+    for (int idx = 0; idx < n; idx++) {
+        int tadOffsetForBlock = tadOffsets[indexes[idx]];
+
+        T *rX = x + tadOffsetForBlock;
+        T *rZ = z + idx * tadLength;
+
+        if (xEWS == 1 && zEWS == 1) {
+
+#pragma omp simd
+            for (int i = 0; i < tadLength; i++ ) {
+                rZ[i] = rX[i];
+            }
+        } else {
+
+#pragma omp simd
+            for (int i = 0; i < tadLength; i++ ) {
+                rZ[i * zEWS] = rX[i * xEWS];
+            }
+        }
+    }
+}
+
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    float *xBuffer = reinterpret_cast<float *>(x);
+    float *zBuffer = reinterpret_cast<float *>(z);
+    int *zShape = reinterpret_cast<int *>(zShapeInfo);
+    int *xShape = reinterpret_cast<int *>(xShapeInfo);
+
+    int *index = reinterpret_cast<int *>(indexes);
+    int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+    int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+    pullRowsGeneric<float>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+}
+
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    double *xBuffer = reinterpret_cast<double *>(x);
+    double *zBuffer = reinterpret_cast<double *>(z);
+    int *zShape = reinterpret_cast<int *>(zShapeInfo);
+    int *xShape = reinterpret_cast<int *>(xShapeInfo);
+
+    int *index = reinterpret_cast<int *>(indexes);
+    int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+    int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+    pullRowsGeneric<double>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+}
+
