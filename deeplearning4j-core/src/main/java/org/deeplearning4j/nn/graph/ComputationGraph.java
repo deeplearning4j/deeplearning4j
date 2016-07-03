@@ -569,7 +569,7 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
         if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
-            dataSetIterator = new AsyncDataSetIterator(iterator, 10);
+            dataSetIterator = new AsyncDataSetIterator(iterator, 2);
         } else dataSetIterator = iterator;
 
         if(configuration.isPretrain()){
@@ -628,7 +628,7 @@ public class ComputationGraph implements Serializable, Model {
 
         MultiDataSetIterator multiDataSetIterator;
         if (!(multic instanceof AsyncMultiDataSetIterator)) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 8);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 2);
         } else multiDataSetIterator = multic;
 
         if(configuration.isPretrain()){
@@ -1020,7 +1020,7 @@ public class ComputationGraph implements Serializable, Model {
         ComputationGraph cg = new ComputationGraph(configuration.clone());
         cg.init();
         cg.setParams(params().dup());
-
+        cg.listeners = this.listeners;
         return cg;
     }
 

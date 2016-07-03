@@ -825,6 +825,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             ret = constructor.newInstance(getLayerWiseConfigurations().clone());
             ret.update(this);
             ret.setParameters(params().dup());
+            ret.listeners = this.listeners;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clone network",e);
         }
@@ -1013,7 +1014,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         DataSetIterator iter;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
         if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator)) {
-            iter = new AsyncDataSetIterator(iterator, 10);
+            iter = new AsyncDataSetIterator(iterator, 2);
         } else iter = iterator;
 
         if (layerWiseConfigurations.isPretrain()) {

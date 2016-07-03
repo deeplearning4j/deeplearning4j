@@ -22,7 +22,15 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
 
     void pretrain(SequenceIterator<T> iterator);
 
-    void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
+    /**
+     * This method does training over the sequence of elements passed into it
+     *
+     * @param sequence
+     * @param nextRandom
+     * @param learningRate
+     * @return average score for this sequence
+     */
+    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
 
     boolean isEarlyTerminationHit();
 }

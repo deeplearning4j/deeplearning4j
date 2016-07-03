@@ -131,6 +131,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public DataSetPreProcessor getPreProcessor() {
+        return baseIterator.getPreProcessor();
+    }
+
+    @Override
     public List<String> getLabels() {
         return baseIterator.getLabels();
     }

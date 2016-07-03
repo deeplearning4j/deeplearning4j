@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
@@ -139,10 +140,12 @@ public class ModelSerializer {
         boolean gotConfig = false;
         boolean gotCoefficients = false;
         boolean gotUpdater = false;
+        boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
         Updater updater = null;
+        DataSetPreProcessor preProcessor = null;
 
 
         ZipEntry config = zipFile.getEntry("configuration.json");
@@ -189,6 +192,20 @@ public class ModelSerializer {
             gotUpdater = true;
         }
 
+        ZipEntry prep = zipFile.getEntry("preprocessor.bin");
+        if (prep != null) {
+            InputStream stream = zipFile.getInputStream(prep);
+            ObjectInputStream ois = new ObjectInputStream(stream);
+
+            try {
+                preProcessor = (DataSetPreProcessor) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+
+            gotPreProcessor = true;
+        }
+
 
         zipFile.close();
 
@@ -219,9 +236,11 @@ public class ModelSerializer {
         boolean gotConfig = false;
         boolean gotCoefficients = false;
         boolean gotUpdater = false;
+        boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
+        DataSetPreProcessor preProcessor = null;
         Updater updater = null;
 
 
@@ -238,7 +257,7 @@ public class ModelSerializer {
                     params = Nd4j.read(dis2);
                     gotCoefficients = true;
                     break;
-                case UPDATER_BIN:
+                case UPDATER_BIN: {
                     ObjectInputStream ois = new ObjectInputStream(zipFile);
 
                     try {
@@ -248,7 +267,20 @@ public class ModelSerializer {
                     }
 
                     gotUpdater = true;
+                    }
                     break;
+                case "preprocessor.bin": {
+                    ObjectInputStream ois = new ObjectInputStream(zipFile);
+
+                    try {
+                        preProcessor = (DataSetPreProcessor) ois.readObject();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    gotPreProcessor = true;
+                }
+                break;
 
             }
 
@@ -304,10 +336,12 @@ public class ModelSerializer {
         boolean gotConfig = false;
         boolean gotCoefficients = false;
         boolean gotUpdater = false;
+        boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
         ComputationGraphUpdater updater = null;
+        DataSetPreProcessor preProcessor = null;
         BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
 
         ZipEntry entry;
@@ -329,7 +363,7 @@ public class ModelSerializer {
 
                     gotCoefficients = true;
                     break;
-                case UPDATER_BIN:
+                case UPDATER_BIN:{
                     ObjectInputStream ois = new ObjectInputStream(zis);
 
                     try {
@@ -339,6 +373,20 @@ public class ModelSerializer {
                     }
 
                     gotUpdater = true;
+                    }
+                    break;
+                case "preprocessor.bin": {
+                    ObjectInputStream ois = new ObjectInputStream(zis);
+
+                    try {
+                        preProcessor = (DataSetPreProcessor) ois.readObject();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    gotPreProcessor = true;
+                    }
+                    break;
             }
 
             zis.closeEntry();
@@ -376,10 +424,12 @@ public class ModelSerializer {
         boolean gotConfig = false;
         boolean gotCoefficients = false;
         boolean gotUpdater = false;
+        boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
         ComputationGraphUpdater updater = null;
+        DataSetPreProcessor preProcessor = null;
 
 
         ZipEntry config = zipFile.getEntry("configuration.json");
@@ -424,6 +474,20 @@ public class ModelSerializer {
             }
 
             gotUpdater = true;
+        }
+
+        ZipEntry prep = zipFile.getEntry("preprocessor.bin");
+        if (prep != null) {
+            InputStream stream = zipFile.getInputStream(prep);
+            ObjectInputStream ois = new ObjectInputStream(stream);
+
+            try {
+                preProcessor = (DataSetPreProcessor) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+
+            gotPreProcessor = true;
         }
 
 

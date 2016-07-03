@@ -24,18 +24,17 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.io.File;
@@ -159,6 +158,56 @@ public class Word2VecTest {
         assertEquals(idx1, idx2);
         assertEquals(word1, word2);
         assertEquals(array1, array2);
+    }
+
+    @Test
+    public void testSparkW2VonBiggerCorpus() throws Exception {
+        SparkConf sparkConf = new SparkConf()
+                .setMaster("local[8]")
+                .setAppName("sparktest")
+                .set("spark.driver.maxResultSize","4g")
+                .set("spark.driver.memory", "8g")
+                .set("spark.executor.memory","8g");
+
+        // Set SparkContext
+        JavaSparkContext sc = new JavaSparkContext(sparkConf);
+
+        // Path of data part-00000
+        //String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
+        String dataPath = "/ext/Temp/SampleRussianCorpus.txt";
+//        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
+
+        // Read in data
+        JavaRDD<String> corpus = sc.textFile(dataPath);
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new LowCasePreProcessor());
+
+        Word2Vec word2Vec = new Word2Vec.Builder()
+                .setNGrams(1)
+                //     .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                //     .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                //     .setRemoveStop(false)
+                .tokenizerFactory(t)
+                .seed(42L)
+                .negative(3)
+                .useAdaGrad(false)
+                .layerSize(100)
+                .windowSize(5)
+                .learningRate(0.025)
+                .minLearningRate(0.0001)
+                .iterations(1)
+                .batchSize(100)
+                .minWordFrequency(5)
+                .useUnknown(true)
+                .build();
+
+        word2Vec.train(corpus);
+
+
+        sc.stop();
+
+        WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), "/ext/Temp/sparkRuModel.txt");
     }
 
     @Test
