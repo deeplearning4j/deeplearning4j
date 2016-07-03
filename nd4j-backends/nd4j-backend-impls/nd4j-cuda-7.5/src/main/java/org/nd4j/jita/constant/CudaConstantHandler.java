@@ -58,4 +58,9 @@ public class CudaConstantHandler extends BasicConstantHandler {
     public DataBuffer getConstantBuffer(double[] array) {
         return wrappedHandler.getConstantBuffer(array);
     }
+
+    @Override
+    public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
+        return wrappedHandler.relocateConstantSpace(dataBuffer);
+    }
 }

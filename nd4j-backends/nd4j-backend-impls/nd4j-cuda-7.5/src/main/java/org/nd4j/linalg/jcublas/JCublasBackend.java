@@ -50,7 +50,11 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public boolean canRun() {
-        return Paths.nameExistsInPath("nvcc") || Paths.nameExistsInPath("nvcc.exe");
+        boolean res = Paths.nameExistsInPath("nvcc") || Paths.nameExistsInPath("nvcc.exe");
+        if (!res)
+            throw new RuntimeException("CUDA backend can't find NVCC within PATH environment variable");
+
+        return res;
     }
 
     @Override

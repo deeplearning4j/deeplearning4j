@@ -119,9 +119,10 @@ public class BaseDatasetIterator implements DataSetIterator {
             preProcessor.preProcess(next);
         return next;
 	}
-	
-	
 
-	
 
+	@Override
+	public DataSetPreProcessor getPreProcessor() {
+		return preProcessor;
+	}
 }

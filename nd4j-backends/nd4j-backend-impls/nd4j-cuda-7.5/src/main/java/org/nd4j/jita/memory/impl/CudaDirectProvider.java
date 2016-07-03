@@ -4,9 +4,11 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -39,7 +41,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @return
      */
     @Override
-    public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
+    public synchronized PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         switch (location) {
             case HOST: {
                 Pointer devicePointer = new Pointer();
@@ -51,7 +53,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                Pointer pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == null)
-                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
+                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: " + Thread.currentThread().getId());
 
                 Pointer hostPointer = new CudaPointer(pointer);
 
@@ -69,12 +71,16 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
-
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
 
+//                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
+//                    throw new RuntimeException("Device allocation happened");
+
+
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
+     //           log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
                 if (pointer == null)
                     return null;
                     //throw new RuntimeException("Can't allocate [DEVICE] memory!");
@@ -87,6 +93,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
+                point.setDeviceId(AtomicAllocator.getInstance().getDeviceId());
 
                 return devicePointerInfo;
             }
@@ -101,7 +108,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @param point
      */
     @Override
-    public void free(AllocationPoint point) {
+    public synchronized void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here

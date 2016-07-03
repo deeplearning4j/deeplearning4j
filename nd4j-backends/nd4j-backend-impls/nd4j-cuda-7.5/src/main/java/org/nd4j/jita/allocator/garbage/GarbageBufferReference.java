@@ -10,10 +10,10 @@ import java.lang.ref.WeakReference;
 /**
  * @author raver119@gmail.com
  */
-public class GarbageReference extends WeakReference<BaseDataBuffer> {
+public class GarbageBufferReference extends WeakReference<BaseDataBuffer> {
     private final AllocationPoint point;
 
-    public GarbageReference(BaseDataBuffer referent, ReferenceQueue<? super BaseDataBuffer> q, AllocationPoint point) {
+    public GarbageBufferReference(BaseDataBuffer referent, ReferenceQueue<? super BaseDataBuffer> q, AllocationPoint point) {
         super(referent, q);
         this.point = point;
     }

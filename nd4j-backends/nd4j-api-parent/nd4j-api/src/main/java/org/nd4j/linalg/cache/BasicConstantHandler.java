@@ -13,4 +13,10 @@ public abstract class BasicConstantHandler implements ConstantHandler{
         // no-op
         return 0L;
     }
+
+    @Override
+    public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
+        System.out.println("No-op fired");
+        return dataBuffer;
+    }
 }

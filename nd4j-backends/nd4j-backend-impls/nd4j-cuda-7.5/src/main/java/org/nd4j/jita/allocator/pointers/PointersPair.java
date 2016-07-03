@@ -16,12 +16,12 @@ public class PointersPair {
     /**
      * this field can be null, on system without any special devices
      */
-    private Pointer devicePointer;
+    private volatile Pointer devicePointer;
 
     /**
      * this should always contain long pointer to host memory
      */
-    private Pointer hostPointer;
+    private volatile Pointer hostPointer;
 
     public PointersPair(long devicePointer, long hostPointer) {
         this.devicePointer = new CudaPointer(devicePointer);

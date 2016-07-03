@@ -868,7 +868,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * @param idx the index to pull the string label value out of the list if it exists
+     * @param idx the index to pullRows the string label value out of the list if it exists
      * @return the label name
      */
     @Override
@@ -877,7 +877,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * @param idxs list of index to pull the string label value out of the list if it exists
+     * @param idxs list of index to pullRows the string label value out of the list if it exists
      * @return the label name
      */
     @Override

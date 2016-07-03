@@ -162,4 +162,6 @@ public interface Allocator {
     DataBuffer getConstantBuffer(double[] array);
 
     DataBuffer moveToConstant(DataBuffer dataBuffer);
+
+    MemoryHandler getMemoryHandler();
 }

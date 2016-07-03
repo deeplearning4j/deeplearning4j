@@ -89,8 +89,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     private static final long serialVersionUID = 3285982317165542614L;
 
-    protected transient  DataBuffer shapeInformation;
-    protected transient  DataBuffer data;
+    protected transient volatile DataBuffer shapeInformation;
+    protected transient volatile DataBuffer data;
     protected int rows, columns;
     protected long length = -1;
     protected int rank;
@@ -3786,10 +3786,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             } else {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             }
 
@@ -3798,11 +3806,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 if (data.dataType() == DataBuffer.Type.FLOAT) {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
+
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
+                        return false;
+
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 } else {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
+
+                    if (Double.isNaN(curr) != Double.isNaN(comp))
+                        return false;
+
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 }
@@ -3824,6 +3840,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for(int i = 0; i < length(); i++) {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
                     return false;
                 }
@@ -3836,6 +3856,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 int[] next = iter.next();
                 double val = getDouble(next);
                 double val2 = n.getDouble(next);
+
+                if (Double.isNaN(val) != Double.isNaN(val2))
+                    return false;
+
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
                     return false;
                 }

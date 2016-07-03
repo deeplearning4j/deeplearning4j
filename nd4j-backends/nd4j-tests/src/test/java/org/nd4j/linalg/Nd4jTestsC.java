@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -39,6 +38,7 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -49,9 +49,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.SerializationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -3139,6 +3136,79 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(b.transpose().var(0));
         assertFalse(Double.isNaN((Double) b.transpose().var(1).sumNumber()));
         System.out.println(b.transpose().var(1));
+    }
+
+    @Test
+    public void testVPull1() {
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.create(new float[]{1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25}).reshape(3,5);
+
+
+        INDArray result = Nd4j.pullRows(array, 1, new int[]{0, 2, 4});
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+    }
+
+    @Test
+    public void testVPull2() {
+        INDArray array = Nd4j.linspace(1,24,24).reshape(4, 6);
+        INDArray assertion = Nd4j.create(new float[]{1, 7, 13, 19, 3, 9, 15, 21, 4, 10, 16, 22}).reshape(3, 4);
+
+
+        INDArray result = Nd4j.pullRows(array, 0, new int[]{0, 2, 3});
+        System.out.println(result);
+
+        assertEquals(3, result.rows());
+        assertEquals(4, result.columns());
+        assertEquals(assertion, result);
+    }
+
+
+    @Test
+    public void testCompareAndSet1() {
+        INDArray array = Nd4j.zeros(25);
+
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, 0.1f);
+        array.putScalar(10, 0.1f);
+        array.putScalar(20, 0.1f);
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 0.1, 0.0, 0.01));
+
+        assertEquals(assertion, array);
+    }
+
+    @Test
+    public void testReplaceNaNs() {
+        INDArray array = Nd4j.zeros(25);
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, Float.NaN);
+        array.putScalar(10, Float.NaN);
+        array.putScalar(20, Float.NaN);
+
+        assertNotEquals(assertion, array);
+
+        Nd4j.getExecutioner().exec(new ReplaceNans(array, 0.0));
+
+        System.out.println("Array After: " + array);
+
+        assertEquals(assertion, array);
+    }
+
+    @Test
+    public void testNaNEquality() {
+        INDArray array = Nd4j.zeros(25);
+        INDArray assertion = Nd4j.zeros(25);
+
+        array.putScalar(0, Float.NaN);
+        array.putScalar(10, Float.NaN);
+        array.putScalar(20, Float.NaN);
+
+        assertNotEquals(assertion, array);
     }
 
 

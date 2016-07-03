@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -45,9 +46,14 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
         if (location == AllocationStatus.DEVICE && reqMemory < MAX_GPU_ALLOCATION) {
-            ensureDeviceCacheHolder(point.getDeviceId(), shape);
 
-            CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
+
+            int deviceId = AtomicAllocator.getInstance().getDeviceId();
+            ensureDeviceCacheHolder(deviceId, shape);
+
+        //    log.info("Trying to malloc for deviceId: {}", deviceId);
+
+            CacheHolder cache = deviceCache.get(deviceId).get(shape);
             if (cache != null) {
                 Pointer pointer = cache.poll();
                 if (pointer != null) {
@@ -55,12 +61,13 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
 
-                   // log.info("Serving from cache {} bytes", reqMemory);
+            //        log.info("Serving from cache {} bytes, pointer: {}", reqMemory, pointer.address());
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
+                    point.setDeviceId(deviceId);
                     return pair;
                 }
             }
@@ -91,6 +98,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
             ensureDeviceCacheHolder(point.getDeviceId(), shape);
 
+      //      log.info("Releasing point: {}", point.getDeviceId());
 
             CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
 

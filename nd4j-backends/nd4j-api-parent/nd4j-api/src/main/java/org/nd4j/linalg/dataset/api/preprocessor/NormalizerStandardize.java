@@ -84,8 +84,8 @@ public class NormalizerStandardize implements DataNormalization {
     @Override
     public void preProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        toPreProcess.setFeatures(toPreProcess.getFeatures().subRowVector(mean));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().divRowVector(std));
+        toPreProcess.getFeatures().subiRowVector(mean);
+        toPreProcess.getFeatures().diviRowVector(std);
     }
 
     /**
@@ -112,8 +112,8 @@ public class NormalizerStandardize implements DataNormalization {
 
     public void revertPreProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        toPreProcess.setFeatures(toPreProcess.getFeatures().mulRowVector(std));
-        toPreProcess.setFeatures(toPreProcess.getFeatures().addRowVector(mean));
+        toPreProcess.getFeatures().muliRowVector(std);
+        toPreProcess.getFeatures().addiRowVector(mean);
     }
 
     /**

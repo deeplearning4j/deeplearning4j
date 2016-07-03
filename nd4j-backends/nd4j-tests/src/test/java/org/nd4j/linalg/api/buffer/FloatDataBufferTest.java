@@ -64,7 +64,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         Indexer indexer = FloatIndexer.create(floatPointer);
         DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.FLOAT,4,indexer);
         DataBuffer other = Nd4j.createBuffer(new float[]{1,2,3,4});
-        assertEquals(other,buffer);
+        assertArrayEquals(other.asFloat(),buffer.asFloat(), 0.001f);
     }
 
     @Test

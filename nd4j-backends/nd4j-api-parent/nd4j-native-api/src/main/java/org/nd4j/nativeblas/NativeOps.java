@@ -916,9 +916,9 @@ public class NativeOps extends Pointer {
      */
     public native void initializeDevicesAndFunctions();
 
-    public native Pointer mallocHost(long memorySize, int flags);
+    public synchronized native Pointer mallocHost(long memorySize, int flags);
 
-    public native Pointer mallocDevice(long memorySize, Pointer ptrToDeviceId, int flags);
+    public synchronized native Pointer mallocDevice(long memorySize, Pointer ptrToDeviceId, int flags);
 
     public native int freeHost(Pointer pointer);
 
@@ -969,4 +969,8 @@ public class NativeOps extends Pointer {
     public native void setGridLimit(int gridSize);
 
     public native void tadOnlyShapeInfo(Pointer shapeInfo, Pointer dimension, int dimensionLength, Pointer targetBuffer, Pointer offsetsBuffer);
+
+    public native void pullRowsFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
+
+    public native void pullRowsDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
 }

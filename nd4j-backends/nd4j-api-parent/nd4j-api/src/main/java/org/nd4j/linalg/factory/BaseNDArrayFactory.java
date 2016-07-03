@@ -799,6 +799,26 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @return
+     */
+    @Override
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+        int vectorLength = source.shape()[sourceDimension];
+        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
+
+        for (int cnt = 0; cnt < indexes.length; cnt++) {
+            ret.putRow(cnt, source.tensorAlongDimension((int)indexes[cnt], sourceDimension));
+        }
+
+        return ret;
+    }
+
+    /**
      * Creates a matrix of zeros
      *
      * @param rows    te number of rows in the matrix

@@ -104,7 +104,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             }
             cacheZeroMiss.incrementAndGet();
 
-            if (zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10) {
+            if (configuration.isUsePreallocation() && zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10) {
                 CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
                 preallocator.start();
             }

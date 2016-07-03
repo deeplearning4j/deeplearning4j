@@ -47,6 +47,8 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+
+import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -2248,7 +2250,8 @@ public class Nd4j {
      * @param arr the array to clear
      */
     public static void clearNans(INDArray arr) {
-        BooleanIndexing.applyWhere(arr, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
+        //BooleanIndexing.applyWhere(arr, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
+        getExecutioner().exec(new ReplaceNans(arr, Nd4j.EPS_THRESHOLD));
     }
 
     /**
@@ -4638,6 +4641,20 @@ public class Nd4j {
     }
 
     /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @return
+     */
+    public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+        INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Concatneate ndarrays along a dimension
      *
      * @param dimension the dimension to concatnte along
@@ -5017,6 +5034,19 @@ public class Nd4j {
                     !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {
                 return;
             }
+
+            if (!System.getProperty("sun.arch.data.model").equals("64")) {
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit JVM");
+                System.out.println("                 Please, consider running this on 64-bit JVM instead");
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                return;
+            }
+
             Nd4j.backend = backend;
             props = Nd4jContext.getInstance().getConf();
             InputStream is = backend.getConfigurationResource().getInputStream();
