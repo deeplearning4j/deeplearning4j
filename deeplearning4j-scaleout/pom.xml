@@ -28,6 +28,7 @@
 	<packaging>pom</packaging>
 	<name>DeepLearning4j-scaleout-parent</name>
 	<modules>
+		<module>dl4j-streaming</module>
 		<module>deeplearning4j-scaleout-akka</module>
 		<module>deeplearning4j-scaleout-api</module>
 		<module>deeplearning4j-nlp</module>
