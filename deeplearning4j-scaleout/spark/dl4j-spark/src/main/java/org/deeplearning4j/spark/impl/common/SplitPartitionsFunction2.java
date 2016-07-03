@@ -7,7 +7,9 @@ import scala.Tuple2;
 import java.util.*;
 
 /**
- * Created by Alex on 02/07/2016.
+ * Equivelent to {@link SplitPartitions}, but for {@code JavaPairRDD}s
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class SplitPartitionsFunction2<T,U> implements Function2<Integer, Iterator<Tuple2<T,U>>, Iterator<Tuple2<T,U>>> {

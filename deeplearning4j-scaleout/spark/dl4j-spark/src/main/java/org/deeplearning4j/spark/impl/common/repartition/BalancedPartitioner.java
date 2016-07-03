@@ -4,7 +4,14 @@ import lombok.AllArgsConstructor;
 import org.apache.spark.Partitioner;
 
 /**
- * Created by Alex on 03/07/2016.
+ * This is a custom partitioner (used in conjunction with {@link AssignIndexFunction} to repartition a RDD.
+ * Unlike a standard .repartition() call (which assigns partitions like [2,3,4,1,2,3,4,1,2,...] for 4 partitions],
+ * this function attempts to keep contiguous elements (i.e., those elements originally in the same partition) together
+ * much more frequently. Furthermore, it is less prone to producing larger or smaller than expected partitions, as
+ * it is entirely deterministic, whereas .repartition() has a degree of randomness (i.e., start index) which can result in
+ * a large degree of variance when the number of elements in the original partitions is small (as is the case generally in DL4J)
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class BalancedPartitioner extends Partitioner {
@@ -21,7 +28,9 @@ public class BalancedPartitioner extends Partitioner {
     public int getPartition(Object key) {
         int elementIdx = (Integer)key;
 
-        //First 'numStandardPartitions' executors get "elementsPerPartition" each;
+        //First 'numStandardPartitions' executors get "elementsPerPartition" each; the remainder get
+        // elementsPerPartition-1 each. This is because the total number of examples might not be an exact multiple
+        // of the number of cores in the cluster
 
         //Work out: which partition it belongs to...
         if(elementIdx <= elementsPerPartition * numStandardPartitions){
