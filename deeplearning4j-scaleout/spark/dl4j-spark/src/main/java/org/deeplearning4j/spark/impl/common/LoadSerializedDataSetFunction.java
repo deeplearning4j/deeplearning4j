@@ -13,16 +13,16 @@ import java.io.InputStream;
  *
  * @author Alex Black
  */
-public class LoadSerializedDataSetFunction implements Function<Tuple2<String,PortableDataStream>,DataSet> {
+public class LoadSerializedDataSetFunction implements Function<PortableDataStream,DataSet> {
     @Override
-    public DataSet call(Tuple2<String,PortableDataStream> t2) throws Exception {
+    public DataSet call(PortableDataStream pds) throws Exception {
         try {
-            InputStream is = t2._2().open();
+            InputStream is = pds.open();
             DataSet d = new DataSet();
             d.load(is);
             return d;
         } finally {
-            t2._2().close();
+            pds.close();
         }
     }
 }

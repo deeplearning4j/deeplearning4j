@@ -72,12 +72,12 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, int nWorkers) {
-        return getTrainingMaster(avgFreq, miniBatchSize, nWorkers, true);
+    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize) {
+        return getTrainingMaster(avgFreq, miniBatchSize, true);
     }
 
-    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, int nWorkers, boolean saveUpdater) {
-        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers,1)
+    private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, boolean saveUpdater) {
+        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
                 .averagingFrequency(avgFreq)
                 .batchSizePerWorker(miniBatchSize)
                 .saveUpdater(saveUpdater)
@@ -137,7 +137,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers, saveUpdater);
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, saveUpdater);
                 SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.RMSPROP), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
@@ -186,7 +186,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, nWorkers, saveUpdater);
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSize, saveUpdater);
                 SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
@@ -241,7 +241,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers, saveUpdater);
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
                 SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
@@ -303,7 +303,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, nWorkers, saveUpdater);
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
                 SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();

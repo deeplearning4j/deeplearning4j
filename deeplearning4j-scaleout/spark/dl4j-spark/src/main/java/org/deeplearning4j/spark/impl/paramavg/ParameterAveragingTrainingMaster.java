@@ -75,7 +75,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
                                             int averagingFrequency, int prefetchNumBatches) {
-        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, false);
+        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, Repartition.Always, false);
     }
 
     /**
@@ -89,7 +89,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      * @param collectTrainingStats     If true: collect training statistics for debugging/optimization purposes
      */
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
-                                            int averagingFrequency, int prefetchNumBatches, boolean collectTrainingStats) {
+                                            int averagingFrequency, int prefetchNumBatches, Repartition repartition, boolean collectTrainingStats) {
         if(numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
         if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
 
@@ -100,6 +100,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.averagingFrequency = averagingFrequency;
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
+        this.repartition = repartition;
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
@@ -184,8 +185,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logMapPartitionsStart();
 
         JavaRDD<DataSet> splitData = split;
+        if(collectTrainingStats) stats.logRepartitionStart();
         splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
-        int nPartitions = split.partitions().size();
+        int nPartitions = splitData.partitions().size();
+        if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
 
         FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
         JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
@@ -207,8 +211,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int splitNum = 1;
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
 
-            JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
-            splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
+            JavaRDD<PortableDataStream> temp = split.values();
+            if(collectTrainingStats) stats.logRepartitionStart();
+            temp = SparkUtils.repartitionBalanceIfRequired(temp, repartition, numObjectsEachWorker(), numWorkers);
+            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+            JavaRDD<DataSet> splitData = temp.map(new LoadSerializedDataSetFunction());
 
             doIteration(network, splitData, splitNum++, splits.length);
         }
@@ -264,7 +272,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int splitNum = 1;
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
-            JavaRDD<DataSet> splitData = split.map(new LoadSerializedDataSetFunction());
+            JavaRDD<PortableDataStream> temp = split.values();
+            if(collectTrainingStats) stats.logRepartitionStart();
+            temp = SparkUtils.repartitionBalanceIfRequired(temp, repartition, numObjectsEachWorker(), numWorkers);
+            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+            JavaRDD<DataSet> splitData = temp.map(new LoadSerializedDataSetFunction());
             JavaRDD<MultiDataSet> splitData2 = splitData.map(new DataSetToMultiDataSetFn());
             doIteration(graph, splitData2, splitNum++, splits.length);
         }
@@ -273,7 +286,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits){
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} executors",
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                 splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
         if (collectTrainingStats) stats.logMapPartitionsStart();
 
@@ -420,7 +433,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
         public Builder(Integer numWorkers, int rddDataSetNumExamples) {
-            if(numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
+            if(numWorkers != null && numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
             if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
             this.numWorkers = numWorkers;
             this.rddDataSetNumExamples = rddDataSetNumExamples;
