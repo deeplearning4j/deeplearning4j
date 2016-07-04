@@ -108,8 +108,8 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
             ds = load(iter.next());
         }
 
-        totalOutcomes = ds.numOutcomes();
-        inputColumns = ds.numInputs();
+        totalOutcomes = ds.getLabels().size(1);
+        inputColumns = ds.getFeatureMatrix().size(1);
         batch = ds.numExamples();
 
         if(preprocessor != null) preprocessor.preProcess(ds);
@@ -123,8 +123,8 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
 
     private void preloadDataSet(){
         preloadedDataSet = load(iter.next());
-        totalOutcomes = preloadedDataSet.numOutcomes();
-        inputColumns = preloadedDataSet.numInputs();
+        totalOutcomes = preloadedDataSet.getLabels().size(1);
+        inputColumns = preloadedDataSet.getFeatureMatrix().size(1);
         batch = preloadedDataSet.numExamples();
     }
 
