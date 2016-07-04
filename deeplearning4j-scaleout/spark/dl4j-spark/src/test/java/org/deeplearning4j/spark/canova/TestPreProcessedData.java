@@ -123,7 +123,7 @@ public class TestPreProcessedData extends BaseSparkTest {
             int totalExamples = 0;
             for (File f2 : fileList) {
                 if (!f2.getPath().endsWith(".bin")) continue;
-                System.out.println(f2.getPath());
+//                System.out.println(f2.getPath());
                 numBinFiles++;
 
                 DataSet ds = new DataSet();
