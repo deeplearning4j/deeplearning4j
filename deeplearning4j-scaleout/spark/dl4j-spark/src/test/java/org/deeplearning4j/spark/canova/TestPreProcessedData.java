@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.canova.iterator.PortableDataStreamDataSetIterator;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
@@ -108,6 +109,7 @@ public class TestPreProcessedData extends BaseSparkTest {
         File temp = new File(outputDir.getPath());
         if(temp.exists()) FileUtils.deleteDirectory(temp);
 
+        int numBinFiles = 0;
         try {
             int batchSize = 5;
             int labelIdx = 4;
@@ -117,7 +119,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                     batchSize, false, labelIdx, numPossibleLabels));
 
             File[] fileList = new File(outputDir.getPath()).listFiles();
-            int numBinFiles = 0;
+
             int totalExamples = 0;
             for (File f2 : fileList) {
                 if (!f2.getPath().endsWith(".bin")) continue;
@@ -127,11 +129,35 @@ public class TestPreProcessedData extends BaseSparkTest {
                 DataSet ds = new DataSet();
                 ds.load(f2);
 
+                assertEquals(4, ds.numInputs());
+                assertEquals(3, ds.numOutcomes());
+
                 totalExamples += ds.numExamples();
             }
 
             assertEquals(150, totalExamples);
             assertTrue(Math.abs(150 / batchSize - numBinFiles) <= partitions);  //Expect 30, give or take due to partitioning randomness
+
+
+
+            //Test the PortableDataStreamDataSetIterator:
+            JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(outputDir.getPath());
+            List<PortableDataStream> pdsList = pds.values().collect();
+
+            DataSetIterator pdsIter = new PortableDataStreamDataSetIterator(pdsList);
+            int pdsCount = 0;
+            int totalExamples2 = 0;
+            while(pdsIter.hasNext()){
+                DataSet ds = pdsIter.next();
+                pdsCount++;
+                totalExamples2 += ds.numExamples();
+
+                assertEquals(4, ds.numInputs());
+                assertEquals(3, ds.numOutcomes());
+            }
+
+            assertEquals(150, totalExamples2);
+            assertEquals(numBinFiles, pdsCount);
         } finally {
             FileUtils.deleteDirectory(temp);
         }
