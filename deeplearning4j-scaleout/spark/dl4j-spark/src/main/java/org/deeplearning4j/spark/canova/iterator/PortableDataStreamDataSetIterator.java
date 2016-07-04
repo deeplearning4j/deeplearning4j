@@ -23,6 +23,11 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
     private int cursor = 0;
     private DataSet preloadedDataSet;
 
+    public PortableDataStreamDataSetIterator(Iterator<PortableDataStream> iter){
+        this.dataSetStreams = null;
+        this.iter = iter;
+    }
+
     public PortableDataStreamDataSetIterator(Collection<PortableDataStream> dataSetStreams){
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
@@ -52,6 +57,7 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
+        if(dataSetStreams == null) throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
         iter = dataSetStreams.iterator();
         cursor = 0;
     }
