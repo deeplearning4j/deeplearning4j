@@ -5,12 +5,16 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by Alex on 04/07/2016.
+ * A DataSetIterator that loads serialized DataSet objects (saved with {@link DataSet#save(OutputStream)}) from
+ * a {@link PortableDataStream}, usually obtained from SparkContext.binaryFiles()
+ *
+ * @author Alex Black
  */
 public class PortableDataStreamDataSetIterator implements DataSetIterator {
 
