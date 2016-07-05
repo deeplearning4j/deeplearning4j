@@ -207,12 +207,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int splitNum = 1;
         for (JavaPairRDD<String,PortableDataStream> split : splits) {
-
             JavaRDD<PortableDataStream> streams = split.values();
-            if(collectTrainingStats) stats.logRepartitionStart();
-            streams = SparkUtils.repartitionBalanceIfRequired(streams, repartition, numObjectsEachWorker(), numWorkers);
-            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
             doIterationPDS(network, null, streams, splitNum++, splits.length);
         }
 
