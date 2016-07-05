@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.canova;
+package org.deeplearning4j.spark.canova.export;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;

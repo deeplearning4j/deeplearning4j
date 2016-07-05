@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.canova.export.StringToDataSetExportFunction;
 import org.deeplearning4j.spark.canova.iterator.PortableDataStreamDataSetIterator;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
