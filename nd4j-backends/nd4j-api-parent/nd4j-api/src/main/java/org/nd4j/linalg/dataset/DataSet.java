@@ -389,16 +389,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }catch(IOException e){
             throw new RuntimeException(e);
         }
-
-//        try {
-//            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(from));
-//            DataInputStream dis = new DataInputStream(bis);
-//            features = Nd4j.read(dis);
-//            labels = Nd4j.read(dis);
-//            dis.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
 
@@ -443,18 +433,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }catch(IOException e){
             throw new RuntimeException(e);
         }
-
-
-//        try {
-//            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
-//            DataOutputStream dis = new DataOutputStream(bos);
-//            Nd4j.write(getFeatureMatrix(),dis);
-//            Nd4j.write(getLabels(),dis);
-//            dis.flush();
-//            dis.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
     @Override

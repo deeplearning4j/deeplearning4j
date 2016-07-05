@@ -634,7 +634,6 @@ public class DataSetTest extends BaseNd4jTest {
                             assertEquals(ds, ds2);
 
                             if(labelsSameAsFeatures) assertTrue( ds2.getFeatureMatrix() == ds2.getLabels());    //Expect same object
-                            System.out.println("OK");
                         }
                     }
                 }
