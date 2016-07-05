@@ -657,7 +657,29 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
             //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
-            if(t == Type.DOUBLE) {
+            if (globalType == null && Nd4j.dataType() != null) {
+                globalType = Nd4j.dataType();
+            }
+            if (t != globalType && t!= Type.INT) {
+                log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
+				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
+		   	}
+            if(t == Type.INT || globalType == Type.INT) {
+                this.elementSize = 4;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+                indexer = IntIndexer.create((IntPointer) pointer);
+
+                int[] array = new int[(int) length];
+
+                for (int i = 0; i < length(); i++) {
+                    array[i] = (int) readByType(s,t);
+                }
+                setData(array);
+            }
+            else if(globalType == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 //allocationPoint.attachBuffer(this);
