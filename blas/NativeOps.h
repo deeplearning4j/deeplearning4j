@@ -920,6 +920,8 @@ public:
      */
     int freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
 
+    int ompGetMaxThreads();
+
     int ompGetNumThreads();
 
     void setOmpNumThreads(int threads);

@@ -1959,6 +1959,13 @@ int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
 
 
 /**
+ * Returns the maximum number open mp threads
+ */
+int NativeOps::ompGetMaxThreads() {
+    return omp_get_max_threads();
+}
+
+/**
  * Returns the number open mp threads
  */
 int NativeOps::ompGetNumThreads() {
