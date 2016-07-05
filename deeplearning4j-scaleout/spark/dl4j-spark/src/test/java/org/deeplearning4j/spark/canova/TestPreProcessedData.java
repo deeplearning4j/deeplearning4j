@@ -8,6 +8,7 @@ import org.apache.spark.input.PortableDataStream;
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -15,16 +16,19 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.canova.iterator.PortableDataStreamDataSetIterator;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,6 +85,116 @@ public class TestPreProcessedData extends BaseSparkTest {
         assertEquals(150/dataSetObjSize, pds.count());
 
         sparkNet.fit(path);
+
+        SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
+        int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12
+
+        //Unfortunately: perfect partitioning isn't guaranteed by SparkUtils.balancedRandomSplit (esp. if original partitions are all size 1
+        // which appears to be occurring at least some of the time), but we should get close to what we expect...
+        assertTrue(Math.abs(expNumFits-sts.getValue("ParameterAveragingWorkerFitTimesMs").size()) < 3);
+
+        assertEquals(3, sts.getValue("ParameterAveragingMasterMapPartitionsTimesMs").size());
+    }
+
+    @Test
+    public void testPreprocessedDataCompGraphDataSet(){
+        //Test _loading_ of preprocessed DataSet data
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 10;
+
+        String path = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"dl4j_testpreprocdata2");
+        File f = new File(path);
+        if(f.exists()) f.delete();
+        f.mkdir();
+
+        DataSetIterator iter = new IrisDataSetIterator(5,150);
+        int i=0;
+        while(iter.hasNext()){
+            File f2 = new File(FilenameUtils.concat(path,"data" + (i++) + ".bin"));
+            iter.next().save(f2);
+        }
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(4).nOut(3).activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3).activation("softmax").build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkComputationGraph sparkNet = new SparkComputationGraph(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+        JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(path);
+        assertEquals(150/dataSetObjSize, pds.count());
+
+        sparkNet.fit(path);
+
+        SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
+        int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12
+
+        //Unfortunately: perfect partitioning isn't guaranteed by SparkUtils.balancedRandomSplit (esp. if original partitions are all size 1
+        // which appears to be occurring at least some of the time), but we should get close to what we expect...
+        assertTrue(Math.abs(expNumFits-sts.getValue("ParameterAveragingWorkerFitTimesMs").size()) < 3);
+
+        assertEquals(3, sts.getValue("ParameterAveragingMasterMapPartitionsTimesMs").size());
+    }
+
+    @Test
+    public void testPreprocessedDataCompGraphMultiDataSet() throws IOException{
+        //Test _loading_ of preprocessed MultiDataSet data
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 10;
+
+        String path = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"dl4j_testpreprocdata3");
+        File f = new File(path);
+        if(f.exists()) f.delete();
+        f.mkdir();
+
+        DataSetIterator iter = new IrisDataSetIterator(5,150);
+        int i=0;
+        while(iter.hasNext()){
+            File f2 = new File(FilenameUtils.concat(path,"data" + (i++) + ".bin"));
+            DataSet ds = iter.next();
+            MultiDataSet mds = new MultiDataSet(ds.getFeatures(), ds.getLabels());
+            mds.save(f2);
+        }
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(4).nOut(3).activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3).activation("softmax").build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkComputationGraph sparkNet = new SparkComputationGraph(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+        JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(path);
+        assertEquals(150/dataSetObjSize, pds.count());
+
+        sparkNet.fitMultiDataSet(path);
 
         SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
         int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12
