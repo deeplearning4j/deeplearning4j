@@ -64,7 +64,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     public DataSet() {
-        this(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
+        this(null,null);
     }
 
 
@@ -96,12 +96,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Returns a single dataset
+     * Returns a single dataset (all fields are null)
      *
-     * @return an empty dataset with 2 1x1 zero matrices
+     * @return an empty dataset (all fields are null)
      */
     public static DataSet empty() {
-        return new DataSet(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
+        return new DataSet(null,null);
     }
 
 
@@ -369,6 +369,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 labels = Nd4j.read(dis);
             } else if(hasLabelsSameAsFeatures){
                 labels = features;
+            } else {
+                labels = null;
             }
 
             featuresMask = (hasFeaturesMask ? Nd4j.read(dis) : null);
