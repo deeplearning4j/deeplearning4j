@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -21,8 +22,11 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestSerializationDoubleToFloat extends BaseNd4jTest {
 
+    DataBuffer.Type initialType;
+
     public TestSerializationDoubleToFloat(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
 
@@ -144,6 +148,12 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
 
         //assertEquals(sub,arr2);
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
+    }
+
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(this.initialType);
+        System.out.println("AFTER DATATYPE HERE: "+ Nd4j.dataType());
     }
 
     @Override
