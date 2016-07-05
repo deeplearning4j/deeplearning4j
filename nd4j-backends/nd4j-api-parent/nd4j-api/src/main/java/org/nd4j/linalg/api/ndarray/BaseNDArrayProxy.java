@@ -49,7 +49,9 @@ public class BaseNDArrayProxy implements java.io.Serializable {
 		this.arrayOrdering = anInstance.ordering();
 		this.data =  anInstance.data();
         if(anInstance.isView()){
-            this.data = anInstance.dup().data();
+            char instanceOrdering = anInstance.ordering();
+            INDArray dupInstance = anInstance.dup(instanceOrdering);
+            this.data = dupInstance.data();
 		}
     }
 	// READ DONE HERE - return an NDArray using the available backend
