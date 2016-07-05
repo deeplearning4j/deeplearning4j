@@ -309,7 +309,6 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
             DataSet dsSpark = sparkData.get(i);
             DataSet dsLocal = localData.get(i);
 
-            assertNull(dsSpark.getFeaturesMaskArray());     //In this particular test: featuresLength > labelLength therefore no mast array needed for features
             assertNotNull(dsSpark.getLabelsMaskArray());    //Expect mask array for labels
 
             INDArray fSpark = dsSpark.getFeatureMatrix();
@@ -368,7 +367,6 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
             DataSet dsSpark = sparkDataAlignStart.get(i);
             DataSet dsLocal = localDataAlignStart.get(i);
 
-            assertNull(dsSpark.getFeaturesMaskArray());     //In this particular test: featuresLength > labelLength therefore no mast array needed for features
             assertNotNull(dsSpark.getLabelsMaskArray());    //Expect mask array for labels
 
             INDArray fSpark = dsSpark.getFeatureMatrix();
