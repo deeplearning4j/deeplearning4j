@@ -24,8 +24,12 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 import java.util.List;
 
@@ -349,5 +353,9 @@ public class NDArray extends BaseNDArray {
         super(shape,buffer);
     }
 
+    private Object writeReplace()
+        throws java.io.ObjectStreamException {
+        return new BaseNDArrayProxy(this);
+    }
 
 }
