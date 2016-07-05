@@ -35,7 +35,6 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -74,8 +73,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-
-    protected Type globalType = DataTypeUtil.getDtypeFromContext();
 
     public BaseCudaDataBuffer() {
 
@@ -359,23 +356,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
         }
-    }
-
-    public Number readByType(DataInputStream s,Type currentType) {
-        Number anElement = 0;
-        try {
-            if (currentType == Type.INT)
-                anElement = s.readInt();
-            else if (currentType == Type.DOUBLE)
-                anElement = s.readDouble();
-            else 
-                anElement = s.readFloat();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-			return anElement;
-		}
-		
     }
 
     @Override
@@ -677,26 +657,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
             //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
-            if (t != globalType && t!= Type.INT) {
-                log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
-				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
-		   	}
-            if(t == Type.INT || globalType == Type.INT) {
-                this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
-                this.trackingPoint = allocationPoint.getObjectId();
-
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
-                indexer = IntIndexer.create((IntPointer) pointer);
-
-                int[] array = new int[(int) length];
-
-                for (int i = 0; i < length(); i++) {
-                    array[i] = (int) readByType(s,t);
-                }
-                setData(array);
-            }
-            else if(globalType == Type.DOUBLE) {
+            if(t == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 //allocationPoint.attachBuffer(this);
@@ -708,11 +669,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 double[] array = new double[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,t).doubleValue();
+                    array[i] = s.readDouble();
                 }
                 setData(array);
 
-            } else if(globalType == Type.FLOAT) {
+            } else if(t == Type.FLOAT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 //allocationPoint.attachBuffer(this);
@@ -724,11 +685,28 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 float[] array = new float[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,t).floatValue();
+                    array[i] = s.readFloat();
                 }
                 setData(array);
-            }
-            else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
+
+            } else if(t == Type.INT) {
+                this.elementSize = 4;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+                indexer = IntIndexer.create((IntPointer) pointer);
+
+                int[] array = new int[(int) length];
+
+                for(int i = 0; i < length(); i++) {
+                    array[i] = s.readInt();
+                }
+                setData(array);
+
+            } else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
+
+
 
             this.wrappedBuffer = this.pointer .asByteBuffer();
             this.wrappedBuffer.order(ByteOrder.nativeOrder());
