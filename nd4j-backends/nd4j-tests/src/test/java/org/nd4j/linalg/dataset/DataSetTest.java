@@ -30,6 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -590,6 +591,95 @@ public class DataSetTest extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testDataSetSaveLoad() throws IOException{
+
+        boolean[] b = new boolean[]{true,false};
+
+        INDArray f = Nd4j.linspace(1,24,24).reshape('c',4,3,2);
+        INDArray l = Nd4j.linspace(24,48,24).reshape('c',4,3,2);
+        INDArray fm = Nd4j.linspace(100,108,8).reshape('c',4,2);
+        INDArray lm = Nd4j.linspace(108,116,8).reshape('c',4,2);
+
+        for(boolean features : b){
+            for(boolean labels : b){
+                for(boolean labelsSameAsFeatures : b){
+                    if(labelsSameAsFeatures && (!features || !labels)) continue;   //Can't have "labels same as features" if no features, or if no labels
+
+                    for( boolean fMask : b ){
+                        for( boolean lMask : b){
+
+                            DataSet ds = new DataSet(
+                                    (features ? f : null),
+                                    (labels ? (labelsSameAsFeatures ? f : l) : null),
+                                    (fMask ? fm : null),
+                                    (lMask ? lm : null));
+
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            DataOutputStream dos = new DataOutputStream(baos);
+
+                            ds.save(dos);
+
+                            byte[] asBytes = baos.toByteArray();
+
+                            ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+                            DataInputStream dis = new DataInputStream(bais);
+
+                            DataSet ds2 = new DataSet();
+                            ds2.load(dis);
+                            dis.close();
+
+                            assertEquals(ds, ds2);
+
+                            if(labelsSameAsFeatures) assertTrue( ds2.getFeatureMatrix() == ds2.getLabels());    //Expect same object
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDataSetSaveLoadSingle() throws IOException{
+
+        INDArray f = Nd4j.linspace(1,24,24).reshape('c',4,3,2);
+        INDArray l = Nd4j.linspace(24,48,24).reshape('c',4,3,2);
+        INDArray fm = Nd4j.linspace(100,108,8).reshape('c',4,2);
+        INDArray lm = Nd4j.linspace(108,116,8).reshape('c',4,2);
+
+        boolean features  = true;
+        boolean labels = false;
+        boolean  labelsSameAsFeatures = false;
+        boolean fMask = true;
+        boolean lMask  = true;
+
+        DataSet ds = new DataSet(
+                (features ? f : null),
+                (labels ? (labelsSameAsFeatures ? f : l) : null),
+                (fMask ? fm : null),
+                (lMask ? lm : null));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+
+        ds.save(dos);
+        dos.close();
+
+        byte[] asBytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+        DataInputStream dis = new DataInputStream(bais);
+
+        DataSet ds2 = new DataSet();
+        ds2.load(dis);
+        dis.close();
+
+        assertEquals(ds, ds2);
+
+        if(labelsSameAsFeatures) assertTrue( ds2.getFeatureMatrix() == ds2.getLabels());    //Expect same object
+    }
 
 
     @Override

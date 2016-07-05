@@ -10,6 +10,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -358,6 +359,64 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         MultiDataSet merged = MultiDataSet.merge(list);
         System.out.println(merged);
+    }
+
+    @Test
+    public void multiDataSetSaveLoadTest() throws IOException {
+
+        int max = 2;
+
+        Nd4j.getRandom().setSeed(12345);
+
+        for( int numF=0; numF <= max; numF++){
+            for( int numL=0; numL <= max; numL++ ){
+                INDArray[] f = (numF > 0 ? new INDArray[numF] : null);
+                INDArray[] l = (numL > 0 ? new INDArray[numL] : null);
+                INDArray[] fm = (numF > 0 ? new INDArray[numF] : null);
+                INDArray[] lm = (numL > 0 ? new INDArray[numL] : null);
+
+                if (numF > 0) {
+                    for( int i=0; i<f.length; i++ ){
+                        f[i] = Nd4j.rand(new int[]{3,4,5});
+                    }
+                }
+                if(numL > 0){
+                    for( int i=0; i<l.length; i++ ){
+                        l[i] = Nd4j.rand(new int[]{2,3,4});
+                    }
+                }
+                if(numF > 0){
+                    for( int i=0; i<fm.length; i++ ){
+                        fm[i] = Nd4j.rand(new int[]{3,5});
+                    }
+                }
+                if(numL > 0){
+                    for( int i=0; i<lm.length; i++ ){
+                        lm[i] = Nd4j.rand(new int[]{2,4});
+                    }
+                }
+
+                MultiDataSet mds = new MultiDataSet(f,l,fm,lm);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(baos);
+
+                mds.save(dos);
+
+                byte[] asBytes = baos.toByteArray();
+
+                ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+                DataInputStream dis = new DataInputStream(bais);
+
+                MultiDataSet mds2 = new MultiDataSet();
+                mds2.load(dis);
+
+
+                assertEquals(mds, mds2);
+            }
+        }
+
+
     }
 
     @Override
