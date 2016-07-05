@@ -22,10 +22,12 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
+    DataBuffer.Type initialType;
+
     public TestSerializationFloatToDouble(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
-
 
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
@@ -149,7 +151,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
     @After
     public void after() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(this.initialType);
         System.out.println("AFTER DATATYPE HERE: "+ Nd4j.dataType());
     }
 
