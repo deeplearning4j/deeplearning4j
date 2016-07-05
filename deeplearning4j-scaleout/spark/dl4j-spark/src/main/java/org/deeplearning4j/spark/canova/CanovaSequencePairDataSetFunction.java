@@ -170,7 +170,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
                 for( int j=featuresLength-labelsLength; j<featuresLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new DataSet(inputArr,newOutput,null,outputMask);
+                ds = new DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
@@ -179,7 +179,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
                 for( int j=labelsLength-featuresLength; j<labelsLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new DataSet(newInput,outputArr,inputMask,null);
+                ds = new DataSet(newInput,outputArr,inputMask,Nd4j.ones(inputMask.shape()));
             }
         } else if(alignmentMode == AlignmentMode.ALIGN_START){
             if(featuresLength > labelsLength ){
@@ -189,7 +189,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
                 for( int j=0; j<labelsLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new org.nd4j.linalg.dataset.DataSet(inputArr,newOutput,null,outputMask);
+                ds = new org.nd4j.linalg.dataset.DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
@@ -197,7 +197,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
                 for( int j=0; j<featuresLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new DataSet(newInput,outputArr,inputMask,null);
+                ds = new DataSet(newInput,outputArr,inputMask,Nd4j.ones(inputMask.shape()));
             }
         } else {
             throw new UnsupportedOperationException("Invalid alignment mode: " + alignmentMode);
