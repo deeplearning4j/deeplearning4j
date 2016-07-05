@@ -1263,6 +1263,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public int hashCode() {
         int result = getFeatures() != null ? getFeatures().hashCode() : 0;
         result = 31 * result + (getLabels() != null ? getLabels().hashCode() : 0);
+        result = 31 * result + (getFeaturesMaskArray() != null ? getFeaturesMaskArray().hashCode() : 0);
+        result = 31 * result + (getLabelsMaskArray() != null ? getLabelsMaskArray().hashCode() : 0);
         return result;
     }
 }

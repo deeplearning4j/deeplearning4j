@@ -22,9 +22,15 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     private INDArray[] featuresMaskArrays;
     private INDArray[] labelsMaskArrays;
 
+    /** Create a new (empty) MultiDataSet object (all fields are null) */
+    public MultiDataSet(){
+
+    }
+
     /** MultiDataSet constructor with single features/labels input, no mask arrays */
     public MultiDataSet(INDArray features, INDArray labels){
-        this(new INDArray[]{features}, new INDArray[]{labels});
+        this( (features != null ? new INDArray[]{features} : null),
+                (labels != null ? new INDArray[]{labels} : null));
     }
 
     /** MultiDataSet constructor with no mask arrays */

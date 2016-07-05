@@ -620,7 +620,6 @@ public class DataSetTest extends BaseNd4jTest {
                             DataOutputStream dos = new DataOutputStream(baos);
 
                             ds.save(dos);
-                            dos.close();
 
                             byte[] asBytes = baos.toByteArray();
 
