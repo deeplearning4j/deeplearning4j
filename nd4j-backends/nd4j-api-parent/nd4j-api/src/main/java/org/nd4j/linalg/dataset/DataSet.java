@@ -404,13 +404,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public void save(OutputStream to) {
 
         byte included = 0;
-        if(features != null) included |= BITMASK_FEATURE_MASK_PRESENT;
-        if(labelsMask != null){
-            if(labelsMask == featuresMask){
+        if(features != null) included |= BITMASK_FEATURES_PRESENT;
+        if(labels != null){
+            if(labels == features){
+                //Same object. Don't serialize the same data twice!
                 included |= BITMASK_LABELS_SAME_AS_FEATURES;
             } else {
-                //Same object. Don't serialize the same data twice!
-                included |= BITMASK_LABELS_MASK_PRESENT;
+                included |= BITMASK_LABELS_PRESENT;
             }
         }
         if(featuresMask != null) included |= BITMASK_FEATURE_MASK_PRESENT;
