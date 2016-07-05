@@ -475,6 +475,8 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         }
         return out;
     }
+
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -500,5 +502,52 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         return builder.toString();
     }
 
+    @Override
+    public boolean equals(Object o){
+        if( o == this ) return true;
+        if( !(o instanceof MultiDataSet) ) return false;
 
+        MultiDataSet m = (MultiDataSet)o;
+
+        if(!bothNullOrEqual(features, m.features)) return false;
+        if(!bothNullOrEqual(labels, m.labels)) return false;
+        if(!bothNullOrEqual(featuresMaskArrays, m.featuresMaskArrays)) return false;
+        return bothNullOrEqual(labelsMaskArrays, m.labelsMaskArrays);
+    }
+
+    private boolean bothNullOrEqual(INDArray[] first, INDArray[] second){
+        if(first == null && second == null) return true;
+        if(first == null || second == null) return false;   //One but not both null
+        if(first.length != second.length) return false;
+        for( int i=0; i<first.length; i++ ){
+            if(!first[i].equals(second[i])) return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode(){
+        int result = 0;
+        if(features != null ){
+            for(INDArray f : features){
+                result = result * 31 + f.hashCode();
+            }
+        }
+        if(labels != null){
+            for(INDArray l : labels){
+                result = result * 31 + l.hashCode();
+            }
+        }
+        if(featuresMaskArrays != null){
+            for( INDArray fm : featuresMaskArrays){
+                result = result * 31 + fm.hashCode();
+            }
+        }
+        if(labelsMaskArrays != null){
+            for( INDArray lm : labelsMaskArrays){
+                result = result * 31 + lm.hashCode();
+            }
+        }
+        return result;
+    }
 }

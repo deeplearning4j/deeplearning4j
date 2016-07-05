@@ -370,55 +370,49 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         for( int numF=0; numF <= max; numF++){
             for( int numL=0; numL <= max; numL++ ){
-                for( int numFM=0; numFM <= max; numFM++ ){
-                    for( int numLM=0; numLM <= max; numLM++ ){
+                INDArray[] f = (numF > 0 ? new INDArray[numF] : null);
+                INDArray[] l = (numL > 0 ? new INDArray[numL] : null);
+                INDArray[] fm = (numF > 0 ? new INDArray[numF] : null);
+                INDArray[] lm = (numL > 0 ? new INDArray[numL] : null);
 
-                        INDArray[] f = (numF > 0 ? new INDArray[numF] : null);
-                        INDArray[] l = (numL > 0 ? new INDArray[numL] : null);
-                        INDArray[] fm = (numFM > 0 ? new INDArray[numFM] : null);
-                        INDArray[] lm = (numLM > 0 ? new INDArray[numLM] : null);
-
-                        if (numF > 0) {
-                            for( int i=0; i<f.length; i++ ){
-                                f[i] = Nd4j.rand(new int[]{3,4,5});
-                            }
-                        }
-                        if(numL > 0){
-                            for( int i=0; i<l.length; i++ ){
-                                l[i] = Nd4j.rand(new int[]{2,3,4});
-                            }
-                        }
-                        if(numFM > 0){
-                            for( int i=0; i<fm.length; i++ ){
-                                fm[i] = Nd4j.rand(new int[]{3,5});
-                            }
-                        }
-                        if(numLM > 0){
-                            for( int i=0; i<lm.length; i++ ){
-                                lm[i] = Nd4j.rand(new int[]{2,4});
-                            }
-                        }
-
-                        MultiDataSet mds = new MultiDataSet(f,l,fm,lm);
-
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        DataOutputStream dos = new DataOutputStream(baos);
-
-                        mds.save(dos);
-
-                        byte[] asBytes = baos.toByteArray();
-
-                        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
-                        DataInputStream dis = new DataInputStream(bais);
-
-                        MultiDataSet mds2 = new MultiDataSet();
-                        mds2.load(dis);
-
-
-                        assertEquals(mds, mds2);
-
+                if (numF > 0) {
+                    for( int i=0; i<f.length; i++ ){
+                        f[i] = Nd4j.rand(new int[]{3,4,5});
                     }
                 }
+                if(numL > 0){
+                    for( int i=0; i<l.length; i++ ){
+                        l[i] = Nd4j.rand(new int[]{2,3,4});
+                    }
+                }
+                if(numF > 0){
+                    for( int i=0; i<fm.length; i++ ){
+                        fm[i] = Nd4j.rand(new int[]{3,5});
+                    }
+                }
+                if(numL > 0){
+                    for( int i=0; i<lm.length; i++ ){
+                        lm[i] = Nd4j.rand(new int[]{2,4});
+                    }
+                }
+
+                MultiDataSet mds = new MultiDataSet(f,l,fm,lm);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(baos);
+
+                mds.save(dos);
+
+                byte[] asBytes = baos.toByteArray();
+
+                ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+                DataInputStream dis = new DataInputStream(bais);
+
+                MultiDataSet mds2 = new MultiDataSet();
+                mds2.load(dis);
+
+
+                assertEquals(mds, mds2);
             }
         }
 
