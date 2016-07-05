@@ -43,7 +43,7 @@ public class NativeOps extends Pointer {
         else
             setOmpNumThreads(Runtime.getRuntime().availableProcessors());
 
-        log.debug("Number of threads used for linear algebra " + ompGetNumThreads());
+        log.debug("Number of threads used for linear algebra " + ompGetMaxThreads());
 
     }
     private native void allocate();
@@ -898,6 +898,12 @@ public class NativeOps extends Pointer {
             Pointer resultShapeInfo,
             PointerPointer tadPointers,
             PointerPointer tadOffsets);
+
+    /**
+     * Gets the maximum number of open mp threads
+     * @return
+     */
+    public native int ompGetMaxThreads();
 
     /**
      * Gets the number of open mp threads
