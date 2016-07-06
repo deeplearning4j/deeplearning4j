@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.dataquality;
 
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.etl4j.api.transform.dataquality.columns.ColumnQuality;

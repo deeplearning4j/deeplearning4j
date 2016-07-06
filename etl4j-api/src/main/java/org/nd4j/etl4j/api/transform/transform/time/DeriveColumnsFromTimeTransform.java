@@ -1,14 +1,14 @@
 package org.nd4j.etl4j.api.transform.transform.time;
 
-import io.skymind.echidna.api.ColumnType;
-import io.skymind.echidna.api.Transform;
+import org.nd4j.etl4j.api.transform.ColumnType;
+import org.nd4j.etl4j.api.transform.Transform;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.IntegerMetaData;
 import org.nd4j.etl4j.api.transform.metadata.StringMetaData;
 import org.nd4j.etl4j.api.transform.metadata.TimeMetaData;
-import org.canova.api.io.data.IntWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.IntWritable;
+import org.nd4j.etl4j.api.io.data.Text;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeFieldType;

@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.condition.column;
 
-import org.canova.api.io.data.NullWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.NullWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * Condition that applies to the values in any column. Specifically, condition is true

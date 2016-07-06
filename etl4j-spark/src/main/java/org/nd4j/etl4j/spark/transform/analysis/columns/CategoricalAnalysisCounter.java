@@ -3,7 +3,7 @@ package org.nd4j.etl4j.spark.transform.analysis.columns;
 import org.nd4j.etl4j.spark.transform.analysis.AnalysisCounter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.HashMap;
 import java.util.HashSet;

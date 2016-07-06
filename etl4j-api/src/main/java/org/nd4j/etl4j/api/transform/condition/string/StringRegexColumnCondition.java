@@ -4,7 +4,7 @@ import org.nd4j.etl4j.api.transform.condition.SequenceConditionMode;
 import org.nd4j.etl4j.api.transform.condition.column.BaseColumnCondition;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * Condition that applies to the values in a String column, using a provided regex.

@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.schema;
 
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -34,7 +34,7 @@ import java.util.Collection;
  *  @author Adam Gibson
  */
 public interface RecordWriter extends Closeable,Configurable {
-    String APPEND = "org.canova.api.record.writer.append";
+    String APPEND = "org.nd4j.etl4j.api.record.writer.append";
 
     /**
      * Write a record

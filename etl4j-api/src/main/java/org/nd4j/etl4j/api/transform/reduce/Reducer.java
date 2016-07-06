@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.reduce;
 
-import io.skymind.echidna.api.ColumnType;
-import io.skymind.echidna.api.ReduceOp;
+import org.nd4j.etl4j.api.transform.ColumnType;
+import org.nd4j.etl4j.api.transform.ReduceOp;
 import org.nd4j.etl4j.api.transform.condition.Condition;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.DoubleMetaData;
@@ -10,12 +10,12 @@ import org.nd4j.etl4j.api.transform.metadata.LongMetaData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.canova.api.berkeley.Pair;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.IntWritable;
-import org.canova.api.io.data.LongWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.berkeley.Pair;
+import org.nd4j.etl4j.api.io.data.DoubleWritable;
+import org.nd4j.etl4j.api.io.data.IntWritable;
+import org.nd4j.etl4j.api.io.data.LongWritable;
+import org.nd4j.etl4j.api.io.data.Text;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.io.Serializable;

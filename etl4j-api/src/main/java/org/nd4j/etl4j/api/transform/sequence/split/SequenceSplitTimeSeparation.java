@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.sequence.split;
 
-import org.canova.api.writable.Writable;
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import org.nd4j.etl4j.api.transform.sequence.SequenceSplit;
 

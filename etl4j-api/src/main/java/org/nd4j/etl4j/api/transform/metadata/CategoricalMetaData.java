@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.metadata;
 
-import io.skymind.echidna.api.ColumnType;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.ColumnType;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -18,7 +18,7 @@
  *
  */
 
-package org.canova.nd4j.nlp.reader;
+package org.nd4j.etl4j.nd4j.nlp.reader;
 
 import org.nd4j.etl4j.api.conf.Configuration;
 import org.nd4j.etl4j.api.io.data.IntWritable;
@@ -26,8 +26,8 @@ import org.nd4j.etl4j.api.records.reader.impl.FileRecordReader;
 import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.vector.Vectorizer;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.common.RecordConverter;
-import org.canova.nd4j.nlp.vectorizer.TfidfVectorizer;
+import org.nd4j.etl4j.common.RecordConverter;
+import org.nd4j.etl4j.nd4j.nlp.vectorizer.TfidfVectorizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;

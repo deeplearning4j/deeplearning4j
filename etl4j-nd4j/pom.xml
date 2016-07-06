@@ -21,25 +21,25 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-nd4j</artifactId>
+    <artifactId>etl4j-nd4j</artifactId>
 
     <parent>
         <groupId>org.nd4j</groupId>
-        <artifactId>canova-parent</artifactId>
+        <artifactId>etl4j-parent</artifactId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
 
     <modules>
-        <module>canova-nd4j-nlp</module>
-        <module>canova-nd4j-image</module>
-        <module>canova-nd4j-timeseries</module>
-        <module>canova-nd4j-audio</module>
-        <module>canova-nd4j-common</module>
-        <module>canova-nd4j-codec</module>
+        <module>etl4j-nd4j-nlp</module>
+        <module>etl4j-nd4j-image</module>
+        <module>etl4j-nd4j-timeseries</module>
+        <module>etl4j-nd4j-audio</module>
+        <module>etl4j-nd4j-common</module>
+        <module>etl4j-nd4j-codec</module>
     </modules>
     <packaging>pom</packaging>
 
-    <name>canova-nd4j</name>
+    <name>etl4j-nd4j</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -2,7 +2,7 @@ package org.nd4j.etl4j.api.transform.analysis.columns;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 
 /**
  * Analysis for Double columns

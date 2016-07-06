@@ -1,10 +1,10 @@
 package org.nd4j.etl4j.api.transform.sequence.window;
 
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.TimeMetaData;
-import org.canova.api.io.data.LongWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.LongWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import org.nd4j.etl4j.api.transform.schema.SequenceSchema;
 import org.joda.time.DateTimeZone;

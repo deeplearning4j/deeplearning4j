@@ -1,8 +1,8 @@
 package org.nd4j.etl4j.spark.transform.rank;
 
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.io.data.LongWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.LongWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import scala.Tuple2;
 
 import java.util.ArrayList;

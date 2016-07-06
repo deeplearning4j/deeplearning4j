@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.spark.transform.analysis;
 
 import org.apache.spark.api.java.function.PairFunction;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import scala.Tuple2;
 
 /**

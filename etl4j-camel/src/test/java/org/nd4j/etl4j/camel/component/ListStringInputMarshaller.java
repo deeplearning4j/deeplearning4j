@@ -1,9 +1,9 @@
 package org.nd4j.etl4j.camel.component;
 
 import org.apache.camel.Exchange;
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.ListStringSplit;
-import org.etl4j.camel.component.CanovaMarshaller;
+import org.nd4j.etl4j.api.split.InputSplit;
+import org.nd4j.etl4j.api.split.ListStringSplit;
+import org.nd4j.etl4j.camel.component.CanovaMarshaller;
 
 import java.util.List;
 

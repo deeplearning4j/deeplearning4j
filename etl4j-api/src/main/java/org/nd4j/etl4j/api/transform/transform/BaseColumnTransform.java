@@ -3,7 +3,7 @@ package org.nd4j.etl4j.api.transform.transform;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.util.ArrayList;

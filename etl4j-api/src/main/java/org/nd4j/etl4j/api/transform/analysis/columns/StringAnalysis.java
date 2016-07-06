@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.analysis.columns;
 
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import lombok.Data;
 
 /**

@@ -18,14 +18,14 @@
  *
  */
 
-package org.canova.nd4j.nlp.vectorizer;
+package org.nd4j.etl4j.nd4j.nlp.vectorizer;
 
 
 import org.nd4j.etl4j.api.berkeley.Counter;
 import org.nd4j.etl4j.api.io.data.IntWritable;
 import org.nd4j.etl4j.api.records.reader.RecordReader;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.nd4j.nlp.reader.TfidfRecordReader;
+import org.nd4j.etl4j.nd4j.nlp.reader.TfidfRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,7 +39,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class TfidfVectorizer extends org.etl4j.nlp.vectorizer.TfidfVectorizer<INDArray> {
+public class TfidfVectorizer extends org.nd4j.etl4j.nlp.vectorizer.TfidfVectorizer<INDArray> {
     @Override
     public INDArray createVector(Object[] args) {
         INDArray ret = Nd4j.create(cache.vocabWords().size());

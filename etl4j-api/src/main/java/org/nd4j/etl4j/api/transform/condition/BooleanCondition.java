@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.condition;
 
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.util.List;

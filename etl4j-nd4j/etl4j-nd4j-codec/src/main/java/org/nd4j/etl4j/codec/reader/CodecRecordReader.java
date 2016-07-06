@@ -71,7 +71,7 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
     private ImageLoader imageLoader;
     private boolean ravel = false;
 
-    public final static String NAME_SPACE = "org.canova.codec.reader";
+    public final static String NAME_SPACE = "org.nd4j.etl4j.codec.reader";
     public final static String ROWS = NAME_SPACE + ".rows";
     public final static String COLUMNS = NAME_SPACE + ".columns";
     public final static String START_FRAME = NAME_SPACE + ".startframe";

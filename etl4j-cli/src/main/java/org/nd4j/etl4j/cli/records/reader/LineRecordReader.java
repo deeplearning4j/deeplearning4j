@@ -6,7 +6,6 @@ import org.nd4j.etl4j.api.io.data.Text;
 import org.nd4j.etl4j.api.records.reader.impl.FileRecordReader;
 import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.writable.Writable;
-//import org.canova.nd4j.nlp.vectorizer.TfidfVectorizer;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

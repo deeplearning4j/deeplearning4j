@@ -13,9 +13,9 @@ import org.nd4j.etl4j.api.transform.transform.categorical.CategoricalToOneHotTra
 import org.nd4j.etl4j.api.transform.transform.column.ReorderColumnsTransform;
 import org.nd4j.etl4j.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.nd4j.etl4j.api.transform.transform.longtransform.LongColumnsMathOpTransform;
-import io.skymind.echidna.api.transform.real.*;
+import org.nd4j.etl4j.api.transform.transform.real.*;
 import lombok.Data;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.analysis.DataAnalysis;
 import org.nd4j.etl4j.api.transform.filter.Filter;
 import org.nd4j.etl4j.api.transform.reduce.IReducer;

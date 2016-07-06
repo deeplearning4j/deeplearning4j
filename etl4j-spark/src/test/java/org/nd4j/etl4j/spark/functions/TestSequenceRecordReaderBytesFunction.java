@@ -13,10 +13,10 @@ import org.nd4j.etl4j.api.split.FileSplit;
 import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.util.ClassPathResource;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.etl4j.codec.reader.CodecRecordReader;
+import org.nd4j.etl4j.codec.reader.CodecRecordReader;
 import org.nd4j.etl4j.spark.BaseSparkTest;
-import org.canova.spark.functions.data.FilesAsBytesFunction;
-import org.canova.spark.functions.data.SequenceRecordReaderBytesFunction;
+import org.nd4j.etl4j.spark.functions.data.FilesAsBytesFunction;
+import org.nd4j.etl4j.spark.functions.data.SequenceRecordReaderBytesFunction;
 import org.junit.Test;
 
 import java.io.File;

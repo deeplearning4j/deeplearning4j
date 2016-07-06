@@ -10,7 +10,7 @@ import org.nd4j.etl4j.api.io.data.DoubleWritable;
 import org.nd4j.etl4j.api.io.data.Text;
 import org.nd4j.etl4j.api.records.reader.impl.LineRecordReader;
 import org.nd4j.etl4j.api.split.InputSplit;
-//import org.canova.api.records.reader.impl.SVMLightRecordReader;
+//import org.nd4j.etl4j.api.records.reader.impl.SVMLightRecordReader;
 import org.nd4j.etl4j.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

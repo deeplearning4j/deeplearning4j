@@ -1,15 +1,15 @@
 package org.nd4j.etl4j.spark.transform.rank;
 
-import io.skymind.echidna.spark.BaseSparkTest;
+import org.nd4j.etl4j.spark.transform.BaseSparkTest;
 import org.apache.spark.api.java.JavaRDD;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
-import io.skymind.echidna.api.ColumnType;
-import io.skymind.echidna.api.TransformProcess;
+import org.nd4j.etl4j.api.io.data.DoubleWritable;
+import org.nd4j.etl4j.api.io.data.Text;
+import org.nd4j.etl4j.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.ColumnType;
+import org.nd4j.etl4j.api.transform.TransformProcess;
 import org.nd4j.etl4j.api.transform.comparator.DoubleWritableComparator;
 import org.nd4j.etl4j.api.transform.schema.Schema;
-import io.skymind.echidna.spark.SparkTransformExecutor;
+import org.nd4j.etl4j.spark.transform.SparkTransformExecutor;
 import org.junit.Test;
 
 import java.util.ArrayList;

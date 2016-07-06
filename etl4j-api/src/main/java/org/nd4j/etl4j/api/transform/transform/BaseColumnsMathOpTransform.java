@@ -1,8 +1,8 @@
 package org.nd4j.etl4j.api.transform.transform;
 
-import org.canova.api.writable.Writable;
-import io.skymind.echidna.api.MathOp;
-import io.skymind.echidna.api.Transform;
+import org.nd4j.etl4j.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.MathOp;
+import org.nd4j.etl4j.api.transform.Transform;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import org.nd4j.etl4j.api.transform.transform.integer.IntegerMathOpTransform;

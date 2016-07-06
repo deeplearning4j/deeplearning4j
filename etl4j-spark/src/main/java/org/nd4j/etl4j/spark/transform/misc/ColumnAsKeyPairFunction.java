@@ -2,7 +2,7 @@ package org.nd4j.etl4j.spark.transform.misc;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import scala.Tuple2;
 
 import java.util.List;

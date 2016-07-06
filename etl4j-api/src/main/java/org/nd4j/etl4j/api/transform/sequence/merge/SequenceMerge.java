@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.sequence.merge;
 
 import org.nd4j.etl4j.api.transform.sequence.SequenceComparator;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.ArrayList;

@@ -24,7 +24,7 @@ import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.junit.Test;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.canova.image.data.ImageWritable;
+import org.nd4j.etl4j.image.data.ImageWritable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

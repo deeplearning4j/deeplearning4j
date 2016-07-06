@@ -2,8 +2,8 @@ package org.nd4j.etl4j.api.transform.transform.real;
 
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.DoubleMetaData;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.DoubleWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * Normalize by taking scale * log2((in-columnMin)/(mean-columnMin) + 1)

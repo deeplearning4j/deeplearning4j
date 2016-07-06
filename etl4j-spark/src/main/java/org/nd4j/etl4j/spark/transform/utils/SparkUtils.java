@@ -1,8 +1,8 @@
 package org.nd4j.etl4j.spark.transform.utils;
 
+import org.nd4j.etl4j.api.io.data.*;
 import org.nd4j.etl4j.api.transform.analysis.DataAnalysis;
 import org.nd4j.etl4j.api.transform.schema.Schema;
-import io.skymind.echidna.ui.HtmlAnalysis;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -13,7 +13,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.nd4j.etl4j.api.transform.split.RandomSplit;
 import org.nd4j.etl4j.api.transform.split.SplitStrategy;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.ui.HtmlAnalysis;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.io.*;
 import java.util.*;

@@ -12,7 +12,7 @@ import org.nd4j.etl4j.api.formats.output.OutputFormat;
 import org.nd4j.etl4j.api.records.reader.RecordReader;
 import org.nd4j.etl4j.api.split.FileSplit;
 import org.nd4j.etl4j.api.split.InputSplit;
-import org.etl4j.cli.subcommands.Vectorize;
+import org.nd4j.etl4j.cli.subcommands.Vectorize;
 import org.junit.Test;
 
 public class TestLineRecordReader {

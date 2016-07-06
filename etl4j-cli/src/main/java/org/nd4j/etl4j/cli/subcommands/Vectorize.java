@@ -82,12 +82,12 @@ public class Vectorize implements SubCommand {
 
     public static final String OUTPUT_FILENAME_KEY = "canova.output.directory";
     public static final String INPUT_FORMAT = "canova.input.format";
-    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.LineInputFormat";
+    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.nd4j.etl4j.api.formats.input.impl.LineInputFormat";
     public static final String OUTPUT_FORMAT = "canova.output.format";
-    public static final String DEFAULT_OUTPUT_FORMAT_CLASSNAME = "org.canova.api.formats.output.impl.SVMLightOutputFormat";
+    public static final String DEFAULT_OUTPUT_FORMAT_CLASSNAME = "org.nd4j.etl4j.api.formats.output.impl.SVMLightOutputFormat";
 
     public static final String VECTORIZATION_ENGINE = "canova.input.vectorization.engine";
-    public static final String DEFAULT_VECTORIZATION_ENGINE_CLASSNAME = "org.canova.cli.csv.vectorization.CSVVectorizationEngine";
+    public static final String DEFAULT_VECTORIZATION_ENGINE_CLASSNAME = "org.nd4j.etl4j.cli.csv.vectorization.CSVVectorizationEngine";
 
     public static final String NORMALIZE_DATA_FLAG = "canova.input.vectorization.normalize";
     public static final String SHUFFLE_DATA_FLAG = "canova.output.shuffle";
@@ -374,19 +374,19 @@ public class Vectorize implements SubCommand {
 
         switch (inputDataType) {
             case "csv":
-                clazz = "org.canova.cli.vectorization.CSVVectorizationEngine";
+                clazz = "org.nd4j.etl4j.cli.vectorization.CSVVectorizationEngine";
                 break;
             case "text":
-                clazz = "org.canova.cli.vectorization.TextVectorizationEngine";
+                clazz = "org.nd4j.etl4j.cli.vectorization.TextVectorizationEngine";
                 break;
             case "audio":
-                clazz = "org.canova.cli.vectorization.AudioVectorizationEngine";
+                clazz = "org.nd4j.etl4j.cli.vectorization.AudioVectorizationEngine";
                 break;
             case "image":
-                clazz = "org.canova.cli.vectorization.ImageVectorizationEngine";
+                clazz = "org.nd4j.etl4j.cli.vectorization.ImageVectorizationEngine";
                 break;
             case "video":
-                clazz = "org.canova.cli.vectorization.VideoVectorizationEngine";
+                clazz = "org.nd4j.etl4j.cli.vectorization.VideoVectorizationEngine";
                 break;
             default:
                 // stick to default --- should blow up (?)

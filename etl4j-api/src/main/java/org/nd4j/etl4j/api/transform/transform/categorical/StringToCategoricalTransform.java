@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.transform.categorical;
 
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.CategoricalMetaData;
 import org.nd4j.etl4j.api.transform.transform.BaseColumnTransform;

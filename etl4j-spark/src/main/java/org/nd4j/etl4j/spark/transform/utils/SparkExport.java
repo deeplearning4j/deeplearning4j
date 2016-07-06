@@ -1,12 +1,12 @@
 package org.nd4j.etl4j.spark.transform.utils;
 
-import io.skymind.echidna.spark.misc.WritablesToStringFunction;
+import org.nd4j.etl4j.spark.transform.misc.WritablesToStringFunction;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.api.transform.sequence.comparator;
 
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * Created by Alex on 11/03/2016.

@@ -9,7 +9,7 @@ import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
-import org.canova.api.io.converters.SelfWritableConverter;
+import org.nd4j.etl4j.api.io.converters.SelfWritableConverter;
 
 /**
  * Represents a canova endpoint.
@@ -24,7 +24,7 @@ public class CanovaEndpoint extends DefaultEndpoint {
     private String outputFormat;
     @UriParam @Metadata(required = "true")
     private String inputMarshaller;
-    @UriParam(defaultValue = "org.canova.api.io.converters.SelfWritableConverter")
+    @UriParam(defaultValue = "org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
     private String writableConverter;
 
     public CanovaEndpoint(String uri, CanovaComponent component) {

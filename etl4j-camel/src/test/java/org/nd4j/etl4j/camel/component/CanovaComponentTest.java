@@ -3,11 +3,11 @@ package org.nd4j.etl4j.camel.component;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.impl.CSVRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.records.reader.RecordReader;
+import org.nd4j.etl4j.api.records.reader.impl.CSVRecordReader;
+import org.nd4j.etl4j.api.split.FileSplit;
+import org.nd4j.etl4j.api.util.ClassPathResource;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class CanovaComponentTest extends CamelTestSupport {
             public void configure() {
                 from("file:src/test/resources/?fileName=iris.dat&noop=true")
                         .unmarshal().csv()
-                        .to("canova://org.canova.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.canova.api.io.converters.SelfWritableConverter")
+                        .to("canova://org.nd4j.etl4j.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
                         .to("mock:result");
             }
         };

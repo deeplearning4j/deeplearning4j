@@ -2,7 +2,7 @@ package org.nd4j.etl4j.api.transform.filter;
 
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.schema.Schema;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.List;
 

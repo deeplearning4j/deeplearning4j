@@ -73,7 +73,7 @@ public class TestVectorize {
 //        conf.set( OutputFormat.OUTPUT_PATH, "" );
 
         String inputFormatKey = "input.format";
-        String svmLightInputFormat = "org.canova.api.formats.input.impl.SVMLightInputFormat";
+        String svmLightInputFormat = "org.nd4j.etl4j.api.formats.input.impl.SVMLightInputFormat";
 
         conf.set(inputFormatKey, svmLightInputFormat);
 
@@ -120,7 +120,7 @@ public class TestVectorize {
         Configuration conf = new Configuration();
 
         String inputFormatKey = "input.format";
-        String svmLightInputFormat = "org.canova.api.formats.input.impl.SVMLightInputFormat";
+        String svmLightInputFormat = "org.nd4j.etl4j.api.formats.input.impl.SVMLightInputFormat";
 
         conf.set(inputFormatKey, svmLightInputFormat);
 

@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.etl4j.api.io.data.DoubleWritable;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.common.data.NDArrayWritable;
+import org.nd4j.etl4j.common.data.NDArrayWritable;
 import org.nd4j.etl4j.image.mnist.MnistManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

@@ -1,8 +1,8 @@
 package org.nd4j.etl4j.api.transform.transform.categorical;
 
 import org.nd4j.etl4j.api.transform.metadata.CategoricalMetaData;
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.Text;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.transform.BaseColumnTransform;
 

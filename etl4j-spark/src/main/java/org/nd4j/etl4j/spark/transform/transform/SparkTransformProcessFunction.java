@@ -2,8 +2,8 @@ package org.nd4j.etl4j.spark.transform.transform;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.canova.api.writable.Writable;
-import io.skymind.echidna.api.TransformProcess;
+import org.nd4j.etl4j.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.TransformProcess;
 
 import java.util.Collections;
 import java.util.List;

@@ -1,8 +1,8 @@
 package org.nd4j.etl4j.api.transform.transform.real;
 
-import io.skymind.echidna.api.MathOp;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.transform.MathOp;
+import org.nd4j.etl4j.api.io.data.DoubleWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.DoubleMetaData;
 import org.nd4j.etl4j.api.transform.transform.BaseColumnTransform;

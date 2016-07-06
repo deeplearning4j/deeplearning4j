@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.transform;
 
-import org.canova.api.io.data.IntWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.IntWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.util.ArrayList;

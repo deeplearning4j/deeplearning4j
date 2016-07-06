@@ -8,7 +8,7 @@ import org.nd4j.etl4j.api.io.labels.PathLabelGenerator;
 import org.nd4j.etl4j.api.split.FileSplit;
 import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.common.RecordConverter;
+import org.nd4j.etl4j.common.RecordConverter;
 import org.nd4j.etl4j.image.loader.NativeImageLoader;
 import org.nd4j.etl4j.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -8,11 +8,9 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.Version;
-import io.skymind.echidna.api.analysis.columns.*;
-import io.skymind.echidna.ui.components.RenderableComponentHistogram;
-import io.skymind.echidna.ui.components.RenderableComponentTable;
+import org.nd4j.etl4j.api.transform.analysis.columns.*;
 import org.apache.commons.io.FileUtils;
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import org.nd4j.etl4j.api.transform.analysis.DataAnalysis;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import org.joda.time.DateTimeZone;
@@ -101,51 +99,54 @@ public class HtmlAnalysis {
             }
 
             if(buckets != null){
-                RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
-
-                for( int j=0; j<counts.length; j++ ){
-                    histBuilder.addBin(buckets[j],buckets[j+1],counts[j]);
-                }
-
-                histBuilder.margins(60,60,90,20);
-
-                RenderableComponentHistogram hist = histBuilder.title(name).build();
-
-                String divName = "histdiv_" + name.replaceAll("\\W","");
-                divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
-                histogramDivNames.add(divName);
+                throw new RuntimeException("Not implemented");
+//                RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
+//
+//                for( int j=0; j<counts.length; j++ ){
+//                    histBuilder.addBin(buckets[j],buckets[j+1],counts[j]);
+//                }
+//
+//                histBuilder.margins(60,60,90,20);
+//
+//                RenderableComponentHistogram hist = histBuilder.title(name).build();
+//
+//                String divName = "histdiv_" + name.replaceAll("\\W","");
+//                divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
+//                histogramDivNames.add(divName);
             }
         }
 
         //Create the summary table
-        RenderableComponentTable rct = new RenderableComponentTable.Builder()
-                .table(table)
-                .header("Column Name", "Column Type", "Column Analysis")
-                .backgroundColor("#FFFFFF")
-                .headerColor("#CCCCCC")
-                .colWidthsPercent(20,10,70)
-                .border(1)
-                .padLeftPx(4).padRightPx(4)
-                .build();
+//        RenderableComponentTable rct = new RenderableComponentTable.Builder()
+//                .table(table)
+//                .header("Column Name", "Column Type", "Column Analysis")
+//                .backgroundColor("#FFFFFF")
+//                .headerColor("#CCCCCC")
+//                .colWidthsPercent(20,10,70)
+//                .border(1)
+//                .padLeftPx(4).padRightPx(4)
+//                .build();
 
-        divs.add(new DivObject("tablesource",ret.writeValueAsString(rct)));
+//        divs.add(new DivObject("tablesource",ret.writeValueAsString(rct)));
+//
+//        input.put("divs", divs);
+//        input.put("histogramIDs", histogramDivNames);
+//
+//        //Current date/time, UTC
+//        DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss zzz").withZone(DateTimeZone.UTC);
+//        long currTime = System.currentTimeMillis();
+//        String dateTime = formatter.print(currTime);
+//        input.put("datetime",dateTime);
+//
+//        Template template = cfg.getTemplate("analysis.ftl");
+//
+//        //Process template to String
+//        Writer stringWriter = new StringWriter();
+//        template.process(input, stringWriter);
+//
+//        return stringWriter.toString();
 
-        input.put("divs", divs);
-        input.put("histogramIDs", histogramDivNames);
-
-        //Current date/time, UTC
-        DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss zzz").withZone(DateTimeZone.UTC);
-        long currTime = System.currentTimeMillis();
-        String dateTime = formatter.print(currTime);
-        input.put("datetime",dateTime);
-
-        Template template = cfg.getTemplate("analysis.ftl");
-
-        //Process template to String
-        Writer stringWriter = new StringWriter();
-        template.process(input, stringWriter);
-
-        return stringWriter.toString();
+        throw new RuntimeException("Not implemented");
     }
 
     public static void createHtmlAnalysisFile(DataAnalysis dataAnalysis, File output ) throws Exception {

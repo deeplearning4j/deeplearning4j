@@ -2,7 +2,7 @@ package org.nd4j.etl4j.spark.transform.filter;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.filter.Filter;
 
 import java.util.List;

@@ -2,7 +2,7 @@ package org.nd4j.etl4j.spark.transform.join;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.join.Join;
 
 import java.util.Collections;

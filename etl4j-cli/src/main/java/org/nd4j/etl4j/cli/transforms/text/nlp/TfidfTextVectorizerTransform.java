@@ -18,14 +18,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.canova.nlp.metadata.DefaultVocabCache;
-import org.canova.nlp.metadata.VocabCache;
-import org.canova.nlp.stopwords.StopWords;
-import org.canova.nlp.tokenization.tokenizer.TokenPreProcess;
-import org.canova.nlp.tokenization.tokenizer.Tokenizer;
-import org.canova.nlp.tokenization.tokenizer.preprocessor.EndingPreProcessor;
-import org.canova.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.canova.nlp.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.etl4j.nlp.metadata.DefaultVocabCache;
+import org.nd4j.etl4j.nlp.metadata.VocabCache;
+import org.nd4j.etl4j.nlp.stopwords.StopWords;
+import org.nd4j.etl4j.nlp.tokenization.tokenizer.TokenPreProcess;
+import org.nd4j.etl4j.nlp.tokenization.tokenizer.Tokenizer;
+import org.nd4j.etl4j.nlp.tokenization.tokenizer.preprocessor.EndingPreProcessor;
+import org.nd4j.etl4j.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.nd4j.etl4j.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
 /**
  * Design Notes
@@ -56,7 +56,7 @@ public class TfidfTextVectorizerTransform implements Transform {
     protected int minWordFrequency = 0;
     public final static String MIN_WORD_FREQUENCY = "org.nd4j.nlp.minwordfrequency";
     public final static String STOP_WORDS = "org.nd4j.nlp.stopwords";
-    public final static String TOKENIZER = "org.canova.nlp.tokenizerfactory";
+    public final static String TOKENIZER = "org.nd4j.etl4j.nlp.tokenizerfactory";
     protected Collection<String> stopWords;
     protected VocabCache cache;
 

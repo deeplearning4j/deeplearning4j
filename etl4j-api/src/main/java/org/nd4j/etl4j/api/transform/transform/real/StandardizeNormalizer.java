@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.transform.real;
 
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.DoubleWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * Normalize using (x-mean)/sigma.

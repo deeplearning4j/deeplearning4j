@@ -28,7 +28,7 @@ import org.nd4j.etl4j.api.records.reader.BaseRecordReader;
 import org.nd4j.etl4j.api.split.FileSplit;
 import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.common.RecordConverter;
+import org.nd4j.etl4j.common.RecordConverter;
 import org.nd4j.etl4j.image.loader.BaseImageLoader;
 import org.nd4j.etl4j.image.loader.ImageLoader;
 import org.nd4j.etl4j.image.loader.NativeImageLoader;

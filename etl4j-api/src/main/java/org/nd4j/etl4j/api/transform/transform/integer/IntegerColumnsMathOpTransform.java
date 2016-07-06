@@ -1,11 +1,11 @@
 package org.nd4j.etl4j.api.transform.transform.integer;
 
-import io.skymind.echidna.api.MathOp;
+import org.nd4j.etl4j.api.transform.MathOp;
 import org.nd4j.etl4j.api.transform.metadata.IntegerMetaData;
 import org.nd4j.etl4j.api.transform.transform.BaseColumnsMathOpTransform;
 import org.nd4j.etl4j.api.transform.transform.real.DoubleColumnsMathOpTransform;
-import org.canova.api.io.data.IntWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.IntWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 
 /**

@@ -2,7 +2,7 @@ package org.nd4j.etl4j.api.transform.transform.real;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import org.nd4j.etl4j.api.transform.metadata.DoubleMetaData;
 import org.nd4j.etl4j.api.transform.transform.BaseColumnTransform;

@@ -5,7 +5,7 @@ import org.nd4j.etl4j.api.io.filters.BalancedPathFilter;
 import org.nd4j.etl4j.api.records.reader.RecordReader;
 import org.nd4j.etl4j.api.split.FileSplit;
 import org.nd4j.etl4j.api.split.InputSplit;
-import org.canova.image.recordreader.ImageRecordReader;
+import org.nd4j.etl4j.image.recordreader.ImageRecordReader;
 import org.junit.Test;
 
 import java.io.*;

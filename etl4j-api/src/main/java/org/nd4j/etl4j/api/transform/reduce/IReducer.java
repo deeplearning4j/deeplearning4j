@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.reduce;
 
 import org.nd4j.etl4j.api.transform.schema.Schema;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.List;

@@ -3,8 +3,8 @@ package org.nd4j.etl4j.api.transform.join;
 import org.nd4j.etl4j.api.transform.metadata.ColumnMetaData;
 import lombok.Data;
 import org.apache.commons.lang3.ArrayUtils;
-import org.canova.api.io.data.NullWritable;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.NullWritable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.io.Serializable;

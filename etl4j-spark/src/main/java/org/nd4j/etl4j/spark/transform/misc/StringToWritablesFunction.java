@@ -2,9 +2,9 @@ package org.nd4j.etl4j.spark.transform.misc;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.StringSplit;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.records.reader.RecordReader;
+import org.nd4j.etl4j.api.split.StringSplit;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.Collection;

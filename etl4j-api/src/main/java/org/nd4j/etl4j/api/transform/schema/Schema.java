@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.schema;
 
-import io.skymind.echidna.api.ColumnType;
-import io.skymind.echidna.api.metadata.*;
+import org.nd4j.etl4j.api.transform.ColumnType;
+import org.nd4j.etl4j.api.transform.metadata.*;
 import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;

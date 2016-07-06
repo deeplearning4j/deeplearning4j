@@ -12,7 +12,7 @@ import org.nd4j.etl4j.api.split.InputSplit;
 import org.nd4j.etl4j.api.util.ClassPathResource;
 import org.nd4j.etl4j.api.writable.ArrayWritable;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.etl4j.codec.reader.CodecRecordReader;
+import org.nd4j.etl4j.codec.reader.CodecRecordReader;
 import org.nd4j.etl4j.spark.BaseSparkTest;
 import org.junit.Test;
 

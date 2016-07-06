@@ -20,16 +20,17 @@
 
 package org.nd4j.etl4j.cli.driver;
 
-import org.nd4j.etl4j.cli.subcommands.Vectorize;
+
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.spi.SubCommand;
 import org.kohsuke.args4j.spi.SubCommandHandler;
 import org.kohsuke.args4j.spi.SubCommands;
-import org.nd4j.etl4j.cli.subcommands.SubCommand;
+import org.nd4j.etl4j.cli.subcommands.Vectorize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Command line interface driver
@@ -44,7 +45,7 @@ public class CommandLineInterfaceDriver {
     @SubCommands({
             @SubCommand(name="vectorize",impl=Vectorize.class)
     })
-    protected SubCommand action;
+    protected org.nd4j.etl4j.cli.subcommands.SubCommand action;
 
 
 

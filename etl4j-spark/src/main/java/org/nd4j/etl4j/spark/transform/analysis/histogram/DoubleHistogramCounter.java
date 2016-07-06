@@ -1,6 +1,6 @@
 package org.nd4j.etl4j.spark.transform.analysis.histogram;
 
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 /**
  * A counter for building histograms on a Double column

@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.api.transform.transform.string;
 
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.io.data.Text;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.HashSet;
 import java.util.List;

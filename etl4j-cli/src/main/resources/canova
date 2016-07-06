@@ -20,7 +20,7 @@ fi
 
 CLASSPATH=${CLASSPATH:?"CANNOT FIND LIBRARIES"}
 
-MAIN="org.canova.cli.driver.CommandLineInterfaceDriver"
+MAIN="org.nd4j.etl4j.cli.driver.CommandLineInterfaceDriver"
 
 # echo the command so that people can see what is going on
 COMMAND="java -cp $CLASSPATH $MAIN $*"

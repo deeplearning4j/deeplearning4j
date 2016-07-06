@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.spark.transform.misc;
 
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.sequence.merge.SequenceMerge;
 import scala.Tuple2;
 

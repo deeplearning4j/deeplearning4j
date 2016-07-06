@@ -2,7 +2,7 @@ package org.nd4j.etl4j.api.transform.condition.column;
 
 import org.nd4j.etl4j.api.transform.condition.Condition;
 import org.nd4j.etl4j.api.transform.condition.SequenceConditionMode;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 
 import java.util.List;

@@ -12,7 +12,7 @@ import org.nd4j.etl4j.api.records.writer.impl.SVMLightRecordWriter;
 import org.nd4j.etl4j.api.split.InputStreamInputSplit;
 import org.nd4j.etl4j.api.writable.ArrayWritable;
 import org.nd4j.etl4j.api.writable.Writable;
-import org.canova.image.mnist.MnistFetcher;
+import org.nd4j.etl4j.image.mnist.MnistFetcher;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

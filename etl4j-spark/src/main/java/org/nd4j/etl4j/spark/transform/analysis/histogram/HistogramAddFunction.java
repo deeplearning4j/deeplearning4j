@@ -1,10 +1,10 @@
 package org.nd4j.etl4j.spark.transform.analysis.histogram;
 
-import io.skymind.echidna.api.ColumnType;
+import org.nd4j.etl4j.api.transform.ColumnType;
 import org.nd4j.etl4j.api.transform.schema.Schema;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.List;

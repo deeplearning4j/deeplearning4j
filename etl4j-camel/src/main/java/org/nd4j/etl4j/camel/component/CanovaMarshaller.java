@@ -1,7 +1,7 @@
 package org.nd4j.etl4j.camel.component;
 
 import org.apache.camel.Exchange;
-import org.canova.api.split.InputSplit;
+import org.nd4j.etl4j.api.split.InputSplit;
 
 /**
  * Marshals na exchange in to an input split

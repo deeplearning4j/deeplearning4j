@@ -2,13 +2,13 @@ package org.nd4j.etl4j.camel.component;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
-import org.canova.api.conf.Configuration;
-import org.canova.api.formats.input.InputFormat;
-import org.canova.api.io.WritableConverter;
-import org.canova.api.io.converters.SelfWritableConverter;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.InputSplit;
-import org.canova.api.writable.Writable;
+import org.nd4j.etl4j.api.conf.Configuration;
+import org.nd4j.etl4j.api.formats.input.InputFormat;
+import org.nd4j.etl4j.api.io.WritableConverter;
+import org.nd4j.etl4j.api.io.converters.SelfWritableConverter;
+import org.nd4j.etl4j.api.records.reader.RecordReader;
+import org.nd4j.etl4j.api.split.InputSplit;
+import org.nd4j.etl4j.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.Collection;
