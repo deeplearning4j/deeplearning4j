@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>canova-parent</artifactId>
+        <artifactId>etl4j-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
@@ -22,20 +22,20 @@
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
+            <artifactId>etl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-image</artifactId>
+            <artifactId>etl4j-nd4j-image</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-codec</artifactId>
+            <artifactId>etl4j-nd4j-codec</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

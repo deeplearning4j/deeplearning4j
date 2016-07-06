@@ -20,16 +20,16 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>canova-data</artifactId>
+        <artifactId>etl4j-data</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-data-audio</artifactId>
+    <artifactId>etl4j-data-audio</artifactId>
     <packaging>jar</packaging>
 
-    <name>canova-data-audio</name>
+    <name>etl4j-data-audio</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -39,7 +39,7 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
+            <artifactId>etl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

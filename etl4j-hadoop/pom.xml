@@ -21,14 +21,14 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>canova-parent</artifactId>
+        <artifactId>etl4j-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-hadoop</artifactId>
+    <artifactId>etl4j-hadoop</artifactId>
     <repositories>
         <repository>
             <id>org.apache.hadoop</id>
@@ -44,7 +44,7 @@
     
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
+            <artifactId>etl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
     
