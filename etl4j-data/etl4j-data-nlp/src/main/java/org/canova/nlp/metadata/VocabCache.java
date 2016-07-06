@@ -21,10 +21,8 @@
 package org.canova.nlp.metadata;
 
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.util.Index;
-
-import java.util.List;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.util.Index;
 
 /**
  * Track metadata about vocabs

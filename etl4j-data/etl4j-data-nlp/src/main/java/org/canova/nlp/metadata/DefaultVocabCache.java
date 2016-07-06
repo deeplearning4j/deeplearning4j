@@ -20,10 +20,10 @@
 
 package org.canova.nlp.metadata;
 
-import org.canova.api.berkeley.Counter;
-import org.canova.api.conf.Configuration;
-import org.canova.api.util.Index;
-import org.canova.api.util.MathUtils;
+import org.etl4j.api.berkeley.Counter;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.util.Index;
+import org.etl4j.api.util.MathUtils;
 import org.canova.nlp.vectorizer.TextVectorizer;
 
 /**

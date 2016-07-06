@@ -2,10 +2,10 @@ package org.canova.image.format;
 
 import java.io.IOException;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.formats.input.BaseInputFormat;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.InputSplit;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.formats.input.BaseInputFormat;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.InputSplit;
 import org.canova.image.recordreader.MNISTRecordReader;
 
 public class MNISTInputFormat extends BaseInputFormat {

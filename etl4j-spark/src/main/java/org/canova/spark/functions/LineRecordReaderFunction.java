@@ -1,9 +1,9 @@
 package org.canova.spark.functions;
 
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.StringSplit;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.StringSplit;
+import org.etl4j.api.writable.Writable;
 
 import java.util.Collection;
 

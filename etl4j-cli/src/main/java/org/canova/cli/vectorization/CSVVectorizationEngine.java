@@ -20,13 +20,13 @@
 
 package org.canova.cli.vectorization;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.exceptions.CanovaException;
-import org.canova.api.formats.output.OutputFormat;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.records.writer.RecordWriter;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.exceptions.CanovaException;
+import org.etl4j.api.formats.output.OutputFormat;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.io.data.Text;
+import org.etl4j.api.records.writer.RecordWriter;
+import org.etl4j.api.writable.Writable;
 import org.canova.cli.csv.schema.CSVInputSchema;
 import org.canova.cli.csv.schema.CSVSchemaColumn;
 import org.canova.cli.shuffle.Shuffler;

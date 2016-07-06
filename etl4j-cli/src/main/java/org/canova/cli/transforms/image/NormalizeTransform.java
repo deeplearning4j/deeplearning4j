@@ -3,9 +3,9 @@ package org.canova.cli.transforms.image;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.FloatWritable;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.io.data.FloatWritable;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
 import org.canova.cli.transforms.Transform;
 import org.nd4j.linalg.api.ndarray.INDArray;

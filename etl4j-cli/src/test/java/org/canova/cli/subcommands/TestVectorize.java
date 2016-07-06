@@ -21,20 +21,17 @@
 package org.canova.cli.subcommands;
 
 import org.apache.commons.io.FileUtils;
-import org.canova.api.conf.Configuration;
-import org.canova.api.formats.input.InputFormat;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.util.ArchiveUtils;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.formats.input.InputFormat;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
+import org.etl4j.api.writable.Writable;
 import org.canova.image.loader.LFWLoader;
-import org.canova.image.recordreader.MNISTRecordReader;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

@@ -1,16 +1,16 @@
 package org.canova.image.recordreader;
 
-import org.canova.api.split.InputSplit;
+import org.etl4j.api.split.InputSplit;
 
 import org.apache.commons.io.IOUtils;
-import org.canova.api.conf.Configuration;
+import org.etl4j.api.conf.Configuration;
 
-import org.canova.api.records.reader.BaseRecordReader;
+import org.etl4j.api.records.reader.BaseRecordReader;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
 import org.canova.image.mnist.MnistManager;
 import org.nd4j.linalg.api.ndarray.INDArray;

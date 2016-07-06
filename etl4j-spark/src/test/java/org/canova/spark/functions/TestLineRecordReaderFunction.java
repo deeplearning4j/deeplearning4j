@@ -3,10 +3,10 @@ package org.canova.spark.functions;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.canova.api.records.reader.impl.CSVRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.records.reader.impl.CSVRecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.util.ClassPathResource;
+import org.etl4j.api.writable.Writable;
 import org.canova.spark.BaseSparkTest;
 import org.junit.Test;
 

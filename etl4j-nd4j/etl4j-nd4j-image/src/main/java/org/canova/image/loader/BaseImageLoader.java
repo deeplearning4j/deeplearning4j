@@ -1,10 +1,7 @@
 package org.canova.image.loader;
 
 import org.apache.commons.io.FileUtils;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.LimitFileSplit;
-import org.canova.api.util.ArchiveUtils;
-import org.canova.image.recordreader.ImageRecordReader;
+import org.etl4j.api.util.ArchiveUtils;
 import org.canova.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;

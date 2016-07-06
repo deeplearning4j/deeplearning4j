@@ -1,26 +1,22 @@
 package org.canova.spark.functions;
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.records.reader.impl.CSVSequenceRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.ArrayWritable;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.SequenceRecordReader;
+import org.etl4j.api.records.reader.impl.CSVSequenceRecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
+import org.etl4j.api.util.ClassPathResource;
+import org.etl4j.api.writable.ArrayWritable;
+import org.etl4j.api.writable.Writable;
 import org.canova.codec.reader.CodecRecordReader;
-import org.canova.image.recordreader.ImageRecordReader;
 import org.canova.spark.BaseSparkTest;
 import org.junit.Test;
 
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;

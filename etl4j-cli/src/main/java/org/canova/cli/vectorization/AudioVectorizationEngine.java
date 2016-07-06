@@ -3,7 +3,7 @@ package org.canova.cli.vectorization;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 
 public class AudioVectorizationEngine extends VectorizationEngine {
 

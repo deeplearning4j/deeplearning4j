@@ -20,7 +20,7 @@
 
 package org.canova.common;
 
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

@@ -1,0 +1,233 @@
+package org.canova.spark.transform.utils;
+
+import io.skymind.echidna.api.analysis.DataAnalysis;
+import io.skymind.echidna.api.schema.Schema;
+import io.skymind.echidna.ui.HtmlAnalysis;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaRDD;
+import io.skymind.echidna.api.split.RandomSplit;
+import io.skymind.echidna.api.split.SplitStrategy;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.canova.api.writable.Writable;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * Created by Alex on 7/03/2016.
+ */
+public class SparkUtils {
+
+    public static <T> List<JavaRDD<T>> splitData(SplitStrategy splitStrategy, JavaRDD<T> data, long seed){
+
+        if(splitStrategy instanceof RandomSplit){
+
+            RandomSplit rs = (RandomSplit)splitStrategy;
+
+            double fractionTrain = rs.getFractionTrain();
+
+            double[] splits = new double[]{fractionTrain,1.0-fractionTrain};
+
+            JavaRDD<T>[] split = data.randomSplit(splits, seed);
+            List<JavaRDD<T>> list = new ArrayList<>(2);
+            Collections.addAll(list, split);
+
+            return list;
+
+        } else {
+            throw new RuntimeException("Not yet implemented");
+        }
+    }
+
+    /**
+     * Write a String to a file (on HDFS or local) in UTF-8 format
+     *
+     * @param path       Path to write to
+     * @param toWrite    String to write
+     * @param sc         Spark context
+     */
+    public static void writeStringToFile(String path, String toWrite, JavaSparkContext sc) throws IOException {
+        writeStringToFile(path, toWrite, sc.sc());
+    }
+
+    /**
+     * Write a String to a file (on HDFS or local) in UTF-8 format
+     *
+     * @param path       Path to write to
+     * @param toWrite    String to write
+     * @param sc         Spark context
+     */
+    public static void writeStringToFile(String path, String toWrite, SparkContext sc) throws IOException {
+        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        try(BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))){
+            bos.write(toWrite.getBytes("UTF-8"));
+        }
+    }
+
+    /**
+     * Read a UTF-8 format String from HDFS (or local)
+     *
+     * @param path    Path to write the string
+     * @param sc      Spark context
+     */
+    public static String readStringFromFile(String path, JavaSparkContext sc) throws IOException {
+        return readStringFromFile(path, sc.sc());
+    }
+
+    /**
+     * Read a UTF-8 format String from HDFS (or local)
+     *
+     * @param path    Path to write the string
+     * @param sc      Spark context
+     */
+    public static String readStringFromFile(String path, SparkContext sc) throws IOException {
+        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        try(BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))){
+            byte[] asBytes = IOUtils.toByteArray(bis);
+            return new String(asBytes,"UTF-8");
+        }
+    }
+
+    /**
+     * Write an object to HDFS (or local) using default Java object serialization
+     *
+     * @param path       Path to write the object to
+     * @param toWrite    Object to write
+     * @param sc         Spark context
+     */
+    public static void writeObjectToFile(String path, Object toWrite, JavaSparkContext sc) throws IOException {
+        writeObjectToFile(path, toWrite, sc.sc());
+    }
+
+    /**
+     * Write an object to HDFS (or local) using default Java object serialization
+     *
+     * @param path       Path to write the object to
+     * @param toWrite    Object to write
+     * @param sc         Spark context
+     */
+    public static void writeObjectToFile(String path, Object toWrite, SparkContext sc) throws IOException {
+        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        try(BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))){
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(toWrite);
+        }
+    }
+
+    /**
+     * Read an object from HDFS (or local) using default Java object serialization
+     *
+     * @param path    File to read
+     * @param type    Class of the object to read
+     * @param sc      Spark context
+     * @param <T>     Type of the object to read
+     */
+    public static <T> T readObjectFromFile(String path, Class<T> type, JavaSparkContext sc) throws IOException {
+        return readObjectFromFile(path, type, sc.sc());
+    }
+
+    /**
+     * Read an object from HDFS (or local) using default Java object serialization
+     *
+     * @param path    File to read
+     * @param type    Class of the object to read
+     * @param sc      Spark context
+     * @param <T>     Type of the object to read
+     */
+    public static <T> T readObjectFromFile(String path, Class<T> type, SparkContext sc) throws IOException {
+        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(fileSystem.open(new Path(path))))){
+            Object o;
+            try {
+                o = ois.readObject();
+            } catch( ClassNotFoundException e ){
+                throw new RuntimeException(e);
+            }
+
+            return (T)o;
+        }
+    }
+
+    /**
+     * Write a schema to a HDFS (or, local) file in a human-readable format
+     *
+     * @param outputPath    Output path to write to
+     * @param schema        Schema to write
+     * @param sc            Spark context
+     */
+    public static void writeSchema(String outputPath, Schema schema, JavaSparkContext sc) throws IOException {
+        writeStringToFile(outputPath, schema.toString(), sc);
+    }
+
+    /**
+     * Write a DataAnalysis to HDFS (or locally) as a HTML file
+     *
+     * @param outputPath      Output path
+     * @param dataAnalysis    Analysis to generate HTML file for
+     * @param sc              Spark context
+     */
+    public static void writeAnalysisHTMLToFile(String outputPath, DataAnalysis dataAnalysis, JavaSparkContext sc){
+        try {
+            String analysisAsHtml = HtmlAnalysis.createHtmlAnalysisString(dataAnalysis);
+            writeStringToFile(outputPath, analysisAsHtml, sc);
+        }catch(Exception e){
+            throw new RuntimeException("Error generating or writing HTML analysis file (normalized data)",e);
+        }
+    }
+
+    /**
+     * Wlite a set of writables (or, sequence) to HDFS (or, locally).
+     *
+     * @param outputPath    Path to write the outptu
+     * @param delim         Delimiter
+     * @param writables     data to write
+     * @param sc            Spark context
+     */
+    public static void writeWritablesToFile(String outputPath, String delim, List<List<Writable>> writables, JavaSparkContext sc) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for(List<Writable> list : writables){
+            boolean first = true;
+            for(Writable w : list){
+                sb.append(w.toString());
+                if(!first) sb.append(delim);
+                first = false;
+            }
+            sb.append("\n");
+        }
+        writeStringToFile(outputPath, sb.toString(), sc);
+    }
+
+    /**
+     * Register the Canova writable classes for Kryo
+     */
+    public static void registerKryoClasses(SparkConf conf){
+        List<Class<?>> classes = Arrays.asList((Class<?>)
+                        BooleanWritable.class,
+                ByteWritable.class,
+                DoubleWritable.class,
+                FloatWritable.class,
+                IntWritable.class,
+                LongWritable.class,
+                NullWritable.class,
+                Text.class
+        );
+
+        conf.registerKryoClasses((Class<?>[])classes.toArray());
+    }
+
+    public static Class<? extends CompressionCodec> getCompressionCodeClass(String compressionCodecClass){
+        Class<?> tempClass;
+        try {
+            tempClass = Class.forName(compressionCodecClass);
+        } catch (ClassNotFoundException e){
+            throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass + " (not found)", e);
+        }
+        if(!(CompressionCodec.class.isAssignableFrom(tempClass))) throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass + " (not a CompressionCodec)");
+        return (Class<? extends CompressionCodec>)tempClass;
+    }
+}

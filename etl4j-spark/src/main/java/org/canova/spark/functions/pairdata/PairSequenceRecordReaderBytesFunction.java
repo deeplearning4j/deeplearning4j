@@ -1,10 +1,9 @@
 package org.canova.spark.functions.pairdata;
 
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.records.reader.SequenceRecordReader;
+import org.etl4j.api.writable.Writable;
 import scala.Tuple2;
 
 import java.io.ByteArrayInputStream;

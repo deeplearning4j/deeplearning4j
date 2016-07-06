@@ -21,11 +21,11 @@
 package org.canova.codec.reader;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.records.reader.impl.FileRecordReader;
-import org.canova.api.split.InputSplit;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.SequenceRecordReader;
+import org.etl4j.api.records.reader.impl.FileRecordReader;
+import org.etl4j.api.split.InputSplit;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.RecordConverter;
 import org.canova.image.loader.ImageLoader;
 import org.jcodec.api.FrameGrab;
@@ -33,7 +33,6 @@ import org.jcodec.api.JCodecException;
 import org.jcodec.common.ByteBufferSeekableByteChannel;
 import org.jcodec.common.NIOUtils;
 import org.jcodec.common.SeekableByteChannel;
-import org.jcodec.scale.AWTUtil;
 
 
 import java.awt.image.BufferedImage;

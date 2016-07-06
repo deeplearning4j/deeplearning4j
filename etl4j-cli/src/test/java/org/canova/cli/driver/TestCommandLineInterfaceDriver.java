@@ -22,17 +22,14 @@ package org.canova.cli.driver;
 
 import static org.junit.Assert.*;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.canova.api.util.ClassPathResource;
+import org.etl4j.api.util.ClassPathResource;
 import org.junit.Test;
 
 

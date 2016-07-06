@@ -24,7 +24,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameConverter;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 
 /**
  * Wraps a {@link Frame} to allow serialization within this framework.

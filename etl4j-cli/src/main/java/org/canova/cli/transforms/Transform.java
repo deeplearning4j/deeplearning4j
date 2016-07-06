@@ -2,7 +2,7 @@ package org.canova.cli.transforms;
 
 import java.util.Collection;
 
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 
 public interface Transform {
 	

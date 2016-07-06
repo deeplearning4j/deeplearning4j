@@ -20,10 +20,10 @@
 
 package org.canova.sound.formats.output;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.exceptions.CanovaException;
-import org.canova.api.formats.output.OutputFormat;
-import org.canova.api.records.writer.RecordWriter;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.exceptions.CanovaException;
+import org.etl4j.api.formats.output.OutputFormat;
+import org.etl4j.api.records.writer.RecordWriter;
 
 /**
  * @author Adam Gibson

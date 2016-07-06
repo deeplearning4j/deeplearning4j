@@ -1,16 +1,6 @@
 package split;
 
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.LimitFileSplit;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.io.File;
-import java.io.IOException;
-import java.util.Random;
-import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 

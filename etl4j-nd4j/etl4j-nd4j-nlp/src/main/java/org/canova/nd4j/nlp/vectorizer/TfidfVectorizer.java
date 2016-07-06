@@ -21,10 +21,10 @@
 package org.canova.nd4j.nlp.vectorizer;
 
 
-import org.canova.api.berkeley.Counter;
-import org.canova.api.io.data.IntWritable;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.berkeley.Counter;
+import org.etl4j.api.io.data.IntWritable;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.writable.Writable;
 import org.canova.nd4j.nlp.reader.TfidfRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

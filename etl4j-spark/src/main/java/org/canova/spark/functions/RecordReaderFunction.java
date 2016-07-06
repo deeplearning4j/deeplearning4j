@@ -2,8 +2,8 @@ package org.canova.spark.functions;
 
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.input.PortableDataStream;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.writable.Writable;
 import scala.Tuple2;
 
 import java.io.DataInputStream;

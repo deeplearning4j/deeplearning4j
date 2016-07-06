@@ -21,15 +21,15 @@
 package org.canova.image.recordreader;
 
 import org.apache.commons.io.FileUtils;
-import org.canova.api.conf.Configuration;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.records.reader.BaseRecordReader;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.InputStreamInputSplit;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.io.data.Text;
+import org.etl4j.api.records.reader.BaseRecordReader;
+import org.etl4j.api.records.reader.SequenceRecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
+import org.etl4j.api.split.InputStreamInputSplit;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.RecordConverter;
 import org.canova.image.loader.BaseImageLoader;
 import org.canova.image.loader.ImageLoader;

@@ -21,9 +21,9 @@
 package org.canova.nlp.movingwindow;
 
 
-import org.canova.api.berkeley.Pair;
-import org.canova.api.berkeley.StringUtils;
-import org.canova.api.util.MultiDimensionalMap;
+import org.etl4j.api.berkeley.Pair;
+import org.etl4j.api.berkeley.StringUtils;
+import org.etl4j.api.util.MultiDimensionalMap;
 import org.canova.nlp.tokenization.tokenizer.Tokenizer;
 import org.canova.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 

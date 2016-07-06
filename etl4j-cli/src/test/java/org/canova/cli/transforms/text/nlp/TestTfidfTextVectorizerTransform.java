@@ -5,14 +5,11 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.io.data.Text;
-import org.canova.api.records.reader.impl.FileRecordReader;
-import org.canova.api.util.MathUtils;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.io.data.Text;
+import org.etl4j.api.writable.Writable;
 import org.junit.Test;
 
 public class TestTfidfTextVectorizerTransform {

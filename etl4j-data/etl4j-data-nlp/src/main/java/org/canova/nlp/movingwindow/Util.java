@@ -21,8 +21,8 @@
 package org.canova.nlp.movingwindow;
 
 
-import org.canova.api.berkeley.Counter;
-import org.canova.api.berkeley.MapFactory;
+import org.etl4j.api.berkeley.Counter;
+import org.etl4j.api.berkeley.MapFactory;
 
 import java.util.List;
 import java.util.Map;

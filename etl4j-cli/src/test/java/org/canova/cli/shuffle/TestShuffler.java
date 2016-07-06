@@ -5,8 +5,8 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.canova.api.io.data.Text;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.io.data.Text;
+import org.etl4j.api.writable.Writable;
 import org.junit.Test;
 
 public class TestShuffler {

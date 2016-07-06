@@ -3,24 +3,17 @@ package org.canova.cli.transforms.text.nlp;
 
 import org.apache.commons.math3.util.Pair;
 import org.apache.lucene.analysis.snowball.SnowballAnalyzer;
-import org.canova.api.berkeley.Counter;
-import org.canova.api.conf.Configuration;
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.vector.Vectorizer.RecordCallBack;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.berkeley.Counter;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.writable.Writable;
 import org.canova.cli.transforms.Transform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;

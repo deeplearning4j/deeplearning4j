@@ -20,11 +20,11 @@
 
 package org.canova.nlp.vectorizer;
 
-import org.canova.api.berkeley.Counter;
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.vector.Vectorizer;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.berkeley.Counter;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.vector.Vectorizer;
+import org.etl4j.api.writable.Writable;
 import org.canova.nlp.metadata.DefaultVocabCache;
 import org.canova.nlp.metadata.VocabCache;
 import org.canova.nlp.stopwords.StopWords;

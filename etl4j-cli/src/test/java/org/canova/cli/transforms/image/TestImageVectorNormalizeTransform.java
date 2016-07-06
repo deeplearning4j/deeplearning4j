@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.io.data.DoubleWritable;
+import org.etl4j.api.writable.Writable;
 import org.junit.Test;
 
 public class TestImageVectorNormalizeTransform {

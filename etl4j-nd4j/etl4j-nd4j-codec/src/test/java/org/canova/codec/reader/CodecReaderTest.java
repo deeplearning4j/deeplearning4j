@@ -22,18 +22,17 @@ package org.canova.codec.reader;
 
 import static org.junit.Assert.*;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.ArrayWritable;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.SequenceRecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.util.ClassPathResource;
+import org.etl4j.api.writable.ArrayWritable;
+import org.etl4j.api.writable.Writable;
 import org.junit.Test;
 
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Iterator;
 

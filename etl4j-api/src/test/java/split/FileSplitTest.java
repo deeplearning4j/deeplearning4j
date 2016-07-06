@@ -1,19 +1,11 @@
 package split;
 
-import org.canova.api.split.InputSplit;
-import org.junit.After;
 import org.junit.rules.TemporaryFolder;
-import org.canova.api.split.FileSplit;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Random;
 
 
-import static org.junit.Assert.*;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 
 
 /**

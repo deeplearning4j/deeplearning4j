@@ -1,20 +1,14 @@
 package org.canova.image.loader;
 
 import org.apache.commons.io.FilenameUtils;
-import org.canova.api.io.filters.BalancedPathFilter;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.LimitFileSplit;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.io.filters.BalancedPathFilter;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
 import org.canova.image.recordreader.ImageRecordReader;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.*;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 

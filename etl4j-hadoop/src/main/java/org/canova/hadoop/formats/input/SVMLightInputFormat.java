@@ -22,11 +22,11 @@ package org.canova.hadoop.formats.input;
 
 
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.formats.input.BaseInputFormat;
-import org.canova.api.records.reader.RecordReader;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.formats.input.BaseInputFormat;
+import org.etl4j.api.records.reader.RecordReader;
 
-import org.canova.api.split.InputSplit;
+import org.etl4j.api.split.InputSplit;
 import org.canova.hadoop.records.reader.SVMLightRecordReader;
 
 import java.io.IOException;

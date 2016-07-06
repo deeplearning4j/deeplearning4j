@@ -21,7 +21,7 @@
 package org.canova.image.mnist;
 
 import org.apache.commons.io.FileUtils;
-import org.canova.api.util.ArchiveUtils;
+import org.etl4j.api.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

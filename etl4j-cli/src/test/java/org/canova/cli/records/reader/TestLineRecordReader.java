@@ -6,12 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.formats.input.InputFormat;
-import org.canova.api.formats.output.OutputFormat;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.formats.input.InputFormat;
+import org.etl4j.api.formats.output.OutputFormat;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
 import org.canova.cli.subcommands.Vectorize;
 import org.junit.Test;
 

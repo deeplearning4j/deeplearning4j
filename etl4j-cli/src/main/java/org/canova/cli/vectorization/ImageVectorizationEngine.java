@@ -3,13 +3,9 @@ package org.canova.cli.vectorization;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 import org.canova.cli.shuffle.Shuffler;
-import org.canova.cli.subcommands.Vectorize;
 import org.canova.cli.transforms.image.NormalizeTransform;
-
-import com.google.common.base.Strings;
 
 /**
  * Reads from InputFormats where (generally, but up to InputFormat) each Writable in Collection is a pixel

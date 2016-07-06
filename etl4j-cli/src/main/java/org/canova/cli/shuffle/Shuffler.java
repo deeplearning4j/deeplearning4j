@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 
-import org.canova.api.writable.Writable;
+import org.etl4j.api.writable.Writable;
 
 /**
  * Record Ordering Shuffler

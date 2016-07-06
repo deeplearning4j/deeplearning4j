@@ -20,9 +20,9 @@
 
 package org.canova.nlp.vectorizer;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.writable.Writable;
 import org.canova.nlp.tokenization.tokenizer.Tokenizer;
 import org.canova.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.canova.nlp.tokenization.tokenizerfactory.TokenizerFactory;

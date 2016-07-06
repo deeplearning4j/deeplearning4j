@@ -21,14 +21,12 @@
 package org.canova.image.loader;
 
 
-import org.canova.api.io.filters.BalancedPathFilter;
-import org.canova.api.io.labels.ParentPathLabelGenerator;
-import org.canova.api.io.labels.PathLabelGenerator;
-import org.canova.api.io.labels.PatternPathLabelGenerator;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.LimitFileSplit;
+import org.etl4j.api.io.filters.BalancedPathFilter;
+import org.etl4j.api.io.labels.PathLabelGenerator;
+import org.etl4j.api.io.labels.PatternPathLabelGenerator;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.split.InputSplit;
 import org.canova.image.recordreader.ImageRecordReader;
 import org.canova.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -20,19 +20,17 @@
 
 package org.canova.nd4j.nlp.reader;
 
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.Writable;
+import org.etl4j.api.conf.Configuration;
+import org.etl4j.api.records.reader.RecordReader;
+import org.etl4j.api.split.FileSplit;
+import org.etl4j.api.util.ClassPathResource;
+import org.etl4j.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
 import org.canova.nd4j.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
