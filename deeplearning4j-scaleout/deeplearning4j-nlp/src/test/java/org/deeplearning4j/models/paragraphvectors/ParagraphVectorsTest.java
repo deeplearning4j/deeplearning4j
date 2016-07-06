@@ -177,7 +177,7 @@ public class ParagraphVectorsTest {
                 .labelsSource(source)
                 .windowSize(5)
                 .iterate(iter)
-                .trainWordVectors(false)
+                .trainWordVectors(true)
                 .vocabCache(cache)
                 .tokenizerFactory(t)
                 .sampling(0)
