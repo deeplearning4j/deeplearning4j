@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -46,6 +47,7 @@ import java.util.Random;
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
+    private static final int COALESCE_THRESHOLD = 3;
 
     private boolean saveUpdater;
     private Integer numWorkers;
@@ -58,6 +60,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private Collection<IterationListener> listeners;
     private int iterationCount = 0;
     private Repartition repartition;
+    private RepartitionStrategy repartitionStrategy;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -68,27 +71,31 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.averagingFrequency = builder.averagingFrequency;
         this.prefetchNumBatches = builder.prefetchNumBatches;
         this.repartition = builder.repartition;
+        this.repartitionStrategy = builder.repartitionStrategy;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
                                             int averagingFrequency, int prefetchNumBatches) {
-        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, Repartition.Always, false);
+        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches,
+                Repartition.Always, RepartitionStrategy.Balanced, false);
     }
 
     /**
-     *
-     * @param saveUpdater              If true: save (and average) the updater state when doing parameter averaging
-     * @param numWorkers               Number of workers (executors * threads per executor) for the cluster
-     * @param rddDataSetNumExamples    Number of examples in each DataSet object in the {@code RDD<DataSet>}
-     * @param batchSizePerWorker       Number of examples to use per worker per fit
-     * @param averagingFrequency       Frequency (in number of minibatches) with which to average parameters
-     * @param prefetchNumBatches       Number of batches to asynchronously prefetch (0: disable)
-     * @param collectTrainingStats     If true: collect training statistics for debugging/optimization purposes
+     * @param saveUpdater           If true: save (and average) the updater state when doing parameter averaging
+     * @param numWorkers            Number of workers (executors * threads per executor) for the cluster
+     * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
+     * @param batchSizePerWorker    Number of examples to use per worker per fit
+     * @param averagingFrequency    Frequency (in number of minibatches) with which to average parameters
+     * @param prefetchNumBatches    Number of batches to asynchronously prefetch (0: disable)
+     * @param collectTrainingStats  If true: collect training statistics for debugging/optimization purposes
      */
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
-                                            int averagingFrequency, int prefetchNumBatches, Repartition repartition, boolean collectTrainingStats) {
-        if(numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
-        if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+                                            int averagingFrequency, int prefetchNumBatches, Repartition repartition,
+                                            RepartitionStrategy repartitionStrategy, boolean collectTrainingStats) {
+        if (numWorkers <= 0)
+            throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
+        if (rddDataSetNumExamples <= 0)
+            throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
 
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
@@ -98,6 +105,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
         this.repartition = repartition;
+        this.repartitionStrategy = repartitionStrategy;
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
@@ -130,30 +138,30 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
     }
 
-    private int numObjectsEachWorker(){
+    private int numObjectsEachWorker() {
         return batchSizePerWorker * averagingFrequency / rddDataSetNumExamples;
     }
 
-    private int getNumDataSetObjectsPerSplit(){
+    private int getNumDataSetObjectsPerSplit() {
         int dataSetObjectsPerSplit;
-        if(rddDataSetNumExamples == 1){
+        if (rddDataSetNumExamples == 1) {
             dataSetObjectsPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
         } else {
             int numDataSetObjsReqEachWorker = numObjectsEachWorker();
-            if(numDataSetObjsReqEachWorker < 1){
+            if (numDataSetObjsReqEachWorker < 1) {
                 //In this case: more examples in a DataSet object than we actually require
                 //For example, 100 examples in DataSet, with batchSizePerWorker=50 and averagingFrequency=1
                 numDataSetObjsReqEachWorker = 1;
             }
 
-            dataSetObjectsPerSplit = numDataSetObjsReqEachWorker*numWorkers;
+            dataSetObjectsPerSplit = numDataSetObjsReqEachWorker * numWorkers;
         }
         return dataSetObjectsPerSplit;
     }
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-        if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+        if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
@@ -165,7 +173,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<DataSet>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        JavaRDD<DataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -176,73 +184,34 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
-    private void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits){
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
-        if (collectTrainingStats) stats.logMapPartitionsStart();
-
-        JavaRDD<DataSet> splitData = split;
-        if(collectTrainingStats) stats.logRepartitionStart();
-        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
-        int nPartitions = splitData.partitions().size();
-        if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
-
-        FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
-        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-        processResults(network, null, result, splitNum, numSplits);
-
-        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
-    }
-
     @Override
-    public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData){
-        if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+    public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
+        if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
+        int origNumPartitions = trainingData.partitions().size();
+        if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
+            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            trainingData = trainingData.coalesce(numWorkers);
+        }
 
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
         if (collectTrainingStats) stats.logSplitStart();
-        JavaPairRDD<String,PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
-        for (JavaPairRDD<String,PortableDataStream> split : splits) {
-
+        for (JavaPairRDD<String, PortableDataStream> split : splits) {
             JavaRDD<PortableDataStream> streams = split.values();
-            if(collectTrainingStats) stats.logRepartitionStart();
-            streams = SparkUtils.repartitionBalanceIfRequired(streams, repartition, numObjectsEachWorker(), numWorkers);
-            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
             doIterationPDS(network, null, streams, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
-    private void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits){
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
-        if (collectTrainingStats) stats.logMapPartitionsStart();
-
-        JavaRDD<PortableDataStream> splitData = split;
-        if(collectTrainingStats) stats.logRepartitionStart();
-        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
-        int nPartitions = splitData.partitions().size();
-        if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
-        FlatMapFunction<Iterator<PortableDataStream>, ParameterAveragingTrainingResult> function;
-        if(network != null) function = new ExecuteWorkerPDSFlatMap<>(getWorkerInstance(network));
-        else function = new ExecuteWorkerPDSFlatMap<>(getWorkerInstance(graph));
-
-        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-        processResults(network, graph, result, splitNum, numSplits);
-
-        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
-    }
-
     @Override
     public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
-        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+        if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
         JavaRDD<MultiDataSet> mdsTrainingData = trainingData.map(new DataSetToMultiDataSetFn());
 
@@ -251,18 +220,19 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
-        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+        if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
-        trainingData.persist(StorageLevel.MEMORY_ONLY());
 
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
+        if (collectTrainingStats) stats.logSplitStart();
         JavaRDD<MultiDataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
         for (JavaRDD<MultiDataSet> split : splits) {
@@ -273,85 +243,55 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     @Override
-    public void executeTraining(SparkComputationGraph graph, JavaPairRDD<String,PortableDataStream> trainingData){
-        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+    public void executeTraining(SparkComputationGraph graph, JavaPairRDD<String, PortableDataStream> trainingData) {
+        if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
 
+        int origNumPartitions = trainingData.partitions().size();
+        if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
+            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            trainingData = trainingData.coalesce(numWorkers);
+        }
+
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
-        JavaPairRDD<String,PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
-        for (JavaPairRDD<String,PortableDataStream> split : splits) {
+        for (JavaPairRDD<String, PortableDataStream> split : splits) {
             JavaRDD<PortableDataStream> streams = split.values();
-            if(collectTrainingStats) stats.logRepartitionStart();
-            streams = SparkUtils.repartitionBalanceIfRequired(streams, repartition, numObjectsEachWorker(), numWorkers);
-            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
             doIterationPDS(null, graph, streams, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
-    private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits){
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
-        if (collectTrainingStats) stats.logMapPartitionsStart();
-
-        JavaRDD<MultiDataSet> splitData = split;
-
-        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
-        int nPartitions = split.partitions().size();
-
-        FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
-        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-        processResults(null, graph, result, splitNum, numSplits);
-
-        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
-    }
-
-    private void doIterationPDS_MDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits){
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
-        if (collectTrainingStats) stats.logMapPartitionsStart();
-
-        JavaRDD<PortableDataStream> splitData = split;
-        if(collectTrainingStats) stats.logRepartitionStart();
-        splitData = SparkUtils.repartitionBalanceIfRequired(splitData, repartition, numObjectsEachWorker(), numWorkers);
-        int nPartitions = splitData.partitions().size();
-        if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
-        FlatMapFunction<Iterator<PortableDataStream>, ParameterAveragingTrainingResult> function = new ExecuteWorkerPDSMDSFlatMap<>(getWorkerInstance(graph));
-
-        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-        processResults(null, graph, result, splitNum, numSplits);
-
-        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
-    }
-
     @Override
-    public void executeTrainingMDS(SparkComputationGraph graph, JavaPairRDD<String,PortableDataStream> trainingData){
-        if(numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
+    public void executeTrainingMDS(SparkComputationGraph graph, JavaPairRDD<String, PortableDataStream> trainingData) {
+        if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
 
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
-        JavaPairRDD<String,PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int)totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
-        for (JavaPairRDD<String,PortableDataStream> split : splits) {
+        for (JavaPairRDD<String, PortableDataStream> split : splits) {
             JavaRDD<PortableDataStream> streams = split.values();
-            if(collectTrainingStats) stats.logRepartitionStart();
-            streams = SparkUtils.repartitionBalanceIfRequired(streams, repartition, numObjectsEachWorker(), numWorkers);
-            if(collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+            if (collectTrainingStats) stats.logRepartitionStart();
+            streams = SparkUtils.repartition(streams, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+            if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
 
             doIterationPDS_MDS(graph, streams, splitNum++, splits.length);
         }
@@ -382,9 +322,85 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
 
+    private void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<DataSet> splitData = split;
+        if (collectTrainingStats) stats.logRepartitionStart();
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = splitData.partitions().size();
+        if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+
+        FlatMapFunction<Iterator<DataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(network, null, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    private void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<PortableDataStream> splitData = split;
+        if (collectTrainingStats) stats.logRepartitionStart();
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = splitData.partitions().size();
+        if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+        FlatMapFunction<Iterator<PortableDataStream>, ParameterAveragingTrainingResult> function;
+        if (network != null) function = new ExecuteWorkerPDSFlatMap<>(getWorkerInstance(network));
+        else function = new ExecuteWorkerPDSFlatMap<>(getWorkerInstance(graph));
+
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(network, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<MultiDataSet> splitData = split;
+
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = split.partitions().size();
+
+        FlatMapFunction<Iterator<MultiDataSet>, ParameterAveragingTrainingResult> function = new ExecuteWorkerMultiDataSetFlatMap<>(getWorkerInstance(graph));
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(null, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    private void doIterationPDS_MDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<PortableDataStream> splitData = split;
+        if (collectTrainingStats) stats.logRepartitionStart();
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = splitData.partitions().size();
+        if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+        FlatMapFunction<Iterator<PortableDataStream>, ParameterAveragingTrainingResult> function = new ExecuteWorkerPDSMDSFlatMap<>(getWorkerInstance(graph));
+
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(null, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+
     private void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<ParameterAveragingTrainingResult> results, int splitNum, int totalSplits) {
         //Need to do parameter averaging, and where necessary also do averaging of the updaters
-
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
 
         if (collectTrainingStats) stats.logAggregateStartTime();
@@ -452,39 +468,41 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private int averagingFrequency = 5;
         private int prefetchNumBatches = 0;
         private Repartition repartition = Repartition.Always;
+        private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
 
 
         /**
          * Same as {@link #Builder(Integer, int)} but automatically set number of workers based on JavaSparkContext.defaultParallelism()
          *
-         * @param rddDataSetNumExamples    Number of examples in each DataSet object in the {@code RDD<DataSet>}
+         * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
         public Builder(int rddDataSetNumExamples) {
-            this(null,rddDataSetNumExamples);
+            this(null, rddDataSetNumExamples);
         }
 
         /**
          * Create a builder, where the following number of workers (Spark executors * number of threads per executor) are
          * being used.<br>
          * Note: this should match the configuration of the cluster.<br>
-         *
+         * <p>
          * It is also necessary to specify how many examples are in each DataSet that appears in the {@code RDD<DataSet>}
          * or {@code JavaRDD<DataSet>} used for training.<br>
          * Two most common cases here:<br>
          * (a) Preprocessed data pipelines will often load binary DataSet objects with N > 1 examples in each; in this case,
-         *     rddDataSetNumExamples should be set to N <br>
+         * rddDataSetNumExamples should be set to N <br>
          * (b) "In line" data pipelines (for example, CSV String -> record reader -> DataSet just before training) will
-         *     typically have exactly 1 example in each DataSet object. In this case, rddDataSetNumExamples should be set to 1
+         * typically have exactly 1 example in each DataSet object. In this case, rddDataSetNumExamples should be set to 1
          *
-         *
-         * @param numWorkers Number of Spark execution threads in the cluster. May be null. If null: number of workers will
-         *                   be obtained from JavaSparkContext.defaultParallelism(), which should provide the number of cores
-         *                   in the cluster.
+         * @param numWorkers            Number of Spark execution threads in the cluster. May be null. If null: number of workers will
+         *                              be obtained from JavaSparkContext.defaultParallelism(), which should provide the number of cores
+         *                              in the cluster.
          * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
         public Builder(Integer numWorkers, int rddDataSetNumExamples) {
-            if(numWorkers != null && numWorkers <= 0) throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
-            if(rddDataSetNumExamples <= 0) throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+            if (numWorkers != null && numWorkers <= 0)
+                throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
+            if (rddDataSetNumExamples <= 0)
+                throw new IllegalArgumentException("Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
             this.numWorkers = numWorkers;
             this.rddDataSetNumExamples = rddDataSetNumExamples;
         }
@@ -543,7 +561,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         }
 
         /**
-         * Set if and how repartitioning should be conducted for the training data.<br>
+         * Set if/when repartitioning should be conducted for the training data.<br>
          * Default value: always repartition (if required to guarantee correct number of partitions and correct number
          * of examples in each partition).
          *
@@ -551,6 +569,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder repartionData(Repartition repartition) {
             this.repartition = repartition;
+            return this;
+        }
+
+        /**
+         * Used in conjunction with {@link #repartionData(Repartition)} (which defines <i>when</i> repartitioning should be
+         * conducted), repartitionStrategy defines <i>how</i> the repartitioning should be done. See {@link RepartitionStrategy}
+         * for details
+         *
+         * @param repartitionStrategy Repartitioning strategy to use
+         */
+        public Builder repartitionStrategy(RepartitionStrategy repartitionStrategy) {
+            this.repartitionStrategy = repartitionStrategy;
             return this;
         }
 
