@@ -1,0 +1,8 @@
+@RELATION UCIIrisDataset
+@DELIMITER ,
+ 
+   @ATTRIBUTE sepallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE sepalwidth   NUMERIC   !NORMALIZE
+   @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE petalwidth   NUMERIC   !NORMALIZE
+   @ATTRIBUTE class        NOMINAL   !LABEL

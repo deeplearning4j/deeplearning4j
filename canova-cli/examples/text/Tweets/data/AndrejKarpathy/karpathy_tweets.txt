@@ -1,0 +1,5 @@
+Twitch having fun being hypnotized with zooming inceptionism ConvNet art http://www.twitch.tv/317070   (fun idea @317070 et al.!)
+Deep Learning singularity: when new cool papers are coming out faster than you can read them
+DeepStereo: Learning to Predict New Views from the World's Imagery http://arxiv.org/abs/1506.06825  impressive! + video: https://www.youtube.com/watch?v=cizgVZ8rjKA
+Fun ConvNet feature visualizations http://arxiv.org/abs/1506.06579  + live camera ConvNet vis demo https://github.com/yosinski/deep-visualization-toolbox
+Neural Nets dreaming natural images http://soumith.ch/eyescream/  , about the recent FAIR paper. Adversarial nets sound quite tricky to train

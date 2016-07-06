@@ -1,0 +1,12 @@
+@RELATION UCIAbaloneDataset
+@DELIMITER ,
+ 
+   @ATTRIBUTE sex 		NOMINAL   	!COPY
+   @ATTRIBUTE length  	 	NUMERIC   	!NORMALIZE
+   @ATTRIBUTE diameter 	 	NUMERIC   	!NORMALIZE
+   @ATTRIBUTE height  	 	NUMERIC   	!NORMALIZE
+   @ATTRIBUTE wholeweight 	NUMERIC 	!NORMALIZE
+   @ATTRIBUTE shuckedweight     NUMERIC         !NORMALIZE
+   @ATTRIBUTE visceraweight     NUMERIC         !NORMALIZE
+   @ATTRIBUTE shellweight       NUMERIC         !NORMALIZE
+   @ATTRIBUTE rings        	NOMINAL   	!LABEL

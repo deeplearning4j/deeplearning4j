@@ -1,0 +1,8 @@
+@RELATION UnsupportedSchema_0_NOMINAL_BINARIZE
+@DELIMITER ,
+ 
+   @ATTRIBUTE sepallength  DATE   !COPY
+   @ATTRIBUTE sepalwidth   NUMERIC   !SKIP
+   @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE petalwidth   NOMINAL   !BINARIZE
+   @ATTRIBUTE class        NOMINAL   !LABEL

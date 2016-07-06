@@ -1,0 +1,8 @@
+@RELATION SytheticDatasetUnitTest
+@DELIMITER ,
+ 
+   @ATTRIBUTE sepallength  NUMERIC   !COPY
+   @ATTRIBUTE sepalwidth   NUMERIC   !SKIP
+   @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE petalwidth   NUMERIC   !BINARIZE
+   @ATTRIBUTE class        NOMINAL   !LABEL

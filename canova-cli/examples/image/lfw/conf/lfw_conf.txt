@@ -1,0 +1,16 @@
+
+canova.conf.print=true
+
+canova.input.header.skip=false
+canova.input.statistics.debug.print=false
+
+canova.input.data.type=image
+
+canova.input.format=org.canova.image.format.ImageInputFormat
+
+canova.input.directory=/tmp/lfw/
+canova.output.directory=/tmp/lfw_svmlight_output.txt
+
+canova.output.format=org.canova.api.formats.output.impl.SVMLightOutputFormat
+
+canova.output.shuffle=true

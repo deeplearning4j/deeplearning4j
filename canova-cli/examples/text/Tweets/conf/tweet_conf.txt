@@ -1,0 +1,17 @@
+
+canova.conf.print=true
+
+canova.input.header.skip=false
+canova.input.statistics.debug.print=false
+
+canova.input.data.type=text
+
+canova.input.format=org.canova.cli.formats.input.TextInputFormat
+
+canova.input.directory=./examples/text/Tweets/data/
+
+canova.output.directory=/tmp/canova/text/svm_light_tweets_output.txt
+
+canova.output.format=org.canova.api.formats.output.impl.SVMLightOutputFormat
+
+canova.output.shuffle=true

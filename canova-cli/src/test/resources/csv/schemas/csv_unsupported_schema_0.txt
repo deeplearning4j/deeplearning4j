@@ -1,0 +1,8 @@
+@RELATION UnsupportedSchema_0_NUMERIC_LABEL
+@DELIMITER ,
+ 
+   @ATTRIBUTE sepallength  NUMERIC   !COPY
+   @ATTRIBUTE sepalwidth   NUMERIC   !SKIP
+   @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE petalwidth   NUMERIC   !BINARIZE
+   @ATTRIBUTE class        NUMERIC   !LABEL

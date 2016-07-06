@@ -1,0 +1,17 @@
+
+canova.conf.print=true
+
+canova.input.header.skip=false
+canova.input.statistics.debug.print=false
+
+canova.input.data.type=csv
+
+canova.input.format=org.canova.api.formats.input.impl.LineInputFormat
+
+canova.input.directory=./examples/csv/UCI_Iris/data/uci_iris_sample.txt
+canova.input.vector.schema=./examples/csv/UCI_Iris/schema/iris_vector_schema.txt
+canova.output.vector.format=svmlight
+canova.output.directory=/tmp/iris_csv_to_svmlight_sample.txt
+
+canova.output.format=org.canova.api.formats.output.impl.SVMLightOutputFormat
+canova.output.shuffle=true
