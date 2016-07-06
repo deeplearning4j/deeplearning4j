@@ -39,7 +39,7 @@ public class BaseNDArrayProxy implements java.io.Serializable {
      */
 
     protected int[] arrayShape;
-    protected int length;
+    protected long length;
 	protected char arrayOrdering;
     protected transient  DataBuffer data;    
 

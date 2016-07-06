@@ -361,23 +361,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
     }
 
-    public Number readByType(DataInputStream s,Type currentType) {
-        Number anElement = 0;
-        try {
-            if (currentType == Type.INT)
-                anElement = s.readInt();
-            else if (currentType == Type.DOUBLE)
-                anElement = s.readDouble();
-            else 
-                anElement = s.readFloat();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-			return anElement;
-		}
-		
-    }
-
     @Override
     public void setData(int[] data) {
         set(data, data.length, 0, 0);
@@ -392,8 +375,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void setData(double[] data) {
         set(data, data.length, 0, 0);
     }
-
-
 
     @Override
     protected void setNioBuffer() {
@@ -695,7 +676,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 int[] array = new int[(int) length];
 
                 for (int i = 0; i < length(); i++) {
-                    array[i] = (int) readByType(s,t);
+                    if (t == Type.INT)
+                        array[i] = s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (int) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = (int) s.readFloat();
                 }
                 setData(array);
             }
@@ -711,7 +697,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 double[] array = new double[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,t).doubleValue();
+                    if (t == Type.INT)
+                        array[i] = (double) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = (double) s.readFloat();
                 }
                 setData(array);
 
@@ -727,7 +718,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 float[] array = new float[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = readByType(s,t).floatValue();
+                    if (t == Type.INT)
+                        array[i] = (float) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (float) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = s.readFloat();
                 }
                 setData(array);
             }
