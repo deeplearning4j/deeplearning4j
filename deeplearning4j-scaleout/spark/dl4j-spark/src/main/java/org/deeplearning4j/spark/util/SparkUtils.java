@@ -9,6 +9,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
@@ -141,6 +142,23 @@ public class SparkUtils {
         }
     }
 
+    public static <T> JavaRDD<T> repartition(JavaRDD<T> rdd, Repartition repartition, RepartitionStrategy repartitionStrategy,
+                                             int objectsPerPartition, int numPartitions ){
+        if(repartition == Repartition.Never) return rdd;
+
+        switch(repartitionStrategy){
+            case SparkDefault:
+                if(repartition == Repartition.NumPartitionsWorkersDiffers && rdd.partitions().size() == numPartitions) return rdd;
+
+                //Either repartition always, or workers/num partitions differs
+                return rdd.repartition(numPartitions);
+            case Balanced:
+                return repartitionBalanceIfRequired(rdd, repartition, objectsPerPartition, numPartitions);
+            default:
+                throw new RuntimeException("Unknown repartition strategy: " + repartitionStrategy);
+        }
+    }
+
 
     /**
      * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately {@code numPartitions} partitions,
@@ -169,7 +187,9 @@ public class SparkUtils {
                 rdd.persist(StorageLevel.MEMORY_ONLY());
 
                 //Count each partition...
+                System.out.println("STARTING COUNT PARTITIONS AND COLLECT: " + System.currentTimeMillis());
                 List<Tuple2<Integer,Integer>> partitionCounts = rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(),true).collect();
+                System.out.println("END COUNT PARTITIONS AND COLLECT: " + System.currentTimeMillis());
                 int totalObjects = 0;
                 int initialPartitions = partitionCounts.size();
 
