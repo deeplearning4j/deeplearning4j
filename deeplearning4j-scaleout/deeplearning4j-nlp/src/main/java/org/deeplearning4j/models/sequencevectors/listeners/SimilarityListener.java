@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Simple listener, to monitor simialiry between selected elements during training
+ * Simple listener, to monitor similarity between selected elements during training
  *
  * @author raver119@gmail.com
  */
