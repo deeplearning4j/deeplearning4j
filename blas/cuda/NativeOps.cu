@@ -4019,6 +4019,9 @@ void NativeOps::setGridLimit(int gridSize) {
 	blockLimit = gridSize;
 }
 
+int NativeOps::ompGetMaxThreads() {
+	return maxThreads;
+}
 
 int NativeOps::ompGetNumThreads() {
 	return maxThreads;
