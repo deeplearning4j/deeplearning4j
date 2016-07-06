@@ -1,0 +1,39 @@
+package org.deeplearning4j.gym;
+
+
+/**
+ * Created by rubenfiszel on 7/6/16.
+ */
+public class ExampleAgent {
+
+
+    public static void run() {
+
+        Client<Integer, Integer> client = ClientFactory.build("CartPole-v0");
+
+        String outDir = "/tmp/random-agent-results";
+        client.monitorStart(outDir, true, false);
+
+        int episodeCount = 1;
+        int maxSteps = 200;
+        int reward = 0;
+
+        for (int i = 0; i < episodeCount; i++) {
+            client.reset();
+
+            for (int j = 0; j < maxSteps; j++) {
+                Integer action = client.getActionSpace().randomAction();
+                StepReply<Integer> step = client.step(action);
+                reward += step.getReward();
+                if (step.isDone())
+                    break;
+            }
+
+        }
+
+        client.monitorClose();
+        //client.upload(outDir,"YOUR_OPENAI_GYM_API_KEY");
+
+    }
+
+}
