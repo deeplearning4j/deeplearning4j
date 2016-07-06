@@ -47,6 +47,7 @@ import java.util.Random;
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
+    private static final int COALESCE_THRESHOLD = 3;
 
     private boolean saveUpdater;
     private Integer numWorkers;
@@ -186,11 +187,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData){
         if(numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
-        //TESTING
-        log.info("STARTING COALESCE: " + System.currentTimeMillis());
-        trainingData = trainingData.coalesce(numWorkers);
-        log.info("ENDING COALESCE: " + System.currentTimeMillis());
-        //END TESTING
+        int origNumPartitions = trainingData.partitions().size();
+        if(origNumPartitions >= COALESCE_THRESHOLD * numWorkers){
+            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            trainingData = trainingData.coalesce(numWorkers);
+        }
 
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
@@ -248,6 +249,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
+
+        int origNumPartitions = trainingData.partitions().size();
+        if(origNumPartitions >= COALESCE_THRESHOLD * numWorkers){
+            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            trainingData = trainingData.coalesce(numWorkers);
+        }
 
         long totalDataSetObjectCount = trainingData.count();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
