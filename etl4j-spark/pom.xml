@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-spark_${scala.binary.version}</artifactId>
+    <artifactId>etl4j-spark_${scala.binary.version}</artifactId>
 
     <properties>
         <spark.version>1.5.1</spark.version>

@@ -23,21 +23,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.nd4j</groupId>
-    <artifactId>canova-parent</artifactId>
+    <artifactId>etl4j-parent</artifactId>
 
     <packaging>pom</packaging>
 
     <version>0.0.0.17-SNAPSHOT</version>
     <modules>
-        <module>canova-api</module>
-        <module>canova-nd4j</module>
-        <module>canova-data</module>
-        <module>canova-cli</module>
-        <module>canova-hadoop</module>
-        <module>canova-spark</module>
-        <module>canova-camel</module>
+        <module>etl4j-api</module>
+        <module>etl4j-nd4j</module>
+        <module>etl4j-data</module>
+        <module>etl4j-cli</module>
+        <module>etl4j-hadoop</module>
+        <module>etl4j-spark</module>
+        <module>etl4j-camel</module>
     </modules>
-    <name>Canova</name>
+    <name>ETL4J</name>
 
     <url>http://nd4j.org</url>
 

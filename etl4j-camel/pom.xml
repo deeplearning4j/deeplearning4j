@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
-        <artifactId>canova-parent</artifactId>
+        <artifactId>etl4j-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-camel</artifactId>
+    <artifactId>etl4j-camel</artifactId>
 
-    <name>Camel canova Component</name>
+    <name>Camel ETL4J Component</name>
     <url>http://deeplearning4j.org</url>
 
     <properties>
@@ -30,11 +30,11 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.4</version>
+            <version>${lombok.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
+            <artifactId>etl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

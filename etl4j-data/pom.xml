@@ -20,22 +20,22 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>canova-parent</artifactId>
+        <artifactId>etl4j-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.0.17-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>canova-data</artifactId>
+    <artifactId>etl4j-data</artifactId>
     <packaging>pom</packaging>
 
-    <name>canova-data</name>
+    <name>etl4j-data</name>
     <url>http://maven.apache.org</url>
     <modules>
-        <module>canova-data-nlp</module>
-        <module>canova-data-image</module>
-        <module>canova-data-timeseries</module>
-        <module>canova-data-audio</module>
+        <module>etl4j-data-nlp</module>
+        <module>etl4j-data-image</module>
+        <module>etl4j-data-timeseries</module>
+        <module>etl4j-data-audio</module>
     </modules>
 
     <properties>
