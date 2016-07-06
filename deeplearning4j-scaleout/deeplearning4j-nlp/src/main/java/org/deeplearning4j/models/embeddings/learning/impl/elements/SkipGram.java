@@ -131,9 +131,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
 
-//        if (tempSequence.getElements().size() > 0)
-//            score /= tempSequence.getElements().size();
-
         return score;
     }
 
@@ -162,12 +159,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
                     score = iterateSample(word,lastWord,nextRandom,alpha);
-//                    cnt++;
+
                 }
             }
         }
-//        if (cnt > 0)
-//            score /= cnt;
 
         return score;
     }
@@ -215,9 +210,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
         }
 
-
-        score /= w1.getCodeLength();
-
         int target = w1.getIndex();
         int label;
         //negative sampling
@@ -261,6 +253,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             }
 
         }
+
+        Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0,neu1e,l1);
 
         return score;
     }
