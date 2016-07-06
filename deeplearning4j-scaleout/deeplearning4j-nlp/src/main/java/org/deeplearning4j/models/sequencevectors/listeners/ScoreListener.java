@@ -13,8 +13,11 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Simple VectorsListener implementation that prints out model score.
  *
+ * PLEASE NOTE: THIS IS PLACEHOLDER FOR FUTURE IMPLEMENTATION
+ *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class ScoreListener<T extends SequenceElement> implements VectorsListener<T> {
     protected static final Logger logger = LoggerFactory.getLogger(ScoreListener.class);
     private final ListenerEvent targetEvent;
