@@ -52,9 +52,11 @@ public class SVMRecordWriterTest {
 
     @Test
     public void testWriter() throws Exception {
+        String tempDir = System.getProperty("java.io.tmpdir");
         InputStream is  = new ClassPathResource("iris.dat").getInputStream();
         assumeNotNull(is);
-        File tmp = new File("iris.txt");
+        File tmp = new File(tempDir,"iris.txt");
+        if(tmp.exists()) tmp.delete();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmp));
         IOUtils.copy(is, bos);
         bos.flush();
@@ -71,7 +73,8 @@ public class SVMRecordWriterTest {
         }
 
         assertEquals(150,records.size());
-        File out = new File("iris_out.txt");
+        File out = new File(tempDir,"iris_out.txt");
+        if(out.exists()) out.delete();
         out.deleteOnExit();
         RecordWriter writer = new SVMLightRecordWriter(out,true);
         for(Collection<Writable> record : records)

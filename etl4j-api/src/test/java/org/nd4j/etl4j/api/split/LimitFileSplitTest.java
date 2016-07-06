@@ -1,4 +1,4 @@
-package split;
+package org.nd4j.etl4j.api.split;
 
 import java.io.File;
 

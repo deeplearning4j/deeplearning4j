@@ -23,6 +23,7 @@ package org.nd4j.etl4j.api.records.reader.impl;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.etl4j.api.records.reader.RecordReader;
 import org.nd4j.etl4j.api.split.FileSplit;
@@ -47,12 +48,14 @@ public class LineReaderTest {
 
     @Test
     public void testLineReader() throws Exception {
-        File tmpdir = new File("tmpdir");
+        String tempDir = System.getProperty("java.io.tmpdir");
+        File tmpdir = new File(tempDir,"tmpdir-testLineReader");
+        if(tmpdir.exists()) tmpdir.delete();
         tmpdir.mkdir();
 
-        File tmp1 = new File("tmpdir/tmp1.txt");
-        File tmp2 = new File("tmpdir/tmp2.txt");
-        File tmp3 = new File("tmpdir/tmp3.txt");
+        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp1.txt"));
+        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp2.txt"));
+        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp3.txt"));
 
         FileUtils.writeLines(tmp1, Arrays.asList("1","2","3"));
         FileUtils.writeLines(tmp2, Arrays.asList("4","5","6"));
@@ -71,7 +74,11 @@ public class LineReaderTest {
 
         assertEquals(9, count);
 
-        FileUtils.deleteDirectory(tmpdir);
+        try{
+            FileUtils.deleteDirectory(tmpdir);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     private static PrintWriter makeGzippedPW(File file) throws IOException {
@@ -84,7 +91,8 @@ public class LineReaderTest {
 
     @Test
     public void testLineReaderWithInputStreamInputSplit() throws Exception {
-        File tmpdir = new File("tmpdir");
+        String tempDir = System.getProperty("java.io.tmpdir");
+        File tmpdir = new File(tempDir,"tmpdir");
         tmpdir.mkdir();
 
         File tmp1 = new File("tmpdir/tmp1.txt.gz");
@@ -107,7 +115,11 @@ public class LineReaderTest {
 
         assertEquals(9, count);
 
-        FileUtils.deleteDirectory(tmpdir);
+        try{
+            FileUtils.deleteDirectory(tmpdir);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
 
