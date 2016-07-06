@@ -20,10 +20,10 @@
 
 package org.canova.nd4j.nlp.input;
 
-import org.etl4j.api.conf.Configuration;
-import org.etl4j.api.formats.input.BaseInputFormat;
-import org.etl4j.api.records.reader.RecordReader;
-import org.etl4j.api.split.InputSplit;
+import org.nd4j.etl4j.api.conf.Configuration;
+import org.nd4j.etl4j.api.formats.input.BaseInputFormat;
+import org.nd4j.etl4j.api.records.reader.RecordReader;
+import org.nd4j.etl4j.api.split.InputSplit;
 import org.canova.nd4j.nlp.reader.TfidfRecordReader;
 
 import java.io.IOException;

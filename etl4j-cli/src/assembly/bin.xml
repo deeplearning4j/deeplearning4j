@@ -19,7 +19,7 @@
       <directory>src/main/resources/</directory>
       <outputDirectory>bin</outputDirectory>
       <includes>
-        <include>canova</include>
+        <include>etl4j</include>
       </includes>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>

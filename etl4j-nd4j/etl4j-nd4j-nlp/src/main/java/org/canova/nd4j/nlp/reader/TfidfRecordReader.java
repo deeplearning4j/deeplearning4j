@@ -20,12 +20,12 @@
 
 package org.canova.nd4j.nlp.reader;
 
-import org.etl4j.api.conf.Configuration;
-import org.etl4j.api.io.data.IntWritable;
-import org.etl4j.api.records.reader.impl.FileRecordReader;
-import org.etl4j.api.split.InputSplit;
-import org.etl4j.api.vector.Vectorizer;
-import org.etl4j.api.writable.Writable;
+import org.nd4j.etl4j.api.conf.Configuration;
+import org.nd4j.etl4j.api.io.data.IntWritable;
+import org.nd4j.etl4j.api.records.reader.impl.FileRecordReader;
+import org.nd4j.etl4j.api.split.InputSplit;
+import org.nd4j.etl4j.api.vector.Vectorizer;
+import org.nd4j.etl4j.api.writable.Writable;
 import org.canova.common.RecordConverter;
 import org.canova.nd4j.nlp.vectorizer.TfidfVectorizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
