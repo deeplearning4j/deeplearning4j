@@ -16,52 +16,76 @@
 
 package org.datavec.nlp.vectorizer;
 
-import org.datavec.api.conf.Configuration;
+
+import org.datavec.api.berkeley.Counter;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.writable.Writable;
-import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
-import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
+import org.datavec.nlp.reader.TfidfRecordReader;
+import org.datavec.nlp.vectorizer.AbstractTfidfVectorizer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
- * Tf idf vectorizer
+ *
+ * Nd4j tfidf vectorizer
+ *
  * @author Adam Gibson
  */
-public abstract class TfidfVectorizer<VECTOR_TYPE> extends TextVectorizer<VECTOR_TYPE> {
+public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
+    @Override
+    public INDArray createVector(Object[] args) {
+        INDArray ret = Nd4j.create(cache.vocabWords().size());
+        Counter<String> docFrequencies = (Counter<String>)args[0];
+        for(int i = 0; i < cache.vocabWords().size(); i++) {
+            double freq = docFrequencies.getCount(cache.wordAt(i));
+            double tfidf = cache.tfidf(cache.wordAt(i),freq);
+            ret.putScalar(i,tfidf);
+        }
+        return ret;
+    }
 
     @Override
-    public void doWithTokens(Tokenizer tokenizer) {
-        Set<String> seen = new HashSet<>();
-        while(tokenizer.hasMoreTokens()) {
-            String token = tokenizer.nextToken();
-            cache.incrementCount(token);
-            if(!seen.contains(token)) {
-                cache.incrementDocCount(token);
+    public INDArray fitTransform(RecordReader reader) {
+        return fitTransform(reader,null);
+    }
+
+    @Override
+    public INDArray fitTransform(final RecordReader reader, RecordCallBack callBack) {
+        final List<Collection<Writable>> records = new ArrayList<>();
+        final TfidfRecordReader reader2 = (TfidfRecordReader) reader;
+        fit(reader,new RecordCallBack() {
+            @Override
+            public void onRecord(Collection<Writable> record) {
+                if(reader.getConf().get(TfidfRecordReader.APPEND_LABEL).equals("true")) {
+                    record.add(new IntWritable(reader2.getCurrentLabel()));
+                }
+                records.add(record);
+            }
+        });
+
+        if(records.isEmpty())
+            throw new IllegalStateException("No records found!");
+        INDArray ret = Nd4j.create(records.size(),cache.vocabWords().size());
+        int i = 0;
+        for(Collection<Writable> record : records) {
+            ret.putRow(i++, transform(record));
+            if(callBack != null) {
+                callBack.onRecord(record);
             }
         }
+
+        return ret;
     }
 
     @Override
-    public TokenizerFactory createTokenizerFactory(Configuration conf) {
-        String clazz = conf.get(TOKENIZER,DefaultTokenizerFactory.class.getName());
-        try {
-            Class<? extends TokenizerFactory> tokenizerFactoryClazz = (Class<? extends TokenizerFactory>) Class.forName(clazz);
-            return tokenizerFactoryClazz.newInstance();
-        } catch (Exception e) {
-           throw new RuntimeException(e);
-        }
+    public INDArray transform(Collection<Writable> record) {
+        Counter<String> wordFrequencies = wordFrequenciesForRecord(record);
+        return createVector(new Object[]{wordFrequencies});
+
     }
-
-    @Override
-    public abstract VECTOR_TYPE createVector(Object[] args);
-
-    @Override
-    public abstract VECTOR_TYPE fitTransform(RecordReader reader);
-
-    @Override
-    public abstract VECTOR_TYPE transform(Collection<Writable> record);
 }

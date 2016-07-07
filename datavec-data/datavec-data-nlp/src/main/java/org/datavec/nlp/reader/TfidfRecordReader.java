@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.nd4j.nlp.reader;
+package org.datavec.nlp.reader;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.IntWritable;

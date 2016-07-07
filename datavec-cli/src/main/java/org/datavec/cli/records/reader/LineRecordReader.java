@@ -36,7 +36,7 @@ import java.util.*;
  *
  */
 public class LineRecordReader extends FileRecordReader  {
-    //private TfidfVectorizer tfidfVectorizer;
+    //private AbstractTfidfVectorizer tfidfVectorizer;
     private Collection<Collection<Writable>> records = new ArrayList<>();
     //private Iterator<Collection<Writable>> recordIter;
     private BufferedReader textFileBufferedReader = null;
@@ -62,7 +62,7 @@ public class LineRecordReader extends FileRecordReader  {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf,split);
-//        tfidfVectorizer = new TfidfVectorizer();
+//        tfidfVectorizer = new AbstractTfidfVectorizer();
 //        tfidfVectorizer.initialize(conf);
 //        tfidfVectorizer.fit(this, new Vectorizer.RecordCallBack() {
 /*            @Override

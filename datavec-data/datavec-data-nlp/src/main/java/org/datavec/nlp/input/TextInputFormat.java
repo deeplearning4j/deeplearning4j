@@ -14,20 +14,24 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.audio.dsp;
+package org.datavec.nlp.input;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.datavec.api.conf.Configuration;
+import org.datavec.api.formats.input.BaseInputFormat;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.InputSplit;
+import org.datavec.nlp.reader.TfidfRecordReader;
 
-public class TestFastFourierTransform {
+import java.io.IOException;
 
-  @Test
-  public void testFastFourierTransform() {
-    FastFourierTransform fft = new FastFourierTransform();
-    double[] amplitudes = new double[]{3.0, 4.0, 0.5, 7.8, 6.9, -6.5, 8.5, 4.6};
-    double[] frequencies = fft.getMagnitudes(amplitudes);
-
-    Assert.assertEquals(2, frequencies.length);
-    Assert.assertArrayEquals(new double[]{21.335,18.513}, frequencies, 0.005);
-  }
+/**
+ * @author Adam Gibson
+ */
+public class TextInputFormat extends BaseInputFormat {
+    @Override
+    public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
+        RecordReader reader = new TfidfRecordReader();
+        reader.initialize(conf,split);
+        return reader;
+    }
 }

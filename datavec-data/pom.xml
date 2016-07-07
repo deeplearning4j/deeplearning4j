@@ -28,13 +28,23 @@
     <name>datavec-data</name>
     <url>http://maven.apache.org</url>
     <modules>
-        <module>datavec-data-nlp</module>
         <module>datavec-data-audio</module>
+        <module>datavec-data-codec</module>
+        <module>datavec-data-image</module>
+        <module>datavec-data-nlp</module>
+        <module>datavec-nd4j-common</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

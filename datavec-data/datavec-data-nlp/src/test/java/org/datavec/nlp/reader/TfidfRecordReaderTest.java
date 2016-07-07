@@ -22,8 +22,8 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
-import org.datavec.nd4j.nlp.reader.TfidfRecordReader;
-import org.datavec.nd4j.nlp.vectorizer.TfidfVectorizer;
+import org.datavec.nlp.reader.TfidfRecordReader;
+import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
 
 import java.util.Collection;
