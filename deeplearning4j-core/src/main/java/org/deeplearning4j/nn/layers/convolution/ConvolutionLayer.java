@@ -250,6 +250,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
+        String afn = conf.getLayer().getActivationFunction();
+        if("identity".equals(afn)){
+            return z;
+        }
 
         if (helper != null) {
             INDArray ret = helper.activate(z, conf.getLayer().getActivationFunction());
@@ -258,7 +262,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
         }
 
-        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), z));
+        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, z));
         return activation;
     }
 
