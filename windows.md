@@ -59,7 +59,7 @@ Now leave the libnd4j directory and clone the [nd4j repository](https://github.c
 
 If you don't want the cuda backend, e.g. because you didn't or can't build it, you can skip it:
 
-    mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5,!org.nd4j:nd4j-tests'
+    mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5,!org.nd4j:nd4j-cuda-7.5-platform,!org.nd4j:nd4j-tests'
 
 Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell. If this doesn't work, make sure you have a current version of maven installed.
 
