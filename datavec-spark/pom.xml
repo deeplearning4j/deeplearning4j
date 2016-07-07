@@ -44,14 +44,14 @@
 
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-image</artifactId>
+            <artifactId>datavec-data-image</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-codec</artifactId>
+            <artifactId>datavec-data-codec</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

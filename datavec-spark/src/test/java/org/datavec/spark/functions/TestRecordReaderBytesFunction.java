@@ -23,6 +23,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
@@ -66,13 +67,13 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
         //Load data from sequence file, parse via RecordReader:
         JavaPairRDD<Text, BytesWritable> fromSeqFile = sc.sequenceFile(outPath, Text.class, BytesWritable.class);
-        RecordReader rr = new ImageRecordReader(28, 28, 1, true, Arrays.asList("0", "1"));
+        RecordReader rr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         JavaRDD<Collection<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(rr));
 
 
         //Next: do the same thing locally, and compare the results
         InputSplit is = new FileSplit(new File(folder), new String[]{"bmp"}, true);
-        ImageRecordReader irr = new ImageRecordReader(28, 28, 1, true);
+        ImageRecordReader irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);
 
         List<Collection<Writable>> list = new ArrayList<>(4);

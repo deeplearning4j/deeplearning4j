@@ -26,7 +26,6 @@
     <version>0.4.0</version>
     <modules>
         <module>datavec-api</module>
-        <module>datavec-nd4j</module>
         <module>datavec-data</module>
         <module>datavec-cli</module>
         <module>datavec-hadoop</module>
