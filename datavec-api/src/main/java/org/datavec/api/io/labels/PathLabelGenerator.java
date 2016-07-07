@@ -18,6 +18,7 @@ package org.datavec.api.io.labels;
 
 import org.datavec.api.writable.Writable;
 
+import java.io.Serializable;
 import java.net.URI;
 
 /**
@@ -26,7 +27,7 @@ import java.net.URI;
  * Though note that the output is a writable, hence it need not be numerical.
  * @author Alex Black
  */
-public interface PathLabelGenerator {
+public interface PathLabelGenerator extends Serializable {
 
     Writable getLabelForPath(String path);
 
