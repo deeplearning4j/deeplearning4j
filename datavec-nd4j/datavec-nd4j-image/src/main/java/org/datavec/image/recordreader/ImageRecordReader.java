@@ -43,18 +43,6 @@ public class ImageRecordReader extends BaseImageRecordReader {
         super();
     }
 
-    /** Loads images with given height, width, channels, and labels, but not appending them. */
-    @Deprecated
-    public ImageRecordReader(int height, int width, int channels, List<String> labels) {
-        super(height, width, channels,labels);
-    }
-
-    /** Loads images with given height, width, channels, and labels, possibly appending them to the output. */
-    @Deprecated
-    public ImageRecordReader(int height, int width, int channels, boolean appendLabel, List<String> labels) {
-        super(height, width, channels,appendLabel, labels);
-    }
-
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
     public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
@@ -90,24 +78,6 @@ public class ImageRecordReader extends BaseImageRecordReader {
         super(height, width, channels, labelGenerator, imageTransform, normalizeValue);
     }
 
-    /** Loads images with given height, width, and channels, possibly appending labels derived from the directory. */
-    @Deprecated
-    public ImageRecordReader(int height, int width, int channels, boolean appendLabel) {
-        super(height, width, channels,appendLabel);
-    }
-
-    /** Loads images with given height, width, channels = 1, and labels, but not appending them. */
-    @Deprecated
-    public ImageRecordReader(int height, int width,  List<String> labels) {
-        super(height, width,  1, labels);
-    }
-
-    /** Loads images with given height, width, channels = 1, and labels, possibly appending them to the output. */
-    @Deprecated
-    public ImageRecordReader(int height, int width,  boolean appendLabel, List<String> labels) {
-        super(height, width,  1, appendLabel, labels);
-    }
-
     /** Loads images with given  height, width, and channels, appending labels returned by the generator. */
     public ImageRecordReader(int height, int width, PathLabelGenerator labelGenerator) {
         super(height, width, 1, labelGenerator);
@@ -116,19 +86,6 @@ public class ImageRecordReader extends BaseImageRecordReader {
     /** Loads images with given height, width, and channels = 1, appending no labels. */
     public ImageRecordReader(int height, int width) {
         super(height, width,  1, null, null, 0.0);
-    }
-
-    /** Loads images with given height, width, and channels = 1, possibly appending labels derived from the directory. */
-    @Deprecated
-    public ImageRecordReader(int height, int width, boolean appendLabel) {
-        super(height, width, 1, appendLabel);
-    }
-
-
-    /** Loads images with given height, width, and channels, possibly appending labels derived from the directory. */
-    @Deprecated
-    public ImageRecordReader(int height, int width, int channels, boolean appendLabel, String pattern) {
-        super(height, width, channels, appendLabel, pattern, 0);
     }
 
 

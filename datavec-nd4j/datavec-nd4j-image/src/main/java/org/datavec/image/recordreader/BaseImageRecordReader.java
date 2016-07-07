@@ -88,42 +88,6 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         this.normalizeValue = normalizeValue;
     }
 
-
-    @Deprecated
-    public BaseImageRecordReader(int height, int width, int channels, List<String> labels) {
-        this(height, width, channels, false);
-        this.labels = labels;
-    }
-
-    @Deprecated
-    public BaseImageRecordReader(int height, int width, int channels, boolean appendLabel) {
-        this.appendLabel = appendLabel;
-        this.height = height;
-        this.width = width;
-        this.channels = channels;
-    }
-
-
-    @Deprecated
-    public BaseImageRecordReader(int height, int width, int channels, boolean appendLabel, List<String> labels) {
-        this(height, width, channels, appendLabel);
-        this.labels = labels;
-    }
-
-    @Deprecated
-    public BaseImageRecordReader(int height, int width, int channels, boolean appendLabel, String pattern, int patternPosition) {
-        this(height, width, channels, appendLabel);
-        this.pattern = pattern;
-        this.patternPosition = patternPosition;
-    }
-
-    @Deprecated
-    public BaseImageRecordReader(int height, int width, int channels, boolean appendLabel, List<String> labels, String pattern, int patternPosition) {
-        this(height, width, channels, appendLabel, labels);
-        this.pattern = pattern;
-        this.patternPosition = patternPosition;
-    }
-
     protected boolean containsFormat(String format) {
         for (String format2 : imageLoader.getAllowedFormats())
             if (format.endsWith("." + format2))

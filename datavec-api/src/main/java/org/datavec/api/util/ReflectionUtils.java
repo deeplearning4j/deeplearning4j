@@ -255,14 +255,4 @@ public class ReflectionUtils {
         dst = deserializer.deserialize(dst);
         return dst;
     }
-
-    @Deprecated
-    public static void cloneWritableInto(Writable dst,
-                                         Writable src) throws IOException {
-        CopyInCopyOutBuffer buffer = cloneBuffers.get();
-        buffer.outBuffer.reset();
-        src.write(buffer.outBuffer);
-        buffer.moveData();
-        dst.readFields(buffer.inBuffer);
-    }
 }

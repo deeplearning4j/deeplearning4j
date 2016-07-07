@@ -647,15 +647,6 @@ public class AnalyzeSpark {
         return new DataQualityAnalysis(schema,list);
     }
 
-
-    /**
-     * @deprecated Use sampleInvalidFromColumn
-     */
-    @Deprecated
-    public static List<Writable> sampleInvalidColumns(int count, String columnName, Schema schema, JavaRDD<List<Writable>> data) {
-        return sampleInvalidFromColumn(count, columnName, schema, data);
-    }
-
     /**
      * Randomly sample a set of invalid values from a specified column.
      * Values are considered invalid according to the Schema / ColumnMetaData
