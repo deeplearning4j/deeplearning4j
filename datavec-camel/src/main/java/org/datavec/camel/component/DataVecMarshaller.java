@@ -7,7 +7,7 @@ import org.datavec.api.split.InputSplit;
  * Marshals na exchange in to an input split
  * @author Adam Gibson
  */
-public interface CanovaMarshaller {
+public interface DataVecMarshaller {
 
 
     /**

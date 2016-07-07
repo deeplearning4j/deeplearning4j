@@ -13,23 +13,23 @@ import org.datavec.api.split.InputSplit;
  * The canova consumer.
  * @author Adam Gibson
  */
-public class CanovaConsumer extends ScheduledPollConsumer {
-    private final CanovaEndpoint endpoint;
+public class DataVecConsumer extends ScheduledPollConsumer {
+    private final DataVecEndpoint endpoint;
     private Class<? extends InputFormat> inputFormatClazz;
-    private Class<? extends CanovaMarshaller> marshallerClazz;
+    private Class<? extends DataVecMarshaller> marshallerClazz;
     private InputFormat inputFormat;
     private Configuration configuration;
-    private CanovaMarshaller marshaller;
+    private DataVecMarshaller marshaller;
 
 
-    public CanovaConsumer(CanovaEndpoint endpoint, Processor processor) {
+    public DataVecConsumer(DataVecEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
         this.endpoint = endpoint;
 
         try {
             inputFormatClazz = (Class<? extends InputFormat>) Class.forName(endpoint.getInputFormat());
             inputFormat = inputFormatClazz.newInstance();
-            marshallerClazz = (Class<? extends CanovaMarshaller>) Class.forName(endpoint.getInputMarshaller());
+            marshallerClazz = (Class<? extends DataVecMarshaller>) Class.forName(endpoint.getInputMarshaller());
             marshaller = marshallerClazz.newInstance();
             configuration = new Configuration();
             for(String prop : endpoint.getConsumerProperties().keySet())

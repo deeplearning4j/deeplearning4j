@@ -21,7 +21,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>datavec-parent</artifactId>
-    <groupId>org.nd4j</groupId>
+    <groupId>org.datavec</groupId>
     <version>0.4.0</version>
   </parent>
   <packaging>jar</packaging>
@@ -40,17 +40,17 @@
       <version>${nd4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.datavec</groupId>
       <artifactId>datavec-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.datavec</groupId>
       <artifactId>datavec-nd4j-image</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.datavec</groupId>
       <artifactId>datavec-nd4j-nlp</artifactId>
       <version>${project.version}</version>
     </dependency>

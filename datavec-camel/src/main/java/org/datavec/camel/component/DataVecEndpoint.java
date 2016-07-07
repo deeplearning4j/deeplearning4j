@@ -14,9 +14,9 @@ import org.apache.camel.spi.UriPath;
  * Represents a canova endpoint.
  * @author Adam Gibson
  */
-@UriEndpoint(scheme = "canova", title = "canova", syntax="canova:inputFormat/?outputFormat=?&inputMarshaller=?", consumerClass = CanovaConsumer.class,label = "canova")
+@UriEndpoint(scheme = "canova", title = "canova", syntax="canova:inputFormat/?outputFormat=?&inputMarshaller=?", consumerClass = DataVecConsumer.class,label = "canova")
 @Data
-public class CanovaEndpoint extends DefaultEndpoint {
+public class DataVecEndpoint extends DefaultEndpoint {
     @UriPath @Metadata(required = "true")
     private String inputFormat;
     @UriParam(defaultValue = "")
@@ -26,20 +26,20 @@ public class CanovaEndpoint extends DefaultEndpoint {
     @UriParam(defaultValue = "org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
     private String writableConverter;
 
-    public CanovaEndpoint(String uri, CanovaComponent component) {
+    public DataVecEndpoint(String uri, DataVecComponent component) {
         super(uri, component);
     }
 
-    public CanovaEndpoint(String endpointUri) {
+    public DataVecEndpoint(String endpointUri) {
         super(endpointUri);
     }
 
     public Producer createProducer() throws Exception {
-        return new CanovaProducer(this);
+        return new DataVecProducer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new CanovaConsumer(this, processor);
+        return new DataVecConsumer(this, processor);
     }
 
     public boolean isSingleton() {

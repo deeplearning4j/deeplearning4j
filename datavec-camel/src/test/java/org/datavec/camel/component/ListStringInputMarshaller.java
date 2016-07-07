@@ -11,7 +11,7 @@ import java.util.List;
  *
  *     @author Adam Gibson
  */
-public class ListStringInputMarshaller implements CanovaMarshaller {
+public class ListStringInputMarshaller implements DataVecMarshaller {
     /**
      * @param exchange
      * @return

@@ -21,7 +21,7 @@
 package org.datavec.api.formats.output;
 
 
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 
@@ -37,6 +37,6 @@ public interface OutputFormat {
      * Create a record writer
      * @return the created writer
      */
-    RecordWriter createWriter(Configuration conf) throws CanovaException;
+    RecordWriter createWriter(Configuration conf) throws DataVecException;
 
 }

@@ -24,24 +24,24 @@ package org.datavec.api.exceptions;
  * Canova exception
  * @author Adam Gibson
  */
-public class CanovaException extends Exception {
-    public CanovaException() {
+public class DataVecException extends Exception {
+    public DataVecException() {
         super();
     }
 
-    public CanovaException(String message) {
+    public DataVecException(String message) {
         super(message);
     }
 
-    public CanovaException(String message, Throwable cause) {
+    public DataVecException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public CanovaException(Throwable cause) {
+    public DataVecException(Throwable cause) {
         super(cause);
     }
 
-    protected CanovaException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    protected DataVecException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

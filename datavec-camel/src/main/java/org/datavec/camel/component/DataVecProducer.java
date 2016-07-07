@@ -15,29 +15,29 @@ import java.util.Collection;
 
 
 /**
- * The canova producer.
+ * The DataVec producer.
  * Converts input records in to their final form
  * based on the input split generated from
  * the given exchange.
  *
  * @author Adam Gibson
  */
-public class CanovaProducer extends DefaultProducer {
+public class DataVecProducer extends DefaultProducer {
     private Class<? extends InputFormat> inputFormatClazz;
-    private Class<? extends CanovaMarshaller> marshallerClazz;
+    private Class<? extends DataVecMarshaller> marshallerClazz;
     private InputFormat inputFormat;
     private Configuration configuration;
     private WritableConverter writableConverter;
-    private CanovaMarshaller marshaller;
+    private DataVecMarshaller marshaller;
 
 
-    public CanovaProducer(CanovaEndpoint endpoint) {
+    public DataVecProducer(DataVecEndpoint endpoint) {
         super(endpoint);
         if(endpoint.getInputFormat() != null) {
             try {
                 inputFormatClazz = (Class<? extends InputFormat>) Class.forName(endpoint.getInputFormat());
                 inputFormat = inputFormatClazz.newInstance();
-                marshallerClazz = (Class<? extends CanovaMarshaller>) Class.forName(endpoint.getInputMarshaller());
+                marshallerClazz = (Class<? extends DataVecMarshaller>) Class.forName(endpoint.getInputMarshaller());
                 Class<? extends WritableConverter> converterClazz = (Class<? extends WritableConverter>) Class.forName(endpoint.getWritableConverter());
                 writableConverter = converterClazz.newInstance();
                 marshaller = marshallerClazz.newInstance();

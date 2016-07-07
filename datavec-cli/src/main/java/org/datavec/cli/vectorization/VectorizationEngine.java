@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.formats.input.InputFormat;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.reader.RecordReader;
@@ -70,7 +70,7 @@ public abstract class VectorizationEngine {
 
   }
 
-  public abstract void execute() throws CanovaException, IOException, InterruptedException;
+  public abstract void execute() throws DataVecException, IOException, InterruptedException;
 
   /**
    * These two methods are stubbing the future vector transform transform system

@@ -17,7 +17,7 @@ import org.datavec.spark.functions.pairdata.BytesPairWritable;
 import org.datavec.spark.functions.pairdata.PairSequenceRecordReaderBytesFunction;
 import org.datavec.spark.functions.pairdata.PathToKeyConverter;
 import org.datavec.spark.functions.pairdata.PathToKeyConverterFilename;
-import org.datavec.spark.util.CanovaSparkUtil;
+import org.datavec.spark.util.DataVecSparkUtil;
 import org.junit.Test;
 import scala.Tuple2;
 
@@ -45,7 +45,7 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
         path = folder + "*";
 
         PathToKeyConverter pathConverter = new PathToKeyConverterFilename();
-        JavaPairRDD<Text,BytesPairWritable> toWrite = CanovaSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
+        JavaPairRDD<Text,BytesPairWritable> toWrite = DataVecSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
 
         Path p = Files.createTempDirectory("dl4j_rrbytesPairOut");
         p.toFile().deleteOnExit();

@@ -4,12 +4,12 @@ import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.input.PortableDataStream;
-import org.datavec.spark.util.CanovaSparkUtil;
+import org.datavec.spark.util.DataVecSparkUtil;
 import scala.Tuple2;
 import scala.Tuple3;
 
 /** A function to read files (assuming exactly 2 per input) from a PortableDataStream and combine the contents into a BytesPairWritable
- * @see CanovaSparkUtil#combineFilesForSequenceFile(JavaSparkContext, String, String, PathToKeyConverter, PathToKeyConverter)
+ * @see DataVecSparkUtil#combineFilesForSequenceFile(JavaSparkContext, String, String, PathToKeyConverter, PathToKeyConverter)
  */
 public class MapToBytesPairWritableFunction implements PairFunction<Tuple2<String, Iterable<Tuple3<String, Integer, PortableDataStream>>>, Text, BytesPairWritable> {
     @Override

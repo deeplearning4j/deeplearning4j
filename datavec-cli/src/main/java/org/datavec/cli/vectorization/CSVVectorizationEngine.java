@@ -21,7 +21,7 @@
 package org.datavec.cli.vectorization;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.io.data.DoubleWritable;
 import org.datavec.api.io.data.Text;
@@ -76,12 +76,12 @@ public class CSVVectorizationEngine extends VectorizationEngine {
   /**
    * 
    * This is where our custom vectorization engine does its thing
- * @throws CanovaException 
+ * @throws DataVecException
  * @throws IOException 
  * @throws InterruptedException 
    * 
    */
-  public void execute() throws CanovaException, IOException, InterruptedException {
+  public void execute() throws DataVecException, IOException, InterruptedException {
 	  
 	  long recordsRead = 0;
 	  long recordsWritten = 0;
@@ -94,7 +94,7 @@ public class CSVVectorizationEngine extends VectorizationEngine {
 		//System.out.println("There were issues with loading and parsing the vector schema: ");
 		//System.out.println( e1 );
 		
-		throw new CanovaException(e1.toString());
+		throw new DataVecException(e1.toString());
 		
 		//return;
 	}

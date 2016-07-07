@@ -13,10 +13,10 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class CanovaComponentTest extends CamelTestSupport {
+public class DataVecComponentTest extends CamelTestSupport {
 
     @Test
-    public void testCanova() throws Exception {
+    public void testDataVec() throws Exception {
         MockEndpoint mock = getMockEndpoint("mock:result");
         //1
         mock.expectedMessageCount(1);
@@ -36,7 +36,7 @@ public class CanovaComponentTest extends CamelTestSupport {
             public void configure() {
                 from("file:src/test/resources/?fileName=iris.dat&noop=true")
                         .unmarshal().csv()
-                        .to("canova://org.nd4j.etl4j.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
+                        .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
                         .to("mock:result");
             }
         };

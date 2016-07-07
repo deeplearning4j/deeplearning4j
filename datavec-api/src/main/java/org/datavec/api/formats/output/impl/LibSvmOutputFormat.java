@@ -20,7 +20,7 @@
 
 package org.datavec.api.formats.output.impl;
 
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
@@ -31,7 +31,7 @@ import org.datavec.api.records.writer.impl.LibSvmRecordWriter;
  */
 public class LibSvmOutputFormat implements OutputFormat {
     @Override
-    public RecordWriter createWriter(Configuration conf) throws CanovaException {
+    public RecordWriter createWriter(Configuration conf) throws DataVecException {
         RecordWriter writer = new LibSvmRecordWriter();
         writer.setConf(conf);
         return writer;

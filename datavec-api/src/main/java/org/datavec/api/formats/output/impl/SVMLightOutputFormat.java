@@ -23,7 +23,7 @@ package org.datavec.api.formats.output.impl;
 
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.SVMLightRecordWriter;
@@ -35,13 +35,13 @@ import java.io.File;
  */
 public class SVMLightOutputFormat implements OutputFormat {
     @Override
-    public RecordWriter createWriter(Configuration conf) throws CanovaException {
+    public RecordWriter createWriter(Configuration conf) throws DataVecException {
         String outputPath = conf.get(OutputFormat.OUTPUT_PATH,".");
         try {
             //return new LineRecordWriter(new File(outputPath));
 		return new SVMLightRecordWriter(new File(outputPath));
         } catch (Exception e) {
-            throw new CanovaException(e);
+            throw new DataVecException(e);
         }
     }
 }

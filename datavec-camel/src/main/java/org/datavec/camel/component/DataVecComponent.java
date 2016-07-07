@@ -8,21 +8,21 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
 
 /**
- * Represents the component that manages {@link CanovaEndpoint}.
+ * Represents the component that manages {@link DataVecEndpoint}.
  */
-public class CanovaComponent extends UriEndpointComponent {
+public class DataVecComponent extends UriEndpointComponent {
     
-    public CanovaComponent() {
-        super(CanovaEndpoint.class);
+    public DataVecComponent() {
+        super(DataVecEndpoint.class);
     }
 
-    public CanovaComponent(CamelContext context) {
-        super(context, CanovaEndpoint.class);
+    public DataVecComponent(CamelContext context) {
+        super(context, DataVecEndpoint.class);
     }
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        CanovaEndpoint endpoint = new CanovaEndpoint(uri, this);
+        DataVecEndpoint endpoint = new DataVecEndpoint(uri, this);
         setProperties(endpoint, parameters);
         endpoint.setInputFormat(remaining);
         return endpoint;

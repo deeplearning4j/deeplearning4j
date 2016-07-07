@@ -21,7 +21,7 @@
 package org.datavec.audio.formats.output;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.exceptions.CanovaException;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 
@@ -30,7 +30,7 @@ import org.datavec.api.records.writer.RecordWriter;
  */
 public class WaveOutputFormat implements OutputFormat {
     @Override
-    public RecordWriter createWriter(Configuration conf) throws CanovaException {
+    public RecordWriter createWriter(Configuration conf) throws DataVecException {
         return null;
     }
 }

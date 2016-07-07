@@ -13,7 +13,7 @@ import scala.Tuple3;
 /** Utilities for using Canova with Spark
  * @author Alex Black
  */
-public class CanovaSparkUtil {
+public class DataVecSparkUtil {
 
     /**Same as {@link #combineFilesForSequenceFile(JavaSparkContext, String, String, PathToKeyConverter, PathToKeyConverter)}
      * but with the PathToKeyConverter used for both file sources
@@ -41,7 +41,7 @@ public class CanovaSparkUtil {
      * String path1 = "/dir1";
      * String path2 = "/dir2";
      * PathToKeyConverter pathConverter = new PathToKeyConverterFilename();
-     * JavaPairRDD&lt;Text,BytesPairWritable&gt; toWrite = CanovaSparkUtil.combineFilesForSequenceFile(sc, path1, path2, pathConverter, pathConverter );
+     * JavaPairRDD&lt;Text,BytesPairWritable&gt; toWrite = DataVecSparkUtil.combineFilesForSequenceFile(sc, path1, path2, pathConverter, pathConverter );
      * String outputPath = "/my/output/path";
      * toWrite.saveAsNewAPIHadoopFile(outputPath, Text.class, BytesPairWritable.class, SequenceFileOutputFormat.class);
      * </code>
