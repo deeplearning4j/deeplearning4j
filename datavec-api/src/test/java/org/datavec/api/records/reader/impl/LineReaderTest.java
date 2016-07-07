@@ -91,7 +91,7 @@ public class LineReaderTest {
         File tmpdir = new File(tempDir,"tmpdir");
         tmpdir.mkdir();
 
-        File tmp1 = new File("tmpdir/tmp1.txt.gz");
+        File tmp1 = new File(tmpdir, "tmp1.txt.gz");
 
         OutputStream os = new GZIPOutputStream(new FileOutputStream(tmp1, false));
         IOUtils.writeLines(Arrays.asList("1","2","3","4","5","6","7","8","9"), null, os);

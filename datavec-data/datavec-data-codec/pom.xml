@@ -26,6 +26,7 @@
     <packaging>jar</packaging>
 
     <name>datavec-data-codec</name>
+
     <dependencies>
         <dependency>
             <groupId>org.datavec</groupId>

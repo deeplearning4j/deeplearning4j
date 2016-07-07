@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import freemarker.template.Configuration;
+import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.Version;
 import org.datavec.api.transform.analysis.columns.*;
@@ -28,6 +29,11 @@ import org.datavec.api.transform.schema.Schema;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.ui.components.RenderableComponentHistogram;
+import org.datavec.api.transform.ui.components.RenderableComponentTable;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.io.*;
 import java.util.*;
@@ -111,54 +117,51 @@ public class HtmlAnalysis {
             }
 
             if(buckets != null){
-                throw new RuntimeException("Not implemented");
-//                RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
-//
-//                for( int j=0; j<counts.length; j++ ){
-//                    histBuilder.addBin(buckets[j],buckets[j+1],counts[j]);
-//                }
-//
-//                histBuilder.margins(60,60,90,20);
-//
-//                RenderableComponentHistogram hist = histBuilder.title(name).build();
-//
-//                String divName = "histdiv_" + name.replaceAll("\\W","");
-//                divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
-//                histogramDivNames.add(divName);
+                RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
+
+                for( int j=0; j<counts.length; j++ ){
+                    histBuilder.addBin(buckets[j],buckets[j+1],counts[j]);
+                }
+
+                histBuilder.margins(60,60,90,20);
+
+                RenderableComponentHistogram hist = histBuilder.title(name).build();
+
+                String divName = "histdiv_" + name.replaceAll("\\W","");
+                divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
+                histogramDivNames.add(divName);
             }
         }
 
         //Create the summary table
-//        RenderableComponentTable rct = new RenderableComponentTable.Builder()
-//                .table(table)
-//                .header("Column Name", "Column Type", "Column Analysis")
-//                .backgroundColor("#FFFFFF")
-//                .headerColor("#CCCCCC")
-//                .colWidthsPercent(20,10,70)
-//                .border(1)
-//                .padLeftPx(4).padRightPx(4)
-//                .build();
+        RenderableComponentTable rct = new RenderableComponentTable.Builder()
+                .table(table)
+                .header("Column Name", "Column Type", "Column Analysis")
+                .backgroundColor("#FFFFFF")
+                .headerColor("#CCCCCC")
+                .colWidthsPercent(20,10,70)
+                .border(1)
+                .padLeftPx(4).padRightPx(4)
+                .build();
 
-//        divs.add(new DivObject("tablesource",ret.writeValueAsString(rct)));
-//
-//        input.put("divs", divs);
-//        input.put("histogramIDs", histogramDivNames);
-//
-//        //Current date/time, UTC
-//        DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss zzz").withZone(DateTimeZone.UTC);
-//        long currTime = System.currentTimeMillis();
-//        String dateTime = formatter.print(currTime);
-//        input.put("datetime",dateTime);
-//
-//        Template template = cfg.getTemplate("analysis.ftl");
-//
-//        //Process template to String
-//        Writer stringWriter = new StringWriter();
-//        template.process(input, stringWriter);
-//
-//        return stringWriter.toString();
+        divs.add(new DivObject("tablesource",ret.writeValueAsString(rct)));
 
-        throw new RuntimeException("Not implemented");
+        input.put("divs", divs);
+        input.put("histogramIDs", histogramDivNames);
+
+        //Current date/time, UTC
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss zzz").withZone(DateTimeZone.UTC);
+        long currTime = System.currentTimeMillis();
+        String dateTime = formatter.print(currTime);
+        input.put("datetime",dateTime);
+
+        Template template = cfg.getTemplate("analysis.ftl");
+
+        //Process template to String
+        Writer stringWriter = new StringWriter();
+        template.process(input, stringWriter);
+
+        return stringWriter.toString();
     }
 
     public static void createHtmlAnalysisFile(DataAnalysis dataAnalysis, File output ) throws Exception {

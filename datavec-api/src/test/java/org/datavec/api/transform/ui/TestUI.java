@@ -86,7 +86,7 @@ public class TestUI {
         DataAnalysis da = new DataAnalysis(schema,list);
 
         String tempDir = System.getProperty("java.io.tmpdir");
-        String outPath = FilenameUtils.concat(tempDir,"echidnaUITest.html");
+        String outPath = FilenameUtils.concat(tempDir,"datavec_transform_UITest.html");
         System.out.println(outPath);
         HtmlAnalysis.createHtmlAnalysisFile(da, new File(outPath));
     }
