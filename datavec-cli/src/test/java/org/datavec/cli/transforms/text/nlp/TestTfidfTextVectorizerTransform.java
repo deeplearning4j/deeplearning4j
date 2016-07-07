@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 

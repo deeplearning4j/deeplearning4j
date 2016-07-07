@@ -16,6 +16,7 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;

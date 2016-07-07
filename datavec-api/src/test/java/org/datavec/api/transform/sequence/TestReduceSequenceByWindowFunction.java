@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.io.data.IntWritable;
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.reduce.Reducer;

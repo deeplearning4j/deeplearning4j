@@ -16,7 +16,8 @@
 
 package org.datavec.api.records.reader.impl;
 
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;

@@ -20,7 +20,7 @@ package org.datavec.cli.transforms.text.nlp;
 import org.apache.commons.math3.util.Pair;
 import org.datavec.api.berkeley.Counter;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.DoubleWritable;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.cli.transforms.Transform;
 import org.nd4j.linalg.api.ndarray.INDArray;

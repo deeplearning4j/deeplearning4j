@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.io.data.LongWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.Writable;

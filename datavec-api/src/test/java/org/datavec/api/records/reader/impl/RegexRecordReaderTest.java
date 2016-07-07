@@ -16,7 +16,7 @@
 
 package org.datavec.api.records.reader.impl;
 
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.regex.RegexLineRecordReader;

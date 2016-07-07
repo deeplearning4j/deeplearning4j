@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
-import org.datavec.api.io.data.IntWritable;
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 import lombok.Data;

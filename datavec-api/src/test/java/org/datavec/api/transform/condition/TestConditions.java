@@ -16,13 +16,12 @@
 
 package org.datavec.api.transform.condition;
 
-import org.datavec.api.io.data.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.column.*;
 import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.TestTransforms;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 import org.junit.Test;
 
 import java.util.Collections;

@@ -16,7 +16,7 @@
 
 package org.datavec.api.io;
 
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.util.ReflectionUtils;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.conf.Configuration;

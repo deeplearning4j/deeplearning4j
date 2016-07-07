@@ -16,7 +16,7 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;

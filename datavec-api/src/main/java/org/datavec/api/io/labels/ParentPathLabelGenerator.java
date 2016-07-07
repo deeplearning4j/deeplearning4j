@@ -18,7 +18,7 @@ package org.datavec.api.io.labels;
 import java.io.File;
 import java.net.URI;
 import org.apache.commons.io.FilenameUtils;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 /**

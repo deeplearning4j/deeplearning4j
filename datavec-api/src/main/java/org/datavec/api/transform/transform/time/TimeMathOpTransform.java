@@ -20,7 +20,7 @@ import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.concurrent.TimeUnit;

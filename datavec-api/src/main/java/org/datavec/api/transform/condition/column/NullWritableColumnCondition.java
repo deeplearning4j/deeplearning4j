@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
-import org.datavec.api.io.data.NullWritable;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 
 /**

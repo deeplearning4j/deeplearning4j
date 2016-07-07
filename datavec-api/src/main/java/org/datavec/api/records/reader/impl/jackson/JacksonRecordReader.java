@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;

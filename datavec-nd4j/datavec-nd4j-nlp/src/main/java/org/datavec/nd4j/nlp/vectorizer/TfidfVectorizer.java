@@ -18,7 +18,7 @@ package org.datavec.nd4j.nlp.vectorizer;
 
 
 import org.datavec.api.berkeley.Counter;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.nd4j.nlp.reader.TfidfRecordReader;

@@ -20,7 +20,7 @@ import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
 /**

@@ -19,12 +19,12 @@ package org.datavec.spark.transform.rank;
 import org.datavec.spark.transform.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
 import org.apache.spark.api.java.JavaRDD;
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.api.transform.comparator.DoubleWritableComparator;
+import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.datavec.api.transform.schema.Schema;
 import org.junit.Test;
 

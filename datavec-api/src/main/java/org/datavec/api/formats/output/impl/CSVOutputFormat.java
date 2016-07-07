@@ -21,7 +21,7 @@ import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
-import org.datavec.api.records.writer.impl.CSVRecordWriter;
+import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 
 import java.io.File;
 import java.io.FileNotFoundException;

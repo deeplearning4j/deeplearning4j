@@ -18,10 +18,10 @@ package org.datavec.spark.transform.quality.real;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.io.data.NullWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.NullWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.dataquality.columns.DoubleQuality;
+import org.datavec.api.transform.quality.columns.DoubleQuality;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 
 /**

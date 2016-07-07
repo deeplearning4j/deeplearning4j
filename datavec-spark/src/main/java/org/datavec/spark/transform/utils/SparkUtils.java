@@ -16,7 +16,6 @@
 
 package org.datavec.spark.transform.utils;
 
-import org.datavec.api.io.data.*;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.apache.commons.io.IOUtils;
@@ -30,7 +29,7 @@ import org.datavec.api.transform.split.RandomSplit;
 import org.datavec.api.transform.split.SplitStrategy;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.datavec.api.transform.ui.HtmlAnalysis;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 
 import java.io.*;
 import java.util.*;

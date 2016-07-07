@@ -18,7 +18,7 @@ package org.datavec.audio.recordreader;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.DoubleWritable;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;

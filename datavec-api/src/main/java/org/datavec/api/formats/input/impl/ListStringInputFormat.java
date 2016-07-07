@@ -20,7 +20,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.input.InputFormat;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.ListStringRecordReader;
+import org.datavec.api.records.reader.impl.collection.ListStringRecordReader;
 
 import java.io.DataInput;
 import java.io.DataOutput;

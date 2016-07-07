@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.transform;
 
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -35,7 +35,7 @@ import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueT
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.real.*;
+import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
@@ -52,8 +52,8 @@ import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransfo
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import junit.framework.TestCase;
-import org.datavec.api.io.data.IntWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;

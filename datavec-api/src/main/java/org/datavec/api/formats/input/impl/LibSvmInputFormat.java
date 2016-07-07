@@ -18,7 +18,7 @@ package org.datavec.api.formats.input.impl;
 
 import org.datavec.api.formats.input.BaseInputFormat;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.LibSvmRecordReader;
+import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
 

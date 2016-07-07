@@ -18,7 +18,7 @@ package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;

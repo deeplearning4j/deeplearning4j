@@ -17,9 +17,10 @@
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.io.data.IntWritable;
-import org.datavec.api.io.data.Text;
-import org.datavec.api.records.writer.impl.CSVRecordWriter;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.StringSplit;

@@ -20,7 +20,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 

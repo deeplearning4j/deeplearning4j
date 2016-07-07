@@ -18,9 +18,9 @@ package org.datavec.spark.transform.quality.string;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.io.data.NullWritable;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.dataquality.columns.StringQuality;
+import org.datavec.api.transform.quality.columns.StringQuality;
 import org.datavec.api.transform.metadata.StringMetaData;
 
 /**

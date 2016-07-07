@@ -16,8 +16,8 @@
 
 package org.datavec.api.util;
 
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.FloatWritable;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;

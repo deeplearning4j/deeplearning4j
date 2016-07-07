@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import lombok.Data;

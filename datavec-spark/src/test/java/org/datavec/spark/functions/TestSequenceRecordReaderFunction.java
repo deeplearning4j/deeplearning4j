@@ -22,7 +22,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.impl.CSVSequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;

@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.util.Collection;
 
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.writer.impl.SVMLightRecordWriter;
+import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;

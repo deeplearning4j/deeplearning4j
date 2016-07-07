@@ -19,7 +19,7 @@ package org.datavec.api.formats.input.impl;
 import org.datavec.api.formats.input.BaseInputFormat;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.MatlabRecordReader;
+import org.datavec.api.records.reader.impl.misc.MatlabRecordReader;
 import org.datavec.api.split.InputSplit;
 
 

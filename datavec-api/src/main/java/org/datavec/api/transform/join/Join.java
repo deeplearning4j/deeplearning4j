@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.join;
 
-import org.datavec.api.io.data.NullWritable;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import lombok.Data;

@@ -18,7 +18,7 @@ package org.datavec.api.transform.transform.integer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
 /**

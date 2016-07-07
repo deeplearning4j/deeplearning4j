@@ -22,7 +22,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.real.DoubleMathOpTransform;
+import org.datavec.api.transform.transform.doubletransform.DoubleMathOpTransform;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;

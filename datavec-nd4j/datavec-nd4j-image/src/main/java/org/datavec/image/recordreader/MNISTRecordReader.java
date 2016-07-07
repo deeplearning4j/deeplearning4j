@@ -25,7 +25,7 @@ import org.datavec.api.records.reader.BaseRecordReader;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-import org.datavec.api.io.data.DoubleWritable;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.datavec.image.mnist.MnistManager;

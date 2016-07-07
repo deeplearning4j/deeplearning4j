@@ -22,7 +22,7 @@ import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 

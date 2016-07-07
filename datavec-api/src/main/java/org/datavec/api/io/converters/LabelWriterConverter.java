@@ -17,7 +17,7 @@
 package org.datavec.api.io.converters;
 
 import org.datavec.api.io.WritableConverter;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.List;

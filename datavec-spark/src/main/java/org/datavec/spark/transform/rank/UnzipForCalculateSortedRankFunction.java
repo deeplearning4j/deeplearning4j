@@ -17,7 +17,7 @@
 package org.datavec.spark.transform.rank;
 
 import org.apache.spark.api.java.function.Function;
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 

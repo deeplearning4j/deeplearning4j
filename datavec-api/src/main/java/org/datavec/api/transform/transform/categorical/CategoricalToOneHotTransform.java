@@ -18,7 +18,7 @@ package org.datavec.api.transform.transform.categorical;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;

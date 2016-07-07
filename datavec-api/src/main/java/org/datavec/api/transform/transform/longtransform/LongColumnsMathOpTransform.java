@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
-import org.datavec.api.io.data.LongWritable;
-import org.datavec.api.transform.transform.real.DoubleColumnsMathOpTransform;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.transform.transform.doubletransform.DoubleColumnsMathOpTransform;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;

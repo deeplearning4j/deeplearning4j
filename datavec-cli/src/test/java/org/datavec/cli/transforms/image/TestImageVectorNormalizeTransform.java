@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.datavec.api.io.data.DoubleWritable;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 

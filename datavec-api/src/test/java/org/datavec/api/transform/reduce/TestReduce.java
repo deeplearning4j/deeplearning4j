@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
@@ -25,9 +25,9 @@ import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.IntWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 

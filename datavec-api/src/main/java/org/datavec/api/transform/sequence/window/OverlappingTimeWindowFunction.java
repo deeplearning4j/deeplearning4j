@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.sequence.window;
 
-import org.datavec.api.io.data.LongWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;

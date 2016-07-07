@@ -33,7 +33,7 @@ import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.normalize.Normalize;
-import org.datavec.api.transform.transform.real.*;
+import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.sequence.SequenceComparator;

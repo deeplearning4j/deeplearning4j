@@ -16,9 +16,9 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.datavec.api.io.data.DoubleWritable;
-import org.datavec.api.io.data.LongWritable;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.condition.Condition;
@@ -31,7 +31,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.datavec.api.berkeley.Pair;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;

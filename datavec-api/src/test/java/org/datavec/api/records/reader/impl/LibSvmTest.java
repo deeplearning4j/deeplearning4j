@@ -18,9 +18,10 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
-import org.datavec.api.records.writer.impl.LibSvmRecordWriter;
+import org.datavec.api.records.writer.impl.misc.LibSvmRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;

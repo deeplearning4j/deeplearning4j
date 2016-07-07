@@ -17,7 +17,7 @@
 package org.datavec.spark.transform.quality.real;
 
 import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.dataquality.columns.DoubleQuality;
+import org.datavec.api.transform.quality.columns.DoubleQuality;
 
 /**
  * Created by Alex on 5/03/2016.

@@ -18,7 +18,7 @@ package org.datavec.api.transform.transform.string;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.util.Map;

@@ -17,7 +17,7 @@
 package org.datavec.nd4j.nlp.reader;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.vector.Vectorizer;

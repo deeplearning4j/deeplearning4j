@@ -19,7 +19,7 @@ package org.datavec.api.records.writer.impl;
 
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.io.data.Text;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.File;

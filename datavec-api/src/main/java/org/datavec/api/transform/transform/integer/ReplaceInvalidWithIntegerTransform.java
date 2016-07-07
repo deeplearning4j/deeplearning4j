@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
-import org.datavec.api.io.data.IntWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
 /**
