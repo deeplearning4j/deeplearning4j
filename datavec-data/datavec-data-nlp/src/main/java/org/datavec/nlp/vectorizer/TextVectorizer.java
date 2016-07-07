@@ -48,7 +48,7 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     protected int minWordFrequency = 0;
     public final static String MIN_WORD_FREQUENCY = "org.nd4j.nlp.minwordfrequency";
     public final static String STOP_WORDS = "org.nd4j.nlp.stopwords";
-    public final static String TOKENIZER = "org.nd4j.etl4j.nlp.tokenizerfactory";
+    public final static String TOKENIZER = "org.datavec.nlp.tokenizerfactory";
     protected Collection<String> stopWords;
     protected VocabCache cache;
 

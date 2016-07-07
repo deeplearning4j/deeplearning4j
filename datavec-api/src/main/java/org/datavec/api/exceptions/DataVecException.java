@@ -21,7 +21,7 @@
 package org.datavec.api.exceptions;
 
 /**
- * Canova exception
+ * DataVec exception
  * @author Adam Gibson
  */
 public class DataVecException extends Exception {

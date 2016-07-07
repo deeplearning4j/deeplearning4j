@@ -1,17 +1,17 @@
 
-canova.conf.print=true
+datavec.conf.print=true
 
-canova.input.header.skip=false
-canova.input.statistics.debug.print=false
+datavec.input.header.skip=false
+datavec.input.statistics.debug.print=false
 
-canova.input.data.type=text
+datavec.input.data.type=text
 
-canova.input.format=org.nd4j.etl4j.cli.formats.input.TextInputFormat
+datavec.input.format=org.datavec.cli.formats.input.TextInputFormat
 
-canova.input.directory=src/test/resources/text/Tweets/data/
+datavec.input.directory=src/test/resources/text/Tweets/data/
 
-canova.output.directory=/tmp/canova/text/svm_light_tweets_shuffled_output.txt
+datavec.output.directory=/tmp/datavec/text/svm_light_tweets_shuffled_output.txt
 
-canova.output.format=org.nd4j.etl4j.api.formats.output.impl.SVMLightOutputFormat
+datavec.output.format=org.datavec.api.formats.output.impl.SVMLightOutputFormat
 
-canova.output.shuffle=true
+datavec.output.shuffle=true

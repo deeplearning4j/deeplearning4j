@@ -1,18 +1,18 @@
 
-canova.conf.print=true
+datavec.conf.print=true
 
-canova.input.header.skip=false
-canova.input.statistics.debug.print=false
+datavec.input.header.skip=false
+datavec.input.statistics.debug.print=false
 
-canova.input.data.type=image
+datavec.input.data.type=image
 
-canova.input.format=org.nd4j.etl4j.image.format.MNISTInputFormat
-canova.input.vectorization.normalize=false;
+datavec.input.format=org.datavec.image.format.MNISTInputFormat
+datavec.input.vectorization.normalize=false;
 
-canova.input.directory=/tmp/MNIST/images-idx1-ubyte
-canova.input.vectorization.normalize=false
+datavec.input.directory=/tmp/MNIST/images-idx1-ubyte
+datavec.input.vectorization.normalize=false
 
-canova.output.vector.format=svmlight
-canova.output.directory=/tmp/mnist_to_svmlight_unit_test.txt
+datavec.output.vector.format=svmlight
+datavec.output.directory=/tmp/mnist_to_svmlight_unit_test.txt
 
-canova.output.format=org.nd4j.etl4j.api.formats.output.impl.SVMLightOutputFormat
+datavec.output.format=org.datavec.api.formats.output.impl.SVMLightOutputFormat

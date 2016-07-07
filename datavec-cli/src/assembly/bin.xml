@@ -19,7 +19,7 @@
       <directory>src/main/resources/</directory>
       <outputDirectory>bin</outputDirectory>
       <includes>
-        <include>etl4j</include>
+        <include>datavec</include>
       </includes>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>

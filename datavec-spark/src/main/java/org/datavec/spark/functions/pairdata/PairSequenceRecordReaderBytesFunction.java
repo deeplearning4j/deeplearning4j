@@ -11,7 +11,7 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.Collection;
 
-/**SequenceRecordReaderBytesFunction: Converts two sets of binary data (in the form of a BytesPairWritable) to Canova format data
+/**SequenceRecordReaderBytesFunction: Converts two sets of binary data (in the form of a BytesPairWritable) to DataVec format data
  * ({@code Tuple2<Collection<Collection<<Writable>>,Collection<Collection<Writable>>}) using two SequenceRecordReaders.
  * Used for example when network input and output data comes from different files
  * @author Alex Black

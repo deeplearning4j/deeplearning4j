@@ -62,7 +62,7 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
         conf.set(CodecRecordReader.COLUMNS, "64");
         Configuration confCopy = new Configuration(conf);
         seqRR.setConf(conf);
-        JavaRDD<Collection<Collection<Writable>>> canovaData = fromSeqFile.map(new SequenceRecordReaderBytesFunction(seqRR));
+        JavaRDD<Collection<Collection<Writable>>> dataVecData = fromSeqFile.map(new SequenceRecordReaderBytesFunction(seqRR));
 
 
 
@@ -78,7 +78,7 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
         }
         assertEquals(4, list.size());
 
-        List<Collection<Collection<Writable>>> fromSequenceFile = canovaData.collect();
+        List<Collection<Collection<Writable>>> fromSequenceFile = dataVecData.collect();
 
         assertEquals(4, list.size());
         assertEquals(4, fromSequenceFile.size());

@@ -11,10 +11,10 @@ import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
 
 /**
- * Represents a canova endpoint.
+ * Represents a DataVec endpoint.
  * @author Adam Gibson
  */
-@UriEndpoint(scheme = "canova", title = "canova", syntax="canova:inputFormat/?outputFormat=?&inputMarshaller=?", consumerClass = DataVecConsumer.class,label = "canova")
+@UriEndpoint(scheme = "datavec", title = "datavec", syntax="datavec:inputFormat/?outputFormat=?&inputMarshaller=?", consumerClass = DataVecConsumer.class,label = "datavec")
 @Data
 public class DataVecEndpoint extends DefaultEndpoint {
     @UriPath @Metadata(required = "true")
@@ -23,7 +23,7 @@ public class DataVecEndpoint extends DefaultEndpoint {
     private String outputFormat;
     @UriParam @Metadata(required = "true")
     private String inputMarshaller;
-    @UriParam(defaultValue = "org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
+    @UriParam(defaultValue = "org.datavec.api.io.converters.SelfWritableConverter")
     private String writableConverter;
 
     public DataVecEndpoint(String uri, DataVecComponent component) {

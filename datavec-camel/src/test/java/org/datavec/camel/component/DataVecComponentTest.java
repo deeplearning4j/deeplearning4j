@@ -36,7 +36,7 @@ public class DataVecComponentTest extends CamelTestSupport {
             public void configure() {
                 from("file:src/test/resources/?fileName=iris.dat&noop=true")
                         .unmarshal().csv()
-                        .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.nd4j.etl4j.api.io.converters.SelfWritableConverter")
+                        .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.component.ListStringInputMarshaller&writableConverter=org.datavec.api.io.converters.SelfWritableConverter")
                         .to("mock:result");
             }
         };

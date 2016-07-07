@@ -10,7 +10,7 @@ import org.datavec.spark.functions.pairdata.PathToKeyConverter;
 import org.datavec.spark.functions.pairdata.PathToKeyFunction;
 import scala.Tuple3;
 
-/** Utilities for using Canova with Spark
+/** Utilities for using DataVec with Spark
  * @author Alex Black
  */
 public class DataVecSparkUtil {

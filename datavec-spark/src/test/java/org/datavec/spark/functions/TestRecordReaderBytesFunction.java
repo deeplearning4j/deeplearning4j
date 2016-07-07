@@ -51,7 +51,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
         //Load data from sequence file, parse via RecordReader:
         JavaPairRDD<Text, BytesWritable> fromSeqFile = sc.sequenceFile(outPath, Text.class, BytesWritable.class);
         RecordReader rr = new ImageRecordReader(28, 28, 1, true, Arrays.asList("0", "1"));
-        JavaRDD<Collection<Writable>> canovaData = fromSeqFile.map(new RecordReaderBytesFunction(rr));
+        JavaRDD<Collection<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(rr));
 
 
         //Next: do the same thing locally, and compare the results
@@ -64,7 +64,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
             list.add(irr.next());
         }
 
-        List<Collection<Writable>> fromSequenceFile = canovaData.collect();
+        List<Collection<Writable>> fromSequenceFile = dataVecData.collect();
 
         assertEquals(4, list.size());
         assertEquals(4, fromSequenceFile.size());

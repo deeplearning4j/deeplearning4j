@@ -73,7 +73,7 @@ public class TestVectorize {
 //        conf.set( OutputFormat.OUTPUT_PATH, "" );
 
         String inputFormatKey = "input.format";
-        String svmLightInputFormat = "org.nd4j.etl4j.api.formats.input.impl.SVMLightInputFormat";
+        String svmLightInputFormat = "org.datavec.api.formats.input.impl.SVMLightInputFormat";
 
         conf.set(inputFormatKey, svmLightInputFormat);
 
@@ -120,7 +120,7 @@ public class TestVectorize {
         Configuration conf = new Configuration();
 
         String inputFormatKey = "input.format";
-        String svmLightInputFormat = "org.nd4j.etl4j.api.formats.input.impl.SVMLightInputFormat";
+        String svmLightInputFormat = "org.datavec.api.formats.input.impl.SVMLightInputFormat";
 
         conf.set(inputFormatKey, svmLightInputFormat);
 
@@ -176,7 +176,7 @@ public class TestVectorize {
     public static void setupLFWSampleLocally() throws Exception {
 
         String localUnzippedSubdir = "lfw";
-        String workingDir = "/tmp/canova/image/"; // + localUnzippedSubdir;
+        String workingDir = "/tmp/datavec/image/"; // + localUnzippedSubdir;
 
         // does the file exist locally?
 
@@ -193,7 +193,7 @@ public class TestVectorize {
         Vectorize vecCommand = new Vectorize( args );
 
         vecCommand.loadConfigFile();
-        assertEquals( "/tmp/iris_unit_test_sample.txt", vecCommand.configProps.get("canova.output.directory") );
+        assertEquals( "/tmp/iris_unit_test_sample.txt", vecCommand.configProps.get("datavec.output.directory") );
 
     }
 

@@ -29,7 +29,7 @@ public class TestLineRecordReader {
         conf.set( OutputFormat.OUTPUT_PATH, "" );
 		
 		
-		String datasetInputPath = (String) vecCommand.configProps.get("canova.input.directory");
+		String datasetInputPath = (String) vecCommand.configProps.get("datavec.input.directory");
 		
 		InputFormat inputformat = vecCommand.createInputFormat();
 		
@@ -71,7 +71,7 @@ public class TestLineRecordReader {
         conf.set( OutputFormat.OUTPUT_PATH, "" );
 		
 		
-		String datasetInputPath = (String) vecCommand.configProps.get("canova.input.directory");
+		String datasetInputPath = (String) vecCommand.configProps.get("datavec.input.directory");
 		
 		InputFormat inputformat = vecCommand.createInputFormat();
 		

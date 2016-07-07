@@ -1,14 +1,14 @@
 
-canova.conf.print=true
+datavec.conf.print=true
 
-canova.input.header.skip=false
-canova.input.statistics.debug.print=false
+datavec.input.header.skip=false
+datavec.input.statistics.debug.print=false
 
-canova.input.data.type=image
+datavec.input.data.type=image
 
-canova.input.format=org.nd4j.etl4j.image.format.ImageInputFormat
+datavec.input.format=org.datavec.image.format.ImageInputFormat
 
-canova.input.directory=/tmp/lfw/
-canova.output.directory=/tmp/canova/image/output/lfw_svmlight_output.txt
+datavec.input.directory=/tmp/lfw/
+datavec.output.directory=/tmp/datavec/image/output/lfw_svmlight_output.txt
 
-canova.output.format=org.nd4j.etl4j.api.formats.output.impl.SVMLightOutputFormat
+datavec.output.format=org.datavec.api.formats.output.impl.SVMLightOutputFormat

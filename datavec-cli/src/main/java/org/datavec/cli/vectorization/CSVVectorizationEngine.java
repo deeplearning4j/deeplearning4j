@@ -51,7 +51,7 @@ public class CSVVectorizationEngine extends VectorizationEngine {
 
   private static final Logger log = LoggerFactory.getLogger(CSVVectorizationEngine.class);
 
-  public static final String SKIP_HEADER_KEY = "canova.input.header.skip";
+  public static final String SKIP_HEADER_KEY = "datavec.input.header.skip";
 
   private CSVInputSchema inputSchema = null;
   private boolean skipHeader = false;
@@ -60,7 +60,7 @@ public class CSVVectorizationEngine extends VectorizationEngine {
 
   // this picks up the input schema file from the properties file and loads it
   private void loadInputSchemaFile() throws Exception {
-      String schemaFilePath = (String) this.configProps.get("canova.input.vector.schema");
+      String schemaFilePath = (String) this.configProps.get("datavec.input.vector.schema");
       this.inputSchema = new CSVInputSchema();
       this.inputSchema.parseSchemaFile(schemaFilePath);
   //    this.vectorizer = new CSVVectorizationEngine();
@@ -134,7 +134,7 @@ public class CSVVectorizationEngine extends VectorizationEngine {
       this.inputSchema.computeDatasetStatistics();	  
 	  
       // 2.a. debug dataset stats
-/*      String schema_print_key = "canova.input.statistics.debug.print";
+/*      String schema_print_key = "datavec.input.statistics.debug.print";
       if (null != this.configProps.get(schema_print_key)) {
           String printSchema = (String) this.configProps.get(schema_print_key);
           if ("true".equals(printSchema.trim().toLowerCase())) {

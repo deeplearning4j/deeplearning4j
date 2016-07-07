@@ -56,7 +56,7 @@ public class LineRecordReader extends FileRecordReader  {
         });
 */
         //recordIter = records.iterator();
-        //System.out.println( "Canova-LineRR:init() " + recordIter.hasNext() );
+        //System.out.println( "datavec-LineRR:init() " + recordIter.hasNext() );
         
         /*
     	try {

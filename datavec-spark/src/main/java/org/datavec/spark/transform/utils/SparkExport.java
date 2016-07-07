@@ -19,7 +19,7 @@ import java.util.Random;
  */
 public class SparkExport {
 
-    //Quick and dirty CSV export (using Spark). Eventually, rework this to use Canova record writers on Spark
+    //Quick and dirty CSV export (using Spark). Eventually, rework this to use DataVec record writers on Spark
     public static void exportCSVSpark(String directory, String delimiter, int outputSplits, JavaRDD<List<Writable>> data) {
 
         //NOTE: Order is probably not random here...

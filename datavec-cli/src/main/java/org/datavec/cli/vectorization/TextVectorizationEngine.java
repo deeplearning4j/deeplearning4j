@@ -33,7 +33,7 @@ public class TextVectorizationEngine extends VectorizationEngine {
 
     TfidfTextVectorizerTransform tfidfTransform = new TfidfTextVectorizerTransform();
     conf.setInt(TfidfTextVectorizerTransform.MIN_WORD_FREQUENCY, 1);
-    //	conf.set(TfidfTextVectorizerTransform.TOKENIZER, "org.nd4j.etl4j.nlp.tokenization.tokenizerfactory.PosUimaTokenizerFactory");
+    //	conf.set(TfidfTextVectorizerTransform.TOKENIZER, "org.datavec.nlp.tokenization.tokenizerfactory.PosUimaTokenizerFactory");
     tfidfTransform.initialize(conf);
 
     int recordsSeen = 0;

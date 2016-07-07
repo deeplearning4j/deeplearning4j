@@ -1,1 +1,1 @@
-class=org.nd4j.etl4j.camel.component.CanovaComponent
+class=org.datavec.camel.component.DataVecComponent

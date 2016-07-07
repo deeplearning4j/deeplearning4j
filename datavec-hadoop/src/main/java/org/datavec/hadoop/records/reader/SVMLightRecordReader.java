@@ -10,7 +10,7 @@ import org.datavec.api.io.data.DoubleWritable;
 import org.datavec.api.io.data.Text;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.split.InputSplit;
-//import org.nd4j.etl4j.api.records.reader.impl.SVMLightRecordReader;
+//import org.datavec.api.records.reader.impl.SVMLightRecordReader;
 import org.datavec.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

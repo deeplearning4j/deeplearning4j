@@ -37,11 +37,11 @@ import java.util.*;
  * 
  * Why?
  * - the MNIST training file is 47MB unzipped
- * - right now (June 2015) Canova only runs in local/serial mode
+ * - right now (June 2015) DataVec only runs in local/serial mode
  * - when we add MapReduce as a runtime engine, the training file size (47MB) is still smaller 
  * 		than the lowest production block size in HDFS these days (64MB, 128MB), so normally MapReduce's
  * 		scheduling system would not split the file (unless you manually set the file's block size lower)
- * - This input format's main purpose is to read MNIST raw data into Canova to be written out
+ * - This input format's main purpose is to read MNIST raw data into DataVec to be written out
  * 		as another format (SVMLight most likely) for DL4J's input format's to read  
  *
  * 

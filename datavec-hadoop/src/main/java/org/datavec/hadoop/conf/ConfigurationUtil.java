@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.Path;
  * 
  * Design Ideas
  * 
- * 	-	Need a Canova Conf entry:
+ * 	-	Need a DataVec Conf entry:
  * 		-	hadoop.configuration.path
  * 			-	example: hadoop.configuration.path=/home/hadoop/hadoop/conf/
  * 

@@ -12,7 +12,7 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.Collection;
 
-/**RecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to Canova format data
+/**RecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to DataVec format data
  * ({@code Collection<Writable>}) using a RecordReader
  * @author Alex Black
  */

@@ -25,7 +25,7 @@ public class CSVRecordWriterTest {
 
     @Test
     public void testWrite() throws Exception {
-        File tempFile = File.createTempFile("canova","writer");
+        File tempFile = File.createTempFile("datavec","writer");
         tempFile.deleteOnExit();
 
         CSVRecordWriter writer = new CSVRecordWriter(tempFile);

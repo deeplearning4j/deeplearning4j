@@ -80,18 +80,18 @@ public class Vectorize implements SubCommand {
 
     private static final Logger log = LoggerFactory.getLogger(Vectorize.class);
 
-    public static final String OUTPUT_FILENAME_KEY = "canova.output.directory";
-    public static final String INPUT_FORMAT = "canova.input.format";
-    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.nd4j.etl4j.api.formats.input.impl.LineInputFormat";
-    public static final String OUTPUT_FORMAT = "canova.output.format";
-    public static final String DEFAULT_OUTPUT_FORMAT_CLASSNAME = "org.nd4j.etl4j.api.formats.output.impl.SVMLightOutputFormat";
+    public static final String OUTPUT_FILENAME_KEY = "datavec.output.directory";
+    public static final String INPUT_FORMAT = "datavec.input.format";
+    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.datavec.api.formats.input.impl.LineInputFormat";
+    public static final String OUTPUT_FORMAT = "datavec.output.format";
+    public static final String DEFAULT_OUTPUT_FORMAT_CLASSNAME = "org.datavec.api.formats.output.impl.SVMLightOutputFormat";
 
-    public static final String VECTORIZATION_ENGINE = "canova.input.vectorization.engine";
-    public static final String DEFAULT_VECTORIZATION_ENGINE_CLASSNAME = "org.nd4j.etl4j.cli.csv.vectorization.CSVVectorizationEngine";
+    public static final String VECTORIZATION_ENGINE = "datavec.input.vectorization.engine";
+    public static final String DEFAULT_VECTORIZATION_ENGINE_CLASSNAME = "org.datavec.cli.csv.vectorization.CSVVectorizationEngine";
 
-    public static final String NORMALIZE_DATA_FLAG = "canova.input.vectorization.normalize";
-    public static final String SHUFFLE_DATA_FLAG = "canova.output.shuffle";
-    public static final String PRINT_STATS_FLAG = "canova.input.statistics.debug.print";
+    public static final String NORMALIZE_DATA_FLAG = "datavec.input.vectorization.normalize";
+    public static final String SHUFFLE_DATA_FLAG = "datavec.output.shuffle";
+    public static final String PRINT_STATS_FLAG = "datavec.input.statistics.debug.print";
     
     protected String[] args;
 
@@ -138,7 +138,7 @@ public class Vectorize implements SubCommand {
 
         if (null == this.configProps.get(OUTPUT_FILENAME_KEY)) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-            this.outputVectorFilename = "/tmp/canova_vectors_" + dateFormat.format(new Date()) + ".txt";
+            this.outputVectorFilename = "/tmp/datavec_vectors_" + dateFormat.format(new Date()) + ".txt";
         } else {
 
             // what if its only a directory?
@@ -165,7 +165,7 @@ public class Vectorize implements SubCommand {
                 if (new File(this.outputVectorFilename).isDirectory()) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
                     //File file = new File(dateFormat.format(date) + ".tsv") ;
-                    this.outputVectorFilename += "/canova_vectors_" + dateFormat.format(new Date()) + ".txt";
+                    this.outputVectorFilename += "/datavec_vectors_" + dateFormat.format(new Date()) + ".txt";
                 } else {
                     // if a file already exists
                     (new File(this.outputVectorFilename)).delete();
@@ -183,28 +183,28 @@ public class Vectorize implements SubCommand {
         Properties props = this.configProps; //System.getProperties();
         Enumeration e = props.propertyNames();
 
-        System.out.println("\n--- Start Canova Configuration ---");
+        System.out.println("\n--- Start DataVec Configuration ---");
 
         while (e.hasMoreElements()) {
             String key = (String) e.nextElement();
             System.out.println(key + " -- " + props.getProperty(key));
         }
 
-        System.out.println("---End Canova Configuration ---\n");
+        System.out.println("---End DataVec Configuration ---\n");
     }
     
     public static void printUsage() {
     	
-    	System.out.println( "Canova: Vectorization Engine" );
+    	System.out.println( "DataVec: Vectorization Engine" );
     	System.out.println( "" );
     	System.out.println( "\tUsage:" );
-    	System.out.println( "\t\tcanova vectorize -conf <conf_file>" );
+    	System.out.println( "\t\tdatavec vectorize -conf <conf_file>" );
     	System.out.println( "" );
     	System.out.println( "\tConfiguration File:" );
     	System.out.println( "\t\tContains a list of property entries that describe the vectorization process" );
     	System.out.println( "" );
     	System.out.println( "\tExample:" );
-    	System.out.println( "\t\tcanova vectorize -conf /tmp/iris_conf.txt " );
+    	System.out.println( "\t\tdatavec vectorize -conf /tmp/iris_conf.txt " );
     	
     	
     }
@@ -232,8 +232,8 @@ public class Vectorize implements SubCommand {
 
         this.loadConfigFile();
 
-        if (null != this.configProps.get("canova.conf.print")) {
-            String print = (String) this.configProps.get("canova.conf.print");
+        if (null != this.configProps.get("datavec.conf.print")) {
+            String print = (String) this.configProps.get("datavec.conf.print");
             if ("true".equals(print.trim().toLowerCase())) {
                 this.debugLoadedConfProperties();
             }
@@ -246,8 +246,8 @@ public class Vectorize implements SubCommand {
         // [ first dataset pass ]
         // for each row in CSV Dataset
 
-        String datasetInputPath = (String) this.configProps.get("canova.input.directory");
-        String inputDataType = (String)this.configProps.get("canova.input.data.type");
+        String datasetInputPath = (String) this.configProps.get("datavec.input.directory");
+        String inputDataType = (String)this.configProps.get("datavec.input.data.type");
         
         if ( null == inputDataType ) {
         	
@@ -370,23 +370,23 @@ public class Vectorize implements SubCommand {
     	
     	// so this quick lookup is not the coolest way to do this, but for now we'll do it
     	
-    	String inputDataType = (String)this.configProps.get("canova.input.data.type");
+    	String inputDataType = (String)this.configProps.get("datavec.input.data.type");
 
         switch (inputDataType) {
             case "csv":
-                clazz = "org.nd4j.etl4j.cli.vectorization.CSVVectorizationEngine";
+                clazz = "org.datavec.cli.vectorization.CSVVectorizationEngine";
                 break;
             case "text":
-                clazz = "org.nd4j.etl4j.cli.vectorization.TextVectorizationEngine";
+                clazz = "org.datavec.cli.vectorization.TextVectorizationEngine";
                 break;
             case "audio":
-                clazz = "org.nd4j.etl4j.cli.vectorization.AudioVectorizationEngine";
+                clazz = "org.datavec.cli.vectorization.AudioVectorizationEngine";
                 break;
             case "image":
-                clazz = "org.nd4j.etl4j.cli.vectorization.ImageVectorizationEngine";
+                clazz = "org.datavec.cli.vectorization.ImageVectorizationEngine";
                 break;
             case "video":
-                clazz = "org.nd4j.etl4j.cli.vectorization.VideoVectorizationEngine";
+                clazz = "org.datavec.cli.vectorization.VideoVectorizationEngine";
                 break;
             default:
                 // stick to default --- should blow up (?)

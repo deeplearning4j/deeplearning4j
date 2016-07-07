@@ -34,7 +34,7 @@ import java.util.Collection;
  * Write to files.
  *
  * To set the path and configuration via configuration:
- * writeTo: org.nd4j.etl4j.api.records.writer.path
+ * writeTo: org.datavec.api.records.writer.path
  *
  * This is the path used to write to
  *
@@ -49,7 +49,7 @@ public  class FileRecordWriter implements RecordWriter {
     protected DataOutputStream out;
     public final static String NEW_LINE = "\n";
     private boolean append;
-    public final static String PATH = "org.nd4j.etl4j.api.records.writer.path";
+    public final static String PATH = "org.datavec.api.records.writer.path";
 
     protected Charset encoding = DEFAULT_CHARSET;
 

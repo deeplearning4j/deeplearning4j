@@ -10,7 +10,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputSplit;
 
 /**
- * The canova consumer.
+ * The DataVec consumer.
  * @author Adam Gibson
  */
 public class DataVecConsumer extends ScheduledPollConsumer {

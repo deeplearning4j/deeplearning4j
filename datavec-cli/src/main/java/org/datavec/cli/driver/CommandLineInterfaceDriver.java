@@ -63,16 +63,16 @@ public class CommandLineInterfaceDriver {
     
     public static void printUsage() {
     	
-    	System.out.println( "Canova: Vectorization System" );
+    	System.out.println( "DataVec: Vectorization System" );
     	System.out.println( "" );
     	System.out.println( "\tUsage:" );
-    	System.out.println( "\t\tcanova <command> <flags>" );
+    	System.out.println( "\t\tdatavec <command> <flags>" );
     	System.out.println( "" );
     	System.out.println( "\tCommands:" );
     	System.out.println( "\t\tvectorize\t\tVectorization engine for text, csv, image, and custom data vectorization" );
     	System.out.println( "" );
     	System.out.println( "\tExample:" );
-    	System.out.println( "\t\tcanova vectorize -conf /tmp/iris_conf.txt " );
+    	System.out.println( "\t\tdatavec vectorize -conf /tmp/iris_conf.txt " );
     	
     }
 

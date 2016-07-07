@@ -204,7 +204,7 @@ public class SparkUtils {
     }
 
     /**
-     * Register the Canova writable classes for Kryo
+     * Register the DataVec writable classes for Kryo
      */
     public static void registerKryoClasses(SparkConf conf){
         List<Class<?>> classes = Arrays.asList((Class<?>)
