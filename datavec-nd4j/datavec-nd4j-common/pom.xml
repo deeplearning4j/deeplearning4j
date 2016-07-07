@@ -20,27 +20,29 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>etl4j-parent</artifactId>
+        <artifactId>datavec-nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.0.0.17-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>etl4j-data</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>datavec-nd4j-common</artifactId>
+    <packaging>jar</packaging>
 
-    <name>etl4j-data</name>
-    <url>http://maven.apache.org</url>
-    <modules>
-        <module>etl4j-data-nlp</module>
-        <module>etl4j-data-image</module>
-        <module>etl4j-data-timeseries</module>
-        <module>etl4j-data-audio</module>
-    </modules>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <name>datavec-nd4j-common</name>
 
 
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

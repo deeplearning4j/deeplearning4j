@@ -19,28 +19,41 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>etl4j-nd4j</artifactId>
-        <groupId>org.nd4j</groupId>
-        <version>0.0.0.17-SNAPSHOT</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>etl4j-nd4j-timeseries</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>datavec-nd4j</artifactId>
 
-    <name>etl4j-nd4j-timeseries</name>
-    <url>http://maven.apache.org</url>
+    <parent>
+        <groupId>org.nd4j</groupId>
+        <artifactId>datavec-parent</artifactId>
+        <version>0.4.0</version>
+    </parent>
+
+    <modules>
+        <module>datavec-nd4j-nlp</module>
+        <module>datavec-nd4j-image</module>
+        <module>datavec-nd4j-timeseries</module>
+        <module>datavec-nd4j-audio</module>
+        <module>datavec-nd4j-common</module>
+        <module>datavec-nd4j-codec</module>
+    </modules>
+    <packaging>pom</packaging>
+
+    <name>datavec-nd4j</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>etl4j-data-timeseries</artifactId>
-            <version>${project.version}</version>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
     </dependencies>
+
+
 </project>

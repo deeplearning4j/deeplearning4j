@@ -20,14 +20,14 @@
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>etl4j-parent</artifactId>
+    <artifactId>datavec-parent</artifactId>
     <groupId>org.nd4j</groupId>
-    <version>0.0.0.17-SNAPSHOT</version>
+    <version>0.4.0</version>
   </parent>
   <packaging>jar</packaging>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>etl4j-cli</artifactId>
-  <name>etl4j-cli</name>
+  <artifactId>datavec-cli</artifactId>
+  <name>datavec-cli</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j.version>1.7.5</slf4j.version>
@@ -41,17 +41,17 @@
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>etl4j-api</artifactId>
+      <artifactId>datavec-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>etl4j-nd4j-image</artifactId>
+      <artifactId>datavec-nd4j-image</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>etl4j-nd4j-nlp</artifactId>
+      <artifactId>datavec-nd4j-nlp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -109,7 +109,7 @@
     </dependency>
   </dependencies>
   <build>
-    <finalName>etl4j</finalName>
+    <finalName>datavec</finalName>
     <plugins>
       <!-- download source code in Eclipse, best practice -->
       <plugin>
@@ -150,7 +150,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptor>src/assembly/bin.xml</descriptor>
-          <finalName>etl4j-cli-${project.version}</finalName>
+          <finalName>datavec-cli-${project.version}</finalName>
         </configuration>
         <executions>
           <execution>
@@ -181,7 +181,7 @@
               </execution>
             </executions>
             <configuration>
-              <name>etl4j-cli</name>
+              <name>datavec-cli</name>
               <group>Development/Libraries</group>
               <packager>SKYMIND</packager>
               <!--<changelogFile>src/changelog</changelogFile>-->
@@ -193,7 +193,7 @@
               </requires>
               <mappings>
                 <mapping>
-                  <directory>/usr/local/lib/etl4j/</directory>
+                  <directory>/usr/local/lib/datavec/</directory>
                   <filemode>755</filemode>
                   <dependency />
                   <artifact />
@@ -203,7 +203,7 @@
                   <filemode>755</filemode>
                   <sources>
                     <source>
-                      <location>src/main/resources/etl4j</location>
+                      <location>src/main/resources/datavec</location>
                     </source>
                   </sources>
                 </mapping>

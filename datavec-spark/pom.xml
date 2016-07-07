@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>etl4j-parent</artifactId>
+        <artifactId>datavec-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.0.0.17-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>etl4j-spark_${scala.binary.version}</artifactId>
+    <artifactId>datavec-spark_${scala.binary.version}</artifactId>
 
     <properties>
         <spark.version>1.5.1</spark.version>
@@ -22,20 +22,20 @@
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>etl4j-api</artifactId>
+            <artifactId>datavec-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>etl4j-nd4j-image</artifactId>
+            <artifactId>datavec-nd4j-image</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>etl4j-nd4j-codec</artifactId>
+            <artifactId>datavec-nd4j-codec</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

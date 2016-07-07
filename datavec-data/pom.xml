@@ -20,28 +20,27 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>etl4j-nd4j</artifactId>
+        <artifactId>datavec-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.0.0.17-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>etl4j-nd4j-audio</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>datavec-data</artifactId>
+    <packaging>pom</packaging>
 
-    <name>etl4j-nd4j-audio</name>
-    <url>http://nd4j.org</url>
+    <name>datavec-data</name>
+    <url>http://maven.apache.org</url>
+    <modules>
+        <module>datavec-data-nlp</module>
+        <module>datavec-data-image</module>
+        <module>datavec-data-timeseries</module>
+        <module>datavec-data-audio</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>etl4j-data-image</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
-    </dependencies>
 </project>
