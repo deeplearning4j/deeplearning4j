@@ -191,6 +191,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
+                if(!runnable.isAlive && blockingQueue.isEmpty()){
+                    throw new IllegalStateException("Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
