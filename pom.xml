@@ -56,7 +56,7 @@
         <slf4j.version>1.7.7</slf4j.version>
         <nd4j.version>0.4-rc3.11-SNAPSHOT</nd4j.version>
         <junit.version>4.12</junit.version>
-        <jackson.version>2.5.1</jackson.version>
+        <jackson.version>2.4.4</jackson.version>    <!-- To match spark -->
         <commons-compress.version>1.8.1</commons-compress.version>
         <commons-lang3.version>3.3.1</commons-lang3.version>
         <commons-math3.version>3.3</commons-math3.version>
