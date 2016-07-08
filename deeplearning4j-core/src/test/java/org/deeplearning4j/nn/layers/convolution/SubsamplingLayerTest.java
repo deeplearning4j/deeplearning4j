@@ -268,7 +268,7 @@ public class SubsamplingLayerTest {
                         .build())
                 .layer(1, new SubsamplingLayer.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(imageHeight-kernelHeight+1,1)
+                        .kernelSize(imageHeight-kernelHeight+2,1)   //imageHeight-kernelHeight+1 is ok: full height
                         .stride(1,1)
                         .build())
                 .layer(2, new OutputLayer.Builder()
