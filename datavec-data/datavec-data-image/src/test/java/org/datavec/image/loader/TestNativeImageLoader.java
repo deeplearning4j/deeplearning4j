@@ -74,29 +74,35 @@ public class TestNativeImageLoader {
         NativeImageLoader loader1 = new NativeImageLoader(h1, w1, ch1);
 
         INDArray array1 = loader1.asMatrix(img1);
-        assertEquals(2, array1.rank());
-        assertEquals(h1, array1.rows());
-        assertEquals(w1, array1.columns());
+        assertEquals(4, array1.rank());
+        assertEquals(1, array1.size(0));
+        assertEquals(1, array1.size(1));
+        assertEquals(h1, array1.size(2));
+        assertEquals(w1, array1.size(3));
 
         INDArray array2 = loader1.asMatrix(img2);
-        assertEquals(2, array2.rank());
-        assertEquals(h1, array2.rows());
-        assertEquals(w1, array2.columns());
+        assertEquals(4, array2.rank());
+        assertEquals(1, array2.size(0));
+        assertEquals(1, array2.size(1));
+        assertEquals(h1, array2.size(2));
+        assertEquals(w1, array2.size(3));
 
         int w2 = 111, h2 = 66, ch2 = 3;
         NativeImageLoader loader2 = new NativeImageLoader(h2, w2, ch2);
 
         INDArray array3 = loader2.asMatrix(img1);
-        assertEquals(3, array3.rank());
-        assertEquals(3, array3.size(0));
-        assertEquals(h2, array3.size(1));
-        assertEquals(w2, array3.size(2));
+        assertEquals(4, array3.rank());
+        assertEquals(1, array3.size(0));
+        assertEquals(3, array3.size(1));
+        assertEquals(h2, array3.size(2));
+        assertEquals(w2, array3.size(3));
 
         INDArray array4 = loader2.asMatrix(img2);
-        assertEquals(3, array4.rank());
-        assertEquals(3, array4.size(0));
-        assertEquals(h2, array4.size(1));
-        assertEquals(w2, array4.size(2));
+        assertEquals(4, array4.rank());
+        assertEquals(1, array4.size(0));
+        assertEquals(3, array4.size(1));
+        assertEquals(h2, array4.size(2));
+        assertEquals(w2, array4.size(3));
     }
 
     @Test
