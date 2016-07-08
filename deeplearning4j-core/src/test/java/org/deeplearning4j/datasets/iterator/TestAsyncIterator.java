@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -98,6 +99,32 @@ public class TestAsyncIterator {
         assertEquals(baseIter.cursor(), 0);
         assertTrue(async.hasNext());
         ((AsyncDataSetIterator)async).shutdown();
+    }
+
+    @Test
+    public void testInitializeNoNextIter(){
+
+        DataSetIterator iter = new IrisDataSetIterator(10,150);
+        while(iter.hasNext()) iter.next();
+
+        DataSetIterator async = new AsyncDataSetIterator(iter,2);
+
+        assertFalse(iter.hasNext());
+        assertFalse(async.hasNext());
+        try{
+            iter.next();
+            fail("Should have thrown NoSuchElementException");
+        }catch(Exception e){
+            //OK
+        }
+
+        async.reset();
+        int count = 0;
+        while(async.hasNext()){
+            async.next();
+            count++;
+        }
+        assertEquals(150/10, count);
     }
 
     @Test
