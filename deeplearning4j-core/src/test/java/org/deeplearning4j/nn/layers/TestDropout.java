@@ -46,9 +46,6 @@ public class TestDropout {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        Field dropoutMaskField = BaseLayer.class.getDeclaredField("dropoutMask");
-        dropoutMaskField.setAccessible(true);
-
         int nTests = 15;
 
         Nd4j.getRandom().setSeed(12345);
@@ -60,37 +57,14 @@ public class TestDropout {
 
             net.fit(new DataSet(in,out));
 
-            //Check that dropout was actually applied (and applied exactly once)
-            INDArray dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(0));
-            assertNotNull(dropoutMask);
-
             INDArray l0Input = net.getLayer(0).input();
-            if(inCopy.equals(l0Input)){ //l0Input should differ from original input (probably)
-                int countNonZero = 0;
-                for( int j=0; j<dropoutMask.length(); j++ ){
-                    if(dropoutMask.getDouble(j) != 0.0) countNonZero++;
-                }
-
-                if(countNonZero != nIn){
-                    //Some inputs should have been dropped out
-                    fail("No dropout occurred, but dropoutMask contains 0.0 elements. mask = " + dropoutMask);
-                } else {
-                    noDropoutCount++;
-                }
-            } else {
-                //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
-                for( int j=0; j<inCopy.length(); j++ ){
-                    double origValue = inCopy.getDouble(j);
-                    double doValue = l0Input.getDouble(j);
-                    double maskValue = dropoutMask.getDouble(j);
-                    assertTrue(maskValue == 0.0 || maskValue == 2.0);
-                    if(maskValue == 0.0){
-                        //Input was dropped out
-                        assertEquals(0.0, doValue, 0.0);
-                    } else {
-                        //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
-                        assertEquals(origValue*2.0, doValue, 0.0001);
-                    }
+            //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
+            for( int j=0; j<inCopy.length(); j++ ){
+                double origValue = inCopy.getDouble(j);
+                double doValue = l0Input.getDouble(j);
+                if(doValue > 0.0){
+                    //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
+                    assertEquals(origValue*2.0, doValue, 0.0001);
                 }
             }
 
@@ -163,59 +137,27 @@ public class TestDropout {
 
             net.fit(new DataSet(in,out));
 
-            //Check that dropout was actually applied (and applied exactly once)
-            INDArray dropoutMask = ((INDArray)dropoutMaskField.get(net.getLayer(0)));
-            assertNotNull(dropoutMask);
-            dropoutMask = dropoutMask.dup('c');
-
             INDArray l0Input = net.getLayer(0).input().dup('c');
-            if(inCopy.equals(l0Input)){ //l0Input should differ from original input (probably)
-                int countNonZero = 0;
-                for( int j=0; j<dropoutMask.length(); j++ ){
-                    if(dropoutMask.getDouble(j) != 0.0) countNonZero++;
-                }
-
-                if(countNonZero != nIn){
-                    //Some inputs should have been dropped out
-                    fail("No dropout occurred, but dropoutMask contains 0.0 elements. mask = " + dropoutMask);
-                } else {
-                    noDropoutCount++;
-                }
-            } else {
-                System.out.println(i);
-                //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
-                NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
-                while(iter.hasNext()){
-                    int[] idx = iter.next();
-                    double origValue = inCopy.getDouble(idx);
-                    double doValue = l0Input.getDouble(idx);
-                    double maskValue = dropoutMask.getDouble(idx);
-                    assertTrue(maskValue == 0.0 || maskValue == 2.0);
-                    if(maskValue == 0.0){
-                        //Input was dropped out
-                        assertEquals(0.0, doValue, 0.0);
-                    } else {
-                        //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
-                        assertEquals(origValue*2.0, doValue, 0.0001);
-                    }
+            //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
+            NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
+            while(iter.hasNext()){
+                int[] idx = iter.next();
+                double origValue = inCopy.getDouble(idx);
+                double doValue = l0Input.getDouble(idx);
+                if(doValue > 0.0){
+                    //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
+                    assertEquals(origValue*2.0, doValue, 0.0001);
                 }
             }
 
             //Check other layers. Don't know pre-dropout values in general, but using saturated sigmoids -> inputs should
             //all be ~1.0 before dropout -> either 0 or ~2.0 after dropout
             for( int j=1; j<3; j++ ){
-                dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(j));
-                assertNotNull(dropoutMask);
 
                 INDArray ljInput = net.getLayer(j).input();
                 for( int k=0; k<ljInput.length(); k++ ){
                     double doValue = ljInput.getDouble(j);
-                    double maskValue = dropoutMask.getDouble(j);
-                    assertTrue(maskValue == 0.0 || maskValue == 2.0);
-                    if(maskValue == 0.0){
-                        //Input was dropped out
-                        assertEquals(0.0, doValue, 0.0);
-                    } else {
+                    if(doValue > 0.0){
                         //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
                         assertEquals(2.0, doValue, 0.1);    //Sigmoid is saturated -> inputs should be ~1.0 -> 2.0 after dropout
                     }
