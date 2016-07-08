@@ -160,8 +160,8 @@ public class FlowIterationListenerTest {
             log.info("Layer: " + layerInfo);
         }
 
-        // checking total number of layers
-        assertEquals(9, info.size());
+        // checking total number of layers - count now includes input as 0 layer in buildModelInfo
+        assertEquals(9, info.size()-1);
 
         // checking, if all named layers exist
         assertNotEquals(null, info.getLayerInfoByName("cnn1"));
