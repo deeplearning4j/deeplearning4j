@@ -54,7 +54,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected int labelIndex = -1;
     protected int labelIndexTo = -1;
     protected int numPossibleLabels = -1;
-    protected boolean notOvershot = true;
     protected Iterator<Collection<Writable>> sequenceIter;
     protected DataSet last;
     protected boolean useCurrent = false;
@@ -311,7 +310,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         batchNum = 0;
-        notOvershot = true;
         recordReader.reset();
     }
 
@@ -338,7 +336,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return (recordReader.hasNext() && notOvershot);
+        return (recordReader.hasNext() && (maxNumBatches < 0 || batchNum < maxNumBatches));
     }
 
     @Override

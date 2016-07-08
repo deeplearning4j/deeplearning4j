@@ -122,10 +122,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
     }
 
-    public INDArray params(){
+    public INDArray params() {
+        return params(false);
+    }
+
+    public INDArray params(boolean backprop){
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
+            if(!backprop || !PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
         }
         return Nd4j.toFlattened('f', list);
     }
