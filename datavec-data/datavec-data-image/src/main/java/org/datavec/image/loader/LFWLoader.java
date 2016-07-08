@@ -118,7 +118,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     public void load() {
         load(NUM_IMAGES, NUM_IMAGES, NUM_LABELS, LABEL_PATTERN, 1, rng);
     }
-    public void load(int numExamples, int batchSize, int numLabels, PathLabelGenerator labelGenerator, double splitTrainTest, Random rng)  {
+    public void load(int batchSize, int numExamples, int numLabels, PathLabelGenerator labelGenerator, double splitTrainTest, Random rng)  {
         if (!imageFilesExist()){
             if (!fullDir.exists() || fullDir.listFiles() == null || fullDir.listFiles().length == 0) {
                 fullDir.mkdir();
@@ -134,7 +134,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
             }
         }
         FileSplit fileSplit = new FileSplit(fullDir, ALLOWED_FORMATS, rng);
-        BalancedPathFilter pathFilter = new BalancedPathFilter(rng, ALLOWED_FORMATS,labelGenerator, numExamples, numLabels, 10, 0, null);
+        BalancedPathFilter pathFilter = new BalancedPathFilter(rng, ALLOWED_FORMATS,labelGenerator, numExamples, numLabels, 0, batchSize, null);
         inputSplit = fileSplit.sample(pathFilter, numExamples*splitTrainTest, numExamples*(1-splitTrainTest));
     }
 
@@ -177,7 +177,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     }
 
     public RecordReader getRecordReader(int batchSize, int numExamples, int[]imgDim, int numLabels, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest, Random rng) {
-        load(numExamples, batchSize, numLabels, labelGenerator, splitTrainTest, rng);
+        load(batchSize, numExamples, numLabels, labelGenerator, splitTrainTest, rng);
         RecordReader recordReader = new ImageRecordReader(imgDim[0], imgDim[1], imgDim[2], labelGenerator, imageTransform, normalizeValue);
 
         try {
