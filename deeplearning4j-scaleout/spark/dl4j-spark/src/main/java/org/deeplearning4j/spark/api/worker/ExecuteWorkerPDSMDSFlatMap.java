@@ -4,7 +4,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.input.PortableDataStream;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
-import org.deeplearning4j.spark.canova.iterator.PortableDataStreamMultiDataSetIterator;
+import org.deeplearning4j.spark.iterator.PortableDataStreamMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Iterator;
