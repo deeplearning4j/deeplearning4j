@@ -133,6 +133,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
+                if(!runnable.isAlive && queue.isEmpty()){
+                    throw new IllegalStateException("Unexpected state occurred for AsyncMultiDataSetIterator: runnable died or no data available");
+                }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
