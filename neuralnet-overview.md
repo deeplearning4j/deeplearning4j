@@ -27,13 +27,13 @@ Neural networks help us cluster and classify. You can think of them as a cluster
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
 </p>
 
-As you think about one problem deep learning can solve, ask yourself: What categories do I care about? What information can I act upon? Those outcomes are labels that would be applied to data: `spam` or `not_spam`, `good_guy` or `bad_guy`, `angry_customer` or `happy_customer`. Then ask: Do I have the data to accompany those labels? Can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) that I can use to teach an algorithm the correlation between labels and inputs?
+As you think about one problem deep learning can solve, [ask yourself a few questions](/questions): What categories do I care about? What information can I act upon? Those outcomes are labels that would be applied to data: `spam` or `not_spam`, `good_guy` or `bad_guy`, `angry_customer` or `happy_customer`. Then ask: Do I have the data to accompany those labels? Can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) to teach an algorithm the correlation between labels and inputs?
 
-For example, if you want to identify a group of people at risk for cancer, your training set might be a list of cancer patients and people without cancer, along with all the data associated to their unique IDs, including everything from explicit features like age and smoking habits to raw data such as time series tracking their motion, or logs of their behavior online, which likely indicate a great deal about lifestyle, habits, interests and risks. 
+For example, if you want to identify a group of people at risk for cancer, your training dataset might be a list of cancer patients and people without cancer, along with all the data associated to their unique IDs, including everything from explicit features like age and smoking habits to raw data such as time series tracking their motion, or logs of their behavior online, which likely indicate a great deal about lifestyle, habits, interests and risks. 
 
 With that dataset, you could train a neural network to classify people as having cancer or not, and then apply that classification model to people whose risk of cancer is unknown, in order to predict cancer risk for new patients and provide those at risk with better attention and pre-emptive treatment. 
 
-Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital statistics, social graphs, raw text communications, click streams, etc., and then comparing them to others in order to surface patterns as well as persons of interest. 
+Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of constructing a training set by amassing vital statistics, social graphs, raw text communications, click streams, etc., and then comparing them to others in order to surface patterns as well as persons of interest. 
 
 ## <a name="element">Neural Network Elements</a>
 
