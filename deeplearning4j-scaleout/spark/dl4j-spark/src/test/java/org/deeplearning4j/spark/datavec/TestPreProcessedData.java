@@ -1,11 +1,11 @@
-package org.deeplearning4j.spark.canova;
+package org.deeplearning4j.spark.datavec;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.input.PortableDataStream;
-import org.canova.api.records.reader.impl.CSVRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -15,11 +15,11 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.canova.export.StringToDataSetExportFunction;
-import org.deeplearning4j.spark.iterator.PortableDataStreamDataSetIterator;
+import org.deeplearning4j.spark.datavec.export.StringToDataSetExportFunction;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.spark.iterator.PortableDataStreamDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
