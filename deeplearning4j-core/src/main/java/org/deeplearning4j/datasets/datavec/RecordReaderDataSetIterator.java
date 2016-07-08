@@ -53,7 +53,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected int labelIndex = -1;
     protected int labelIndexTo = -1;
     protected int numPossibleLabels = -1;
-    protected boolean notOvershot = true;
     protected Iterator<Collection<Writable>> sequenceIter;
     protected DataSet last;
     protected boolean useCurrent = false;
@@ -210,15 +209,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             NDArrayWritable writable = (NDArrayWritable)currList.get(0);
             return new DataSet(writable.get(),writable.get());
         }
-       if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
-           if(!regression)
-               label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
-           else
-               label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
-           NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
-           featureVector = ndArrayWritable.get();
-           return new DataSet(featureVector,label);
-       }
+        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+            if(!regression)
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
+            else
+                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+            NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
+            featureVector = ndArrayWritable.get();
+            return new DataSet(featureVector,label);
+        }
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
@@ -310,7 +309,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         batchNum = 0;
-        notOvershot = true;
         recordReader.reset();
     }
 
@@ -331,13 +329,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
     }
 
     @Override
     public boolean hasNext() {
-        return (recordReader.hasNext() && notOvershot);
+        return (recordReader.hasNext() && (maxNumBatches < 0 || batchNum < maxNumBatches));
     }
 
     @Override
