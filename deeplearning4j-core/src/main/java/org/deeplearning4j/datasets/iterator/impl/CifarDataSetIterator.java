@@ -32,6 +32,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     // TODO use maxNumBatches and batchNum instead
     protected int numExamples = totalExamples;
     protected int exampleCount = 0;
+    protected boolean overshot = false;
 
 
     /** Loads images with given  batchSize, numExamples, & version returned by the generator. */
@@ -104,10 +105,14 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
                     imageData.put(3 * i + 1, byteFeature[i + 1 +     height * width]); // green
                     imageData.put(3 * i + 2, byteFeature[i + 1                     ]); // red
                 }
-                dataSets.add(new DataSet(loader.asRowVector(image), label));
-                batchNumCount++;
+                try {
+                    dataSets.add(new DataSet(loader.asRowVector(image), label));
+                    batchNumCount++;
+                } catch(Exception e){
+                    break;
+                }
             }
-            exampleCount += batchSize;
+            exampleCount += batchNumCount;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,12 +125,13 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
             labels.add(data.getLabels());
         }
 
+        batchNum++;
         if(inputs.isEmpty() || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
-            notOvershot = false;
+            overshot = true;
             return last;
         }
 
-        DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
+        DataSet ret =  new DataSet(Nd4j.vstack(inputs), Nd4j.vstack(labels));
         last = ret;
         if(preProcessor != null) preProcessor.preProcess(ret);
         if ( loader.getLabels() != null) ret.setLabelNames(loader.getLabels());
@@ -134,12 +140,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     @Override
     public boolean hasNext() {
-        try {
-            return exampleCount < numExamples;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return exampleCount < numExamples && (maxNumBatches == -1 || batchNum < maxNumBatches) && !overshot;
     }
 
     @Override
@@ -150,6 +151,8 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     @Override
     public void reset() {
         exampleCount = 0;
+        overshot = false;
+        batchNum = 0;
         inputStream = loader.getInputStream();
     }
 
