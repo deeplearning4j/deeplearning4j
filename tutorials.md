@@ -1,5 +1,5 @@
 ---
-title: Tutorials
+title: Deep Learning Tutorials
 layout: default
 ---
 
