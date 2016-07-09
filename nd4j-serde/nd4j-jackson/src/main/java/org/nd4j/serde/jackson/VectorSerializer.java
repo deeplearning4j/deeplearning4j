@@ -1,7 +1,6 @@
 package org.nd4j.serde.jackson;
 
 
-import java.io.IOException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -9,12 +8,16 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.IOException;
+
 /**
  * @author Adam Gibson
  */
 public class VectorSerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+        if (indArray.isView())
+            indArray = indArray.dup(indArray.ordering());
         jsonGenerator.writeStartObject();
         DataBuffer view = indArray.data();
         jsonGenerator.writeArrayFieldStart("dataBuffer");
