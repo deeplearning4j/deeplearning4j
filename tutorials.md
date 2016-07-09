@@ -3,7 +3,7 @@ title: Tutorials
 layout: default
 ---
 
-# Tutorials
+# Deep Learning Tutorials
 
 ## Basic Neural Networks
 
