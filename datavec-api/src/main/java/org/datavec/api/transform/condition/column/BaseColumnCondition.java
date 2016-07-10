@@ -83,4 +83,6 @@ public abstract class BaseColumnCondition implements Condition {
 
     public abstract boolean columnCondition(Writable writable);
 
+    @Override
+    public abstract String toString();
 }

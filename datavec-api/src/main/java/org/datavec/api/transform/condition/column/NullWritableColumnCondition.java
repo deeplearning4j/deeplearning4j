@@ -35,4 +35,9 @@ public class NullWritableColumnCondition extends BaseColumnCondition {
     public boolean columnCondition(Writable writable) {
         return writable instanceof NullWritable;
     }
+
+    @Override
+    public String toString() {
+        return "NullWritableColumnCondition()";
+    }
 }

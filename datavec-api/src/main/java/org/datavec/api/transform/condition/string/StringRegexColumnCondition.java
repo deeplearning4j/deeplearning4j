@@ -49,4 +49,9 @@ public class StringRegexColumnCondition extends BaseColumnCondition {
     public boolean columnCondition(Writable writable) {
         return writable.toString().matches(regex);
     }
+
+    @Override
+    public String toString(){
+        return "StringRegexColumnCondition(colName=\"" + column + "\",regex=\"" + regex + "\")";
+    }
 }
