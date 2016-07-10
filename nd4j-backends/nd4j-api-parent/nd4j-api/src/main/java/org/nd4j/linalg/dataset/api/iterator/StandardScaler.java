@@ -18,7 +18,9 @@ import org.slf4j.LoggerFactory;
  * Standard scaler calculates a moving column wise
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
+ * Use @link{NormalizerStandardize} instead
  */
+@Deprecated
 public class StandardScaler {
     private static Logger logger = LoggerFactory.getLogger(StandardScaler.class);
     private INDArray mean,std;
