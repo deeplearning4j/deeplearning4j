@@ -1,5 +1,5 @@
 ---
-title: Release Notes for rc3.11
+title: Release Notes
 layout: default
 ---
 
