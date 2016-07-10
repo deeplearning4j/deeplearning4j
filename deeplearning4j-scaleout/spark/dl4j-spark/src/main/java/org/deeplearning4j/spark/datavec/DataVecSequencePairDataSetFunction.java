@@ -1,10 +1,10 @@
-package org.deeplearning4j.spark.canova;
+package org.deeplearning4j.spark.datavec;
 
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.io.WritableConverter;
-import org.canova.api.writable.Writable;
-import org.canova.common.data.NDArrayWritable;
-import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
+import org.datavec.api.io.WritableConverter;
+import org.datavec.api.writable.Writable;
+import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -17,14 +17,14 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 
-/**Map {@code Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>} objects (out of a TWO canova-spark
+/**Map {@code Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>} objects (out of a TWO datavec-spark
  *  sequence record reader functions) to  DataSet objects for Spark training.
  * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
  * Supports loading data from a TWO sources only; hence supports many-to-one and one-to-many situations.
- * see {@link CanovaSequenceDataSetFunction} for the single file version
+ * see {@link DataVecSequenceDataSetFunction} for the single file version
  * @author Alex Black
  */
-public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
+public class DataVecSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
      * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length<br>
@@ -47,34 +47,34 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
     /** Constructor for equal length and no conversion of labels (i.e., regression or already in one-hot representation).
      * No data set proprocessor or writable converter
      */
-    public CanovaSequencePairDataSetFunction(){
+    public DataVecSequencePairDataSetFunction(){
         this(-1, true);
     }
 
     /**Constructor for equal length, no data set preprocessor or writable converter
-     * @see #CanovaSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
+     * @see #DataVecSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
      */
-    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression){
         this(numPossibleLabels, regression, AlignmentMode.EQUAL_LENGTH);
     }
 
     /**Constructor for data with a specified alignment mode, no data set preprocessor or writable converter
-     * @see #CanovaSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
+     * @see #DataVecSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
      */
-    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode){
         this(numPossibleLabels, regression, alignmentMode, null, null);
     }
 
     /**
      * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
      * @param regression False for classification, true for regression
-     * @param alignmentMode Alignment mode for data. See {@link CanovaSequencePairDataSetFunction.AlignmentMode}
+     * @param alignmentMode Alignment mode for data. See {@link DataVecSequencePairDataSetFunction.AlignmentMode}
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
      */
-    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression,
-                                             AlignmentMode alignmentMode, DataSetPreProcessor preProcessor,
-                                             WritableConverter converter){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression,
+                                              AlignmentMode alignmentMode, DataSetPreProcessor preProcessor,
+                                              WritableConverter converter){
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
         this.alignmentMode = alignmentMode;
@@ -160,7 +160,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
 
         DataSet ds;
         if(alignmentMode == AlignmentMode.EQUAL_LENGTH || featuresLength == labelsLength){
-            ds = new org.nd4j.linalg.dataset.DataSet(inputArr,outputArr);
+            ds = new DataSet(inputArr,outputArr);
         } else if(alignmentMode == AlignmentMode.ALIGN_END){
             if(featuresLength > labelsLength ){
                 //Input longer, pad output
@@ -189,7 +189,7 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
                 for( int j=0; j<labelsLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new org.nd4j.linalg.dataset.DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
+                ds = new DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);

@@ -52,7 +52,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw new IllegalArgumentException("Queue size must be > 0");
         this.baseIterator = baseIterator;
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
-        runnable = new IteratorRunnable();
+        runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -100,7 +100,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         //Clear the queue, reset the base iterator, set up a new thread
         blockingQueue.clear();
         baseIterator.reset();
-        runnable = new IteratorRunnable();
+        runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -191,6 +191,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
+                if(!runnable.isAlive && blockingQueue.isEmpty()){
+                    throw new IllegalStateException("Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
@@ -218,6 +221,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private volatile boolean isAlive = true;
         private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
+
+        public IteratorRunnable(boolean hasNext){
+            this.isAlive = hasNext;
+        }
+
         @Override
         public void run() {
             try {
@@ -230,7 +238,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     return;
                 }
                 else exception = new RuntimeException("Runnable interrupted unexpectedly",e); //Something else interrupted
-            } catch(RuntimeException e ){
+            } catch(RuntimeException e ) {
                 exception = e;
             } finally {
                 isAlive = false;

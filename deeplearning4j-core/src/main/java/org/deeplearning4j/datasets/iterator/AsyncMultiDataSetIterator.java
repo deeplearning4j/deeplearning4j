@@ -1,6 +1,5 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -8,7 +7,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +33,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this.iterator = iterator;
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
-        runnable = new AsyncMultiDataSetIterator.IteratorRunnable();
+        runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -72,7 +70,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         //Clear the queue, reset the base iterator, set up a new thread
         queue.clear();
         iterator.reset();
-        runnable = new AsyncMultiDataSetIterator.IteratorRunnable();
+        runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -133,6 +131,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
+                if(!runnable.isAlive && queue.isEmpty()){
+                    throw new IllegalStateException("Unexpected state occurred for AsyncMultiDataSetIterator: runnable died or no data available");
+                }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
@@ -165,6 +166,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private volatile boolean isAlive = true;
         private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
+
+        public IteratorRunnable(boolean hasNext){
+            this.isAlive = hasNext;
+        }
+
         @Override
         public void run() {
             try {
