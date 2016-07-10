@@ -47,7 +47,7 @@ public class HtmlAnalysis {
         Configuration cfg = new Configuration(new Version(2, 3, 23));
 
         // Where do we load the templates from:
-        cfg.setClassForTemplateLoading(HtmlAnalysis.class, "");
+        cfg.setClassForTemplateLoading(HtmlAnalysis.class, "/templates/");
 
         // Some other recommended settings:
         cfg.setIncompatibleImprovements(new Version(2, 3, 23));
