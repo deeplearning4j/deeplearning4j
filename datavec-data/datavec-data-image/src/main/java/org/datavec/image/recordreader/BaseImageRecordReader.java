@@ -297,6 +297,10 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         return labels;
     }
 
+    public void setLabels(List<String> labels) {
+        this.labels = labels;
+    }
+
     @Override
     public void reset() {
         if (inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");

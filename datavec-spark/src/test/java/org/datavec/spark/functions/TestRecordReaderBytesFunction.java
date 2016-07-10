@@ -51,6 +51,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
         //Local file path
         ClassPathResource cpr = new ClassPathResource("/imagetest/0/a.bmp");
+        List<String> labelsList = Arrays.asList("0", "1");   //Need this for Spark: can't infer without init call
         String path = cpr.getFile().getAbsolutePath();
         String folder = path.substring(0, path.length() - 7);
         path = folder + "*";
@@ -67,13 +68,14 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
         //Load data from sequence file, parse via RecordReader:
         JavaPairRDD<Text, BytesWritable> fromSeqFile = sc.sequenceFile(outPath, Text.class, BytesWritable.class);
-        RecordReader rr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
-        JavaRDD<Collection<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(rr));
+        ImageRecordReader irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
+        irr.setLabels(labelsList);
+        JavaRDD<Collection<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(irr));
 
 
         //Next: do the same thing locally, and compare the results
         InputSplit is = new FileSplit(new File(folder), new String[]{"bmp"}, true);
-        ImageRecordReader irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
+        irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);
 
         List<Collection<Writable>> list = new ArrayList<>(4);

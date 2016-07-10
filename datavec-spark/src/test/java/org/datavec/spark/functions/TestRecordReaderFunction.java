@@ -52,7 +52,9 @@ public class TestRecordReaderFunction extends BaseSparkTest {
         JavaPairRDD<String,PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(4,origData.count());    //4 images
 
-        RecordReaderFunction rrf = new RecordReaderFunction(new ImageRecordReader(28,28,1,new ParentPathLabelGenerator()));
+        ImageRecordReader irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
+        irr.setLabels(labelsList);
+        RecordReaderFunction rrf = new RecordReaderFunction(irr);
         JavaRDD<Collection<Writable>> rdd = origData.map(rrf);
         List<Collection<Writable>> listSpark = rdd.collect();
 
@@ -65,7 +67,7 @@ public class TestRecordReaderFunction extends BaseSparkTest {
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
         InputSplit is = new FileSplit(new File(folder),new String[]{"bmp"}, true);
 //        System.out.println("Locations: " + Arrays.toString(is.locations()));
-        ImageRecordReader irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
+        irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
         irr.initialize(is);
 
         List<Collection<Writable>> list = new ArrayList<>(4);
