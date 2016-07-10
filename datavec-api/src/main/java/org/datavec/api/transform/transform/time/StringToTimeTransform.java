@@ -31,7 +31,9 @@ import java.io.ObjectOutputStream;
 import java.util.TimeZone;
 
 /**
- * Convert a String column to a time column by parsing the date/time String, using a JodaTime
+ * Convert a String column to a time column by parsing the date/time String, using a JodaTime.
+ *
+ * Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
  *
  * @author Alex Black
  */

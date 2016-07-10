@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
+import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.schema.Schema;
@@ -25,15 +26,22 @@ import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
+import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
+import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
 import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
 import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
 import org.datavec.api.transform.transform.column.RenameColumnsTransform;
 import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.normalize.Normalize;
 import org.datavec.api.transform.transform.doubletransform.*;
+import org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform;
+import org.datavec.api.transform.transform.string.StringMapTransform;
+import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.sequence.SequenceComparator;
@@ -44,6 +52,7 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
+import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
 import java.util.*;
@@ -416,16 +425,52 @@ public class TransformProcess implements Serializable {
 
 
         /**
-         * Convert the specified columns from a categorical representation to a one-hot representation.
+         * Convert the specified column(s) from a categorical representation to a one-hot representation.
          * This involves the creation of multiple new columns each.
          *
-         * @param columnNames Names of the categorical columns to convert to a one-hot representation
+         * @param columnNames Names of the categorical column(s) to convert to a one-hot representation
          */
         public Builder categoricalToOneHot(String... columnNames) {
             for (String s : columnNames) {
                 transform(new CategoricalToOneHotTransform(s));
             }
             return this;
+        }
+
+        /**
+         * Convert the specified column(s) from a categorical representation to an integer representation.
+         * This will replace the specified categorical column(s) with an integer repreesentation, where
+         * each integer has the value 0 to numCategories-1.
+         *
+         * @param columnNames Name of the categorical column(s) to convert to an integer representation
+         */
+        public Builder categoricalToInteger(String... columnNames){
+            for(String s : columnNames){
+                transform(new CategoricalToIntegerTransform(s));
+            }
+            return this;
+        }
+
+        /**
+         * Convert the specified column from an integer representation (assume values 0 to numCategories-1) to
+         * a categorical representation, given the specified state names
+         *
+         * @param columnName       Name of the column to convert
+         * @param categoryStateNames    Names of the states for the categorical column
+         */
+        public Builder integerToCategorical(String columnName, List<String> categoryStateNames){
+            return transform(new IntegerToCategoricalTransform(columnName, categoryStateNames));
+        }
+
+        /**
+         * Convert the specified column from an integer representation to a categorical representation, given the specified
+         * mapping between integer indexes and state names
+         *
+         * @param columnName       Name of the column to convert
+         * @param categoryIndexNameMap    Names of the states for the categorical column
+         */
+        public Builder integerToCategorical(String columnName, Map<Integer,String> categoryIndexNameMap){
+            return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
         }
 
         /**
@@ -563,6 +608,62 @@ public class TransformProcess implements Serializable {
         public Builder calculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator, boolean ascending){
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator, ascending)));
             return this;
+        }
+
+        /**
+         * Convert the specified String column to a categorical column. The state names must be provided.
+         *
+         * @param columnName    Name of the String column to convert to categorical
+         * @param stateNames    State names of the category
+         */
+        public Builder stringToCategorical(String columnName, List<String> stateNames){
+            return transform(new StringToCategoricalTransform(columnName, stateNames));
+        }
+
+        /**
+         * Remove all whitespace characters from the values in the specified String column
+         *
+         * @param columnName    Name of the column to remove whitespace from
+         */
+        public Builder stringRemoveWhitespaceTransform(String columnName){
+            return transform(new RemoveWhiteSpaceTransform(columnName));
+        }
+
+        /**
+         * Replace one or more String values in the specified column with new values.
+         *
+         * Keys in the map are the original values; the Values in the map are their replacements.
+         * If a String appears in the data but does not appear in the provided map (as a key), that String values will
+         * not be modified.
+         *
+         * @param columnName    Name of the column in which to do replacement
+         * @param mapping       Map of oldValues -> newValues
+         */
+        public Builder stringMapTransform(String columnName, Map<String,String> mapping){
+            return transform(new StringMapTransform(columnName, mapping));
+        }
+
+        /**
+         * Convert a String column (containing a date/time String) to a time column (by parsing the date/time String)
+         *
+         * @param column          String column containing the date/time Strings
+         * @param format          Format of the strings. Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+         * @param dateTimeZone    Timezone of the column
+         */
+        public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone){
+            return transform(new StringToTimeTransform(column, format, dateTimeZone));
+        }
+
+        /**
+         * Replace the values in a specified column with a specified new value, if some condition holds.
+         * If the condition does not hold, the original values are not modified.
+         *
+         * @param column       Column to operate on
+         * @param newValue     Value to use as replacement, if condition is satisfied
+         * @param condition    Condition that must be satisfied for replacement
+         */
+        public Builder conditionalReplaceValueTransform(String column, Writable newValue, Condition condition){
+            return transform(new ConditionalReplaceValueTransform(column, newValue, condition));
         }
 
         /**
