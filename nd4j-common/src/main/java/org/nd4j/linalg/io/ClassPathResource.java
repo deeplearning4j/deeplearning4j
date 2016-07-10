@@ -1,11 +1,16 @@
 package org.nd4j.linalg.io;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.commons.io.IOUtils;
+
+import java.io.*;
 import java.net.URL;
 
-
+/**
+ * A slightly upgraded version of spring's
+ * classpath resource
+ *
+ *
+ */
 public class ClassPathResource extends AbstractFileResolvingResource {
     private final String path;
     private ClassLoader classLoader;
@@ -44,6 +49,27 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
     public final ClassLoader getClassLoader() {
         return this.classLoader != null?this.classLoader:this.clazz.getClassLoader();
+    }
+
+    /**
+     * Get a temp file from the classpath.
+     * This is for resources where
+     * a file is needed and the
+     * classpath resource is in a jar file
+     * @return the temp file
+     * @throws IOException
+     */
+    public File getTempFileFromArchive() throws IOException {
+        InputStream is = getInputStream();
+        File tmpFile = new File(path + "tmp");
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+        tmpFile.deleteOnExit();
+        IOUtils.copy(is,bos);
+        bos.flush();
+        bos.close();
+        is.close();
+        return tmpFile;
+
     }
 
     public boolean exists() {
