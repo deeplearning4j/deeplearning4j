@@ -24,8 +24,10 @@ import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -40,6 +42,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -199,21 +202,20 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
-                .iterations(5)
-                .batchSize(250)
-                .layerSize(150)
+                .iterations(3)
+                .batchSize(64)
+                .layerSize(100)
                 .stopWords(new ArrayList<String>())
                 .seed(42)
                 .learningRate(0.025)
                 .minLearningRate(0.001)
                 .sampling(0)
-                .negativeSample(10)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                //.negativeSample(10)
                 .epochs(1)
                 .windowSize(5)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
-                .setVectorsListeners(new ArrayList<VectorsListener<VocabWord>>(Collections.singletonList(new ScoreListener<VocabWord>(ListenerEvent.ITERATION, 10))))
-                //  .setVectorsListeners(new ArrayList<VectorsListener<VocabWord>>(Collections.singletonList(new SimilarityListener<VocabWord>(ListenerEvent.ITERATION, 50, "day", "night"))))
                 .tokenizerFactory(t)
                 .build();
 
@@ -253,6 +255,16 @@ public class Word2VecTests {
         assertTrue(lst.contains("year"));
 
         new File("cache.ser").delete();
+
+        ArrayList<String> labels = new ArrayList<>();
+        labels.add("day");
+        labels.add("night");
+        labels.add("week");
+
+        INDArray matrix = vec.getWordVectors(labels);
+        assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("day"));
+        assertEquals(matrix.getRow(1), vec.getWordVectorMatrix("night"));
+        assertEquals(matrix.getRow(2), vec.getWordVectorMatrix("week"));
     }
 
     /**

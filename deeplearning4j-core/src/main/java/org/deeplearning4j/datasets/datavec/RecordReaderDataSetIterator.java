@@ -16,21 +16,20 @@
  *
  */
 
-package org.deeplearning4j.datasets.canova;
+package org.deeplearning4j.datasets.datavec;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
-import org.canova.api.io.WritableConverter;
-import org.canova.api.io.converters.SelfWritableConverter;
-import org.canova.api.io.converters.WritableConverterException;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.writable.Writable;
-import org.canova.common.data.NDArrayWritable;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.datavec.api.io.WritableConverter;
+import org.datavec.api.io.converters.SelfWritableConverter;
+import org.datavec.api.io.converters.WritableConverterException;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.writable.Writable;
+import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -210,15 +209,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             NDArrayWritable writable = (NDArrayWritable)currList.get(0);
             return new DataSet(writable.get(),writable.get());
         }
-       if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
-           if(!regression)
-               label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
-           else
-               label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
-           NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
-           featureVector = ndArrayWritable.get();
-           return new DataSet(featureVector,label);
-       }
+        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+            if(!regression)
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
+            else
+                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+            NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
+            featureVector = ndArrayWritable.get();
+            return new DataSet(featureVector,label);
+        }
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);

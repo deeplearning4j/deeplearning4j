@@ -110,6 +110,24 @@ public interface WordVectors extends Serializable {
      * @return the ndarray for this word
      */
     INDArray getWordVectorMatrix(String word);
+
+
+    /**
+     * This method returns 2D array, where each row represents corresponding word/label
+     *
+     * @param labels
+     * @return
+     */
+    INDArray getWordVectors(Collection<String> labels);
+
+    /**
+     * This method returns mean vector, built from words/labels passed in
+     *
+     * @param labels
+     * @return
+     */
+    INDArray getWordVectorsMean(Collection<String> labels);
+
     /**
      * Words nearest based on positive and negative words
      * @param positive the positive words

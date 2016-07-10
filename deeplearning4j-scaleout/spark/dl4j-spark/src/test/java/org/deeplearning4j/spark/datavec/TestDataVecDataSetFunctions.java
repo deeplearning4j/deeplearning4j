@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.canova;
+package org.deeplearning4j.spark.datavec;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -6,25 +6,26 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.SequenceRecordReader;
-import org.canova.api.records.reader.impl.CSVSequenceRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.split.NumberedFileInputSplit;
-import org.canova.api.util.ClassPathResource;
-import org.canova.api.writable.Writable;
-import org.canova.image.recordreader.ImageRecordReader;
-import org.canova.spark.functions.SequenceRecordReaderFunction;
-import org.canova.spark.functions.pairdata.*;
-import org.canova.spark.util.CanovaSparkUtil;
-import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
+
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
+import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.NumberedFileInputSplit;
+import org.datavec.api.writable.Writable;
+import org.datavec.image.recordreader.ImageRecordReader;
+import org.datavec.spark.functions.SequenceRecordReaderFunction;
+import org.datavec.spark.functions.pairdata.*;
+import org.datavec.spark.util.DataVecSparkUtil;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
+
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.MultiDataSet;
 import scala.Tuple2;
 
 import java.io.File;
@@ -37,10 +38,10 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class TestCanovaDataSetFunctions extends BaseSparkTest {
+public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
     @Test
-    public void testCanovaDataSetFunction() throws Exception {
+    public void testDataVecDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
         File f = new File("src/test/resources/imagetest/0/a.bmp");
@@ -53,15 +54,15 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<String,PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(4,origData.count());    //4 images
 
-        RecordReader rr = new ImageRecordReader(28,28,1,true,labelsList);
-        org.canova.spark.functions.RecordReaderFunction rrf = new org.canova.spark.functions.RecordReaderFunction(rr);
+        RecordReader rr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
+        org.datavec.spark.functions.RecordReaderFunction rrf = new org.datavec.spark.functions.RecordReaderFunction(rr);
         JavaRDD<Collection<Writable>> rdd = origData.map(rrf);
-        JavaRDD<DataSet> data = rdd.map(new CanovaDataSetFunction(1,2,false));
+        JavaRDD<DataSet> data = rdd.map(new DataVecDataSetFunction(1,2,false));
         List<DataSet> collected = data.collect();
 
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
         InputSplit is = new FileSplit(new File(folder),new String[]{"bmp"}, true);
-        ImageRecordReader irr = new ImageRecordReader(28,28,1,true);
+        ImageRecordReader irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
         irr.initialize(is);
 
         RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(irr,1,1,2);
@@ -97,7 +98,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testCanovaSequenceDataSetFunction() throws Exception {
+    public void testDataVecSequenceDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
 
@@ -113,7 +114,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         SequenceRecordReader seqRR = new CSVSequenceRecordReader(1,",");
         SequenceRecordReaderFunction rrf = new SequenceRecordReaderFunction(seqRR);
         JavaRDD<Collection<Collection<Writable>>> rdd = origData.map(rrf);
-        JavaRDD<DataSet> data = rdd.map(new CanovaSequenceDataSetFunction(2, -1, true, null, null));
+        JavaRDD<DataSet> data = rdd.map(new DataVecSequenceDataSetFunction(2, -1, true, null, null));
         List<DataSet> collected = data.collect();
 
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
@@ -154,7 +155,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testCanovaSequencePairDataSetFunction() throws Exception {
+    public void testDataVecSequencePairDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
 
         //Convert data to a SequenceFile:
@@ -164,7 +165,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         path = folder + "*";
 
         PathToKeyConverter pathConverter = new PathToKeyConverterFilename();
-        JavaPairRDD<Text,BytesPairWritable> toWrite = CanovaSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
+        JavaPairRDD<Text,BytesPairWritable> toWrite = DataVecSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
 
         Path p = Files.createTempDirectory("dl4j_testSeqPairFn");
         p.toFile().deleteOnExit();
@@ -181,7 +182,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         JavaRDD<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> writables = fromSeq.map(psrbf);
 
             //Map to DataSet:
-        CanovaSequencePairDataSetFunction pairFn = new CanovaSequencePairDataSetFunction();
+        DataVecSequencePairDataSetFunction pairFn = new DataVecSequencePairDataSetFunction();
         JavaRDD<DataSet> data = writables.map(pairFn);
         List<DataSet> sparkData = data.collect();
 
@@ -246,8 +247,8 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testCanovaSequencePairDataSetFunctionVariableLength() throws Exception {
-        //Same sort of test as testCanovaSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
+    public void testDataVecSequencePairDataSetFunctionVariableLength() throws Exception {
+        //Same sort of test as testDataVecSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
 
         //Convert data to a SequenceFile:
         File f = new File("src/test/resources/csvsequence/csvsequence_0.txt");
@@ -262,7 +263,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
 
 
         PathToKeyConverter pathConverter = new PathToKeyConverterNumber();  //Extract a number from the file name
-        JavaPairRDD<Text,BytesPairWritable> toWrite = CanovaSparkUtil.combineFilesForSequenceFile(sc, pathFeatures, pathLabels, pathConverter);
+        JavaPairRDD<Text,BytesPairWritable> toWrite = DataVecSparkUtil.combineFilesForSequenceFile(sc, pathFeatures, pathLabels, pathConverter);
 
         Path p = Files.createTempDirectory("dl4j_testSeqPairFnVarLength");
         p.toFile().deleteOnExit();
@@ -279,7 +280,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         JavaRDD<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> writables = fromSeq.map(psrbf);
 
         //Map to DataSet:
-        CanovaSequencePairDataSetFunction pairFn = new CanovaSequencePairDataSetFunction(4,false, CanovaSequencePairDataSetFunction.AlignmentMode.ALIGN_END);
+        DataVecSequencePairDataSetFunction pairFn = new DataVecSequencePairDataSetFunction(4,false, DataVecSequencePairDataSetFunction.AlignmentMode.ALIGN_END);
         JavaRDD<DataSet> data = writables.map(pairFn);
         List<DataSet> sparkData = data.collect();
 
@@ -347,7 +348,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
 
         //-------------------------------------------------
         //NOW: test same thing, but for align start...
-        CanovaSequencePairDataSetFunction pairFnAlignStart = new CanovaSequencePairDataSetFunction(4,false, CanovaSequencePairDataSetFunction.AlignmentMode.ALIGN_START);
+        DataVecSequencePairDataSetFunction pairFnAlignStart = new DataVecSequencePairDataSetFunction(4,false, DataVecSequencePairDataSetFunction.AlignmentMode.ALIGN_START);
         JavaRDD<DataSet> rddDataAlignStart = writables.map(pairFnAlignStart);
         List<DataSet> sparkDataAlignStart = rddDataAlignStart.collect();
 

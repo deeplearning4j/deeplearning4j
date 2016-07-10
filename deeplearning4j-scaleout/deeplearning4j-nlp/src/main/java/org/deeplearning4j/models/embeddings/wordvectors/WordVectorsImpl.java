@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -196,6 +198,41 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Override
     public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
         return modelUtils.wordsNearest(positive, negative, top);
+    }
+
+    /**
+     * This method returns 2D array, where each row represents corresponding label
+     *
+     * @param labels
+     * @return
+     */
+    @Override
+    public INDArray getWordVectors(@NonNull Collection<String> labels) {
+        int indexes[] = new int[labels.size()];
+        int cnt = 0;
+        for (String label: labels) {
+            if (vocab.containsWord(label)) {
+                indexes[cnt] = vocab.indexOf(label);
+            } else indexes[cnt] = -1;
+            cnt++;
+        }
+
+        indexes = ArrayUtils.removeElement(indexes, -1);
+
+        INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
+        return result;
+    }
+
+    /**
+     * This method returns mean vector, built from words/labels passed in
+     *
+     * @param labels
+     * @return
+     */
+    @Override
+    public INDArray getWordVectorsMean(Collection<String> labels) {
+        INDArray array = getWordVectors(labels);
+        return array.mean(0);
     }
 
     /**
