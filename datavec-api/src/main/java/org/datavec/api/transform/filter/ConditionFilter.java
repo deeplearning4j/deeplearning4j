@@ -56,4 +56,9 @@ public class ConditionFilter implements Filter {
     public Schema getInputSchema() {
         return condition.getInputSchema();
     }
+
+    @Override
+    public String toString(){
+        return "ConditionFilter(" + condition + ")";
+    }
 }

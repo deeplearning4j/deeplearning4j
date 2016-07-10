@@ -119,4 +119,10 @@ public class TimeColumnCondition extends BaseColumnCondition {
                 throw new RuntimeException("Unknown or not implemented op: " + op);
         }
     }
+
+    @Override
+    public String toString() {
+        return "TimeColumnCondition(colName=\"" + column + "\"," + op + "," +
+                (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+    }
 }

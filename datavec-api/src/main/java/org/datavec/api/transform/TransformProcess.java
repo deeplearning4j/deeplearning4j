@@ -142,6 +142,7 @@ public class TransformProcess implements Serializable {
                 Transform t = d.getTransform();
                 currInputSchema = t.transform(currInputSchema);
             } else if (d.getFilter() != null) {
+                i++;
                 continue; //Filter -> doesn't change schema
             } else if (d.getConvertToSequence() != null) {
                 if (currInputSchema instanceof SequenceSchema) {
