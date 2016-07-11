@@ -9,12 +9,13 @@ layout: default
 * Refactored the Spark API significantly
 * Added CuDNN wrapper 
 * Performance improvements for ND4J
-* Introducing DataVec: Lots of new functionality for transforming, preprocessing, cleaning data. (This replaces Canova)
+* Introducing [DataVec](https://github.com/deeplearning4j/datavec): Lots of new functionality for transforming, preprocessing, cleaning data. (This replaces Canova)
 * New DataSetIterators for feeding neural nets with existing data: ExistingDataSetIterator, Floats(Double)DataSetIterator, IteratorDataSetIterator
 * New learning algorithms for word2vec and paravec: CBOW and PV-DM respectively
 * New native ops for better performance: DropOut, DropOutInverted, CompareAndSet, ReplaceNaNs
 * Shadow asynchronous datasets prefetch enabled by default for both MultiLayerNetwork and ComputationGraph
 * Better memory handling with JVM GC and CUDA backend, resulting in significantly lower memory footprint
+
 
 <p align="center">
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
