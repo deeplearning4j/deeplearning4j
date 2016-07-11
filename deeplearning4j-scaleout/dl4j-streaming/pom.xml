@@ -6,12 +6,12 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-streaming_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
-    <version>0.4.0</version>
+    <version>0.4.1-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4.0</version>
+        <version>0.4.1-SNAPSHOT</version>
     </parent>
 
     <name>Dl4j Streaming</name>
