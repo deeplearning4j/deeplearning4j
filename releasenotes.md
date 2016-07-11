@@ -16,4 +16,15 @@ layout: default
 * Shadow asynchronous datasets prefetch enabled by default for both MultiLayerNetwork and ComputationGraph
 * Better memory handling with JVM GC and CUDA backend, resulting in significantly lower memory footprint
 
-[Deeplearning4j on Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+## Resources
+
+* [Deeplearning4j on Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+* [Deeplearning4j Source Code](https://github.com/deeplearning4j/deeplearning4j/)
+* [ND4J Source Code](https://github.com/deeplearning4j/nd4j/)
+* [libnd4j Source Code](https://github.com/deeplearning4j/libnd4j/)
+
+## Roadmap
+
+* Deep Q Learning
+* Deeplearning4s Scala API
+* Standard NN configuration shared with Keras
