@@ -90,11 +90,11 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-spark_${scala.binary.version}</artifactId>
-            <version>${nd4j.version}</version>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-core</artifactId>
+                    <artifactId>spark-core_${scala.binary.version}</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
