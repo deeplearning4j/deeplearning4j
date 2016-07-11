@@ -34,7 +34,7 @@ public class TestDeepWalk {
 
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 7, ",");
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
 
         int vectorSize = 5;
         int windowSize = 2;
@@ -194,7 +194,7 @@ public class TestDeepWalk {
         int nVertices = 13;
 
         ClassPathResource cpr = new ClassPathResource("graph13.txt");
-        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 13, ",");
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 13, ",");
 
         System.out.println(graph);
 
@@ -228,7 +228,7 @@ public class TestDeepWalk {
     public void testDeepWalkWeightedParallel() throws IOException {
 
         //Load graph
-        String path = new ClassPathResource("WeightedGraph.txt").getFile().getAbsolutePath();
+        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"

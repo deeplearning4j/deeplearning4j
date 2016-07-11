@@ -21,7 +21,7 @@ public class TestGraphLoadingWeighted {
     @Test
     public void testWeightedDirected() throws IOException{
 
-        String path = new ClassPathResource("WeightedGraph.txt").getFile().getAbsolutePath();
+        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
@@ -76,7 +76,7 @@ public class TestGraphLoadingWeighted {
     @Test
     public void testWeightedDirectedV2() throws Exception {
 
-        String path = new ClassPathResource("WeightedGraph.txt").getFile().getAbsolutePath();
+        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         boolean directed = true;

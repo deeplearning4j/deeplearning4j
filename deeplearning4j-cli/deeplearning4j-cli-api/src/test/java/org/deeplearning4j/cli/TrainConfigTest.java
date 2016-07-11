@@ -47,10 +47,10 @@ public class TrainConfigTest {
         NeuralNetConfiguration testConfig = testModelFlag.value("model.json");
         assertEquals(conf, testConfig);
 
-        FileUtils.writeStringToFile(new ClassPathResource("model.json").getFile(), json);
+        FileUtils.writeStringToFile(new ClassPathResource("model.json").getTempFileFromArchive(), json);
 
         String[] cmd = {
-                "-input",new ClassPathResource("iris.txt").getFile().getAbsolutePath(), "-conf", new ClassPathResource("model.json").getFile().getAbsolutePath(), "-output", "test_output.txt"
+                "-input",new ClassPathResource("iris.txt").getTempFileFromArchive().getAbsolutePath(), "-conf", new ClassPathResource("model.json").getTempFileFromArchive().getAbsolutePath(), "-output", "test_output.txt"
         };
 
         Train train = new Train(cmd);
