@@ -29,7 +29,6 @@ import java.util.*;
  * Created by nyghtowl on 12/17/15.
  */
 public class CifarLoader extends NativeImageLoader implements Serializable {
-
     public final static int NUM_TRAIN_IMAGES = 50000;
     public final static int NUM_TEST_IMAGES = 10000;
     public final static int NUM_LABELS = 10; // 6000 imgs per class
@@ -43,7 +42,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public static String dataBinUrl = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
     public static String dataBinFile = "cifar-10-batches-bin";
     protected static String labelFileName = "batches.meta.txt";
-    protected List<String> labels = new ArrayList<>();
+    protected static List<String> labels = new ArrayList<>();
 
     protected static String[] trainFileNames = {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
     protected static String testFileName = "test_batch.bin";
@@ -56,6 +55,10 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public final static File TRAINPATH = new File(fullDir, "train");
     public final static File TESTPATH = new File(fullDir, FilenameUtils.concat(dataBinFile, testFileName));
     public final static File LABELPATH = new File(fullDir, FilenameUtils.concat(dataBinFile, labelFileName));
+    static {
+        load();
+    }
+
 
     public CifarLoader(boolean train){
         this.train = train;
@@ -108,13 +111,13 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         throw new UnsupportedOperationException();
     }
 
-    public void generateMaps() {
+    public static void generateMaps() {
         cifarTrainData.put("filesFilename", new File(dataBinUrl).getName());
         cifarTrainData.put("filesURL", dataBinUrl);
         cifarTrainData.put("filesFilenameUnzipped", dataBinFile);
     }
 
-    private void defineLabels() {
+    private static void defineLabels() {
         try {
             File path = new File(fullDir, FilenameUtils.concat(dataBinFile, labelFileName));
             BufferedReader br = new BufferedReader(new FileReader(path));
@@ -129,7 +132,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         }
     }
 
-    public void load()  {
+    public static void load()  {
         if (!imageFilesExist() && !fullDir.exists()) {
             generateMaps();
             fullDir.mkdir();
@@ -140,7 +143,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         defineLabels();
     }
 
-    public boolean imageFilesExist(){
+    public static boolean imageFilesExist(){
         File f = new File(fullDir, FilenameUtils.concat(dataBinFile, testFileName));
         if (!f.exists()) return false;
 
@@ -156,7 +159,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         InputStream in = null;
 
         try {
-        // Create inputStream
+            // Create inputStream
             if(train) {
                 Collection<File> subFiles = FileUtils.listFiles(new File(fullDir, dataBinFile), new String[] {"bin"}, true);
                 Iterator trainIter = subFiles.iterator();
