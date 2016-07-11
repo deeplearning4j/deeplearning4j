@@ -46,7 +46,7 @@ public class BarnesHutTsneTest {
                 .build();
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
-        File f = resource.getFile();
+        File f = resource.getTempFileFromArchive();
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,784));
 
 
