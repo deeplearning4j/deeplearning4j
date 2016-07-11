@@ -20,6 +20,11 @@ public class RecordReaderMultiDataSetIteratorTest {
 
     @Test
     public void testsBasic() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
 
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
         RecordReader rr = new CSVRecordReader(0,",");
@@ -162,6 +167,11 @@ public class RecordReaderMultiDataSetIteratorTest {
     public void testSplittingCSVSequence() throws Exception {
         //Idea: take CSV sequences, and split "csvsequence_i.txt" into two separate inputs; keep "csvSequencelables_i.txt"
         // as standard one-hot output
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
 
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
@@ -258,6 +268,12 @@ public class RecordReaderMultiDataSetIteratorTest {
 
     @Test
     public void testVariableLengthTS() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        }
 
         //Set up SequenceRecordReaderDataSetIterators for comparison
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
