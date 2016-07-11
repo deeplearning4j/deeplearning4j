@@ -158,7 +158,7 @@ template<typename OpType>
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex n = shape::length(xShapeBuffer);
 
-		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+		for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 			result[resultIndexes[i]] = OpType::op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 		}
 	}
@@ -232,7 +232,7 @@ template<typename OpType>
 			int yCoord[MAX_RANK];
 
 			if (dx == result) {
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 
@@ -243,7 +243,7 @@ template<typename OpType>
 			} else {
     			int resultCoord[MAX_RANK];
 
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 					shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
@@ -287,11 +287,11 @@ template<typename OpType>
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if (incx == incy && incy == incz && incx == 1) {
-			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 				result[i] = OpType::op(dx[i], dy[i], params);
 			}
 		} else {
-			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 				result[i * incz] = OpType::op(dx[i * incx], dy[i * incy], params);
 			}
 		}

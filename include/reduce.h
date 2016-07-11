@@ -117,7 +117,7 @@ template<typename OpType>
 				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				if (elementWiseStride >= 1) {
-					for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
+					for (Nd4jIndex i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[i * elementWiseStride], extraParams), extraParams);
 					}
 				}
@@ -125,7 +125,7 @@ template<typename OpType>
 					int rank = shape::rank(xShapeInfo);
 					int ind2sub[MAX_RANK];
 
-					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
+					for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
 						int offset = shape::getOffset(0, shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
@@ -162,7 +162,7 @@ template<typename OpType>
 
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
-						for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+						for (Nd4jIndex i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
 							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 						}
 						__syncthreads();

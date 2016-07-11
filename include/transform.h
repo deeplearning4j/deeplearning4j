@@ -111,8 +111,7 @@ namespace functions {
 			int *indexes) {
 		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -179,7 +178,7 @@ static __inline__ __device__ void transformCuda(
 			int xCoord[MAX_RANK];
 
 #pragma unroll
-			for (int i = tid; i < length; i+= gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < length; i+= gridDim.x * blockDim.x) {
 				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
@@ -363,7 +362,7 @@ template<typename OpType>
 
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided)
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[resultIndexes[i]] = OpType::op(dx[indexes[i]], extraParams);
 				}
 			}
@@ -378,18 +377,18 @@ template<typename OpType>
                 if (xStride == 1 && resultStride == 1) {
 					if (n > 2048) {
 #pragma omp parallel for simd schedule(guided)
-						for (int i = 0; i < n; i++) {
+						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], extraParams);
 						}
 					} else {
 #pragma omp simd
-						for (int i = 0; i < n; i++) {
+						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], extraParams);
 						}
 					}
                 } else {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
-                        for (int i = 0; i < n; i++) {
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = OpType::op(dx[i * xStride], extraParams);
                         }
                 }

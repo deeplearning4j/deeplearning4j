@@ -190,7 +190,7 @@ template<typename OpType>
 						}
 					}
 					else {
-						for(int i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
+						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], extraZ), extraZ);
 						}
 					}

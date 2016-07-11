@@ -91,18 +91,18 @@ template<typename OpType>
 
             if(tadEWS > 0) {
             	if (tadEWS == 1 && yStride == 1) {
-                	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                	for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
-					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+					for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i * tadEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
             }
             else {
                 int xCoord[MAX_RANK];
-                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     result[xOffset] = OpType::op(x[xOffset], y[i * yStride]);
