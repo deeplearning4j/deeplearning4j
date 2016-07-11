@@ -64,10 +64,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public CifarLoader(int height, int width, int channels, boolean train){
         super(height, width, channels);
         this.train = train;
+        load();
     }
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, int normalizeValue, boolean train){
         super(height, width, channels, imgTransform, normalizeValue);
         this.train = train;
+        load();
     }
 
     public CifarLoader(boolean train, String localDir){
