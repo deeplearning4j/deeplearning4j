@@ -1267,6 +1267,40 @@ extern "C" __global__ void pullRowsKernelDouble(double *x,
     pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
 }
 
+template <typename T>
+__device__ void convertToHalfGeneric(T *dx, int n, half *dz) {
+    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+
+    for (int i = tid; i < n; i += blockDim.x * gridDim.x ) {
+        dz[i] = __float2half((float) dx[i]);
+    }
+}
+
+extern "C" __global__ void kernelFloatsToHalfs(float *dx, int n, half *dz) {
+    convertToHalfGeneric<float>(dx, n, dz);
+}
+
+extern "C" __global__ void kernelDoublesToHalfs(double *dx, int n, half *dz) {
+    convertToHalfGeneric<double>(dx, n, dz);
+}
+
+template <typename T>
+__device__ void convertHalfsToGeneric(half *dx, int n, T *dz) {
+    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+
+    for (int i = tid; i < n; i += blockDim.x * gridDim.x ) {
+        dz[i] = (T) __half2float(dx[i]);
+    }
+}
+
+extern "C" __global__ void kernelHalfsToDoubles(half *dx, int n, double *dz) {
+    convertHalfsToGeneric<double>(dx, n, dz);
+}
+
+extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
+    convertHalfsToGeneric<float>(dx, n, dz);
+}
+
 #endif
 
 #endif /* TRANSFORM_H_ */

@@ -4308,6 +4308,9 @@ void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPoi
 
 
 	pullRowsKernelFloat<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -4324,4 +4327,43 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 
 
 	pullRowsKernelDouble<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	float *z = reinterpret_cast<float *>(z);
+	half *x = reinterpret_cast<half *>(x);
+
+	kernelHalfsToFloats<<<32, 32, 1024, *stream>>>(x, n, z);
+}
+
+void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	double *z = reinterpret_cast<double *>(z);
+	half *x = reinterpret_cast<half *>(x);
+
+	kernelHalfsToDoubles<<<32, 32, 1024, *stream>>>(x, n, z);
+}
+
+void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	double *x = reinterpret_cast<double *>(x);
+	half *z = reinterpret_cast<half *>(z);
+
+	kernelDoublesToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
+}
+
+void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	float *x = reinterpret_cast<float *>(x);
+	half *z = reinterpret_cast<half *>(z);
+
+	kernelFloatsToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
 }

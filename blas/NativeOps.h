@@ -978,6 +978,17 @@ public:
 
     void pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets);
 
+    /*
+         Four methods below are supposed to be used for runtime conversions between Single/Double precision and Half precision
+     */
+
+    void convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+
+    void convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+
+    void convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+
+    void convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
 };
 
 
