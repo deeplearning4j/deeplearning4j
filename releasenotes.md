@@ -16,3 +16,4 @@ layout: default
 * Shadow asynchronous datasets prefetch enabled by default for both MultiLayerNetwork and ComputationGraph
 * Better memory handling with JVM GC and CUDA backend, resulting in significantly lower memory footprint
 
+[Deeplearning4j on Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
