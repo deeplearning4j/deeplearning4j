@@ -4335,8 +4335,8 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	float *z = reinterpret_cast<float *>(z);
-	half *x = reinterpret_cast<half *>(x);
+	float *z = reinterpret_cast<float *>(dz);
+	half *x = reinterpret_cast<half *>(dx);
 
 	kernelHalfsToFloats<<<32, 32, 1024, *stream>>>(x, n, z);
 }
@@ -4344,8 +4344,8 @@ void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer *dx
 void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	double *z = reinterpret_cast<double *>(z);
-	half *x = reinterpret_cast<half *>(x);
+	double *z = reinterpret_cast<double *>(dz);
+	half *x = reinterpret_cast<half *>(dx);
 
 	kernelHalfsToDoubles<<<32, 32, 1024, *stream>>>(x, n, z);
 }
@@ -4353,8 +4353,8 @@ void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer *d
 void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	double *x = reinterpret_cast<double *>(x);
-	half *z = reinterpret_cast<half *>(z);
+	double *x = reinterpret_cast<double *>(dx);
+	half *z = reinterpret_cast<half *>(dz);
 
 	kernelDoublesToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
 }
@@ -4362,8 +4362,8 @@ void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *d
 void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	float *x = reinterpret_cast<float *>(x);
-	half *z = reinterpret_cast<half *>(z);
+	float *x = reinterpret_cast<float *>(dx);
+	half *z = reinterpret_cast<half *>(dz);
 
 	kernelFloatsToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
 }

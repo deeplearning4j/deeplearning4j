@@ -7,6 +7,11 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 
+typedef struct {
+unsigned short x;
+} __half;
+
+typedef __half half;
 
 /**
  *
@@ -2150,5 +2155,159 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
     int *tadOffset = reinterpret_cast<int *>(tadOffsets);
 
     pullRowsGeneric<double>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+}
+
+
+op_def float cpu_half2float(half h) {
+    unsigned sign = ((h.x >> 15) & 1);
+    unsigned exponent = ((h.x >> 10) & 0x1f);
+    unsigned mantissa = ((h.x & 0x3ff) << 13);
+
+    if (exponent == 0x1f) {  /* NaN or Inf */
+        mantissa = (mantissa ? (sign = 0, 0x7fffff) : 0);
+        exponent = 0xff;
+    } else if (!exponent) {  /* Denorm or Zero */
+        if (mantissa) {
+            unsigned int msb;
+            exponent = 0x71;
+            do {
+                msb = (mantissa & 0x400000);
+                mantissa <<= 1;  /* normalize */
+                --exponent;
+            } while (!msb);
+            mantissa &= 0x7fffff;  /* 1.mantissa is implicit */
+        }
+    } else {
+        exponent += 0x70;
+    }
+
+    int temp = ((sign << 31) | (exponent << 23) | mantissa);
+
+    return *((float*)((void*)&temp));
+}
+
+
+op_def half cpu_float2half_rn(float f)
+{
+    half ret;
+
+    unsigned x = *((int*)(void*)(&f));
+    unsigned u = (x & 0x7fffffff), remainder, shift, lsb, lsb_s1, lsb_m1;
+    unsigned sign, exponent, mantissa;
+
+    // Get rid of +NaN/-NaN case first.
+    if (u > 0x7f800000) {
+        ret.x = 0x7fffU;
+        return ret;
+    }
+
+    sign = ((x >> 16) & 0x8000);
+
+    // Get rid of +Inf/-Inf, +0/-0.
+    if (u > 0x477fefff) {
+        ret.x = sign | 0x7c00U;
+        return ret;
+    }
+    if (u < 0x33000001) {
+        ret.x = (sign | 0x0000);
+        return ret;
+    }
+
+    exponent = ((u >> 23) & 0xff);
+    mantissa = (u & 0x7fffff);
+
+    if (exponent > 0x70) {
+        shift = 13;
+        exponent -= 0x70;
+    } else {
+        shift = 0x7e - exponent;
+        exponent = 0;
+        mantissa |= 0x800000;
+    }
+    lsb = (1 << shift);
+    lsb_s1 = (lsb >> 1);
+    lsb_m1 = (lsb - 1);
+
+    // Round to nearest even.
+    remainder = (mantissa & lsb_m1);
+    mantissa >>= shift;
+    if (remainder > lsb_s1 || (remainder == lsb_s1 && (mantissa & 0x1))) {
+        ++mantissa;
+        if (!(mantissa & 0x3ff)) {
+            ++exponent;
+            mantissa = 0;
+        }
+    }
+
+    ret.x = (sign | (exponent << 10) | mantissa);
+
+    return ret;
+}
+
+
+template<typename T>
+void convGenericToHalfs(T *dx, const int n, half *dz) {
+    if (n < 8000) {
+
+#pragma omp simd
+        for (int i = 0; i < n; i++) {
+            dz[i] = cpu_float2half_rn((float) dx[i]);
+        }
+
+    } else {
+
+#pragma omp parallel for simd schedule(guided)
+        for (int i = 0; i < n; i++) {
+            dz[i] = cpu_float2half_rn((float) dx[i]);
+        }
+
+    }
+}
+
+template<typename T>
+void convHalfsToGeneric(half *dx, const int n, T *dz) {
+    if (n < 8000) {
+
+#pragma omp simd
+        for (int i = 0; i < n; i++) {
+            dz[i] = (T) cpu_half2float( dx[i]);
+        }
+
+    } else {
+
+#pragma omp parallel for simd schedule(guided)
+        for (int i = 0; i < n; i++) {
+            dz[i] = (T) cpu_half2float(dx[i]);
+        }
+
+    }
+}
+
+void NativeOps::convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+    double *x = reinterpret_cast<double *>(dx);
+    half *z = reinterpret_cast<half *>(dz);
+
+    convGenericToHalfs<double>(x, n, z);
+}
+
+void NativeOps::convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+    float *x = reinterpret_cast<float *>(dx);
+    half *z = reinterpret_cast<half *>(dz);
+
+    convGenericToHalfs<float>(x, n, z);
+}
+
+void NativeOps::convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+    half *x = reinterpret_cast<half *>(dx);
+    double *z = reinterpret_cast<double *>(dz);
+
+    convHalfsToGeneric<double>(x, n, z);
+}
+
+void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+    half *x = reinterpret_cast<half *>(dx);
+    float *z = reinterpret_cast<float *>(dz);
+
+    convHalfsToGeneric<float>(x, n, z);
 }
 
