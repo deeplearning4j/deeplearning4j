@@ -59,7 +59,7 @@ public abstract class BaseImageLoader implements Serializable {
     public abstract INDArray asMatrix(File f) throws IOException;
     public abstract INDArray asMatrix(InputStream inputStream) throws IOException;
 
-    public void downloadAndUntar(Map urlMap, File fullDir) {
+    public static void downloadAndUntar(Map urlMap, File fullDir) {
         try {
             File file = new File(fullDir, urlMap.get("filesFilename").toString());
             if (!file.isFile()) {

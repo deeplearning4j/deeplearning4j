@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.writable.Writable;
 
@@ -101,7 +103,8 @@ public class BalancedPathFilter extends RandomPathFilter {
     @Override
     public URI[] filter(URI[] paths) {
         paths = super.filter(paths);
-
+        if(labelGenerator == null)
+            labelGenerator = new ParentPathLabelGenerator();
         Map<Writable, List<URI>> labelPaths  = new LinkedHashMap<Writable, List<URI>>();
         for (int i = 0; i < paths.length; i++) {
             URI path = paths[i];
