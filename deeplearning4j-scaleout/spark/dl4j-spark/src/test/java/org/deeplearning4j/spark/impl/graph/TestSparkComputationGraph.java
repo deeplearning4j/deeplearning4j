@@ -43,7 +43,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         JavaSparkContext sc = this.sc;
 
         RecordReader rr = new CSVRecordReader(0, ",");
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(1)
                 .addReader("iris", rr)
                 .addInput("iris", 0, 3)

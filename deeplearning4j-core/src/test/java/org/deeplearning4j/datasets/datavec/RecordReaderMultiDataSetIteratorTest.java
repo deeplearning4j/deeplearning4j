@@ -24,11 +24,11 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
         RecordReader rr = new CSVRecordReader(0,",");
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr,10,4,3);
 
         RecordReader rr2 = new CSVRecordReader(0,",");
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
                 .addReader("reader",rr2)
@@ -60,9 +60,9 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         //Load time series from CSV sequence files; compare to SequenceRecordReaderDataSetIterator
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -113,11 +113,11 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Outputs: columns 3, and 4->OneHot
 
         RecordReader rr = new CSVRecordReader(0,",");
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr,10,4,3);
 
         RecordReader rr2 = new CSVRecordReader(0,",");
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
                 .addReader("reader",rr2)
@@ -165,9 +165,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         // as standard one-hot output
 
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -235,7 +235,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Test: reference to reader that doesn't exist
         try{
             RecordReader rr = new CSVRecordReader(0,",");
-            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1)
                     .addReader("iris",rr)
@@ -248,7 +248,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Test: no inputs or outputs
         try{
             RecordReader rr = new CSVRecordReader(0,",");
-            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1)
                     .addReader("iris", rr)
@@ -262,9 +262,9 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         //Set up SequenceRecordReaderDataSetIterators for comparison
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
