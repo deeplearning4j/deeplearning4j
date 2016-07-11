@@ -35,7 +35,7 @@ public class PropertiesFlagTest extends BaseFlagTest {
 
     @Test
     public void test() throws Exception {
-        File file = new ClassPathResource("testConfig.txt").getFile();
+        File file = new ClassPathResource("testConfig.txt").getTempFileFromArchive();
         Properties propertiesFlag = new Properties();
         Configuration testConfig = propertiesFlag.value(file.getAbsolutePath());
 

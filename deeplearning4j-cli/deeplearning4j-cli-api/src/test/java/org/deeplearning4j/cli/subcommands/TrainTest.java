@@ -19,11 +19,11 @@ public class TrainTest {
 		
 
 		//String testSVMLightInputFile = "src/test/resources/data/irisSvmLight.txt";
-		File resource =  new ClassPathResource("confs/cli_train_unit_test_conf.txt").getFile();
+		File resource =  new ClassPathResource("confs/cli_train_unit_test_conf.txt").getTempFileFromArchive();
         if(!resource.isDirectory())
             throw new IllegalStateException("Resolved to a directory");
 		String conf_file = resource.getAbsolutePath();
-        FileUtils.copyFile(new ClassPathResource("data/irisSvmLight.txt").getFile(),new File(System.getProperty("java.io.tmpdir"),"data/irisSvmLight.txt"));
+        FileUtils.copyFile(new ClassPathResource("data/irisSvmLight.txt").getTempFileFromArchive(),new File(System.getProperty("java.io.tmpdir"),"data/irisSvmLight.txt"));
         String[] args = { "-conf", conf_file ,"-input",conf_file};
 		
 		Train train = new Train(args);
