@@ -117,7 +117,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
         static class Deallocator extends WorkSpace implements Pointer.Deallocator {
             Deallocator(WorkSpace w) { super(w); }
-            @Override public void deallocate() { checkCuda(cudaFree(this)); }
+            @Override public void deallocate() { checkCuda(cudaFree(this)); setNull(); }
         }
 
         WorkSpace() { }
