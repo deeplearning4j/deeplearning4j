@@ -3,7 +3,7 @@ title: Release Notes
 layout: default
 ---
 
-# Release Notes for rc3.11
+# Release Notes for version 4.0
 
 * Initial multi-GPU support viable for standalone and Spark. 
 * Refactored the Spark API significantly
