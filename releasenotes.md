@@ -23,7 +23,7 @@ layout: default
 * [ND4J Source Code](https://github.com/deeplearning4j/nd4j/)
 * [libnd4j Source Code](https://github.com/deeplearning4j/libnd4j/)
 
-## Roadmap
+## Roadmap for Summer 2016
 
 * Deep Q Learning
 * Deeplearning4s Scala API
