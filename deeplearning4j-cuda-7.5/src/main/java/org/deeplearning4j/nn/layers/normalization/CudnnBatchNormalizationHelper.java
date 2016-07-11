@@ -103,7 +103,7 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
 
         static class Deallocator extends Cache implements Pointer.Deallocator {
             Deallocator(Cache c) { super(c); }
-            @Override public void deallocate() { checkCuda(cudaFree(this)); }
+            @Override public void deallocate() { checkCuda(cudaFree(this)); setNull(); }
         }
 
         Cache() { }
