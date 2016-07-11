@@ -66,7 +66,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFromSvmLightBackprop() throws Exception {
-        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getFile().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
             @Override
             public LabeledPoint call(LabeledPoint v1) throws Exception {
                 return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
@@ -112,7 +112,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFromSvmLight() throws Exception {
-        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getFile().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
             @Override
             public LabeledPoint call(LabeledPoint v1) throws Exception {
                 return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));

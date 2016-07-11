@@ -34,7 +34,7 @@ public class DeepWalkGradientCheck {
 
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        Graph<String, String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 7, ",");
+        Graph<String, String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
 
         int vectorSize = 5;
         int windowSize = 2;
@@ -170,7 +170,7 @@ public class DeepWalkGradientCheck {
         ClassPathResource cpr = new ClassPathResource("graph13.txt");
 
         int nVertices = 13;
-        Graph<String, String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 13, ",");
+        Graph<String, String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 13, ",");
 
         int vectorSize = 10;
         int windowSize = 3;

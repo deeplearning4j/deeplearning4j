@@ -24,7 +24,7 @@ public class TestGraphLoading {
     public void testEdgeListGraphLoading() throws IOException {
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        IGraph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),7,",");
+        IGraph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(),7,",");
         System.out.println(graph);
 
         assertEquals(graph.numVertices(),7);
@@ -54,7 +54,7 @@ public class TestGraphLoading {
 
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
         VertexFactory<String> vertexFactory = new StringVertexFactory("v_%d");
-        Graph<String,String> graph = GraphLoader.loadGraph(cpr.getFile().getAbsolutePath(),
+        Graph<String,String> graph = GraphLoader.loadGraph(cpr.getTempFileFromArchive().getAbsolutePath(),
                 edgeLineProcessor,vertexFactory,10,false);
 
 
@@ -100,8 +100,8 @@ public class TestGraphLoading {
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
         VertexLoader<String> vertexLoader = new DelimitedVertexLoader(":","//");
 
-        Graph<String,String> graph = GraphLoader.loadGraph(verticesCPR.getFile().getAbsolutePath(),
-                edgesCPR.getFile().getAbsolutePath(),vertexLoader,edgeLineProcessor,false);
+        Graph<String,String> graph = GraphLoader.loadGraph(verticesCPR.getTempFileFromArchive().getAbsolutePath(),
+                edgesCPR.getTempFileFromArchive().getAbsolutePath(),vertexLoader,edgeLineProcessor,false);
 
         System.out.println(graph);
 
