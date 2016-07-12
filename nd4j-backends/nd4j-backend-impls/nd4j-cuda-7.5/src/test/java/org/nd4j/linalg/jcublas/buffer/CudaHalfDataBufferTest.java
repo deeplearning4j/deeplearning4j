@@ -1,14 +1,22 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import org.junit.Test;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.factory.CudaDataBufferFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author raver119@gmail.com
  */
 public class CudaHalfDataBufferTest {
+    private static Logger logger = LoggerFactory.getLogger(CudaHalfDataBufferTest.class);
 
     @Test
     public void testConversion1() throws Exception {
@@ -18,6 +26,11 @@ public class CudaHalfDataBufferTest {
 
         DataBuffer bufferHalfs = factory.convertToHalfs(bufferOriginal);
 
+        DataBuffer bufferRestored = factory.restoreFromHalfs(bufferHalfs);
 
+
+        logger.info("Buffer restored: {}", Arrays.toString(bufferRestored.asFloat()));
+
+        assertArrayEquals(bufferOriginal.asFloat(), bufferRestored.asFloat(), 0.01f);
     }
 }

@@ -451,11 +451,15 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         Pointer z = AtomicAllocator.getInstance().getPointer(outputBuffer, context);
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) buffer.length(), z);
-
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToFloats(extras, x, (int) buffer.length(), z);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToDoubles(extras, x, (int) buffer.length(), z);
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
         }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
 
         return outputBuffer;
     }

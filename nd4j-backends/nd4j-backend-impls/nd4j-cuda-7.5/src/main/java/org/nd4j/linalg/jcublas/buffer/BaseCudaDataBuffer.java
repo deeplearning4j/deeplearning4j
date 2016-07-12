@@ -156,8 +156,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (dataType() == Type.HALF) {
             // FIXME: proper pointer and proper indexer should be used here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asNativePointer();
-            indexer = ShortIndexer.create((ShortPointer) pointer);
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
@@ -209,8 +209,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.HALF) {
             // FIXME: proper pointer and indexer required here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asNativePointer();
-            indexer = ShortIndexer.create((ShortPointer) pointer);
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
