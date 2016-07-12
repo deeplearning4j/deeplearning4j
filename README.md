@@ -49,3 +49,8 @@ void upload(String trainingDir, String apiKey)
 void ServerShutdown() {
 StepReply<O> step(A action)
 ```
+
+## TODO
+
+* Add other Environment (Atari, etc)
+* Add continuous space

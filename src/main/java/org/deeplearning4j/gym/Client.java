@@ -116,22 +116,21 @@ public class Client<O, A> {
                 .put("force", force)
                 .put("resume", resume);
 
-        ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, json);
+        monitorStart(json);
     }
 
     public void monitorStart(String directory) {
         JSONObject json = new JSONObject()
                 .put("directory", directory);
+        monitorStart(json);
+    }
 
+    public void monitorStart(JSONObject json) {
         ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, json);
     }
 
     public void monitorClose() {
         ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_CLOSE, new JSONObject());
-    }
-
-    public void close() {
-        ClientUtils.post(url + ENVS_ROOT + instanceId + CLOSE, new JSONObject());
     }
 
     public void upload(String trainingDir, String apiKey, String algorithmId) {
@@ -140,13 +139,18 @@ public class Client<O, A> {
                 .put("api_key", apiKey)
                 .put("algorithm_id", algorithmId);
 
-        ClientUtils.post(url + ENVS_ROOT + instanceId + CLOSE, json);
+        upload(json);
     }
 
     public void upload(String trainingDir, String apiKey) {
         JSONObject json = new JSONObject()
                 .put("training_dir", trainingDir)
                 .put("api_key", apiKey);
+        upload(json);
+    }
+
+
+    public void upload(JSONObject json) {
         try {
             ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, json);
         } catch (RuntimeException e) {
