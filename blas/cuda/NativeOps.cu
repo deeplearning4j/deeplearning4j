@@ -4332,38 +4332,51 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	float *z = reinterpret_cast<float *>(dz);
 	half *x = reinterpret_cast<half *>(dx);
+	float *z = reinterpret_cast<float *>(dz);
 
 	kernelHalfsToFloats<<<32, 32, 1024, *stream>>>(x, n, z);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	double *z = reinterpret_cast<double *>(dz);
 	half *x = reinterpret_cast<half *>(dx);
+	double *z = reinterpret_cast<double *>(dz);
+
 
 	kernelHalfsToDoubles<<<32, 32, 1024, *stream>>>(x, n, z);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	double *x = reinterpret_cast<double *>(dx);
 	half *z = reinterpret_cast<half *>(dz);
 
 	kernelDoublesToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	float *x = reinterpret_cast<float *>(dx);
 	half *z = reinterpret_cast<half *>(dz);
 
 	kernelFloatsToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }

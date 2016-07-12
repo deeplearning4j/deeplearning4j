@@ -982,13 +982,13 @@ public:
          Four methods below are supposed to be used for runtime conversions between Single/Double precision and Half precision
      */
 
-    void convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+    void convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
 
-    void convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+    void convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
 
-    void convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+    void convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
 
-    void convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz);
+    void convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
 };
 
 

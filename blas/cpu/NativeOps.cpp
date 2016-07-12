@@ -2283,28 +2283,28 @@ void convHalfsToGeneric(half *dx, const int n, T *dz) {
     }
 }
 
-void NativeOps::convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz) {
     double *x = reinterpret_cast<double *>(dx);
     half *z = reinterpret_cast<half *>(dz);
 
     convGenericToHalfs<double>(x, n, z);
 }
 
-void NativeOps::convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz) {
     float *x = reinterpret_cast<float *>(dx);
     half *z = reinterpret_cast<half *>(dz);
 
     convGenericToHalfs<float>(x, n, z);
 }
 
-void NativeOps::convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz) {
     half *x = reinterpret_cast<half *>(dx);
     double *z = reinterpret_cast<double *>(dz);
 
     convHalfsToGeneric<double>(x, n, z);
 }
 
-void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer *dx, int n, Nd4jPointer *dz) {
+void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz) {
     half *x = reinterpret_cast<half *>(dx);
     float *z = reinterpret_cast<float *>(dz);
 

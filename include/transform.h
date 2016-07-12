@@ -1270,7 +1270,7 @@ template <typename T>
 __device__ void convertToHalfGeneric(T *dx, int n, half *dz) {
     int tid = threadIdx.x + blockIdx.x * gridDim.x;
 
-    for (int i = tid; i < n; i += blockDim.x * gridDim.x ) {
+    for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x ) {
         dz[i] = __float2half((float) dx[i]);
     }
 }
@@ -1287,7 +1287,7 @@ template <typename T>
 __device__ void convertHalfsToGeneric(half *dx, int n, T *dz) {
     int tid = threadIdx.x + blockIdx.x * gridDim.x;
 
-    for (int i = tid; i < n; i += blockDim.x * gridDim.x ) {
+    for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x ) {
         dz[i] = (T) __half2float(dx[i]);
     }
 }
