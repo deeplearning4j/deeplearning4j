@@ -8,6 +8,8 @@ import org.deeplearning4j.gym.space.ObservationSpace;
 import org.json.JSONObject;
 
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -145,7 +147,12 @@ public class Client<O, A> {
         JSONObject json = new JSONObject()
                 .put("training_dir", trainingDir)
                 .put("api_key", apiKey);
-        ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, json);
+        try {
+            ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, json);
+        } catch (RuntimeException e) {
+            Logger logger = Logger.getLogger("Client Upload");
+            logger.log(Level.SEVERE, "Impossible to upload: Wrong API key?");
+        }
     }
 
     public void ServerShutdown() {

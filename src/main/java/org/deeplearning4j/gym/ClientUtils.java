@@ -4,6 +4,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -51,8 +52,11 @@ public class ClientUtils {
     }
 
     static public void unirestCrash(UnirestException e) {
-        e.printStackTrace();
-        throw new RuntimeException("Connection error");
+        //if couldn't parse json
+        if (e.getCause().getCause().getCause() instanceof JSONException)
+            throw new RuntimeException("Couldn't parse json reply. Probable cause: Wrong API Key at upload");
+        else
+            throw new RuntimeException("Connection error");
     }
 
 

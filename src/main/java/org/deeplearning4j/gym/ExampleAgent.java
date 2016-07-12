@@ -32,8 +32,9 @@ public class ExampleAgent {
         }
 
         client.monitorClose();
-        //client.upload(outDir,"YOUR_OPENAI_GYM_API_KEY");
+        client.upload(outDir,"YOUR_OPENAI_GYM_API_KEY");
 
     }
+    
 
 }

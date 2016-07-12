@@ -97,7 +97,10 @@ public class ClientTest {
             }
 
         }
-        client.monitorStart(testDir);
+
+        client.monitorClose();
+        client.upload(testDir,"YOUR_OPENAI_GYM_API_KEY");
+
 
 
     }

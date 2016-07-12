@@ -36,6 +36,14 @@
             <version>1.6.5</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
