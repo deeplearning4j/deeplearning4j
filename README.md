@@ -41,7 +41,6 @@ ActionSpace<A> getActionSpace() {
 Set<String> listAll()
 O reset()
 void monitorStart(String directory, boolean force, boolean resume)
-void monitorStart(String directory)
 void monitorClose()
 void close()
 void upload(String trainingDir, String apiKey, String algorithmId)

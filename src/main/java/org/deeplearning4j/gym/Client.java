@@ -121,11 +121,16 @@ public class Client<O, A> {
         monitorStart(json);
     }
 
+    /*
+    Present in the doc but not working server-side
     public void monitorStart(String directory) {
+
         JSONObject json = new JSONObject()
                 .put("directory", directory);
+
         monitorStart(json);
     }
+    */
 
     public void monitorStart(JSONObject json) {
         ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, json);
