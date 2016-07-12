@@ -1057,8 +1057,10 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,length);
         else if(dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,length);
-        else
+        else if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,length);
+        else ret = null;
+
         logCreationIfNecessary(ret);
         return ret;
     }

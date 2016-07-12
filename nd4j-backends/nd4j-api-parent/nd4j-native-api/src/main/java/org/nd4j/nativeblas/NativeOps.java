@@ -979,4 +979,12 @@ public class NativeOps extends Pointer {
     public native void pullRowsFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
 
     public native void pullRowsDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
+
+    public native void convertDoublesToHalfs(PointerPointer extraPointers, Pointer x, int n, Pointer z);
+
+    public native void convertFloatsToHalfs(PointerPointer extraPointers, Pointer x, int n, Pointer z);
+
+    public native void convertHalfsToDoubles(PointerPointer extraPointers, Pointer x, int n, Pointer z);
+
+    public native void convertHalfsToFloats(PointerPointer extraPointers, Pointer x, int n, Pointer z);
 }

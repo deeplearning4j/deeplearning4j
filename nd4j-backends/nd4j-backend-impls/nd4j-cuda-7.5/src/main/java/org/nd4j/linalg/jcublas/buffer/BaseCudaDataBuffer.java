@@ -21,14 +21,8 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -160,6 +154,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else if (dataType() == Type.INT){
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
+        } else if (dataType() == Type.HALF) {
+            // FIXME: proper pointer and proper indexer should be used here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asNativePointer();
+            indexer = ShortIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
@@ -209,12 +207,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else if (underlyingBuffer.dataType() == Type.INT){
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
+        } else if (underlyingBuffer.dataType() == Type.HALF) {
+            // FIXME: proper pointer and indexer required here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asNativePointer();
+            indexer = ShortIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
-//        log.info("Buffer info: dataType: ["+underlyingBuffer.dataType()+"], capacity: [" + this.wrappedBuffer.capacity()+ "], limit: ["+this.wrappedBuffer.limit()+"], position: ["+ this.wrappedBuffer.position() + "]");
-
-        // TODO: make sure we're getting pointer with offset at allocator
     }
 
     public BaseCudaDataBuffer(long length) {
