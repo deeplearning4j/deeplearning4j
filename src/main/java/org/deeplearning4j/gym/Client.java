@@ -1,6 +1,7 @@
 package org.deeplearning4j.gym;
 
 
+import com.mashape.unirest.http.JsonNode;
 import org.deeplearning4j.gym.space.ActionSpace;
 import org.deeplearning4j.gym.space.BoxSpace;
 import org.deeplearning4j.gym.space.DiscreteSpace;
@@ -106,8 +107,9 @@ public class Client<O, A> {
         return listAll(url);
     }
 
-    public void reset() {
-        ClientUtils.post(url + ENVS_ROOT + instanceId + RESET, new JSONObject());
+    public O reset() {
+        JsonNode resetRep = ClientUtils.post(url + ENVS_ROOT + instanceId + RESET, new JSONObject());
+        return observationSpace.getValue(resetRep.getObject(), "observation");
     }
 
     public void monitorStart(String directory, boolean force, boolean resume) {

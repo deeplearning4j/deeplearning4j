@@ -23,7 +23,7 @@ The type parameters of a client are an Observation and an Action. It enables to 
 Unfortunately because of java's limitation (type erasure), if you set the wrong type for Observation and/or Action corresponding to the Environment Id, since it is retrieved from the server at runtime, the code will fail at runtime only when you cast an Observation or Action (when you actually retrieve one). If you get a cast error like that, it is the reason.
 
 
-The methods nomenclature follows closely the api interface of gym-http-api:
+The methods nomenclature follows closely the api interface of gym-http-api, O is Observation an A is Action:
 
 ```java
 
@@ -39,7 +39,7 @@ String getUrl()
 ObservationSpace<O> getObservationSpace()
 ActionSpace<A> getActionSpace() {
 Set<String> listAll()
-void reset()
+O reset()
 void monitorStart(String directory, boolean force, boolean resume)
 void monitorStart(String directory)
 void monitorClose()
