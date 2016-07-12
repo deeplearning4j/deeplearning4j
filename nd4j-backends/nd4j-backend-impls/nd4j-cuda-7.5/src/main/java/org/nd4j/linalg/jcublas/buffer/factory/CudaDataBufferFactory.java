@@ -405,8 +405,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
         if (buffer.dataType() == DataBuffer.Type.FLOAT) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
         } else if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().convertDoublesToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
         } else if (buffer.dataType() == DataBuffer.Type.HALF) {
             log.info("Buffer is already HALF-precision");
             return buffer;
@@ -452,8 +454,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToFloats(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToDoubles(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             log.info("Buffer is already HALF-precision");
             return buffer;
