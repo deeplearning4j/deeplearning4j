@@ -58,6 +58,7 @@ public class FeatureUtil {
         return ret;
     }
 
+    @Deprecated
     public static void normalizeMatrix(INDArray toNormalize) {
         INDArray columnMeans = toNormalize.mean(0);
         toNormalize.subiRowVector(columnMeans);
