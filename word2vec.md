@@ -141,8 +141,8 @@ Create a new project in IntelliJ using Maven. If you don't know how to do that, 
 
 ``` xml
 <properties>
-  <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
-  <dl4j.version>0.4-rc3.9</dl4j.version>
+  <nd4j.version>0.4.1-SNAPSHOT</nd4j.version> // check Maven Central for latest versions!
+  <dl4j.version>0.4.1-SNAPSHOT</dl4j.version>
 </properties>
 
 <dependencies>
@@ -169,15 +169,11 @@ Create a new project in IntelliJ using Maven. If you don't know how to do that, 
 Now create and name a new class in Java. After that, you'll take the raw sentences in your .txt file, traverse them with your iterator, and subject them to some sort of preprocessing, such as converting all words to lowercase. 
 
 ``` java
-        log.info("Load data....");
-        ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
-        SentenceIterator iter = new LineSentenceIterator(resource.getFile());
-        iter.setPreProcessor(new SentencePreProcessor() {
-            @Override
-            public String preProcess(String sentence) {
-                return sentence.toLowerCase();
-            }
-        });
+        String filePath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
+
+        log.info("Load & Vectorize Sentences....");
+        // Strip white space before and after for each line
+        SentenceIterator iter = new BasicLineIterator(filePath);
 ```
 
 If you want to load a text file besides the sentences provided in our example, you'd do this:
@@ -206,20 +202,9 @@ In bash, you can find the absolute file path of any directory by typing `pwd` in
 Word2vec needs to be fed words rather than whole sentences, so the next step is to tokenize the data. To tokenize a text is to break it up into its atomic units, creating a new token each time you hit a white space, for example. 
 
 ``` java
-        log.info("Tokenize data....");
-        final EndingPreProcessor preProcessor = new EndingPreProcessor();
-        TokenizerFactory tokenizer = new DefaultTokenizerFactory();
-        tokenizer.setTokenPreProcessor(new TokenPreProcess() {
-            @Override
-            public String preProcess(String token) {
-                token = token.toLowerCase();
-                String base = preProcessor.preProcess(token);
-                base = base.replaceAll("\\d", "d");
-                if (base.endsWith("ly") || base.endsWith("ing"))
-                    System.out.println();
-                return base;
-            }
-        });
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
 ```
 
 That should give you one word per line. 
@@ -229,23 +214,18 @@ That should give you one word per line.
 Now that the data is ready, you can configure the Word2vec neural net and feed in the tokens. 
 
 ``` java
-        int batchSize = 1000;
-        int iterations = 3;
-        int layerSize = 150;
-        
-        log.info("Build model....");
+        log.info("Building model....");
         Word2Vec vec = new Word2Vec.Builder()
-                .batchSize(batchSize) //# words per minibatch.
-                .minWordFrequency(5) // 
-                .useAdaGrad(false) //
-                .layerSize(layerSize) // word feature vector size
-                .iterations(iterations) // # iterations to train
-                .learningRate(0.025) // 
-                .minLearningRate(1e-3) // learning rate decays wrt # words. floor learning
-                .negativeSample(10) // sample size 10 words
-                .iterate(iter) //
-                .tokenizerFactory(tokenizer)
+                .minWordFrequency(5)
+                .iterations(1)
+                .layerSize(100)
+                .seed(42)
+                .windowSize(5)
+                .iterate(iter)
+                .tokenizerFactory(t)
                 .build();
+
+        log.info("Fitting Word2Vec model....");
         vec.fit();
 ```
 
@@ -267,11 +247,14 @@ This configuration accepts a number of hyperparameters. A few require some expla
 The next step is to evaluate the quality of your feature vectors. 
 
 ``` java
-        log.info("Evaluate model....");
-        double sim = vec.similarity("people", "money");
-        log.info("Similarity between people and money: " + sim);
-        Collection<String> similar = vec.wordsNearest("day", 10);
-        log.info("Similar words to 'day' : " + similar);
+        // Write word vectors
+        WordVectorSerializer.writeWordVectors(vec, "pathToWriteto.txt");
+
+        log.info("Closest Words:");
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        System.out.println(lst);
+        UiServer server = UiServer.getInstance();
+        System.out.println("Started on port " + server.getPort());
         
         //output: [night, week, year, game, season, during, office, until, -]
 ```
@@ -317,7 +300,7 @@ You'll want to save the model. The normal way to save models in Deeplearning4j i
 
 ``` java
         log.info("Save vectors....");
-        WordVectorSerializer.writeWordVectors(vec, "words.txt");
+        WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
 ```
 
 This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
@@ -337,7 +320,7 @@ Any number of combinations is possible, but they will only return sensible resul
 You can reload the vectors into memory like this:
 
 ``` java
-WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
+        Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
 ```
 
 You can then use Word2vec as a lookup table:
