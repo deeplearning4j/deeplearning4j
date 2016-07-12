@@ -9,7 +9,7 @@ public class ExampleAgent {
 
     public static void run() {
 
-        Client<Integer, Integer> client = ClientFactory.build("CartPole-v0");
+        Client<Box, Integer> client = ClientFactory.build("CartPole-v0");
 
         String outDir = "/tmp/random-agent-results";
         client.monitorStart(outDir, true, false);
@@ -23,7 +23,7 @@ public class ExampleAgent {
 
             for (int j = 0; j < maxSteps; j++) {
                 Integer action = client.getActionSpace().randomAction();
-                StepReply<Integer> step = client.step(action);
+                StepReply<Box> step = client.step(action);
                 reward += step.getReward();
                 if (step.isDone())
                     break;
@@ -35,6 +35,9 @@ public class ExampleAgent {
         client.upload(outDir,"YOUR_OPENAI_GYM_API_KEY");
 
     }
-    
+
+    public static void main(String[] args) {
+        ExampleAgent.run();
+    }
 
 }

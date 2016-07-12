@@ -1,10 +1,7 @@
 package org.deeplearning4j.gym.test;
 
 import com.mashape.unirest.http.JsonNode;
-import org.deeplearning4j.gym.Client;
-import org.deeplearning4j.gym.ClientFactory;
-import org.deeplearning4j.gym.ClientUtils;
-import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.*;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,7 +63,7 @@ public class ClientTest {
 
         //test
 
-        Client<Integer, Integer> client = ClientFactory.build(url, env);
+        Client<Box, Integer> client = ClientFactory.build(url, env);
         client.monitorStart(testDir, true, false);
 
         int episodeCount = 1;
@@ -79,7 +76,7 @@ public class ClientTest {
             for (int j = 0; j < maxSteps; j++) {
 
                 Integer action = client.getActionSpace().randomAction();
-                StepReply<Integer> step = client.step(action);
+                StepReply<Box> step = client.step(action);
                 reward += step.getReward();
 
                 //return a isDone true before i == maxSteps
