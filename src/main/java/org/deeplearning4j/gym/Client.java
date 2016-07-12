@@ -109,11 +109,19 @@ public class Client<O, A> {
     }
 
     public void monitorStart(String directory, boolean force, boolean resume) {
-        ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, new JSONObject().put("directory", directory).put("force", force).put("resume", resume));
+        JSONObject json = new JSONObject()
+                .put("directory", directory)
+                .put("force", force)
+                .put("resume", resume);
+
+        ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, json);
     }
 
     public void monitorStart(String directory) {
-        ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, new JSONObject().put("directory", directory));
+        JSONObject json = new JSONObject()
+                .put("directory", directory);
+
+        ClientUtils.post(url + ENVS_ROOT + instanceId + MONITOR_START, json);
     }
 
     public void monitorClose() {
@@ -125,11 +133,19 @@ public class Client<O, A> {
     }
 
     public void upload(String trainingDir, String apiKey, String algorithmId) {
-        ClientUtils.post(url + ENVS_ROOT + instanceId + CLOSE, new JSONObject().put("training_dir", trainingDir).put("api_key", apiKey).put("algorithm_id", algorithmId));
+        JSONObject json = new JSONObject()
+                .put("training_dir", trainingDir)
+                .put("api_key", apiKey)
+                .put("algorithm_id", algorithmId);
+
+        ClientUtils.post(url + ENVS_ROOT + instanceId + CLOSE, json);
     }
 
     public void upload(String trainingDir, String apiKey) {
-        ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, new JSONObject().put("training_dir", trainingDir).put("api_key", apiKey));
+        JSONObject json = new JSONObject()
+                .put("training_dir", trainingDir)
+                .put("api_key", apiKey);
+        ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, json);
     }
 
     public void ServerShutdown() {
@@ -137,9 +153,17 @@ public class Client<O, A> {
     }
 
     public StepReply<O> step(A action) {
-        JSONObject body = new JSONObject().put("action", action);
+        JSONObject body = new JSONObject()
+                .put("action", action);
+
         JSONObject reply = ClientUtils.post(url + ENVS_ROOT + instanceId + STEP, body).getObject();
-        return new StepReply<O>(observationSpace.getValue(reply, "observation"), reply.getDouble("reward"), reply.getBoolean("done"), reply.getJSONObject("info"));
+
+        O observation = observationSpace.getValue(reply, "observation");
+        double reward = reply.getDouble("reward");
+        boolean done = reply.getBoolean("done");
+        JSONObject info = reply.getJSONObject("info");
+
+        return new StepReply<O>(observation,  reward, done, info);
     }
 
 

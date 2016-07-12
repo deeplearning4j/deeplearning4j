@@ -14,6 +14,7 @@ public class ClientUtils {
 
     static public JsonNode post(String url, JSONObject json) {
         HttpResponse<JsonNode> jsonResponse = null;
+
         try {
             jsonResponse = Unirest.post(url)
                     .header("content-type", "application/json")
@@ -23,14 +24,13 @@ public class ClientUtils {
             unirestCrash(e);
         }
 
-
         return jsonResponse.getBody();
     }
 
 
     static public JSONObject get(String url) {
         HttpResponse<JsonNode> jsonResponse = null;
-        System.out.println(url);
+
         try {
             jsonResponse = Unirest.get(url)
                     .header("content-type", "application/json")
@@ -39,9 +39,8 @@ public class ClientUtils {
             unirestCrash(e);
         }
 
-        if (jsonResponse.getBody() != null)
-            System.out.println(jsonResponse.getBody().toString());
         checkReply(jsonResponse, url);
+
         return jsonResponse.getBody().getObject();
     }
 
