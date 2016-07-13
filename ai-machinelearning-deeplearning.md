@@ -5,7 +5,7 @@ layout: default
 
 # Artificial intelligence, machine learning & deep learning
 
-You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest. Deep learning is a subset of machine learning, which is a subset of AI.
+You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, which is a subset of AI.
 
 AI is any computer program that does something smart. 
 
@@ -26,3 +26,12 @@ They are, in short, an optimization algorithm. If you tune them right, they mini
 Deep learning is a subset of machine learning. Deep artificial neural networks are a set of algorithms setting new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. Deep learning is part of DeepMind's notorious AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016. A more complete explanation of neural works is [here](./neuralnets-overview).
 
 Deep is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line). 
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
