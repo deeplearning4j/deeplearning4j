@@ -10,9 +10,16 @@ import org.nd4j.linalg.jcublas.buffer.factory.CudaDataBufferFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
@@ -29,16 +36,49 @@ public class CudaHalfDataBufferTest {
     public void testConversion1() throws Exception {
         DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
-        CudaDataBufferFactory factory = new CudaDataBufferFactory();
+        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
 
-        DataBuffer bufferHalfs = factory.convertToHalfs(bufferOriginal);
-
-        DataBuffer bufferRestored = factory.restoreFromHalfs(bufferHalfs);
+        DataBuffer bufferRestored = Nd4j.getDataBufferFactory().restoreFromHalfs(bufferHalfs);
 
 
         logger.info("Buffer original: {}", Arrays.toString(bufferOriginal.asFloat()));
         logger.info("Buffer restored: {}", Arrays.toString(bufferRestored.asFloat()));
 
         assertArrayEquals(bufferOriginal.asFloat(), bufferRestored.asFloat(), 0.01f);
+    }
+
+    @Test
+    public void testSerialization1() throws Exception {
+        DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
+
+        File tempFile = File.createTempFile("alpha", "beta");
+        tempFile.deleteOnExit();
+
+        // now we serialize halfs, and we expect it to become floats on other side
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(tempFile.getAbsolutePath())))){
+            bufferHalfs.write(dos);
+        }
+
+        // loading data back from file
+        DataInputStream dis = new DataInputStream(new FileInputStream(tempFile.getAbsoluteFile()));
+
+        DataBuffer bufferRestored = Nd4j.createBuffer(bufferOriginal.length());
+        bufferRestored.read(dis);
+
+        assertArrayEquals(bufferOriginal.asFloat(), bufferRestored.asFloat(), 0.01f);
+    }
+
+    @Test
+    public void testSingleConversions() throws Exception {
+        CudaFloatDataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        short f = bufferOriginal.fromFloat(1.0f);
+        float h = bufferOriginal.toFloat((int) f);
+
+        logger.info("Short F: {}, Float F: {}", f, h);
+
+        assertEquals(1.0f, h, 0.001f);
     }
 }

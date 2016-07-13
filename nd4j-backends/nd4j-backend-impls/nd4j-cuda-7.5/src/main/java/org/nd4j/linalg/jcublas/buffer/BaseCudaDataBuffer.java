@@ -38,11 +38,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.*;
 import java.util.*;
 
@@ -596,8 +599,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void destroy() {
     }
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws IOException {
+    @Override
+    public void write(DataOutputStream out) throws IOException {
+        allocator.synchronizeHostData(this);
+        super.write(out);
+    }
+
+    @Override
+    public void write(OutputStream dos)  {
+        allocator.synchronizeHostData(this);
+        super.write(dos);
+    }
+
+    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        allocator.synchronizeHostData(this);
         stream.defaultWriteObject();
         write(stream);
     }
@@ -681,6 +696,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = (int) s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = (int) s.readFloat();
+                    else if (t == Type.HALF)
+                        array[i] = (int) toFloat((int) s.readShort());
                 }
                 setData(array);
             }
@@ -702,13 +719,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = (double) s.readFloat();
+                    else if (t == Type.HALF)
+                        array[i] = (double) toFloat((int) s.readShort());
                 }
                 setData(array);
 
             } else if(globalType == Type.FLOAT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
-                //allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
@@ -723,8 +741,56 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = (float) s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = s.readFloat();
+                    else if (t == Type.HALF) {
+                        array[i] = toFloat((int) s.readShort());
+                    }
                 }
                 setData(array);
+            } else if (globalType == Type.HALF) {
+                this.elementSize = 2;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                indexer = HalfIndexer.create((ShortPointer) this.pointer);
+
+                float[] array = new float[(int) length];
+
+                for (int i = 0; i < length; i++) {
+                    if (t == Type.INT)
+                        array[i] = (float) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (float) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = s.readFloat();
+                    else if (t == Type.HALF) {
+                        array[i] = toFloat((int) s.readShort());
+                    }
+                }
+
+                // now, easiest approach is conversion from float buffer to halfs buffer
+                // FIXME: this worth reimplementing as direct Half-allocation, instead of temporary array creation
+                CudaFloatDataBuffer tempBuffer = new CudaFloatDataBuffer(array);
+
+                AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+                AllocationPoint pointSrc = allocator.getAllocationPoint(tempBuffer);
+                AllocationPoint pointDst = allocationPoint;
+
+                CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+                PointerPointer extras = new PointerPointer(
+                        null, // not used for conversion
+                        context.getOldStream(),
+                        AtomicAllocator.getInstance().getDeviceIdPointer());
+
+                Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
+                Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+
+                NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
+
+                allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
+                pointDst.tickDeviceWrite();
             }
             else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
@@ -821,5 +887,59 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public int getInt(long ix) {
         allocator.synchronizeHostData(this);
         return super.getInt(ix);
+    }
+
+    protected float toFloat(int hbits) {
+        int mant = hbits & 0x03ff;            // 10 bits mantissa
+        int exp =  hbits & 0x7c00;            // 5 bits exponent
+        if( exp == 0x7c00 )                   // NaN/Inf
+            exp = 0x3fc00;                    // -> NaN/Inf
+        else if( exp != 0 )                   // normalized value
+        {
+            exp += 0x1c000;                   // exp - 15 + 127
+// "smooth transition" is nonstandard behavior
+//            if( mant == 0 && exp > 0x1c400 )  // smooth transition
+//                return Float.intBitsToFloat( ( hbits & 0x8000 ) << 16
+//                                                | exp << 13 | 0x3ff );
+        }
+        else if( mant != 0 )                  // && exp==0 -> subnormal
+        {
+            exp = 0x1c400;                    // make it normal
+            do {
+                mant <<= 1;                   // mantissa * 2
+                exp -= 0x400;                 // decrease exp by 1
+            } while( ( mant & 0x400 ) == 0 ); // while not normal
+            mant &= 0x3ff;                    // discard subnormal bit
+        }                                     // else +/-0 -> +/-0
+        return Float.intBitsToFloat(          // combine all parts
+                ( hbits & 0x8000 ) << 16          // sign  << ( 31 - 15 )
+                        | ( exp | mant ) << 13 );         // value << ( 23 - 10 )
+    }
+
+    @Override
+    public short fromFloat( float fval ) {
+        int fbits = Float.floatToIntBits( fval );
+        int sign = fbits >>> 16 & 0x8000;          // sign only
+        int val = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
+
+        if( val >= 0x47800000 )               // might be or become NaN/Inf
+        {                                     // avoid Inf due to rounding
+            if( ( fbits & 0x7fffffff ) >= 0x47800000 )
+            {                                 // is or must become NaN/Inf
+                if( val < 0x7f800000 )        // was value but too large
+                    return (short) (sign | 0x7c00);     // make it +/-Inf
+                return (short) (sign | 0x7c00 |        // remains +/-Inf or NaN
+                        ( fbits & 0x007fffff ) >>> 13); // keep NaN (and Inf) bits
+            }
+            return (short) (sign | 0x7bff);             // unrounded not quite Inf
+        }
+        if( val >= 0x38800000 )               // remains normalized value
+            return (short) (sign | val - 0x38000000 >>> 13); // exp - 127 + 15
+        if( val < 0x33000000 )                // too small for subnormal
+            return (short) sign;                      // becomes +/-0
+        val = ( fbits & 0x7fffffff ) >>> 23;  // tmp exp for subnormal calc
+        return (short) (sign | ( ( fbits & 0x7fffff | 0x800000 ) // add subnormal bit
+                + ( 0x800000 >>> val - 102 )     // round depending on cut off
+                >>> 126 - val ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
     }
 }

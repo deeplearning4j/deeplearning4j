@@ -539,6 +539,14 @@ public class Nd4j {
     public static OpFactory getOpFactory() {
         return OP_FACTORY_INSTANCE;
     }
+
+    /**
+     *
+     * @return
+     */
+    public static DataBufferFactory getDataBufferFactory() {
+        return DATA_BUFFER_FACTORY_INSTANCE;
+    }
     /**
      * Returns the fft instance
      *

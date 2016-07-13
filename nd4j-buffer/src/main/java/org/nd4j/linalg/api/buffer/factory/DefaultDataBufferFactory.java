@@ -370,4 +370,26 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         }
         throw new IllegalArgumentException("Invalid type " + type);
     }
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
 }
