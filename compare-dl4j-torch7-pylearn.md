@@ -29,6 +29,7 @@ Content
 
 ### <a name="tensorflow">TensorFlow</a>
 
+* TensorFlow is essentially the successor to Theano. The two libraries are very similar, and both good. Some of the creators of Theano went on to create Tensor at Google. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
 * Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
@@ -36,18 +37,19 @@ Content
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
+* Caveat: Not all operations in Tensorflow work as they do in Numpy. 
 
 Pros and Cons
 
 * (+) Python + numpy
 * (+) Computational graph abstraction, like Theano
-* (+) Much faster compile times than Theano
+* (+) Faster compile times than Theano
 * (+) TensorBoard for visualization
-* (+) Data AND model parallelism
+* (+) Data and model parallelism
 * (-) Slower than other frameworks
 * (-) Much “fatter” than Torch; more magic
 * (-) Not many pretrained models
-* (-) Computational graph is pure Python, so slow
+* (-) Computational graph is pure Python, therefore slow
 
 ### <a name="theano">Theano and Ecosystem</a>
 
@@ -71,7 +73,7 @@ Pros and Cons
 
 ### <a name="torch">Torch</a>
 
-[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google DeepMind and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
+[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
 
