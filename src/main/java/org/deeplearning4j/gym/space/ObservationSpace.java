@@ -7,6 +7,8 @@ import org.json.JSONObject;
  */
 abstract public class ObservationSpace<T> {
 
+    abstract String getInfoName();
+
     abstract public T getValue(JSONObject o, String key);
 
 }

@@ -14,11 +14,10 @@ ExampleAgent.run();
 To create a new Client, use the ClientFactory. If the url is not localhost:5000, provide it as a second argument
 
 ```java
-Client<Box, Integer> client = ClientFactory.build("CartPole-v0");
+        Client<Box, Integer, BoxSpace, DiscreteSpace> client = ClientFactory.build("CartPole-v0");
 ```
 
-The type parameters of a client are an Observation and an Action. It enables to statically check the type of an observation for the user.
-
+The type parameters of a client are the Observation, the Action, the Observation Space and the ActionSpace. It is a bit cumbersome to both declare an ActionSpace and an Action since an ActionSpace knows what type is an Action but unfortunately java does't support type member and path dependant types.
 ### Warning
 Unfortunately because of java's limitation (type erasure), if you set the wrong type for Observation and/or Action corresponding to the Environment Id, since it is retrieved from the server at runtime, the code will fail at runtime only when you cast an Observation or Action (when you actually retrieve one). If you get a cast error like that, it is the reason.
 
@@ -36,8 +35,8 @@ static void serverShutdown(String url)
 String getInstanceId()
 String getEnvId()
 String getUrl()
-ObservationSpace<O> getObservationSpace()
-ActionSpace<A> getActionSpace() {
+OS getObservationSpace()
+AS getActionSpace()
 Set<String> listAll()
 O reset()
 void monitorStart(String directory, boolean force, boolean resume)
@@ -51,5 +50,5 @@ StepReply<O> step(A action)
 
 ## TODO
 
-* Add other Environment (Atari, etc)
-* Add continuous space
+* Add all ObservationSpace and ActionSpace.
+* Having les cumbersome type parameters.

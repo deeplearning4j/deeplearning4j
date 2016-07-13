@@ -16,6 +16,13 @@ public class DiscreteSpace extends ActionSpace<Integer> {
         rd = new Random();
     }
 
+    public String getInfoName(){
+        return "Discrete";
+    }
+
+    public int getN() {
+        return n;
+    }
 
     public Integer randomAction() {
         return rd.nextInt(n);

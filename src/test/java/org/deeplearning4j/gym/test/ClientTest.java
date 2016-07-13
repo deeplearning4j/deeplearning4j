@@ -2,6 +2,8 @@ package org.deeplearning4j.gym.test;
 
 import com.mashape.unirest.http.JsonNode;
 import org.deeplearning4j.gym.*;
+import org.deeplearning4j.gym.space.BoxSpace;
+import org.deeplearning4j.gym.space.DiscreteSpace;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,7 +65,7 @@ public class ClientTest {
 
         //test
 
-        Client<Box, Integer> client = ClientFactory.build(url, env);
+        Client<Box, Integer, BoxSpace, DiscreteSpace> client = ClientFactory.build(url, env);
         client.monitorStart(testDir, true, false);
 
         int episodeCount = 1;

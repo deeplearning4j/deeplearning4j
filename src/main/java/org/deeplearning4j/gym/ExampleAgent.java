@@ -1,6 +1,9 @@
 package org.deeplearning4j.gym;
 
 
+import org.deeplearning4j.gym.space.BoxSpace;
+import org.deeplearning4j.gym.space.DiscreteSpace;
+
 /**
  * Created by rubenfiszel on 7/6/16.
  */
@@ -9,7 +12,7 @@ public class ExampleAgent {
 
     public static void run() {
 
-        Client<Box, Integer> client = ClientFactory.build("CartPole-v0");
+        Client<Box, Integer, BoxSpace, DiscreteSpace> client = ClientFactory.build("CartPole-v0");
 
         String outDir = "/tmp/random-agent-results";
         client.monitorStart(outDir, true, false);

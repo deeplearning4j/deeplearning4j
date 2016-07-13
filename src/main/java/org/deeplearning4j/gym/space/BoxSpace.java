@@ -14,6 +14,10 @@ public class BoxSpace extends ObservationSpace<Box> {
 
     }
 
+    public String getInfoName(){
+        return "Box";
+    }
+
     public Box getValue(JSONObject o, String key) {
         JSONArray arr = o.getJSONArray(key);
         return new Box(arr);

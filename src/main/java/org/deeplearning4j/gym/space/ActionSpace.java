@@ -5,6 +5,8 @@ package org.deeplearning4j.gym.space;
  */
 abstract public class ActionSpace<T> {
 
+    abstract String getInfoName();
+
     abstract public T randomAction();
 
 }

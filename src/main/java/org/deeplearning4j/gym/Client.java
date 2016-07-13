@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * Created by rubenfiszel on 7/6/16.
  */
-public class Client<O, A> {
+public class Client<O, A, OS extends ObservationSpace<O>, AS extends ActionSpace<A>> {
 
 
     public static String V1_ROOT = "/v1";
@@ -35,10 +35,10 @@ public class Client<O, A> {
     private String envId;
     private String instanceId;
     private String url;
-    private ObservationSpace<O> observationSpace;
-    private ActionSpace<A> actionSpace;
+    private OS observationSpace;
+    private AS actionSpace;
 
-    public Client(String url, String envId, String instanceId, ObservationSpace<O> observationSpace, ActionSpace<A> actionSpace) {
+    public Client(String url, String envId, String instanceId, OS observationSpace, AS actionSpace) {
 
         this.envId = envId;
         this.url = url;
@@ -48,31 +48,6 @@ public class Client<O, A> {
 
     }
 
-    public static ActionSpace getActionSpace(String url, String instanceId) {
-
-        JSONObject reply = ClientUtils.get(url + Client.ENVS_ROOT + instanceId + ACTION_SPACE);
-        JSONObject info = reply.getJSONObject("info");
-        String infoName = info.getString("name");
-
-        switch (infoName) {
-            case "Discrete":
-                return new DiscreteSpace(info.getInt("n"));
-            default:
-                throw new RuntimeException("Unknown space " + infoName);
-        }
-    }
-
-    public static ObservationSpace getObservationSpace(String url, String instanceId) {
-        JSONObject reply = ClientUtils.get(url + Client.ENVS_ROOT + instanceId + OBSERVATION_SPACE);
-        JSONObject info = reply.getJSONObject("info");
-        String infoName = info.getString("name");
-        switch (infoName) {
-            case "Box":
-                return new BoxSpace(info);
-            default:
-                throw new RuntimeException("Unknown space " + infoName);
-        }
-    }
 
     public static Set<String> listAll(String url) {
         JSONObject reply = ClientUtils.get(url + ENVS_ROOT);
@@ -95,11 +70,11 @@ public class Client<O, A> {
         return url;
     }
 
-    public ObservationSpace<O> getObservationSpace() {
+    public OS getObservationSpace() {
         return observationSpace;
     }
 
-    public ActionSpace<A> getActionSpace() {
+    public AS getActionSpace() {
         return actionSpace;
     }
 
