@@ -518,8 +518,17 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void shuffle() {
-        //note here we use the same seed with different random objects guaranteeing same order
         long seed = System.currentTimeMillis();
+        shuffle(seed);
+    }
+
+    /**
+     * Shuffles the dataset in place, given a seed for a random number generator. For reproducibility
+     *
+     * @param seed Seed to use for the random Number Generator
+     */
+    public void shuffle(long seed) {
+        //note here we use the same seed with different random objects guaranteeing same order
         int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
         int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
@@ -529,25 +538,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
         if(getLabelsMaskArray() != null) {
             Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
-        }
-    }
-
-    /**
-     * Shuffles the dataset in place, given a random number generator. For reproducibility
-     *
-     * @param rng Random Number Generator
-     */
-    public void shuffle(Random rng) {
-        //note here we use the same seed with different random objects guaranteeing same order
-        int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
-        int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
-        Nd4j.shuffle(getFeatureMatrix(),rng,nonzeroDimsFeat);
-        Nd4j.shuffle(getLabels(),rng,nonzeroDimsLab);
-        if(getFeaturesMaskArray() != null) {
-            Nd4j.shuffle(getFeaturesMaskArray(),rng,nonzeroDimsFeat);
-        }
-        if(getLabelsMaskArray() != null) {
-            Nd4j.shuffle(getLabelsMaskArray(),rng,nonzeroDimsLab);
         }
     }
 
@@ -898,7 +888,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
-        this.shuffle(rng);
+        long seed = rng.nextLong();
+        this.shuffle(seed);
         return splitTestAndTrain(numHoldout);
     }
 
