@@ -586,6 +586,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         getFeatures().putRow(example, feature);
     }
 
+    @Deprecated
     @Override
     public void normalize() {
         FeatureUtil.normalizeMatrix(getFeatures());
@@ -619,8 +620,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     /**
+     * @Deprecated
      * Subtract by the column means and divide by the standard deviation
      */
+    @Deprecated
     @Override
     public void normalizeZeroMeanZeroUnitVariance() {
         INDArray columnMeans = getFeatures().mean(0);
