@@ -92,7 +92,7 @@ public class ShapeOffsetResolution implements Serializable {
                 return true;
             }
             //point or interval is possible
-            if(arr.isRowVector()) {
+            if(arr.isRowVector() && indexes.length > 1) {
                 if(indexes[0] instanceof PointIndex) {
                     if(indexes[1] instanceof IntervalIndex) {
                         offset = indexes[1].offset();
@@ -115,7 +115,7 @@ public class ShapeOffsetResolution implements Serializable {
                 }
             }
             else {
-                if(indexes[1] instanceof PointIndex) {
+                if(indexes.length > 1 && indexes[1] instanceof PointIndex) {
                     if(indexes[0] instanceof IntervalIndex) {
                         offset = indexes[0].offset();
                         this.shapes = new int[2];
