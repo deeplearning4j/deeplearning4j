@@ -55,11 +55,6 @@
 
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>../../../dl4j-test-resources/src/main/resources</directory>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -95,11 +90,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>../../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
             </plugin>
         </plugins>
     </build>
