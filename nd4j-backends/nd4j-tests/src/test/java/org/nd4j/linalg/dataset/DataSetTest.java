@@ -93,7 +93,7 @@ public class DataSetTest extends BaseNd4jTest {
         DataSet x2 = x1.copy(); //call split test train with rng
 
         //Manual shuffle
-        x1.shuffle(123);
+        x1.shuffle(new Random(123).nextLong());
         SplitTestAndTrain testAndTrain = x1.splitTestAndTrain(10);
         // Pass rng with splt test train
         rngHere = new Random(123);
