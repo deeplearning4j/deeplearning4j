@@ -259,7 +259,7 @@ public class RecordReaderDataSetiteratorTest {
             new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
             new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
         }
-        
+
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
