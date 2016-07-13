@@ -524,6 +524,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     /**
      * Shuffles the dataset in place, given a seed for a random number generator. For reproducibility
+     * This will modify the dataset in place!!
      *
      * @param seed Seed to use for the random Number Generator
      */
@@ -881,9 +882,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Splits a dataset in to test and train
+     * Splits a dataset in to test and train randomly.
+     * This will modify the dataset in place to shuffle it before splitting into test/train!
      *
      * @param numHoldout the number to hold out for training
+     * @param  rng Random Number Generator to use to shuffle the dataset
      * @return the pair of datasets for the train test split
      */
     @Override
@@ -893,6 +896,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return splitTestAndTrain(numHoldout);
     }
 
+    /**
+     * Splits a dataset in to test and train
+     *
+     * @param numHoldout the number to hold out for training
+     * @return the pair of datasets for the train test split
+     */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
         int numExamples = numExamples();
