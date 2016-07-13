@@ -75,6 +75,7 @@
 
     <profiles>
         <profile>
+            <id>testresources</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
