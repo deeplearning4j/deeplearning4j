@@ -1,5 +1,5 @@
 ---
-title:通过DL4J使用递归网络
+title: 通过DL4J使用递归网络
 layout: zh-default
 ---
 
