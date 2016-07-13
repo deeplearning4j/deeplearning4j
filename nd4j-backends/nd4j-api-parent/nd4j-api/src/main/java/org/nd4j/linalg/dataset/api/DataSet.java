@@ -83,7 +83,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     void addFeatureVector(INDArray feature, int example);
 
-    @Deprecated
     void normalize();
 
     void binarize();
