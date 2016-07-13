@@ -532,6 +532,25 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
     }
 
+    /**
+     * Shuffles the dataset in place, given a random number generator. For reproducibility
+     *
+     * @param rng Random Number Generator
+     */
+    public void shuffle(Random rng) {
+        //note here we use the same seed with different random objects guaranteeing same order
+        int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
+        int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
+        Nd4j.shuffle(getFeatureMatrix(),rng,nonzeroDimsFeat);
+        Nd4j.shuffle(getLabels(),rng,nonzeroDimsLab);
+        if(getFeaturesMaskArray() != null) {
+            Nd4j.shuffle(getFeaturesMaskArray(),rng,nonzeroDimsFeat);
+        }
+        if(getLabelsMaskArray() != null) {
+            Nd4j.shuffle(getLabelsMaskArray(),rng,nonzeroDimsLab);
+        }
+    }
+
 
     /**
      * Squeezes input data to a max and a min
@@ -879,6 +898,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
+        this.shuffle(rng);
         int numExamples = numExamples();
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
