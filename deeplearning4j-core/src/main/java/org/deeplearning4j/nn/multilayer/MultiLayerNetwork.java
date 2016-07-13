@@ -1069,7 +1069,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
     protected void backprop() {
-        if(flattenedGradients == null) initGradientsView();
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
         this.epsilon = (pair == null ? null : pair.getSecond());
