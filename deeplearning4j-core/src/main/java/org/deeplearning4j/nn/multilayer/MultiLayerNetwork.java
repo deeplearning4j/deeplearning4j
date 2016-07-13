@@ -915,7 +915,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int numParams() {
-        return numParams(false);
+        if (isInitCalled()) 
+            return numParams(false);
+        else 
+            log.info("Model is not initialized. Initialize net with init()");
+            return 0;
     }
 
     @Override
