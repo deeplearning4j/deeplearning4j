@@ -207,3 +207,4 @@ Runs as both a local serial process and a MapReduce (MR engine on the roadmap) s
 
 ## Built-In General Functionality
 * Understands how to take general text and convert it into vectors with stock techniques such as kernel hashing and TF-IDF
+
