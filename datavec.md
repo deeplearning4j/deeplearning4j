@@ -1,5 +1,5 @@
 ---
-title: DataVec
+title: DataVec: A Vectorization and ETL Library
 layout: default
 ---
 
