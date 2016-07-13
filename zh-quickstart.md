@@ -1,7 +1,8 @@
 ---
-title:Deeplearning4j快速入门指南
+title: Deeplearning4j快速入门指南
 layout: default
 ---
+
 <!-- Begin Inspectlet Embed Code -->
 <script type="text/javascript" id="inspectletjs">
 window.__insp = window.__insp || [];
