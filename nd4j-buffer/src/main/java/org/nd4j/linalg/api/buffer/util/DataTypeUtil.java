@@ -20,6 +20,7 @@ public class DataTypeUtil {
             case "double": return DataBuffer.Type.DOUBLE;
             case "float": return DataBuffer.Type.FLOAT;
             case "int": return DataBuffer.Type.INT;
+            case "half": return DataBuffer.Type.HALF;
             default: return DataBuffer.Type.FLOAT;
         }
     }
@@ -34,6 +35,7 @@ public class DataTypeUtil {
             case DOUBLE: return "double";
             case FLOAT: return "float";
             case INT: return "int";
+            case HALF: return "half";
             default: return "float";
         }
     }
@@ -63,7 +65,7 @@ public class DataTypeUtil {
      * @param allocationModeForContext
      */
     public static void setDTypeForContext(String allocationModeForContext) {
-        if(!allocationModeForContext.equals("double") && !allocationModeForContext.equals("float") && !allocationModeForContext.equals("int"))
+        if(!allocationModeForContext.equals("double") && !allocationModeForContext.equals("float") && !allocationModeForContext.equals("int") && !allocationModeForContext.equals("half"))
             throw new IllegalArgumentException("Allocation mode must be one of: double,float, or int");
         Nd4jContext.getInstance().getConf().put("dtype",allocationModeForContext);
     }

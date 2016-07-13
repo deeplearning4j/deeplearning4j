@@ -1211,8 +1211,10 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);
         else if(dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize);
+        else ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+
         logCreationIfNecessary(ret);
         return ret;
     }

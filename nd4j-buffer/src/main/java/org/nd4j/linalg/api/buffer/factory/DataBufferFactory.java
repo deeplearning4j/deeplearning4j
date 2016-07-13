@@ -532,4 +532,8 @@ public interface DataBufferFactory {
      * @return
      */
     DataBuffer convertToHalfs(DataBuffer buffer);
+
+    DataBuffer createHalf(long length);
+
+    DataBuffer createHalf(long length, boolean initialize);
 }

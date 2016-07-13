@@ -467,4 +467,14 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
         return outputBuffer;
     }
+
+    @Override
+    public DataBuffer createHalf(long length) {
+        return new CudaHalfDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize) {
+        return new CudaHalfDataBuffer(length, initialize);
+    }
 }

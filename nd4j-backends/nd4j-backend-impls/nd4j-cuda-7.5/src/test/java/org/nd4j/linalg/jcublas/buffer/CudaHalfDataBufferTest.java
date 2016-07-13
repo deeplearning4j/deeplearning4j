@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.factory.CudaDataBufferFactory;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ public class CudaHalfDataBufferTest {
 
         DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
 
-        File tempFile = File.createTempFile("alpha", "beta");
+        File tempFile = File.createTempFile("alpha", "11");
         tempFile.deleteOnExit();
 
         // now we serialize halfs, and we expect it to become floats on other side
@@ -68,6 +69,37 @@ public class CudaHalfDataBufferTest {
         bufferRestored.read(dis);
 
         assertArrayEquals(bufferOriginal.asFloat(), bufferRestored.asFloat(), 0.01f);
+    }
+
+    @Test
+    public void testSerialization2() throws Exception {
+        DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+
+        File tempFile = File.createTempFile("alpha", "11");
+        tempFile.deleteOnExit();
+
+        // now we serialize halfs, and we expect it to become floats on other side
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(tempFile.getAbsolutePath())))){
+            bufferHalfs.write(dos);
+        }
+
+        // loading data back from file
+        DataInputStream dis = new DataInputStream(new FileInputStream(tempFile.getAbsoluteFile()));
+
+        DataBuffer bufferRestored = Nd4j.createBuffer(bufferOriginal.length());
+        bufferRestored.read(dis);
+
+        assertEquals(bufferRestored.dataType(), DataBuffer.Type.HALF);
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+
+        DataBuffer bufferConverted = Nd4j.getDataBufferFactory().restoreFromHalfs(bufferRestored);
+
+        assertArrayEquals(bufferOriginal.asFloat(), bufferConverted.asFloat(), 0.01f);
     }
 
     @Test

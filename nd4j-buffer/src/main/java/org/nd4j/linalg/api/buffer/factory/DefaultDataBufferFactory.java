@@ -392,4 +392,14 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     public DataBuffer convertToHalfs(DataBuffer buffer) {
         throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
+
+    @Override
+    public DataBuffer createHalf(long length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
 }
