@@ -518,8 +518,18 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void shuffle() {
-        //note here we use the same seed with different random objects guaranteeing same order
         long seed = System.currentTimeMillis();
+        shuffle(seed);
+    }
+
+    /**
+     * Shuffles the dataset in place, given a seed for a random number generator. For reproducibility
+     * This will modify the dataset in place!!
+     *
+     * @param seed Seed to use for the random Number Generator
+     */
+    public void shuffle(long seed) {
+        //note here we use the same seed with different random objects guaranteeing same order
         int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
         int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
@@ -875,13 +885,28 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
+     * Splits a dataset in to test and train randomly.
+     * This will modify the dataset in place to shuffle it before splitting into test/train!
+     *
+     * @param numHoldout the number to hold out for training
+     * @param  rng Random Number Generator to use to shuffle the dataset
+     * @return the pair of datasets for the train test split
+     */
+    @Override
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
+        long seed = rng.nextLong();
+        this.shuffle(seed);
+        return splitTestAndTrain(numHoldout);
+    }
+
+    /**
      * Splits a dataset in to test and train
      *
      * @param numHoldout the number to hold out for training
      * @return the pair of datasets for the train test split
      */
     @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
         int numExamples = numExamples();
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
@@ -889,11 +914,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(0,numHoldout),NDArrayIndex.all()));
         DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples()), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
         return new SplitTestAndTrain(first, second);
-    }
-
-    @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
-        return splitTestAndTrain(numHoldout, new Random());
     }
 
 
