@@ -3,7 +3,7 @@ title: Artificial Intelligence, Machine Learning and Deep Learning
 layout: default
 ---
 
-# Comparing artificial intelligence, machine learning and deep learning
+# Artificial intelligence, machine learning & deep learning
 
 You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest. Deep learning is a subset of machine learning, which is a subset of AI.
 
