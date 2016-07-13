@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j快速入门指南
-layout: default
+layout: zh-default
 ---
 
 <!-- Begin Inspectlet Embed Code -->
