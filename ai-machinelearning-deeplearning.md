@@ -20,3 +20,5 @@ How does one minimize error? Well, one way is to build a framework that multipli
 They are, in short, an optimization algorithm. If you tune them right, they minimize their error by guessing and guessing and guessing again.
 
 Deep learning is a subset of machine learning. Deep artificial neural networks are a set of algorithms setting new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. Deep learning is part of DeepMind's notorious AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016. A more complete explanation of neural works is [here](./neuralnets-overview).
+
+Deep is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line). 
