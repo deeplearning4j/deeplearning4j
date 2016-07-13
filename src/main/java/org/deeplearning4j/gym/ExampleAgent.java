@@ -1,6 +1,7 @@
 package org.deeplearning4j.gym;
 
 
+import org.deeplearning4j.gym.space.Box;
 import org.deeplearning4j.gym.space.BoxSpace;
 import org.deeplearning4j.gym.space.DiscreteSpace;
 

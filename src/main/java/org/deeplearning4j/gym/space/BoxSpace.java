@@ -1,6 +1,5 @@
 package org.deeplearning4j.gym.space;
 
-import org.deeplearning4j.gym.Box;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -23,4 +22,7 @@ public class BoxSpace extends ObservationSpace<Box> {
         return new Box(arr);
     }
 
+    public double[] toArray(Box o) {
+        return new double[0];
+    }
 }
