@@ -61,6 +61,7 @@ Search for [DataVec](https://search.maven.org/#search%7Cga%7C1%7CDataVec) on Mav
 
 Add the dependency information into your pom.xml.
 
+<!--
 ## <a name="cli">Run DataVec From the Command Line</a>
 
 `DataVec-cli` can now be installed in two 'new' ways:
@@ -84,7 +85,7 @@ tar -zxvf canova-cli.tar.gz
 cd canova-cli-0.0.0.15-SNAPSHOT; ./bin/canova
 ```
 
-<!-- You'll need to do a *git clone* from [DataVec's Github repo](https://github.com/deeplearning4j/DataVec), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
+ You'll need to do a *git clone* from [DataVec's Github repo](https://github.com/deeplearning4j/DataVec), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
       mvn -DskipTests=true -Dmaven.javadoc.skip=true install
 
