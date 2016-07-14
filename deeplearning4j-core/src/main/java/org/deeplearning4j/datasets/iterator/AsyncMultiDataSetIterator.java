@@ -31,6 +31,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             throw new IllegalArgumentException("Queue size must be > 0");
 
         this.iterator = iterator;
+        this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
         runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
