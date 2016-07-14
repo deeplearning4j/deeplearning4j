@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.4-rc3.11-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
     </parent>
 
     <dependencyManagement>
@@ -71,12 +71,6 @@
 
     <build>
         <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
-
-        <testResources>
-            <testResource>
-                <directory>${project.basedir}/../dl4j-test-resources/src/main/resources</directory>
-            </testResource>
-        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -84,9 +78,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.18.1</version>
                     <configuration>
-                        <additionalClasspathElements>
-                            <additionalClasspathElement>../dl4j-test-resources/src/main/resources</additionalClasspathElement>
-                        </additionalClasspathElements>
                         <argLine>-Ddtype=double</argLine>
                     </configuration>
                 </plugin>

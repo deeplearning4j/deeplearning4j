@@ -18,10 +18,12 @@
 
 package org.deeplearning4j.datasets.iterator.impl;
 
-import org.canova.api.io.labels.PathLabelGenerator;
-import org.canova.image.loader.LFWLoader;
-import org.canova.image.transform.ImageTransform;
-import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
+
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.io.labels.PathLabelGenerator;
+import org.datavec.image.loader.LFWLoader;
+import org.datavec.image.transform.ImageTransform;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 
 import java.util.Random;
 
@@ -30,7 +32,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/** Loads subset of images with given imgDim returned by the generator. */
 	public LFWDataSetIterator(int[] imgDim) {
-		this(LFWLoader.SUB_NUM_IMAGES, LFWLoader.SUB_NUM_IMAGES, imgDim, LFWLoader.SUB_NUM_LABELS, false, null, true, 1, null, 0, new Random(System.currentTimeMillis()));
+		this(LFWLoader.SUB_NUM_IMAGES, LFWLoader.SUB_NUM_IMAGES, imgDim, LFWLoader.SUB_NUM_LABELS, false, new ParentPathLabelGenerator(), true, 1, null, 0, new Random(System.currentTimeMillis()));
 	}
 
 	/** Loads images with given  batchSize, numExamples returned by the generator. */
@@ -64,7 +66,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
     }
 
     /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */
-    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest,  Random rng) {
+    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest, Random rng) {
         this(batchSize, numExamples, imgDim, numLabels, useSubset, labelGenerator, train, splitTrainTest, null, 0, rng);
     }
 

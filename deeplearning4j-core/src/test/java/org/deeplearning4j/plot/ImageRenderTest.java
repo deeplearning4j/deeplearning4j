@@ -79,7 +79,7 @@ public class ImageRenderTest {
 
 
         ImageLoader loader = new ImageLoader(56,56,3);
-        INDArray arr = loader.toBgr(new ClassPathResource("rendertest.jpg").getFile()).reshape(3,56,56);
+        INDArray arr = loader.toBgr(new ClassPathResource("rendertest.jpg").getTempFileFromArchive()).reshape(3,56,56);
         File tmp2 = new File(System.getProperty("java.io.tmpdir"),"rendercolor.png");
         ImageRender.render(arr,tmp2.getAbsolutePath());
         tmp2.deleteOnExit();
