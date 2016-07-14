@@ -1067,7 +1067,10 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,length);
         else if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,length);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset,length);
         else ret = null;
+
 
         logCreationIfNecessary(ret);
         return ret;
@@ -1083,6 +1086,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
@@ -1099,6 +1104,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
@@ -1123,6 +1130,9 @@ public class Nd4j {
         int length = ArrayUtil.prod(shape);
         if(type == DataBuffer.Type.INT)
             return createBuffer(new int[length]);
+        else if (type== DataBuffer.Type.HALF)
+            return createBuffer(new float[length]);
+
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
@@ -1142,6 +1152,7 @@ public class Nd4j {
             case INT: return DATA_BUFFER_FACTORY_INSTANCE.createInt(buffer,length);
             case DOUBLE: return DATA_BUFFER_FACTORY_INSTANCE.createDouble(buffer,length);
             case FLOAT: return DATA_BUFFER_FACTORY_INSTANCE.createFloat(buffer,length);
+            case HALF: return DATA_BUFFER_FACTORY_INSTANCE.createHalf(buffer, length);
             default: throw new IllegalArgumentException("Illegal type " + type);
         }
     }
@@ -1157,6 +1168,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data,length);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data,length);
         logCreationIfNecessary(ret);
@@ -1229,6 +1242,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
@@ -1245,6 +1260,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
@@ -5065,7 +5082,7 @@ public class Nd4j {
             Nd4jContext.getInstance().updateProperties(is);
             is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
+            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

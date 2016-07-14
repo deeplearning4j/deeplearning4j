@@ -477,4 +477,210 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     public DataBuffer createHalf(long length, boolean initialize) {
         return new CudaHalfDataBuffer(length, initialize);
     }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, boolean copy) {
+        return new CudaHalfDataBuffer(ArrayUtil.toFloatArray(data), copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, int length) {
+        return new CudaHalfDataBuffer(ArrayUtil.toFloatArray(data), true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int length) {
+        return new CudaHalfDataBuffer(length);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param buffer
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(ByteBuffer buffer, int length) {
+        return new CudaHalfDataBuffer(buffer, length);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer createHalf(byte[] data, int length) {
+        return new CudaHalfDataBuffer(data, length);
+    }
 }
