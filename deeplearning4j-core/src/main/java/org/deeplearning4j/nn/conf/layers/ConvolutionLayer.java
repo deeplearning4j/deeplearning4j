@@ -16,6 +16,13 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
 
+    /**
+    * ConvolutionLayer
+    * nIn in the input layer is the number of channels
+    * nOut is the number of filters to be used in the net or in other words the depth
+    * The builder specifies the filter/kernel size, the stride and padding
+    * The pooling layer takes the kernel size
+    */
     private ConvolutionLayer(Builder builder) {
     	super(builder);
         this.convolutionType = builder.convolutionType;
