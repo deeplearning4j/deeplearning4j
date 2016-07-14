@@ -1,5 +1,0 @@
-input.format=org.canova.api.formats.input.impl.SVMLightInputFormat
-
-input.directory=src/test/resources/data/irisSvmLight.txt
-
-output.directory=/tmp/
