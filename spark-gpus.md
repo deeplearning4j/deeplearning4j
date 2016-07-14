@@ -5,7 +5,7 @@ layout: default
 
 # Running Deep Learning on Distributed GPUs With Spark
 
-Deeplearning4j trains neural nets on distributed GPUs using Spark and CuDNN.
+Deeplearning4j trains deep neural networks on distributed GPUs using Spark and CuDNN.
 
 This post is a simple introduction to each of those technologies. It looks at each individually, and shows how Deeplearning4j pulls them together in an image processing example.
 
@@ -17,10 +17,20 @@ Deeplearning4j is the most widely used open-source deep learning tool for the JV
 
 Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of four open-source libraries maintained by Skymind. DL4J is powered by the scientific computing library ND4J, or n-dimensional arrays for Java, which performs the linear algebra and calculus necessary to train neural nets. ND4J is accelerated by a C++ library libnd4j. And finally, the DataVec library is used to vectorize all types of data.
 
-Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs:
+Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
 
-    CODE & LINK HERE – WHERE IS THE EXAMPLE?
+First we configure Spark and load the data:
 
-Line by line explanation here as necessary. 
+<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c?slice=43:63"></script>
 
+Then we configure the neural network:
 
+<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c?slice=63:114"></script>
+
+Then we tell Spark how to perform parameter averaging:
+
+<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c?slice=114:122"></script>
+
+And finally, we train the network by calling `.fit()` on `sparkNetwork`.
+
+<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c?slice=124:136"></script>
