@@ -121,11 +121,13 @@ public class ConvolutionLayerSetupTest {
         network.fit(iter.next());
     }
 
+
+
     @Test
     public void testMultiChannel() throws Exception {
         //ensure LFW data set is present
         List<String> labels = new ArrayList<>(Arrays.asList("Zico", "Ziwang_Xu"));
-        String rootDir = new ClassPathResource("lfwtest").getFile().getAbsolutePath();
+        String rootDir = new ClassPathResource("lfwtest").getTempFileFromArchive().getAbsolutePath();
 
         RecordReader reader = new ImageRecordReader(28,28,3,true,labels);
         reader.initialize(new FileSplit(new File(rootDir)));

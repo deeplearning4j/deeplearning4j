@@ -1,8 +1,8 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
-import org.canova.image.loader.CifarLoader;
-import org.canova.image.transform.ImageTransform;
-import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
+import org.datavec.image.loader.CifarLoader;
+import org.datavec.image.transform.ImageTransform;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
