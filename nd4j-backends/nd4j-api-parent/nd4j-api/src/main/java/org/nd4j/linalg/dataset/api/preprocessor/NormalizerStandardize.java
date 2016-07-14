@@ -1,15 +1,15 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import java.io.File;
-import java.io.IOException;
-
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Standard scaler calculates a moving column wise
@@ -28,11 +28,21 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
-        mean = dataSet.getFeatureMatrix().mean(0);
-        std = dataSet.getFeatureMatrix().std(0);
-        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
-            logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
+        if (!dataSet.hasMaskArrays()) {
+            mean = dataSet.getFeatureMatrix().mean(0);
+            std = dataSet.getFeatureMatrix().std(0);
+            std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+            if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+                logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
+        }
+        else {
+            mean = dataSet.getFeatureMatrix().mulRowVector(dataSet.getFeaturesMaskArray()).mean(0);
+            std = dataSet.getFeatureMatrix().std(0);
+            std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+            if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+                logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
+
+        }
     }
 
     /**
