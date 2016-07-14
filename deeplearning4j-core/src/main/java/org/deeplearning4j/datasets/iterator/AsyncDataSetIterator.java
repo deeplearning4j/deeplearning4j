@@ -51,10 +51,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
         if(queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
         this.baseIterator = baseIterator;
+        this.baseIterator.reset();
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = new Thread(runnable);
 
+        /**
+         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
+         */
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
