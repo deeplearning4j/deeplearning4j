@@ -1523,24 +1523,27 @@ void concatGeneric(
     T *resultPointer = reinterpret_cast<T *>(result);
 
     bool allC = true;
+    bool allScalar = true;
 
     //nothing to concat
     if(numArrays == 1)
         return;
+
+    //detect whether all arrays are c ordered or not
+    //Also detect whether they are all scalars
+    for(int i = 0; i < numArrays; i++) {
+        allC &= (shape::order(inputShapeInfoPointers[i]) == 'c');
+        allScalar &= (shape::isScalar(inputShapeInfoPointers[i]));
+    }
+
     //we are merging all scalars
-    if(shape::isScalar(inputShapeInfoPointers[0])) {
+    if(allScalar) {
         for(int i = 0; i < numArrays; i++) {
             resultPointer[i] = dataBuffers[i][0];
         }
-
         return;
     }
 
-
-    //detect whether all arrays are c ordered or not
-    for(int i = 0; i < numArrays; i++) {
-        allC &= (shape::order(inputShapeInfoPointers[i]) == 'c');
-    }
 
     int length = shape::length(resultShapeInfoPointer);
 
