@@ -21,7 +21,7 @@ Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
 
 First we configure Spark and load the data:
 
-<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c?slice=43:63"></script>
+<script src="http://gist-it.appspot.com/https://gist.github.com/agibsonccc/05887ab83055503cde7cdc2bf383689c.js?slice=43:63"></script>
 
 Then we configure the neural network:
 
