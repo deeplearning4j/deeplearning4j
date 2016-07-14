@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.nd4j.linalg.dataset.DataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +36,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private final BlockingQueue<DataSet> blockingQueue;
     private Thread thread;
     private IteratorRunnable runnable;
+
+    protected static final Logger logger = LoggerFactory.getLogger(AsyncDataSetIterator.class);
 
     /**
      *
@@ -148,8 +152,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     @Override
     public synchronized  boolean hasNext() {
-        if(!blockingQueue.isEmpty())
+        if(!blockingQueue.isEmpty()) {
+            logger.debug("Branch A");
             return true;
+        }
 
         if(runnable.isAlive.get()) {
             //Empty blocking queue, but runnable is alive
@@ -158,12 +164,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
             //either way: there's at least 1 more element to come
 
             // this is fix for possible race condition within runnable cycle
+            logger.debug("Branch B");
             return runnable.hasLatch();
         } else {
             if(!runnable.killRunnable && runnable.exception != null ) {
                 throw runnable.exception;   //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
+            logger.debug("Branch C");
             return !blockingQueue.isEmpty();
         }
     }
@@ -241,8 +249,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
             Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
             and if it's already locked within main runnable loop - we get fast TRUE.
          */
+            logger.info("back permits: {}", back.availablePermits() );
             if (back.tryAcquire()) {
                 boolean result = baseIterator.hasNext();
+                logger.info("got result: {}", result);
                 back.release();
                 return result;
             } else {
@@ -259,6 +269,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                         back.acquire();
                         blockingQueue.put(baseIterator.next());
                     } finally {
+                        logger.info("Releasing");
                         back.release();
                     }
                 }

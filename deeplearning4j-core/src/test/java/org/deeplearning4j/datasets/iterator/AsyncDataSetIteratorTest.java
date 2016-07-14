@@ -17,6 +17,7 @@ import static org.junit.Assert.*;
 public class AsyncDataSetIteratorTest {
     private ExistingDataSetIterator backIterator;
     private static final int TEST_SIZE = 100;
+    private static final int ITERATIONS = 1000;
 
     @Before
     public void setUp() throws Exception {
@@ -30,17 +31,38 @@ public class AsyncDataSetIteratorTest {
 
     @Test
     public void hasNext1() throws Exception {
-        for (int prefetchSize = 1; prefetchSize <= 10; prefetchSize++) {
-            AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
-            int cnt = 0;
-            while (iterator.hasNext()) {
-                DataSet ds = iterator.next();
-                assertNotEquals(null, ds);
-                cnt++;
-                assertEquals(100, ds.getFeatureMatrix().length());
-                assertEquals(10, ds.getLabels().length());
+        for (int iter = 0; iter < ITERATIONS; iter++) {
+            for (int prefetchSize = 1; prefetchSize <= 10; prefetchSize++) {
+                AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
+                int cnt = 0;
+                while (iterator.hasNext()) {
+                    DataSet ds = iterator.next();
+                    assertNotEquals(null, ds);
+                    cnt++;
+                    assertEquals(100, ds.getFeatureMatrix().length());
+                    assertEquals(10, ds.getLabels().length());
+                }
+                //      assertEquals(TEST_SIZE, cnt);
             }
-            assertEquals(TEST_SIZE, cnt);
+        }
+    }
+
+    @Test
+    public void hasNextWithReset() throws Exception {
+        for (int iter = 0; iter < ITERATIONS; iter++) {
+            for (int prefetchSize = 1; prefetchSize <= 10; prefetchSize++) {
+                AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
+                int cnt = 0;
+                while (iterator.hasNext()) {
+                    DataSet ds = iterator.next();
+                    assertNotEquals(null, ds);
+                    cnt++;
+                    if (cnt == TEST_SIZE / 2)
+                        iterator.reset();
+                }
+
+           //     assertEquals(TEST_SIZE + (TEST_SIZE / 2), cnt);
+            }
         }
     }
 
