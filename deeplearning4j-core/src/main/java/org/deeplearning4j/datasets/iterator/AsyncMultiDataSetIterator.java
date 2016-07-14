@@ -91,7 +91,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             //(a) runnable is blocking on baseIterator.next()
             //(b) runnable is blocking on blockingQueue.put()
             //either way: there's at least 1 more element to come
-            return true;
+            return runnable.hasLatch();
         } else {
             if(!runnable.killRunnable && runnable.exception != null ) {
                 throw runnable.exception;   //Something went wrong
@@ -167,16 +167,38 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private volatile boolean isAlive = true;
         private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
+        private Semaphore back = new Semaphore(1);
 
         public IteratorRunnable(boolean hasNext){
             this.isAlive = hasNext;
+        }
+
+        public boolean hasLatch() {
+            /*
+            This method was added to address possible race condition within runnable loop.
+            Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
+            and if it's already locked within main runnable loop - we get fast TRUE.
+         */
+            if (back.tryAcquire()) {
+                boolean result = iterator.hasNext();
+                back.release();
+                return result;
+            } else {
+                // if we're here, then at the request moment, we were inside runnable loop, and inside iterator there was something available as next
+                return true;
+            }
         }
 
         @Override
         public void run() {
             try {
                 while (!killRunnable && iterator.hasNext()) {
-                    queue.put(iterator.next());
+                    try {
+                        back.acquire();
+                        queue.put(iterator.next());
+                    } finally {
+                        back.release();
+                    }
                 }
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
