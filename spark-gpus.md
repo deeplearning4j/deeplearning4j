@@ -23,6 +23,8 @@ Deeplearning4j is part of a free enterprise distribution called the Skymind Inte
 
 Deeplearning4j talks to cuDNN using [JavaCPP](https://github.com/bytedeco/javacpp), the glue code that creates a bridge between Java and C++. 
 
+## Code Example
+
 Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
 
 First we configure Spark and load the data:
