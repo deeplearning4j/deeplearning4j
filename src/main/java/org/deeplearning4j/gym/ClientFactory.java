@@ -8,7 +8,9 @@ import org.json.JSONObject;
 
 
 /**
- * Created by rubenfiszel on 7/8/16.
+ * @author rubenfiszel on 7/8/16.
+ *
+ * ClientFactory contains builder method to create a new {@link Client}
  */
 public class ClientFactory {
 
@@ -26,7 +28,7 @@ public class ClientFactory {
 
     }
 
-    public static <O, A, OS extends ObservationSpace<O>, AS extends ActionSpace<A>>  Client<O, A, OS, AS> build(String envId) {
+    public static <O, A, OS extends ObservationSpace<O>, AS extends ActionSpace<A>> Client<O, A, OS, AS> build(String envId) {
         return build("http://127.0.0.1:5000", envId);
     }
 

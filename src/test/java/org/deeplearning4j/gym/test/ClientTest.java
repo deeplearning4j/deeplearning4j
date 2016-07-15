@@ -1,7 +1,10 @@
 package org.deeplearning4j.gym.test;
 
 import com.mashape.unirest.http.JsonNode;
-import org.deeplearning4j.gym.*;
+import org.deeplearning4j.gym.Client;
+import org.deeplearning4j.gym.ClientFactory;
+import org.deeplearning4j.gym.ClientUtils;
+import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.gym.space.Box;
 import org.deeplearning4j.gym.space.BoxSpace;
 import org.deeplearning4j.gym.space.DiscreteSpace;
@@ -16,8 +19,9 @@ import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 /**
- * Created by rubenfiszel on 7/11/16.
+ * @author rubenfiszel on 7/11/16.
  */
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(ClientUtils.class)
 public class ClientTest {
@@ -99,8 +103,7 @@ public class ClientTest {
         }
 
         client.monitorClose();
-        client.upload(testDir,"YOUR_OPENAI_GYM_API_KEY");
-
+        client.upload(testDir, "YOUR_OPENAI_GYM_API_KEY");
 
 
     }

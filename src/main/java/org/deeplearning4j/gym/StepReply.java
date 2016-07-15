@@ -1,12 +1,15 @@
 package org.deeplearning4j.gym;
 
-
 import lombok.Value;
 import org.json.JSONObject;
-/**
- * Created by rubenfiszel on 7/6/16.
- */
 
+/**
+ * @author rubenfiszel on 7/6/16.
+ *
+ * StepReply is the container for the data returned after each step(action).
+ *
+ * @param <T> type of observation
+ */
 @Value
 public class StepReply<T> {
 

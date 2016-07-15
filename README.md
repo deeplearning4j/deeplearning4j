@@ -1,15 +1,10 @@
-#gym-java-client
+# gym-java-client
 
 A java http client for [gym-http-api](https://github.com/openai/gym-http-api).
 
-# quickstart
+# Quickstart
 
-An example agent is provided:
-```java
-import org.deeplearning4j.ExampleAgent;
-...
-ExampleAgent.run();
-```
+An example agent is provided at [gym-java-client-example](https://github.com/deeplearning4j/gym-java-client-example).
 
 To create a new Client, use the ClientFactory. If the url is not localhost:5000, provide it as a second argument
 
@@ -17,38 +12,93 @@ To create a new Client, use the ClientFactory. If the url is not localhost:5000,
         Client<Box, Integer, BoxSpace, DiscreteSpace> client = ClientFactory.build("CartPole-v0");
 ```
 
-The type parameters of a client are the Observation, the Action, the Observation Space and the ActionSpace. It is a bit cumbersome to both declare an ActionSpace and an Action since an ActionSpace knows what type is an Action but unfortunately java does't support type member and path dependant types.
-### Warning
-Unfortunately because of java's limitation (type erasure), if you set the wrong type for Observation and/or Action corresponding to the Environment Id, since it is retrieved from the server at runtime, the code will fail at runtime only when you cast an Observation or Action (when you actually retrieve one). If you get a cast error like that, it is the reason.
+"CartPole-v0" is the name of the gym environment.
 
+The type parameters of a client are the Observation type, the Action type, the Observation Space type and the ActionSpace type.
 
-The methods nomenclature follows closely the api interface of gym-http-api, O is Observation an A is Action:
+It is a bit cumbersome to both declare an ActionSpace and an Action since an ActionSpace knows what type is an Action but unfortunately java does't support type member and path dependant types.
+
+Here we use Box and BoxSpace for the environment and Integer and Discrete Space because it is how [CartPole-v0](https://gym.openai.com/envs/CartPole-v0) is specified.
+
+The methods nomenclature follows closely the api interface of [gym-http-api](https://github.com/openai/gym-http-api#api-specification), O is Observation an A is Action:
 
 ```java
+//Static methods
 
-//static methods
-static Set<String> listAll(String url)
-static void serverShutdown(String url)
+/**
+ * @param url url of the server
+ * @return set of all environments running on the server at the url
+ */
+public static Set<String> listAll(String url);
+
+/**
+ * Shutdown the server at the url
+ *
+ * @param url url of the server
+ */
+public static void serverShutdown(String url);
 
 
-//methods accessible from a client instance (no need for instanceId or url, how convenient :)
-String getInstanceId()
-String getEnvId()
-String getUrl()
-OS getObservationSpace()
-AS getActionSpace()
-Set<String> listAll()
-O reset()
-void monitorStart(String directory, boolean force, boolean resume)
-void monitorClose()
-void close()
-void upload(String trainingDir, String apiKey, String algorithmId)
-void upload(String trainingDir, String apiKey)
-void ServerShutdown() {
-StepReply<O> step(A action)
+
+//Methods accessible from a Client
+/**
+ * @return set of all environments running on the same server than this client
+ */
+public Set<String> listAll();
+
+/**
+ * Step the environment by one action
+ *
+ * @param action action to step the environment with
+ * @return the StepReply containing the next observation, the reward, if it is a terminal state and optional information.
+ */
+public StepReply<O> step(A action);
+/**
+ * Reset the state of the environment and return an initial observation.
+ *
+ * @return initial observation
+ */
+public O reset();
+
+/**
+ * Start monitoring.
+ *
+ * @param directory path to directory in which store the monitoring file
+ * @param force     clear out existing training data from this directory (by deleting every file prefixed with "openaigym.")
+ * @param resume    retain the training data already in this directory, which will be merged with our new data
+ */
+public void monitorStart(String directory, boolean force, boolean resume);
+
+/**
+ * Flush all monitor data to disk
+ */
+public void monitorClose();
+
+/**
+ * Upload monitoring data to OpenAI servers.
+ *
+ * @param trainingDir directory that contains the monitoring data
+ * @param apiKey      personal OpenAI API key
+ * @param algorithmId an arbitrary string indicating the paricular version of the algorithm (including choices of parameters) you are running.
+ **/
+public void upload(String trainingDir, String apiKey, String algorithmId);
+
+/**
+ * Upload monitoring data to OpenAI servers.
+ *
+ * @param trainingDir directory that contains the monitoring data
+ * @param apiKey      personal OpenAI API key
+ */
+public void upload(String trainingDir, String apiKey);
+
+
+/**
+ * Shutdown the server at the same url than this client
+ */
+public void serverShutdown()
+
 ```
 
 ## TODO
 
-* Add all ObservationSpace and ActionSpace.
-* Having les cumbersome type parameters.
+* Add all ObservationSpace and ActionSpace when they will be available.

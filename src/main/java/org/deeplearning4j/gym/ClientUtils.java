@@ -8,10 +8,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Created by rubenfiszel on 7/8/16.
+ * @author rubenfiszel on 7/8/16.
+ *
+ * ClientUtils contain the utility methods to post and get data from the server REST API through the library unirest.
  */
 public class ClientUtils {
-
 
     static public JsonNode post(String url, JSONObject json) {
         HttpResponse<JsonNode> jsonResponse = null;
