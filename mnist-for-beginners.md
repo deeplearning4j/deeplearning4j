@@ -172,6 +172,6 @@ Compared to other frameworks, Deeplearning4j excels at the following.
 
 If you have any questions, please join us online in our [Gitter support chat room](https://gitter.im/deeplearning4j/deeplearning4j). 
 
-**Recommended Resources**
+## Recommended Resources
 
 * [Andrew Ng's Machine Learning](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
