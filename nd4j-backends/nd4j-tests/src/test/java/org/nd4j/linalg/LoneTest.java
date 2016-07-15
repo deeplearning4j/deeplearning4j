@@ -94,7 +94,7 @@ public class LoneTest extends BaseNd4jTest {
         INDArray arr1 = Nd4j.create(1,1);
         INDArray arr2 = Nd4j.create(1,8);
         INDArray arr3 = Nd4j.create(1,1);
-        INDArray arr4 = Nd4j.concat(0,arr1,arr2,arr3,arr4);
-        assertTrue(arr4.maxNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
+        INDArray arr4 = Nd4j.concat(1,arr1,arr2,arr3);
+        assertTrue(arr4.sumNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
     }
 }
