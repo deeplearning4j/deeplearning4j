@@ -2,7 +2,8 @@
 title: MNIST for Beginners
 layout: default
 ---
-#MNIST for Beginners
+
+# MNIST for Beginners
 ## Introduction
 
 In this tutorial, we’ll classify the MNIST dataset, the “Hello World” of machine learning. 
@@ -15,13 +16,13 @@ We will use MNIST to train a neural network to look at each image and predict th
 
 <p align="center"><a href="./quickstart" class="btn btn-custom">Get Started With Deeplearning4j</a></p>
 
-##The MNIST Dataset
+## The MNIST Dataset
 
 The MNIST dataset contains a **training set** of 60,000 examples, and a **test set** of 10,000 examples. The training set is used to teach the algorithm to predict the correct label, the integer, while the test set is used to validate those assumptions. 
 
 In the machine learning world, this is called [supervised learning](https://en.wikipedia.org/wiki/Supervised_learning), because we have the correct answers for the images we’re making guesses about. The training set can therefore act as a supervisor, or teacher, correcting the neural network when it guesses wrong. 
 
-##Configuring the MNIST Example
+## Configuring the MNIST Example
 
 We’ve packaged the MNIST tutorial into Maven, so there’s no need to write code. Please open IntelliJ to get started. 
 
@@ -33,7 +34,7 @@ Open the folder labeled “dl4j-examples”. Go to the directories src → main 
 
 In this file, we will configure our neural net, train our model and evaluate the results. It will be helpful to view this code alongside the tutorial.
 
-###Setting Variables
+### Setting Variables
 ```
 final int numRows = 28; // The number of rows of a matrix.
 final int numColumns = 28; // The number of columns of a matrix.
@@ -47,14 +48,14 @@ In our example, each MNIST image is 28x28 pixels, which correlate with a 28 **nu
 
 The **batchSize** and **numEpochs** have to be chosen based on experience. A larger batch size results in faster training, while more epochs result in better accuracy. However, there are diminishing returns after a certain number of epochs, so there is a trade offbetween accuracy and training speed. In general, you’ll need to experiment to discover the optimal values. We’ve set reasonable defaults in this example.
 
-###Fetching the MNIST Data
+### Fetching the MNIST Data
 ```
 DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
 DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
 ```
 The class called “DataSetIterator” is what we use to fetch the MNIST dataset. We create one dataset "mnistTrain” for **training the model** and another dataset “mnistTest” for **evaluating the accuracy** of our model after training. The model, by the way, refers to the parameters of the neural network. Those parameters are adjusted as the network learns, until they guess the correct label for each image; at that point, you have an accurate model. 
 
-##Building Our Neural Network
+## Building Our Neural Network
 
 We will build a feedforward neural network based off a [paper by Xavier Glorot and Yoshua Bengio](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf). For our purposes, we’ll start with a basic example with only one hidden layer. However, as a rule of thumb, the deeper your network (i.e. the more layers), the more complexity and nuance they can capture to produce accurate results.
 
@@ -62,7 +63,7 @@ We will build a feedforward neural network based off a [paper by Xavier Glorot a
 
 Keep this image in mind, because this is what we’re constructing.
 
-###Setting Hyperparameters
+### Setting Hyperparameters
 
 For any neural network you build in Deeplearning4j, the foundation is the [NeuralNetConfiguration class](http://deeplearning4j.org/neuralnet-configuration.html). This is where you configure **hyperparameters**. Setting **hyperparameters** defines the architecture and how the algorithm learns. Intuitively, each hyperparameter is like one ingredient for a meal, a meal that can go very right, or very wrong... Luckily, you can adjust them if they don’t produce the right results. 
 ```
@@ -107,7 +108,7 @@ The list specifies the number of layers in the net; this function replicates you
 
 Again, if any of the above was confusing, we recommend [Andrew Ng’s Machine Learning course](https://www.coursera.org/learn/machine-learning). 
 
-###Building Layers
+### Building Layers
 
 We won’t go into the research behind each parameter (i.e. activation, weightInit). However, feel free to read the paper by Xavier Glorot and Yoshua Bengio to learn why these matter.
 
@@ -129,7 +130,7 @@ We won’t go into the research behind each parameter (i.e. activation, weightIn
         .build();
 ```
 
-##Training Your Model
+## Training Your Model
 
 Now that our model is built, let’s begin training. On the top right in IntelliJ, click the green arrow. This will run the code explained above. 
 
@@ -137,7 +138,7 @@ Now that our model is built, let’s begin training. On the top right in Intelli
 
 Depending on your hardware, it may take several minutes to complete.
 
-##Evaluating The Results
+## Evaluating The Results
 
 ![Alt text](./img/mlp_mnist_single_layer_example_results.png)
 
@@ -150,7 +151,7 @@ Depending on your hardware, it may take several minutes to complete.
 
 **Precision, recall and F1** measure a model’s **relevance**. For example, it would be dangerous to predict that cancer will not reoccur (i.e. a false negative) as the person would not seek further treatment. Because of this, it would be wise to choose a model that avoids false negatives (i.e. a higher precision, recall and F1) even if the overall **accuracy** lower.
 
-##Conclusion
+## Conclusion
 
 And there you have it! You’ve successfully trained a neural network to read hand-written digits with 97.1% accuracy. State-of-the-art performance is even better than that, and you can improve the model by adjusting the hyperparameters further. 
 
