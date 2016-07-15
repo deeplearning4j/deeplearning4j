@@ -20,6 +20,13 @@ By applying a more complex algorithm, Lenet, to MNIST, you can achieve 99 percen
 
 [Just show me the code](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java)
 
+### Word2Vec Tutorial
+
+Word2vec is a popular natural-language processing algorithm capable of creating neural word embeddings, which in turn can be fed into deeper neural networks. 
+
+[View the tutorial](./word2vec)
+[Just show me the code](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
+
 ### Linear Classifier Tutorial
 
 This tutorial shows you how a multilayer perceptron can be used as a linear classifier. 
