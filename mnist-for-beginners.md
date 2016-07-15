@@ -54,7 +54,8 @@ explain why this matters later.
 int numEpochs = 15; // An epoch is a complete pass through a given dataset. 
 ```
 In our example, each MNIST image is 28x28 pixels, which correlate with a 28 **numRows** x 28 **numColumns** matrix (matrices are the 
-fundamental data structures of deep learning). Furthermore, MNIST contains 10 possible outcomes (the labels numbered 0 - 9) which is our **outputNum**. 
+fundamental data structures of deep learning). Furthermore, MNIST contains 10 possible outcomes (the labels numbered 0 - 9) which is our 
+**outputNum**. 
 
 The **batchSize** and **numEpochs** have to be chosen based on experience. A larger batch size results in faster training, while more 
 epochs result in better accuracy. However, there are diminishing returns after a certain number of epochs, so there is a trade offbetween
@@ -190,7 +191,8 @@ false negatives (i.e. a higher precision, recall and F1) even if the overall **a
 
 ##Conclusion
 
-And there you have it! You’ve successfully trained a neural network to read hand-written digits with 97.1% accuracy. State-of-the-art performance is even better than that, and you can improve the model by adjusting the hyperparameters further. 
+And there you have it! You’ve successfully trained a neural network to read hand-written digits with 97.1% accuracy. State-of-the-art 
+performance is even better than that, and you can improve the model by adjusting the hyperparameters further. 
 
 Compared to other frameworks, Deeplearning4j excels at the following. 
 
@@ -203,9 +205,6 @@ If you have any questions, please join us online in our [Gitter support chat roo
 
 Recommended Resources:
 
-[Andrew Ng's Machine Learning](https://www.coursera.org/learn/machine-learning/home/week/1) 
-[Google's UD730](https://www.udacity.com/course/deep-learning--ud730)
-[On Intelligence by Jeff Hawkins]
-
-
-
+[Andrew Ng's Machine Learning](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
+[Google's UD730](https://www.udacity.com/course/deep-learning--ud730)<br>
+[On Intelligence by Jeff Hawkins](https://www.amazon.com/Intelligence-Jeff-Hawkins/dp/0805078533)
