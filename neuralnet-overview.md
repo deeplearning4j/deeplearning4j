@@ -194,13 +194,13 @@ To train complex neural networks on very large datasets, a deep learning cluster
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
+* [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Word2vec and Natural-Language Processing](./lstm.html)
-* [Iris Flower Dataset Tutorial](./iris-flower-dataset-tutorial.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
