@@ -311,24 +311,36 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public void set(float[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
+//        log.info("Set called");
         if (dataType() == Type.DOUBLE) {
             //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toDoubles(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toDoubles(data));
-            Pointer srcPtr = new CudaPointer(new DoublePointer(ArrayUtil.toDoubles(data)).address() + (dstOffset * elementSize));
+            DoublePointer pointer = new DoublePointer(ArrayUtil.toDoubles(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //memcpyAsync(dstPtr, srcPtr, length * 4);
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.FLOAT) {
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            Pointer srcPtr = new CudaPointer(new FloatPointer(data).address() + (dstOffset * elementSize));
+            FloatPointer pointer = new FloatPointer(data);
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
+//            log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.INT) {
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(new IntPointer(ArrayUtil.toInts(data)).address() + (dstOffset * elementSize));
+            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         }
     }
 
@@ -344,22 +356,29 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void set(double[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
         if (dataType() == Type.DOUBLE) {
-            //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            Pointer srcPtr = new CudaPointer(new DoublePointer(data).address() + (dstOffset * elementSize));
+            DoublePointer pointer = new DoublePointer(data);
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //memcpyAsync(dstPtr, srcPtr, length * 4);
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.FLOAT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toFloats(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toFloats(data));
-            Pointer srcPtr = new CudaPointer(new FloatPointer(ArrayUtil.toFloats(data)).address() + (dstOffset * elementSize));
+            FloatPointer pointer = new FloatPointer(ArrayUtil.toFloats(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.INT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(new IntPointer(ArrayUtil.toInts(data)).address() + (dstOffset * elementSize));
+            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         }
     }
 
@@ -438,27 +457,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void put(long i, IComplexNumber result) {
         throw new UnsupportedOperationException("ComplexNumbers are not supported yet");
-        /*
-        modified.set(true);
-        if (dataType() == DataBuffer.Type.FLOAT) {
-            JCublas2.cublasSetVector(
-                    (int) length(),
-                    getElementSize(),
-                    PointerUtil.getPointer(CudaComplexConversion.toComplex(result.asFloat()))
-                    , 1
-                    , getHostPointer()
-                    , 1);
-        }
-        else {
-            JCublas2.cublasSetVector(
-                    (int) length(),
-                    getElementSize(),
-                    PointerUtil.getPointer(CudaComplexConversion.toComplexDouble(result.asDouble()))
-                    , 1
-                    , getHostPointer()
-                    , 1);
-        }
-        */
     }
 
 
@@ -470,29 +468,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Deprecated
     public void set(Pointer pointer) {
         throw new UnsupportedOperationException("set(Pointer) is not supported");
-        //modified.set(true);
-
-        /*
-        if (dataType() == DataBuffer.Type.DOUBLE) {
-            JCublas2.cublasDcopy(
-                    ContextHolder.getInstance().getHandle(),
-                    length(),
-                    pointer,
-                    1,
-                    getHostPointer(),
-                    1
-            );
-        } else {
-            JCublas2.cublasScopy(
-                    ContextHolder.getInstance().getHandle(),
-                    length(),
-                    pointer,
-                    1,
-                    getHostPointer(),
-                    1
-            );
-        }
-        */
     }
 
     @Override

@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -607,11 +608,11 @@ public class CudaFloatDataBufferTest {
         assertEquals(true, pointShape.isActualOnDeviceSide());
         assertEquals(true, pointShape.isActualOnHostSide());
 
-        assertEquals(false, pointMain.isActualOnDeviceSide());
-        assertEquals(true, pointMain.isActualOnHostSide());
+        assertEquals(true, pointMain.isActualOnDeviceSide());
+        assertEquals(false, pointMain.isActualOnHostSide());
 
         assertEquals(AllocationStatus.DEVICE, pointMain.getAllocationStatus());
-        assertEquals(AllocationStatus.DEVICE, pointShape.getAllocationStatus());
+        assertEquals(AllocationStatus.CONSTANT, pointShape.getAllocationStatus());
     }
 
     @Test
@@ -629,7 +630,7 @@ public class CudaFloatDataBufferTest {
         assertEquals(false, pointMain.isActualOnHostSide());
 
         assertEquals(AllocationStatus.DEVICE, pointMain.getAllocationStatus());
-        assertEquals(AllocationStatus.DEVICE, pointShape.getAllocationStatus());
+        assertEquals(AllocationStatus.CONSTANT, pointShape.getAllocationStatus());
     }
 
     @Test
@@ -719,10 +720,41 @@ public class CudaFloatDataBufferTest {
         assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(8));
     }
 
-    @Test public void testPermuteAssingn(){
+    @Test
+    public void testPermuteAssingn(){
         INDArray arr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
         INDArray arr2 = arr.permute(1,0,2);
         INDArray arr3 = arr2.dup('c');
         assertEquals(arr2,arr3);
+    }
+
+    @Test
+    public void testDoubleDouble2() {
+        final int nrow = 400000;
+        final int nfeatures = 500;
+        final int nlabels = 2;
+        double[][] features = new double[nrow][nfeatures];
+        double[][] labels = new double[nrow][nlabels];
+
+
+        Random r = new Random();
+
+        for (int i = 0; i < nrow; i++) {
+            for (int j = 0; j < nfeatures; j++) {
+                features[i][j] = r.nextDouble();
+            }
+            for (int j = 0; j < nlabels; j++) {
+                labels[i][j] = r.nextDouble();
+            }
+        }
+
+        INDArray indFeatures = Nd4j.create(features);
+        INDArray indLabels = Nd4j.create(labels);
+        System.out.println("----------");
+//        indFeatures.muli(2f);
+//        indLabels.muli(2f);
+
+        System.out.println("Features value[0]: " + indFeatures.getFloat(0));
+        System.out.println("Labels value[0]: " + indLabels.getFloat(0));
     }
 }

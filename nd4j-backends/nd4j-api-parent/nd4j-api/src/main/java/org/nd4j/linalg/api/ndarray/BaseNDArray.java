@@ -173,14 +173,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             assert (data[r].length == columns);
         }
 
-        this.data = Nd4j.createBuffer(length);
-
+     //   this.data = Nd4j.createBuffer(length);
+/*
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < columns; c++) {
                 putScalar(r, c, data[r][c]);
             }
-        }
+        }*/
     }
 
 
@@ -634,7 +634,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
         }
-
+/*
         this.data = Nd4j.createBuffer(length);
 
         for (int r = 0; r < rows; r++) {
@@ -642,6 +642,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 putScalar(r, c, data[r][c]);
             }
         }
+        */
     }
 
 
