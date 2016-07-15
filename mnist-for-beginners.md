@@ -4,6 +4,7 @@ layout: default
 ---
 
 # MNIST for Beginners
+
 ## Introduction
 
 In this tutorial, we’ll classify the MNIST dataset, the “Hello World” of machine learning. 
@@ -40,13 +41,12 @@ final int numRows = 28; // The number of rows of a matrix.
 final int numColumns = 28; // The number of columns of a matrix.
 int outputNum = 10; // Number of possible outcomes (e.g. labels 0 through 9). 
 int batchSize = 128; // How many examples to fetch with each step. 
-int rngSeed = 123; // This random-number generator applies a seed to ensure that the same initial weights are used when training. We’ll 
-explain why this matters later. 
+int rngSeed = 123; // This random-number generator applies a seed to ensure that the same initial weights are used when training. We’ll explain why this matters later. 
 int numEpochs = 15; // An epoch is a complete pass through a given dataset. 
 ```
 In our example, each MNIST image is 28x28 pixels, which correlate with a 28 **numRows** x 28 **numColumns** matrix (matrices are the fundamental data structures of deep learning). Furthermore, MNIST contains 10 possible outcomes (the labels numbered 0 - 9) which is our **outputNum**. 
 
-The **batchSize** and **numEpochs** have to be chosen based on experience. A larger batch size results in faster training, while more epochs result in better accuracy. However, there are diminishing returns after a certain number of epochs, so there is a trade offbetween accuracy and training speed. In general, you’ll need to experiment to discover the optimal values. We’ve set reasonable defaults in this example.
+The **batchSize** and **numEpochs** have to be chosen based on experience. A larger batch size results in faster training, while more epochs result in better accuracy. However, there are diminishing returns after a certain number of epochs, so there is a trade off between accuracy and training speed. In general, you’ll need to experiment to discover the optimal values. We’ve set reasonable defaults in this example.
 
 ### Fetching the MNIST Data
 ```
@@ -66,6 +66,7 @@ Keep this image in mind, because this is what we’re constructing.
 ### Setting Hyperparameters
 
 For any neural network you build in Deeplearning4j, the foundation is the [NeuralNetConfiguration class](http://deeplearning4j.org/neuralnet-configuration.html). This is where you configure **hyperparameters**. Setting **hyperparameters** defines the architecture and how the algorithm learns. Intuitively, each hyperparameter is like one ingredient for a meal, a meal that can go very right, or very wrong... Luckily, you can adjust them if they don’t produce the right results. 
+
 ```
 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .seed(rngSeed)
@@ -76,6 +77,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .regularization(true).l2(1e-4)
         .list()
 ```
+
 **.seed(rngSeed)**
 
 This parameter uses a specific, randomly generated weight initialization. If you run an example many times, and generate new, random weights each time, then your net’s results (accuracy and F1 score) may vary a great deal, because different initial weights can lead algorithms to different local minima of the errorscape. Keeping the weights the same allows you see the effect of adjusting other hyperparameters more clearly, while other conditions remain equal.
@@ -113,6 +115,7 @@ Again, if any of the above was confusing, we recommend [Andrew Ng’s Machine Le
 We won’t go into the research behind each parameter (i.e. activation, weightInit). However, feel free to read the paper by Xavier Glorot and Yoshua Bengio to learn why these matter.
 
 ![Alt text](./img/onelayer_labeled.png)
+
 ```
         .layer(0, new DenseLayer.Builder()
                 .nIn(numRows * numColumns) // Number of input datapoints.
