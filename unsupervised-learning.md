@@ -68,6 +68,6 @@ The underlying implementation for K Nearest Neighbors is the [VP Tree](https://g
 ### Other Resources
 
 * [Introduction to Deep Neural Networks](./neuralnet-overview.html)
-* [Iris Tutorial](./iris-flower-dataset-tutorial.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
 * [Deeplearning4j Quickstart Examples](./quickstart.html)
 * [ND4J: Numpy for the JVM](http://nd4j.org)
