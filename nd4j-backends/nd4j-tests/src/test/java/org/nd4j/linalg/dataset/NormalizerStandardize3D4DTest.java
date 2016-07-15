@@ -9,6 +9,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by susaneraly on 7/15/16.
  */
@@ -28,29 +30,19 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
          */
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
 
-        double tolerancePerc = 0.01; // 0.01% of correct value
         int timeSteps = 12;
         int samples = 4;
         int features = 3;
-        int x = 2,y = 4, z = 3;
-        int a = 2,b = 3,c= 4;
 
-        /*
-        INDArray featureX = Nd4j.linspace(1,timeSteps,timeSteps).reshape(1,timeSteps).mul(x);
-        INDArray featureY = featureX.mul(y);
-        INDArray featureZ = featureX.mul(z);
-        INDArray featureSet = Nd4j.concat(0,featureX,featureY,featureZ); //this is one sample
-        */
+        float k = 10f;
 
-        //INDArray fullFeatures = Nd4j.concat(0,featureSet,featureSet.mul(a),featureSet.mul(b),featureSet.mul(c));
-        INDArray fullFeatures = Nd4j.zeros(samples,features,timeSteps).add(10);
+        INDArray fullFeatures = Nd4j.zeros(samples,features,timeSteps).add(k);
         INDArray labelSet = Nd4j.zeros(samples,features);
         DataSet sampleDataSet = new DataSet(fullFeatures, labelSet);
 
-        //double meanNaturalNums = (nSamples + 1)/2.0;
-        //INDArray theoreticalMean = Nd4j.create(new double[] {meanNaturalNums*x,meanNaturalNums*y,meanNaturalNums*z});
-        //double stdNaturalNums = Math.sqrt((nSamples*nSamples - 1)/12.0);
-        //INDArray theoreticalStd = Nd4j.create(new double[] {stdNaturalNums*x,stdNaturalNums*y,stdNaturalNums*z});
+        myNormalizer.fit(sampleDataSet);
+        assertEquals(myNormalizer.getMean(),Nd4j.create(new float[] {k,k,k}));
+        assertEquals(myNormalizer.getStd(),Nd4j.zeros(1,features));
     }
     @Override
     public char ordering() {

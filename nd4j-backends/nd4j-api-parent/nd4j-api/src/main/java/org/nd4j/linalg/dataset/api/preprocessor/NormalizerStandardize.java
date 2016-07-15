@@ -57,8 +57,17 @@ public class NormalizerStandardize implements DataNormalization {
                 if (featureRank == 4)
                     theFeatures = tailor4d2d(next);
             }
-            runningTotal += theFeatures.size(0);
-            batchCount = theFeatures.size(0);
+            if (next.hasMaskArrays()) {
+                //now features are in columns and rows are samples
+                //mask is features x timesteps
+                runningTotal += next.getFeaturesMaskArray().sum(0).getInt(0,0);
+                batchCount = next.getFeaturesMaskArray().sum(0).getInt(0,0);
+
+            }
+            else{
+                runningTotal += theFeatures.size(0);
+                batchCount = theFeatures.size(0);
+            }
             if(mean == null) {
                 //start with the mean and std of zero
                 //column wise
@@ -135,7 +144,13 @@ public class NormalizerStandardize implements DataNormalization {
      * Revert the data to what it was before transform
      * @param toPreProcess the dataset to revert back
      */
-    public void revert(DataSet toPreProcess) {this.revertPreProcess(toPreProcess);}
+    public void revert(DataSet toPreProcess) {
+        if (toPreProcess.getFeatureMatrix().rank() == 2)
+            this.revertPreProcess(toPreProcess);
+        else
+            throw new RuntimeException("API_USE_ERROR: Reverting not supported for feature matrices with rank larger than 2");
+
+    }
 
     public void revert(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
@@ -191,7 +206,7 @@ public class NormalizerStandardize implements DataNormalization {
                 thisTAD.muli(dataset.getFeaturesMaskArray());
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));
         }
-        return in2d;
+        return in2d.transposei();
     }
 
     private INDArray tailor4d2d(DataSet dataset) {
@@ -207,7 +222,7 @@ public class NormalizerStandardize implements DataNormalization {
             INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 2, 0);
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));
         }
-        return in2d;
+        return in2d.transposei();
     }
 
 }
