@@ -134,9 +134,9 @@ We won’t go into the research behind each parameter (i.e. activation, weightIn
 ```
 So what exactly is the hidden layer? 
 
-Each node (the circles) in the hidden layer represent a “feature” of a handwritten digit in the MNIST dataset. For example, imagine you are looking at the number 6. One node may represent a rounded edge, another node may represent curly lines and so on and so forth. The more nodes you have, the more complexity and nuance they can capture to make better predictions.  
+Each node (the circles) in the hidden layer represent a feature of a handwritten digit in the MNIST dataset. For example, imagine you are looking at the number 6. One node may represent rounded edges, another node may represent curly lines and so on and so forth. These features are weighted by importance and recombined to predict that the handwritten number is indeed 6. The more nodes you have, the more complexity and nuance they can capture to make better predictions.  
 
-Furthermore, the reason it’s “hidden” is because it’s difficult to decipher how and why a neural net classifies things a certain way. Whatever knowledge that a neural net has acquired is encoded in it's numerical weights. This is known as feature introspection.
+You can think of a layer as "hidden" because it’s difficult for humans to decipher how and why a neural net classifies things a certain way. Whatever knowledge that a neural net has acquired is encoded in a format only readable by machines. This is known as feature introspection.
 
 ## Training Your Model
 
@@ -161,7 +161,7 @@ Depending on your hardware, it may take several minutes to complete.
 
 ## Conclusion
 
-And there you have it! You’ve successfully trained a neural network to read hand-written digits with 97.1% accuracy. State-of-the-art performance is even better than that, and you can improve the model by adjusting the hyperparameters further. 
+And there you have it! You should realize that you've successfully trained a neural network to achieve 97.1% accuracy with zero domain knowledge of computer vision. State-of-the-art performance is even better than that, and you can improve the model by adjusting the hyperparameters further. 
 
 Compared to other frameworks, Deeplearning4j excels at the following. 
 
