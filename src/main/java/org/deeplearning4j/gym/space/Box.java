@@ -5,9 +5,9 @@ import org.json.JSONArray;
 /**
  * Created by rubenfiszel on 7/8/16.
  */
-public class Box extends LowDimensional{
+public class Box implements LowDimensional{
 
-    double[] array;
+    private final double[] array;
 
     public Box(JSONArray arr) {
 

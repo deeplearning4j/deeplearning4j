@@ -3,8 +3,6 @@ package org.deeplearning4j.gym;
 
 import com.mashape.unirest.http.JsonNode;
 import org.deeplearning4j.gym.space.ActionSpace;
-import org.deeplearning4j.gym.space.BoxSpace;
-import org.deeplearning4j.gym.space.DiscreteSpace;
 import org.deeplearning4j.gym.space.ObservationSpace;
 import org.json.JSONObject;
 

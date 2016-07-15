@@ -6,7 +6,7 @@ A java http client for [gym-http-api](https://github.com/openai/gym-http-api).
 
 An example agent is provided:
 ```java
-import org.deeplearning4j.gym.ExampleAgent;
+import org.deeplearning4j.ExampleAgent;
 ...
 ExampleAgent.run();
 ```

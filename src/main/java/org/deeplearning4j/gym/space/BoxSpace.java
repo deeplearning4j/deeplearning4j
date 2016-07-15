@@ -6,15 +6,12 @@ import org.json.JSONObject;
 /**
  * Created by rubenfiszel on 7/8/16.
  */
-public class BoxSpace extends ObservationSpace<Box> {
+public class BoxSpace implements LowDimensionalSpace<Box> {
 
+    JSONObject n;
 
     public BoxSpace(JSONObject n) {
-
-    }
-
-    public String getInfoName(){
-        return "Box";
+        this.n = n;
     }
 
     public Box getValue(JSONObject o, String key) {
@@ -22,7 +19,4 @@ public class BoxSpace extends ObservationSpace<Box> {
         return new Box(arr);
     }
 
-    public double[] toArray(Box o) {
-        return new double[0];
-    }
 }

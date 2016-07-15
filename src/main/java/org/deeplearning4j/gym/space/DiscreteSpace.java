@@ -5,19 +5,15 @@ import java.util.Random;
 /**
  * Created by rubenfiszel on 7/8/16.
  */
-public class DiscreteSpace extends ActionSpace<Integer> {
+public class DiscreteSpace implements ActionSpace<Integer> {
 
-    int n;
-    Random rd;
+    private int n;
+    private Random rd;
 
     public DiscreteSpace(int n) {
 
         this.n = n;
         rd = new Random();
-    }
-
-    public String getInfoName(){
-        return "Discrete";
     }
 
     public int getN() {
