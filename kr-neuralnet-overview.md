@@ -192,7 +192,6 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 * [Word2vec과 자연어 처리](./kr-word2vec.html)
 * [Deeplearing4j 퀵 스타트 가이드 (Quick Start Guide)](./kr-quickstart.html)
 * [심층 신경망/인공 신경망 용어 사전](./glossary.html)
-* [Iris Flower 데이터셋 튜토리알](./iris-flower-dataset-tutorial.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
