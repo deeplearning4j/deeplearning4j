@@ -19,21 +19,19 @@ We will use MNIST to train a neural network to look at each image and predict th
 
 ## The MNIST Dataset
 
-The MNIST dataset contains a **training set** of 60,000 examples, and a **test set** of 10,000 examples. The training set is used to teach the algorithm to predict the correct label, the integer, while the test set is used to validate those assumptions. 
+The MNIST dataset contains a **training set** of 60,000 examples, and a **test set** of 10,000 examples. The training set is used to teach the algorithm to predict the correct label, the integer, while the test set is used to check how accurately the trained network can make guesses. 
 
 In the machine learning world, this is called [supervised learning](https://en.wikipedia.org/wiki/Supervised_learning), because we have the correct answers for the images we’re making guesses about. The training set can therefore act as a supervisor, or teacher, correcting the neural network when it guesses wrong. 
 
 ## Configuring the MNIST Example
 
-We’ve packaged the MNIST tutorial into Maven, so there’s no need to write code. Please open IntelliJ to get started. 
+We’ve packaged the MNIST tutorial into Maven, so there’s no need to write code. Please open IntelliJ to get started. (To download IntelliJ, see our [Quickstart](./quickstart)...)
 
-![Alt text](./img/intellij_logo.png)
-
-Open the folder labeled “dl4j-examples”. Go to the directories src → main → java → feedforward → mnist, and open the file “MLPMnistSingleLayerExample”. 
+Open the folder labeled `dl4j-examples`. Go to the directories src → main → java → feedforward → mnist, and open the file `MLPMnistSingleLayerExample.java`. 
 
 ![Alt text](./img/mlp_mnist_single_layer_example_setup.png)
 
-In this file, we will configure our neural net, train our model and evaluate the results. It will be helpful to view this code alongside the tutorial.
+In this file, we will configure the neural network, train a model and evaluate the results. It will be helpful to view this code alongside the tutorial.
 
 ### Setting Variables
 ```
@@ -44,20 +42,22 @@ int batchSize = 128; // How many examples to fetch with each step.
 int rngSeed = 123; // This random-number generator applies a seed to ensure that the same initial weights are used when training. We’ll explain why this matters later. 
 int numEpochs = 15; // An epoch is a complete pass through a given dataset. 
 ```
-In our example, each MNIST image is 28x28 pixels, which correlate with a 28 **numRows** x 28 **numColumns** matrix (matrices are the fundamental data structures of deep learning). Furthermore, MNIST contains 10 possible outcomes (the labels numbered 0 - 9) which is our **outputNum**. 
+In our example, each MNIST image is 28x28 pixels, which means our input data is a 28 **numRows** x 28 **numColumns** matrix (matrices are the fundamental data structures of deep learning). Furthermore, MNIST contains 10 possible outcomes (the labels numbered 0 - 9) which is our **outputNum**. 
 
-The **batchSize** and **numEpochs** have to be chosen based on experience. A larger batch size results in faster training, while more epochs result in better accuracy. However, there are diminishing returns after a certain number of epochs, so there is a trade off between accuracy and training speed. In general, you’ll need to experiment to discover the optimal values. We’ve set reasonable defaults in this example.
+The **batchSize** and **numEpochs** have to be chosen based on experience; you learn what works through experimentation. A larger batch size results in faster training, while more *epochs*, or passes through the dataset, result in better accuracy. 
+
+However, there are diminishing returns beyond a certain number of epochs, so there is a trade off between accuracy and training speed. In general, you’ll need to experiment to discover the optimal values. We’ve set reasonable defaults in this example.
 
 ### Fetching the MNIST Data
 ```
 DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
 DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
 ```
-The class called “DataSetIterator” is what we use to fetch the MNIST dataset. We create one dataset "mnistTrain” for **training the model** and another dataset “mnistTest” for **evaluating the accuracy** of our model after training. The model, by the way, refers to the parameters of the neural network. Those parameters are adjusted as the network learns, until they guess the correct label for each image; at that point, you have an accurate model. 
+The class called “DataSetIterator” is used to fetch the MNIST dataset. We create one dataset "mnistTrain” for **training the model** and another dataset “mnistTest” for **evaluating the accuracy** of our model after training. The model, by the way, refers to the parameters of the neural network. Those parameters are coefficients that process signal from the input, and they are adjusted as the network learns until they can finally guess the correct label for each image; at that point, you have an accurate model. 
 
 ## Building Our Neural Network
 
-We will build a feedforward neural network based off a [paper by Xavier Glorot and Yoshua Bengio](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf). For our purposes, we’ll start with a basic example with only one hidden layer. However, as a rule of thumb, the deeper your network (i.e. the more layers), the more complexity and nuance they can capture to produce accurate results.
+We will build a feedforward neural network based off a [paper by Xavier Glorot and Yoshua Bengio](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf). For our purposes, we’ll start with a basic example with only one hidden layer. However, as a rule of thumb, the deeper your network (i.e. the more layers), the more complexity and nuance it can capture to produce accurate results. 
 
 ![Alt text](./img/onelayer.png)
 
