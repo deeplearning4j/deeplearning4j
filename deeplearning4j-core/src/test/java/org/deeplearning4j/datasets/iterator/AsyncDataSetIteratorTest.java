@@ -42,7 +42,8 @@ public class AsyncDataSetIteratorTest {
                     assertEquals(100, ds.getFeatureMatrix().length());
                     assertEquals(10, ds.getLabels().length());
                 }
-                //      assertEquals(TEST_SIZE, cnt);
+
+                assertEquals("Failed on iteration: " + iter + ", prefetchSize: " + prefetchSize, TEST_SIZE, cnt);
             }
         }
     }
@@ -61,7 +62,7 @@ public class AsyncDataSetIteratorTest {
                         iterator.reset();
                 }
 
-           //     assertEquals(TEST_SIZE + (TEST_SIZE / 2), cnt);
+                assertEquals(TEST_SIZE + (TEST_SIZE / 2), cnt);
             }
         }
     }
