@@ -203,7 +203,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
      // A single layer learns features unsupervised.	
     }
 
-以上是[用RBM处理鸢尾花数据集](./iris-flower-dataset-tutorial.html)的示例，可点击链接查看这个示例的专门教程。 
+以上是用RBM处理鸢尾花数据集的示例，可点击链接查看这个示例的专门教程。 
 
 ## <a name="params">参数与变量k</a>
 
