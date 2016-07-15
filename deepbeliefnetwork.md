@@ -19,6 +19,8 @@ MNIST is a good place to begin exploring image recognition and DBNs. The first s
 
 ### Hyperparameters
 
+See the [parameters common to all multilayer networks](./neuralnet-configuration).
+
 The variable k represents the number of times you run [contrastive divergence](./glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is `1`.
 
 ### Initiating a Deep-Belief Network
