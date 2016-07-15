@@ -11,8 +11,8 @@ layout: default
 
 MNIST is the "Hello World" of machine learning. With this tutorial, you can train on MNIST with a single-layer neural network.
 
-[View the Tutorial](http://deeplearning4j.org/mnist-for-beginners.html)<br>
-[Show me the Code](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
+[View the tutorial](http://deeplearning4j.org/mnist-for-beginners.html)<br>
+[Show me the code](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
 
 ### MNIST for Experts
 
