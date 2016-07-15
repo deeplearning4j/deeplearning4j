@@ -39,8 +39,6 @@ Recall that Deeplearning4j's multinetwork configuration lets you create a layer 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java?slice=48:218"></script>
 
-An explanation of the hyperparameters is given in our [Iris tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html). 
-
 ### LSTM Implementations in DL4J
 
 * [Graves LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesLSTM.java) (Useful for sensor data and time series)
