@@ -21,7 +21,7 @@ cuDNN is one of the fastest libraries for deep convolutional networks. It ranks 
 
 Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of four open-source libraries maintained by Skymind. DL4J is powered by the scientific computing library [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, which performs the linear algebra and calculus necessary to train neural nets. ND4J is accelerated by a C++ library [libnd4j](https://github.com/deeplearning4j/libnd4j). And finally, the DataVec library is used to vectorize all types of data.
 
-Deeplearning4j talks to cuDNN using [JavaCPP](https://github.com/bytedeco/javacpp), or glue code that creates a bridge between Java developers and C++. 
+Deeplearning4j talks to cuDNN using [JavaCPP](https://github.com/bytedeco/javacpp), the glue code that creates a bridge between Java and C++. 
 
 Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
 
@@ -49,7 +49,6 @@ First we configure Spark and load the data:
         JavaRDD<DataSet> test = sc.parallelize(testData);
 
 Then we configure the neural network:
-
 
         //Set up network configuration (as per standard DL4J networks)
         int nChannels = 1;
