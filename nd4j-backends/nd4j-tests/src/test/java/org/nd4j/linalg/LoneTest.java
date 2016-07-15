@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -85,5 +86,15 @@ public class LoneTest extends BaseNd4jTest {
             jj = colVector.get(NDArrayIndex.interval(i,i+10));
             jj = colVector.get(NDArrayIndex.interval(i,i+10));
         }
+    }
+
+    @Test
+    public void concatScalarVectorIssue() {
+        //A bug was found when the first array that concat sees is a scalar and the rest vectors + scalars
+        INDArray arr1 = Nd4j.create(1,1);
+        INDArray arr2 = Nd4j.create(1,8);
+        INDArray arr3 = Nd4j.create(1,1);
+        INDArray arr4 = Nd4j.concat(1,arr1,arr2,arr3);
+        assertTrue(arr4.sumNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
     }
 }
