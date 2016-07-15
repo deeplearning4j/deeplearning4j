@@ -174,4 +174,4 @@ If you have any questions, please join us online in our [Gitter support chat roo
 
 ## Recommended Resources
 
-* [Andrew Ng's Machine Learning](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
+* [Andrew Ng's Online Machine Learning Course](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
