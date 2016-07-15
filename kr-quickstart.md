@@ -47,7 +47,7 @@ mvn clean package
 * TSNE 예제 혹은 다른 예제를 실행하려면 `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` 를 입력하십시오. 실행이 실패하거나 Maven 종료 후 데몬 스레드를 멈출 수 없는 경우 마지막 매개변수 `-Dexec.cleanupDaemonThreads=false`가 필요할 수 있습니다.
 * TSNE 학습을 1000회 반복한 결과는 `dl4j-0.4-examples/target/archive-tmp/`의 `tsne-standard-coords.csv`를 확인하세요.
 
-Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나와야 정상입니다. Iris 예제에 대한 더 자세한 설명은 [Iris DBN 튜토리얼](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을 참조하시기 바랍니다.
+Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나와야 정상입니다.
 
 만일 실행중에 문제가 생기면 우선 여러분의 POM.xml파일을 확인해 보세요. 정상적인 경우라면 [이 파일](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)과 비슷해야 합니다.
 
