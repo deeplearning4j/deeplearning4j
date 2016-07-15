@@ -132,6 +132,11 @@ We won’t go into the research behind each parameter (i.e. activation, weightIn
         .pretrain(false).backprop(true)
         .build();
 ```
+So what exactly is the hidden layer? 
+
+Each node (the circles) in the hidden layer represent a “feature” of a handwritten digit in the MNIST dataset. For example, imagine you are looking at the number 6. One node may represent a rounded edge, another node may represent curly lines and so on and so forth. The more nodes you have, the more complexity and nuance they can capture to make better predictions.  
+
+Furthermore, the reason it’s “hidden” is because it’s difficult to decipher how and why a neural net classifies things a certain way. Whatever knowledge that a neural net has acquired is encoded in it's numerical weights. This is known as feature introspection.
 
 ## Training Your Model
 
