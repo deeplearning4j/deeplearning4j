@@ -7,40 +7,35 @@ layout: default
 
 Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we use Spark to load data and GPUs to process it with cuDNN. 
 
-Deeplearning4j also has value added tools for automatic tuning of neural networks, deployment, visualization of tools
-and integrations with various kinds of data pipeline tools that make dealing with data on production clusters easier.
+Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters easier. Much easier. 
 
-This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and shows how Deeplearning4j pulls them together in an image-processing example with code.
+This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and at the end it shows with code how Deeplearning4j pulls them together in an image-processing example. 
 
+## Apache Spark
 
+As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL. 
 
+## CUDA
 
-#Apache Spark
-Spark was the Apache Foundation’s most popular project last year. As an open-source, distributed run-time, Spark can orchestrate multiple host threads. Deeplearning4j only relies on Spark as a data-access layer, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL.
-
-#CUDA
 Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. 
 
-#cuDNN
+## cuDNN
 cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the GPU maker NVIDIA. cuDNN is a library of primitives for standard deep learning routines: forward and backward convolution, pooling, normalization, and activation layers. 
 
-cuDNN is one of the fastest libraries for deep convolutional networks (and as of recent recurrene nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN, and gives the Java community easy access to it. 
-
-
+cuDNN is one of the fastest libraries for deep convolutional networks (and more recently, for recurrent nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN, and gives the Java community easy access to it. 
 
 [Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoder.
 
-Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of four open-source libraries maintained by Skymind. DL4J is powered by the scientific computing library [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, which performs the linear algebra and calculus necessary to train neural nets. ND4J is accelerated by a C++ library [libnd4j](https://github.com/deeplearning4j/libnd4j). And finally, the [DataVec library](https://github.com/deeplearning4j/DataVec) is used to vectorize all types of data.
+Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of several open-source libraries maintained by Skymind engineers. 
 
-Deeplearning4j talks to cuDNN using [JavaCPP](https://github.com/bytedeco/javacpp), the glue code that creates a bridge between Java and C++. 
+* [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, is the scientific computing library that performs the linear algebra and calculus necessary to train neural nets for DL4J. 
+* [libnd4j](https://github.com/deeplearning4j/libnd4j) is the C++ library that accelerates ND4J. 
+* [DataVec](https://github.com/deeplearning4j/DataVec) is used to vectorize all types of data.
+* [JavaCPP](https://github.com/bytedeco/javacpp) is the glue code that creates a bridge between Java and C++. DL4J talks to cuDNN using JavaCPP.
 
-#Java and C++ Communication: Doesn't java slow down cuda?
+## Java and C++ Communication: Doesn't Java Slow Down CUDA?
 
-This is often the case. Thankfully, we have optimized communication by 
-offloading operations to off heap. JavaCpp implements a Pointer class that makes it very easy
-to do [off heap operations](https://dzone.com/articles/heap-vs-heap-memory-usage) (eg: data doesn't hit the garbage collector)
-This allows us to benefit from lower latency and memory management while benefitting from the managed 
-garbage collector where it matters. This is the approach many distributed systems frameworks and databases such as apache flink, spark, and hbase take.
+This is often the case. Thankfully, we have optimized communication by offloading operations to off heap. JavaCpp implements a Pointer class that makes it very easy to do [off heap operations](https://dzone.com/articles/heap-vs-heap-memory-usage) (eg: data doesn't hit the garbage collector). This allows us to benefit from lower latency and memory management while benefitting from the managed garbage collector where it matters. This is the approach many distributed systems frameworks and databases such as apache flink, spark, and hbase take.
 
 We take the stance that java isn't good at linear algebra
 operations and should therefore be handled by c++ where we can benefit from hardware acceleration
