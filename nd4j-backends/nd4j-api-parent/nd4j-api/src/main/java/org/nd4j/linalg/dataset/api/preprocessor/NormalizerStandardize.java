@@ -28,21 +28,17 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
-        if (!dataSet.hasMaskArrays()) {
-            mean = dataSet.getFeatureMatrix().mean(0);
-            std = dataSet.getFeatureMatrix().std(0);
-            std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-            if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
-                logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
+        int featureRank = dataSet.getFeatureMatrix().rank();
+        INDArray theFeatures = dataSet.getFeatureMatrix();
+        if (featureRank > 2) {
+            if (featureRank == 3) theFeatures = tailor3d2d(dataSet);
+            if (featureRank == 4) theFeatures = tailor4d2d(dataSet);
         }
-        else {
-            mean = dataSet.getFeatureMatrix().mulRowVector(dataSet.getFeaturesMaskArray()).mean(0);
-            std = dataSet.getFeatureMatrix().std(0);
-            std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-            if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
-                logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
-
-        }
+        mean = theFeatures.mean(0);
+        std = theFeatures.std(0);
+        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+            logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
     }
 
     /**
@@ -53,18 +49,27 @@ public class NormalizerStandardize implements DataNormalization {
     public void fit(DataSetIterator iterator) {
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
-            runningTotal += next.numExamples();
-            batchCount = next.getFeatures().size(0);
+            INDArray theFeatures = next.getFeatureMatrix();
+            int featureRank = theFeatures.rank();
+            if (featureRank > 2) {
+                if (featureRank == 3)
+                    theFeatures = tailor3d2d(next);
+                if (featureRank == 4)
+                    theFeatures = tailor4d2d(next);
+            }
+            runningTotal += theFeatures.size(0);
+            batchCount = theFeatures.size(0);
             if(mean == null) {
                 //start with the mean and std of zero
                 //column wise
-                mean = next.getFeatureMatrix().mean(0);
-                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatureMatrix().std(0),2);
+                mean = theFeatures.mean(0);
+                //batchCount can be 1 for 2d
+                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0),2);
                 std.muli(batchCount);
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
-                INDArray xMinusMean = next.getFeatureMatrix().subRowVector(mean);
+                INDArray xMinusMean = theFeatures.subRowVector(mean);
                 INDArray newMean = mean.add(xMinusMean.sum(0).divi(runningTotal));
                 // Using http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
                 // for a version of calc variance when dataset is partitioned into two sample sets
@@ -72,10 +77,10 @@ public class NormalizerStandardize implements DataNormalization {
                 // delta = mean_B - mean_A; A is data seen so far, B is the current batch
                 // M2 is the var*n
                 // M2 = M2_A + M2_B + delta^2 * nA * nB/(nA+nB)
-                INDArray meanB = next.getFeatureMatrix().mean(0);
+                INDArray meanB = theFeatures.mean(0);
                 INDArray deltaSq = Transforms.pow(meanB.subRowVector(mean),2);
                 INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-batchCount)*batchCount/(float)runningTotal);
-                INDArray mtwoB = Transforms.pow(next.getFeatureMatrix().std(0),2);
+                INDArray mtwoB = Transforms.pow(theFeatures.std(0),2);
                 mtwoB.muli(batchCount);
                 std = std.add(mtwoB);
                 std = std.add(deltaSqScaled);
@@ -170,4 +175,39 @@ public class NormalizerStandardize implements DataNormalization {
         Nd4j.saveBinary(this.mean,statistics[0]);
         Nd4j.saveBinary(this.std,statistics[1]);
     }
+
+    private INDArray tailor3d2d(DataSet dataset) {
+        int instances = dataset.getFeatureMatrix().size(0);
+        int features = dataset.getFeatureMatrix().size(1);
+        int timesteps = dataset.getFeatureMatrix().size(2);
+
+        boolean hasMasks = dataset.hasMaskArrays();
+        INDArray in2d = Nd4j.create(features,timesteps*instances);
+
+        int tads = dataset.getFeatureMatrix().tensorssAlongDimension(2,0);
+        for(int i = 0; i < tads; i++){
+            INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 2, 0);
+            if (hasMasks)
+                thisTAD.muli(dataset.getFeaturesMaskArray());
+            in2d.putRow(i, Nd4j.toFlattened(thisTAD));
+        }
+        return in2d;
+    }
+
+    private INDArray tailor4d2d(DataSet dataset) {
+        int instances = dataset.getFeatureMatrix().size(0);
+        int channels = dataset.getFeatureMatrix().size(1);
+        int height = dataset.getFeatureMatrix().size(2);
+        int width = dataset.getFeatureMatrix().size(2);
+
+        INDArray in2d = Nd4j.create(channels,height*width*instances);
+
+        int tads = dataset.getFeatureMatrix().tensorssAlongDimension(3,2,0);
+        for(int i = 0; i < tads; i++){
+            INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 2, 0);
+            in2d.putRow(i, Nd4j.toFlattened(thisTAD));
+        }
+        return in2d;
+    }
+
 }
