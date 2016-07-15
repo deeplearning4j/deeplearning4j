@@ -166,6 +166,6 @@ To make changes to the examples from the command line and run that changed file,
 
 In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for more information.
 
-Take a look at the [IRIS tutorial](./iris-flower-dataset-tutorial.html) to get running quickly, and check out our guide for [restricted Boltzmann machines](./restrictedboltzmannmachine.html) to understand the basic mechanics of *deep-belief networks*.
+Take a look at the [MNIST tutorial](./mnist-for-beginners.html) to get running quickly, and check out our guide for [restricted Boltzmann machines](./restrictedboltzmannmachine.html) to understand the basic mechanics of *deep-belief networks*.
 
 Follow the [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
