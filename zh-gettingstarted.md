@@ -157,10 +157,10 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
 
       Nd4j.getRandom().setSeed(123);
 
-### <a name="next">后续步骤IRIS示例及安装神经网络</a>
+### <a name="next">后续步骤示例及安装神经网络</a>
 
 欲开始创建神经网络，请参见[神经网络简介](http://deeplearning4j.org/zh-neuralnet-overview)获得更多信息。
 
-阅读[IRIS教程](./zh-iris-flower-dataset-tutorial.html)以迅速上手。同时请参阅我们关于[受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)的说明，以理解*深度置信网络*的基本机制。
+同时请参阅我们关于[受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)的说明，以理解*深度置信网络*的基本机制。
 
 根据[ND4J入门指南](http://nd4j.org/zh-getstarted.html)上的说明创建新项目，并将必要的[POM依赖项](http://nd4j.org/dependencies.html)包括在内。
