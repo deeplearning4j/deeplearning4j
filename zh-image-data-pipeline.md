@@ -59,7 +59,7 @@ DataSetIterator对输入数据集进行迭代，每次迭代均抓取一个或�
 
 ## 配置模型
 
-以下是一个神经网络的配置示例。本例的许多超参数都已在[鸢尾花数据集教程](./iris-flower-dataset-tutorial.html)中介绍过，所以此处仅对部分特殊属性作一概述。
+以下是一个神经网络的配置示例。本例的许多超参数都已在[鸢尾花数据集教程](./neuralnet-configuration.html)中介绍过，所以此处仅对部分特殊属性作一概述。
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
