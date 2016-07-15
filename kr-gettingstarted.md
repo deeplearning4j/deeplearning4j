@@ -156,7 +156,7 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 
 		Nd4j.getRandom().setSeed(123);
 
-### <a name="next">다음 단계: IRIS 예제와 인공 신경망 설계하기</a>
+### <a name="next">다음 단계: 예제와 인공 신경망 설계하기</a>
 
 신경망을 설계하기 전에 [Neural Nets Overview](http://deeplearning4j.org/kr-neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
 
