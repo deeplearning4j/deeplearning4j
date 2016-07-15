@@ -33,13 +33,11 @@ Deeplearning4j is part of a free enterprise distribution called the Skymind Inte
 * [DataVec](https://github.com/deeplearning4j/DataVec) is used to vectorize all types of data.
 * [JavaCPP](https://github.com/bytedeco/javacpp) is the glue code that creates a bridge between Java and C++. DL4J talks to cuDNN using JavaCPP.
 
-## Java and C++ Communication: Doesn't Java Slow Down CUDA?
+## Java & C++ Communication: Doesn't Java Slow Down CUDA?
 
-This is often the case. Thankfully, we have optimized communication by offloading operations to off heap. JavaCpp implements a Pointer class that makes it very easy to do [off heap operations](https://dzone.com/articles/heap-vs-heap-memory-usage) (eg: data doesn't hit the garbage collector). This allows us to benefit from lower latency and memory management while benefitting from the managed garbage collector where it matters. This is the approach many distributed systems frameworks and databases such as apache flink, spark, and hbase take.
+Usually. But we optimized communication by putting operations off heap. JavaCPP implements a `Pointer` class that makes it easy to do [off-heap operations](https://dzone.com/articles/heap-vs-heap-memory-usage) (i.e. data doesn't hit the garbage collector). This allows us to benefit from lower latency and memory management while benefiting from the managed garbage collector where it matters. This is the approach taken by many distributed systems frameworks and databases such as such as Apache Flink, Spark and Hbase.
 
-We take the stance that java isn't good at linear algebra
-operations and should therefore be handled by c++ where we can benefit from hardware acceleration
-of floating point operations. This is handled in the above linked libnd4j.
+Java isn't good at linear algebra operations. They should be handled by C++, where we can benefit from hardware acceleration of floating-point operations. That's what libnd4j is for.
 
 ## Code Example
 
@@ -138,9 +136,6 @@ Then we tell Spark how to perform parameter averaging:
                 .build();
 
         SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net, tm);
-
-
-
 
 And finally, we train the network by calling `.fit()` on `sparkNetwork`.
 
