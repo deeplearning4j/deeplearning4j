@@ -172,6 +172,16 @@ Compared to other frameworks, Deeplearning4j excels at the following.
 
 If you have any questions, please join us online in our [Gitter support chat room](https://gitter.im/deeplearning4j/deeplearning4j). 
 
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
+
+
 ## Recommended Resources
 
 * [Andrew Ng's Online Machine Learning Course](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
+* [LeNet Example: MNIST With Convolutional Nets ](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java)
