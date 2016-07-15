@@ -112,7 +112,7 @@ Again, if any of the above was confusing, we recommend [Andrew Ng’s Machine Le
 
 ### Building Layers
 
-We won’t go into the research behind each parameter (i.e. activation, weightInit). However, feel free to read the paper by Xavier Glorot and Yoshua Bengio to learn why these matter.
+We won’t go into the research behind each parameter (i.e. activation, weightInit). However, feel free to read the [paper by Xavier Glorot and Yoshua Bengio](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf) to learn why these matter.
 
 ![Alt text](./img/onelayer_labeled.png)
 
@@ -145,9 +145,9 @@ Depending on your hardware, it may take several minutes to complete.
 
 ![Alt text](./img/mlp_mnist_single_layer_example_results.png)
 
-**Accuracy** - The percentage of MNIST images that were correctly identified by our model. 
-**Precision** - The number of true positives divided by the number of true positives and false positives.
-**Recall** - The number of true positives divided by the number of true positives and the number of false negatives.
+**Accuracy** - The percentage of MNIST images that were correctly identified by our model. <br>
+**Precision** - The number of true positives divided by the number of true positives and false positives. <br>
+**Recall** - The number of true positives divided by the number of true positives and the number of false negatives. <br>
 **F1 Score** - Weighted average of **precision** and **recall**.
 
 **Accuracy** measures the model overall. 
@@ -167,7 +167,7 @@ Compared to other frameworks, Deeplearning4j excels at the following.
 
 If you have any questions, please join us online in our [Gitter support chat room](https://gitter.im/deeplearning4j/deeplearning4j). 
 
-Recommended Resources:
+**Recommended Resources:**
 
 [Andrew Ng's Machine Learning](https://www.coursera.org/learn/machine-learning/home/week/1)<br>
 [Google's UD730](https://www.udacity.com/course/deep-learning--ud730)<br>
