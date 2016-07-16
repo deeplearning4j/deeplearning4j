@@ -24,7 +24,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.BaseRecordReader;
-import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
@@ -88,6 +87,7 @@ public class LineRecordReader extends BaseRecordReader {
                 try {
                     close();
                     iter = IOUtils.lineIterator(new InputStreamReader(locations[currIndex].toURL().openStream()));
+                    onLocationOpen(locations[currIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -114,6 +114,7 @@ public class LineRecordReader extends BaseRecordReader {
                 try {
                     close();
                     iter = IOUtils.lineIterator(new InputStreamReader(locations[currIndex].toURL().openStream()));
+                    onLocationOpen(locations[currIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -123,6 +124,10 @@ public class LineRecordReader extends BaseRecordReader {
 
             return false;
         }
+    }
+
+    protected void onLocationOpen(URI location) {
+
     }
 
     @Override
@@ -154,7 +159,6 @@ public class LineRecordReader extends BaseRecordReader {
         if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
         try{
             initialize(inputSplit);
-            currIndex = 0;
         }catch(Exception e){
             throw new RuntimeException("Error during LineRecordReader reset",e);
         }
