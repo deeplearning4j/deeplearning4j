@@ -169,6 +169,15 @@ namespace simdOps {
 	template<typename T>
 	class Mod {
 	public:
+		/*
+
+		 // just a optional note, feel free to remove later
+
+		op_def static half op(half d1, half d2, half *params) {
+			return __float2half(simdOps::Mod<float>::op(__half2float(d1), __half2float(d2), nullptr));
+		}
+		 */
+
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}

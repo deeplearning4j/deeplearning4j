@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <dll.h>
+#include <float16.hpp>
 
 namespace nd4j {
 	namespace math {
@@ -230,6 +231,14 @@ namespace nd4j {
 			return value < 0 ? -value : value;
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_max<nd4j::float16>(nd4j::float16 val1, nd4j::float16 val2) {
+			return val1 > val2 ? val1 : val2;
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -253,6 +262,14 @@ namespace nd4j {
 		inline int nd4j_max<int>(int val1, int val2) {
 			return val1 > val2 ? val1 : val2;
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_min<nd4j::float16>(nd4j::float16 val1, nd4j::float16 val2) {
+			return val1 < val2 ? val1 : val2;
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
