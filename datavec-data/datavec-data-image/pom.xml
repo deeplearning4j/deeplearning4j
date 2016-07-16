@@ -25,6 +25,13 @@
 
     <artifactId>datavec-data-image</artifactId>
 
+    <properties>
+        <opencv.version>3.1.0</opencv.version>
+        <ffmpeg.version>3.0.2</ffmpeg.version>
+        <leptonica.version>1.73</leptonica.version>
+        <javacpp.version>1.2</javacpp.version>
+    </properties>
+
     <dependencies>
 
         <dependency>
@@ -88,21 +95,97 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>opencv</artifactId>
-            <version>3.1.0-1.2</version>
+            <version>${opencv.version}-${javacpp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}-${javacpp.version}</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}-${javacpp.version}</version>
+            <classifier>macosx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}-${javacpp.version}</version>
+            <classifier>windows-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}-${javacpp.version}</version>
+            <classifier>linux-ppc64le</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>ffmpeg</artifactId>
-            <version>3.0.2-1.2</version>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
+            <classifier>macosx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
+            <classifier>windows-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
+            <classifier>linux-ppc64le</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>leptonica</artifactId>
+            <version>${leptonica.version}-${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>leptonica</artifactId>
-            <version>1.73-1.2</version>
+            <version>${leptonica.version}-${javacpp.version}</version>
+            <classifier>linux-x86_64</classifier>
         </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>leptonica</artifactId>
+            <version>${leptonica.version}-${javacpp.version}</version>
+            <classifier>macosx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>leptonica</artifactId>
+            <version>${leptonica.version}-${javacpp.version}</version>
+            <classifier>windows-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>leptonica</artifactId>
+            <version>${leptonica.version}-${javacpp.version}</version>
+            <classifier>linux-ppc64le</classifier>
+        </dependency>
+
     </dependencies>
 
 </project>
