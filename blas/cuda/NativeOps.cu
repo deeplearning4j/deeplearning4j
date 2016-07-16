@@ -2855,7 +2855,7 @@ void NativeOps::execScalarHalf(
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
 	if (debug && verbose)
-		printf("F14 opNum:[%i]\n", opNum);
+		printf("H14 opNum:[%i]\n", opNum);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -2863,7 +2863,7 @@ void NativeOps::execScalarHalf(
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[5]);
 
 	if (verbose && launchDims.x == 1)
-		printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
+		printf("AH14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	scalarHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
 			opNum,
