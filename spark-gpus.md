@@ -26,7 +26,7 @@ cuDNN is one of the fastest libraries for deep convolutional networks (and more 
 
 ## Deeplearning4j, ND4J, DataVec and JavaCPP
 
-[Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoder.
+[Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoders.
 
 Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of several open-source libraries maintained by Skymind engineers. 
 
@@ -34,6 +34,14 @@ Deeplearning4j is part of a free enterprise distribution called the Skymind Inte
 * [libnd4j](https://github.com/deeplearning4j/libnd4j) is the C++ library that accelerates ND4J. 
 * [DataVec](https://github.com/deeplearning4j/DataVec) is used to vectorize all types of data.
 * [JavaCPP](https://github.com/bytedeco/javacpp) is the glue code that creates a bridge between Java and C++. DL4J talks to cuDNN using JavaCPP.
+
+
+
+#Spark and DL4j
+Deeplearning4j also comes with built in spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use spark for data access.
+
+A distributed file system allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training.
+
 
 ## Java & C++ Communication: Doesn't Java Slow Down CUDA?
 
@@ -43,7 +51,18 @@ Java isn't good at linear algebra operations. They should be handled by C++, whe
 
 ## Distributed Deep Learning With Parameter Averaging
 
-TKTKTKTKTKTK
+There are two main methods for the distributed training of neural networks: data parallelism and model parallelism. 
+
+With data parallelism, you subdivide a very large dataset into batches, and distribute those batches to parallel models running on separate hardware to train simultaneously. 
+
+Imagine training on an encyclopedia, subdividing it into batches of 10 pages, and distributing 10 batches to 10 models to train, then averaging the parameters of those trained models in one master model, and pushing the updated weights of the master model out to the distributed models. The model parameters are then averaged at the end of training to yield a single model.
+
+Deeplearning4j relies on data parallelism and uses Spark for distributed host thread orchestration across a cluster.
+
+##Does Parameter Averaging work?
+See references at the bottom of this post for some papers to dig in to.
+
+
 
 ## Code Example
 
@@ -131,6 +150,10 @@ pattern is known as a best practice in java land due to the complimenting tools 
 code completion. Despite its verbose nature, its also very easy to wrap in a more concise language such as 
 clojure or scala.
 
+
+
+##Distributed Training with spark
+
 Then we tell Spark how to perform parameter averaging:
 
         //Create Spark multi layer network from configuration
@@ -156,3 +179,31 @@ And finally, we train the network by calling `.fit()` on `sparkNetwork`.
             Evaluation evaluation = sparkNetwork.evaluate(test);
             System.out.println(evaluation.stats());
         }
+
+
+
+##Refrences
+Training with intra-block parallel optimization and blockwise model-update filtering. In 2016
+
+IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), pages
+
+5880–5884. IEEE, 2016.
+
+[2] Jeffrey Dean, Greg Corrado, Rajat Monga, Kai Chen, Matthieu Devin, Mark Mao, Andrew Senior,
+
+Paul Tucker, Ke Yang, Quoc V Le, et al. Large scale distributed deep networks. In Advances in
+
+Neural Information Processing Systems, pages 1223–1231, 2012.
+
+[3] Augustus Odena. Faster asynchronous sgd. arXiv preprint arXiv:1601.04033, 2016.
+
+[4] Nikko Strom. Scalable distributed dnn training using commodity gpu cloud computing. In Six-
+teenth Annual Conference of the International Speech Communication Association, 2015. http:
+
+//nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf.
+
+[5] Wei Zhang, Suyog Gupta, Xiangru Lian, and Ji Liu. Staleness-aware async-sgd for distributed
+
+deep learning. CoRR, abs/1511.05950, 2015. http://arxiv.org/abs/1511.05950.
+
+[6]: http://arxiv.org/abs/1404.5997
