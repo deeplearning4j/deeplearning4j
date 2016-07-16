@@ -42,7 +42,9 @@
         (13,simdOps::Max),\
         (14,simdOps::Min),\
         (15,simdOps::NotEqualTo),\
-        (16,simdOps::Copy)
+        (16,simdOps::Copy),\
+        (17,simdOps::Axpy)
+
 
 
 namespace functions {

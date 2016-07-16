@@ -156,6 +156,23 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Axpy {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2 + d1;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T alpha = params[0];
+			return alpha * d1 + d2;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+	};
+
+	template<typename T>
 	class SetValOrLess {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
