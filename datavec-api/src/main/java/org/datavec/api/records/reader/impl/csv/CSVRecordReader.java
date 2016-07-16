@@ -23,7 +23,6 @@ import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.records.reader.RecordReader;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -39,15 +38,15 @@ public class CSVRecordReader extends LineRecordReader {
     private boolean skippedLines = false;
     private int skipNumLines = 0;
     private String delimiter = ",";
-    public final static String SKIP_NUM_LINES = RecordReader.NAME_SPACE + ".skipnumlines";
-    public final static String DELIMITER = RecordReader.NAME_SPACE + ".delimiter";
+    public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
+    public final static String DELIMITER = NAME_SPACE + ".delimiter";
 
     /**
      * Skip first n lines
      * @param skipNumLines the number of lines to skip
      */
     public CSVRecordReader(int skipNumLines) {
-         this(skipNumLines,",");
+        this(skipNumLines,",");
     }
 
     /**
@@ -68,7 +67,7 @@ public class CSVRecordReader extends LineRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
-        this.delimiter = conf.get(DELIMITER, ","); 
+        this.delimiter = conf.get(DELIMITER, ",");
     }
 
     @Override
@@ -102,5 +101,11 @@ public class CSVRecordReader extends LineRecordReader {
     public void reset() {
         super.reset();
         skippedLines = false;
+    }
+
+    @Override
+    protected void onLocationOpen(URI location) {
+        skippedLines = false;
+        skipNumLines = 0;
     }
 }
