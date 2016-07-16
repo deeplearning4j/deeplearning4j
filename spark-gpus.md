@@ -24,6 +24,8 @@ cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the
 
 cuDNN is one of the fastest libraries for deep convolutional networks (and more recently, for recurrent nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN, and gives the Java community easy access to it. 
 
+## Deeplearning4j, ND4J, DataVec and JavaCPP
+
 [Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoder.
 
 Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of several open-source libraries maintained by Skymind engineers. 
