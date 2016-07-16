@@ -39,6 +39,10 @@ Usually. But we optimized communication by putting operations off heap. JavaCPP 
 
 Java isn't good at linear algebra operations. They should be handled by C++, where we can benefit from hardware acceleration of floating-point operations. That's what libnd4j is for.
 
+## Distributed Deep Learning With Parameter Averaging
+
+TKTKTKTKTKTK
+
 ## Code Example
 
 Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
