@@ -17,55 +17,52 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Inverted DropOut implementation as Op
+ *  Level 1 blas op Axpy as libnd4j native op
  *
  * @author raver119@gmail.com
  */
-public class DropOutInverted extends BaseTransformOp {
+public class Axpy extends BaseTransformOp {
 
     private double p;
 
-    public DropOutInverted() {
+    public Axpy() {
 
     }
 
-    public DropOutInverted(INDArray x, double p) {
-        super(x);
-        this.p = p;
-        init(x, null, x, x.length());
-    }
-
-    public DropOutInverted(INDArray x, INDArray z, double p) {
+    public Axpy(INDArray x, INDArray z, double p) {
         super(x,z);
         this.p = p;
-        init(x, null, z, x.length());
+        init(x, z, z, x.length());
     }
 
-    public DropOutInverted(INDArray x, INDArray z, double p, long n) {
+    public Axpy(INDArray x, INDArray z, double p, long n) {
         super(x,z,n);
         this.p = p;
-        init(x, null, z, n);
+        init(x, z, z, n);
+    }
+
+    public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
+        super(x,y,z,n);
+        this.p = p;
+        init(x, y, z, x.length());
     }
 
     @Override
     public int opNum() {
-        return 44;
+        return 17;
     }
 
     @Override
     public String name() {
-        return "dropout_inverted";
+        return "axpy";
     }
 
     @Override
@@ -114,9 +111,9 @@ public class DropOutInverted extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new DropOutInverted(xAlongDimension, z.vectorAlongDimension(index, dimension), p,  xAlongDimension.length());
+            return new Axpy(xAlongDimension, z.vectorAlongDimension(index, dimension), p,  xAlongDimension.length());
         else
-            return new DropOutInverted(xAlongDimension, z.vectorAlongDimension(index, dimension), p, xAlongDimension.length());
+            throw new IllegalStateException("op.Y can't be null");
     }
 
     @Override
@@ -124,9 +121,9 @@ public class DropOutInverted extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new DropOutInverted(xAlongDimension, z.tensorAlongDimension(index, dimension), p, xAlongDimension.length());
+            return new Axpy(xAlongDimension, z.tensorAlongDimension(index, dimension), p, xAlongDimension.length());
         else
-            return new DropOutInverted(xAlongDimension, z.tensorAlongDimension(index, dimension), p, xAlongDimension.length());
+            throw new IllegalStateException("op.Y can't be null");
 
     }
 

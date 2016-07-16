@@ -937,7 +937,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             int anElement = element.intValue();
             put(i, anElement);
         }
-        else if (globalType == Type.FLOAT) {
+        else if (globalType == Type.FLOAT || globalType == Type.HALF) {
             float anElement = element.floatValue();
             put(i, anElement);
         }

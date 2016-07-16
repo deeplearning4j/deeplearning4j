@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -407,7 +408,10 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
         cublasHandle_t handle = ctx.getHandle();
-        synchronized (handle) {
+
+        ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha));
+
+/*        synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             PointerPointer p = new PointerPointer(new Pointer[] {ctx.getHandle()});
@@ -419,7 +423,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer(),
                     incY);
         }
-
+*/
         allocator.registerAction(ctx, Y, X);
     }
 
