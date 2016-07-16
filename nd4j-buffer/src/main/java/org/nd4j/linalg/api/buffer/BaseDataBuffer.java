@@ -848,8 +848,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) other.get(offset() + i);
 
             }
-        }
-        else {
+        } else if (dataType() == Type.HALF) {
+            dirty.set(false);
+            if(indexer instanceof HalfIndexer) {
+                return ((HalfIndexer)indexer).get(offset() + i);
+
+            }
+
+            throw new RuntimeException("Unsupported indexer was used for Half-precision buffer");
+        } else {
             dirty.set(false);
             if(indexer instanceof FloatIndexer) {
                 return ((FloatIndexer)indexer).get(offset() + i);

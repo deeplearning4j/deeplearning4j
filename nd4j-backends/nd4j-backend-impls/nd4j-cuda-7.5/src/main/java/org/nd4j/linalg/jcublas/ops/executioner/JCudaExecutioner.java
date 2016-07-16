@@ -1030,8 +1030,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.scalar().doubleValue(),
                     extraArgs);
         }
-        else {
+        else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.execScalarFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    z,
+                    zShapeInfo,
+                    op.scalar().floatValue(),
+                    extraArgs);
+        } else {
+            nativeOps.execScalarHalf(
                     xShapeInfoHostPointer,
                     op.opNum(),
                     x,

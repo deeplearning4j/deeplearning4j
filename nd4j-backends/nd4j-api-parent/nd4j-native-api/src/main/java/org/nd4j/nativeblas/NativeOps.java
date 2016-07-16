@@ -699,6 +699,15 @@ public class NativeOps extends Pointer {
                                        float scalar,
                                        Pointer extraParams);
 
+    public native void execScalarHalf(PointerPointer extraPointers, int opNum,
+                                       Pointer x,
+                                       Pointer xShapeInfo,
+                                       Pointer result,
+                                       Pointer resultShapeInfo,
+                                       float scalar,
+                                       Pointer extraParams);
+
+
     /**
      *
      * @param opNum
