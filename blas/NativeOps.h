@@ -696,6 +696,15 @@ public:
                          float scalar,
                          Nd4jPointer extraParams);
 
+
+    void execScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                         Nd4jPointer x,
+                         Nd4jPointer xShapeInfo,
+                         Nd4jPointer result,
+                         Nd4jPointer resultShapeInfo,
+                         float scalar,
+                         Nd4jPointer extraParams);
+
     /**
      *
      * @param opNum

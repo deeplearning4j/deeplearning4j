@@ -1135,6 +1135,18 @@ void NativeOps::execScalarFloat(
 
 }
 
+void NativeOps::execScalarHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer x,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        float scalar,
+        Nd4jPointer extraParams) {
+    // no-op
+}
+
 /**
  *
  * @param opNum

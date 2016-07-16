@@ -10,7 +10,10 @@
 
 #include <math.h>
 #include <dll.h>
+
+#ifdef __CUDACC__
 #include <float16.hpp>
+#endif
 
 namespace nd4j {
 	namespace math {
