@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -17,7 +18,10 @@ import static org.junit.Assert.*;
 public class AsyncDataSetIteratorTest {
     private ExistingDataSetIterator backIterator;
     private static final int TEST_SIZE = 100;
-    private static final int ITERATIONS = 1000;
+    private static final int ITERATIONS = 100;
+
+    // time spent in consumer thread
+    private static final long EXECUTION_TIME = 5;
 
     @Before
     public void setUp() throws Exception {
@@ -67,4 +71,17 @@ public class AsyncDataSetIteratorTest {
         }
     }
 
+
+    @Test
+    public void testWithLoad() {
+
+        for (int iter = 0; iter < ITERATIONS; iter++) {
+            AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, 8);
+            TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, EXECUTION_TIME);
+
+            consumer.consumeWhileHasNext(true);
+
+            assertEquals(TEST_SIZE, consumer.getCount());
+        }
+    }
 }
