@@ -80,7 +80,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
     }
 
 
-    public class Builder extends BasePretrainNetworkLayerSpace.Builder{
+    public static class Builder extends BasePretrainNetworkLayerSpace.Builder<Builder> {
         private ParameterSpace<RBM.HiddenUnit> hiddenUnit;
         private ParameterSpace<RBM.VisibleUnit> visibleUnit;
         private ParameterSpace<Integer> k;

@@ -65,7 +65,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
     }
 
 
-    public class Builder extends LayerSpace.Builder {
+    public static class Builder extends LayerSpace.Builder<Builder> {
 
         private ParameterSpace<Double> n;
         private ParameterSpace<Double> k;
