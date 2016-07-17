@@ -72,7 +72,7 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         return sb.toString();
     }
 
-    public class Builder extends BasePretrainNetworkLayerSpace.Builder {
+    public static class Builder extends BasePretrainNetworkLayerSpace.Builder<Builder> {
 
         private ParameterSpace<Double> corruptionLevel;
         private ParameterSpace<Double> sparsity;
