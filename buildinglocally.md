@@ -275,7 +275,7 @@ If you prefer, you can build each piece in the DL4J stack by hand. The procedure
 
 The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for.
 
-```
+``` shell
 # removes any existing repositories to ensure a clean build
 rm -rf libnd4j
 rm -rf nd4j
@@ -305,6 +305,16 @@ cd canova
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
 #./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+cd ..
+
+# build and install datavec
+checkexit git clone https://github.com/deeplearning4j/datavec.git
+cd datavec
+if [ "$SCALAV" == "" ]; then
+  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+else
+  checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
+fi
 cd ..
 
 # build and install deeplearning4j
