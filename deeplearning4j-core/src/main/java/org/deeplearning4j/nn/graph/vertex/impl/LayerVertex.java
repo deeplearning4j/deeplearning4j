@@ -38,16 +38,20 @@ import java.util.Arrays;
 @Data
 public class LayerVertex extends BaseGraphVertex {
 
-    private Layer layer;
-    private InputPreProcessor layerPreProcessor;
+    private final Layer layer;
+    private final InputPreProcessor layerPreProcessor;
+    //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
+    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
+    // passed in externally
+    private final boolean outputVertex;
 
     /** Create a network input vertex: */
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer, InputPreProcessor layerPreProcessor){
-        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor);
+    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer, InputPreProcessor layerPreProcessor, boolean outputVertex){
+        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor, outputVertex);
     }
 
     public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
-                        Layer layer, InputPreProcessor layerPreProcessor){
+                        Layer layer, InputPreProcessor layerPreProcessor, boolean outputVertex){
         super(graph,name,vertexIndex,inputVertices,outputVertices);
         this.graph = graph;
         this.vertexName = name;
@@ -56,6 +60,7 @@ public class LayerVertex extends BaseGraphVertex {
         this.outputVertices = outputVertices;
         this.layer = layer;
         this.layerPreProcessor = layerPreProcessor;
+        this.outputVertex = outputVertex;
 
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
         this.epsilons = new INDArray[(outputVertices != null ? outputVertices.length : 0)];
@@ -68,7 +73,7 @@ public class LayerVertex extends BaseGraphVertex {
 
     @Override
     public boolean isOutputVertex(){
-        return layer instanceof BaseOutputLayer;
+        return outputVertex || layer instanceof BaseOutputLayer;
     }
 
     @Override
@@ -144,4 +149,24 @@ public class LayerVertex extends BaseGraphVertex {
         return sb.toString();
     }
 
+    @Override
+    public boolean canDoBackward(){
+        if(!isOutputVertex()) return super.canDoBackward();
+
+        for (INDArray input : inputs) {
+            if (input == null) {
+                return false;
+            }
+        }
+
+        if(!(layer instanceof BaseOutputLayer)){
+            for (INDArray epsilon : epsilons) {
+                if (epsilon == null) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 }
