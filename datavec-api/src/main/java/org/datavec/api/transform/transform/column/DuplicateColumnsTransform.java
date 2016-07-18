@@ -61,24 +61,23 @@ public class DuplicateColumnsTransform implements Transform {
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size() + newColumnNames.size());
 
         List<String> oldNames = inputSchema.getColumnNames();
-        List<String> newNames = new ArrayList<>(oldNames.size() + newColumnNames.size());
 
         int dupCount = 0;
         for (int i = 0; i < oldMeta.size(); i++) {
             String current = oldNames.get(i);
-            newNames.add(current);
             newMeta.add(oldMeta.get(i));
 
             if (columnsToDuplicateSet.contains(current)) {
                 //Duplicate the current column, and place it after...
                 String dupName = newColumnNames.get(dupCount);
-                newNames.add(dupName);
-                newMeta.add(oldMeta.get(i).clone());
+                ColumnMetaData m = oldMeta.get(i).clone();
+                m.setColumnName(dupName);
+                newMeta.add(m);
                 dupCount++;
             }
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override

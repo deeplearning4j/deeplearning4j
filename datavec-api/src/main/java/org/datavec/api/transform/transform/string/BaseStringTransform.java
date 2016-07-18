@@ -39,7 +39,7 @@ public abstract class BaseStringTransform extends BaseColumnTransform {
     public abstract Text map(Writable writable);
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType){
-        return new StringMetaData();
+    public ColumnMetaData getNewColumnMetaData(String newName,ColumnMetaData oldColumnType){
+        return new StringMetaData(newName);
     }
 }

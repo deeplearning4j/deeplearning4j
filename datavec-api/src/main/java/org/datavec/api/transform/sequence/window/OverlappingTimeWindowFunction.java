@@ -178,23 +178,19 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
     @Override
     public Schema transform(Schema inputSchema) {
         if (!addWindowStartTimeColumn && !addWindowEndTimeColumn) return inputSchema;
-        List<String> newNames = new ArrayList<>();
         List<ColumnMetaData> newMeta = new ArrayList<>();
 
-        newNames.addAll(inputSchema.getColumnNames());
         newMeta.addAll(inputSchema.getColumnMetaData());
 
         if (addWindowStartTimeColumn) {
-            newNames.add("windowStartTime");
-            newMeta.add(new TimeMetaData());
+            newMeta.add(new TimeMetaData("windowStartTime"));
         }
 
         if (addWindowEndTimeColumn) {
-            newNames.add("windowEndTime");
-            newMeta.add(new TimeMetaData());
+            newMeta.add(new TimeMetaData("windowEndTime"));
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override

@@ -42,7 +42,7 @@ public class LongMathOpTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof LongMetaData))
             throw new IllegalStateException("Column is not an Long column");
         LongMetaData meta = (LongMetaData) oldColumnType;
@@ -58,7 +58,7 @@ public class LongMathOpTransform extends BaseColumnTransform {
             minValue = maxValue;
             maxValue = temp;
         }
-        return new LongMetaData(minValue, maxValue);
+        return new LongMetaData(newName, minValue, maxValue);
     }
 
     private long doOp(long input) {

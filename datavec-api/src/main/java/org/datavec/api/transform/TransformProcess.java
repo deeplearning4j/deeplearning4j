@@ -242,6 +242,15 @@ public class TransformProcess implements Serializable {
     }
 
 
+//    public String toJson(){
+//
+//    }
+//
+//    public static TransformProcess fromJson(String json){
+//
+//    }
+
+
     /**
      * Builder class for constructing a TransformProcess
      */

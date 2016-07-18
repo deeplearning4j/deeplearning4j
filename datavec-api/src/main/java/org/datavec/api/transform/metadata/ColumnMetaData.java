@@ -31,6 +31,14 @@ import java.io.Serializable;
 public interface ColumnMetaData extends Serializable, Cloneable {
 
     /**
+     * Get the name of the specified column
+     * @return Name of the column
+     */
+    String getColumnName();
+
+    void setColumnName(String name);
+
+    /**
      * Get the type of column
      */
     ColumnType getColumnType();

@@ -59,16 +59,16 @@ public abstract class BaseColumnTransform extends BaseTransform {
         while(typesIter.hasNext()){
             ColumnMetaData t = typesIter.next();
             if(i++ == columnNumber){
-                newMeta.add(getNewColumnMetaData(t));
+                newMeta.add(getNewColumnMetaData(t.getColumnName(), t));
             } else {
                 newMeta.add(t);
             }
         }
 
-        return schema.newSchema(new ArrayList<>(schema.getColumnNames()),newMeta);
+        return schema.newSchema(newMeta);
     }
 
-    public abstract ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType);
+    public abstract ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType);
 
     @Override
     public List<Writable> map(List<Writable> writables) {

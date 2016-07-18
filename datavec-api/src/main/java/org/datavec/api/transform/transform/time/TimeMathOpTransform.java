@@ -56,9 +56,10 @@ public class TimeMathOpTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
         if(!(oldColumnType instanceof TimeMetaData)) throw new IllegalStateException("Cannot execute TimeMathOpTransform on column with type " + oldColumnType);
-        return new TimeMetaData(((TimeMetaData) oldColumnType).getTimeZone());
+
+        return new TimeMetaData(newName,((TimeMetaData) oldColumnType).getTimeZone());
     }
 
     @Override

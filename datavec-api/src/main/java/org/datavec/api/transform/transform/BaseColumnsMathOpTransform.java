@@ -99,13 +99,11 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
                 throw new IllegalStateException("Input schema does not have column with name \"" + name + "\"");
         }
 
-        List<String> newNames = new ArrayList<>(inputSchema.getColumnNames());
         List<ColumnMetaData> newMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
-        newNames.add(newColumnName);
-        newMeta.add(derivedColumnMetaData());
+        newMeta.add(derivedColumnMetaData(newColumnName));
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override
@@ -147,7 +145,7 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
         return out;
     }
 
-    protected abstract ColumnMetaData derivedColumnMetaData();
+    protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName);
 
     protected abstract Writable doOp(Writable... input);
 }

@@ -100,7 +100,6 @@ public class Reducer implements IReducer {
     public Schema transform(Schema schema) {
         int nCols = schema.numColumns();
         List<String> colNames = schema.getColumnNames();
-        List<String> newNames = new ArrayList<>();
         List<ColumnMetaData> meta = schema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(nCols);
 
@@ -111,7 +110,6 @@ public class Reducer implements IReducer {
             if (keyColumns.contains(name)) {
                 //No change to key columns
                 newMeta.add(inMeta);
-                newNames.add(name);
                 continue;
             }
 
@@ -120,9 +118,8 @@ public class Reducer implements IReducer {
                 ColumnReduction reduction = customReductions.get(name);
 
                 String outName = reduction.getColumnOutputName(name);
-                ColumnMetaData outMeta = reduction.getColumnOutputMetaData(inMeta);
+                ColumnMetaData outMeta = reduction.getColumnOutputMetaData(outName, inMeta);
 
-                newNames.add(outName);
                 newMeta.add(outMeta);
 
                 continue;
@@ -133,11 +130,9 @@ public class Reducer implements IReducer {
                 ConditionalReduction reduction = conditionalReductions.get(name);
 
                 String outName = reduction.getOutputName();
-                Pair<String,ColumnMetaData> temp = getNameAndMetaForColumn(reduction.getReduction(),name,inMeta);
-                ColumnMetaData outMeta = temp.getSecond();
-
-                newNames.add(outName);
-                newMeta.add(outMeta);
+                ColumnMetaData m = getMetaForColumn(reduction.getReduction(),name,inMeta);
+                m.setColumnName(outName);
+                newMeta.add(m);
 
                 continue;
             }
@@ -146,48 +141,92 @@ public class Reducer implements IReducer {
             //If no reduction op is specified for that column: use the default
             ReduceOp op = opMap.get(name);
             if (op == null) op = defaultOp;
-            Pair<String,ColumnMetaData> thisColOut = getNameAndMetaForColumn(op,name,inMeta);
-            newNames.add(thisColOut.getFirst());
-            newMeta.add(thisColOut.getSecond());
+            newMeta.add(getMetaForColumn(op,name,inMeta));
         }
 
-        return schema.newSchema(newNames, newMeta);
+        return schema.newSchema(newMeta);
     }
 
-    private static Pair<String,ColumnMetaData> getNameAndMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
+//    private static Pair<String,ColumnMetaData> getNameAndMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
+//        switch (op) {
+//            case Min:
+//                return new Pair<>("min(" + name + ")",inMeta);
+//            case Max:
+//                return new Pair<>("max(" + name + ")",inMeta);
+//            case Range:
+//                return new Pair<>("range(" + name + ")",inMeta);
+//            case TakeFirst:
+//                return new Pair<>("first(" + name + ")",inMeta);
+//            case TakeLast:
+//                return new Pair<>("last(" + name + ")",inMeta);
+//            case Sum:
+//                String outName = "sum(" + name + ")";
+//                //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
+//                ColumnMetaData outMeta;
+//                if(inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData){
+//                    outMeta = new LongMetaData();
+//                } else if(inMeta instanceof DoubleMetaData){
+//                    outMeta = new DoubleMetaData();
+//                } else {
+//                    //Sum doesn't really make sense to sum other column types anyway...
+//                    outMeta = inMeta;
+//                }
+//                return new Pair<>(outName,outMeta);
+//            case Mean:
+//                return new Pair<String,ColumnMetaData>("mean(" + name + ")",new DoubleMetaData());
+//            case Stdev:
+//                return new Pair<String,ColumnMetaData>("stdev(" + name + ")",new DoubleMetaData());
+//            case Count:
+//                return new Pair<String,ColumnMetaData>("count",new IntegerMetaData(0, null));
+//            case CountUnique:
+//                //Always integer
+//                return new Pair<String,ColumnMetaData>("countUnique(" + name + ")",new IntegerMetaData(0, null));
+//            default:
+//                throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
+//        }
+//    }
+
+    private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
+        inMeta = inMeta.clone();
         switch (op) {
             case Min:
-                return new Pair<>("min(" + name + ")",inMeta);
+                inMeta.setColumnName("min(" + name + ")");
+                return inMeta;
             case Max:
-                return new Pair<>("max(" + name + ")",inMeta);
+                inMeta.setColumnName("max(" + name + ")");
+                return inMeta;
             case Range:
-                return new Pair<>("range(" + name + ")",inMeta);
+                inMeta.setColumnName("range(" + name + ")");
+                return inMeta;
             case TakeFirst:
-                return new Pair<>("first(" + name + ")",inMeta);
+                inMeta.setColumnName("first(" + name + ")");
+                return inMeta;
             case TakeLast:
-                return new Pair<>("last(" + name + ")",inMeta);
+                inMeta.setColumnName("last(" + name + ")");
+                return inMeta;
             case Sum:
                 String outName = "sum(" + name + ")";
                 //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
                 if(inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData){
-                    outMeta = new LongMetaData();
+                    outMeta = new LongMetaData(outName);
                 } else if(inMeta instanceof DoubleMetaData){
-                    outMeta = new DoubleMetaData();
+                    outMeta = new DoubleMetaData(outName);
                 } else {
                     //Sum doesn't really make sense to sum other column types anyway...
                     outMeta = inMeta;
                 }
-                return new Pair<>(outName,outMeta);
+                outMeta.setColumnName(outName);
+                return outMeta;
             case Mean:
-                return new Pair<String,ColumnMetaData>("mean(" + name + ")",new DoubleMetaData());
+                return new DoubleMetaData("mean(" + name + ")");
             case Stdev:
-                return new Pair<String,ColumnMetaData>("stdev(" + name + ")",new DoubleMetaData());
+                return new DoubleMetaData("stdev(" + name + ")");
             case Count:
-                return new Pair<String,ColumnMetaData>("count",new IntegerMetaData(0, null));
+                return new IntegerMetaData("count",0, null);
             case CountUnique:
                 //Always integer
-                return new Pair<String,ColumnMetaData>("countUnique(" + name + ")",new IntegerMetaData(0, null));
+                return new IntegerMetaData("countUnique(" + name + ")",0, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
         }

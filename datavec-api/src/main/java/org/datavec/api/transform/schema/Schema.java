@@ -16,6 +16,13 @@
 
 package org.datavec.api.transform.schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.joda.time.DateTimeZone;
@@ -26,6 +33,7 @@ import java.util.*;
 /**
  * Created by Alex on 4/03/2016.
  */
+@JsonIgnoreProperties({"columnNames","columnNamesIndex"})
 public class Schema implements Serializable {
 
     private List<String> columnNames;
@@ -34,28 +42,29 @@ public class Schema implements Serializable {
 
 
     protected Schema(Builder builder) {
-        this.columnNames = builder.columnNames;
         this.columnMetaData = builder.columnMetaData;
+        this.columnNames = new ArrayList<>();
+        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getColumnName());
         columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
         }
     }
 
-    public Schema(List<String> columnNames, List<ColumnMetaData> columnMetaData) {
-        if (columnNames == null || columnMetaData == null) throw new IllegalArgumentException("Input cannot be null");
-        if (columnNames.size() == 0 || columnNames.size() != columnMetaData.size())
-            throw new IllegalArgumentException("List sizes must match (and be non-zero)");
-        this.columnNames = columnNames;
+    public Schema(List<ColumnMetaData> columnMetaData) {
+        if (columnMetaData == null || columnMetaData.size() == 0) throw new IllegalArgumentException("Column meta data must be non-empty");
         this.columnMetaData = columnMetaData;
+        this.columnNames = new ArrayList<>();
+        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getColumnName());
         this.columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
         }
     }
 
-    public Schema newSchema(List<String> columnNames, List<ColumnMetaData> columnMetaData) {
-        return new Schema(columnNames, columnMetaData);
+
+    public Schema newSchema(List<ColumnMetaData> columnMetaData) {
+        return new Schema(columnMetaData);
     }
 
     public int numColumns() {
@@ -138,9 +147,57 @@ public class Schema implements Serializable {
         return sb.toString();
     }
 
+    public String toJson(){
+        return toJacksonString(new JsonFactory());
+    }
+
+    public String toXml(){
+        return toJacksonString(new XmlFactory());
+    }
+
+    public String toYaml(){
+        return toJacksonString(new YAMLFactory());
+    }
+
+    private String toJacksonString(JsonFactory factory){
+        ObjectMapper om = new ObjectMapper(factory);
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        String str;
+        try{
+            str = om.writeValueAsString(this);
+        } catch(Exception e){
+            throw new RuntimeException(e);
+        }
+
+        return str;
+    }
+
+    public static Schema fromJson(String json){
+        return fromJacksonString(json, new JsonFactory());
+    }
+
+    public static Schema fromXml(String xml){
+        return fromJacksonString(xml, new XmlFactory());
+    }
+
+    public static Schema fromYaml(String yaml){
+        return fromJacksonString(yaml, new YAMLFactory());
+    }
+
+    private static Schema fromJacksonString(String str, JsonFactory factory){
+        ObjectMapper om = new ObjectMapper(factory);
+        try{
+            return om.readValue(str, Schema.class);
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
     public static class Builder {
 
-        List<String> columnNames = new ArrayList<>();
+//        List<String> columnNames = new ArrayList<>();
         List<ColumnMetaData> columnMetaData = new ArrayList<>();
 
         /**
@@ -149,7 +206,7 @@ public class Schema implements Serializable {
          * @param name Name of the column
          */
         public Builder addColumnDouble(String name) {
-            return addColumn(name, new DoubleMetaData());
+            return addColumn(new DoubleMetaData(name));
         }
 
         /**
@@ -175,7 +232,7 @@ public class Schema implements Serializable {
          */
         public Builder addColumnDouble(String name, Double minAllowedValue, Double maxAllowedValue,
                                        boolean allowNaN, boolean allowInfinite) {
-            return addColumn(name, new DoubleMetaData(minAllowedValue, maxAllowedValue, allowNaN, allowInfinite));
+            return addColumn(new DoubleMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite));
         }
 
         /**
@@ -194,7 +251,7 @@ public class Schema implements Serializable {
          * @param name Name of the column
          */
         public Builder addColumnInteger(String name) {
-            return addColumn(name, new IntegerMetaData());
+            return addColumn(new IntegerMetaData(name));
         }
 
         /**
@@ -205,7 +262,7 @@ public class Schema implements Serializable {
          * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
          */
         public Builder addColumnInteger(String name, Integer minAllowedValue, Integer maxAllowedValue) {
-            return addColumn(name, new IntegerMetaData(minAllowedValue, maxAllowedValue));
+            return addColumn(new IntegerMetaData(name, minAllowedValue, maxAllowedValue));
         }
 
         /**
@@ -225,7 +282,7 @@ public class Schema implements Serializable {
          * @param stateNames Names of the allowable states for this categorical column
          */
         public Builder addColumnCategorical(String name, String... stateNames) {
-            return addColumn(name, new CategoricalMetaData(stateNames));
+            return addColumn(new CategoricalMetaData(name, stateNames));
         }
 
         /**
@@ -235,7 +292,7 @@ public class Schema implements Serializable {
          * @param stateNames Names of the allowable states for this categorical column
          */
         public Builder addColumnCategorical(String name, List<String> stateNames) {
-            return addColumn(name, new CategoricalMetaData(stateNames));
+            return addColumn(new CategoricalMetaData(name, stateNames));
         }
 
         /**
@@ -244,7 +301,7 @@ public class Schema implements Serializable {
          * @param name Name of the column
          */
         public Builder addColumnLong(String name) {
-            return addColumn(name, new LongMetaData());
+            return addColumn(new LongMetaData(name));
         }
 
         /**
@@ -255,7 +312,7 @@ public class Schema implements Serializable {
          * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
          */
         public Builder addColumnLong(String name, Long minAllowedValue, Long maxAllowedValue) {
-            return addColumn(name, new LongMetaData(minAllowedValue, maxAllowedValue));
+            return addColumn(new LongMetaData(name, minAllowedValue, maxAllowedValue));
         }
 
         /**
@@ -271,11 +328,11 @@ public class Schema implements Serializable {
         /**
          * Add a column
          *
-         * @param name     Name of the column
          * @param metaData metadata for this column
          */
-        public Builder addColumn(String name, ColumnMetaData metaData) {
-            columnNames.add(name);
+//        public Builder addColumn(String name, ColumnMetaData metaData) {
+        public Builder addColumn(ColumnMetaData metaData) {
+//            columnNames.add(name);
             columnMetaData.add(metaData);
             return this;
         }
@@ -286,7 +343,7 @@ public class Schema implements Serializable {
          * @param name Name of  the column
          */
         public Builder addColumnString(String name) {
-            return addColumn(name, new StringMetaData());
+            return addColumn(new StringMetaData(name));
         }
 
         /**
@@ -308,7 +365,7 @@ public class Schema implements Serializable {
          * @param maxAllowableLength Maximum allowable length for the String to be considered valid
          */
         public Builder addColumnString(String name, String regex, Integer minAllowableLength, int maxAllowableLength) {
-            return addColumn(name, new StringMetaData(regex, minAllowableLength, maxAllowableLength));
+            return addColumn(new StringMetaData(name, regex, minAllowableLength, maxAllowableLength));
         }
 
         /**
@@ -346,7 +403,7 @@ public class Schema implements Serializable {
          * @param maxValidValue Maximum allowable time (in milliseconds). May be null.
          */
         public Builder addColumnTime(String columnName, DateTimeZone timeZone, Long minValidValue, Long maxValidValue) {
-            addColumn(columnName, new TimeMetaData(timeZone, minValidValue, maxValidValue));
+            addColumn(new TimeMetaData(columnName, timeZone, minValidValue, maxValidValue));
             return this;
         }
 

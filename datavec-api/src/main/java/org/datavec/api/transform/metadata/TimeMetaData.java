@@ -31,7 +31,7 @@ import java.util.TimeZone;
  * @author Alex Black
  */
 @Data
-public class TimeMetaData implements ColumnMetaData {
+public class TimeMetaData extends BaseColumnMetaData {
 
     private final DateTimeZone timeZone;
     private final Long minValidTime;
@@ -40,8 +40,8 @@ public class TimeMetaData implements ColumnMetaData {
     /**
      * Create a TimeMetaData column with no restrictions and UTC timezone.
      */
-    public TimeMetaData() {
-        this(DateTimeZone.UTC, null, null);
+    public TimeMetaData(String name) {
+        this(name, DateTimeZone.UTC, null, null);
     }
 
     /**
@@ -49,8 +49,8 @@ public class TimeMetaData implements ColumnMetaData {
      *
      * @param timeZone Timezone for this column. Typically used for parsing
      */
-    public TimeMetaData(TimeZone timeZone) {
-        this(timeZone, null, null);
+    public TimeMetaData(String name, TimeZone timeZone) {
+        this(name, timeZone, null, null);
     }
 
     /**
@@ -58,8 +58,8 @@ public class TimeMetaData implements ColumnMetaData {
      *
      * @param timeZone Timezone for this column.
      */
-    public TimeMetaData(DateTimeZone timeZone) {
-        this(timeZone, null, null);
+    public TimeMetaData(String name, DateTimeZone timeZone) {
+        this(name, timeZone, null, null);
     }
 
     /**
@@ -67,7 +67,8 @@ public class TimeMetaData implements ColumnMetaData {
      * @param minValidTime Minimum valid time, in milliseconds (timestamp format). If null: no restriction
      * @param maxValidTime Maximum valid time, in milliseconds (timestamp format). If null: no restriction
      */
-    public TimeMetaData(TimeZone timeZone, Long minValidTime, Long maxValidTime) {
+    public TimeMetaData(String name, TimeZone timeZone, Long minValidTime, Long maxValidTime) {
+        super(name);
         this.timeZone = DateTimeZone.forTimeZone(timeZone);
         this.minValidTime = minValidTime;
         this.maxValidTime = maxValidTime;
@@ -78,7 +79,8 @@ public class TimeMetaData implements ColumnMetaData {
      * @param minValidTime Minimum valid time, in milliseconds (timestamp format). If null: no restriction
      * @param maxValidTime Maximum valid time, in milliseconds (timestamp format). If null: no restriction
      */
-    public TimeMetaData(DateTimeZone timeZone, Long minValidTime, Long maxValidTime) {
+    public TimeMetaData(String name, DateTimeZone timeZone, Long minValidTime, Long maxValidTime) {
+        super(name);
         this.timeZone = timeZone;
         this.minValidTime = minValidTime;
         this.maxValidTime = maxValidTime;
@@ -108,7 +110,7 @@ public class TimeMetaData implements ColumnMetaData {
 
     @Override
     public TimeMetaData clone() {
-        return new TimeMetaData(timeZone, minValidTime, maxValidTime);
+        return new TimeMetaData(name, timeZone, minValidTime, maxValidTime);
     }
 
 

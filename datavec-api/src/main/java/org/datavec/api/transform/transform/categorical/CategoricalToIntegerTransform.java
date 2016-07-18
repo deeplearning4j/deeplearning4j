@@ -70,24 +70,22 @@ public class CategoricalToIntegerTransform extends BaseTransform {
         Iterator<String> namesIter = origNames.iterator();
         Iterator<ColumnMetaData> typesIter = origMeta.iterator();
 
-        List<String> outNames = new ArrayList<>(origNames.size());
-        List<ColumnMetaData> newMeta = new ArrayList<>(outNames.size());
+        List<ColumnMetaData> newMeta = new ArrayList<>(schema.numColumns());
 
         while(namesIter.hasNext()){
             String s = namesIter.next();
             ColumnMetaData t = typesIter.next();
-            outNames.add(s);
 
             if(i++ == columnIdx){
                 //Convert this to integer
                 int nClasses = stateNames.size();
-                newMeta.add(new IntegerMetaData(0,nClasses-1));
+                newMeta.add(new IntegerMetaData(t.getColumnName(),0,nClasses-1));
             } else {
                 newMeta.add(t);
             }
         }
 
-        return schema.newSchema(outNames,newMeta);
+        return schema.newSchema(newMeta);
     }
 
     @Override

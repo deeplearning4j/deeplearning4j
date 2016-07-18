@@ -26,7 +26,7 @@ import org.datavec.api.writable.Writable;
  * @author Alex Black
  */
 @Data
-public class DoubleMetaData implements ColumnMetaData {
+public class DoubleMetaData extends BaseColumnMetaData {
 
     //min/max are nullable: null -> no restriction on min/max values
     private final Double min;
@@ -34,16 +34,16 @@ public class DoubleMetaData implements ColumnMetaData {
     private final boolean allowNaN;
     private final boolean allowInfinite;
 
-    public DoubleMetaData() {
-        this(null, null, false, false);
+    public DoubleMetaData(String name) {
+        this(name, null, null, false, false);
     }
 
     /**
      * @param min Min allowed value. If null: no restriction on min value value in this column
      * @param max Max allowed value. If null: no restiction on max value in this column
      */
-    public DoubleMetaData(Double min, Double max) {
-        this(min, max, false, false);
+    public DoubleMetaData(String name, Double min, Double max) {
+        this(name, min, max, false, false);
     }
 
     /**
@@ -52,7 +52,8 @@ public class DoubleMetaData implements ColumnMetaData {
      * @param allowNaN      Are NaN values ok?
      * @param allowInfinite Are +/- infinite values ok?
      */
-    public DoubleMetaData(Double min, Double max, boolean allowNaN, boolean allowInfinite) {
+    public DoubleMetaData(String name, Double min, Double max, boolean allowNaN, boolean allowInfinite) {
+        super(name);
         this.min = min;
         this.max = max;
         this.allowNaN = allowNaN;
@@ -84,7 +85,7 @@ public class DoubleMetaData implements ColumnMetaData {
 
     @Override
     public DoubleMetaData clone() {
-        return new DoubleMetaData(min, max, allowNaN, allowInfinite);
+        return new DoubleMetaData(name, min, max, allowNaN, allowInfinite);
     }
 
     @Override

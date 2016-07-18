@@ -70,8 +70,7 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         Iterator<String> namesIter = origNames.iterator();
         Iterator<ColumnMetaData> typesIter = origMeta.iterator();
 
-        List<String> outNames = new ArrayList<>(origNames.size()+stateNames.size()-1);
-        List<ColumnMetaData> newMeta = new ArrayList<>(outNames.size());
+        List<ColumnMetaData> newMeta = new ArrayList<>(schema.numColumns());
 
         while(namesIter.hasNext()){
             String s = namesIter.next();
@@ -81,17 +80,14 @@ public class CategoricalToOneHotTransform extends BaseTransform {
                 //Convert this to one-hot:
                 for (String stateName : stateNames) {
                     String newName = s + "[" + stateName + "]";
-                    outNames.add(newName);
-                    newMeta.add(new IntegerMetaData(0,1));
-//                    newMeta.add(new CategoricalMetaData("0","1"));
+                    newMeta.add(new IntegerMetaData(newName,0,1));
                 }
             } else {
-                outNames.add(s);
                 newMeta.add(t);
             }
         }
 
-        return schema.newSchema(outNames,newMeta);
+        return schema.newSchema(newMeta);
     }
 
     @Override

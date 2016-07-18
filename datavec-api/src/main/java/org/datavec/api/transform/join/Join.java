@@ -108,7 +108,6 @@ public class Join implements Serializable {
         if(keyColumnsLeft == null) throw new IllegalStateException("Left key columns are not set (null)");
         if(keyColumnsRight == null) throw new IllegalArgumentException("Right key columns are not set (null");
 
-        List<String> columnNamesOut = new ArrayList<>();
         List<ColumnMetaData> metaDataOut = new ArrayList<>();
         Set<String> columnNamesSeenSoFar = new HashSet<>();
 
@@ -119,7 +118,6 @@ public class Join implements Serializable {
 
         for( int i=0; i<columnNamesLeft.size(); i++ ){
             String name = columnNamesLeft.get(i);
-            columnNamesOut.add(name);
             metaDataOut.add(metaDataLeft.get(i));
 
             columnNamesSeenSoFar.add(name);
@@ -132,11 +130,10 @@ public class Join implements Serializable {
                 throw new IllegalStateException("Cannot produce output schema: columns with name \"" + name +
                         "\" appear in both left and right schemas (and is not a key column for right schema)");
             }
-            columnNamesOut.add(name);
             metaDataOut.add(metaDataRight.get(i));
         }
 
-        return leftSchema.newSchema(columnNamesOut,metaDataOut);
+        return leftSchema.newSchema(metaDataOut);
     }
 
     /**

@@ -78,14 +78,11 @@ public class CalculateSortedRank implements Serializable {
 
         List<String> origNames = inputSchema.getColumnNames();
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
-
-        List<String> newNames = new ArrayList<>(origNames);
         List<ColumnMetaData> newMeta = new ArrayList<>(origMeta);
 
-        newNames.add(newColumnName);
-        newMeta.add(new LongMetaData(0L,null));
+        newMeta.add(new LongMetaData(newColumnName, 0L,null));
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     public void setInputSchema(Schema schema){

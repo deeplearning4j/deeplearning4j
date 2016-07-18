@@ -57,8 +57,8 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnMeta) {
-        return new DoubleMetaData(newMin, newMax);
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnMeta) {
+        return new DoubleMetaData(newColumnName, newMin, newMax);
     }
 
     @Override

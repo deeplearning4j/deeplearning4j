@@ -42,7 +42,7 @@ public class IntegerMathOpTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof IntegerMetaData))
             throw new IllegalStateException("Column is not an integer column");
         IntegerMetaData meta = (IntegerMetaData) oldColumnType;
@@ -58,7 +58,7 @@ public class IntegerMathOpTransform extends BaseColumnTransform {
             minValue = maxValue;
             maxValue = temp;
         }
-        return new IntegerMetaData(minValue, maxValue);
+        return new IntegerMetaData(newColumnName, minValue, maxValue);
     }
 
     private int doOp(int input) {

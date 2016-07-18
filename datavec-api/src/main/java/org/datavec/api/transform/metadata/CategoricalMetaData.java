@@ -28,16 +28,17 @@ import java.util.Set;
  * Metadata for categorical columns.
  * Here, each
  */
-public class CategoricalMetaData implements ColumnMetaData {
+public class CategoricalMetaData extends BaseColumnMetaData {
 
     private List<String> stateNames;
     private Set<String> stateNamesSet;  //For fast lookup
 
-    public CategoricalMetaData(String... stateNames) {
-        this(Arrays.asList(stateNames));
+    public CategoricalMetaData(String name, String... stateNames) {
+        this(name, Arrays.asList(stateNames));
     }
 
-    public CategoricalMetaData(List<String> stateNames) {
+    public CategoricalMetaData(String name, List<String> stateNames) {
+        super(name);
         this.stateNames = stateNames;
         stateNamesSet = new HashSet<>(stateNames);
     }
@@ -54,7 +55,7 @@ public class CategoricalMetaData implements ColumnMetaData {
 
     @Override
     public CategoricalMetaData clone() {
-        return new CategoricalMetaData(stateNames);
+        return new CategoricalMetaData(name,stateNames);
     }
 
     public List<String> getStateNames() {

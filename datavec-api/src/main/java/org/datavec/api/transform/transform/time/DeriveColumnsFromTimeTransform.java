@@ -68,23 +68,20 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size() + derivedColumns.size());
 
         List<String> oldNames = inputSchema.getColumnNames();
-        List<String> newNames = new ArrayList<>(oldNames.size() + derivedColumns.size());
 
         for (int i = 0; i < oldMeta.size(); i++) {
             String current = oldNames.get(i);
-            newNames.add(current);
             newMeta.add(oldMeta.get(i));
 
             if (insertAfter.equals(current)) {
                 //Insert the derived columns here
                 for (DerivedColumn d : derivedColumns) {
-                    newNames.add(d.columnName);
                     switch (d.columnType) {
                         case String:
-                            newMeta.add(new StringMetaData());
+                            newMeta.add(new StringMetaData(d.columnName));
                             break;
                         case Integer:
-                            newMeta.add(new IntegerMetaData());     //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
+                            newMeta.add(new IntegerMetaData(d.columnName));     //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
                             break;
                         default:
                             throw new IllegalStateException("Unexpected column type: " + d.columnType);
@@ -93,7 +90,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
             }
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override

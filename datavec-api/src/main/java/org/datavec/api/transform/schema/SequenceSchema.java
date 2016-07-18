@@ -32,13 +32,12 @@ public class SequenceSchema extends Schema {
     private final Integer minSequenceLength;
     private final Integer maxSequenceLength;
 
-    public SequenceSchema(List<String> columnNames, List<ColumnMetaData> columnMetaData){
-        this(columnNames,columnMetaData,null,null);
+    public SequenceSchema(List<ColumnMetaData> columnMetaData){
+        this(columnMetaData,null,null);
     }
 
-    public SequenceSchema(List<String> columnNames, List<ColumnMetaData> columnMetaData,
-                          Integer minSequenceLength, Integer maxSequenceLength) {
-        super(columnNames, columnMetaData);
+    public SequenceSchema(List<ColumnMetaData> columnMetaData,Integer minSequenceLength, Integer maxSequenceLength) {
+        super(columnMetaData);
         this.minSequenceLength = minSequenceLength;
         this.maxSequenceLength = maxSequenceLength;
     }
@@ -50,8 +49,8 @@ public class SequenceSchema extends Schema {
     }
 
     @Override
-    public SequenceSchema newSchema(List<String> columnNames, List<ColumnMetaData> columnMetaData){
-        return new SequenceSchema(columnNames,columnMetaData,minSequenceLength,maxSequenceLength);
+    public SequenceSchema newSchema(List<ColumnMetaData> columnMetaData){
+        return new SequenceSchema(columnMetaData,minSequenceLength,maxSequenceLength);
     }
 
     @Override

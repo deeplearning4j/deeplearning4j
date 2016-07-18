@@ -41,11 +41,9 @@ public class ConvertFromSequence {
     }
 
     public Schema transform(SequenceSchema schema){
-
-        List<String> names = new ArrayList<>(schema.getColumnNames());
         List<ColumnMetaData> meta = new ArrayList<>(schema.getColumnMetaData());
 
-        return new Schema(names,meta);
+        return new Schema(meta);
     }
 
 

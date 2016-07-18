@@ -24,7 +24,7 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-public class StringMetaData implements ColumnMetaData {
+public class StringMetaData extends BaseColumnMetaData {
 
     //regex + min/max length are nullable: null -> no restrictions on these
     private final String regex;
@@ -34,8 +34,8 @@ public class StringMetaData implements ColumnMetaData {
     /**
      * Default constructor with no restrictions on allowable strings
      */
-    public StringMetaData() {
-        this(null, null, null);
+    public StringMetaData(String name) {
+        this(name, null, null, null);
     }
 
     /**
@@ -44,7 +44,8 @@ public class StringMetaData implements ColumnMetaData {
      * @param minLength      Min allowable String length. If null: no restriction on min String length
      * @param maxLength      Max allowable String length. If null: no restriction on max String length
      */
-    public StringMetaData(String mustMatchRegex, Integer minLength, Integer maxLength) {
+    public StringMetaData(String name, String mustMatchRegex, Integer minLength, Integer maxLength) {
+        super(name);
         this.regex = mustMatchRegex;
         this.minLength = minLength;
         this.maxLength = maxLength;
@@ -68,7 +69,7 @@ public class StringMetaData implements ColumnMetaData {
 
     @Override
     public StringMetaData clone() {
-        return new StringMetaData(regex, minLength, maxLength);
+        return new StringMetaData(name, regex, minLength, maxLength);
     }
 
     @Override

@@ -47,8 +47,8 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new IntegerMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new IntegerMetaData(newColumnName);
     }
 
     @Override

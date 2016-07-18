@@ -28,17 +28,18 @@ import lombok.Data;
  * @author Alex Black
  */
 @Data
-public class LongMetaData implements ColumnMetaData {
+public class LongMetaData extends BaseColumnMetaData {
 
     //min/max are nullable: null -> no restriction on min/max values
     private final Long min;
     private final Long max;
 
-    public LongMetaData() {
-        this(null, null);
+    public LongMetaData(String name) {
+        this(name, null, null);
     }
 
-    public LongMetaData(Long min, Long max) {
+    public LongMetaData(String name, Long min, Long max) {
+        super(name);
         this.min = min;
         this.max = max;
     }
@@ -68,7 +69,7 @@ public class LongMetaData implements ColumnMetaData {
 
     @Override
     public LongMetaData clone() {
-        return new LongMetaData(min, max);
+        return new LongMetaData(name, min, max);
     }
 
     @Override

@@ -67,7 +67,6 @@ public class RemoveColumnsTransform extends BaseTransform {
         Collections.addAll(set, columnsToRemove);
 
 
-        List<String> newNames = new ArrayList<>(newNumColumns);
         List<ColumnMetaData> newMeta = new ArrayList<>(newNumColumns);
 
         Iterator<String> namesIter = origNames.iterator();
@@ -77,12 +76,11 @@ public class RemoveColumnsTransform extends BaseTransform {
             String n = namesIter.next();
             ColumnMetaData t = metaIter.next();
             if(!set.contains(n)){
-                newNames.add(n);
                 newMeta.add(t);
             }
         }
 
-        return schema.newSchema(newNames,newMeta);
+        return schema.newSchema(newMeta);
     }
 
     @Override

@@ -94,8 +94,8 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
-        return new TimeMetaData(timeZone, minValidTime, maxValidTime);
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
+        return new TimeMetaData(newName, timeZone, minValidTime, maxValidTime);
     }
 
     @Override

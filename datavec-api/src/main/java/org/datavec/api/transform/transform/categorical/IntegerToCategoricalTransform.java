@@ -46,8 +46,8 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
-        return new CategoricalMetaData(new ArrayList<>(map.values()));
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
+        return new CategoricalMetaData(newColumnName, new ArrayList<>(map.values()));
     }
 
     @Override

@@ -38,7 +38,7 @@ public class ConvertToSequence {
     }
 
     public SequenceSchema transform(Schema schema){
-        return new SequenceSchema(schema.getColumnNames(),schema.getColumnMetaData());
+        return new SequenceSchema(schema.getColumnMetaData());
     }
 
     public void setInputSchema(Schema schema){

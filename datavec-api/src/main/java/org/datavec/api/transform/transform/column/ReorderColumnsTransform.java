@@ -66,25 +66,21 @@ public class ReorderColumnsTransform implements Transform {
 
         List<String> origNames = inputSchema.getColumnNames();
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
-
-        List<String> outNames = new ArrayList<>();
         List<ColumnMetaData> outMeta = new ArrayList<>();
 
         boolean[] taken = new boolean[origNames.size()];
         for(String s : newOrder){
             int idx = inputSchema.getIndexOfColumn(s);
-            outNames.add(origNames.get(idx));
             outMeta.add(origMeta.get(idx));
             taken[idx] = true;
         }
 
         for( int i=0; i<taken.length; i++ ){
             if(taken[i]) continue;
-            outNames.add(origNames.get(i));
             outMeta.add(origMeta.get(i));
         }
 
-        return inputSchema.newSchema(outNames, outMeta);
+        return inputSchema.newSchema(outMeta);
     }
 
     @Override

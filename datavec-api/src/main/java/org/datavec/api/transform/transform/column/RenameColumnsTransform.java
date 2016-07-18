@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
@@ -50,17 +51,20 @@ public class RenameColumnsTransform implements Transform {
         List<String> inputNames = inputSchema.getColumnNames();
         List<String> outputNames = new ArrayList<>(oldNames.size());
 
+        List<ColumnMetaData> outputMeta = new ArrayList<>();
         for(String s : inputNames){
             int idx = oldNames.indexOf(s);
             if(idx >= 0){
                 //Switch the old and new names
-                outputNames.add(newNames.get(idx));
+                ColumnMetaData meta = inputSchema.getMetaData(s);
+                meta.setColumnName(newNames.get(idx));
+                outputMeta.add(meta);
             } else {
-                outputNames.add(s);
+                outputMeta.add(inputSchema.getMetaData(s));
             }
         }
 
-        return inputSchema.newSchema(outputNames,inputSchema.getColumnMetaData());
+        return inputSchema.newSchema(outputMeta);
     }
 
     @Override

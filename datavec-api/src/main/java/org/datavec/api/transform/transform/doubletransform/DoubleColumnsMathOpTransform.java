@@ -39,8 +39,8 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new DoubleMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new DoubleMetaData(newColumnName);
     }
 
     @Override

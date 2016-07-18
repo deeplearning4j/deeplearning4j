@@ -26,21 +26,22 @@ import org.datavec.api.writable.Writable;
  * @author Alex Black
  */
 @Data
-public class IntegerMetaData implements ColumnMetaData {
+public class IntegerMetaData extends BaseColumnMetaData {
 
     //min/max are nullable: null -> no restriction on min/max values
     private final Integer minAllowedValue;
     private final Integer maxAllowedValue;
 
-    public IntegerMetaData() {
-        this(null, null);
+    public IntegerMetaData(String name) {
+        this(name, null, null);
     }
 
     /**
      * @param min Min allowed value. If null: no restriction on min value value in this column
      * @param max Max allowed value. If null: no restiction on max value in this column
      */
-    public IntegerMetaData(Integer min, Integer max) {
+    public IntegerMetaData(String name, Integer min, Integer max) {
+        super(name);
         this.minAllowedValue = min;
         this.maxAllowedValue = max;
     }
@@ -66,7 +67,7 @@ public class IntegerMetaData implements ColumnMetaData {
 
     @Override
     public IntegerMetaData clone() {
-        return new IntegerMetaData(minAllowedValue, maxAllowedValue);
+        return new IntegerMetaData(name, minAllowedValue, maxAllowedValue);
     }
 
     @Override

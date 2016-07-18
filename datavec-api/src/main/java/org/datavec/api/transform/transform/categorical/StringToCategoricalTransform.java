@@ -41,8 +41,8 @@ public class StringToCategoricalTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
-        return new CategoricalMetaData(stateNames);
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
+        return new CategoricalMetaData(newColumnName, stateNames);
     }
 
     @Override

@@ -74,7 +74,6 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
         List<ColumnMetaData> oldMeta = inputSchema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size() + newColumnNames.size() - 1);
         List<String> oldNames = inputSchema.getColumnNames();
-        List<String> newNames = new ArrayList<>(oldMeta.size() + newColumnNames.size() - 1);
 
         Iterator<ColumnMetaData> typesIter = oldMeta.iterator();
         Iterator<String> namesIter = oldNames.iterator();
@@ -88,17 +87,15 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
                 if(t.getColumnType() != ColumnType.String) throw new IllegalStateException("Cannot convert non-string type");
 
                 for( int j=0; j<newColumnNames.size(); j++ ){
-                    ColumnMetaData meta = new CategoricalMetaData("true","false");
+                    ColumnMetaData meta = new CategoricalMetaData(newColumnNames.get(j),"true","false");
                     newMeta.add(meta);
-                    newNames.add(newColumnNames.get(j));
                 }
             } else {
                 newMeta.add(t);
-                newNames.add(name);
             }
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
 
     }
 

@@ -59,8 +59,8 @@ public class Log2Normalizer extends BaseDoubleTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnMeta) {
-        return new DoubleMetaData(0.0, null);
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnMeta) {
+        return new DoubleMetaData(newColumnName, 0.0, null);
     }
 
     @Override

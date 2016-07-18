@@ -42,8 +42,8 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new LongMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new LongMetaData(newColumnName);
     }
 
     @Override
