@@ -2124,6 +2124,58 @@ void   NativeOps::execPairwiseTransformFloat(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+void   NativeOps::execPairwiseTransformHalf(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		Nd4jPointer dx,
+		int xStride,
+		Nd4jPointer y,
+		int yStride,
+		Nd4jPointer result,
+		int resultStride,
+		Nd4jPointer extraParams, Nd4jIndex n){
+	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
+	if (debug && verbose)
+		printf("H4 opNum:[%i]\n", opNum);
+
+	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[11], deviceProperties[getDeviceId(extraPointers[2])]);
+
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], nullptr, (int *) extraPointers[7], 1, sizeof(float), 0);
+	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[11]);
+
+	if (verbose && launchDims.x == 1)
+		printf("AH4 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
+
+	pairWiseTransformStridedHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+			opNum,
+					n,
+					xPointer,
+					yPointer,
+					xStride,
+					yStride,
+					extraParamsPointer,
+					resultPointer,
+					resultStride, allocationPointer, deviceTADShapeInfo);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
 /**
  *
  * @param opNum
@@ -2201,6 +2253,70 @@ void NativeOps::execPairwiseTransformFloat(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+
+void NativeOps::execPairwiseTransformHalf(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		Nd4jPointer dx,
+		Nd4jPointer xShapeInfo,
+		Nd4jPointer y,
+		Nd4jPointer yShapeInfo,
+		Nd4jPointer result,
+		Nd4jPointer resultShapeInfo,
+		Nd4jPointer extraParams,
+		Nd4jPointer xIndexes,
+		Nd4jPointer yIndexes,
+		Nd4jPointer resultIndexes){
+	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
+	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
+	int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
+	int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
+	if (debug && verbose)
+		printf("H5 opNum:[%i]\n", opNum);
+
+	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[10], deviceProperties[getDeviceId(extraPointers[2])]);
+
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[10], 1, sizeof(nd4j::float16), 0);
+
+	if (verbose && launchDims.x == 1)
+		printf("AH5 opNum:[%i]\n", opNum);
+
+	pairWiseTransformHalfIndex<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+			opNum,
+					xPointer,
+					yPointer,
+					extraParamsPointer,
+					resultPointer,
+					xShapeInfoPointer, shape::rank(hostXShapeInfo),
+					yShapeInfoPointer, shape::rank(hostYShapeInfo),
+					resultShapeInfoPointer, shape::rank(hostZShapeInfo),
+					xIndexesPointer,
+					yIndexesPointer,
+					resultIndexesPointer, allocationPointer, deviceTADShapeInfo);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
 /**
  *
  * @param opNum
@@ -2264,6 +2380,62 @@ void NativeOps::execPairwiseTransformFloat(
 			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			yShapeInfoPointer, shape::rank(hostYShapeInfo),
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execPairwiseTransformHalf(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		Nd4jPointer dx,
+		Nd4jPointer  xShapeInfo,
+		Nd4jPointer y,
+		Nd4jPointer  yShapeInfo,
+		Nd4jPointer result,
+		Nd4jPointer  resultShapeInfo,
+		Nd4jPointer extraParams){
+	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
+	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
+	if (debug && verbose)
+		printf("H6 opNum:[%i]\n", opNum);
+
+//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[9], deviceProperties[getDeviceId(extraPointers[2])]);
+
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(float), 0);
+	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[9]);
+
+	if (verbose && launchDims.x == 1) {
+		printf("HF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
+		shape::printShapeInfoLinear(hostXShapeInfo);
+	}
+
+	pairWiseTransformHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+			opNum,
+					xPointer,
+					yPointer,
+					extraParamsPointer,
+					resultPointer,
+					xShapeInfoPointer, shape::rank(hostXShapeInfo),
+					yShapeInfoPointer, shape::rank(hostYShapeInfo),
+					resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));

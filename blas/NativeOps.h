@@ -505,6 +505,15 @@ public:
                                       int resultStride,
                                       Nd4jPointer extraParams, Nd4jIndex n);
 
+    void   execPairwiseTransformHalf(Nd4jPointer *extraPointers,int opNum,
+                                      Nd4jPointer dx,
+                                      int xStride,
+                                      Nd4jPointer y,
+                                      int yStride,
+                                      Nd4jPointer result,
+                                      int resultStride,
+                                      Nd4jPointer extraParams, Nd4jIndex n);
+
     /**
      *
      * @param opNum
@@ -532,6 +541,18 @@ public:
                                     Nd4jPointer yIndexes,
                                     Nd4jPointer resultIndexes);
 
+    void execPairwiseTransformHalf(Nd4jPointer *extraPointers,int opNum,
+                                    Nd4jPointer dx,
+                                    Nd4jPointer xShapeInfo,
+                                    Nd4jPointer y,
+                                    Nd4jPointer yShapeInfo,
+                                    Nd4jPointer result,
+                                    Nd4jPointer resultShapeInfo,
+                                    Nd4jPointer extraParams,
+                                    Nd4jPointer xIndexes,
+                                    Nd4jPointer yIndexes,
+                                    Nd4jPointer resultIndexes);
+
     /**
      *
      * @param opNum
@@ -545,6 +566,15 @@ public:
      * @param n
      */
     void execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                                    Nd4jPointer dx,
+                                    Nd4jPointer  xShapeInfo,
+                                    Nd4jPointer y,
+                                    Nd4jPointer  yShapeInfo,
+                                    Nd4jPointer result,
+                                    Nd4jPointer  resultShapeInfo,
+                                    Nd4jPointer extraParams);
+
+    void execPairwiseTransformHalf(Nd4jPointer *extraPointers,int opNum,
                                     Nd4jPointer dx,
                                     Nd4jPointer  xShapeInfo,
                                     Nd4jPointer y,

@@ -802,6 +802,19 @@ void   NativeOps::execPairwiseTransformFloat(
             n);
 }
 
+void   NativeOps::execPairwiseTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        int xStride,
+        Nd4jPointer y,
+        int yStride,
+        Nd4jPointer result,
+        int resultStride,
+        Nd4jPointer extraParams, Nd4jIndex n) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -855,6 +868,22 @@ void NativeOps::execPairwiseTransformFloat(
 
 }
 
+void NativeOps::execPairwiseTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer y,
+        Nd4jPointer yShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer extraParams,
+        Nd4jPointer xIndexes,
+        Nd4jPointer yIndexes,
+        Nd4jPointer resultIndexes) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -886,6 +915,19 @@ void NativeOps::execPairwiseTransformFloat(
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
 	NativeOpExcutioner<float>::execPairwiseTransform(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
 
+}
+
+void NativeOps::execPairwiseTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        Nd4jPointer  xShapeInfo,
+        Nd4jPointer y,
+        Nd4jPointer  yShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer  resultShapeInfo,
+        Nd4jPointer extraParams) {
+    // no-op
 }
 
 /**
