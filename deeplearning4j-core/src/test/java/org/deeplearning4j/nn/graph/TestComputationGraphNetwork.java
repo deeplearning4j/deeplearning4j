@@ -5,6 +5,8 @@ import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.canova.RecordReaderMultiDataSetIterator;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.*;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -27,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -569,5 +572,67 @@ public class TestComputationGraphNetwork {
 
 //            System.out.println(score + "\t" + scoreUsingScoreExamples + "\t|\t" + scoreNoReg + "\t" + scoreUsingScoreExamplesNoReg);
         }
+    }
+
+
+    @Test
+    public void testExternalErrors(){
+        //Simple test: same network, but in one case: one less layer (the OutputLayer), where the epsilons are passed in externally
+        // instead. Should get identical results
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray inData = Nd4j.rand(3,10);
+        INDArray outData = Nd4j.rand(3,10);
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration standard = new NeuralNetConfiguration.Builder()
+                .learningRate(0.1)
+                .updater(Updater.SGD)
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build(), "l0")
+                .setOutputs("out")
+                .pretrain(false)
+                .backprop(true)
+                .build();
+        ComputationGraph s = new ComputationGraph(standard);
+        s.init();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration external = new NeuralNetConfiguration.Builder()
+                .learningRate(0.1)
+                .updater(Updater.SGD)
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .setOutputs("l0")
+                .pretrain(false)
+                .backprop(true)
+                .build();
+
+        ComputationGraph e = new ComputationGraph(external);
+        e.init();
+
+        s.setInputs(inData);
+        s.setLabels(outData);
+        s.computeGradientAndScore();
+        Gradient sGrad = s.gradient();
+
+        org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer)s.getLayer(1);
+        Pair<Gradient,INDArray> olPairStd = ol.backpropGradient(null);
+
+        INDArray olEpsilon = olPairStd.getSecond();
+
+        e.feedForward(inData, true);
+        Pair<Gradient,INDArray[]> extErrorGrad = e.backpropGradient(olEpsilon);
+
+        int nParamsDense = 10*10 + 10;
+        assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nParamsDense)),
+                extErrorGrad.getFirst().gradient());
+
     }
 }
