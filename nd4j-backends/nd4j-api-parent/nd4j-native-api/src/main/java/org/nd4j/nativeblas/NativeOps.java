@@ -446,6 +446,12 @@ public class NativeOps extends Pointer {
                                                      Pointer xShapeInfo,
                                                      Pointer extraParams);
 
+    public native float   execIndexReduceScalarHalf(PointerPointer extraPointers,
+                                                     int opNum,
+                                                     Pointer x,
+                                                     Pointer xShapeInfo,
+                                                     Pointer extraParams);
+
     /**
      *
      * @param opNum
@@ -458,6 +464,14 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execIndexReduceFloat(PointerPointer extraPointers, int opNum,
+                                              Pointer x,
+                                              Pointer xShapeInfo,
+                                              Pointer extraParams,
+                                              Pointer result,
+                                              Pointer resultShapeInfoBuffer,
+                                              Pointer dimension, int dimensionLength);
+
+    public native void   execIndexReduceHalf(PointerPointer extraPointers, int opNum,
                                               Pointer x,
                                               Pointer xShapeInfo,
                                               Pointer extraParams,
@@ -611,6 +625,13 @@ public class NativeOps extends Pointer {
                                          Pointer result,
                                          Pointer resultShapeInfo);
 
+    public native void   execReduceHalf(PointerPointer extraPointers, int opNum,
+                                         Pointer x,
+                                         Pointer xShapeInfo,
+                                         Pointer extraParams,
+                                         Pointer result,
+                                         Pointer resultShapeInfo);
+
     /**
      *
      * @param opNum
@@ -628,6 +649,14 @@ public class NativeOps extends Pointer {
                                          Pointer resultShapeInfo,
                                          Pointer dimension,int dimensionLength);
 
+    public native void   execReduceHalf(PointerPointer extraPointers, int opNum,
+                                         Pointer x,
+                                         Pointer xShapeInfo,
+                                         Pointer extraParams,
+                                         Pointer result,
+                                         Pointer resultShapeInfo,
+                                         Pointer dimension,int dimensionLength);
+
     /**
      *
      * @param opNum
@@ -637,6 +666,12 @@ public class NativeOps extends Pointer {
      * @return
      */
     public native float execReduceScalarFloat(PointerPointer extraPointers, int opNum,
+                                              Pointer x,
+                                              Pointer xShapeInfo,
+                                              Pointer extraParams);
+
+
+    public native float execReduceScalarHalf(PointerPointer extraPointers, int opNum,
                                               Pointer x,
                                               Pointer xShapeInfo,
                                               Pointer extraParams);
@@ -827,6 +862,13 @@ public class NativeOps extends Pointer {
                                             int resultStride,
                                             Pointer extraParams, long n);
 
+    public native void   execTransformHalf(PointerPointer extraPointers, int opNum,
+                                            Pointer dx,
+                                            int xStride,
+                                            Pointer result,
+                                            int resultStride,
+                                            Pointer extraParams, long n);
+
     /**
      *
      * @param opNum
@@ -838,6 +880,15 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execTransformFloat(
+            PointerPointer extraPointers,
+            int opNum,
+            Pointer dx,
+            Pointer xShapeInfo,
+            Pointer result,
+            Pointer resultShapeInfo,
+            Pointer extraParams);
+
+    public native void   execTransformHalf(
             PointerPointer extraPointers,
             int opNum,
             Pointer dx,
@@ -859,6 +910,16 @@ public class NativeOps extends Pointer {
      * @param resultIndexes
      */
     public native void   execTransformFloat(PointerPointer extraPointers,
+                                            int opNum,
+                                            Pointer dx,
+                                            Pointer xShapeInfo,
+                                            Pointer result,
+                                            Pointer resultShapeInfo,
+                                            Pointer extraParams,
+                                            Pointer xIndexes,
+                                            Pointer resultIndexes);
+
+    public native void   execTransformHalf(PointerPointer extraPointers,
                                             int opNum,
                                             Pointer dx,
                                             Pointer xShapeInfo,

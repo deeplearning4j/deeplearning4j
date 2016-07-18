@@ -1,16 +1,24 @@
 package jcuda.jcublas.ops;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.transforms.ACos;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -82,5 +90,49 @@ public class HalfOpsTests {
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
         assertEquals(-3.0f, array1.getRow(0).getFloat(2), 0.01);
         assertEquals(-10.0f, array1.getRow(0).getFloat(9), 0.01);
+    }
+
+    @Test
+    public void testReduce1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+
+        Sum sum = new Sum(array1);
+        Nd4j.getExecutioner().exec(sum, 1);
+
+        Number resu = sum.getFinalResult();
+
+        System.out.println("Result: " + resu);
+
+        assertEquals(17.15f, resu.floatValue(), 0.01f);
+    }
+
+    @Test
+    public void testIndexReduce1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{0.0f, 0.0f, 0.0f, 2.0f, 2.0f, 0.0f});
+
+        int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+
+        assertEquals(3, idx);
+    }
+
+    @Test
+    public void testTransform1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{0.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+        Nd4j.getExecutioner().exec(new ACos(array1, array2));
+
+        assertEquals(1.56f, array2.getFloat(0), 0.01);
+    }
+
+    @Test
+    public void testSoftmax1()  throws Exception {
+        INDArray array1 = Nd4j.zeros(15);
+        array1.putScalar(0, 0.9f);
+
+        Nd4j.getExecutioner().exec(new SoftMax(array1));
+
+        assertEquals(1.0f, array1.sumNumber().doubleValue(), 0.01f);
+        assertEquals(0.14f, array1.getFloat(0), 0.01f);
     }
 }
