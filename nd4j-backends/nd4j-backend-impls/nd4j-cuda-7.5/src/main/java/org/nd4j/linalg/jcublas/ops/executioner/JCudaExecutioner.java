@@ -415,7 +415,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 if(ret.isScalar()) {
                     AtomicAllocator.getInstance().tickHostWrite(ret);
 
-                    ret.putScalar(0, nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+                    ret.putScalar(0, nativeOps.execSummaryStatsScalarHalf(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
 
                     op.setFinalResult(ret.getFloat(0));
                 } else {
@@ -438,7 +438,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 if (ret.isScalar()) {
                     AtomicAllocator.getInstance().tickHostWrite(ret);
 
-                    ret.putScalar(0, nativeOps.execReduce3ScalarFloat(
+                    ret.putScalar(0, nativeOps.execReduce3ScalarHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -450,7 +450,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
                     op.setFinalResult(ret.getFloat(0));
                 } else {
-                    nativeOps.execReduce3Float(
+                    nativeOps.execReduce3Half(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -1017,7 +1017,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 if(op instanceof Variance) {
-                    float result = nativeOps.execSummaryStatsScalarFloat(
+                    float result = nativeOps.execSummaryStatsScalarHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x
@@ -1027,7 +1027,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                     Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
 
-                    float result = nativeOps.execReduce3ScalarFloat(
+                    float result = nativeOps.execReduce3ScalarHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -1151,7 +1151,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 if(op.y() != null) {
                     Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                     Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
-                    nativeOps.execReduce3Float(
+                    nativeOps.execReduce3Half(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -1168,7 +1168,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 else {
 
                     if(op instanceof Variance) {
-                        nativeOps.execSummaryStatsFloat(
+                        nativeOps.execSummaryStatsHalf(
                                 xShapeInfoHostPointer,
                                 op.opNum(),
                                 x,

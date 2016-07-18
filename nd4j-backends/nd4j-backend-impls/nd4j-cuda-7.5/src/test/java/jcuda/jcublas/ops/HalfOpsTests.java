@@ -10,11 +10,13 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ACos;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,7 @@ public class HalfOpsTests {
     @Before
     public void setUp() {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(false).setVerbose(true);
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true);
     }
 
     @Test
@@ -134,5 +136,28 @@ public class HalfOpsTests {
 
         assertEquals(1.0f, array1.sumNumber().doubleValue(), 0.01f);
         assertEquals(0.14f, array1.getFloat(0), 0.01f);
+    }
+
+    @Test
+    public void testReduce3_1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
+        INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
+
+
+        double result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().doubleValue();
+
+        assertEquals(2.5, result, 0.01);
+    }
+
+    @Test
+    public void testReduce3_2() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+
+        double similarity = Transforms.cosineSim(array1, array2);
+
+        System.out.println("Cosine similarity: " + similarity);
+        assertEquals(0.95f, similarity, 0.01f);
     }
 }

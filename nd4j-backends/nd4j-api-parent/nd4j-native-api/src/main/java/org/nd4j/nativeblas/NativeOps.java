@@ -696,6 +696,15 @@ public class NativeOps extends Pointer {
                                           Pointer result,
                                           Pointer resultShapeInfo);
 
+    public native void   execReduce3Half(PointerPointer extraPointers, int opNum,
+                                          Pointer x,
+                                          Pointer xShapeInfo,
+                                          Pointer extraParamsVals,
+                                          Pointer y,
+                                          Pointer yShapeInfo,
+                                          Pointer result,
+                                          Pointer resultShapeInfo);
+
     /**
      *
      * @param opNum
@@ -706,6 +715,13 @@ public class NativeOps extends Pointer {
      * @param yShapeInfo
      */
     public native float   execReduce3ScalarFloat(PointerPointer extraPointers, int opNum,
+                                                 Pointer x,
+                                                 Pointer xShapeInfo,
+                                                 Pointer extraParamsVals,
+                                                 Pointer y,
+                                                 Pointer yShapeInfo);
+
+    public native float   execReduce3ScalarHalf(PointerPointer extraPointers, int opNum,
                                                  Pointer x,
                                                  Pointer xShapeInfo,
                                                  Pointer extraParamsVals,
@@ -725,6 +741,17 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execReduce3Float(PointerPointer extraPointers, int opNum,
+                                          Pointer x,
+                                          Pointer xShapeInfo,
+                                          Pointer extraParamsVals,
+                                          Pointer y,
+                                          Pointer yShapeInfo,
+                                          Pointer result,
+                                          Pointer resultShapeInfoBuffer,
+                                          Pointer dimension,
+                                          int dimensionLength);
+
+    public native void   execReduce3Half(PointerPointer extraPointers, int opNum,
                                           Pointer x,
                                           Pointer xShapeInfo,
                                           Pointer extraParamsVals,
@@ -813,6 +840,10 @@ public class NativeOps extends Pointer {
     public native float   execSummaryStatsScalarFloat(PointerPointer extraPointers, int opNum,Pointer x,
                                                       Pointer xShapeInfo,
                                                       Pointer extraParams,boolean biasCorrected);
+
+    public native float   execSummaryStatsScalarHalf(PointerPointer extraPointers, int opNum,Pointer x,
+                                                      Pointer xShapeInfo,
+                                                      Pointer extraParams,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -823,6 +854,13 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execSummaryStatsFloat(PointerPointer extraPointers, int opNum,
+                                               Pointer x,
+                                               Pointer xShapeInfo,
+                                               Pointer extraParams,
+                                               Pointer result,
+                                               Pointer resultShapeInfo,boolean biasCorrected);
+
+    public native void   execSummaryStatsHalf(PointerPointer extraPointers, int opNum,
                                                Pointer x,
                                                Pointer xShapeInfo,
                                                Pointer extraParams,
@@ -840,6 +878,13 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execSummaryStatsFloat(PointerPointer extraPointers, int opNum,Pointer x,
+                                               Pointer xShapeInfo,
+                                               Pointer extraParams,
+                                               Pointer result,
+                                               Pointer resultShapeInfoBuffer,
+                                               Pointer dimension, int dimensionLength,boolean biasCorrected);
+
+    public native void   execSummaryStatsHalf(PointerPointer extraPointers, int opNum,Pointer x,
                                                Pointer xShapeInfo,
                                                Pointer extraParams,
                                                Pointer result,
@@ -950,6 +995,15 @@ public class NativeOps extends Pointer {
             Pointer input,
             Pointer inputShapeInfo);
 
+    public native void flattenHalf(
+            PointerPointer extraPointers,
+            int offset,
+            char order,
+            Pointer result,
+            Pointer resultShapeInfo,
+            Pointer input,
+            Pointer inputShapeInfo);
+
 
     /**
      * Append an input array
@@ -998,6 +1052,17 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void concatFloat(
+            PointerPointer extraPointers,
+            int dimension,
+            int numArrays,
+            PointerPointer data,
+            PointerPointer inputShapeInfo,
+            Pointer result,
+            Pointer resultShapeInfo,
+            PointerPointer tadPointers,
+            PointerPointer tadOffsets);
+
+    public native void concatHalf(
             PointerPointer extraPointers,
             int dimension,
             int numArrays,

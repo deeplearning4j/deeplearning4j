@@ -220,7 +220,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(long length) {
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4);
+        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
     }
 
     public BaseCudaDataBuffer(float[] data) {

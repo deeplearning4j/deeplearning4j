@@ -19,7 +19,7 @@ public class AllocationUtils {
 
     public static int getElementSize(@NonNull AllocationShape shape) {
         if (shape.getElementSize() > 0) return shape.getElementSize();
-            else return (shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
+            else return (shape.getDataType() == DataBuffer.Type.FLOAT ? 4 : shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 2);
     }
 
     /**

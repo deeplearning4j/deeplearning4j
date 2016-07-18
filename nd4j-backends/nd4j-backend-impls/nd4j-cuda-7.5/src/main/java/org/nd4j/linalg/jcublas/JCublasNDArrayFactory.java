@@ -477,7 +477,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
-                allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
+                allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : m.data().dataType() == DataBuffer.Type.FLOAT ? 4 : 2));
                 linearIndex += m.length();
             } else {
                 Pointer hostYShapeInfo = AddressRetriever.retrieveHostPointer(m.shapeInfoDataBuffer());
@@ -514,7 +514,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                             allocator.getPointer(m.shapeInfoDataBuffer(), context));
 
                 } else {
-                    throw new UnsupportedOperationException("Illegal data type for copy");
+                    nativeOps.flattenHalf(
+                            extras,
+                            linearIndex,
+                            order,
+                            allocator.getPointer(ret, context),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context),
+                            allocator.getPointer(m, context),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context));
                 }
 
 
@@ -633,9 +640,21 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     dZShapeInfo,
                     new PointerPointer(new Pointer[] {tadPointer}),
                     new PointerPointer(new Pointer[] {offsetPointer}));
+        } else if(ret.data().dataType() == DataBuffer.Type.FLOAT)  {
+            nativeOps.concatFloat(
+                    extras,
+                    dimension,
+                    toConcat.length,
+                    new PointerPointer(new Pointer[] {dataPointer}),
+                    new PointerPointer(new Pointer[] {shapesPointer}),
+                    dZ,
+                    dZShapeInfo,
+                    new PointerPointer(new Pointer[] {tadPointer}),
+                    new PointerPointer(new Pointer[] {offsetPointer}));
+
         }
         else {
-            nativeOps.concatFloat(
+            nativeOps.concatHalf(
                     extras,
                     dimension,
                     toConcat.length,
