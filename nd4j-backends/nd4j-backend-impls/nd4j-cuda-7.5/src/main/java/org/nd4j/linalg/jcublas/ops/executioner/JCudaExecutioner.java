@@ -130,8 +130,19 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                     dimensionPointer, dimension.length);
         }
-        else {
+        else if(op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.execBroadcastFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    y,
+                    AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
+                    z,
+                    AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                    dimensionPointer, dimension.length);
+        } else {
+            nativeOps.execBroadcastHalf(
                     xShapeInfoHostPointer,
                     op.opNum(),
                     x,

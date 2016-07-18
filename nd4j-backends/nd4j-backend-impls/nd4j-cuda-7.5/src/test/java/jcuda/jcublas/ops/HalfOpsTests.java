@@ -2,11 +2,13 @@ package jcuda.jcublas.ops;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,5 +60,27 @@ public class HalfOpsTests {
         assertEquals(1.01f, array1.getFloat(0), 0.001f);
         assertEquals(1.01f, array1.getFloat(1), 0.001f);
 
+    }
+
+    @Test
+    public void testBroadcasts1() throws Exception {
+        INDArray array1 = Nd4j.zeros(1500,150);
+        INDArray array2 = Nd4j.linspace(1,150,150);
+
+        AtomicAllocator.getInstance().getPointer(array1, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        AtomicAllocator.getInstance().getPointer(array2, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+
+        long time1 = System.currentTimeMillis();
+        array1.subiRowVector(array2);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: " + (time2 - time1));
+
+        //   System.out.println("Array1: " + array1);
+//        System.out.println("Array2: " + array2);
+
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-3.0f, array1.getRow(0).getFloat(2), 0.01);
+        assertEquals(-10.0f, array1.getRow(0).getFloat(9), 0.01);
     }
 }

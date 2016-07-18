@@ -1009,6 +1009,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 other.put(offset() + i,(int) element);
             }
         }
+        else if (dataType() == Type.HALF) {
+            if(indexer instanceof HalfIndexer) {
+                ((HalfIndexer)indexer).put(offset() + i, (float) element);
+
+            }
+        }
         else {
             if(indexer instanceof FloatIndexer) {
                 ((FloatIndexer)indexer).put(offset() + i, (float)element);

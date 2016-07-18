@@ -487,7 +487,16 @@ public class NativeOps extends Pointer {
                                             Pointer dimension,
                                             int dimensionLength);
 
-
+    public native void   execBroadcastHalf(PointerPointer extraPointers,
+                                            int opNum,
+                                            Pointer x,
+                                            Pointer xShapeInfo,
+                                            Pointer y,
+                                            Pointer yShapeInfo,
+                                            Pointer result,
+                                            Pointer resultShapeInfo,
+                                            Pointer dimension,
+                                            int dimensionLength);
 
     /**
      *
