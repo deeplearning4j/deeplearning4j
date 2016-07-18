@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -39,13 +37,22 @@ import java.util.Arrays;
 /** * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
  * @author Alex Black
  */
-@AllArgsConstructor
 @NoArgsConstructor
-@Data  @EqualsAndHashCode(callSuper=false)
+@Data
 public class LayerVertex extends GraphVertex {
 
     private NeuralNetConfiguration layerConf;
     private InputPreProcessor preProcessor;
+    //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
+    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
+    // passed in externally
+    private boolean outputVertex;
+
+
+    public LayerVertex(NeuralNetConfiguration layerConf, InputPreProcessor preProcessor) {
+        this.layerConf = layerConf;
+        this.preProcessor = preProcessor;
+    }
 
     @Override
     public GraphVertex clone() {
@@ -75,10 +82,13 @@ public class LayerVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
+        //Now, we need to work out if this vertex is an output vertex or not...
+        boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
+
         return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(
                 graph, name, idx,
                 LayerFactories.getFactory(layerConf).create(layerConf, null, idx, paramsView, initializeParams),
-                preProcessor);
+                preProcessor, isOutput);
     }
 
     @Override

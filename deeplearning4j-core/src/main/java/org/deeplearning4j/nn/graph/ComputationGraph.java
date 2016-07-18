@@ -98,16 +98,16 @@ public class ComputationGraph implements Serializable, Model {
      * have an arbitrary number (>=1) separate input arrays
       */
     private int numInputArrays;
-    /** The number of output arrays to the network. Many networks only have 1 input; however, a ComputationGraph may
+    /** The number of output arrays to the network. Many networks only have 1 output; however, a ComputationGraph may
      * have an arbitrary number (>=1) separate output arrays
      */
     private int numOutputArrays;
 
     //Current inputs, labels, input mask arrays and label mask arrays
-    private INDArray[] inputs;
-    private INDArray[] labels;
-    private INDArray[] inputMaskArrays;
-    private INDArray[] labelMaskArrays;
+    private transient INDArray[] inputs;
+    private transient INDArray[] labels;
+    private transient INDArray[] inputMaskArrays;
+    private transient INDArray[] labelMaskArrays;
 
     private NeuralNetConfiguration defaultConfiguration;
     private Collection<IterationListener> listeners = new ArrayList<>();
@@ -819,11 +819,11 @@ public class ComputationGraph implements Serializable, Model {
         //Calculate activations (which are stored in each layer, and used in backprop)
         if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             rnnActivateUsingStoredState(inputs, true, true);
-            backprop(true);
+            calcBackpropGradients(true);
         }
         else {
             feedForward(true, true);
-            backprop(false);
+            calcBackpropGradients(false);
         }
 
         //Score: sum of the scores for the various output layers...
@@ -954,10 +954,23 @@ public class ComputationGraph implements Serializable, Model {
         return outputs;
     }
 
+    public Pair<Gradient,INDArray[]> backpropGradient(INDArray... epsilons){
+        if(epsilons == null || epsilons.length != numOutputArrays)
+            throw new IllegalArgumentException("Invalid input: must have epsilons length equal to number of output arrays");
+
+
+
+        INDArray[] nextEps = calcBackpropGradients(configuration.getBackpropType() == BackpropType.TruncatedBPTT, epsilons);
+        return new Pair<>(gradient, nextEps);
+    }
+
     /**Do backprop (gradient calculation)
      * @param truncatedBPTT false: normal backprop. true: calculate gradients using truncated BPTT for RNN layers
+     * @param externalEpsilons null usually (for typical supervised learning). If not null (and length > 0) then assume that
+     *                         the user has provided some errors externally, as they would do for example in reinforcement
+     *                         learning situations.
      */
-    protected void backprop(boolean truncatedBPTT){
+    protected INDArray[] calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons){
         if(flattenedGradients == null) initGradientsView();
 
         LinkedList<Triple<String,INDArray,Character>> gradients = new LinkedList<>();
@@ -969,11 +982,19 @@ public class ComputationGraph implements Serializable, Model {
             if(current.isInputVertex()) continue;   //No op
 
             if(current.isOutputVertex()){
-                BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>)current.getLayer();
+                //Two reasons for a vertex to be an output vertex:
+                //(a) it's an output layer (i.e., instanceof BaseOutputLayer), or
+                //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
                 int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                INDArray currLabels = labels[thisOutputNumber];
-                outputLayer.setLabels(currLabels);
+                if(current.getLayer() instanceof BaseOutputLayer){
+                    BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>)current.getLayer();
+
+                    INDArray currLabels = labels[thisOutputNumber];
+                    outputLayer.setLabels(currLabels);
+                } else {
+                    current.setErrors(externalEpsilons[thisOutputNumber]);
+                }
             }
 
             Pair<Gradient,INDArray[]> pair = current.doBackward(truncatedBPTT);
@@ -1012,6 +1033,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         this.gradient = gradient;
+
+        return null;    //TODO
     }
 
     @Override
