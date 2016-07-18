@@ -29,11 +29,11 @@ Content
 
 ### <a name="tensorflow">TensorFlow</a>
 
-* TensorFlow is essentially the successor to Theano. The two libraries are very similar, and both good. Some of the creators of Theano went on to create Tensor at Google. 
+* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano went on to create Tensorflow at Google. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
 * Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
-* Google's acknowledged goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
+* Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
