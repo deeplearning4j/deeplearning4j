@@ -28,12 +28,12 @@ public abstract class BaseColumnMetaData implements ColumnMetaData {
     }
 
     @Override
-    public String getColumnName(){
+    public String getName(){
         return name;
     }
 
     @Override
-    public void setColumnName(String name){
+    public void setName(String name){
         this.name = name;
     }
 

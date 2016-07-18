@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 
@@ -26,18 +29,18 @@ import java.util.Set;
 
 /**
  * Metadata for categorical columns.
- * Here, each
  */
+@JsonIgnoreProperties({"stateNamesSet"})
 public class CategoricalMetaData extends BaseColumnMetaData {
 
-    private List<String> stateNames;
-    private Set<String> stateNamesSet;  //For fast lookup
+    private final List<String> stateNames;
+    private final Set<String> stateNamesSet;  //For fast lookup
 
     public CategoricalMetaData(String name, String... stateNames) {
         this(name, Arrays.asList(stateNames));
     }
 
-    public CategoricalMetaData(String name, List<String> stateNames) {
+    public CategoricalMetaData(@JsonProperty("name") String name, @JsonProperty("stateNames") List<String> stateNames) {
         super(name);
         this.stateNames = stateNames;
         stateNamesSet = new HashSet<>(stateNames);

@@ -71,7 +71,7 @@ public class DuplicateColumnsTransform implements Transform {
                 //Duplicate the current column, and place it after...
                 String dupName = newColumnNames.get(dupCount);
                 ColumnMetaData m = oldMeta.get(i).clone();
-                m.setColumnName(dupName);
+                m.setName(dupName);
                 newMeta.add(m);
                 dupCount++;
             }

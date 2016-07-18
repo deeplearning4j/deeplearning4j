@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,20 +30,20 @@ public class TestJsonYamlXml {
     public void testToFromJson(){
 
         Schema schema = new Schema.Builder()
-                .addColumnString("First")
-                .addColumnDouble("Second")
-                .addColumnInteger("Third",0,10)
+                .addColumnCategorical("Cat","State1","State2")
+                .addColumnDouble("Dbl")
+                .addColumnInteger("Int",0,10)
+                .addColumnLong("Long")
+                .addColumnString("Str")
+                .addColumnTime("TimeCol", DateTimeZone.UTC)
                 .build();
 
         String asJson = schema.toJson();
         System.out.println(asJson);
 
-//        Schema schema2 = Schema.fromJson(asJson);
-//
-//        assertEquals(schema, schema2);
+        Schema schema2 = Schema.fromJson(asJson);
 
-        System.out.println();
-        System.out.println(schema.toXml());
+        assertEquals(schema, schema2);
         System.out.println();
         System.out.println(schema.toYaml());
     }

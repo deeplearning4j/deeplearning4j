@@ -57,7 +57,7 @@ public class RenameColumnsTransform implements Transform {
             if(idx >= 0){
                 //Switch the old and new names
                 ColumnMetaData meta = inputSchema.getMetaData(s);
-                meta.setColumnName(newNames.get(idx));
+                meta.setName(newNames.get(idx));
                 outputMeta.add(meta);
             } else {
                 outputMeta.add(inputSchema.getMetaData(s));

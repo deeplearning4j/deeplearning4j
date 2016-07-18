@@ -59,7 +59,7 @@ public abstract class BaseColumnTransform extends BaseTransform {
         while(typesIter.hasNext()){
             ColumnMetaData t = typesIter.next();
             if(i++ == columnNumber){
-                newMeta.add(getNewColumnMetaData(t.getColumnName(), t));
+                newMeta.add(getNewColumnMetaData(t.getName(), t));
             } else {
                 newMeta.add(t);
             }

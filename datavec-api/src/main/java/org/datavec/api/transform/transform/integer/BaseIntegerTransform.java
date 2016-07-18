@@ -38,7 +38,7 @@ public abstract class BaseIntegerTransform extends BaseColumnTransform {
     @Override
     public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnMeta){
         ColumnMetaData meta = oldColumnMeta.clone();
-        meta.setColumnName(newName);
+        meta.setName(newName);
         return meta;
     }
 }

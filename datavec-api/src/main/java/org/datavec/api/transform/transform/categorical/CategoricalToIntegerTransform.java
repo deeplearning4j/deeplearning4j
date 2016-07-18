@@ -79,7 +79,7 @@ public class CategoricalToIntegerTransform extends BaseTransform {
             if(i++ == columnIdx){
                 //Convert this to integer
                 int nClasses = stateNames.size();
-                newMeta.add(new IntegerMetaData(t.getColumnName(),0,nClasses-1));
+                newMeta.add(new IntegerMetaData(t.getName(),0,nClasses-1));
             } else {
                 newMeta.add(t);
             }

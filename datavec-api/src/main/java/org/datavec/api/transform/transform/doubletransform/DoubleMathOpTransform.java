@@ -46,8 +46,8 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
         if (!(oldColumnType instanceof DoubleMetaData))
             throw new IllegalStateException("Column is not an integer column");
         DoubleMetaData meta = (DoubleMetaData) oldColumnType;
-        Double minValue = meta.getMin();
-        Double maxValue = meta.getMax();
+        Double minValue = meta.getMinAllowedValue();
+        Double maxValue = meta.getMaxAllowedValue();
         if (minValue != null) minValue = doOp(minValue);
         if (maxValue != null) maxValue = doOp(maxValue);
         if(minValue != null && maxValue != null && minValue > maxValue ){

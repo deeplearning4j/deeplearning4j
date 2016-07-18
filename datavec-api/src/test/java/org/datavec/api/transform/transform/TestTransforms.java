@@ -271,9 +271,9 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Double, out.getMetaData(0).getColumnType());
         DoubleMetaData meta = (DoubleMetaData) out.getMetaData(0);
-        assertNotNull(meta.getMin());
-        assertEquals(0, meta.getMin(), 1e-6);
-        assertNull(meta.getMax());
+        assertNotNull(meta.getMinAllowedValue());
+        assertEquals(0, meta.getMinAllowedValue(), 1e-6);
+        assertNull(meta.getMaxAllowedValue());
 
         double loge2 = Math.log(2);
         assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(min))).get(0).toDouble(), 1e-6);
@@ -299,10 +299,10 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.Double, out.getMetaData(0).getColumnType());
         DoubleMetaData meta = (DoubleMetaData) out.getMetaData(0);
         DoubleMetaData meta2 = (DoubleMetaData) out2.getMetaData(0);
-        assertEquals(0, meta.getMin(), 1e-6);
-        assertEquals(1, meta.getMax(), 1e-6);
-        assertEquals(-1, meta2.getMin(), 1e-6);
-        assertEquals(1, meta2.getMax(), 1e-6);
+        assertEquals(0, meta.getMinAllowedValue(), 1e-6);
+        assertEquals(1, meta.getMaxAllowedValue(), 1e-6);
+        assertEquals(-1, meta2.getMinAllowedValue(), 1e-6);
+        assertEquals(1, meta2.getMaxAllowedValue(), 1e-6);
 
 
         assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(0))).get(0).toDouble(), 1e-6);
@@ -329,8 +329,8 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Double, out.getMetaData(0).getColumnType());
         DoubleMetaData meta = (DoubleMetaData) out.getMetaData(0);
-        assertNull(meta.getMin());
-        assertNull(meta.getMax());
+        assertNull(meta.getMinAllowedValue());
+        assertNull(meta.getMaxAllowedValue());
 
 
         assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(), 1e-6);
@@ -354,8 +354,8 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Double, out.getMetaData(0).getColumnType());
         DoubleMetaData meta = (DoubleMetaData) out.getMetaData(0);
-        assertNull(meta.getMin());
-        assertNull(meta.getMax());
+        assertNull(meta.getMinAllowedValue());
+        assertNull(meta.getMaxAllowedValue());
 
 
         assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(), 1e-6);
@@ -671,8 +671,8 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Long, out.getType(0));
         LongMetaData meta = (LongMetaData) out.getMetaData(0);
-        assertEquals(-5, (long) meta.getMin());
-        assertEquals(5, (long) meta.getMax());
+        assertEquals(-5, (long) meta.getMinAllowedValue());
+        assertEquals(5, (long) meta.getMaxAllowedValue());
 
         assertEquals(Collections.singletonList((Writable) new LongWritable(-5)), transform.map(Collections.singletonList((Writable) new LongWritable(-1))));
         assertEquals(Collections.singletonList((Writable) new LongWritable(0)), transform.map(Collections.singletonList((Writable) new LongWritable(0))));
@@ -732,8 +732,8 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Double, out.getType(0));
         DoubleMetaData meta = (DoubleMetaData) out.getMetaData(0);
-        assertEquals(-5.0, meta.getMin(), 1e-6);
-        assertEquals(5.0, meta.getMax(), 1e-6);
+        assertEquals(-5.0, meta.getMinAllowedValue(), 1e-6);
+        assertEquals(5.0, meta.getMaxAllowedValue(), 1e-6);
 
         assertEquals(Collections.singletonList((Writable) new DoubleWritable(-5)), transform.map(Collections.singletonList((Writable) new DoubleWritable(-1))));
         assertEquals(Collections.singletonList((Writable) new DoubleWritable(0)), transform.map(Collections.singletonList((Writable) new DoubleWritable(0))));

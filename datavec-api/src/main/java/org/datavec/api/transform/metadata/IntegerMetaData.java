@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 import org.datavec.api.writable.Writable;
@@ -40,7 +41,7 @@ public class IntegerMetaData extends BaseColumnMetaData {
      * @param min Min allowed value. If null: no restriction on min value value in this column
      * @param max Max allowed value. If null: no restiction on max value in this column
      */
-    public IntegerMetaData(String name, Integer min, Integer max) {
+    public IntegerMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Integer min, @JsonProperty("maxAllowedValue") Integer max) {
         super(name);
         this.minAllowedValue = min;
         this.maxAllowedValue = max;

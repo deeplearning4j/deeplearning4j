@@ -40,7 +40,7 @@ public abstract class BaseDoubleTransform extends BaseColumnTransform {
     public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnMeta){
         if(oldColumnMeta instanceof DoubleMetaData){
             ColumnMetaData meta = oldColumnMeta.clone();
-            meta.setColumnName(newColumnName);
+            meta.setName(newColumnName);
             return meta;
         }
         else return new DoubleMetaData(newColumnName);

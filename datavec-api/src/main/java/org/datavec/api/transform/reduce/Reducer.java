@@ -30,7 +30,6 @@ import org.datavec.api.transform.metadata.LongMetaData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.datavec.api.berkeley.Pair;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
@@ -131,7 +130,7 @@ public class Reducer implements IReducer {
 
                 String outName = reduction.getOutputName();
                 ColumnMetaData m = getMetaForColumn(reduction.getReduction(),name,inMeta);
-                m.setColumnName(outName);
+                m.setName(outName);
                 newMeta.add(m);
 
                 continue;
@@ -190,19 +189,19 @@ public class Reducer implements IReducer {
         inMeta = inMeta.clone();
         switch (op) {
             case Min:
-                inMeta.setColumnName("min(" + name + ")");
+                inMeta.setName("min(" + name + ")");
                 return inMeta;
             case Max:
-                inMeta.setColumnName("max(" + name + ")");
+                inMeta.setName("max(" + name + ")");
                 return inMeta;
             case Range:
-                inMeta.setColumnName("range(" + name + ")");
+                inMeta.setName("range(" + name + ")");
                 return inMeta;
             case TakeFirst:
-                inMeta.setColumnName("first(" + name + ")");
+                inMeta.setName("first(" + name + ")");
                 return inMeta;
             case TakeLast:
-                inMeta.setColumnName("last(" + name + ")");
+                inMeta.setName("last(" + name + ")");
                 return inMeta;
             case Sum:
                 String outName = "sum(" + name + ")";
@@ -216,7 +215,7 @@ public class Reducer implements IReducer {
                     //Sum doesn't really make sense to sum other column types anyway...
                     outMeta = inMeta;
                 }
-                outMeta.setColumnName(outName);
+                outMeta.setName(outName);
                 return outMeta;
             case Mean:
                 return new DoubleMetaData("mean(" + name + ")");

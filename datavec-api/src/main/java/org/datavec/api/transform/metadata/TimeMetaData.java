@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
@@ -79,7 +80,8 @@ public class TimeMetaData extends BaseColumnMetaData {
      * @param minValidTime Minimum valid time, in milliseconds (timestamp format). If null: no restriction
      * @param maxValidTime Maximum valid time, in milliseconds (timestamp format). If null: no restriction
      */
-    public TimeMetaData(String name, DateTimeZone timeZone, Long minValidTime, Long maxValidTime) {
+    public TimeMetaData(@JsonProperty("name") String name, @JsonProperty("timeZone") DateTimeZone timeZone,
+                        @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
         super(name);
         this.timeZone = timeZone;
         this.minValidTime = minValidTime;

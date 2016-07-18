@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 
@@ -31,6 +32,13 @@ public class StringMetaData extends BaseColumnMetaData {
     private final Integer minLength;
     private final Integer maxLength;
 
+    public StringMetaData(){
+        super(null);
+        regex = null;
+        minLength = null;
+        maxLength = null;
+    }
+
     /**
      * Default constructor with no restrictions on allowable strings
      */
@@ -44,7 +52,8 @@ public class StringMetaData extends BaseColumnMetaData {
      * @param minLength      Min allowable String length. If null: no restriction on min String length
      * @param maxLength      Max allowable String length. If null: no restriction on max String length
      */
-    public StringMetaData(String name, String mustMatchRegex, Integer minLength, Integer maxLength) {
+    public StringMetaData(@JsonProperty("name")String name, @JsonProperty("regex")String mustMatchRegex,
+                          @JsonProperty("minLength")Integer minLength, @JsonProperty("maxLength") Integer maxLength) {
         super(name);
         this.regex = mustMatchRegex;
         this.minLength = minLength;

@@ -46,8 +46,8 @@ public class LongMathOpTransform extends BaseColumnTransform {
         if (!(oldColumnType instanceof LongMetaData))
             throw new IllegalStateException("Column is not an Long column");
         LongMetaData meta = (LongMetaData) oldColumnType;
-        Long minValue = meta.getMin();
-        Long maxValue = meta.getMax();
+        Long minValue = meta.getMinAllowedValue();
+        Long maxValue = meta.getMaxAllowedValue();
         if (minValue != null) minValue = doOp(minValue);
         if (maxValue != null) maxValue = doOp(maxValue);
         if(minValue != null && maxValue != null && minValue > maxValue ){

@@ -16,13 +16,18 @@
 
 package org.datavec.api.transform.schema;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.joda.time.DateTimeZone;
@@ -40,28 +45,40 @@ public class Schema implements Serializable {
     private List<ColumnMetaData> columnMetaData;
     private Map<String, Integer> columnNamesIndex;   //For efficient lookup
 
+    private Schema(){
+        //No-arg constructor for Jackson
+    }
 
     protected Schema(Builder builder) {
         this.columnMetaData = builder.columnMetaData;
         this.columnNames = new ArrayList<>();
-        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getColumnName());
+        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
         columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
         }
     }
 
-    public Schema(List<ColumnMetaData> columnMetaData) {
+    public Schema(@JsonProperty("columnMetaData") List<ColumnMetaData> columnMetaData) {
         if (columnMetaData == null || columnMetaData.size() == 0) throw new IllegalArgumentException("Column meta data must be non-empty");
         this.columnMetaData = columnMetaData;
         this.columnNames = new ArrayList<>();
-        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getColumnName());
+        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
         this.columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
         }
     }
-
+//
+//    public void setColumnMetaData(List<ColumnMetaData> columnMetaData){
+//        this.columnMetaData = columnMetaData;
+//        this.columnNames = new ArrayList<>();
+//        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
+//        this.columnNamesIndex = new HashMap<>();
+//        for (int i = 0; i < columnNames.size(); i++) {
+//            columnNamesIndex.put(columnNames.get(i), i);
+//        }
+//    }
 
     public Schema newSchema(List<ColumnMetaData> columnMetaData) {
         return new Schema(columnMetaData);
@@ -151,19 +168,18 @@ public class Schema implements Serializable {
         return toJacksonString(new JsonFactory());
     }
 
-    public String toXml(){
-        return toJacksonString(new XmlFactory());
-    }
-
     public String toYaml(){
         return toJacksonString(new YAMLFactory());
     }
 
     private String toJacksonString(JsonFactory factory){
         ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         String str;
         try{
             str = om.writeValueAsString(this);
@@ -188,6 +204,12 @@ public class Schema implements Serializable {
 
     private static Schema fromJacksonString(String str, JsonFactory factory){
         ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         try{
             return om.readValue(str, Schema.class);
         }catch(Exception e){
