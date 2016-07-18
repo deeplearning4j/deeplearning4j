@@ -510,6 +510,15 @@ public class NativeOps extends Pointer {
                                                     int resultStride,
                                                     Pointer extraParams, long n);
 
+    public native void   execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
+                                                    Pointer dx,
+                                                    int xStride,
+                                                    Pointer y,
+                                                    int yStride,
+                                                    Pointer result,
+                                                    int resultStride,
+                                                    Pointer extraParams, long n);
+
     /**
      *
      * @param opNum
@@ -536,6 +545,18 @@ public class NativeOps extends Pointer {
                                                   Pointer yIndexes,
                                                   Pointer resultIndexes);
 
+    public native void execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
+                                                  Pointer dx,
+                                                  Pointer xShapeInfo,
+                                                  Pointer y,
+                                                  Pointer yShapeInfo,
+                                                  Pointer result,
+                                                  Pointer resultShapeInfo,
+                                                  Pointer extraParams,
+                                                  Pointer xIndexes,
+                                                  Pointer yIndexes,
+                                                  Pointer resultIndexes);
+
     /**
      *
      * @param opNum
@@ -548,6 +569,15 @@ public class NativeOps extends Pointer {
      * @param extraParams
      */
     public native void execPairwiseTransformFloat(PointerPointer extraPointers, int opNum,
+                                                  Pointer dx,
+                                                  Pointer xShapeInfo,
+                                                  Pointer y,
+                                                  Pointer yShapeInfo,
+                                                  Pointer result,
+                                                  Pointer resultShapeInfo,
+                                                  Pointer extraParams);
+
+    public native void execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
                                                   Pointer dx,
                                                   Pointer xShapeInfo,
                                                   Pointer y,

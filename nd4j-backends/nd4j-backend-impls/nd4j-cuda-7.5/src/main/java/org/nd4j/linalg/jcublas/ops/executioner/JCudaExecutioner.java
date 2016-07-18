@@ -1220,7 +1220,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             zShapeInfo,
                             extraArgs);
                 }
-            } else {
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
@@ -1236,6 +1236,32 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     );
                 } else {
                     nativeOps.execPairwiseTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            y,
+                            yShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
+            } else {
+                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    nativeOps.execPairwiseTransformHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            y,
+                            op.y().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execPairwiseTransformHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
