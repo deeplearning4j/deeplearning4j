@@ -441,6 +441,12 @@ public:
                                        Nd4jPointer xShapeInfo,
                                        Nd4jPointer extraParams);
 
+    float execIndexReduceScalarHalf(Nd4jPointer *extraPointers,
+                                       int opNum,
+                                       Nd4jPointer x,
+                                       Nd4jPointer xShapeInfo,
+                                       Nd4jPointer extraParams);
+
     /**
      *
      * @param opNum
@@ -453,6 +459,14 @@ public:
      * @param dimensionLength
      */
     void   execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
+                                Nd4jPointer x,
+                                Nd4jPointer xShapeInfo,
+                                Nd4jPointer extraParams,
+                                Nd4jPointer result,
+                                Nd4jPointer resultShapeInfoBuffer,
+                                Nd4jPointer dimension, int dimensionLength);
+
+    void   execIndexReduceHalf(Nd4jPointer *extraPointers,int opNum,
                                 Nd4jPointer x,
                                 Nd4jPointer xShapeInfo,
                                 Nd4jPointer extraParams,
@@ -610,6 +624,13 @@ public:
                            Nd4jPointer result,
                            Nd4jPointer resultShapeInfo);
 
+    void   execReduceHalf(Nd4jPointer *extraPointers,int opNum,
+                           Nd4jPointer x,
+                           Nd4jPointer xShapeInfo,
+                           Nd4jPointer extraParams,
+                           Nd4jPointer result,
+                           Nd4jPointer resultShapeInfo);
+
     /**
      *
      * @param opNum
@@ -627,6 +648,14 @@ public:
                            Nd4jPointer resultShapeInfo,
                            Nd4jPointer dimension,int dimensionLength);
 
+    void   execReduceHalf(Nd4jPointer *extraPointers,int opNum,
+                           Nd4jPointer x,
+                           Nd4jPointer xShapeInfo,
+                           Nd4jPointer extraParams,
+                           Nd4jPointer result,
+                           Nd4jPointer resultShapeInfo,
+                           Nd4jPointer dimension,int dimensionLength);
+
     /**
      *
      * @param opNum
@@ -636,6 +665,11 @@ public:
      * @return
      */
     float execReduceScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                                Nd4jPointer x,
+                                Nd4jPointer xShapeInfo,
+                                Nd4jPointer extraParams);
+
+    float execReduceScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                 Nd4jPointer x,
                                 Nd4jPointer xShapeInfo,
                                 Nd4jPointer extraParams);
@@ -827,6 +861,14 @@ public:
                               int resultStride,
                               Nd4jPointer extraParams, Nd4jIndex n);
 
+
+    void   execTransformHalf(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              int xStride,
+                              Nd4jPointer result,
+                              int resultStride,
+                              Nd4jPointer extraParams, Nd4jIndex n);
+
     /**
      *
      * @param opNum
@@ -844,6 +886,13 @@ public:
                               Nd4jPointer resultShapeInfo,
                               Nd4jPointer extraParams);
 
+    void   execTransformHalf(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              Nd4jPointer xShapeInfo,
+                              Nd4jPointer result,
+                              Nd4jPointer resultShapeInfo,
+                              Nd4jPointer extraParams);
+
     /**
      *
      * @param opNum
@@ -855,6 +904,15 @@ public:
      * @param n
      */
     void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              Nd4jPointer xShapeInfo,
+                              Nd4jPointer result,
+                              Nd4jPointer resultShapeInfo,
+                              Nd4jPointer extraParams,
+                              Nd4jPointer xIndexes,
+                              Nd4jPointer resultIndexes);
+
+    void   execTransformHalf(Nd4jPointer *extraPointers,int opNum,
                               Nd4jPointer dx,
                               Nd4jPointer xShapeInfo,
                               Nd4jPointer result,

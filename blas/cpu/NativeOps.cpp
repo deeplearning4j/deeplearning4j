@@ -280,6 +280,16 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
 
 }
 
+void   NativeOps::execReduceHalf(Nd4jPointer *extraPointers,int opNum,
+                                   Nd4jPointer x,
+                                   Nd4jPointer xShapeInfo,
+                                   Nd4jPointer extraParams,
+                                   Nd4jPointer result,
+                                   Nd4jPointer resultShapeInfo,
+                                   Nd4jPointer dimension,int dimensionLength) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -699,6 +709,13 @@ float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, int op
 	return NativeOpExcutioner<float>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 }
 
+float   NativeOps::execIndexReduceScalarHalf(Nd4jPointer *extraPointers, int opNum,
+                                              Nd4jPointer x,
+                                              Nd4jPointer xShapeInfo,
+                                              Nd4jPointer extraParams) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -727,9 +744,18 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
 	NativeOpExcutioner<float>::execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo, tadOffsets);
-
-
 }
+
+void   NativeOps::execIndexReduceHalf(Nd4jPointer *extraPointers, int opNum,
+                                       Nd4jPointer x,
+                                       Nd4jPointer xShapeInfo,
+                                       Nd4jPointer extraParams,
+                                       Nd4jPointer result,
+                                       Nd4jPointer resultShapeInfoBuffer,
+                                       Nd4jPointer dimension, int dimensionLength) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -965,6 +991,15 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,int opNum,
     delete[] dimension;
 }
 
+void   NativeOps::execReduceHalf(Nd4jPointer *extraPointers,int opNum,
+                                  Nd4jPointer x,
+                                  Nd4jPointer xShapeInfo,
+                                  Nd4jPointer extraParams,
+                                  Nd4jPointer result,
+                                  Nd4jPointer resultShapeInfo) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1005,6 +1040,7 @@ void   NativeOps::execReduceFloat(
 
 }
 
+
 /**
  *
  * @param opNum
@@ -1023,6 +1059,15 @@ float NativeOps::execReduceScalarFloat(
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     return NativeOpExcutioner<float>::execReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+}
+
+float NativeOps::execReduceScalarHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer x,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer extraParams) {
+    // no-op
 }
 
 /**
@@ -1353,6 +1398,17 @@ void   NativeOps::execTransformFloat(
 	NativeOpExcutioner<float>::execTransform(opNum,xPointer,xStride,resultPointer,resultStride,extraParamsPointer,n);
 }
 
+void   NativeOps::execTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        int xStride,
+        Nd4jPointer result,
+        int resultStride,
+        Nd4jPointer extraParams, Nd4jIndex n) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1383,6 +1439,17 @@ void   NativeOps::execTransformFloat(
             resultPointer,
             resultShapeInfoPointer,
             extraParamsPointer);
+}
+
+void   NativeOps::execTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer extraParams) {
+
 }
 
 /**
@@ -1422,6 +1489,19 @@ void   NativeOps::execTransformFloat(
             xIndexesPointer,
             resultIndexesPointer);
 
+}
+
+void   NativeOps::execTransformHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer dx,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer extraParams,
+        Nd4jPointer xIndexes,
+        Nd4jPointer resultIndexes) {
+    // no-op
 }
 
 
