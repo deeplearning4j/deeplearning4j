@@ -482,6 +482,17 @@ public:
             Nd4jPointer resultShapeInfo,
             Nd4jPointer dimension, int dimensionLength);
 
+    void   execBroadcastHalf(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            Nd4jPointer x,
+            Nd4jPointer xShapeInfo,
+            Nd4jPointer y,
+            Nd4jPointer yShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            Nd4jPointer dimension, int dimensionLength);
+
 
 
     /**

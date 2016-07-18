@@ -2059,6 +2059,59 @@ void   NativeOps::execBroadcastFloat(
 }
 
 
+void   NativeOps::execBroadcastHalf(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		Nd4jPointer x,
+		Nd4jPointer xShapeInfo,
+		Nd4jPointer y,
+		Nd4jPointer yShapeInfo,
+		Nd4jPointer result,
+		Nd4jPointer resultShapeInfo,
+		Nd4jPointer dimension, int dimensionLength){
+	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
+	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+	int *dimensionPointer = reinterpret_cast<int *>(dimension);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+
+	if (debug && verbose)
+		printf("H3 opNum:[%i]\n", opNum);
+
+	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[getDeviceId(extraPointers[2])]);
+
+
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(nd4j::float16), 0);
+
+	broadcastHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			opNum,
+					xPointer,
+					xShapeInfoPointer, shape::rank(hostXShapeInfo),
+					yPointer,
+					yShapeInfoPointer, shape::rank(hostYShapeInfo),
+					resultPointer,
+					resultShapeInfoPointer, shape::rank(hostZShapeInfo),
+					dimensionPointer,
+					dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
 
 /**
  *
