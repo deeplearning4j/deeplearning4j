@@ -1773,6 +1773,7 @@ namespace shape {
             traceNew(1);
 
             this->tadOffsets = new int[this->numTads];
+#pragma omp parallel for
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
 

@@ -418,49 +418,63 @@ template<typename OpType>
                     int *yStride = shape::stride(yShapeBuffer);
                     int *resultStride = shape::stride(resultShapeBuffer);
 
+#pragma omp parallel for
+for (Nd4jIndex i = 0; i < xShape[0]; i++) {
+                    T *dxLocal = dx + xStride[0] * i;
+                    T *yLocal = y + yStride[0] * i;
+                    T *resultLocal = result + resultStride[0] * i;
+
+                    int rankLocal = rank - 1;
+                    int *xShapeLocal = xShape + 1;
+
+                    int *xStrideLocal = xStride + 1;
+                    int *yStrideLocal = yStride + 1;
+                    int *resultStrideLocal = resultStride + 1;
+
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];
                     int dim;
                     int xStridesIter[MAX_RANK];
                     int yStridesIter[MAX_RANK];
                     int resultStridesIter[MAX_RANK];
-                    if (PrepareThreeRawArrayIter<T>(rank,
-                                                    xShape,
-                                                    dx,
-                                                    xStride,
-                                                    y,
-                                                    yStride,
-                                                    result,
-                                                    resultStride,
-                                                    rank,
+                    if (PrepareThreeRawArrayIter<T>(rankLocal,
+                                                    xShapeLocal,
+                                                    dxLocal,
+                                                    xStrideLocal,
+                                                    yLocal,
+                                                    yStrideLocal,
+                                                    resultLocal,
+                                                    resultStrideLocal,
+                                                    rankLocal,
                                                     shapeIter,
-                                                    &dx,
+                                                    &dxLocal,
                                                     xStridesIter,
-                                                    &y,
+                                                    &yLocal,
                                                     yStridesIter,
-                                                    &result,
+                                                    &resultLocal,
                                                     resultStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                        ND4J_RAW_ITER_START(dim, rankLocal, coord, shapeIter); {
                                 /* Process the innermost dimension */
-                                T *xIter = dx;
-                                T *yIter = y;
-                                T *resultIter = result;
+                                T *xIter = dxLocal;
+                                T *yIter = yLocal;
+                                T *resultIter = resultLocal;
                                 resultIter[0] = OpType::op(xIter[0], yIter[0], extraParams);
                             }
                         ND4J_RAW_ITER_THREE_NEXT(dim,
-                                                 rank,
+                                                 rankLocal,
                                                  coord,
                                                  shapeIter,
-                                                 dx,
+                                                 dxLocal,
                                                  xStridesIter,
-                                                 y,
+                                                 yLocal,
                                                  yStridesIter,
-                                                 result,
+                                                 resultLocal,
                                                  resultStridesIter);
                     }
                     else {
                         printf("Unable to prepare array\n");
                     }
+}
 
                 }
 
@@ -469,9 +483,6 @@ template<typename OpType>
                     int xRank = shape::rank(xShapeBuffer);
                     int yRank = shape::rank(yShapeBuffer);
                     int resultRank = shape::rank(resultShapeBuffer);
-                    int *xCoord = new int[xRank];
-                    int *yCoord = new int[yRank];
-                    int *resultCoord = new int[resultRank];
 
                     int *xShape = shape::shapeOf(xShapeBuffer);
                     int *xStride = shape::stride(xShapeBuffer);
@@ -481,7 +492,12 @@ template<typename OpType>
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
                     if(dx == result) {
+#pragma omp parallel for
                         for (Nd4jIndex i = 0; i < len; i++) {
+                            int xCoord[MAX_RANK];
+                            int yCoord[MAX_RANK];
+                            int resultCoord[MAX_RANK];
+
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
                             shape::ind2subC(resultRank,resultShape, i, resultCoord);
@@ -493,7 +509,12 @@ template<typename OpType>
                         }
                     }
                     else {
+#pragma omp parallel for
                         for (Nd4jIndex i = 0; i < len; i++) {
+                            int xCoord[MAX_RANK];
+                            int yCoord[MAX_RANK];
+                            int resultCoord[MAX_RANK];
+
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
                             shape::ind2subC(resultRank,resultShape, i, resultCoord);
@@ -505,11 +526,6 @@ template<typename OpType>
 
                         }
                     }
-
-
-                    delete[] xCoord;
-                    delete[] yCoord;
-                    delete []resultCoord;
                 }
             }
 
@@ -523,7 +539,7 @@ template<typename OpType>
                               T *extraParams,
                               Nd4jIndex n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-					if (n > 2048000) {
+					if (n > 2048) {
 #pragma omp parallel for simd schedule(guided)
 						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], y[i], extraParams);
@@ -536,7 +552,7 @@ template<typename OpType>
 					}
                 }
                 else {
-					if (n > 2048000) {
+					if (n > 2048) {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
 						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i * resultStride] = OpType::op(dx[i * xStride],
