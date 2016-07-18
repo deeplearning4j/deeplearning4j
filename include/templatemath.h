@@ -13,9 +13,21 @@
 
 #ifdef __CUDACC__
 #include <float16.hpp>
+
+typedef union {
+		struct {
+			half H;
+			half L;
+		} B;
+		int W;
+} PAIR;
 #endif
 
 namespace nd4j {
+#ifdef __CUDACC__
+
+#endif
+
 	namespace math {
 		template<typename T>
 #ifdef __CUDACC__
@@ -730,6 +742,7 @@ template<>
 		namespace atomics {
 template <typename T>
 __device__ T nd4j_atomicAdd(T* address, T val);
+
 template <typename T>
 __device__ T nd4j_atomicSub(T* address, T val);
 template <typename T>
@@ -748,6 +761,23 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 				__longlong_as_double(assumed)));
 	} while (assumed != old);
 	return __longlong_as_double(old);
+}
+
+template <>
+__device__ nd4j::float16 nd4j_atomicAdd<nd4j::float16>(nd4j::float16* address, nd4j::float16 val)  {
+	int* address_as_ull = (int*) address;
+	PAIR *old = (PAIR *) *address_as_ull, assumed;
+	PAIR fresh;
+	do {
+
+		nd4j::float16 res = ((nd4j::float16) old->B.H) + val;
+		fresh.B.H = res.data;
+		fresh.B.L = old->B.L;
+
+		assumed.W = old->W;
+		old->W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old->W);
+	return old->B.H;
 }
 
 template <>
@@ -793,6 +823,7 @@ template <>
 __device__ float nd4j_atomicAdd<float>(float* address, float val)  {
 	return atomicAdd(address,val);
 }
+
 
 template <>
 __device__ float nd4j_atomicSub<float>(float* address, float val) {

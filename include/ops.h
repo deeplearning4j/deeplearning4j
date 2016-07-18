@@ -1087,8 +1087,8 @@ namespace simdOps {
 #ifdef __CUDACC__
 		__device__
 		static inline T opAtomic(T d1, T d2, T *extraParams) {
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], d1 * d1);
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], d2 * d2);
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],(T) (d1 * d1));
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],(T) (d2 * d2));
 
 			return (d1 * d2);
 		}

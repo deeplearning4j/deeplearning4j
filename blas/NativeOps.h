@@ -694,6 +694,15 @@ public:
                             Nd4jPointer result,
                             Nd4jPointer resultShapeInfo);
 
+    void   execReduce3Half(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParamsVals,
+                            Nd4jPointer y,
+                            Nd4jPointer yShapeInfo,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfo);
+
     /**
      *
      * @param opNum
@@ -709,6 +718,14 @@ public:
                                    Nd4jPointer extraParamsVals,
                                    Nd4jPointer y,
                                    Nd4jPointer yShapeInfo);
+
+    float   execReduce3ScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                                   Nd4jPointer x,
+                                   Nd4jPointer xShapeInfo,
+                                   Nd4jPointer extraParamsVals,
+                                   Nd4jPointer y,
+                                   Nd4jPointer yShapeInfo);
+
     /**
      *
      * @param opNum
@@ -723,6 +740,17 @@ public:
      * @param dimensionLength
      */
     void   execReduce3Float(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParamsVals,
+                            Nd4jPointer y,
+                            Nd4jPointer yShapeInfo,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfoBuffer,
+                            Nd4jPointer dimension,
+                            int dimensionLength);
+
+    void   execReduce3Half(Nd4jPointer *extraPointers,int opNum,
                             Nd4jPointer x,
                             Nd4jPointer xShapeInfo,
                             Nd4jPointer extraParamsVals,
@@ -812,6 +840,11 @@ public:
     float   execSummaryStatsScalarFloat(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
                                         Nd4jPointer xShapeInfo,
                                         Nd4jPointer extraParams,bool biasCorrected);
+
+    float   execSummaryStatsScalarHalf(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                        Nd4jPointer xShapeInfo,
+                                        Nd4jPointer extraParams,bool biasCorrected);
+
     /**
      *
      * @param opNum
@@ -827,6 +860,15 @@ public:
                                  Nd4jPointer extraParams,
                                  Nd4jPointer result,
                                  Nd4jPointer resultShapeInfo,bool biasCorrected);
+
+
+    void   execSummaryStatsHalf(Nd4jPointer *extraPointers,int opNum,
+                                 Nd4jPointer x,
+                                 Nd4jPointer xShapeInfo,
+                                 Nd4jPointer extraParams,
+                                 Nd4jPointer result,
+                                 Nd4jPointer resultShapeInfo,bool biasCorrected);
+
     /**
      *
      * @param opNum
@@ -844,6 +886,15 @@ public:
                                  Nd4jPointer result,
                                  Nd4jPointer resultShapeInfoBuffer,
                                  Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
+
+
+    void   execSummaryStatsHalf(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                 Nd4jPointer xShapeInfo,
+                                 Nd4jPointer extraParams,
+                                 Nd4jPointer result,
+                                 Nd4jPointer resultShapeInfoBuffer,
+                                 Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
+
     /**
      *
      * @param opNum
@@ -942,6 +993,16 @@ public:
             Nd4jPointer input,
             Nd4jPointer inputShapeInfo);
 
+
+    void flattenHalf(
+            Nd4jPointer *extraPointers,
+            int offset,
+            char order,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            Nd4jPointer input,
+            Nd4jPointer inputShapeInfo);
+
     /**
 * Append an input array
 * to the end of a flat array
@@ -979,6 +1040,15 @@ public:
     * along a particular dimension
     */
     void concatDouble(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+
+    void concatHalf(
             Nd4jPointer *extraPointers,
             int dimension,
             int numArrays,

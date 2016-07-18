@@ -1110,6 +1110,19 @@ void   NativeOps::execReduce3Float(
 
 }
 
+void   NativeOps::execReduce3Half(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer x,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer extraParamsVals,
+        Nd4jPointer y,
+        Nd4jPointer yShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1132,6 +1145,16 @@ float   NativeOps::execReduce3ScalarFloat(Nd4jPointer *extraPointers,int opNum,
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
 	return NativeOpExcutioner<float>::execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
 }
+
+float   NativeOps::execReduce3ScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                                          Nd4jPointer x,
+                                          Nd4jPointer xShapeInfo,
+                                          Nd4jPointer extraParamsVals,
+                                          Nd4jPointer y,
+                                          Nd4jPointer yShapeInfo) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1176,6 +1199,21 @@ void   NativeOps::execReduce3Float(Nd4jPointer *extraPointers,int opNum,
             dimensionLength);
 
 }
+
+void   NativeOps::execReduce3Half(Nd4jPointer *extraPointers,int opNum,
+                                   Nd4jPointer x,
+                                   Nd4jPointer xShapeInfo,
+                                   Nd4jPointer extraParamsVals,
+                                   Nd4jPointer y,
+                                   Nd4jPointer yShapeInfo,
+                                   Nd4jPointer result,
+                                   Nd4jPointer resultShapeInfoBuffer,
+                                   Nd4jPointer dimension,
+                                   int dimensionLength) {
+    // no-op
+}
+
+
 /**
  *
  * @param opNum
@@ -1308,6 +1346,16 @@ float   NativeOps::execSummaryStatsScalarFloat(
             extraParamsPointer,
             biasCorrected);
 }
+
+float   NativeOps::execSummaryStatsScalarHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer x,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer extraParams,bool biasCorrected) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1339,6 +1387,19 @@ void   NativeOps::execSummaryStatsFloat(
             resultShapeInfoPointer,
             biasCorrected);
 }
+
+
+void   NativeOps::execSummaryStatsHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        Nd4jPointer x,
+        Nd4jPointer xShapeInfo,
+        Nd4jPointer extraParams,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,bool biasCorrected) {
+    // no-op
+}
+
 /**
  *
  * @param opNum
@@ -1373,6 +1434,16 @@ void   NativeOps::execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,Nd4
             dimensionLength,
             biasCorrected);
 
+}
+
+
+void   NativeOps::execSummaryStatsHalf(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                        Nd4jPointer xShapeInfo,
+                                        Nd4jPointer extraParams,
+                                        Nd4jPointer result,
+                                        Nd4jPointer resultShapeInfoBuffer,
+                                        Nd4jPointer dimension, int dimensionLength,bool biasCorrected) {
+    // no-op
 }
 /**
  *
@@ -1963,6 +2034,18 @@ void NativeOps::concatFloat(
             resultShapeInfo);
 
 }
+
+
+void NativeOps::concatHalf(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    // no-op
+}
 /**
     * Concatneate multi array of the same shape together
     * along a particular dimension
@@ -2014,6 +2097,16 @@ void NativeOps::flattenFloat(
             inputShapeInfo);
 }
 
+void NativeOps::flattenHalf(
+        Nd4jPointer *extraPointers,
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    // no-op
+}
 
 /**
 * Append an input array

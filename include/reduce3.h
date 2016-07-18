@@ -940,6 +940,34 @@ __global__ void reduce3Float(
 }
 
 extern "C"
+__global__ void reduce3Half(
+		int opNum,
+		nd4j::float16 *dx,
+		int *xShapeInfo,
+		nd4j::float16 *dy,
+		int *yShapeInfo,
+		nd4j::float16 *extraParams,
+		nd4j::float16 *result,
+		int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
+	reduce3Generic<nd4j::float16>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets);
+
+}
+
+extern "C"
 __global__ void reduce3ScalarFloat(
 		int opNum,
 		float *dx,
@@ -953,6 +981,31 @@ __global__ void reduce3ScalarFloat(
 		int dimensionLength,
 		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	reduce3ScalarGeneric<float>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			allocationPointer, tadOnlyShapeInfo, tadOffsets);
+
+}
+
+extern "C" __global__ void reduce3ScalarHalf(
+		int opNum,
+		nd4j::float16 *dx,
+		int *xShapeInfo,
+		nd4j::float16 *dy,
+		int *yShapeInfo,
+		nd4j::float16 *extraParams,
+		nd4j::float16 *result,
+		int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
+	reduce3ScalarGeneric<nd4j::float16>(
 			opNum,
 			dx,
 			xShapeInfo,
