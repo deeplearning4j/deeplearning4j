@@ -16,10 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,6 +38,11 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"columnNames","columnNamesIndex"})
 @EqualsAndHashCode
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),
+})
 public class Schema implements Serializable {
 
     private List<String> columnNames;
