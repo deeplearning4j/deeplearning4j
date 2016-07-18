@@ -4289,6 +4289,56 @@ void   NativeOps::execTransformFloat(
 }
 
 
+void   NativeOps::execTransformHalf(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		Nd4jPointer dx,
+		Nd4jPointer xShapeInfo,
+		Nd4jPointer result,
+		Nd4jPointer resultShapeInfo,
+		Nd4jPointer extraParams,
+		Nd4jPointer xIndexes,
+		Nd4jPointer resultIndexes) {
+	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	if (debug && verbose)
+		printf("H21 opNum:[%i]\n", opNum);
+
+	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[0], deviceProperties[getDeviceId(extraPointers[2])]);
+
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+
+	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[0]);
+
+	if (verbose && launchDims.x == 1)
+		printf("AH21 opNum:[%i]\n", opNum);
+
+	transformHalfIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			opNum,
+					xPointer,
+					xShapeInfoPointer,  shape::rank(hostXShapeInfo),
+					extraParamsPointer,
+					resultPointer,
+					resultIndexesPointer, allocPointer, reductionPointer);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+
+}
+
+
 template <typename T>
 __device__ void flattenKernelGeneric(int dOffset,
 					char order,
