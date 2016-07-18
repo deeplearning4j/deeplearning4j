@@ -17,6 +17,7 @@
 package org.datavec.api.transform.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
@@ -32,6 +33,7 @@ import java.util.TimeZone;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class TimeMetaData extends BaseColumnMetaData {
 
     private final DateTimeZone timeZone;

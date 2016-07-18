@@ -17,6 +17,7 @@
 package org.datavec.api.transform.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
@@ -29,6 +30,7 @@ import lombok.Data;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class LongMetaData extends BaseColumnMetaData {
 
     //minAllowedValue/maxAllowedValue are nullable: null -> no restriction on minAllowedValue/maxAllowedValue values

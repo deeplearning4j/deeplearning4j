@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
@@ -27,15 +28,20 @@ import static org.junit.Assert.assertEquals;
 public class TestJsonYamlXml {
 
     @Test
-    public void testToFromJson(){
+    public void testToFromJsonYaml(){
 
         Schema schema = new Schema.Builder()
                 .addColumnCategorical("Cat","State1","State2")
                 .addColumnDouble("Dbl")
-                .addColumnInteger("Int",0,10)
+                .addColumnDouble("Dbl2",null,100.0,true,false)
+                .addColumnInteger("Int")
+                .addColumnInteger("Int2",0,10)
                 .addColumnLong("Long")
+                .addColumnLong("Long2",-100L,null)
                 .addColumnString("Str")
+                .addColumnString("Str2","someregexhere",1,null)
                 .addColumnTime("TimeCol", DateTimeZone.UTC)
+                .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L)
                 .build();
 
         String asJson = schema.toJson();
@@ -43,9 +49,26 @@ public class TestJsonYamlXml {
 
         Schema schema2 = Schema.fromJson(asJson);
 
+        int count = schema.numColumns();
+        for( int i=0; i<count; i++ ){
+            ColumnMetaData c1 = schema.getMetaData(i);
+            ColumnMetaData c2 = schema2.getMetaData(i);
+            assertEquals(c1,c2);
+        }
         assertEquals(schema, schema2);
-        System.out.println();
-        System.out.println(schema.toYaml());
+
+
+        String asYaml = schema.toYaml();
+        System.out.println(asYaml);
+
+        Schema schema3 = Schema.fromYaml(asYaml);
+        for( int i=0; i<count; i++ ){
+            ColumnMetaData c1 = schema.getMetaData(i);
+            ColumnMetaData c3 = schema3.getMetaData(i);
+            assertEquals(c1,c3);
+        }
+        assertEquals(schema, schema3);
     }
+
 
 }

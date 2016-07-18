@@ -28,6 +28,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.joda.time.DateTimeZone;
@@ -39,9 +40,11 @@ import java.util.*;
  * Created by Alex on 4/03/2016.
  */
 @JsonIgnoreProperties({"columnNames","columnNamesIndex"})
+@EqualsAndHashCode
 public class Schema implements Serializable {
 
     private List<String> columnNames;
+    @JsonProperty("columns")
     private List<ColumnMetaData> columnMetaData;
     private Map<String, Integer> columnNamesIndex;   //For efficient lookup
 
@@ -59,7 +62,7 @@ public class Schema implements Serializable {
         }
     }
 
-    public Schema(@JsonProperty("columnMetaData") List<ColumnMetaData> columnMetaData) {
+    public Schema(@JsonProperty("columns") List<ColumnMetaData> columnMetaData) {
         if (columnMetaData == null || columnMetaData.size() == 0) throw new IllegalArgumentException("Column meta data must be non-empty");
         this.columnMetaData = columnMetaData;
         this.columnNames = new ArrayList<>();
@@ -69,16 +72,6 @@ public class Schema implements Serializable {
             columnNamesIndex.put(columnNames.get(i), i);
         }
     }
-//
-//    public void setColumnMetaData(List<ColumnMetaData> columnMetaData){
-//        this.columnMetaData = columnMetaData;
-//        this.columnNames = new ArrayList<>();
-//        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
-//        this.columnNamesIndex = new HashMap<>();
-//        for (int i = 0; i < columnNames.size(); i++) {
-//            columnNamesIndex.put(columnNames.get(i), i);
-//        }
-//    }
 
     public Schema newSchema(List<ColumnMetaData> columnMetaData) {
         return new Schema(columnMetaData);
@@ -218,8 +211,6 @@ public class Schema implements Serializable {
     }
 
     public static class Builder {
-
-//        List<String> columnNames = new ArrayList<>();
         List<ColumnMetaData> columnMetaData = new ArrayList<>();
 
         /**
@@ -352,9 +343,7 @@ public class Schema implements Serializable {
          *
          * @param metaData metadata for this column
          */
-//        public Builder addColumn(String name, ColumnMetaData metaData) {
         public Builder addColumn(ColumnMetaData metaData) {
-//            columnNames.add(name);
             columnMetaData.add(metaData);
             return this;
         }
@@ -386,7 +375,7 @@ public class Schema implements Serializable {
          * @param minAllowableLength Minimum allowable length for the String to be considered valid
          * @param maxAllowableLength Maximum allowable length for the String to be considered valid
          */
-        public Builder addColumnString(String name, String regex, Integer minAllowableLength, int maxAllowableLength) {
+        public Builder addColumnString(String name, String regex, Integer minAllowableLength, Integer maxAllowableLength) {
             return addColumn(new StringMetaData(name, regex, minAllowableLength, maxAllowableLength));
         }
 

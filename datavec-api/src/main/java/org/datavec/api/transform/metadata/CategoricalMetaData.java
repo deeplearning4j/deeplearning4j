@@ -18,7 +18,7 @@ package org.datavec.api.transform.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 
@@ -31,6 +31,7 @@ import java.util.Set;
  * Metadata for categorical columns.
  */
 @JsonIgnoreProperties({"stateNamesSet"})
+@EqualsAndHashCode
 public class CategoricalMetaData extends BaseColumnMetaData {
 
     private final List<String> stateNames;
