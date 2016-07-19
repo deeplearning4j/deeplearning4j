@@ -62,12 +62,12 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         super.before();
     }
 
     @After
-    public void after() {
+    public void after()throws Exception  {
         super.after();
     }
 

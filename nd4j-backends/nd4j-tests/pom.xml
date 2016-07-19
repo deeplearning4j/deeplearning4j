@@ -33,6 +33,7 @@
 
 
     <properties>
+        <scala.binary.version>2.11</scala.binary.version>
         <junit.version>4.12</junit.version>
     </properties>
     <build>
@@ -112,6 +113,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-kafka</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
