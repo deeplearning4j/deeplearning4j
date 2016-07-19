@@ -3067,6 +3067,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int columns, char order) {
+        return Nd4j.create(columns, order);
+    }
+
     /**
      * Creates an ndarray
      *
@@ -3428,6 +3432,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, int offset) {
+        return create(rows, columns, stride, offset);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3462,6 +3470,10 @@ public class Nd4j {
 
     }
 
+    public static INDArray zeros(int[] shape, int[] stride, int offset) {
+        return create(shape, stride, offset);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3483,6 +3495,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride) {
+        return create(rows, columns, stride, order());
+    }
+
+    public static INDArray zeros(int rows, int columns, int[] stride) {
         return create(rows, columns, stride, order());
     }
 
@@ -3508,6 +3524,10 @@ public class Nd4j {
         return create(shape, stride, order());
     }
 
+    public static INDArray zeros(int[] shape, int[] stride) {
+        return create(shape, stride);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3529,6 +3549,7 @@ public class Nd4j {
     public static INDArray create(int rows, int columns) {
         return create(rows, columns, order());
     }
+
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -3832,6 +3853,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int[] shape, DataBuffer.Type dataType) {
+        return zeros(shape, dataType);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4124,6 +4149,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, int offset, char ordering) {
+        return create(rows, columns, stride, offset, ordering);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4156,6 +4185,10 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
 
+    }
+
+    public static INDArray zeros(int[] shape, int[] stride, int offset, char ordering) {
+        return create(shape, stride, offset, ordering);
     }
 
     /**
@@ -4198,6 +4231,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, char ordering) {
+        return create(rows, columns, stride, ordering);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4224,6 +4261,10 @@ public class Nd4j {
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    public static INDArray zeros(int[] shape, int[] stride, char ordering) {
+        return create(shape, stride, ordering);
     }
 
     /**
@@ -4253,6 +4294,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, char ordering) {
+        return create(new int[]{rows,columns},ordering);
+    }
+
+    public static INDArray zeros(int rows, int columns, char ordering) {
         return create(new int[]{rows,columns},ordering);
     }
 
@@ -4291,6 +4336,7 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
 
     /**
      * Creates an *uninitialized* ndarray with the specified shape and ordering.<br>

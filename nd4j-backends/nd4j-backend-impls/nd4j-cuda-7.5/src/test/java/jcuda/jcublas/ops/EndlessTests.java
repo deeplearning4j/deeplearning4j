@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class EndlessTests {
-    private static final int RUN_LIMIT = 1000;
+    private static final int RUN_LIMIT = 10;
 
     @Before
     public void setUp() {
