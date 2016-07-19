@@ -32,7 +32,7 @@ public class Nd4jKafkaRoute extends RouteBuilder {
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
-                        final INDArray arr = exchange.getIn(INDArray.class);
+                        final INDArray arr = (INDArray)  exchange.getIn().getBody();
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         DataOutputStream dos = new DataOutputStream(bos);
                         Nd4j.write(arr, dos);
@@ -48,11 +48,11 @@ public class Nd4jKafkaRoute extends RouteBuilder {
         from(kafkaUri).process(new Processor() {
             @Override
             public void process(Exchange exchange) throws Exception {
-                byte[] body2 = exchange.getIn().getBody(byte[].class);
+                byte[] body2 = (byte[]) exchange.getIn().getBody();
                 String body = new String(body2);
                 INDArray arr = Nd4jBase64.fromBase64(body);
                 exchange.getIn().setBody(arr);
             }
-        });
+        }).to("direct:receive");
     }
 }

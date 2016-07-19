@@ -25,7 +25,7 @@ public class Nd4jKafkaProducer  {
     public void publish(INDArray arr) {
         if(producerTemplate == null)
             producerTemplate = camelContext.createProducerTemplate();
-        producerTemplate.sendBody(connectionInformation.kafkaUri(),arr);
+        producerTemplate.sendBody("direct:start",arr);
     }
 
 

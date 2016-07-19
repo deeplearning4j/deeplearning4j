@@ -23,7 +23,7 @@ public class Nd4jKafkaConsumer {
     public INDArray receive() {
         if(consumerTemplate == null)
             consumerTemplate = camelContext.createConsumerTemplate();
-        return consumerTemplate.receiveBody(connectionInformation.kafkaUri(),INDArray.class);
+        return consumerTemplate.receiveBody("direct:receive",INDArray.class);
     }
 
 }

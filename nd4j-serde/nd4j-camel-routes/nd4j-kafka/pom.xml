@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kafka</artifactId>
+    <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kafka</name>
@@ -55,19 +55,7 @@
     </profiles>
 
     <dependencies>
-        <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
-            <version>0.2</version>
-            <scope>test</scope>
-        </dependency>
 
-
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-            <version>${zookeeper.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>

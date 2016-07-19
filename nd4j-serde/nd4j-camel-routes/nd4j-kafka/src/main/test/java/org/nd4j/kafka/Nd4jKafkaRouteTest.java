@@ -9,7 +9,6 @@ import org.nd4j.camel.kafka.KafkaConnectionInformation;
 import org.nd4j.camel.kafka.Nd4jKafkaConsumer;
 import org.nd4j.camel.kafka.Nd4jKafkaProducer;
 import org.nd4j.camel.kafka.Nd4jKafkaRoute;
-import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -18,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 7/19/16.
  */
-public class Nd4jKafkaRouteTest extends BaseNd4jTest {
+public class Nd4jKafkaRouteTest  {
     private EmbeddedKafkaCluster kafka;
     private EmbeddedZookeeper zk;
     private CamelContext camelContext;
@@ -27,9 +26,6 @@ public class Nd4jKafkaRouteTest extends BaseNd4jTest {
     private KafkaConnectionInformation connectionInformation;
 
 
-    public Nd4jKafkaRouteTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Before
     public void before() throws Exception {
@@ -66,15 +62,5 @@ public class Nd4jKafkaRouteTest extends BaseNd4jTest {
         assertEquals(Nd4j.create(4),consumer.receive());
     }
 
-    /**
-     * The ordering for this test
-     * This test will only be invoked for
-     * the given test  and ignored for others
-     *
-     * @return the ordering for this test
-     */
-    @Override
-    public char ordering() {
-        return 'c';
-    }
+
 }
