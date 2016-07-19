@@ -32,6 +32,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public BaseTransformOp(INDArray x, INDArray z) {
         super(x, z);
         LinAlgExceptions.assertSameLength(x,z);
+        LinAlgExceptions.assertSameShape(x,z);
     }
 
     public BaseTransformOp() {

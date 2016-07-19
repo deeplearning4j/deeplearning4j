@@ -154,6 +154,7 @@ public class NormalizerMinMaxScaler implements DataNormalization {
     public void load(File...statistics) throws IOException {
         this.min = Nd4j.readBinary(statistics[0]);
         this.max = Nd4j.readBinary(statistics[1]);
+        this.maxMinusMin = max.sub(min);
     }
 
     /**

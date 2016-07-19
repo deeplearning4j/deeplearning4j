@@ -35,6 +35,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -73,6 +74,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
+
+    protected Type globalType = DataTypeUtil.getDtypeFromContext();
 
     public BaseCudaDataBuffer() {
 
@@ -373,8 +376,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         set(data, data.length, 0, 0);
     }
 
-
-
     @Override
     protected void setNioBuffer() {
         throw new UnsupportedOperationException("setNioBuffer() is not supported for CUDA backend");
@@ -657,7 +658,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
             //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
-            if(t == Type.DOUBLE) {
+            if (globalType == null && Nd4j.dataType() != null) {
+                globalType = Nd4j.dataType();
+            }
+            if (t != globalType && t!= Type.INT) {
+                log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
+				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
+		   	}
+            if(t == Type.INT || globalType == Type.INT) {
+                this.elementSize = 4;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+                indexer = IntIndexer.create((IntPointer) pointer);
+
+                int[] array = new int[(int) length];
+
+                for (int i = 0; i < length(); i++) {
+                    if (t == Type.INT)
+                        array[i] = s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (int) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = (int) s.readFloat();
+                }
+                setData(array);
+            }
+            else if(globalType == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 //allocationPoint.attachBuffer(this);
@@ -669,11 +697,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 double[] array = new double[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = s.readDouble();
+                    if (t == Type.INT)
+                        array[i] = (double) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = (double) s.readFloat();
                 }
                 setData(array);
 
-            } else if(t == Type.FLOAT) {
+            } else if(globalType == Type.FLOAT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
                 //allocationPoint.attachBuffer(this);
@@ -685,28 +718,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 float[] array = new float[(int) length];
 
                 for(int i = 0; i < length(); i++) {
-                    array[i] = s.readFloat();
+                    if (t == Type.INT)
+                        array[i] = (float) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (float) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = s.readFloat();
                 }
                 setData(array);
-
-            } else if(t == Type.INT) {
-                this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
-                this.trackingPoint = allocationPoint.getObjectId();
-
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
-                indexer = IntIndexer.create((IntPointer) pointer);
-
-                int[] array = new int[(int) length];
-
-                for(int i = 0; i < length(); i++) {
-                    array[i] = s.readInt();
-                }
-                setData(array);
-
-            } else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
-
-
+            }
+            else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
             this.wrappedBuffer = this.pointer .asByteBuffer();
             this.wrappedBuffer.order(ByteOrder.nativeOrder());

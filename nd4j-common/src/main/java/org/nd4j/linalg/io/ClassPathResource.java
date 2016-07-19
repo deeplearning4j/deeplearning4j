@@ -48,8 +48,10 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     }
 
     public final ClassLoader getClassLoader() {
-        return this.classLoader != null?this.classLoader:this.clazz.getClassLoader();
+        return this.classLoader != null ? this.classLoader:this.clazz.getClassLoader();
     }
+
+
 
     /**
      * Get a temp file from the classpath.

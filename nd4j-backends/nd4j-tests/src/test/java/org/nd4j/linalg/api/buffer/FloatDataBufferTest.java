@@ -19,10 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import static org.junit.Assert.*;
-
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.Before;
@@ -37,6 +34,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Float data buffer tests
@@ -55,6 +53,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
     @Before
     public void before() {
         Nd4j.dtype = DataBuffer.Type.FLOAT;
+        System.out.println("DATATYPE HERE: "+ Nd4j.dataType());
     }
 
 

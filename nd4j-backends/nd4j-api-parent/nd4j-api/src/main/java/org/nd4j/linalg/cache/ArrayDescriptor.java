@@ -8,34 +8,25 @@ import java.util.Arrays;
  * @author raver119@gmail.com
  */
 public class ArrayDescriptor {
-    public enum DataType {
-        INT,
-        FLOAT,
-        DOUBLE,
-        LONG,
-    }
-
-    private int hashCode = -1;
-    private final DataType dtype;
+    int[] intArray = null;
+    float[] floatArray = null;
+    double[] doubleArray = null;
+    long[] longArray = null;
 
     public ArrayDescriptor(int[] array) {
-        hashCode = Arrays.hashCode(array);
-        dtype = DataType.INT;
+        this.intArray = array;
     }
 
     public ArrayDescriptor(float[] array) {
-        hashCode = Arrays.hashCode(array);
-        dtype = DataType.FLOAT;
+        this.floatArray = array;
     }
 
     public ArrayDescriptor(double[] array) {
-        hashCode = Arrays.hashCode(array);
-        dtype = DataType.DOUBLE;
+        this.doubleArray = array;
     }
 
     public ArrayDescriptor(long[] array) {
-        hashCode = Arrays.hashCode(array);
-        dtype = DataType.LONG;
+        this.longArray = array;
     }
 
     @Override
@@ -45,15 +36,31 @@ public class ArrayDescriptor {
 
         ArrayDescriptor that = (ArrayDescriptor) o;
 
-        if (dtype != that.dtype) return false;
-        return hashCode == that.hashCode;
-
+        if (intArray != null && that.intArray != null) {
+            return Arrays.equals(intArray, that.intArray);
+        } else if (floatArray != null && that.floatArray != null) {
+            return Arrays.equals(floatArray, that.floatArray);
+        } else if (doubleArray != null && that.doubleArray != null) {
+            return Arrays.equals(doubleArray, that.doubleArray);
+        } else if (longArray != null && that.longArray != null) {
+            return Arrays.equals(longArray, that.longArray);
+        } else {
+            return false;
+        }
     }
 
     @Override
     public int hashCode() {
-        int result = hashCode;
-        result = 31 * result + (dtype != null ? dtype.hashCode() : 0);
-        return result;
+        if (intArray != null) {
+            return intArray.getClass().hashCode()    + 31 * Arrays.hashCode(intArray);
+        } else if (floatArray != null) {
+            return floatArray.getClass().hashCode()  + 31 * Arrays.hashCode(floatArray);
+        } else if (doubleArray != null) {
+            return doubleArray.getClass().hashCode() + 31 * Arrays.hashCode(doubleArray);
+        } else if (longArray != null) {
+            return longArray.getClass().hashCode()   + 31 * Arrays.hashCode(longArray);
+        } else {
+            return 0;
+        }
     }
 }

@@ -6,6 +6,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,9 +22,15 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     private INDArray[] featuresMaskArrays;
     private INDArray[] labelsMaskArrays;
 
+    /** Create a new (empty) MultiDataSet object (all fields are null) */
+    public MultiDataSet(){
+
+    }
+
     /** MultiDataSet constructor with single features/labels input, no mask arrays */
     public MultiDataSet(INDArray features, INDArray labels){
-        this(new INDArray[]{features}, new INDArray[]{labels});
+        this( (features != null ? new INDArray[]{features} : null),
+                (labels != null ? new INDArray[]{labels} : null));
     }
 
     /** MultiDataSet constructor with no mask arrays */
@@ -159,6 +166,102 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     @Override
     public void setLabelsMaskArray(int idx, INDArray labelsMaskArray) {
         this.labelsMaskArrays[idx] = labelsMaskArray;
+    }
+
+    @Override
+    public void save(OutputStream to) throws IOException {
+        int numFArr = (features == null ? 0 : features.length);
+        int numLArr = (labels == null ? 0 : labels.length);
+        int numFMArr = (featuresMaskArrays == null ? 0 : featuresMaskArrays.length);
+        int numLMArr = (labelsMaskArrays == null ? 0 : labelsMaskArrays.length);
+
+        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(to))){
+            dos.writeInt(numFArr);
+            dos.writeInt(numLArr);
+            dos.writeInt(numFMArr);
+            dos.writeInt(numLMArr);
+
+            if(features != null && features.length > 0){
+                for( INDArray f : features){
+                    Nd4j.write(f, dos);
+                }
+            }
+
+            if(labels != null && labels.length > 0){
+                for( INDArray l : labels ){
+                    Nd4j.write(l, dos);
+                }
+            }
+
+            if(featuresMaskArrays != null && featuresMaskArrays.length > 0){
+                for(INDArray fm : featuresMaskArrays){
+                    Nd4j.write(fm, dos);
+                }
+            }
+
+            if(labelsMaskArrays != null && labelsMaskArrays.length > 0){
+                for( INDArray lm : labelsMaskArrays ){
+                    Nd4j.write(lm, dos);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void save(File to) throws IOException {
+        save(new FileOutputStream(to));
+    }
+
+    @Override
+    public void load(InputStream from) throws IOException {
+
+        try(DataInputStream dis = new DataInputStream(from)){
+            int numFArr = dis.readInt();
+            int numLArr = dis.readInt();
+            int numFMArr = dis.readInt();
+            int numLMArr = dis.readInt();
+
+            if(numFArr > 0){
+                features = new INDArray[numFArr];
+                for( int i=0; i<numFArr; i++ ){
+                    features[i] = Nd4j.read(dis);
+                }
+            } else {
+                features = null;
+            }
+
+            if(numLArr > 0){
+                labels = new INDArray[numLArr];
+                for( int i=0; i<numLArr; i++ ){
+                    labels[i] = Nd4j.read(dis);
+                }
+            } else {
+                labels = null;
+            }
+
+            if(numFMArr > 0){
+                featuresMaskArrays = new INDArray[numFMArr];
+                for( int i=0; i<numFMArr; i++ ){
+                    featuresMaskArrays[i] = Nd4j.read(dis);
+                }
+            } else {
+                featuresMaskArrays = null;
+            }
+
+            if(numLMArr > 0){
+                labelsMaskArrays = new INDArray[numLMArr];
+                for( int i=0; i<numLMArr; i++ ){
+                    labelsMaskArrays[i] = Nd4j.read(dis);
+                }
+            } else {
+                labelsMaskArrays = null;
+            }
+        }
+    }
+
+    @Override
+    public void load(File from) throws IOException {
+        load(new FileInputStream(from));
     }
 
 
@@ -372,6 +475,8 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         }
         return out;
     }
+
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -397,5 +502,52 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         return builder.toString();
     }
 
+    @Override
+    public boolean equals(Object o){
+        if( o == this ) return true;
+        if( !(o instanceof MultiDataSet) ) return false;
 
+        MultiDataSet m = (MultiDataSet)o;
+
+        if(!bothNullOrEqual(features, m.features)) return false;
+        if(!bothNullOrEqual(labels, m.labels)) return false;
+        if(!bothNullOrEqual(featuresMaskArrays, m.featuresMaskArrays)) return false;
+        return bothNullOrEqual(labelsMaskArrays, m.labelsMaskArrays);
+    }
+
+    private boolean bothNullOrEqual(INDArray[] first, INDArray[] second){
+        if(first == null && second == null) return true;
+        if(first == null || second == null) return false;   //One but not both null
+        if(first.length != second.length) return false;
+        for( int i=0; i<first.length; i++ ){
+            if(!first[i].equals(second[i])) return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode(){
+        int result = 0;
+        if(features != null ){
+            for(INDArray f : features){
+                result = result * 31 + f.hashCode();
+            }
+        }
+        if(labels != null){
+            for(INDArray l : labels){
+                result = result * 31 + l.hashCode();
+            }
+        }
+        if(featuresMaskArrays != null){
+            for( INDArray fm : featuresMaskArrays){
+                result = result * 31 + fm.hashCode();
+            }
+        }
+        if(labelsMaskArrays != null){
+            for( INDArray lm : labelsMaskArrays){
+                result = result * 31 + lm.hashCode();
+            }
+        }
+        return result;
+    }
 }

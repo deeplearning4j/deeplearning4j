@@ -20,7 +20,8 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
+
+import java.util.Arrays;
 
 /**
  * Linear algebra exceptions
@@ -35,6 +36,11 @@ public class LinAlgExceptions {
      */
     public static void assertSameLength(INDArray n, INDArray n2) {
         if (n.length() != n2.length())
+            throw new IllegalStateException("Mis matched lengths");
+    }
+
+    public static void assertSameShape(INDArray n, INDArray n2) {
+        if( !Arrays.equals( n.shape(),n2.shape() ) )
             throw new IllegalStateException("Mis matched shapes");
     }
 

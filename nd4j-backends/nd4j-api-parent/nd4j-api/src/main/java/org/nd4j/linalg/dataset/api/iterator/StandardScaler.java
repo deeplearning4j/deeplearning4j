@@ -18,7 +18,10 @@ import org.slf4j.LoggerFactory;
  * Standard scaler calculates a moving column wise
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
- * Use @link{NormalizerStandardize} instead
+ *
+ * @deprecated Use {@link org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize} for equivalent functionality.
+ * NormalizerStandardize is more stable (for examples, when a column contains all the same values for every example) but
+ * otherwise provides equivalent functionality. See also {@link org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler}
  */
 @Deprecated
 public class StandardScaler {

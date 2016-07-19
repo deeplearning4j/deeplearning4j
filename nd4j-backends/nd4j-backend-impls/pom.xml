@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc3.11-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,16 +31,16 @@
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
-        <javacpp.platform0></javacpp.platform0>
+        <javacpp.platform0 />
         <javacpp.platform1>linux-x86_64</javacpp.platform1>
         <javacpp.platform2>macosx-x86_64</javacpp.platform2>
         <javacpp.platform3>windows-x86_64</javacpp.platform3>
         <javacpp.platform4>linux-ppc64le</javacpp.platform4>
-        <javacpp.platform5></javacpp.platform5>
-        <javacpp.platform6></javacpp.platform6>
-        <javacpp.platform7></javacpp.platform7>
-        <javacpp.platform8></javacpp.platform8>
-        <javacpp.platform9></javacpp.platform9>
+        <javacpp.platform5 />
+        <javacpp.platform6 />
+        <javacpp.platform7 />
+        <javacpp.platform8 />
+        <javacpp.platform9 />
     </properties>
 
 
@@ -171,16 +171,16 @@
                 </property>
             </activation>
             <properties>
-                <javacpp.platform0></javacpp.platform0>
-                <javacpp.platform1></javacpp.platform1>
-                <javacpp.platform2></javacpp.platform2>
-                <javacpp.platform3></javacpp.platform3>
-                <javacpp.platform4></javacpp.platform4>
-                <javacpp.platform5></javacpp.platform5>
-                <javacpp.platform6></javacpp.platform6>
-                <javacpp.platform7></javacpp.platform7>
-                <javacpp.platform8></javacpp.platform8>
-                <javacpp.platform9></javacpp.platform9>
+                <javacpp.platform0 />
+                <javacpp.platform1 />
+                <javacpp.platform2 />
+                <javacpp.platform3 />
+                <javacpp.platform4 />
+                <javacpp.platform5 />
+                <javacpp.platform6 />
+                <javacpp.platform7 />
+                <javacpp.platform8 />
+                <javacpp.platform9 />
             </properties>
         </profile>
 
@@ -192,16 +192,16 @@
                 </file>
             </activation>
             <properties>
-                <javacpp.platform0></javacpp.platform0>
-                <javacpp.platform1></javacpp.platform1>
-                <javacpp.platform2></javacpp.platform2>
-                <javacpp.platform3></javacpp.platform3>
-                <javacpp.platform4></javacpp.platform4>
-                <javacpp.platform5></javacpp.platform5>
-                <javacpp.platform6></javacpp.platform6>
-                <javacpp.platform7></javacpp.platform7>
-                <javacpp.platform8></javacpp.platform8>
-                <javacpp.platform9></javacpp.platform9>
+                <javacpp.platform0 />
+                <javacpp.platform1 />
+                <javacpp.platform2 />
+                <javacpp.platform3 />
+                <javacpp.platform4 />
+                <javacpp.platform5 />
+                <javacpp.platform6 />
+                <javacpp.platform7 />
+                <javacpp.platform8 />
+                <javacpp.platform9 />
             </properties>
         </profile>
     </profiles>

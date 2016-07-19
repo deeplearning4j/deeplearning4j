@@ -24,7 +24,7 @@ public class BasicTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
-        if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
+        if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
             return new Pair<DataBuffer, DataBuffer>(array.shapeInfoDataBuffer(), null);
         } else {
             Arrays.sort(dimension);

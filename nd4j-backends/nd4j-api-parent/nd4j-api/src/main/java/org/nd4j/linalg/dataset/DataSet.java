@@ -48,15 +48,23 @@ import java.util.*;
 public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     private static final long serialVersionUID = 1935520764586513365L;
-    private static Logger log = LoggerFactory.getLogger(DataSet.class);
+    private static final Logger log = LoggerFactory.getLogger(DataSet.class);
+
+    private static final byte BITMASK_FEATURES_PRESENT = 1;
+    private static final byte BITMASK_LABELS_PRESENT = 1 << 1;
+    private static final byte BITMASK_LABELS_SAME_AS_FEATURES = 1 << 2;
+    private static final byte BITMASK_FEATURE_MASK_PRESENT = 1 << 3;
+    private static final byte BITMASK_LABELS_MASK_PRESENT = 1 << 4;
+
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
     private INDArray features, labels;
     private INDArray featuresMask;
     private INDArray labelsMask;
 
+
     public DataSet() {
-        this(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
+        this(null,null);
     }
 
 
@@ -88,12 +96,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Returns a single dataset
+     * Returns a single dataset (all fields are null)
      *
-     * @return an empty dataset with 2 1x1 zero matrices
+     * @return an empty dataset (all fields are null)
      */
     public static DataSet empty() {
-        return new DataSet(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
+        return new DataSet(null,null);
     }
 
 
@@ -348,8 +356,26 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         try {
             BufferedInputStream bis = new BufferedInputStream(from);
             DataInputStream dis = new DataInputStream(bis);
-            features = Nd4j.read(dis);
-            labels = Nd4j.read(dis);
+
+            byte included = dis.readByte();
+            boolean hasFeatures = (included & BITMASK_FEATURES_PRESENT) != 0;
+            boolean hasLabels = (included & BITMASK_LABELS_PRESENT) != 0;
+            boolean hasLabelsSameAsFeatures = (included & BITMASK_LABELS_SAME_AS_FEATURES) != 0;
+            boolean hasFeaturesMask = (included & BITMASK_FEATURE_MASK_PRESENT) != 0;
+            boolean hasLabelsMask = (included & BITMASK_LABELS_MASK_PRESENT) != 0;
+
+            features = (hasFeatures ? Nd4j.read(dis) : null);
+            if(hasLabels){
+                labels = Nd4j.read(dis);
+            } else if(hasLabelsSameAsFeatures){
+                labels = features;
+            } else {
+                labels = null;
+            }
+
+            featuresMask = (hasFeaturesMask ? Nd4j.read(dis) : null);
+            labelsMask = (hasLabelsMask ? Nd4j.read(dis) : null);
+
             dis.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -358,27 +384,43 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void load(File from) {
-        try {
-            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(from));
-            DataInputStream dis = new DataInputStream(bis);
-            features = Nd4j.read(dis);
-            labels = Nd4j.read(dis);
-            dis.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        try{
+            load(new FileInputStream(from));
+        }catch(IOException e){
+            throw new RuntimeException(e);
         }
     }
 
 
     @Override
     public void save(OutputStream to) {
+
+        byte included = 0;
+        if(features != null) included |= BITMASK_FEATURES_PRESENT;
+        if(labels != null){
+            if(labels == features){
+                //Same object. Don't serialize the same data twice!
+                included |= BITMASK_LABELS_SAME_AS_FEATURES;
+            } else {
+                included |= BITMASK_LABELS_PRESENT;
+            }
+        }
+        if(featuresMask != null) included |= BITMASK_FEATURE_MASK_PRESENT;
+        if(labelsMask != null) included |= BITMASK_LABELS_MASK_PRESENT;
+
+
         try {
             BufferedOutputStream bos = new BufferedOutputStream(to);
-            DataOutputStream dis = new DataOutputStream(bos);
-            Nd4j.write(getFeatureMatrix(),dis);
-            Nd4j.write(getLabels(),dis);
-            dis.flush();
-            dis.close();
+            DataOutputStream dos = new DataOutputStream(bos);
+            dos.writeByte(included);
+
+            if(features != null) Nd4j.write(features, dos);
+            if(labels != null && labels != features) Nd4j.write(labels, dos);
+            if(featuresMask != null) Nd4j.write(featuresMask, dos);
+            if(labelsMask != null) Nd4j.write(labelsMask, dos);
+
+            dos.flush();
+            dos.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -386,15 +428,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void save(File to) {
-        try {
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
-            DataOutputStream dis = new DataOutputStream(bos);
-            Nd4j.write(getFeatureMatrix(),dis);
-            Nd4j.write(getLabels(),dis);
-            dis.flush();
-            dis.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        try{
+            save(new FileOutputStream(to,false));
+        }catch(IOException e){
+            throw new RuntimeException(e);
         }
     }
 
@@ -481,8 +518,18 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void shuffle() {
-        //note here we use the same seed with different random objects guaranteeing same order
         long seed = System.currentTimeMillis();
+        shuffle(seed);
+    }
+
+    /**
+     * Shuffles the dataset in place, given a seed for a random number generator. For reproducibility
+     * This will modify the dataset in place!!
+     *
+     * @param seed Seed to use for the random Number Generator
+     */
+    public void shuffle(long seed) {
+        //note here we use the same seed with different random objects guaranteeing same order
         int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
         int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
@@ -549,6 +596,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         getFeatures().putRow(example, feature);
     }
 
+    @Deprecated
     @Override
     public void normalize() {
         FeatureUtil.normalizeMatrix(getFeatures());
@@ -582,8 +630,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     /**
+     * @Deprecated
      * Subtract by the column means and divide by the standard deviation
      */
+    @Deprecated
     @Override
     public void normalizeZeroMeanZeroUnitVariance() {
         INDArray columnMeans = getFeatures().mean(0);
@@ -835,13 +885,28 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
+     * Splits a dataset in to test and train randomly.
+     * This will modify the dataset in place to shuffle it before splitting into test/train!
+     *
+     * @param numHoldout the number to hold out for training
+     * @param  rng Random Number Generator to use to shuffle the dataset
+     * @return the pair of datasets for the train test split
+     */
+    @Override
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
+        long seed = rng.nextLong();
+        this.shuffle(seed);
+        return splitTestAndTrain(numHoldout);
+    }
+
+    /**
      * Splits a dataset in to test and train
      *
      * @param numHoldout the number to hold out for training
      * @return the pair of datasets for the train test split
      */
     @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
         int numExamples = numExamples();
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
@@ -849,11 +914,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(0,numHoldout),NDArrayIndex.all()));
         DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples()), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
         return new SplitTestAndTrain(first, second);
-    }
-
-    @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
-        return splitTestAndTrain(numHoldout, new Random());
     }
 
 
@@ -1208,18 +1268,26 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (this == o) return true;
         if (!(o instanceof DataSet)) return false;
 
-        DataSet dataSet = (DataSet) o;
+        DataSet d = (DataSet) o;
 
-        if (getFeatures() != null ? !getFeatures().equals(dataSet.getFeatures()) : dataSet.getFeatures() != null)
-            return false;
-        return !(getLabels() != null ? !getLabels().equals(dataSet.getLabels()) : dataSet.getLabels() != null);
+        if(!equalOrBothNull(features,d.features)) return false;
+        if(!equalOrBothNull(labels, d.labels)) return false;
+        if(!equalOrBothNull(featuresMask, d.featuresMask)) return false;
+        return equalOrBothNull(labelsMask, d.labelsMask);
+    }
 
+    private static boolean equalOrBothNull(INDArray first, INDArray second){
+        if(first == null && second == null) return true;    //Both are null: ok
+        if(first == null || second == null) return false;   //Only one is null, not both
+        return first.equals(second);
     }
 
     @Override
     public int hashCode() {
         int result = getFeatures() != null ? getFeatures().hashCode() : 0;
         result = 31 * result + (getLabels() != null ? getLabels().hashCode() : 0);
+        result = 31 * result + (getFeaturesMaskArray() != null ? getFeaturesMaskArray().hashCode() : 0);
+        result = 31 * result + (getLabelsMaskArray() != null ? getLabelsMaskArray().hashCode() : 0);
         return result;
     }
 }
