@@ -48,7 +48,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     }
 
     public final ClassLoader getClassLoader() {
-        return this.classLoader != null?this.classLoader:this.clazz.getClassLoader();
+        return this.classLoader != null ? this.classLoader:this.clazz.getClassLoader();
     }
 
     /**
@@ -61,13 +61,21 @@ public class ClassPathResource extends AbstractFileResolvingResource {
      */
     public File getTempFileFromArchive() throws IOException {
         InputStream is = getInputStream();
+        //directory
         File tmpFile = new File(path + "tmp");
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        tmpFile.deleteOnExit();
-        IOUtils.copy(is,bos);
-        bos.flush();
-        bos.close();
-        is.close();
+        if(is != null) {
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            tmpFile.deleteOnExit();
+            IOUtils.copy(is,bos);
+            bos.flush();
+            bos.close();
+            is.close();
+        }
+        //extract
+        else {
+
+        }
+
         return tmpFile;
 
     }
