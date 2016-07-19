@@ -21,7 +21,11 @@ import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.DoubleColumnCondition;
+import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
+import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.normalize.Normalize;
@@ -99,13 +103,27 @@ public class TestJsonYaml {
                         .build())
                 .stringToTimeTransform("Str2a","YYYY-MM-dd hh:mm:ss", DateTimeZone.UTC)
                 .timeMathOp("TimeCol2",MathOp.Add,1, TimeUnit.HOURS)
+
+                //Filters:
+                .filter(new FilterInvalidValues("Cat","Str2a"))
+                .filter(new ConditionFilter(new NullWritableColumnCondition("Long")))
+
+                //Convert to/from sequence
+                .convertToSequence("Int",new NumericalColumnComparator("TimeCol2"))
+                .convertFromSequence()
+
+                //Sequence split
+
+                //Reducers
+
+                //Calculate sorted rank
                 .build();
 
         String asJson = tp.toJson();
         String asYaml = tp.toYaml();
 
-        System.out.println(asJson);
-        System.out.println(asYaml);
+//        System.out.println(asJson);
+//        System.out.println(asYaml);
 
 
         TransformProcess tpFromJson = TransformProcess.fromJson(asJson);
@@ -120,7 +138,7 @@ public class TestJsonYaml {
             DataAction da2 = daListJson.get(i);
             DataAction da3 = daListYaml.get(i);
 
-            //System.out.println(i + "\t" + da1);
+            System.out.println(i + "\t" + da1);
 
             assertEquals(da1, da2);
             assertEquals(da1, da3);

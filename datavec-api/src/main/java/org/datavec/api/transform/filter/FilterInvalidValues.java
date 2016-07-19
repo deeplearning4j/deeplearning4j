@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.filter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -27,6 +29,8 @@ import java.util.List;
  * invalid values in any of a specified set of columns.
  * Invalid values are determined with respect to the schema
  */
+@EqualsAndHashCode(exclude = {"schema","columnIdxs"})
+@JsonIgnoreProperties({"schema","columnIdxs"})
 public class FilterInvalidValues implements Filter {
 
     private Schema schema;

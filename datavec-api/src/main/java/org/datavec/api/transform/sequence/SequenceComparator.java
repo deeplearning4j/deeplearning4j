@@ -16,7 +16,12 @@
 
 package org.datavec.api.transform.sequence;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
+import org.datavec.api.transform.sequence.comparator.StringComparator;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
@@ -25,8 +30,13 @@ import java.util.List;
 
 /**
  * Compare the time steps of a sequence
- * Created by Alex on 11/03/2016.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value= {
+        @JsonSubTypes.Type(value = NumericalColumnComparator.class, name = "NumericalColumnComparator"),
+        @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator"),
+})
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {
 
     void setSchema(Schema sequenceSchema);

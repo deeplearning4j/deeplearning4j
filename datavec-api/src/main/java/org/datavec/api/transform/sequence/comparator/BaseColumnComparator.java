@@ -16,23 +16,25 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.sequence.SequenceComparator;
 
 import java.util.List;
 
-/**Compare/sort a sequence by the values of a specific column
- * Created by Alex on 11/03/2016.
+/**
+ * Compare/sort a sequence by the values of a specific column
  */
+@EqualsAndHashCode(exclude = {"schema", "columnIdx"})
 public abstract class BaseColumnComparator implements SequenceComparator {
 
-    private Schema schema;
+    protected Schema schema;
 
     protected final String columnName;
     protected int columnIdx = -1;
 
-    protected BaseColumnComparator(String columnName){
+    protected BaseColumnComparator(String columnName) {
         this.columnName = columnName;
     }
 
@@ -44,10 +46,10 @@ public abstract class BaseColumnComparator implements SequenceComparator {
 
     @Override
     public int compare(List<Writable> o1, List<Writable> o2) {
-        return compare(get(o1,columnIdx),get(o2,columnIdx));
+        return compare(get(o1, columnIdx), get(o2, columnIdx));
     }
 
-    private static Writable get(List<Writable> c, int idx){
+    private static Writable get(List<Writable> c, int idx) {
         return c.get(idx);
     }
 

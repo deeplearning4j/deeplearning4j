@@ -18,6 +18,7 @@ package org.datavec.api.transform.sequence;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
@@ -32,6 +33,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(exclude = {"inputSchema"})
 public class ConvertFromSequence {
 
     private SequenceSchema inputSchema;
@@ -46,6 +48,9 @@ public class ConvertFromSequence {
         return new Schema(meta);
     }
 
-
+    @Override
+    public String toString(){
+        return "ConvertFromSequence()";
+    }
 
 }
