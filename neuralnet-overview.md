@@ -27,17 +27,39 @@ Neural networks help us cluster and classify. You can think of them as a cluster
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
 </p>
 
-What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What categories or outcomes do I care about? Those outcomes are labels that would be applied to data: for example, `spam` or `not_spam`, `good_guy` or `bad_guy`, `angry_customer` or `happy_customer`. Then ask: Do I have the data to accompany  those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) to teach an algorithm the correlation between labels and inputs? 
+What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What outcomes do I care about? Those outcomes are labels that could be applied to data: for example, `spam` or `not_spam` in an email filter, `good_guy` or `bad_guy` in fraud detection, `angry_customer` or `happy_customer` in customer relationship management. Then ask: Do I have the data to accompany those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) where spam has been labeled as spam, in order to teach an algorithm the correlation between labels and inputs? 
 
 ## A Few Concrete Examples
 
-Because that's what deep learning does: It maps inputs to outputs. It finds correlations between, say, the blob of pixels in a Jpeg file and the name of the person in the image. Or the blob of text in a customer email, and the sentiment conveyed by their message. 
+Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. Here are a few examples of what deep learning can do. 
 
-For example, if you want to identify a group of people at risk for cancer, your training dataset might be a list of cancer patients and people without cancer (the output/labels), along with all the data associated to their unique IDs, including everything from explicit features like age and smoking habits to raw data such as time series tracking their motion, or logs of their behavior online (the input). That input probably indicates a great deal about lifestyle, habits, interests and ultimately cancer risk. 
+### Classification
 
-With that dataset, you could train a neural network to classify people as having cancer or not, and then apply that classification model to people whose risk of cancer is unknown, in order to predict cancer risk for new patients more accurately, and then provide those at risk with better attention and pre-emptive treatment. 
+All classification tasks depend upon labeled datasets; that is, humans must transfer their knowledge to the dataset in order for a neural to learn the correlation between labels and data. This is known as *supervised learning*.
 
-Searching for other outcomes -- potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors in finance -- involves much the same process of constructing a training set by amassing vital statistics, social graphs, raw text communications, click streams, etc., and then comparing them to others in order to surface patterns and persons of interest. 
+* Detect faces, identify people in images, recognize facial expressions (angry, joyful)
+* Identify objects in images (stop signs, pedestrians, lane markers...)
+* Recognize gestures in video
+* Detect voices, identify speakers, transcribe speech to text, recognize sentiment in voices
+* Classify text as spam (in emails), or fraudulent (in insurance claims); recognize sentiment in text (customer feedback)
+
+Any labels that humans can generate, any outcomes you care about and which correlate to data, can be used to train a neural network.
+
+### Clustering
+
+Clustering or grouping is the detection of similarities. Deep learning does not require labels to detect similarities. Learning without labels is called *unsupervised learning*. Unlabeled data is the majority of data in the world. One law of machine learning is: the more data an algorithm can train on, the more accurate it will be. Therefore, unsupervised learning has the potential to produce highly accurate models. 
+
+* Search: Comparing documents, images or sounds to surface similar items.
+* Anomaly detection: The flipside of detecting similarities is detectin anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
+
+### Predictive Analytics
+
+With classification, deep learning is able to establish correlations between, say, pixels in an image and the name of a person. You might call this a static prediction. By the same token, exposed to enough of the right data, deep learning is able to establish correlations between present events and future events. The future event is like the label in a sense. Deep learning doesn't necessarily care about time, or the fact that something hasn't happened yet. Given a time series, deep learning may read a string of number and predict the number most likely to occur next. 
+
+* Hardware breakdowns (data centers, manufacturing, transport)
+* Health breakdowns (healthcare, wearables)
+* Customer churn (predicting the likelihood that a customer will leave, based on web activity and metadata)
+* Employee turnover (ditto, but for employees)
 
 ## <a name="element">Neural Network Elements</a>
 
