@@ -34,8 +34,20 @@ public class NormalizerStandardize implements DataNormalization {
             if (featureRank == 3) theFeatures = tailor3d2d(dataSet);
             if (featureRank == 4) theFeatures = tailor4d2d(dataSet);
         }
-        mean = theFeatures.mean(0);
-        std = theFeatures.std(0);
+        if (!dataSet.hasMaskArrays()) {
+            mean = theFeatures.mean(0);
+            std = theFeatures.std(0);
+        }
+        else {
+            INDArray beforeMean = theFeatures.sum(0);
+            //the mask gives the adjustment
+            mean = beforeMean.divColumnVector(dataSet.getFeaturesMaskArray().sum(1));
+            std = theFeatures.std(0);
+            std = Transforms.pow(std,2);
+            std.muli(theFeatures.size(0)); //now this is the square of the diff from mean
+            std.divColumnVector(dataSet.getFeaturesMaskArray().sum(1));
+            std = Transforms.pow(std,0.5);
+        }
         std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
@@ -71,10 +83,19 @@ public class NormalizerStandardize implements DataNormalization {
             if(mean == null) {
                 //start with the mean and std of zero
                 //column wise
-                mean = theFeatures.mean(0);
-                //batchCount can be 1 for 2d
-                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0),2);
-                std.muli(batchCount);
+                if (!next.hasMaskArrays()) {
+                    mean = theFeatures.mean(0);
+                    //batchCount can be 1 for 2d
+                    std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0), 2);
+                    std.muli(batchCount);
+                }
+                else {
+                    INDArray beforeMean = theFeatures.sum(0);
+                    mean = beforeMean.divColumnVector(next.getFeaturesMaskArray().sum(1));
+                    std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0), 2);
+                    //std.muli(batchCount); //returning variance*n, the *n is because of the /n after the else
+                    std.muli(theFeatures.size(0)); //now this is the square of the diff from mean
+                }
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
