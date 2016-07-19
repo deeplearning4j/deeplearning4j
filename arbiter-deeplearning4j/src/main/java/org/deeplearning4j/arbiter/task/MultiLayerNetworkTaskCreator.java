@@ -91,7 +91,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
             net.setListeners(dl4jListener);
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
+            DataSetIterator dataSetIterator = dataProvider.trainData(candidate.getDataParameters());
 
 
             EarlyStoppingConfiguration<MultiLayerNetwork> esConfig = candidate.getValue().getEarlyStoppingConfiguration();

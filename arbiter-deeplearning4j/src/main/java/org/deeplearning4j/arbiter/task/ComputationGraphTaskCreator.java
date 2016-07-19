@@ -88,7 +88,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             net.setListeners(dl4jListener);
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
+            DataSetIterator dataSetIterator = dataProvider.trainData(candidate.getDataParameters());
 
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
