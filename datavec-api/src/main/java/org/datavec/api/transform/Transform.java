@@ -18,8 +18,30 @@ package org.datavec.api.transform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
+import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
+import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
+import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
+import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
+import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
+import org.datavec.api.transform.transform.column.RenameColumnsTransform;
+import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
+import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
+import org.datavec.api.transform.transform.doubletransform.*;
+import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
+import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
+import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
+import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
+import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
+import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
+import org.datavec.api.transform.transform.string.*;
+import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
+import org.datavec.api.transform.transform.time.StringToTimeTransform;
+import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
@@ -29,6 +51,37 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = CategoricalToIntegerTransform.class, name = "CategoricalToIntegerTransform"),
+        @JsonSubTypes.Type(value = CategoricalToOneHotTransform.class, name = "CategoricalToOneHotTransform"),
+        @JsonSubTypes.Type(value = IntegerToCategoricalTransform.class, name = "IntegerToCategoricalTransform"),
+        @JsonSubTypes.Type(value = StringToCategoricalTransform.class, name = "StringToCategoricalTransform"),
+        @JsonSubTypes.Type(value = DuplicateColumnsTransform.class, name = "DuplicateColumnsTransform"),
+        @JsonSubTypes.Type(value = RemoveColumnsTransform.class, name = "RemoveColumnsTransform"),
+        @JsonSubTypes.Type(value = RenameColumnsTransform.class, name = "RenameColumnsTransform"),
+        @JsonSubTypes.Type(value = ReorderColumnsTransform.class, name = "ReorderColumnsTransform"),
+        @JsonSubTypes.Type(value = ConditionalCopyValueTransform.class, name = "ConditionalCopyValueTransform"),
+        @JsonSubTypes.Type(value = ConditionalReplaceValueTransform.class, name = "ConditionalReplaceValueTransform"),
+        @JsonSubTypes.Type(value = DoubleColumnsMathOpTransform.class, name = "DoubleColumnsMathOpTransform"),
+        @JsonSubTypes.Type(value = Log2Normalizer.class, name = "Log2Normalizer"),
+        @JsonSubTypes.Type(value = MinMaxNormalizer.class, name = "MinMaxNormalizer"),
+        @JsonSubTypes.Type(value = StandardizeNormalizer.class, name = "StandardizeNormalizer"),
+        @JsonSubTypes.Type(value = SubtractMeanNormalizer.class, name = "SubtractMeanNormalizer"),
+        @JsonSubTypes.Type(value = IntegerColumnsMathOpTransform.class, name = "IntegerColumnsMathOpTransform"),
+        @JsonSubTypes.Type(value = IntegerMathOpTransform.class, name = "IntegerMathOpTransform"),
+        @JsonSubTypes.Type(value = ReplaceEmptyIntegerWithValueTransform.class, name = "ReplaceEmptyIntegerWithValueTransform"),
+        @JsonSubTypes.Type(value = ReplaceInvalidWithIntegerTransform.class, name = "ReplaceInvalidWithIntegerTransform"),
+        @JsonSubTypes.Type(value = LongColumnsMathOpTransform.class, name = "LongColumnsMathOpTransform"),
+        @JsonSubTypes.Type(value = LongMathOpTransform.class, name = "LongMathOpTransform"),
+        @JsonSubTypes.Type(value = MapAllStringsExceptListTransform.class, name = "MapAllStringsExceptListTransform"),
+        @JsonSubTypes.Type(value = RemoveWhiteSpaceTransform.class, name = "RemoveWhiteSpaceTransform"),
+        @JsonSubTypes.Type(value = ReplaceEmptyStringTransform.class, name = "ReplaceEmptyStringTransform"),
+        @JsonSubTypes.Type(value = StringListToCategoricalSetTransform.class, name = "StringListToCategoricalSetTransform"),
+        @JsonSubTypes.Type(value = StringMapTransform.class, name = "StringMapTransform"),
+        @JsonSubTypes.Type(value = DeriveColumnsFromTimeTransform.class, name = "DeriveColumnsFromTimeTransform"),
+        @JsonSubTypes.Type(value = StringToTimeTransform.class, name = "StringToTimeTransform"),
+        @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
+})
 public interface Transform extends Serializable {
 
     /** Get the output schema for this transformation, given an input schema */

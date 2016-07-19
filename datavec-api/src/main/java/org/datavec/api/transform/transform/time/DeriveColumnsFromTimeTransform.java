@@ -165,7 +165,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DeriveColumnsFromTimeTransform(timeColumnName=\"").append(columnName)
+        sb.append("DeriveColumnsFromTimeTransform(timeColumn=\"").append(columnName)
                 .append("\",insertAfter=\"").append(insertAfter).append("\",derivedColumns=(");
 
         boolean first = true;

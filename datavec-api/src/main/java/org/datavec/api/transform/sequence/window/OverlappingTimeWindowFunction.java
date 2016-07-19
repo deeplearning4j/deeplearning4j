@@ -195,7 +195,7 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
 
     @Override
     public String toString() {
-        return "OverlappingTimeWindowFunction(column=\"" + timeColumn + "\",windowSize=" + windowSize + windowSizeUnit +
+        return "OverlappingTimeWindowFunction(columnName=\"" + timeColumn + "\",windowSize=" + windowSize + windowSizeUnit +
                 ",windowSeparation=" + windowSeparation + windowSeparationUnit + ",offset="
                 + offsetAmount + (offsetAmount != 0 && offsetUnit != null ? offsetUnit : "") +
                 (addWindowStartTimeColumn ? ",addWindowStartTimeColumn=true" : "") + (addWindowEndTimeColumn ? ",addWindowEndTimeColumn=true" : "")

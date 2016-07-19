@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.categorical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -33,12 +34,12 @@ public class StringToCategoricalTransform extends BaseColumnTransform {
 
     private final List<String> stateNames;
 
-    public StringToCategoricalTransform(String columnName, List<String> stateNames){
+    public StringToCategoricalTransform(@JsonProperty("columnName") String columnName, @JsonProperty("stateNames") List<String> stateNames) {
         super(columnName);
         this.stateNames = stateNames;
     }
 
-    public StringToCategoricalTransform(String columnName, String... stateNames){
+    public StringToCategoricalTransform(String columnName, String... stateNames) {
         this(columnName, Arrays.asList(stateNames));
     }
 
@@ -53,7 +54,7 @@ public class StringToCategoricalTransform extends BaseColumnTransform {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "StringToCategoricalTransform(stateNames=" + stateNames + ")";
     }
 }

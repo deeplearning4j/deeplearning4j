@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.string;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.transform.condition.column.BaseColumnCondition;
 import lombok.Data;
@@ -25,7 +26,7 @@ import org.datavec.api.writable.Writable;
 /**
  * Condition that applies to the values in a String column, using a provided regex.
  * Condition return true if the String matches the regex, or false otherwise<br>
- *
+ * <p>
  * <b>Note:</b> Uses Writable.toString(), hence can potentially be applied to non-String columns
  *
  * @author Alex Black
@@ -36,11 +37,11 @@ public class StringRegexColumnCondition extends BaseColumnCondition {
 
     private final String regex;
 
-    public StringRegexColumnCondition(String columnName, String regex){
+    public StringRegexColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("regex") String regex) {
         this(columnName, regex, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 
-    public StringRegexColumnCondition(String columnName, String regex, SequenceConditionMode sequenceConditionMode ){
+    public StringRegexColumnCondition(String columnName, String regex, SequenceConditionMode sequenceConditionMode) {
         super(columnName, sequenceConditionMode);
         this.regex = regex;
     }
@@ -51,7 +52,7 @@ public class StringRegexColumnCondition extends BaseColumnCondition {
     }
 
     @Override
-    public String toString(){
-        return "StringRegexColumnCondition(colName=\"" + column + "\",regex=\"" + regex + "\")";
+    public String toString() {
+        return "StringRegexColumnCondition(columnName=\"" + columnName + "\",regex=\"" + regex + "\")";
     }
 }

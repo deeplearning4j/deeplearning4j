@@ -34,21 +34,21 @@ public abstract class BaseColumnCondition implements Condition {
 
     public static final SequenceConditionMode DEFAULT_SEQUENCE_CONDITION_MODE = SequenceConditionMode.Or;
 
-    protected final String column;
+    protected final String columnName;
     protected int columnIdx = -1;
     protected Schema schema;
     protected SequenceConditionMode sequenceMode;
 
-    protected BaseColumnCondition(String column, SequenceConditionMode sequenceConditionMode) {
-        this.column = column;
+    protected BaseColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode) {
+        this.columnName = columnName;
         this.sequenceMode = sequenceConditionMode;
     }
 
     @Override
     public void setInputSchema(Schema schema) {
-        columnIdx = schema.getColumnNames().indexOf(column);
+        columnIdx = schema.getColumnNames().indexOf(columnName);
         if (columnIdx < 0) {
-            throw new IllegalStateException("Invalid state: column \"" + column + "\" not present in input schema");
+            throw new IllegalStateException("Invalid state: column \"" + columnName + "\" not present in input schema");
         }
         this.schema = schema;
     }

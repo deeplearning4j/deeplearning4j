@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -78,6 +79,11 @@ public class TransformProcess implements Serializable {
 
     private final Schema initialSchema;
     private List<DataAction> actionList;
+
+    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList){
+        this.initialSchema = initialSchema;
+        this.actionList = actionList;
+    }
 
     private TransformProcess(Builder builder) {
         actionList = builder.actionList;
@@ -278,19 +284,19 @@ public class TransformProcess implements Serializable {
         return str;
     }
 
-    public static Schema fromJson(String json) {
+    public static TransformProcess fromJson(String json) {
         return fromJacksonString(json, new JsonFactory());
     }
 
-    public static Schema fromXml(String xml) {
+    public static TransformProcess fromXml(String xml) {
         return fromJacksonString(xml, new XmlFactory());
     }
 
-    public static Schema fromYaml(String yaml) {
+    public static TransformProcess fromYaml(String yaml) {
         return fromJacksonString(yaml, new YAMLFactory());
     }
 
-    private static Schema fromJacksonString(String str, JsonFactory factory) {
+    private static TransformProcess fromJacksonString(String str, JsonFactory factory) {
         ObjectMapper om = new ObjectMapper(factory);
         om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -299,7 +305,7 @@ public class TransformProcess implements Serializable {
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         try {
-            return om.readValue(str, Schema.class);
+            return om.readValue(str, TransformProcess.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -390,11 +396,11 @@ public class TransformProcess implements Serializable {
         /**
          * Duplicate a single column
          *
-         * @param columnName Name of the column to duplicate
+         * @param column Name of the column to duplicate
          * @param newName    Name of the new (duplicate) column
          */
-        public Builder duplicateColumn(String columnName, String newName) {
-            return transform(new DuplicateColumnsTransform(Collections.singletonList(columnName), Collections.singletonList(newName)));
+        public Builder duplicateColumn(String column, String newName) {
+            return transform(new DuplicateColumnsTransform(Collections.singletonList(column), Collections.singletonList(newName)));
         }
 
 
@@ -411,12 +417,12 @@ public class TransformProcess implements Serializable {
         /**
          * Perform a mathematical operation (add, subtract, scalar max etc) on the specified integer column, with a scalar
          *
-         * @param columnName The integer column to perform the operation on
+         * @param column The integer column to perform the operation on
          * @param mathOp     The mathematical operation
          * @param scalar     The scalar value to use in the mathematical operation
          */
-        public Builder integerMathOp(String columnName, MathOp mathOp, int scalar) {
-            return transform(new IntegerMathOpTransform(columnName, mathOp, scalar));
+        public Builder integerMathOp(String column, MathOp mathOp, int scalar) {
+            return transform(new IntegerMathOpTransform(column, mathOp, scalar));
         }
 
         /**

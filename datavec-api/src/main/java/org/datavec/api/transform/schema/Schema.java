@@ -123,7 +123,7 @@ public class Schema implements Serializable {
      * Determine if the schema has a column with the specified name
      *
      * @param columnName Name to see if the column exists
-     * @return True if column exists for that name, false otherwise
+     * @return True if a column exists for that name, false otherwise
      */
     public boolean hasColumn(String columnName) {
         Integer idx = columnNamesIndex.get(columnName);

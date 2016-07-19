@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
@@ -38,12 +39,13 @@ public class RenameColumnsTransform implements Transform {
     private final List<String> newNames;
     private Schema inputSchema;
 
-    public RenameColumnsTransform(String oldName, String newName){
+    public RenameColumnsTransform(String oldName, String newName) {
         this(Collections.singletonList(oldName), Collections.singletonList(newName));
     }
 
-    public RenameColumnsTransform(List<String> oldNames, List<String> newNames ){
-        if(oldNames.size() != newNames.size()) throw new IllegalArgumentException("Invalid input: old/new names lists differ in length");
+    public RenameColumnsTransform(@JsonProperty("oldNames") List<String> oldNames, @JsonProperty("newNames") List<String> newNames) {
+        if (oldNames.size() != newNames.size())
+            throw new IllegalArgumentException("Invalid input: old/new names lists differ in length");
         this.oldNames = oldNames;
         this.newNames = newNames;
     }
@@ -54,9 +56,9 @@ public class RenameColumnsTransform implements Transform {
         List<String> outputNames = new ArrayList<>(oldNames.size());
 
         List<ColumnMetaData> outputMeta = new ArrayList<>();
-        for(String s : inputNames){
+        for (String s : inputNames) {
             int idx = oldNames.indexOf(s);
-            if(idx >= 0){
+            if (idx >= 0) {
                 //Switch the old and new names
                 ColumnMetaData meta = inputSchema.getMetaData(s);
                 meta.setName(newNames.get(idx));
@@ -92,7 +94,7 @@ public class RenameColumnsTransform implements Transform {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "RenameColumnsTransform(oldNames=" + oldNames + ",newNames=" + newNames + ")";
     }
 }

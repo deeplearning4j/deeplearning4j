@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.categorical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -34,30 +35,30 @@ import java.util.*;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@JsonIgnoreProperties({"inputSchema", "columnIdx", "statesMap"})
+@JsonIgnoreProperties({"inputSchema", "columnIdx", "stateNames", "statesMap"})
 public class CategoricalToIntegerTransform extends BaseTransform {
 
     private String columnName;
     private int columnIdx = -1;
     private List<String> stateNames;
-    private Map<String,Integer> statesMap;
+    private Map<String, Integer> statesMap;
 
-    public CategoricalToIntegerTransform(String columnName) {
+    public CategoricalToIntegerTransform(@JsonProperty("columnName") String columnName) {
         this.columnName = columnName;
     }
 
     @Override
-    public void setInputSchema(Schema inputSchema){
+    public void setInputSchema(Schema inputSchema) {
         super.setInputSchema(inputSchema);
 
         columnIdx = inputSchema.getIndexOfColumn(columnName);
         ColumnMetaData meta = inputSchema.getMetaData(columnName);
-        if(!(meta instanceof CategoricalMetaData)) throw new IllegalStateException("Cannot convert column \"" +
+        if (!(meta instanceof CategoricalMetaData)) throw new IllegalStateException("Cannot convert column \"" +
                 columnName + "\" from categorical to one-hot: column is not categorical (is: " + meta.getColumnType() + ")");
-        this.stateNames = ((CategoricalMetaData)meta).getStateNames();
+        this.stateNames = ((CategoricalMetaData) meta).getStateNames();
 
         this.statesMap = new HashMap<>(stateNames.size());
-        for( int i=0; i<stateNames.size(); i++ ){
+        for (int i = 0; i < stateNames.size(); i++) {
             this.statesMap.put(stateNames.get(i), i);
         }
     }
@@ -68,20 +69,20 @@ public class CategoricalToIntegerTransform extends BaseTransform {
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
 
-        int i=0;
+        int i = 0;
         Iterator<String> namesIter = origNames.iterator();
         Iterator<ColumnMetaData> typesIter = origMeta.iterator();
 
         List<ColumnMetaData> newMeta = new ArrayList<>(schema.numColumns());
 
-        while(namesIter.hasNext()){
+        while (namesIter.hasNext()) {
             String s = namesIter.next();
             ColumnMetaData t = typesIter.next();
 
-            if(i++ == columnIdx){
+            if (i++ == columnIdx) {
                 //Convert this to integer
                 int nClasses = stateNames.size();
-                newMeta.add(new IntegerMetaData(t.getName(),0,nClasses-1));
+                newMeta.add(new IntegerMetaData(t.getName(), 0, nClasses - 1));
             } else {
                 newMeta.add(t);
             }
@@ -92,23 +93,23 @@ public class CategoricalToIntegerTransform extends BaseTransform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(writables.size() != inputSchema.numColumns() ){
+        if (writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
         }
         int idx = getColumnIdx();
 
         int n = stateNames.size();
         List<Writable> out = new ArrayList<>(writables.size() + n);
 
-        int i=0;
-        for( Writable w : writables){
+        int i = 0;
+        for (Writable w : writables) {
 
-            if(i++ == idx){
+            if (i++ == idx) {
                 //Do conversion
                 String str = w.toString();
                 Integer classIdx = statesMap.get(str);
-                if(classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+                if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
                 out.add(new IntWritable(classIdx));
             } else {
                 //No change to this column

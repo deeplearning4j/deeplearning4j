@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
@@ -33,7 +34,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"inputSchema","outputOrder"})
+@JsonIgnoreProperties({"inputSchema", "outputOrder"})
 public class ReorderColumnsTransform implements Transform {
 
     private final List<String> newOrder;
@@ -41,44 +42,43 @@ public class ReorderColumnsTransform implements Transform {
     private int[] outputOrder;  //Mapping from in to out. so output[i] = input.get(outputOrder[i])
 
     /**
-     *
-     * @param newOrder    A partial or complete order of the columns in the output
+     * @param newOrder A partial or complete order of the columns in the output
      */
-    public ReorderColumnsTransform(String... newOrder){
+    public ReorderColumnsTransform(String... newOrder) {
         this(Arrays.asList(newOrder));
     }
 
     /**
-     *
-     * @param newOrder    A partial or complete order of the columns in the output
+     * @param newOrder A partial or complete order of the columns in the output
      */
-    public ReorderColumnsTransform(List<String> newOrder){
+    public ReorderColumnsTransform(@JsonProperty("newOrder") List<String> newOrder) {
         this.newOrder = newOrder;
     }
 
     @Override
     public Schema transform(Schema inputSchema) {
-        for(String s : newOrder){
-            if(!inputSchema.hasColumn(s)){
+        for (String s : newOrder) {
+            if (!inputSchema.hasColumn(s)) {
                 throw new IllegalStateException("Input schema does not contain column with name \"" + s + "\"");
             }
         }
-        if(inputSchema.numColumns() < newOrder.size()) throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
-            " column but newOrder has " + newOrder.size() + " columns");
+        if (inputSchema.numColumns() < newOrder.size())
+            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
+                    " column but newOrder has " + newOrder.size() + " columns");
 
         List<String> origNames = inputSchema.getColumnNames();
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
         List<ColumnMetaData> outMeta = new ArrayList<>();
 
         boolean[] taken = new boolean[origNames.size()];
-        for(String s : newOrder){
+        for (String s : newOrder) {
             int idx = inputSchema.getIndexOfColumn(s);
             outMeta.add(origMeta.get(idx));
             taken[idx] = true;
         }
 
-        for( int i=0; i<taken.length; i++ ){
-            if(taken[i]) continue;
+        for (int i = 0; i < taken.length; i++) {
+            if (taken[i]) continue;
             outMeta.add(origMeta.get(i));
         }
 
@@ -87,27 +87,28 @@ public class ReorderColumnsTransform implements Transform {
 
     @Override
     public void setInputSchema(Schema inputSchema) {
-        for(String s : newOrder){
-            if(!inputSchema.hasColumn(s)){
+        for (String s : newOrder) {
+            if (!inputSchema.hasColumn(s)) {
                 throw new IllegalStateException("Input schema does not contain column with name \"" + s + "\"");
             }
         }
-        if(inputSchema.numColumns() < newOrder.size()) throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
-                " columns but newOrder has " + newOrder.size() + " columns");
+        if (inputSchema.numColumns() < newOrder.size())
+            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
+                    " columns but newOrder has " + newOrder.size() + " columns");
 
         List<String> origNames = inputSchema.getColumnNames();
         outputOrder = new int[origNames.size()];
 
         boolean[] taken = new boolean[origNames.size()];
-        int j=0;
-        for(String s : newOrder){
+        int j = 0;
+        for (String s : newOrder) {
             int idx = inputSchema.getIndexOfColumn(s);
             taken[idx] = true;
             outputOrder[j++] = idx;
         }
 
-        for( int i=0; i<taken.length; i++ ){
-            if(taken[i]) continue;
+        for (int i = 0; i < taken.length; i++) {
+            if (taken[i]) continue;
             outputOrder[j++] = i;
         }
     }
@@ -120,7 +121,7 @@ public class ReorderColumnsTransform implements Transform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         List<Writable> out = new ArrayList<>();
-        for(int i : outputOrder){
+        for (int i : outputOrder) {
             out.add(writables.get(i));
         }
         return out;
@@ -129,7 +130,7 @@ public class ReorderColumnsTransform implements Transform {
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
         List<List<Writable>> out = new ArrayList<>();
-        for(List<Writable> step : sequence){
+        for (List<Writable> step : sequence) {
             out.add(map(step));
         }
         return out;

@@ -97,9 +97,12 @@ public class TestJsonYaml {
                 .timeMathOp("TimeCol2",MathOp.Add,1, TimeUnit.HOURS)
                 .build();
 
+        String asJson = tp.toJson();
+        String asYaml = tp.toYaml();
 
-        System.out.println(tp.toJson());
-        System.out.println(tp.toYaml());
+
+        TransformProcess tpFromJson = TransformProcess.fromJson(asJson);
+
 
     }
 

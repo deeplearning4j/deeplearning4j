@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.condition;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.writable.Writable;
@@ -29,7 +30,7 @@ import java.util.List;
  * Replace the value in a specified column with a new value, if a condition is satisfied/true.<br>
  * Note that the condition can be any generic condition, including on other column(s), different to the column
  * that will be modified if the condition is satisfied/true.<br>
- *
+ * <p>
  * <b>Note</b>: For sequences, this transform use the convention that each step in the sequence is passed to the condition,
  * and replaced (or not) separately (i.e., Condition.condition(List<Writable>) is used on each time step individually)
  *
@@ -45,12 +46,11 @@ public class ConditionalReplaceValueTransform implements Transform {
     private int columnToReplaceIdx = -1;
 
     /**
-     *
-     * @param columnToReplace    Name of the column in which to replace the old value with 'newValue', if the condition holds
-     * @param newValue           New value to use
-     * @param condition          Condition
+     * @param columnToReplace Name of the column in which to replace the old value with 'newValue', if the condition holds
+     * @param newValue        New value to use
+     * @param condition       Condition
      */
-    public ConditionalReplaceValueTransform(String columnToReplace, Writable newValue, Condition condition ){
+    public ConditionalReplaceValueTransform(@JsonProperty("columnToReplace") String columnToReplace, @JsonProperty("newValue") Writable newValue, @JsonProperty("condition") Condition condition) {
         this.columnToReplace = columnToReplace;
         this.newValue = newValue;
         this.condition = condition;
@@ -65,7 +65,7 @@ public class ConditionalReplaceValueTransform implements Transform {
     @Override
     public void setInputSchema(Schema inputSchema) {
         columnToReplaceIdx = inputSchema.getColumnNames().indexOf(columnToReplace);
-        if(columnToReplaceIdx < 0){
+        if (columnToReplaceIdx < 0) {
             throw new IllegalStateException("Column \"" + columnToReplace + "\" not found in input schema");
         }
         condition.setInputSchema(inputSchema);
@@ -78,10 +78,10 @@ public class ConditionalReplaceValueTransform implements Transform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(condition.condition(writables)){
+        if (condition.condition(writables)) {
             //Condition holds -> set new value
             List<Writable> newList = new ArrayList<>(writables);
-            newList.set(columnToReplaceIdx,newValue);
+            newList.set(columnToReplaceIdx, newValue);
             return newList;
         } else {
             //Condition does not hold -> no change
@@ -92,14 +92,14 @@ public class ConditionalReplaceValueTransform implements Transform {
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
         List<List<Writable>> out = new ArrayList<>();
-        for(List<Writable> step : sequence){
+        for (List<Writable> step : sequence) {
             out.add(map(step));
         }
         return out;
     }
 
     @Override
-    public String toString(){
-        return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue="+newValue + ",condition=" + condition + ")";
+    public String toString() {
+        return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue=" + newValue + ",condition=" + condition + ")";
     }
 }

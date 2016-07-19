@@ -25,7 +25,7 @@ import org.datavec.api.writable.Writable;
 import lombok.Data;
 
 /**
- * Metadata for an long column
+ * Metadata for a long column
  *
  * @author Alex Black
  */

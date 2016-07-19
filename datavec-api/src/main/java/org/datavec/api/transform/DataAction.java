@@ -42,6 +42,10 @@ public class DataAction implements Serializable {
     private IReducer reducer;
     private CalculateSortedRank calculateSortedRank;
 
+    public DataAction(){
+        //No-arg constructor for Jackson
+    }
+
     public DataAction(Transform transform) {
         this.transform = transform;
     }

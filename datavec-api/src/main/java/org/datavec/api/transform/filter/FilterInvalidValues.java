@@ -34,7 +34,7 @@ public class FilterInvalidValues implements Filter {
     private final String[] columnsToFilterIfInvalid;
     private int[] columnIdxs;
 
-    /** Filter examples that have invalid values in ANY column. */
+    /** Filter examples that have invalid values in ANY columns. */
     public FilterInvalidValues(){
         filterAnyInvalid = true;
         columnsToFilterIfInvalid = null;

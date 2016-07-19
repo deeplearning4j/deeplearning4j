@@ -146,45 +146,6 @@ public class Reducer implements IReducer {
         return schema.newSchema(newMeta);
     }
 
-//    private static Pair<String,ColumnMetaData> getNameAndMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
-//        switch (op) {
-//            case Min:
-//                return new Pair<>("min(" + name + ")",inMeta);
-//            case Max:
-//                return new Pair<>("max(" + name + ")",inMeta);
-//            case Range:
-//                return new Pair<>("range(" + name + ")",inMeta);
-//            case TakeFirst:
-//                return new Pair<>("first(" + name + ")",inMeta);
-//            case TakeLast:
-//                return new Pair<>("last(" + name + ")",inMeta);
-//            case Sum:
-//                String outName = "sum(" + name + ")";
-//                //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
-//                ColumnMetaData outMeta;
-//                if(inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData){
-//                    outMeta = new LongMetaData();
-//                } else if(inMeta instanceof DoubleMetaData){
-//                    outMeta = new DoubleMetaData();
-//                } else {
-//                    //Sum doesn't really make sense to sum other column types anyway...
-//                    outMeta = inMeta;
-//                }
-//                return new Pair<>(outName,outMeta);
-//            case Mean:
-//                return new Pair<String,ColumnMetaData>("mean(" + name + ")",new DoubleMetaData());
-//            case Stdev:
-//                return new Pair<String,ColumnMetaData>("stdev(" + name + ")",new DoubleMetaData());
-//            case Count:
-//                return new Pair<String,ColumnMetaData>("count",new IntegerMetaData(0, null));
-//            case CountUnique:
-//                //Always integer
-//                return new Pair<String,ColumnMetaData>("countUnique(" + name + ")",new IntegerMetaData(0, null));
-//            default:
-//                throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
-//        }
-//    }
-
     private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
         inMeta = inMeta.clone();
         switch (op) {
