@@ -9,7 +9,7 @@ import org.json.JSONArray;
  *
  * @see <a href="https://gym.openai.com/envs#box2d">https://gym.openai.com/envs#box2d</a>
  */
-public class Box implements LowDimensional {
+public class Box implements Encodable {
 
     private final double[] array;
 

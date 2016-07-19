@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * @see <a href="https://github.com/openai/gym-http-api#api-specification">https://github.com/openai/gym-http-api#api-specification</a>
  */
 @Value
-public class Client<O, A, OS extends ObservationSpace<O>, AS extends ActionSpace<A>> {
+public class Client<O, A, AS extends ActionSpace<A>> {
 
 
     public static String V1_ROOT = "/v1";
@@ -44,7 +44,7 @@ public class Client<O, A, OS extends ObservationSpace<O>, AS extends ActionSpace
     String url;
     String envId;
     String instanceId;
-    OS observationSpace;
+    ObservationSpace<O> observationSpace;
     AS actionSpace;
 
 
@@ -81,7 +81,8 @@ public class Client<O, A, OS extends ObservationSpace<O>, AS extends ActionSpace
      */
     public StepReply<O> step(A action) {
         JSONObject body = new JSONObject()
-                .put("action", action);
+                .put("action", action)
+                .put("render", true);
 
         JSONObject reply = ClientUtils.post(url + ENVS_ROOT + instanceId + STEP, body).getObject();
 
