@@ -24,13 +24,11 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.metadata.LongMetaData;
 import lombok.Data;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.comparator.WritableComparator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**

@@ -19,9 +19,6 @@ package org.datavec.api.writable.comparator;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Writable;
 
-import java.io.Serializable;
-import java.util.Comparator;
-
 @EqualsAndHashCode
 public class DoubleWritableComparator implements WritableComparator {
     @Override

@@ -16,8 +16,6 @@
 
 package org.datavec.cli.csv.transforms;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
 public class TestTransforms {

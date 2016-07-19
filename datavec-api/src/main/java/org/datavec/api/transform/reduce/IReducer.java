@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;

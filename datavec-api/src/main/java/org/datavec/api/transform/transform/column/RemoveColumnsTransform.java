@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Writable;
 
 import java.util.*;

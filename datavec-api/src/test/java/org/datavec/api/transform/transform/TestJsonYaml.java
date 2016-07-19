@@ -33,7 +33,6 @@ import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
-import org.datavec.api.transform.transform.normalize.Normalize;
 import org.datavec.api.transform.transform.string.MapAllStringsExceptListTransform;
 import org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform;
 import org.datavec.api.transform.transform.string.StringListToCategoricalSetTransform;

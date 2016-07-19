@@ -53,7 +53,7 @@ import java.util.*;
  */
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
-@EqualsAndHashCode(exclude = {"schema","keyColumnsSet"})
+@EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})
 public class Reducer implements IReducer {
 
     private Schema schema;
@@ -224,7 +224,7 @@ public class Reducer implements IReducer {
         List<Writable> tempColumnValues = new ArrayList<>(examplesList.size());
         for (int i = 0; i < nCols; i++) {
             String colName = colNames.get(i);
-            if (keyColumnsSet.contains(colName)) {
+            if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
                 //This is a key column -> all values should be identical
                 //Therefore just take the first one
                 out.add(examplesList.get(0).get(i));
@@ -237,7 +237,7 @@ public class Reducer implements IReducer {
             }
 
             //Second: is this a *custom* reduction column?
-            if (customReductions.containsKey(colName)) {
+            if (customReductions != null && customReductions.containsKey(colName)) {
                 ColumnReduction reduction = customReductions.get(colName);
                 Writable reducedColumn = reduction.reduceColumn(tempColumnValues);
                 out.add(reducedColumn);
@@ -247,7 +247,7 @@ public class Reducer implements IReducer {
             //Third: is this a *conditional* reduction column?
             //Only practical difference with conditional reductions is we filter the input based on a condition first
             boolean conditionalOp = false;
-            if (conditionalReductions.containsKey(colName)) {
+            if (conditionalReductions != null && conditionalReductions.containsKey(colName)) {
                 ConditionalReduction reduction = conditionalReductions.get(colName);
                 Condition c = reduction.getCondition();
                 List<Writable> filteredColumnValues = new ArrayList<>();
@@ -555,22 +555,22 @@ public class Reducer implements IReducer {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder("Reducer(");
-        if(keyColumns != null){
+        if (keyColumns != null) {
             sb.append("keyColumns=").append(keyColumns).append(",");
         }
         sb.append("defaultOp=").append(defaultOp);
-        if(opMap != null){
+        if (opMap != null) {
             sb.append(",opMap=").append(opMap);
         }
-        if(customReductions != null){
+        if (customReductions != null) {
             sb.append(",customReductions=").append(customReductions);
         }
-        if(conditionalReductions != null){
+        if (conditionalReductions != null) {
             sb.append(",conditionalReductions=").append(conditionalReductions);
         }
-        if(ignoreInvalidInColumns != null){
+        if (ignoreInvalidInColumns != null) {
             sb.append(",ignoreInvalidInColumns=").append(ignoreInvalidInColumns);
         }
         sb.append(")");
