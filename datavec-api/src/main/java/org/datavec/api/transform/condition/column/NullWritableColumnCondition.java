@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.condition.column;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 
@@ -25,10 +27,11 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode(callSuper = true)
 public class NullWritableColumnCondition extends BaseColumnCondition {
 
-    public NullWritableColumnCondition(String column) {
-        super(column, DEFAULT_SEQUENCE_CONDITION_MODE);
+    public NullWritableColumnCondition(@JsonProperty("columnName") String columnName) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -35,22 +36,22 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final double scalar;
 
-    public DoubleMathOpTransform(String columnName, MathOp mathOp, double scalar) {
+    public DoubleMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") double scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof DoubleMetaData))
-            throw new IllegalStateException("Column is not an integer column");
+            throw new IllegalStateException("Column is not an integer columnName");
         DoubleMetaData meta = (DoubleMetaData) oldColumnType;
-        Double minValue = meta.getMin();
-        Double maxValue = meta.getMax();
+        Double minValue = meta.getMinAllowedValue();
+        Double maxValue = meta.getMaxAllowedValue();
         if (minValue != null) minValue = doOp(minValue);
         if (maxValue != null) maxValue = doOp(maxValue);
-        if(minValue != null && maxValue != null && minValue > maxValue ){
+        if (minValue != null && maxValue != null && minValue > maxValue) {
             //Consider rsub 1, with original min/max of 0 and 1: (1-0) -> 1 and (1-1) -> 0
             //Or multiplication by -1: (0 to 1) -> (-1 to 0)
             //Need to swap min/max here...
@@ -58,7 +59,7 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
             minValue = maxValue;
             maxValue = temp;
         }
-        return new DoubleMetaData(minValue, maxValue);
+        return new DoubleMetaData(newColumnName, minValue, maxValue);
     }
 
     private double doOp(double input) {

@@ -17,7 +17,9 @@
 package org.datavec.api.transform.sequence;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
@@ -32,6 +34,8 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(exclude = {"inputSchema"})
+@JsonIgnoreProperties({"inputSchema"})
 public class ConvertFromSequence {
 
     private SequenceSchema inputSchema;
@@ -41,13 +45,14 @@ public class ConvertFromSequence {
     }
 
     public Schema transform(SequenceSchema schema){
-
-        List<String> names = new ArrayList<>(schema.getColumnNames());
         List<ColumnMetaData> meta = new ArrayList<>(schema.getColumnMetaData());
 
-        return new Schema(names,meta);
+        return new Schema(meta);
     }
 
-
+    @Override
+    public String toString(){
+        return "ConvertFromSequence()";
+    }
 
 }

@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.transform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,8 +29,8 @@ import java.util.List;
 /**Map the values in a single column to new values.
  * For example: string -> string, or empty -> x type transforms for a single column
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
+@JsonIgnoreProperties({"inputSchema","columnNumber"})
 public abstract class BaseColumnTransform extends BaseTransform {
 
     protected final String columnName;
@@ -59,16 +59,16 @@ public abstract class BaseColumnTransform extends BaseTransform {
         while(typesIter.hasNext()){
             ColumnMetaData t = typesIter.next();
             if(i++ == columnNumber){
-                newMeta.add(getNewColumnMetaData(t));
+                newMeta.add(getNewColumnMetaData(t.getName(), t));
             } else {
                 newMeta.add(t);
             }
         }
 
-        return schema.newSchema(new ArrayList<>(schema.getColumnNames()),newMeta);
+        return schema.newSchema(newMeta);
     }
 
-    public abstract ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType);
+    public abstract ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType);
 
     @Override
     public List<Writable> map(List<Writable> writables) {
@@ -99,4 +99,19 @@ public abstract class BaseColumnTransform extends BaseTransform {
     @Override
     public abstract String toString();
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseColumnTransform o2 = (BaseColumnTransform) o;
+
+        return columnName.equals(o2.columnName);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return columnName.hashCode();
+    }
 }

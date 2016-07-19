@@ -14,18 +14,32 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.writable.comparator;
+package org.datavec.api.transform.metadata;
 
-import org.datavec.api.writable.Writable;
+import lombok.EqualsAndHashCode;
 
-public class FloatWritableComparator implements WritableComparator {
-    @Override
-    public int compare(Writable o1, Writable o2) {
-        return Float.compare(o1.toFloat(), o2.toFloat());
+/**
+ * Created by Alex on 18/07/2016.
+ */
+@EqualsAndHashCode
+public abstract class BaseColumnMetaData implements ColumnMetaData {
+
+    protected String name;
+
+    protected BaseColumnMetaData(String name){
+        this.name = name;
     }
 
     @Override
-    public String toString(){
-        return "FloatWritableComparator()";
+    public String getName(){
+        return name;
     }
+
+    @Override
+    public void setName(String name){
+        this.name = name;
+    }
+
+    @Override
+    public abstract ColumnMetaData clone();
 }

@@ -23,7 +23,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.DataOutputBuffer;
 import org.datavec.api.io.serializers.Deserializer;
 import org.datavec.api.io.serializers.SerializationFactory;
-import org.datavec.api.writable.Writable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

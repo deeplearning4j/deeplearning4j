@@ -17,6 +17,7 @@
 package org.datavec.api.writable;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 
@@ -35,7 +36,7 @@ public class DoubleWritable implements WritableComparable {
 
     }
 
-    public DoubleWritable(double value) {
+    public DoubleWritable(@JsonProperty("value") double value) {
         set(value);
     }
 

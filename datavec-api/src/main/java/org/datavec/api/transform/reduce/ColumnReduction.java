@@ -56,6 +56,6 @@ public interface ColumnReduction extends Serializable {
      * @param columnInputMeta Metadata for the column, before reduce
      * @return Metadata for the column, after the reduction
      */
-    ColumnMetaData getColumnOutputMetaData(ColumnMetaData columnInputMeta);
+    ColumnMetaData getColumnOutputMetaData(String newColumnName, ColumnMetaData columnInputMeta);
 
 }

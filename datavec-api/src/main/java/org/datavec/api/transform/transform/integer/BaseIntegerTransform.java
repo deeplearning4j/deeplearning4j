@@ -36,7 +36,9 @@ public abstract class BaseIntegerTransform extends BaseColumnTransform {
     public abstract Writable map(Writable writable);
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnMeta){
-        return oldColumnMeta;
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnMeta){
+        ColumnMetaData meta = oldColumnMeta.clone();
+        meta.setName(newName);
+        return meta;
     }
 }

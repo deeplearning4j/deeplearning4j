@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.transform.doubletransform.DoubleColumnsMathOpTransform;
 import org.datavec.api.transform.MathOp;
@@ -23,6 +24,8 @@ import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+
+import java.util.Arrays;
 
 /**
  * Add a new long column, calculated from one or more other columns. A new column (with the specified name) is added
@@ -37,13 +40,14 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
  */
 public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
-    public LongColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
+    public LongColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp,
+                                      @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new LongMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new LongMetaData(newColumnName);
     }
 
     @Override
@@ -70,5 +74,10 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
         }
+    }
+
+    @Override
+    public String toString(){
+        return "LongColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
 }

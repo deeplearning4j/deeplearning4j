@@ -16,12 +16,16 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Add a new double column, calculated from one or more other columns. A new column (with the specified name) is added
@@ -34,13 +38,17 @@ import org.datavec.api.writable.Writable;
  */
 public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
+    public DoubleColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") List<String> columns) {
+        this(newColumnName, mathOp, columns.toArray(new String[columns.size()]));
+    }
+
     public DoubleColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new DoubleMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new DoubleMetaData(newColumnName);
     }
 
     @Override
@@ -67,5 +75,10 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
         }
+    }
+
+    @Override
+    public String toString(){
+        return "DoubleColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
 }

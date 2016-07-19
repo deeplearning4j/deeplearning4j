@@ -253,8 +253,8 @@ public class TestReduce {
         }
 
         @Override
-        public ColumnMetaData getColumnOutputMetaData(ColumnMetaData columnInputMeta) {
-            return new StringMetaData();
+        public ColumnMetaData getColumnOutputMetaData(String newColumnName, ColumnMetaData columnInputMeta) {
+            return new StringMetaData(newColumnName);
         }
     }
 

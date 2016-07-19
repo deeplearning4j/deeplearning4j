@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.filter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -29,11 +31,12 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode
 public class ConditionFilter implements Filter {
 
     private final Condition condition;
 
-    public ConditionFilter(Condition condition){
+    public ConditionFilter(@JsonProperty("condition") Condition condition){
         this.condition = condition;
     }
 

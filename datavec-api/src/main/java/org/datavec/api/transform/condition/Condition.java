@@ -16,6 +16,11 @@
 
 package org.datavec.api.transform.condition;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.datavec.api.transform.condition.column.*;
+import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -30,6 +35,19 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = "CategoricalColumnCondition"),
+        @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = "DoubleColumnCondition"),
+        @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = "IntegerColumnCondition"),
+        @JsonSubTypes.Type(value = LongColumnCondition.class, name = "LongColumnCondition"),
+        @JsonSubTypes.Type(value = NullWritableColumnCondition.class, name = "NullWritableColumnCondition"),
+        @JsonSubTypes.Type(value = StringColumnCondition.class, name = "StringColumnCondition"),
+        @JsonSubTypes.Type(value = TimeColumnCondition.class, name = "TimeColumnCondition"),
+        @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
+        @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition")
+})
 public interface Condition extends Serializable {
 
     /**

@@ -16,14 +16,23 @@
 
 package org.datavec.api.transform.reduce;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.List;
 
-/**A reducer aggregates or combines a set of examples into a single List<Writable>
+/**
+ * A reducer aggregates or combines a set of examples into a single List<Writable>
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {
+        @JsonSubTypes.Type(value = Reducer.class, name = "Reducer")
+})
 public interface IReducer extends Serializable {
 
     void setInputSchema(Schema schema);

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
@@ -29,6 +30,7 @@ import java.io.Serializable;
 
 /** A helper class used in TransformProcess to store the types of action to execute next. */
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataAction implements Serializable {
 
     private Transform transform;
@@ -38,6 +40,10 @@ public class DataAction implements Serializable {
     private SequenceSplit sequenceSplit;
     private IReducer reducer;
     private CalculateSortedRank calculateSortedRank;
+
+    public DataAction(){
+        //No-arg constructor for Jackson
+    }
 
     public DataAction(Transform transform) {
         this.transform = transform;

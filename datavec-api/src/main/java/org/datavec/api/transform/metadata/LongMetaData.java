@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
@@ -23,24 +25,26 @@ import org.datavec.api.writable.Writable;
 import lombok.Data;
 
 /**
- * Metadata for an long column
+ * Metadata for a long column
  *
  * @author Alex Black
  */
 @Data
-public class LongMetaData implements ColumnMetaData {
+@EqualsAndHashCode(callSuper = true)
+public class LongMetaData extends BaseColumnMetaData {
 
-    //min/max are nullable: null -> no restriction on min/max values
-    private final Long min;
-    private final Long max;
+    //minAllowedValue/maxAllowedValue are nullable: null -> no restriction on minAllowedValue/maxAllowedValue values
+    private final Long minAllowedValue;
+    private final Long maxAllowedValue;
 
-    public LongMetaData() {
-        this(null, null);
+    public LongMetaData(String name) {
+        this(name, null, null);
     }
 
-    public LongMetaData(Long min, Long max) {
-        this.min = min;
-        this.max = max;
+    public LongMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Long minAllowedValue, @JsonProperty("maxAllowedValue") Long maxAllowedValue) {
+        super(name);
+        this.minAllowedValue = minAllowedValue;
+        this.maxAllowedValue = maxAllowedValue;
     }
 
     @Override
@@ -60,25 +64,25 @@ public class LongMetaData implements ColumnMetaData {
                 return false;
             }
         }
-        if (min != null && value < min) return false;
-        if (max != null && value > max) return false;
+        if (minAllowedValue != null && value < minAllowedValue) return false;
+        if (maxAllowedValue != null && value > maxAllowedValue) return false;
 
         return true;
     }
 
     @Override
     public LongMetaData clone() {
-        return new LongMetaData(min, max);
+        return new LongMetaData(name, minAllowedValue, maxAllowedValue);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("LongMetaData(");
-        if (min != null) sb.append("minAllowed=").append(min);
-        if (max != null) {
-            if (min != null) sb.append(",");
-            sb.append("maxAllowed=").append(max);
+        sb.append("LongMetaData(name=\"").append(name).append("\",");
+        if (minAllowedValue != null) sb.append("minAllowed=").append(minAllowedValue);
+        if (maxAllowedValue != null) {
+            if (minAllowedValue != null) sb.append(",");
+            sb.append("maxAllowed=").append(maxAllowedValue);
         }
         sb.append(")");
         return sb.toString();

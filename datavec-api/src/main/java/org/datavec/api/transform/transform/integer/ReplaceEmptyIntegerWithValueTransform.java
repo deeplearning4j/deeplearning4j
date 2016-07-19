@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
@@ -28,17 +29,17 @@ import org.datavec.api.writable.Writable;
 @Data
 public class ReplaceEmptyIntegerWithValueTransform extends BaseIntegerTransform {
 
-    private final int newValueOfEmptyIntegers;
+    private final int value;
 
-    public ReplaceEmptyIntegerWithValueTransform(String columnName, int newValueOfEmptyIntegers) {
+    public ReplaceEmptyIntegerWithValueTransform(@JsonProperty("columnName") String columnName, @JsonProperty("value") int value) {
         super(columnName);
-        this.newValueOfEmptyIntegers = newValueOfEmptyIntegers;
+        this.value = value;
     }
 
     @Override
     public Writable map(Writable writable) {
         String s = writable.toString();
-        if (s == null || s.isEmpty()) return new IntWritable(newValueOfEmptyIntegers);
+        if (s == null || s.isEmpty()) return new IntWritable(value);
         return writable;
     }
 }

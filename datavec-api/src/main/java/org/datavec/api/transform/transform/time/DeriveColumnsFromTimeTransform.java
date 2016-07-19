@@ -16,6 +16,12 @@
 
 package org.datavec.api.transform.transform.time;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ColumnType;
@@ -23,6 +29,8 @@ import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
+import org.datavec.api.util.jackson.DateTimeFieldTypeDeserializer;
+import org.datavec.api.util.jackson.DateTimeFieldTypeSerializer;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -45,13 +53,15 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
+@EqualsAndHashCode(exclude = {"inputSchema","insertAfterIdx","deriveFromIdx"})
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;
     private final String insertAfter;
+    private DateTimeZone inputTimeZone;
     private final List<DerivedColumn> derivedColumns;
     private Schema inputSchema;
-    private DateTimeZone inputTimeZone;
     private int insertAfterIdx = -1;
     private int deriveFromIdx = -1;
 
@@ -62,29 +72,34 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         this.insertAfter = builder.insertAfter;
     }
 
+    public DeriveColumnsFromTimeTransform(@JsonProperty("columnName") String columnName, @JsonProperty("insertAfter") String insertAfter,
+                                          @JsonProperty("inputTimeZone") DateTimeZone inputTimeZone, @JsonProperty("derivedColumns") List<DerivedColumn> derivedColumns) {
+        this.columnName = columnName;
+        this.insertAfter = insertAfter;
+        this.inputTimeZone = inputTimeZone;
+        this.derivedColumns = derivedColumns;
+    }
+
     @Override
     public Schema transform(Schema inputSchema) {
         List<ColumnMetaData> oldMeta = inputSchema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size() + derivedColumns.size());
 
         List<String> oldNames = inputSchema.getColumnNames();
-        List<String> newNames = new ArrayList<>(oldNames.size() + derivedColumns.size());
 
         for (int i = 0; i < oldMeta.size(); i++) {
             String current = oldNames.get(i);
-            newNames.add(current);
             newMeta.add(oldMeta.get(i));
 
             if (insertAfter.equals(current)) {
                 //Insert the derived columns here
                 for (DerivedColumn d : derivedColumns) {
-                    newNames.add(d.columnName);
                     switch (d.columnType) {
                         case String:
-                            newMeta.add(new StringMetaData());
+                            newMeta.add(new StringMetaData(d.columnName));
                             break;
                         case Integer:
-                            newMeta.add(new IntegerMetaData());     //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
+                            newMeta.add(new IntegerMetaData(d.columnName));     //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
                             break;
                         default:
                             throw new IllegalStateException("Unexpected column type: " + d.columnType);
@@ -93,7 +108,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
             }
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override
@@ -118,13 +133,13 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema(){
+    public Schema getInputSchema() {
         return inputSchema;
     }
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(writables.size() != inputSchema.numColumns() ){
+        if (writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
                     "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
         }
@@ -165,7 +180,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DeriveColumnsFromTimeTransform(timeColumnName=\"").append(columnName)
+        sb.append("DeriveColumnsFromTimeTransform(timeColumn=\"").append(columnName)
                 .append("\",insertAfter=\"").append(insertAfter).append("\",derivedColumns=(");
 
         boolean first = true;
@@ -237,15 +252,22 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         }
     }
 
-    private static class DerivedColumn implements Serializable {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @EqualsAndHashCode
+    public static class DerivedColumn implements Serializable {
         private final String columnName;
         private final ColumnType columnType;
         private final String format;
         private final DateTimeZone dateTimeZone;
+        @JsonSerialize(using = DateTimeFieldTypeSerializer.class)
+        @JsonDeserialize(using = DateTimeFieldTypeDeserializer.class)
         private final DateTimeFieldType fieldType;
         private transient DateTimeFormatter dateTimeFormatter;
 
-        public DerivedColumn(String columnName, ColumnType columnType, String format, DateTimeZone dateTimeZone, DateTimeFieldType fieldType) {
+        //        public DerivedColumn(String columnName, ColumnType columnType, String format, DateTimeZone dateTimeZone, DateTimeFieldType fieldType) {
+        public DerivedColumn(@JsonProperty("columnName") String columnName, @JsonProperty("columnType") ColumnType columnType,
+                             @JsonProperty("format") String format, @JsonProperty("dateTimeZone") DateTimeZone dateTimeZone,
+                             @JsonProperty("fieldType") DateTimeFieldType fieldType) {
             this.columnName = columnName;
             this.columnType = columnType;
             this.format = format;

@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.transform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -47,6 +50,9 @@ import java.util.List;
  * <b>See</b>: {@link IntegerMathOpTransform}, {@link DoubleMathOpTransform}, {@link LongMathOpTransform} for operations
  * with a scalar + single column, instea
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties({"columnIdxs","inputSchema"})
+@EqualsAndHashCode(exclude = {"columnIdxs","inputSchema"})
 public abstract class BaseColumnsMathOpTransform implements Transform {
 
     protected final String newColumnName;
@@ -99,13 +105,11 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
                 throw new IllegalStateException("Input schema does not have column with name \"" + name + "\"");
         }
 
-        List<String> newNames = new ArrayList<>(inputSchema.getColumnNames());
         List<ColumnMetaData> newMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
-        newNames.add(newColumnName);
-        newMeta.add(derivedColumnMetaData());
+        newMeta.add(derivedColumnMetaData(newColumnName));
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override
@@ -147,7 +151,10 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
         return out;
     }
 
-    protected abstract ColumnMetaData derivedColumnMetaData();
+    protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName);
 
     protected abstract Writable doOp(Writable... input);
+
+    @Override
+    public abstract String toString();
 }

@@ -18,6 +18,7 @@ package org.datavec.api.writable;
 
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 
@@ -35,7 +36,7 @@ public class BooleanWritable implements WritableComparable {
 
     /**
      */
-    public BooleanWritable(boolean value) {
+    public BooleanWritable(@JsonProperty("value") boolean value) {
         set(value);
     }
 

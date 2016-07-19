@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -35,14 +36,14 @@ public class IntegerMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final int scalar;
 
-    public IntegerMathOpTransform(String columnName, MathOp mathOp, int scalar) {
+    public IntegerMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") int scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof IntegerMetaData))
             throw new IllegalStateException("Column is not an integer column");
         IntegerMetaData meta = (IntegerMetaData) oldColumnType;
@@ -58,7 +59,7 @@ public class IntegerMathOpTransform extends BaseColumnTransform {
             minValue = maxValue;
             maxValue = temp;
         }
-        return new IntegerMetaData(minValue, maxValue);
+        return new IntegerMetaData(newColumnName, minValue, maxValue);
     }
 
     private int doOp(int input) {

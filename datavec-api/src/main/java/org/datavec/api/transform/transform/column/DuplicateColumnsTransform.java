@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -32,6 +34,7 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"columnsToDuplicateSet", "columnIndexesToDuplicateSet", "inputSchema"})
 public class DuplicateColumnsTransform implements Transform {
 
     private final List<String> columnsToDuplicate;
@@ -44,7 +47,7 @@ public class DuplicateColumnsTransform implements Transform {
      * @param columnsToDuplicate List of columns to duplicate
      * @param newColumnNames     List of names for the new (duplicate) columns
      */
-    public DuplicateColumnsTransform(List<String> columnsToDuplicate, List<String> newColumnNames) {
+    public DuplicateColumnsTransform(@JsonProperty("columnsToDuplicate") List<String> columnsToDuplicate, @JsonProperty("newColumnNames") List<String> newColumnNames) {
         if (columnsToDuplicate == null || newColumnNames == null)
             throw new IllegalArgumentException("Columns/names cannot be null");
         if (columnsToDuplicate.size() != newColumnNames.size())
@@ -61,24 +64,23 @@ public class DuplicateColumnsTransform implements Transform {
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size() + newColumnNames.size());
 
         List<String> oldNames = inputSchema.getColumnNames();
-        List<String> newNames = new ArrayList<>(oldNames.size() + newColumnNames.size());
 
         int dupCount = 0;
         for (int i = 0; i < oldMeta.size(); i++) {
             String current = oldNames.get(i);
-            newNames.add(current);
             newMeta.add(oldMeta.get(i));
 
             if (columnsToDuplicateSet.contains(current)) {
-                //Duplicate the current column, and place it after...
+                //Duplicate the current columnName, and place it after...
                 String dupName = newColumnNames.get(dupCount);
-                newNames.add(dupName);
-                newMeta.add(oldMeta.get(i).clone());
+                ColumnMetaData m = oldMeta.get(i).clone();
+                m.setName(dupName);
+                newMeta.add(m);
                 dupCount++;
             }
         }
 
-        return inputSchema.newSchema(newNames, newMeta);
+        return inputSchema.newSchema(newMeta);
     }
 
     @Override
@@ -104,7 +106,7 @@ public class DuplicateColumnsTransform implements Transform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(writables.size() != inputSchema.numColumns() ){
+        if (writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
                     "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
         }
@@ -127,7 +129,26 @@ public class DuplicateColumnsTransform implements Transform {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "DuplicateColumnsTransform(toDuplicate=" + columnsToDuplicate + ",newNames=" + newColumnNames + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DuplicateColumnsTransform o2 = (DuplicateColumnsTransform) o;
+
+        if (!columnsToDuplicate.equals(o2.columnsToDuplicate)) return false;
+        return newColumnNames.equals(o2.newColumnNames);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = columnsToDuplicate.hashCode();
+        result = 31 * result + newColumnNames.hashCode();
+        return result;
     }
 }

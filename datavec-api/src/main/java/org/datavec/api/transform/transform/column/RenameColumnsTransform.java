@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
@@ -29,38 +32,61 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema"})
 public class RenameColumnsTransform implements Transform {
 
     private final List<String> oldNames;
     private final List<String> newNames;
     private Schema inputSchema;
 
-    public RenameColumnsTransform(String oldName, String newName){
+    public RenameColumnsTransform(String oldName, String newName) {
         this(Collections.singletonList(oldName), Collections.singletonList(newName));
     }
 
-    public RenameColumnsTransform(List<String> oldNames, List<String> newNames ){
-        if(oldNames.size() != newNames.size()) throw new IllegalArgumentException("Invalid input: old/new names lists differ in length");
+    public RenameColumnsTransform(@JsonProperty("oldNames") List<String> oldNames, @JsonProperty("newNames") List<String> newNames) {
+        if (oldNames.size() != newNames.size())
+            throw new IllegalArgumentException("Invalid input: old/new names lists differ in length");
         this.oldNames = oldNames;
         this.newNames = newNames;
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RenameColumnsTransform o2 = (RenameColumnsTransform) o;
+
+        if (!oldNames.equals(o2.oldNames)) return false;
+        return newNames.equals(o2.newNames);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = oldNames.hashCode();
+        result = 31 * result + newNames.hashCode();
+        return result;
+    }
+
+    @Override
     public Schema transform(Schema inputSchema) {
         List<String> inputNames = inputSchema.getColumnNames();
-        List<String> outputNames = new ArrayList<>(oldNames.size());
 
-        for(String s : inputNames){
+        List<ColumnMetaData> outputMeta = new ArrayList<>();
+        for (String s : inputNames) {
             int idx = oldNames.indexOf(s);
-            if(idx >= 0){
+            if (idx >= 0) {
                 //Switch the old and new names
-                outputNames.add(newNames.get(idx));
+                ColumnMetaData meta = inputSchema.getMetaData(s).clone();
+                meta.setName(newNames.get(idx));
+                outputMeta.add(meta);
             } else {
-                outputNames.add(s);
+                outputMeta.add(inputSchema.getMetaData(s));
             }
         }
 
-        return inputSchema.newSchema(outputNames,inputSchema.getColumnMetaData());
+        return inputSchema.newSchema(outputMeta);
     }
 
     @Override
@@ -86,7 +112,7 @@ public class RenameColumnsTransform implements Transform {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "RenameColumnsTransform(oldNames=" + oldNames + ",newNames=" + newNames + ")";
     }
 }

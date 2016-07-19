@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -23,6 +24,8 @@ import org.datavec.api.transform.transform.doubletransform.DoubleColumnsMathOpTr
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+
+import java.util.Arrays;
 
 /**
  * Add a new integer column, calculated from one or more other columns. A new column (with the specified name) is added
@@ -42,13 +45,14 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
      * @param mathOp        Mathematical operation. Only Add/Subtract/Multiply/Divide/Modulus is allowed here
      * @param columns       Columns to use in the mathematical operation
      */
-    public IntegerColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
+    public IntegerColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp,
+                                         @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData() {
-        return new IntegerMetaData();
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+        return new IntegerMetaData(newColumnName);
     }
 
     @Override
@@ -75,5 +79,10 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
         }
+    }
+
+    @Override
+    public String toString(){
+        return "IntegerColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
 }

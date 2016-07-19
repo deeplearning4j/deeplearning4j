@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.sequence.split;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.SequenceSplit;
@@ -35,6 +38,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"separationMilliseconds","timeColumnIdx","schema"})
+@EqualsAndHashCode(exclude = {"separationMilliseconds","timeColumnIdx","schema"})
 public class SequenceSplitTimeSeparation implements SequenceSplit {
 
     private final String timeColumn;
@@ -49,7 +54,8 @@ public class SequenceSplitTimeSeparation implements SequenceSplit {
      * @param timeQuantity    Value/amount (of the specified TimeUnit)
      * @param timeUnit        The unit of time
      */
-    public SequenceSplitTimeSeparation(String timeColumn, long timeQuantity, TimeUnit timeUnit){
+    public SequenceSplitTimeSeparation(@JsonProperty("timeColumn") String timeColumn, @JsonProperty("timeQuantity") long timeQuantity,
+                                       @JsonProperty("timeUnit") TimeUnit timeUnit){
         this.timeColumn = timeColumn;
         this.timeQuantity = timeQuantity;
         this.timeUnit = timeUnit;

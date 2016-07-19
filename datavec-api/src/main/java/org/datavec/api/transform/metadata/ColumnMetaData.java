@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 
@@ -28,7 +31,25 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = CategoricalMetaData.class, name = "Categorical"),
+        @JsonSubTypes.Type(value = DoubleMetaData.class, name = "Double"),
+        @JsonSubTypes.Type(value = IntegerMetaData.class, name = "Integer"),
+        @JsonSubTypes.Type(value = LongMetaData.class, name = "Long"),
+        @JsonSubTypes.Type(value = StringMetaData.class, name = "String"),
+        @JsonSubTypes.Type(value = TimeMetaData.class, name = "Time")
+})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface ColumnMetaData extends Serializable, Cloneable {
+
+    /**
+     * Get the name of the specified column
+     * @return Name of the column
+     */
+    String getName();
+
+    void setName(String name);
 
     /**
      * Get the type of column

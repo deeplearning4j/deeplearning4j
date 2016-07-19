@@ -18,6 +18,7 @@ package org.datavec.api.writable;
 
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 
@@ -29,7 +30,7 @@ public class LongWritable implements WritableComparable {
 
     public LongWritable() {}
 
-    public LongWritable(long value) { set(value); }
+    public LongWritable(@JsonProperty("value") long value) { set(value); }
 
     /** Set the value of this LongWritable. */
     public void set(long value) { this.value = value; }

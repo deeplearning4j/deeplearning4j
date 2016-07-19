@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -27,6 +28,7 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode(callSuper = true)
 public class CategoricalColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
@@ -120,7 +122,7 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
 
     @Override
     public String toString() {
-        return "CategoricalColumnCondition(colName=\"" + column + "\"," + op + "," +
+        return "CategoricalColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
 }

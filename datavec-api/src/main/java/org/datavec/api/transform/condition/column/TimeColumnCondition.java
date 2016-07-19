@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.condition.column;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
@@ -27,6 +29,7 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode(callSuper = true)
 public class TimeColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
@@ -37,12 +40,12 @@ public class TimeColumnCondition extends BaseColumnCondition {
      * Constructor for operations such as less than, equal to, greater than, etc.
      * Uses default sequence condition mode, {@link BaseColumnCondition#DEFAULT_SEQUENCE_CONDITION_MODE}
      *
-     * @param column Column to check for the condition
-     * @param op     Operation (<, >=, !=, etc)
-     * @param value  Time value (in epoch millisecond format) to use in the condition
+     * @param columnName Column to check for the condition
+     * @param op         Operation (<, >=, !=, etc)
+     * @param value      Time value (in epoch millisecond format) to use in the condition
      */
-    public TimeColumnCondition(String column, ConditionOp op, long value) {
-        this(column, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
+    public TimeColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") long value) {
+        this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
     /**
@@ -122,7 +125,7 @@ public class TimeColumnCondition extends BaseColumnCondition {
 
     @Override
     public String toString() {
-        return "TimeColumnCondition(colName=\"" + column + "\"," + op + "," +
+        return "TimeColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
 }

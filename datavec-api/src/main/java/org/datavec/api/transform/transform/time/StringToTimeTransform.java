@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.metadata.TimeMetaData;
 import org.datavec.api.writable.Writable;
@@ -32,7 +33,7 @@ import java.util.TimeZone;
 
 /**
  * Convert a String column to a time column by parsing the date/time String, using a JodaTime.
- *
+ * <p>
  * Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
  *
  * @author Alex Black
@@ -71,7 +72,9 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param minValidTime Min valid time (epoch millisecond format). If null: no restriction in min valid time
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
      */
-    public StringToTimeTransform(String columnName, String timeFormat, TimeZone timeZone, Long minValidTime, Long maxValidTime) {
+    public StringToTimeTransform(@JsonProperty("columnName") String columnName, @JsonProperty("timeFormat") String timeFormat,
+                                 @JsonProperty("timeZone") TimeZone timeZone, @JsonProperty("minValidTime") Long minValidTime,
+                                 @JsonProperty("maxValidTime") Long maxValidTime) {
         this(columnName, timeFormat, DateTimeZone.forTimeZone(timeZone), minValidTime, maxValidTime);
     }
 
@@ -94,8 +97,8 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
-        return new TimeMetaData(timeZone, minValidTime, maxValidTime);
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
+        return new TimeMetaData(newName, timeZone, minValidTime, maxValidTime);
     }
 
     @Override

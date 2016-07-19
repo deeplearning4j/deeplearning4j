@@ -14,35 +14,23 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.sequence;
+package org.datavec.api.writable.comparator;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Comparator;
 
-/**
- * SequenceSplit interface: used to split a single sequence into multiple smaller subsequences, according
- * to some criteria
- *
- * @author Alex Black
- */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value= {
-        @JsonSubTypes.Type(value = SequenceSplitTimeSeparation.class, name = "SequenceSplitTimeSeparation")
+        @JsonSubTypes.Type(value = DoubleWritableComparator.class, name = "DoubleWritableComparator"),
+        @JsonSubTypes.Type(value = FloatWritableComparator.class, name = "FloatWritableComparator"),
+        @JsonSubTypes.Type(value = IntWritableComparator.class, name = "IntWritableComparator"),
+        @JsonSubTypes.Type(value = LongWritableComparator.class, name = "LongWritableComparator"),
+        @JsonSubTypes.Type(value = TextWritableComparator.class, name = "TextWritableComparator")
 })
-public interface SequenceSplit extends Serializable {
-
-    List<List<List<Writable>>> split(List<List<Writable>> sequence);
-
-    void setInputSchema(Schema inputSchema);
-
-    Schema getInputSchema();
+public interface WritableComparator extends Comparator<Writable>, Serializable {
 
 }

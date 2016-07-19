@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 import org.datavec.api.writable.Writable;
@@ -26,35 +28,38 @@ import org.datavec.api.writable.Writable;
  * @author Alex Black
  */
 @Data
-public class DoubleMetaData implements ColumnMetaData {
+@EqualsAndHashCode(callSuper = true)
+public class DoubleMetaData extends BaseColumnMetaData {
 
-    //min/max are nullable: null -> no restriction on min/max values
-    private final Double min;
-    private final Double max;
+    //minAllowedValue/maxAllowedValue are nullable: null -> no restriction on minAllowedValue/maxAllowedValue values
+    private final Double minAllowedValue;
+    private final Double maxAllowedValue;
     private final boolean allowNaN;
     private final boolean allowInfinite;
 
-    public DoubleMetaData() {
-        this(null, null, false, false);
+    public DoubleMetaData(String name) {
+        this(name, null, null, false, false);
     }
 
     /**
-     * @param min Min allowed value. If null: no restriction on min value value in this column
-     * @param max Max allowed value. If null: no restiction on max value in this column
+     * @param minAllowedValue Min allowed value. If null: no restriction on minAllowedValue value value in this column
+     * @param maxAllowedValue Max allowed value. If null: no restiction on maxAllowedValue value in this column
      */
-    public DoubleMetaData(Double min, Double max) {
-        this(min, max, false, false);
+    public DoubleMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Double minAllowedValue,
+                          @JsonProperty("maxAllowedValue")Double maxAllowedValue) {
+        this(name, minAllowedValue, maxAllowedValue, false, false);
     }
 
     /**
-     * @param min           Min allowed value. If null: no restriction on min value value in this column
-     * @param max           Max allowed value. If null: no restiction on max value in this column
+     * @param min           Min allowed value. If null: no restriction on minAllowedValue value value in this column
+     * @param maxAllowedValue           Max allowed value. If null: no restiction on maxAllowedValue value in this column
      * @param allowNaN      Are NaN values ok?
      * @param allowInfinite Are +/- infinite values ok?
      */
-    public DoubleMetaData(Double min, Double max, boolean allowNaN, boolean allowInfinite) {
-        this.min = min;
-        this.max = max;
+    public DoubleMetaData(String name, Double min, Double maxAllowedValue, boolean allowNaN, boolean allowInfinite) {
+        super(name);
+        this.minAllowedValue = min;
+        this.maxAllowedValue = maxAllowedValue;
         this.allowNaN = allowNaN;
         this.allowInfinite = allowInfinite;
     }
@@ -76,29 +81,29 @@ public class DoubleMetaData implements ColumnMetaData {
         if (allowNaN && Double.isNaN(d)) return true;
         if (allowInfinite && Double.isInfinite(d)) return true;
 
-        if (min != null && d < min) return false;
-        if (max != null && d > max) return false;
+        if (minAllowedValue != null && d < minAllowedValue) return false;
+        if (maxAllowedValue != null && d > maxAllowedValue) return false;
 
         return true;
     }
 
     @Override
     public DoubleMetaData clone() {
-        return new DoubleMetaData(min, max, allowNaN, allowInfinite);
+        return new DoubleMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DoubleMetaData(");
+        sb.append("DoubleMetaData(name=\"").append(name).append("\",");
         boolean needComma = false;
-        if (min != null) {
-            sb.append("minAllowed=").append(min);
+        if (minAllowedValue != null) {
+            sb.append("minAllowed=").append(minAllowedValue);
             needComma = true;
         }
-        if (max != null) {
+        if (maxAllowedValue != null) {
             if (needComma) sb.append(",");
-            sb.append("maxAllowed=").append(max);
+            sb.append("maxAllowed=").append(maxAllowedValue);
             needComma = true;
         }
         if (needComma) sb.append(",");

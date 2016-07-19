@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -27,6 +30,8 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"columnType","schema", "columnIdx"})
+@EqualsAndHashCode(callSuper = true, exclude = {"columnType"})
 public class NumericalColumnComparator extends BaseColumnComparator {
 
     private ColumnType columnType;
@@ -36,7 +41,7 @@ public class NumericalColumnComparator extends BaseColumnComparator {
         this(columnName, true);
     }
 
-    public NumericalColumnComparator(String columnName, boolean ascending){
+    public NumericalColumnComparator(@JsonProperty("columnName") String columnName, @JsonProperty("ascending") boolean ascending){
         super(columnName);
         this.ascending = ascending;
     }
@@ -81,5 +86,10 @@ public class NumericalColumnComparator extends BaseColumnComparator {
 
         if(ascending) return compare;
         return -compare;
+    }
+
+    @Override
+    public String toString(){
+        return "NumericalColumnComparator(columnName=\"" + columnName + "\",ascending=" + ascending + ")";
     }
 }

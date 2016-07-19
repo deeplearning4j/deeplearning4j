@@ -16,6 +16,15 @@
 
 package org.datavec.api.transform;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
@@ -33,6 +42,7 @@ import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
 import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
 import org.datavec.api.transform.transform.column.RenameColumnsTransform;
 import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
+import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
@@ -52,6 +62,7 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
+import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
@@ -69,12 +80,12 @@ public class TransformProcess implements Serializable {
     private final Schema initialSchema;
     private List<DataAction> actionList;
 
-    private TransformProcess(Builder builder) {
-        actionList = builder.actionList;
-        initialSchema = builder.initialSchema;
+    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList){
+        this.initialSchema = initialSchema;
+        this.actionList = actionList;
 
         //Calculate and set the schemas for each tranformation:
-        Schema currInputSchema = builder.initialSchema;
+        Schema currInputSchema = initialSchema;
         for (DataAction d : actionList) {
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
@@ -104,7 +115,7 @@ public class TransformProcess implements Serializable {
                 IReducer reducer = d.getReducer();
                 reducer.setInputSchema(currInputSchema);
                 currInputSchema = reducer.transform(currInputSchema);
-            } else if(d.getCalculateSortedRank() != null){
+            } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
                 csr.setInputSchema(currInputSchema);
                 currInputSchema = csr.transform(currInputSchema);
@@ -112,6 +123,10 @@ public class TransformProcess implements Serializable {
                 throw new RuntimeException("Unknown action: " + d);
             }
         }
+    }
+
+    private TransformProcess(Builder builder) {
+        this(builder.initialSchema, builder.actionList);
     }
 
     public List<DataAction> getActionList() {
@@ -161,7 +176,7 @@ public class TransformProcess implements Serializable {
             } else if (d.getReducer() != null) {
                 IReducer reducer = d.getReducer();
                 currInputSchema = reducer.transform(currInputSchema);
-            } else if( d.getCalculateSortedRank() != null){
+            } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
                 currInputSchema = csr.transform(currInputSchema);
             } else {
@@ -242,6 +257,56 @@ public class TransformProcess implements Serializable {
     }
 
 
+    public String toJson() {
+        return toJacksonString(new JsonFactory());
+    }
+
+    public String toYaml() {
+        return toJacksonString(new YAMLFactory());
+    }
+
+    private String toJacksonString(JsonFactory factory) {
+        ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        String str;
+        try {
+            str = om.writeValueAsString(this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return str;
+    }
+
+    public static TransformProcess fromJson(String json) {
+        return fromJacksonString(json, new JsonFactory());
+    }
+
+    public static TransformProcess fromYaml(String yaml) {
+        return fromJacksonString(yaml, new YAMLFactory());
+    }
+
+    private static TransformProcess fromJacksonString(String str, JsonFactory factory) {
+        ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        try {
+            return om.readValue(str, TransformProcess.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     /**
      * Builder class for constructing a TransformProcess
      */
@@ -316,20 +381,21 @@ public class TransformProcess implements Serializable {
          * Reorder the columns using a partial or complete new ordering.
          * If only some of the column names are specified for the new order, the remaining columns will be placed at
          * the end, according to their current relative ordering
-         * @param newOrder    Names of the columns, in the order they will appear in the output
+         *
+         * @param newOrder Names of the columns, in the order they will appear in the output
          */
-        public Builder reorderColumns(String... newOrder){
+        public Builder reorderColumns(String... newOrder) {
             return transform(new ReorderColumnsTransform(newOrder));
         }
 
         /**
          * Duplicate a single column
          *
-         * @param columnName Name of the column to duplicate
+         * @param column Name of the column to duplicate
          * @param newName    Name of the new (duplicate) column
          */
-        public Builder duplicateColumn(String columnName, String newName) {
-            return transform(new DuplicateColumnsTransform(Collections.singletonList(columnName), Collections.singletonList(newName)));
+        public Builder duplicateColumn(String column, String newName) {
+            return transform(new DuplicateColumnsTransform(Collections.singletonList(column), Collections.singletonList(newName)));
         }
 
 
@@ -346,24 +412,24 @@ public class TransformProcess implements Serializable {
         /**
          * Perform a mathematical operation (add, subtract, scalar max etc) on the specified integer column, with a scalar
          *
-         * @param columnName The integer column to perform the operation on
+         * @param column The integer column to perform the operation on
          * @param mathOp     The mathematical operation
          * @param scalar     The scalar value to use in the mathematical operation
          */
-        public Builder integerMathOp(String columnName, MathOp mathOp, int scalar) {
-            return transform(new IntegerMathOpTransform(columnName, mathOp, scalar));
+        public Builder integerMathOp(String column, MathOp mathOp, int scalar) {
+            return transform(new IntegerMathOpTransform(column, mathOp, scalar));
         }
 
         /**
          * Calculate and add a new integer column by performing a mathematical operation on a number of existing columns.
          * New column is added to the end.
          *
-         * @param newColumnName    Name of the new/derived column
-         * @param mathOp           Mathematical operation to execute on the columns
-         * @param columnNames      Names of the columns to use in the mathematical operation
+         * @param newColumnName Name of the new/derived column
+         * @param mathOp        Mathematical operation to execute on the columns
+         * @param columnNames   Names of the columns to use in the mathematical operation
          */
-        public Builder integerColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames){
-            return transform(new IntegerColumnsMathOpTransform(newColumnName,mathOp,columnNames));
+        public Builder integerColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
+            return transform(new IntegerColumnsMathOpTransform(newColumnName, mathOp, columnNames));
         }
 
         /**
@@ -381,12 +447,12 @@ public class TransformProcess implements Serializable {
          * Calculate and add a new long column by performing a mathematical operation on a number of existing columns.
          * New column is added to the end.
          *
-         * @param newColumnName    Name of the new/derived column
-         * @param mathOp           Mathematical operation to execute on the columns
-         * @param columnNames      Names of the columns to use in the mathematical operation
+         * @param newColumnName Name of the new/derived column
+         * @param mathOp        Mathematical operation to execute on the columns
+         * @param columnNames   Names of the columns to use in the mathematical operation
          */
-        public Builder longColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames){
-            return transform(new LongColumnsMathOpTransform(newColumnName,mathOp,columnNames));
+        public Builder longColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
+            return transform(new LongColumnsMathOpTransform(newColumnName, mathOp, columnNames));
         }
 
         /**
@@ -404,12 +470,12 @@ public class TransformProcess implements Serializable {
          * Calculate and add a new double column by performing a mathematical operation on a number of existing columns.
          * New column is added to the end.
          *
-         * @param newColumnName    Name of the new/derived column
-         * @param mathOp           Mathematical operation to execute on the columns
-         * @param columnNames      Names of the columns to use in the mathematical operation
+         * @param newColumnName Name of the new/derived column
+         * @param mathOp        Mathematical operation to execute on the columns
+         * @param columnNames   Names of the columns to use in the mathematical operation
          */
-        public Builder doubleColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames){
-            return transform(new DoubleColumnsMathOpTransform(newColumnName,mathOp,columnNames));
+        public Builder doubleColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
+            return transform(new DoubleColumnsMathOpTransform(newColumnName, mathOp, columnNames));
         }
 
         /**
@@ -445,8 +511,8 @@ public class TransformProcess implements Serializable {
          *
          * @param columnNames Name of the categorical column(s) to convert to an integer representation
          */
-        public Builder categoricalToInteger(String... columnNames){
-            for(String s : columnNames){
+        public Builder categoricalToInteger(String... columnNames) {
+            for (String s : columnNames) {
                 transform(new CategoricalToIntegerTransform(s));
             }
             return this;
@@ -456,10 +522,10 @@ public class TransformProcess implements Serializable {
          * Convert the specified column from an integer representation (assume values 0 to numCategories-1) to
          * a categorical representation, given the specified state names
          *
-         * @param columnName       Name of the column to convert
-         * @param categoryStateNames    Names of the states for the categorical column
+         * @param columnName         Name of the column to convert
+         * @param categoryStateNames Names of the states for the categorical column
          */
-        public Builder integerToCategorical(String columnName, List<String> categoryStateNames){
+        public Builder integerToCategorical(String columnName, List<String> categoryStateNames) {
             return transform(new IntegerToCategoricalTransform(columnName, categoryStateNames));
         }
 
@@ -467,10 +533,10 @@ public class TransformProcess implements Serializable {
          * Convert the specified column from an integer representation to a categorical representation, given the specified
          * mapping between integer indexes and state names
          *
-         * @param columnName       Name of the column to convert
-         * @param categoryIndexNameMap    Names of the states for the categorical column
+         * @param columnName           Name of the column to convert
+         * @param categoryIndexNameMap Names of the states for the categorical column
          */
-        public Builder integerToCategorical(String columnName, Map<Integer,String> categoryIndexNameMap){
+        public Builder integerToCategorical(String columnName, Map<Integer, String> categoryIndexNameMap) {
             return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
         }
 
@@ -563,50 +629,50 @@ public class TransformProcess implements Serializable {
          * Reduce (i.e., aggregate/combine) a set of sequence examples - for each sequence individually - using a window function.
          * For example, take all records/examples in each 24-hour period (i.e., using window function), and convert them into
          * a singe value (using the reducer). In this example, the output is a sequence, with time period of 24 hours.
-         * @param reducer           Reducer to use to reduce each window
-         * @param windowFunction    Window function to find apply on each sequence individually
+         *
+         * @param reducer        Reducer to use to reduce each window
+         * @param windowFunction Window function to find apply on each sequence individually
          */
-        public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction){
+        public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {
             actionList.add(new DataAction(new ReduceSequenceByWindowTransform(reducer, windowFunction)));
             return this;
         }
 
         /**
-         *  CalculateSortedRank: calculate the rank of each example, after sorting example.
+         * CalculateSortedRank: calculate the rank of each example, after sorting example.
          * For example, we might have some numerical "score" column, and we want to know for the rank (sort order) for each
          * example, according to that column.<br>
          * The rank of each example (after sorting) will be added in a new Long column. Indexing is done from 0; examples will have
          * values 0 to dataSetSize-1.<br>
-         *
+         * <p>
          * Currently, CalculateSortedRank can only be applied on standard (i.e., non-sequence) data
          * Furthermore, the current implementation can only sort on one column
          *
-         * @param newColumnName    Name of the new column (will contain the rank for each example)
-         * @param sortOnColumn     Column to sort on
-         * @param comparator       Comparator used to sort examples
+         * @param newColumnName Name of the new column (will contain the rank for each example)
+         * @param sortOnColumn  Column to sort on
+         * @param comparator    Comparator used to sort examples
          */
-        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator){
+        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator)));
             return this;
         }
 
         /**
-         *  CalculateSortedRank: calculate the rank of each example, after sorting example.
+         * CalculateSortedRank: calculate the rank of each example, after sorting example.
          * For example, we might have some numerical "score" column, and we want to know for the rank (sort order) for each
          * example, according to that column.<br>
          * The rank of each example (after sorting) will be added in a new Long column. Indexing is done from 0; examples will have
          * values 0 to dataSetSize-1.<br>
-         *
+         * <p>
          * Currently, CalculateSortedRank can only be applied on standard (i.e., non-sequence) data
          * Furthermore, the current implementation can only sort on one column
          *
-         * @param newColumnName    Name of the new column (will contain the rank for each example)
-         * @param sortOnColumn     Column to sort on
-         * @param comparator       Comparator used to sort examples
-         * @param ascending        If true: sort ascending. False: descending
-         *
+         * @param newColumnName Name of the new column (will contain the rank for each example)
+         * @param sortOnColumn  Column to sort on
+         * @param comparator    Comparator used to sort examples
+         * @param ascending     If true: sort ascending. False: descending
          */
-        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator, boolean ascending){
+        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator, boolean ascending) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator, ascending)));
             return this;
         }
@@ -614,44 +680,44 @@ public class TransformProcess implements Serializable {
         /**
          * Convert the specified String column to a categorical column. The state names must be provided.
          *
-         * @param columnName    Name of the String column to convert to categorical
-         * @param stateNames    State names of the category
+         * @param columnName Name of the String column to convert to categorical
+         * @param stateNames State names of the category
          */
-        public Builder stringToCategorical(String columnName, List<String> stateNames){
+        public Builder stringToCategorical(String columnName, List<String> stateNames) {
             return transform(new StringToCategoricalTransform(columnName, stateNames));
         }
 
         /**
          * Remove all whitespace characters from the values in the specified String column
          *
-         * @param columnName    Name of the column to remove whitespace from
+         * @param columnName Name of the column to remove whitespace from
          */
-        public Builder stringRemoveWhitespaceTransform(String columnName){
+        public Builder stringRemoveWhitespaceTransform(String columnName) {
             return transform(new RemoveWhiteSpaceTransform(columnName));
         }
 
         /**
          * Replace one or more String values in the specified column with new values.
-         *
+         * <p>
          * Keys in the map are the original values; the Values in the map are their replacements.
          * If a String appears in the data but does not appear in the provided map (as a key), that String values will
          * not be modified.
          *
-         * @param columnName    Name of the column in which to do replacement
-         * @param mapping       Map of oldValues -> newValues
+         * @param columnName Name of the column in which to do replacement
+         * @param mapping    Map of oldValues -> newValues
          */
-        public Builder stringMapTransform(String columnName, Map<String,String> mapping){
+        public Builder stringMapTransform(String columnName, Map<String, String> mapping) {
             return transform(new StringMapTransform(columnName, mapping));
         }
 
         /**
          * Convert a String column (containing a date/time String) to a time column (by parsing the date/time String)
          *
-         * @param column          String column containing the date/time Strings
-         * @param format          Format of the strings. Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
-         * @param dateTimeZone    Timezone of the column
+         * @param column       String column containing the date/time Strings
+         * @param format       Format of the strings. Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+         * @param dateTimeZone Timezone of the column
          */
-        public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone){
+        public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone) {
             return transform(new StringToTimeTransform(column, format, dateTimeZone));
         }
 
@@ -659,12 +725,25 @@ public class TransformProcess implements Serializable {
          * Replace the values in a specified column with a specified new value, if some condition holds.
          * If the condition does not hold, the original values are not modified.
          *
-         * @param column       Column to operate on
-         * @param newValue     Value to use as replacement, if condition is satisfied
-         * @param condition    Condition that must be satisfied for replacement
+         * @param column    Column to operate on
+         * @param newValue  Value to use as replacement, if condition is satisfied
+         * @param condition Condition that must be satisfied for replacement
          */
-        public Builder conditionalReplaceValueTransform(String column, Writable newValue, Condition condition){
+        public Builder conditionalReplaceValueTransform(String column, Writable newValue, Condition condition) {
             return transform(new ConditionalReplaceValueTransform(column, newValue, condition));
+        }
+
+        /**
+         * Replace the value in a specified column with a new value taken from another column, if a condition is satisfied/true.<br>
+         * Note that the condition can be any generic condition, including on other column(s), different to the column
+         * that will be modified if the condition is satisfied/true.<br>
+         *
+         * @param columnToReplace    Name of the column in which values will be replaced (if condition is satisfied)
+         * @param sourceColumn       Name of the column from which the new values will be
+         * @param condition          Condition to use
+         */
+        public Builder conditionalCopyValueTransform(String columnToReplace, String sourceColumn, Condition condition) {
+            return transform(new ConditionalCopyValueTransform(columnToReplace, sourceColumn, condition));
         }
 
         /**

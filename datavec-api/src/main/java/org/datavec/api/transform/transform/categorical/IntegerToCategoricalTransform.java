@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -29,11 +31,12 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema", "columnNumber"})
 public class IntegerToCategoricalTransform extends BaseColumnTransform {
 
     private final Map<Integer, String> map;
 
-    public IntegerToCategoricalTransform(String columnName, Map<Integer, String> map) {
+    public IntegerToCategoricalTransform(@JsonProperty("columnName") String columnName, @JsonProperty("map") Map<Integer, String> map) {
         super(columnName);
         this.map = map;
     }
@@ -46,8 +49,8 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
-        return new CategoricalMetaData(new ArrayList<>(map.values()));
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
+        return new CategoricalMetaData(newColumnName, new ArrayList<>(map.values()));
     }
 
     @Override
@@ -69,5 +72,24 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
         }
         sb.append("])");
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        IntegerToCategoricalTransform o2 = (IntegerToCategoricalTransform) o;
+
+        return map != null ? map.equals(o2.map) : o2.map == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (map != null ? map.hashCode() : 0);
+        return result;
     }
 }

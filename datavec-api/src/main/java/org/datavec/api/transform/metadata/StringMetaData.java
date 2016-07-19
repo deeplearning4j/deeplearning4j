@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 
@@ -24,18 +26,26 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-public class StringMetaData implements ColumnMetaData {
+@EqualsAndHashCode(callSuper = true)
+public class StringMetaData extends BaseColumnMetaData {
 
     //regex + min/max length are nullable: null -> no restrictions on these
     private final String regex;
     private final Integer minLength;
     private final Integer maxLength;
 
+    public StringMetaData(){
+        super(null);
+        regex = null;
+        minLength = null;
+        maxLength = null;
+    }
+
     /**
      * Default constructor with no restrictions on allowable strings
      */
-    public StringMetaData() {
-        this(null, null, null);
+    public StringMetaData(String name) {
+        this(name, null, null, null);
     }
 
     /**
@@ -44,7 +54,9 @@ public class StringMetaData implements ColumnMetaData {
      * @param minLength      Min allowable String length. If null: no restriction on min String length
      * @param maxLength      Max allowable String length. If null: no restriction on max String length
      */
-    public StringMetaData(String mustMatchRegex, Integer minLength, Integer maxLength) {
+    public StringMetaData(@JsonProperty("name")String name, @JsonProperty("regex")String mustMatchRegex,
+                          @JsonProperty("minLength")Integer minLength, @JsonProperty("maxLength") Integer maxLength) {
+        super(name);
         this.regex = mustMatchRegex;
         this.minLength = minLength;
         this.maxLength = maxLength;
@@ -68,13 +80,13 @@ public class StringMetaData implements ColumnMetaData {
 
     @Override
     public StringMetaData clone() {
-        return new StringMetaData(regex, minLength, maxLength);
+        return new StringMetaData(name, regex, minLength, maxLength);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("StringMetaData(");
+        sb.append("StringMetaData(name=\"").append(name).append("\",");
         if (minLength != null) sb.append("minLengthAllowed=").append(minLength);
         if (maxLength != null) {
             if (minLength != null) sb.append(",");

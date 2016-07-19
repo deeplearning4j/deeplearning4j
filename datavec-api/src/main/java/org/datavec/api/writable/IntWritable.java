@@ -17,6 +17,7 @@
 package org.datavec.api.writable;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 
@@ -28,7 +29,7 @@ public class IntWritable implements WritableComparable {
 
     public IntWritable() {}
 
-    public IntWritable(int value) { set(value); }
+    public IntWritable(@JsonProperty("value") int value) { set(value); }
 
     /** Set the value of this IntWritable. */
     public void set(int value) { this.value = value; }

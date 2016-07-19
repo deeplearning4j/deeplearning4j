@@ -16,8 +16,11 @@
 
 package org.datavec.api.transform.filter;
 
-import org.datavec.api.writable.Writable;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.List;
@@ -27,6 +30,12 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value= {
+        @JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
+        @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues")
+})
 public interface Filter extends Serializable {
 
     /**

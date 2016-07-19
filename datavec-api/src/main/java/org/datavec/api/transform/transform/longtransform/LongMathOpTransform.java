@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -35,19 +36,19 @@ public class LongMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final long scalar;
 
-    public LongMathOpTransform(String columnName, MathOp mathOp, long scalar) {
+    public LongMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") long scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
     }
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof LongMetaData))
             throw new IllegalStateException("Column is not an Long column");
         LongMetaData meta = (LongMetaData) oldColumnType;
-        Long minValue = meta.getMin();
-        Long maxValue = meta.getMax();
+        Long minValue = meta.getMinAllowedValue();
+        Long maxValue = meta.getMaxAllowedValue();
         if (minValue != null) minValue = doOp(minValue);
         if (maxValue != null) maxValue = doOp(maxValue);
         if(minValue != null && maxValue != null && minValue > maxValue ){
@@ -58,7 +59,7 @@ public class LongMathOpTransform extends BaseColumnTransform {
             minValue = maxValue;
             maxValue = temp;
         }
-        return new LongMetaData(minValue, maxValue);
+        return new LongMetaData(newName, minValue, maxValue);
     }
 
     private long doOp(long input) {

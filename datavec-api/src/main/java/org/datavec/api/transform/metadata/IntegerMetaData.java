@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 import org.datavec.api.writable.Writable;
@@ -26,21 +28,23 @@ import org.datavec.api.writable.Writable;
  * @author Alex Black
  */
 @Data
-public class IntegerMetaData implements ColumnMetaData {
+@EqualsAndHashCode(callSuper = true)
+public class IntegerMetaData extends BaseColumnMetaData {
 
     //min/max are nullable: null -> no restriction on min/max values
     private final Integer minAllowedValue;
     private final Integer maxAllowedValue;
 
-    public IntegerMetaData() {
-        this(null, null);
+    public IntegerMetaData(String name) {
+        this(name, null, null);
     }
 
     /**
      * @param min Min allowed value. If null: no restriction on min value value in this column
      * @param max Max allowed value. If null: no restiction on max value in this column
      */
-    public IntegerMetaData(Integer min, Integer max) {
+    public IntegerMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Integer min, @JsonProperty("maxAllowedValue") Integer max) {
+        super(name);
         this.minAllowedValue = min;
         this.maxAllowedValue = max;
     }
@@ -66,13 +70,13 @@ public class IntegerMetaData implements ColumnMetaData {
 
     @Override
     public IntegerMetaData clone() {
-        return new IntegerMetaData(minAllowedValue, maxAllowedValue);
+        return new IntegerMetaData(name, minAllowedValue, maxAllowedValue);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("IntegerMetaData(");
+        sb.append("IntegerMetaData(name=\"").append(name).append("\",");
         if (minAllowedValue != null) sb.append("minAllowed=").append(minAllowedValue);
         if (maxAllowedValue != null) {
             if (minAllowedValue != null) sb.append(",");

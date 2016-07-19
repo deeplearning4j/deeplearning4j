@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -30,6 +33,12 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value= {
+        @JsonSubTypes.Type(value = TimeWindowFunction.class, name = "TimeWindowFunction"),
+        @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class, name = "OverlappingTimeWindowFunction")
+})
 public interface WindowFunction extends Serializable {
 
     List<List<List<Writable>>> applyToSequence(List<List<Writable>> sequence);
