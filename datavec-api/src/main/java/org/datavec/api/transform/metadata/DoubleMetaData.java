@@ -95,7 +95,7 @@ public class DoubleMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DoubleMetaData(");
+        sb.append("DoubleMetaData(name=\"").append(name).append("\",");
         boolean needComma = false;
         if (minAllowedValue != null) {
             sb.append("minAllowed=").append(minAllowedValue);

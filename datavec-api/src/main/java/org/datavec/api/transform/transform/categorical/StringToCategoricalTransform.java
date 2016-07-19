@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -27,6 +28,7 @@ import java.util.List;
 /**
  * Convert a String column to a categorical column
  */
+@JsonIgnoreProperties({"inputSchema", "columnNumber"})
 public class StringToCategoricalTransform extends BaseColumnTransform {
 
     private final List<String> stateNames;

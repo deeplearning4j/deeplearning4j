@@ -78,7 +78,7 @@ public class LongMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("LongMetaData(");
+        sb.append("LongMetaData(name=\"").append(name).append("\",");
         if (minAllowedValue != null) sb.append("minAllowed=").append(minAllowedValue);
         if (maxAllowedValue != null) {
             if (minAllowedValue != null) sb.append(",");

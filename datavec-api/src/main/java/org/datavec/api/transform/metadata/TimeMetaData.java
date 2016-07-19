@@ -121,7 +121,7 @@ public class TimeMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("TimeMetaData(timeZone=").append(timeZone.getID());
+        sb.append("TimeMetaData(name=\"").append(name).append("\",timeZone=").append(timeZone.getID());
         if (minValidTime != null) sb.append("minValidTime=").append(minValidTime);
         if (maxValidTime != null) {
             if (minValidTime != null) sb.append(",");

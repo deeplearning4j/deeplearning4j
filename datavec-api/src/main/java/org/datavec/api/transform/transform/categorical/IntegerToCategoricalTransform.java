@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -29,6 +30,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema", "columnNumber"})
 public class IntegerToCategoricalTransform extends BaseColumnTransform {
 
     private final Map<Integer, String> map;

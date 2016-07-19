@@ -16,6 +16,15 @@
 
 package org.datavec.api.transform;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
@@ -242,13 +251,58 @@ public class TransformProcess implements Serializable {
     }
 
 
-//    public String toJson(){
-//
-//    }
-//
-//    public static TransformProcess fromJson(String json){
-//
-//    }
+    public String toJson(){
+        return toJacksonString(new JsonFactory());
+    }
+
+    public String toYaml(){
+        return toJacksonString(new YAMLFactory());
+    }
+
+    private String toJacksonString(JsonFactory factory){
+        ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        String str;
+        try{
+            str = om.writeValueAsString(this);
+        } catch(Exception e){
+            throw new RuntimeException(e);
+        }
+
+        return str;
+    }
+
+    public static Schema fromJson(String json){
+        return fromJacksonString(json, new JsonFactory());
+    }
+
+    public static Schema fromXml(String xml){
+        return fromJacksonString(xml, new XmlFactory());
+    }
+
+    public static Schema fromYaml(String yaml){
+        return fromJacksonString(yaml, new YAMLFactory());
+    }
+
+    private static Schema fromJacksonString(String str, JsonFactory factory){
+        ObjectMapper om = new ObjectMapper(factory);
+        om.registerModule(new JodaModule());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        try{
+            return om.readValue(str, Schema.class);
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+    }
 
 
     /**

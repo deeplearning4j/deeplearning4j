@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
@@ -32,6 +33,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema","outputOrder"})
 public class ReorderColumnsTransform implements Transform {
 
     private final List<String> newOrder;

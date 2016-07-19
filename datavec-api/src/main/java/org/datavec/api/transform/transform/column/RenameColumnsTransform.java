@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
@@ -30,6 +31,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema"})
 public class RenameColumnsTransform implements Transform {
 
     private final List<String> oldNames;

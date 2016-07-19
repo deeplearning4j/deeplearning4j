@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -24,6 +27,8 @@ import java.util.List;
 
 /**A Transform converts an example to another example, or a sequence to another sequence
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 public interface Transform extends Serializable {
 
     /** Get the output schema for this transformation, given an input schema */

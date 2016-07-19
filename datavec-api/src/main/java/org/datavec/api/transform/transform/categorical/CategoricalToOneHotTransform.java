@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
@@ -33,6 +34,7 @@ import java.util.*;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonIgnoreProperties({"inputSchema", "columnIdx", "statesMap"})
 public class CategoricalToOneHotTransform extends BaseTransform {
 
     private String columnName;

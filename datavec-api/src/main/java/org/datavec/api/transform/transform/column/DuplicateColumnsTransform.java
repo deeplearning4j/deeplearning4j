@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -32,6 +33,7 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"columnsToDuplicateSet","columnIndexesToDuplicateSet","inputSchema"})
 public class DuplicateColumnsTransform implements Transform {
 
     private final List<String> columnsToDuplicate;

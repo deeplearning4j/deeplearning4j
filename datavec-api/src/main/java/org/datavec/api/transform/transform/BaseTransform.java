@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
@@ -27,6 +28,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema"})
 public abstract class BaseTransform implements Transform {
 
     protected Schema inputSchema;

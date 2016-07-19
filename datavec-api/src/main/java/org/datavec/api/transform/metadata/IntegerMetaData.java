@@ -76,7 +76,7 @@ public class IntegerMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("IntegerMetaData(");
+        sb.append("IntegerMetaData(name=\"").append(name).append("\",");
         if (minAllowedValue != null) sb.append("minAllowed=").append(minAllowedValue);
         if (maxAllowedValue != null) {
             if (minAllowedValue != null) sb.append(",");

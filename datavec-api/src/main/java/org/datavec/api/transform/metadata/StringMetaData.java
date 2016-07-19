@@ -86,7 +86,7 @@ public class StringMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("StringMetaData(");
+        sb.append("StringMetaData(name=\"").append(name).append("\",");
         if (minLength != null) sb.append("minLengthAllowed=").append(minLength);
         if (maxLength != null) {
             if (minLength != null) sb.append(",");

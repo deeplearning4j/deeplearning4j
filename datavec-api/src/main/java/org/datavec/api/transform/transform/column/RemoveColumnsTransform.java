@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.column;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -27,13 +29,14 @@ import java.util.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
 public class RemoveColumnsTransform extends BaseTransform {
 
     private int[] columnsToRemoveIdx;
     private String[] columnsToRemove;
     private Set<Integer> indicesToRemove;
 
-    public RemoveColumnsTransform(String... columnsToRemove){
+    public RemoveColumnsTransform(@JsonProperty("columnsToRemove") String... columnsToRemove){
         this.columnsToRemove = columnsToRemove;
     }
 

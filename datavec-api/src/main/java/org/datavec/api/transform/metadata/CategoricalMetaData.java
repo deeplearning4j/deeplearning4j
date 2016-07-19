@@ -69,7 +69,7 @@ public class CategoricalMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("CategoricalMetaData(stateNames=[");
+        sb.append("CategoricalMetaData(name=\"").append(name).append("\",stateNames=[");
         boolean first = true;
         for (String s : stateNamesSet) {
             if (!first) sb.append(",");
