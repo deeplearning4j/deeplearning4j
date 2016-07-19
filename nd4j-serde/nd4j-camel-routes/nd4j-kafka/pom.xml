@@ -1,0 +1,94 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-camel-routes</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.4.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-kafka</artifactId>
+    <packaging>jar</packaging>
+
+    <name>nd4j-kafka</name>
+    <url>http://nd4j.org</url>
+    <profiles>
+        <profile>
+            <id>scala-2.11</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>scala.binary.version</name>
+                    <value>2.11</value>
+                </property>
+            </activation>
+            <properties>
+                <scala.version>2.11.7</scala.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                    <version>2.11.7</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>scala-2.10</id>
+            <activation>
+                <property>
+                    <name>scala.binary.version</name>
+                    <value>2.10</value>
+                </property>
+            </activation>
+            <properties>
+                <scala.version>2.10.6</scala.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                    <version>2.10.6</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${zookeeper.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-kafka</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-core</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+
+
+        <!-- testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test</artifactId>
+            <version>2.17.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-base64</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

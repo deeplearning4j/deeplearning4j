@@ -51,6 +51,8 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         return this.classLoader != null ? this.classLoader:this.clazz.getClassLoader();
     }
 
+
+
     /**
      * Get a temp file from the classpath.
      * This is for resources where
@@ -61,21 +63,12 @@ public class ClassPathResource extends AbstractFileResolvingResource {
      */
     public File getTempFileFromArchive() throws IOException {
         InputStream is = getInputStream();
-        //directory
         File tmpFile = new File(path + "tmp");
-        if(is != null) {
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-            tmpFile.deleteOnExit();
-            IOUtils.copy(is,bos);
-            bos.flush();
-            bos.close();
-            is.close();
-        }
-        //extract
-        else {
-
-        }
-
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+        tmpFile.deleteOnExit();
+        IOUtils.copy(is,bos);
+        bos.flush();
+        bos.close();
         return tmpFile;
 
     }

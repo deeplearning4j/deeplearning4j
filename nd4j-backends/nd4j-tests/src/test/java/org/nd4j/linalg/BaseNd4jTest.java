@@ -107,7 +107,7 @@ public abstract class BaseNd4jTest  {
 
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         log.info("Running " + getClass().getName() + " on backend " + backend.getClass().getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
@@ -117,7 +117,7 @@ public abstract class BaseNd4jTest  {
     }
 
     @After
-    public void after() {
+    public void after() throws  Exception {
         log.info("Ending " + getClass().getName());
         if(System.getProperties().getProperty("backends") != null && !System.getProperty("backends").contains(backend.getClass().getName()))
             return;
