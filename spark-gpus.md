@@ -5,30 +5,37 @@ layout: default
 
 # Running Deep Learning on Distributed GPUs With Spark
 
-Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we use Spark to load data and GPUs to process it with cuDNN. 
+Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we show the use Spark to load data and GPUs to process images with cuDNN. 
 
-Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters easier. Much easier. 
+Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters easier much easier. 
 
-This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and at the end it shows with code how Deeplearning4j pulls them together in an image-processing example. 
+This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and at the end it shows with code how Deeplearning4j pulls them together in an image-processing example.
+
+In this post, we will cover the below technologies and their interactions:
+ 
+ 1. Apache Spark
+ 2. CUDA
+ 3. cuDNN
+ 4. DL4j ecosystem(deeplearning4j,nd4j,datavec,javacpp)
 
 ## Apache Spark
 
-As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL. 
+As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer for a cluster, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL (extract transform load) or data storage and access for the hadoop ecosystem (HDFS or hadoop file system). The goal is to leverage hadoop's data locality mechanisms while speeding up compute with native computations.
 
 ## CUDA
 
-Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. 
+Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the gpu and cuda via a mix of custom cuda kernels and java native interface.
 
 ## cuDNN
 cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the GPU maker NVIDIA. cuDNN is a library of primitives for standard deep learning routines: forward and backward convolution, pooling, normalization, and activation layers. 
 
-cuDNN is one of the fastest libraries for deep convolutional networks (and more recently, for recurrent nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN, and gives the Java community easy access to it. 
+cuDNN is one of the fastest libraries for deep convolutional networks (and more recently, for recurrent nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN via Java Native Interface, and gives the Java community easy access to it. 
 
 ## Deeplearning4j, ND4J, DataVec and JavaCPP
 
 [Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoders.
 
-Deeplearning4j is part of a free enterprise distribution called the Skymind Intelligence Layer, or SKIL. It is one of several open-source libraries maintained by Skymind engineers. 
+Deeplearning4j is part of a set of open source libraries for building deep learning applications on the java virtual machine. It is one of several open-source libraries maintained by Skymind engineers. 
 
 * [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, is the scientific computing library that performs the linear algebra and calculus necessary to train neural nets for DL4J. 
 * [libnd4j](https://github.com/deeplearning4j/libnd4j) is the C++ library that accelerates ND4J. 
@@ -37,7 +44,8 @@ Deeplearning4j is part of a free enterprise distribution called the Skymind Inte
 
 
 
-#Spark and DL4j
+## Spark and DL4j
+
 Deeplearning4j also comes with built in spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use spark for data access.
 
 A distributed file system allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training.
@@ -150,6 +158,11 @@ pattern is known as a best practice in java land due to the complimenting tools 
 code completion. Despite its verbose nature, its also very easy to wrap in a more concise language such as 
 clojure or scala.
 
+We are going to release  a scala wrapper very similar to the keras framework taking advantage
+of some of the nicer constructs of the scala language which should help usability quite a bit.
+
+These configurations can also be defined via yaml or json.
+
 
 
 ##Distributed Training with spark
@@ -159,19 +172,22 @@ Then we tell Spark how to perform parameter averaging:
         //Create Spark multi layer network from configuration
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
                 .workerPrefetchNumBatches(0)
-                .saveUpdater(true)
+                .saveUpdater(true) //save things like adagrad squared gradient histories
                 .averagingFrequency(5) //Do 5 minibatch fit operations per worker, then average and redistribute parameters
-                .batchSizePerWorker(examplesPerDataSetObject) //Num of examples that each worker uses per fit operation
+                .batchSizePerWorker(examplesPerDataSetObject) //Number of examples that each worker uses per fit operation
                 .build();
 
         SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net, tm);
 
 And finally, we train the network by calling `.fit()` on `sparkNetwork`.
 
+
+
+
         //Train network
         log.info("--- Starting network training ---");
         int nEpochs = 5;
-        for( int i=0; i<nEpochs; i++ ){
+        for( int i = 0; i < nEpochs; i++ ){
             sparkNetwork.fit(train);
             System.out.println("----- Epoch " + i + " complete -----");
 
@@ -182,8 +198,10 @@ And finally, we train the network by calling `.fit()` on `sparkNetwork`.
 
 
 
-##Refrences
-Training with intra-block parallel optimization and blockwise model-update filtering. In 2016
+
+##References
+
+[1] Training with intra-block parallel optimization and blockwise model-update filtering. In 2016
 
 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), pages
 
