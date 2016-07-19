@@ -22,6 +22,10 @@ In this post, we will cover the below technologies and their interactions:
 
 As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer for a cluster, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL (extract transform load) or data storage and access for the hadoop ecosystem (HDFS or hadoop file system). The goal is to leverage hadoop's data locality mechanisms while speeding up compute with native computations.
 
+Spark accomplishes this via a construct called an RDD, or Resilient Distributed DataSet. The RDD construct allows us a functional interface to data partitioned across a cluster. Below you will see us use rdds for loading data and passing
+an rdd of DataSet (a dl4j construct containing a feature matrix and a label matrix).
+
+
 ## CUDA
 
 Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the gpu and cuda via a mix of custom cuda kernels and java native interface.
@@ -46,9 +50,10 @@ Deeplearning4j is part of a set of open source libraries for building deep learn
 
 ## Spark and DL4j
 
-Deeplearning4j also comes with built in spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use spark for data access.
+Deeplearning4j also comes with built in spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use spark for data access. We do this by training on spark rdd partitions (portions of the data stored across a cluster)
 
-A distributed file system allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training.
+A distributed file system combined with an easy interface allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training without having to do a lot of
+the harder work ourselves.
 
 
 ## Java & C++ Communication: Doesn't Java Slow Down CUDA?
