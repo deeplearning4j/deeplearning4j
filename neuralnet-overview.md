@@ -61,11 +61,13 @@ With classification, deep learning is able to establish correlations between, sa
 * Customer churn (predicting the likelihood that a customer will leave, based on web activity and metadata)
 * Employee turnover (ditto, but for employees)
 
+With that brief overview of what deep learning can do, let's look at what neural nets are made of. 
+
 ## <a name="element">Neural Network Elements</a>
 
 Deep learning is the name we use for "stacked neural networks"; that is, networks composed of several layers. 
 
-The layers are made of *nodes*. A node is a place where computation happens, loosely patterned on a neuron in the human brain, which fires when it encounters sufficient stimuli. A node combines input from the data with a set of coefficients, or weights, that either amplify or dampen that input, thereby assigning significance to inputs for the task the algorithm is trying to learn. (For example, which input is most helpful is classifying data without error?) These input-weight products are summed and the sum is passed through a node's so-called activation function, to determine whether and to what extent that signal progresses further through the network to affect the ultimate outcome, say, an act of classification. 
+The layers are made of *nodes*. A node is just a place where computation happens, loosely patterned on a neuron in the human brain, which fires when it encounters sufficient stimuli. A node combines input from the data with a set of coefficients, or weights, that either amplify or dampen that input, thereby assigning significance to inputs for the task the algorithm is trying to learn. (For example, which input is most helpful is classifying data without error?) These input-weight products are summed and the sum is passed through a node's so-called activation function, to determine whether and to what extent that signal progresses further through the network to affect the ultimate outcome, say, an act of classification. 
 
 Here's a diagram of what one node might look like.
 
