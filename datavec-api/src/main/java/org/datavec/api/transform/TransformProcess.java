@@ -87,8 +87,6 @@ public class TransformProcess implements Serializable {
         //Calculate and set the schemas for each tranformation:
         Schema currInputSchema = initialSchema;
         for (DataAction d : actionList) {
-            System.out.println(d);
-            System.out.println(currInputSchema.getColumnNames());
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
                 t.setInputSchema(currInputSchema);
@@ -129,8 +127,6 @@ public class TransformProcess implements Serializable {
 
     private TransformProcess(Builder builder) {
         this(builder.initialSchema, builder.actionList);
-//        actionList = builder.actionList;
-//        initialSchema = builder.initialSchema;
     }
 
     public List<DataAction> getActionList() {

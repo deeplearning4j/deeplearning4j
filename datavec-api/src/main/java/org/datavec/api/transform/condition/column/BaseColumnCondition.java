@@ -17,6 +17,7 @@
 package org.datavec.api.transform.condition.column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.condition.Condition;
@@ -30,6 +31,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"columnIdx","schema","sequenceMode"})
+@EqualsAndHashCode(exclude = {"columnIdx","schema","sequenceMode"})
 public abstract class BaseColumnCondition implements Condition {
 
     public static final SequenceConditionMode DEFAULT_SEQUENCE_CONDITION_MODE = SequenceConditionMode.Or;

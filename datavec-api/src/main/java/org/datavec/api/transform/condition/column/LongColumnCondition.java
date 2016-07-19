@@ -17,6 +17,7 @@
 package org.datavec.api.transform.condition.column;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -28,6 +29,7 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode(callSuper = true)
 public class LongColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;

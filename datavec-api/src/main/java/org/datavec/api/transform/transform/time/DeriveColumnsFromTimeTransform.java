@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ColumnType;
@@ -53,6 +54,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
+@EqualsAndHashCode(exclude = {"inputSchema","insertAfterIdx","deriveFromIdx"})
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;
@@ -251,6 +253,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @EqualsAndHashCode
     public static class DerivedColumn implements Serializable {
         private final String columnName;
         private final ColumnType columnType;

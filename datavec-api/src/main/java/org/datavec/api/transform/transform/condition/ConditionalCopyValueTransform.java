@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform.condition;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -38,6 +39,7 @@ import java.util.List;
  * @see ConditionalReplaceValueTransform to do a conditional replacement with a fixed value (instead of a value from another column)
  */
 @JsonIgnoreProperties({"columnToReplaceIdx", "sourceColumnIdx"})
+@EqualsAndHashCode(exclude = {"columnToReplaceIdx","sourceColumnIdx"})
 public class ConditionalCopyValueTransform implements Transform {
 
     private final String columnToReplace;
@@ -104,6 +106,6 @@ public class ConditionalCopyValueTransform implements Transform {
 
     @Override
     public String toString() {
-        return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn + ",condition=" + condition + ")";
+        return "ConditionalCopyValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn + ",condition=" + condition + ")";
     }
 }

@@ -27,8 +27,7 @@ import org.datavec.api.writable.Writable;
 
 import java.util.*;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+//@Data
 @JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
 public class RemoveColumnsTransform extends BaseTransform {
 
@@ -107,5 +106,20 @@ public class RemoveColumnsTransform extends BaseTransform {
     @Override
     public String toString() {
         return "RemoveColumnsTransform(" + Arrays.toString(columnsToRemove) + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RemoveColumnsTransform o2 = (RemoveColumnsTransform) o;
+
+        return Arrays.equals(columnsToRemove, o2.columnsToRemove);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(columnsToRemove);
     }
 }

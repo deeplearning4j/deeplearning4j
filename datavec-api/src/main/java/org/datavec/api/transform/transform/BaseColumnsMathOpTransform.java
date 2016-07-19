@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -51,6 +52,7 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"columnIdxs","inputSchema"})
+@EqualsAndHashCode(exclude = {"columnIdxs","inputSchema"})
 public abstract class BaseColumnsMathOpTransform implements Transform {
 
     protected final String newColumnName;

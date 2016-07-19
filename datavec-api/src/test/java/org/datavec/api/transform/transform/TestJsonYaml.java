@@ -120,7 +120,7 @@ public class TestJsonYaml {
             DataAction da2 = daListJson.get(i);
             DataAction da3 = daListYaml.get(i);
 
-            System.out.println(i);
+            //System.out.println(i + "\t" + da1);
 
             assertEquals(da1, da2);
             assertEquals(da1, da3);

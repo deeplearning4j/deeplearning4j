@@ -30,7 +30,6 @@ import java.util.List;
 /**Map the values in a single column to new values.
  * For example: string -> string, or empty -> x type transforms for a single column
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonIgnoreProperties({"inputSchema","columnNumber"})
 public abstract class BaseColumnTransform extends BaseTransform {
@@ -101,4 +100,19 @@ public abstract class BaseColumnTransform extends BaseTransform {
     @Override
     public abstract String toString();
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseColumnTransform o2 = (BaseColumnTransform) o;
+
+        return columnName.equals(o2.columnName);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return columnName.hashCode();
+    }
 }

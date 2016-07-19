@@ -132,4 +132,23 @@ public class DuplicateColumnsTransform implements Transform {
     public String toString() {
         return "DuplicateColumnsTransform(toDuplicate=" + columnsToDuplicate + ",newNames=" + newColumnNames + ")";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DuplicateColumnsTransform o2 = (DuplicateColumnsTransform) o;
+
+        if (!columnsToDuplicate.equals(o2.columnsToDuplicate)) return false;
+        return newColumnNames.equals(o2.newColumnNames);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = columnsToDuplicate.hashCode();
+        result = 31 * result + newColumnNames.hashCode();
+        return result;
+    }
 }

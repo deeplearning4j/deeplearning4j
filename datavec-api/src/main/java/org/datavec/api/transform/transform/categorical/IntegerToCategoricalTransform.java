@@ -73,4 +73,23 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
         sb.append("])");
         return sb.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        IntegerToCategoricalTransform o2 = (IntegerToCategoricalTransform) o;
+
+        return map != null ? map.equals(o2.map) : o2.map == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (map != null ? map.hashCode() : 0);
+        return result;
+    }
 }

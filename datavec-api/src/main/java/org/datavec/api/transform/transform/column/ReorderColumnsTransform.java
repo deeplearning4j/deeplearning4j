@@ -137,7 +137,27 @@ public class ReorderColumnsTransform implements Transform {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ReorderColumnsTransform o2 = (ReorderColumnsTransform) o;
+
+        if (!newOrder.equals(o2.newOrder)) return false;
+        return Arrays.equals(outputOrder, o2.outputOrder);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = newOrder.hashCode();
+        result = 31 * result + Arrays.hashCode(outputOrder);
+        return result;
+    }
+
+    @Override
     public String toString(){
         return "ReorderColumnsTransform(newOrder=" + newOrder + ")";
+
     }
 }

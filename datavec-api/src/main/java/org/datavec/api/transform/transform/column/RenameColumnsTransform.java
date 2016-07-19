@@ -51,16 +51,34 @@ public class RenameColumnsTransform implements Transform {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RenameColumnsTransform o2 = (RenameColumnsTransform) o;
+
+        if (!oldNames.equals(o2.oldNames)) return false;
+        return newNames.equals(o2.newNames);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = oldNames.hashCode();
+        result = 31 * result + newNames.hashCode();
+        return result;
+    }
+
+    @Override
     public Schema transform(Schema inputSchema) {
         List<String> inputNames = inputSchema.getColumnNames();
-        List<String> outputNames = new ArrayList<>(oldNames.size());
 
         List<ColumnMetaData> outputMeta = new ArrayList<>();
         for (String s : inputNames) {
             int idx = oldNames.indexOf(s);
             if (idx >= 0) {
                 //Switch the old and new names
-                ColumnMetaData meta = inputSchema.getMetaData(s);
+                ColumnMetaData meta = inputSchema.getMetaData(s).clone();
                 meta.setName(newNames.get(idx));
                 outputMeta.add(meta);
             } else {

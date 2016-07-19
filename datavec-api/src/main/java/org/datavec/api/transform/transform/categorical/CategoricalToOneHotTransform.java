@@ -33,13 +33,13 @@ import java.util.*;
 /**
  * Created by Alex on 4/03/2016.
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonIgnoreProperties({"inputSchema", "columnIdx", "stateNames", "statesMap"})
 public class CategoricalToOneHotTransform extends BaseTransform {
 
     private String columnName;
     private int columnIdx = -1;
+
     private List<String> stateNames;
     private Map<String, Integer> statesMap;
 
@@ -61,6 +61,27 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         for (int i = 0; i < stateNames.size(); i++) {
             this.statesMap.put(stateNames.get(i), i);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CategoricalToOneHotTransform o2 = (CategoricalToOneHotTransform) o;
+
+        return columnName.equals(o2.columnName);
+    }
+
+    @Override
+    public int hashCode() {
+        return columnName.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "CategoricalToOneHotTransform(columnName=\"" + columnName + "\")";
+
     }
 
     @Override

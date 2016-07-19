@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform.string;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -36,6 +37,7 @@ import java.util.*;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "map", "columnIdx"})
+@EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
 public class StringListToCategoricalSetTransform extends BaseTransform {
 
     private final String columnName;
