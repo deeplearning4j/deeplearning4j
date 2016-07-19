@@ -16,14 +16,20 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.Writable;
 
 /**
- * Created by Alex on 11/03/2016.
+ * A comparator for comparing String values in a single column
+ *
+ * @author Alex
  */
 public class StringComparator extends BaseColumnComparator {
 
-    public StringComparator(String columnName) {
+    /**
+     * @param columnName Name of the column in which to compare values
+     */
+    public StringComparator(@JsonProperty("columnName") String columnName) {
         super(columnName);
     }
 

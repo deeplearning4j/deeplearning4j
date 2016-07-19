@@ -33,7 +33,7 @@ public class MapToPairForReducerFunction implements PairFunction<List<Writable>,
 
     @Override
     public Tuple2<String, List<Writable>> call(List<Writable> writables) throws Exception {
-        List<String> keyColumns = reducer.getKeyColumns();
+        List<String> keyColumns = reducer.getKeyColumnsSet();
         Schema schema = reducer.getInputSchema();
         String key;
         if(keyColumns.size() == 1) key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();

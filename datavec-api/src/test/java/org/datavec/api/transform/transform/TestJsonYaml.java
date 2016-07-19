@@ -18,14 +18,19 @@ package org.datavec.api.transform.transform;
 
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.MathOp;
+import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
+import org.datavec.api.transform.sequence.comparator.StringComparator;
+import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
+import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.normalize.Normalize;
@@ -52,71 +57,90 @@ import static org.junit.Assert.assertEquals;
 public class TestJsonYaml {
 
     @Test
-    public void testToFromJsonYaml(){
+    public void testToFromJsonYaml() {
 
         Schema schema = new Schema.Builder()
-                .addColumnCategorical("Cat","State1","State2")
-                .addColumnCategorical("Cat2","State1","State2")
+                .addColumnCategorical("Cat", "State1", "State2")
+                .addColumnCategorical("Cat2", "State1", "State2")
                 .addColumnDouble("Dbl")
-                .addColumnDouble("Dbl2",null,100.0,true,false)
+                .addColumnDouble("Dbl2", null, 100.0, true, false)
                 .addColumnInteger("Int")
-                .addColumnInteger("Int2",0,10)
+                .addColumnInteger("Int2", 0, 10)
                 .addColumnLong("Long")
-                .addColumnLong("Long2",-100L,null)
+                .addColumnLong("Long2", -100L, null)
                 .addColumnString("Str")
-                .addColumnString("Str2","someregexhere",1,null)
+                .addColumnString("Str2", "someregexhere", 1, null)
                 .addColumnTime("TimeCol", DateTimeZone.UTC)
                 .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L)
                 .build();
 
-        Map<String,String> map = new HashMap<>();
-        map.put("from","to");
-        map.put("anotherFrom","anotherTo");
+        Map<String, String> map = new HashMap<>();
+        map.put("from", "to");
+        map.put("anotherFrom", "anotherTo");
 
         TransformProcess tp = new TransformProcess.Builder(schema)
                 .categoricalToInteger("Cat")
                 .categoricalToOneHot("Cat2")
-                .integerToCategorical("Cat", Arrays.asList("State1","State2"))
-                .stringToCategorical("Str",Arrays.asList("State1","State2"))
-                .duplicateColumn("Str","Str2a")
+                .integerToCategorical("Cat", Arrays.asList("State1", "State2"))
+                .stringToCategorical("Str", Arrays.asList("State1", "State2"))
+                .duplicateColumn("Str", "Str2a")
                 .removeColumns("Str2a")
-                .renameColumn("Str2","Str2a")
-                .reorderColumns("Cat","Dbl")
-                .conditionalCopyValueTransform("Dbl","Dbl2",new DoubleColumnCondition("Dbl", ConditionOp.Equal, 0.0))
-                .conditionalReplaceValueTransform("Dbl",new DoubleWritable(1.0), new DoubleColumnCondition("Dbl", ConditionOp.Equal, 1.0))
-                .doubleColumnsMathOp("NewDouble", MathOp.Add, "Dbl","Dbl2")
-                .doubleMathOp("Dbl",MathOp.Add, 1.0)
+                .renameColumn("Str2", "Str2a")
+                .reorderColumns("Cat", "Dbl")
+                .conditionalCopyValueTransform("Dbl", "Dbl2", new DoubleColumnCondition("Dbl", ConditionOp.Equal, 0.0))
+                .conditionalReplaceValueTransform("Dbl", new DoubleWritable(1.0), new DoubleColumnCondition("Dbl", ConditionOp.Equal, 1.0))
+                .doubleColumnsMathOp("NewDouble", MathOp.Add, "Dbl", "Dbl2")
+                .doubleMathOp("Dbl", MathOp.Add, 1.0)
                 .integerColumnsMathOp("NewInt", MathOp.Subtract, "Int", "Int2")
                 .integerMathOp("Int", MathOp.Multiply, 2)
-                .transform(new ReplaceEmptyIntegerWithValueTransform("Int",1))
-                .transform(new ReplaceInvalidWithIntegerTransform("Int",1))
-                .longColumnsMathOp("Long",MathOp.Multiply, "Long", "Long2")
+                .transform(new ReplaceEmptyIntegerWithValueTransform("Int", 1))
+                .transform(new ReplaceInvalidWithIntegerTransform("Int", 1))
+                .longColumnsMathOp("Long", MathOp.Multiply, "Long", "Long2")
                 .longMathOp("Long", MathOp.ScalarMax, 0)
-                .transform(new MapAllStringsExceptListTransform("Str","Other",Arrays.asList("Ok","SomeVal")))
+                .transform(new MapAllStringsExceptListTransform("Str", "Other", Arrays.asList("Ok", "SomeVal")))
                 .stringRemoveWhitespaceTransform("Str")
-                .transform(new ReplaceEmptyStringTransform("Str","WasEmpty"))
-                .transform(new StringListToCategoricalSetTransform("Str",Arrays.asList("StrA","StrB"),Arrays.asList("StrA","StrB"),","))
-                .stringMapTransform("Str2a",map)
+                .transform(new ReplaceEmptyStringTransform("Str", "WasEmpty"))
+                .transform(new StringListToCategoricalSetTransform("Str", Arrays.asList("StrA", "StrB"), Arrays.asList("StrA", "StrB"), ","))
+                .stringMapTransform("Str2a", map)
                 .transform(new DeriveColumnsFromTimeTransform.Builder("TimeCol")
                         .addIntegerDerivedColumn("Hour", DateTimeFieldType.hourOfDay())
-                        .addStringDerivedColumn("Date","YYYY-MM-dd", DateTimeZone.UTC)
+                        .addStringDerivedColumn("Date", "YYYY-MM-dd", DateTimeZone.UTC)
                         .build())
-                .stringToTimeTransform("Str2a","YYYY-MM-dd hh:mm:ss", DateTimeZone.UTC)
-                .timeMathOp("TimeCol2",MathOp.Add,1, TimeUnit.HOURS)
+                .stringToTimeTransform("Str2a", "YYYY-MM-dd hh:mm:ss", DateTimeZone.UTC)
+                .timeMathOp("TimeCol2", MathOp.Add, 1, TimeUnit.HOURS)
 
                 //Filters:
-                .filter(new FilterInvalidValues("Cat","Str2a"))
+                .filter(new FilterInvalidValues("Cat", "Str2a"))
                 .filter(new ConditionFilter(new NullWritableColumnCondition("Long")))
 
                 //Convert to/from sequence
-                .convertToSequence("Int",new NumericalColumnComparator("TimeCol2"))
+                .convertToSequence("Int", new NumericalColumnComparator("TimeCol2"))
                 .convertFromSequence()
 
                 //Sequence split
+                .convertToSequence("Int", new StringComparator("Str2a"))
+                .splitSequence(new SequenceSplitTimeSeparation("TimeCol2", 1, TimeUnit.HOURS))
 
-                //Reducers
+                //Reducers and reduce by window:
+                .reduce(new Reducer.Builder(ReduceOp.TakeFirst)
+                        .keyColumns("TimeCol2")
+                        .countColumns("Cat")
+                        .sumColumns("Dbl").build())
+                .reduceSequenceByWindow(new Reducer.Builder(ReduceOp.TakeFirst)
+                                .countColumns("Cat2")
+                                .stdevColumns("Dbl2").build(),
+                        new OverlappingTimeWindowFunction.Builder()
+                                .timeColumn("TimeCol2")
+                                .addWindowStartTimeColumn(true)
+                                .addWindowEndTimeColumn(true)
+                                .windowSize(1, TimeUnit.HOURS)
+                                .offset(5, TimeUnit.MINUTES)
+                                .windowSeparation(15, TimeUnit.MINUTES)
+                                .excludeEmptyWindows(true)
+                                .build())
 
                 //Calculate sorted rank
+
                 .build();
 
         String asJson = tp.toJson();
@@ -133,7 +157,7 @@ public class TestJsonYaml {
         List<DataAction> daListJson = tpFromJson.getActionList();
         List<DataAction> daListYaml = tpFromYaml.getActionList();
 
-        for( int i=0; i<daList.size(); i++ ){
+        for (int i = 0; i < daList.size(); i++) {
             DataAction da1 = daList.get(i);
             DataAction da2 = daListJson.get(i);
             DataAction da3 = daListYaml.get(i);

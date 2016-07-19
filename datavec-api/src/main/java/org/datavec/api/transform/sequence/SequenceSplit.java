@@ -16,15 +16,27 @@
 
 package org.datavec.api.transform.sequence;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.List;
 
 /**
- * Created by Alex on 16/03/2016.
+ * SequenceSplit interface: used to split a single sequence into multiple smaller subsequences, according
+ * to some criteria
+ *
+ * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value= {
+        @JsonSubTypes.Type(value = SequenceSplitTimeSeparation.class, name = "SequenceSplitTimeSeparation")
+})
 public interface SequenceSplit extends Serializable {
 
     List<List<List<Writable>>> split(List<List<Writable>> sequence);

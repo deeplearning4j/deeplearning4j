@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
@@ -82,6 +83,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = DeriveColumnsFromTimeTransform.class, name = "DeriveColumnsFromTimeTransform"),
         @JsonSubTypes.Type(value = StringToTimeTransform.class, name = "StringToTimeTransform"),
         @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
+        @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class, name = "ReduceSequenceByWindowTransform"),
 })
 public interface Transform extends Serializable {
 

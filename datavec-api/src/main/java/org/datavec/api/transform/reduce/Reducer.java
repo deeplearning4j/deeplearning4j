@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.reduce;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
@@ -49,11 +52,13 @@ import java.util.*;
  * @author Alex Black
  */
 @Data
+@JsonIgnoreProperties({"schema", "keyColumnsSet"})
+@EqualsAndHashCode(exclude = {"schema","keyColumnsSet"})
 public class Reducer implements IReducer {
 
     private Schema schema;
-    private final List<String> keyColumnsList;
-    private final Set<String> keyColumns;
+    private final List<String> keyColumns;
+    private final Set<String> keyColumnsSet;
     private final ReduceOp defaultOp;
     private final Map<String, ReduceOp> opMap;
     private Map<String, ColumnReduction> customReductions;
@@ -61,23 +66,38 @@ public class Reducer implements IReducer {
     private Set<String> ignoreInvalidInColumns;
 
     private Reducer(Builder builder) {
-        if (builder.keyColumns == null ) builder.keyColumns = new String[0];
-        this.keyColumnsList = new ArrayList<>(builder.keyColumns.length);
-        Collections.addAll(keyColumnsList, builder.keyColumns);
-        this.keyColumns = new HashSet<>();
-        Collections.addAll(keyColumns, builder.keyColumns);
-        this.defaultOp = builder.defaultOp;
-        this.opMap = builder.opMap;
-        this.customReductions = builder.customReductions;
-        this.conditionalReductions = builder.conditionalReductions;
-        this.ignoreInvalidInColumns = builder.ignoreInvalidInColumns;
+//        if (builder.keyColumns == null ) builder.keyColumns = new String[0];
+//        this.keyColumns = new ArrayList<>(builder.keyColumns.length);
+//        Collections.addAll(keyColumns, builder.keyColumns);
+//        this.keyColumnsSet = new HashSet<>();
+//        Collections.addAll(keyColumnsSet, builder.keyColumns);
+//        this.defaultOp = builder.defaultOp;
+//        this.opMap = builder.opMap;
+//        this.customReductions = builder.customReductions;
+//        this.conditionalReductions = builder.conditionalReductions;
+//        this.ignoreInvalidInColumns = builder.ignoreInvalidInColumns;
+        this((builder.keyColumns == null ? null : Arrays.asList(builder.keyColumns)), builder.defaultOp, builder.opMap,
+                builder.customReductions, builder.conditionalReductions, builder.ignoreInvalidInColumns);
+    }
+
+    public Reducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
+                   @JsonProperty("opMap") Map<String, ReduceOp> opMap, @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
+                   @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
+                   @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
+        this.keyColumns = keyColumns;
+        this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
+        this.defaultOp = defaultOp;
+        this.opMap = opMap;
+        this.customReductions = customReductions;
+        this.conditionalReductions = conditionalReductions;
+        this.ignoreInvalidInColumns = ignoreInvalidInColumns;
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         this.schema = schema;
         //Conditions (if any) also need the input schema:
-        for(ConditionalReduction cr : conditionalReductions.values()){
+        for (ConditionalReduction cr : conditionalReductions.values()) {
             cr.getCondition().setInputSchema(schema);
         }
     }
@@ -87,9 +107,8 @@ public class Reducer implements IReducer {
         return schema;
     }
 
-    @Override
-    public List<String> getKeyColumns() {
-        return keyColumnsList;
+    public List<String> getKeyColumnsSet() {
+        return keyColumns;
     }
 
     /**
@@ -106,14 +125,14 @@ public class Reducer implements IReducer {
             String name = colNames.get(i);
             ColumnMetaData inMeta = meta.get(i);
 
-            if (keyColumns.contains(name)) {
+            if (keyColumnsSet != null && keyColumnsSet.contains(name)) {
                 //No change to key columns
                 newMeta.add(inMeta);
                 continue;
             }
 
             //First: check for a custom reductions on this column
-            if(customReductions.containsKey(name)){
+            if (customReductions != null && customReductions.containsKey(name)) {
                 ColumnReduction reduction = customReductions.get(name);
 
                 String outName = reduction.getColumnOutputName(name);
@@ -125,11 +144,11 @@ public class Reducer implements IReducer {
             }
 
             //Second: check for conditional reductions on this column:
-            if(conditionalReductions.containsKey(name)){
+            if (conditionalReductions != null && conditionalReductions.containsKey(name)) {
                 ConditionalReduction reduction = conditionalReductions.get(name);
 
                 String outName = reduction.getOutputName();
-                ColumnMetaData m = getMetaForColumn(reduction.getReduction(),name,inMeta);
+                ColumnMetaData m = getMetaForColumn(reduction.getReduction(), name, inMeta);
                 m.setName(outName);
                 newMeta.add(m);
 
@@ -140,13 +159,13 @@ public class Reducer implements IReducer {
             //If no reduction op is specified for that column: use the default
             ReduceOp op = opMap.get(name);
             if (op == null) op = defaultOp;
-            newMeta.add(getMetaForColumn(op,name,inMeta));
+            newMeta.add(getMetaForColumn(op, name, inMeta));
         }
 
         return schema.newSchema(newMeta);
     }
 
-    private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta){
+    private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta) {
         inMeta = inMeta.clone();
         switch (op) {
             case Min:
@@ -168,9 +187,9 @@ public class Reducer implements IReducer {
                 String outName = "sum(" + name + ")";
                 //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
-                if(inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData){
+                if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData) {
                     outMeta = new LongMetaData(outName);
-                } else if(inMeta instanceof DoubleMetaData){
+                } else if (inMeta instanceof DoubleMetaData) {
                     outMeta = new DoubleMetaData(outName);
                 } else {
                     //Sum doesn't really make sense to sum other column types anyway...
@@ -183,10 +202,10 @@ public class Reducer implements IReducer {
             case Stdev:
                 return new DoubleMetaData("stdev(" + name + ")");
             case Count:
-                return new IntegerMetaData("count",0, null);
+                return new IntegerMetaData("count", 0, null);
             case CountUnique:
                 //Always integer
-                return new IntegerMetaData("countUnique(" + name + ")",0, null);
+                return new IntegerMetaData("countUnique(" + name + ")", 0, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
         }
@@ -205,7 +224,7 @@ public class Reducer implements IReducer {
         List<Writable> tempColumnValues = new ArrayList<>(examplesList.size());
         for (int i = 0; i < nCols; i++) {
             String colName = colNames.get(i);
-            if (keyColumns.contains(colName)) {
+            if (keyColumnsSet.contains(colName)) {
                 //This is a key column -> all values should be identical
                 //Therefore just take the first one
                 out.add(examplesList.get(0).get(i));
@@ -218,7 +237,7 @@ public class Reducer implements IReducer {
             }
 
             //Second: is this a *custom* reduction column?
-            if(customReductions.containsKey(colName)){
+            if (customReductions.containsKey(colName)) {
                 ColumnReduction reduction = customReductions.get(colName);
                 Writable reducedColumn = reduction.reduceColumn(tempColumnValues);
                 out.add(reducedColumn);
@@ -228,14 +247,14 @@ public class Reducer implements IReducer {
             //Third: is this a *conditional* reduction column?
             //Only practical difference with conditional reductions is we filter the input based on a condition first
             boolean conditionalOp = false;
-            if(conditionalReductions.containsKey(colName)){
+            if (conditionalReductions.containsKey(colName)) {
                 ConditionalReduction reduction = conditionalReductions.get(colName);
                 Condition c = reduction.getCondition();
                 List<Writable> filteredColumnValues = new ArrayList<>();
 
-                int j=0;
-                for(List<Writable> example : examplesList){
-                    if(c.condition(example)){
+                int j = 0;
+                for (List<Writable> example : examplesList) {
+                    if (c.condition(example)) {
                         filteredColumnValues.add(tempColumnValues.get(j));
                     }
                     j++;
@@ -285,14 +304,14 @@ public class Reducer implements IReducer {
             case Min:
                 long min = Long.MAX_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     min = Math.min(min, w.toLong());
                 }
                 return new LongWritable(min);
             case Max:
                 long max = Long.MIN_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     max = Math.max(max, w.toLong());
                 }
                 return new LongWritable(max);
@@ -300,7 +319,7 @@ public class Reducer implements IReducer {
                 long min2 = Long.MAX_VALUE;
                 long max2 = Long.MIN_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     long l = w.toLong();
                     min2 = Math.min(min2, l);
                     max2 = Math.max(max2, l);
@@ -310,32 +329,32 @@ public class Reducer implements IReducer {
             case Mean:
                 long sum = 0;
                 int count = 0;
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     sum += w.toLong();
                     count++;
                 }
-                if(op == ReduceOp.Sum) return new LongWritable(sum);
-                else if(count > 0) return new DoubleWritable(((double)sum) / count);
+                if (op == ReduceOp.Sum) return new LongWritable(sum);
+                else if (count > 0) return new DoubleWritable(((double) sum) / count);
                 else return new DoubleWritable(0.0);
             case Stdev:
                 double[] arr = new double[values.size()];
                 int i = 0;
                 int countValid = 0;
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     arr[i++] = w.toLong();
                     countValid++;
                 }
-                if(ignoreInvalid && countValid < arr.length){
-                    arr = Arrays.copyOfRange(arr,0,countValid);
+                if (ignoreInvalid && countValid < arr.length) {
+                    arr = Arrays.copyOfRange(arr, 0, countValid);
                 }
                 return new DoubleWritable(new StandardDeviation().evaluate(arr));
             case Count:
-                if(ignoreInvalid){
+                if (ignoreInvalid) {
                     int countValid2 = 0;
-                    for(Writable w : values){
-                        if(!metaData.isValid(w)) continue;
+                    for (Writable w : values) {
+                        if (!metaData.isValid(w)) continue;
                         countValid2++;
                     }
                     return new IntWritable(countValid2);
@@ -343,16 +362,16 @@ public class Reducer implements IReducer {
                 return new IntWritable(values.size());
             case CountUnique:
                 Set<Long> set = new HashSet<>();
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     set.add(w.toLong());
                 }
                 return new IntWritable(set.size());
             case TakeFirst:
-                if(values.size() > 0) return values.get(0);
+                if (values.size() > 0) return values.get(0);
                 return new LongWritable(0);
             case TakeLast:
-                if(values.size() > 0) return values.get(values.size() - 1);
+                if (values.size() > 0) return values.get(values.size() - 1);
                 return new LongWritable(0);
             default:
                 throw new UnsupportedOperationException("Unknown or not implement op: " + op);
@@ -364,14 +383,14 @@ public class Reducer implements IReducer {
             case Min:
                 double min = Double.MAX_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     min = Math.min(min, w.toDouble());
                 }
                 return new DoubleWritable(min);
             case Max:
                 double max = -Double.MAX_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     max = Math.max(max, w.toDouble());
                 }
                 return new DoubleWritable(max);
@@ -379,7 +398,7 @@ public class Reducer implements IReducer {
                 double min2 = Double.MAX_VALUE;
                 double max2 = -Double.MAX_VALUE;
                 for (Writable w : values) {
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     double d = w.toDouble();
                     min2 = Math.min(min2, d);
                     max2 = Math.max(max2, d);
@@ -389,32 +408,32 @@ public class Reducer implements IReducer {
             case Mean:
                 double sum = 0;
                 int count = 0;
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     sum += w.toDouble();
                     count++;
                 }
-                if(op == ReduceOp.Sum) return new DoubleWritable(sum);
-                else if(count > 0) return new DoubleWritable(sum / count);
+                if (op == ReduceOp.Sum) return new DoubleWritable(sum);
+                else if (count > 0) return new DoubleWritable(sum / count);
                 else return new DoubleWritable(0.0);
             case Stdev:
                 double[] arr = new double[values.size()];
                 int i = 0;
                 int countValid = 0;
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     arr[i++] = w.toDouble();
                     countValid++;
                 }
-                if(ignoreInvalid && countValid < arr.length){
-                    arr = Arrays.copyOfRange(arr,0,countValid);
+                if (ignoreInvalid && countValid < arr.length) {
+                    arr = Arrays.copyOfRange(arr, 0, countValid);
                 }
                 return new DoubleWritable(new StandardDeviation().evaluate(arr));
             case Count:
-                if(ignoreInvalid){
+                if (ignoreInvalid) {
                     int countValid2 = 0;
-                    for(Writable w : values){
-                        if(!metaData.isValid(w)) continue;
+                    for (Writable w : values) {
+                        if (!metaData.isValid(w)) continue;
                         countValid2++;
                     }
                     return new IntWritable(countValid2);
@@ -422,16 +441,16 @@ public class Reducer implements IReducer {
                 return new IntWritable(values.size());
             case CountUnique:
                 Set<Double> set = new HashSet<>();
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     set.add(w.toDouble());
                 }
                 return new IntWritable(set.size());
             case TakeFirst:
-                if(values.size() > 0) return values.get(0);
+                if (values.size() > 0) return values.get(0);
                 return new DoubleWritable(0.0);
             case TakeLast:
-                if(values.size() > 0) return values.get(values.size() - 1);
+                if (values.size() > 0) return values.get(values.size() - 1);
                 return new DoubleWritable(0.0);
             default:
                 throw new UnsupportedOperationException("Unknown or not implement op: " + op);
@@ -441,10 +460,10 @@ public class Reducer implements IReducer {
     private Writable reduceStringOrCategoricalColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (op) {
             case Count:
-                if(ignoreInvalid){
+                if (ignoreInvalid) {
                     int countValid = 0;
-                    for(Writable w : values){
-                        if(!metaData.isValid(w)) continue;
+                    for (Writable w : values) {
+                        if (!metaData.isValid(w)) continue;
                         countValid++;
                     }
                     return new IntWritable(countValid);
@@ -452,16 +471,16 @@ public class Reducer implements IReducer {
                 return new IntWritable(values.size());
             case CountUnique:
                 Set<String> set = new HashSet<>();
-                for (Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     set.add(w.toString());
                 }
                 return new IntWritable(set.size());
             case TakeFirst:
-                if(values.size() > 0) return values.get(0);
+                if (values.size() > 0) return values.get(0);
                 return new Text("");
             case TakeLast:
-                if(values.size() > 0) return values.get(values.size() - 1);
+                if (values.size() > 0) return values.get(values.size() - 1);
                 return new Text("");
             default:
                 throw new UnsupportedOperationException("Cannot execute op \"" + op + "\" on String/Categorical column "
@@ -471,35 +490,35 @@ public class Reducer implements IReducer {
 
     private Writable reduceTimeColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
 
-        switch(op) {
+        switch (op) {
             case Min:
                 long min = Long.MAX_VALUE;
-                for(Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
-                    min = Math.min(min,w.toLong());
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
+                    min = Math.min(min, w.toLong());
                 }
                 return new LongWritable(min);
             case Max:
                 long max = Long.MIN_VALUE;
-                for(Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
-                    max = Math.max(max,w.toLong());
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
+                    max = Math.max(max, w.toLong());
                 }
                 return new LongWritable(max);
             case Mean:
                 long sum = 0L;
                 int count = 0;
-                for(Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     sum += w.toLong();
                     count++;
                 }
-                return (count > 0 ? new LongWritable(sum/count) : new LongWritable(0));
+                return (count > 0 ? new LongWritable(sum / count) : new LongWritable(0));
             case Count:
-                if(ignoreInvalid){
+                if (ignoreInvalid) {
                     int countValid = 0;
-                    for(Writable w : values){
-                        if(!metaData.isValid(w)) continue;
+                    for (Writable w : values) {
+                        if (!metaData.isValid(w)) continue;
                         countValid++;
                     }
                     return new IntWritable(countValid);
@@ -507,16 +526,16 @@ public class Reducer implements IReducer {
                 return new IntWritable(values.size());
             case CountUnique:
                 Set<Long> set = new HashSet<>();
-                for(Writable w : values){
-                    if(ignoreInvalid && !metaData.isValid(w)) continue;
+                for (Writable w : values) {
+                    if (ignoreInvalid && !metaData.isValid(w)) continue;
                     set.add(w.toLong());
                 }
                 return new IntWritable(set.size());
             case TakeFirst:
-                if(values.size() > 0) return values.get(0);
+                if (values.size() > 0) return values.get(0);
                 return new LongWritable(0);
             case TakeLast:
-                if(values.size() > 0) return values.get(values.size()-1);
+                if (values.size() > 0) return values.get(values.size() - 1);
                 return new LongWritable(0);
             case Range:
             case Sum:
@@ -530,9 +549,32 @@ public class Reducer implements IReducer {
 
     private Writable reduceBytesColumn(ReduceOp op, List<Writable> list) {
         if (op == ReduceOp.TakeFirst) return list.get(0);
-        else if(op == ReduceOp.TakeLast) return list.get(list.size()-1);
+        else if (op == ReduceOp.TakeLast) return list.get(list.size() - 1);
         throw new UnsupportedOperationException("Cannot execute op \"" + op + "\" on Bytes column "
                 + "(can only perform TakeFirst or TakeLast ops on Bytes columns)");
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder("Reducer(");
+        if(keyColumns != null){
+            sb.append("keyColumns=").append(keyColumns).append(",");
+        }
+        sb.append("defaultOp=").append(defaultOp);
+        if(opMap != null){
+            sb.append(",opMap=").append(opMap);
+        }
+        if(customReductions != null){
+            sb.append(",customReductions=").append(customReductions);
+        }
+        if(conditionalReductions != null){
+            sb.append(",conditionalReductions=").append(conditionalReductions);
+        }
+        if(ignoreInvalidInColumns != null){
+            sb.append(",ignoreInvalidInColumns=").append(ignoreInvalidInColumns);
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
 
@@ -636,24 +678,24 @@ public class Reducer implements IReducer {
         /**
          * Reduce the specified columns by taking the first value
          */
-        public Builder takeFirstColumns(String... columns){
+        public Builder takeFirstColumns(String... columns) {
             return add(ReduceOp.TakeFirst, columns);
         }
 
         /**
          * Reduce the specified columns by taking the last value
          */
-        public Builder takeLastColumns(String... columns){
+        public Builder takeLastColumns(String... columns) {
             return add(ReduceOp.TakeLast, columns);
         }
 
         /**
          * Reduce the specified column using a custom column reduction functionality.
          *
-         * @param column             Column to execute the custom reduction functionality on
-         * @param columnReduction    Column reduction to execute on that column
+         * @param column          Column to execute the custom reduction functionality on
+         * @param columnReduction Column reduction to execute on that column
          */
-        public Builder customReduction(String column, ColumnReduction columnReduction){
+        public Builder customReduction(String column, ColumnReduction columnReduction) {
             customReductions.put(column, columnReduction);
             return this;
         }
@@ -663,12 +705,12 @@ public class Reducer implements IReducer {
          * examples where the condition returns true. Examples where the condition does not apply (returns false) are
          * ignored/excluded.
          *
-         * @param column       Name of the column to execute the conditional reduction on
-         * @param outputName   Name of the column, after the reduction has been executed
-         * @param reduction    Reduction to execute
-         * @param condition    Condition to use in the reductions
+         * @param column     Name of the column to execute the conditional reduction on
+         * @param outputName Name of the column, after the reduction has been executed
+         * @param reduction  Reduction to execute
+         * @param condition  Condition to use in the reductions
          */
-        public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition){
+        public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
             this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reduction, condition));
             return this;
         }
@@ -691,7 +733,8 @@ public class Reducer implements IReducer {
         }
     }
 
-    @AllArgsConstructor @Data
+    @AllArgsConstructor
+    @Data
     private static class ConditionalReduction implements Serializable {
         private final String columnName;
         private final String outputName;

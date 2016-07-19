@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -46,6 +49,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema","offsetAmountMilliseconds","windowSizeMilliseconds","windowSeparationMilliseconds", "timeZone"})
+@EqualsAndHashCode(exclude = {"inputSchema","offsetAmountMilliseconds","windowSizeMilliseconds","windowSeparationMilliseconds", "timeZone"})
 public class OverlappingTimeWindowFunction implements WindowFunction {
 
     private final String timeColumn;
@@ -126,9 +131,11 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
      *                                 of the window
      * @param excludeEmptyWindows      If true: exclude any windows that don't have any values in them
      */
-    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long windowSeparation,
-                                         TimeUnit windowSeparationUnit, long offset, TimeUnit offsetUnit,
-                                         boolean addWindowStartTimeColumn, boolean addWindowEndTimeColumn, boolean excludeEmptyWindows) {
+    public OverlappingTimeWindowFunction(@JsonProperty("timeColumn") String timeColumn, @JsonProperty("windowSize") long windowSize,
+                                         @JsonProperty("windowSizeUnit") TimeUnit windowSizeUnit, @JsonProperty("windowSeparation") long windowSeparation,
+                                         @JsonProperty("windowSeparationUnit") TimeUnit windowSeparationUnit, @JsonProperty("offset") long offset,
+                                         @JsonProperty("offsetUnit") TimeUnit offsetUnit, @JsonProperty("addWindowStartTimeColumn")boolean addWindowStartTimeColumn,
+                                         @JsonProperty("addWindowEndTimeColumn") boolean addWindowEndTimeColumn, @JsonProperty("excludeEmptyWindows") boolean excludeEmptyWindows) {
         this.timeColumn = timeColumn;
         this.windowSize = windowSize;
         this.windowSizeUnit = windowSizeUnit;

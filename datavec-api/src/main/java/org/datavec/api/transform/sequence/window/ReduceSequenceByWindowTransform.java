@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -33,13 +36,15 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema"})
+@EqualsAndHashCode(exclude = {"inputSchema"})
 public class ReduceSequenceByWindowTransform implements Transform {
 
     private IReducer reducer;
     private WindowFunction windowFunction;
     private Schema inputSchema;
 
-    public ReduceSequenceByWindowTransform(IReducer reducer, WindowFunction windowFunction){
+    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer, @JsonProperty("windowFunction") WindowFunction windowFunction){
         this.reducer = reducer;
         this.windowFunction = windowFunction;
     }
@@ -92,5 +97,10 @@ public class ReduceSequenceByWindowTransform implements Transform {
         }
 
         return out;
+    }
+
+    @Override
+    public String toString(){
+        return "ReduceSequencbyWindowTransform(reducer=" + reducer + ",windowFunction=" + windowFunction + ")";
     }
 }
