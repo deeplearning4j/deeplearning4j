@@ -24,6 +24,7 @@ import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -74,5 +75,10 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
         }
+    }
+
+    @Override
+    public String toString(){
+        return "DoubleColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
 }

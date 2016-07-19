@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -35,8 +36,11 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 18/07/2016.
@@ -100,11 +104,30 @@ public class TestJsonYaml {
         String asJson = tp.toJson();
         String asYaml = tp.toYaml();
 
-//        System.out.println(asJson);
+        System.out.println(asJson);
+        System.out.println(asYaml);
 
 
         TransformProcess tpFromJson = TransformProcess.fromJson(asJson);
+        TransformProcess tpFromYaml = TransformProcess.fromYaml(asYaml);
 
+        List<DataAction> daList = tp.getActionList();
+        List<DataAction> daListJson = tpFromJson.getActionList();
+        List<DataAction> daListYaml = tpFromYaml.getActionList();
+
+        for( int i=0; i<daList.size(); i++ ){
+            DataAction da1 = daList.get(i);
+            DataAction da2 = daListJson.get(i);
+            DataAction da3 = daListYaml.get(i);
+
+            System.out.println(i);
+
+            assertEquals(da1, da2);
+            assertEquals(da1, da3);
+        }
+
+        assertEquals(tp, tpFromJson);
+        assertEquals(tp, tpFromYaml);
 
     }
 

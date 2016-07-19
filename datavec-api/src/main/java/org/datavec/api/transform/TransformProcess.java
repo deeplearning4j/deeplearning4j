@@ -83,15 +83,12 @@ public class TransformProcess implements Serializable {
     public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList){
         this.initialSchema = initialSchema;
         this.actionList = actionList;
-    }
-
-    private TransformProcess(Builder builder) {
-        actionList = builder.actionList;
-        initialSchema = builder.initialSchema;
 
         //Calculate and set the schemas for each tranformation:
-        Schema currInputSchema = builder.initialSchema;
+        Schema currInputSchema = initialSchema;
         for (DataAction d : actionList) {
+            System.out.println(d);
+            System.out.println(currInputSchema.getColumnNames());
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
                 t.setInputSchema(currInputSchema);
@@ -128,6 +125,12 @@ public class TransformProcess implements Serializable {
                 throw new RuntimeException("Unknown action: " + d);
             }
         }
+    }
+
+    private TransformProcess(Builder builder) {
+        this(builder.initialSchema, builder.actionList);
+//        actionList = builder.actionList;
+//        initialSchema = builder.initialSchema;
     }
 
     public List<DataAction> getActionList() {

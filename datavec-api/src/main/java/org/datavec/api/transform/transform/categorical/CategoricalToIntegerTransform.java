@@ -19,21 +19,19 @@ package org.datavec.api.transform.transform.categorical;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.metadata.ColumnMetaData;
 
 import java.util.*;
 
 /**
  * Created by Alex on 4/03/2016.
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonIgnoreProperties({"inputSchema", "columnIdx", "stateNames", "statesMap"})
 public class CategoricalToIntegerTransform extends BaseTransform {
@@ -117,5 +115,26 @@ public class CategoricalToIntegerTransform extends BaseTransform {
             }
         }
         return out;
+    }
+
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof CategoricalToIntegerTransform)) return false;
+
+        CategoricalToIntegerTransform o2 = (CategoricalToIntegerTransform)o;
+
+        if(columnName == null){
+            return o2.columnName == null;
+        } else {
+            return columnName.equals(o2.columnName);
+        }
+    }
+
+    public int hashCode() {
+        return columnName.hashCode();
+    }
+
+    protected boolean canEqual(Object other) {
+        return other instanceof CategoricalToIntegerTransform;
     }
 }

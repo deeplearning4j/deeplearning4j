@@ -135,4 +135,9 @@ public class ReorderColumnsTransform implements Transform {
         }
         return out;
     }
+
+    @Override
+    public String toString(){
+        return "ReorderColumnsTransform(newOrder=" + newOrder + ")";
+    }
 }

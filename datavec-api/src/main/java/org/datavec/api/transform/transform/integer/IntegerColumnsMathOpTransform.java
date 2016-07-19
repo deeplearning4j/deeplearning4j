@@ -25,6 +25,8 @@ import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
+import java.util.Arrays;
+
 /**
  * Add a new integer column, calculated from one or more other columns. A new column (with the specified name) is added
  * as the final column of the output. No other columns are modified.<br>
@@ -77,5 +79,10 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
         }
+    }
+
+    @Override
+    public String toString(){
+        return "IntegerColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
 }

@@ -152,4 +152,7 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
     protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName);
 
     protected abstract Writable doOp(Writable... input);
+
+    @Override
+    public abstract String toString();
 }
