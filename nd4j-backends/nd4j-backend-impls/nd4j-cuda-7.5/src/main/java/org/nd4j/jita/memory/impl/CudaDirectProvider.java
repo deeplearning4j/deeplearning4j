@@ -43,7 +43,7 @@ public class CudaDirectProvider implements MemoryProvider {
     @Override
     public synchronized PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
 
-        log.info("shape onCreate: {}, target: {}", shape, location);
+        //log.info("shape onCreate: {}, target: {}", shape, location);
 
         switch (location) {
             case HOST: {

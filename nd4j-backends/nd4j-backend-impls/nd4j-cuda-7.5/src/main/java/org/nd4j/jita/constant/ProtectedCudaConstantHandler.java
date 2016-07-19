@@ -77,7 +77,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
-        logger.info("shape: " + point.getShape());
+  //      logger.info("shape: " + point.getShape());
         // and release device memory :)
 
         long currentOffset = constantOffsets.get(deviceId).get();
@@ -103,7 +103,6 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         long bytes = requiredMemoryBytes;
         // hack for misalignment avoidance for 16bit data type
         if (dataBuffer.dataType() == DataBuffer.Type.HALF) {
-            logger.info("bytes: {}", bytes);
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
