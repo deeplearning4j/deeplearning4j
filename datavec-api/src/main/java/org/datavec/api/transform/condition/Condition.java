@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.condition;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -30,6 +32,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface Condition extends Serializable {
 
     /**

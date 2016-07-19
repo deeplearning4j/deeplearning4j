@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -47,6 +49,8 @@ import java.util.List;
  * <b>See</b>: {@link IntegerMathOpTransform}, {@link DoubleMathOpTransform}, {@link LongMathOpTransform} for operations
  * with a scalar + single column, instea
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties({"columnIdxs","inputSchema"})
 public abstract class BaseColumnsMathOpTransform implements Transform {
 
     protected final String newColumnName;

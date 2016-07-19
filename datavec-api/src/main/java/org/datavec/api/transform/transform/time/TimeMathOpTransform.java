@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema","columnNumber","asMilliseconds"})
 public class TimeMathOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;

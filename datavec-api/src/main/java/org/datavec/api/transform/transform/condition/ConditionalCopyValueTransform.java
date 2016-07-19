@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.condition;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -35,6 +36,7 @@ import java.util.List;
  * @author Alex Black
  * @see ConditionalReplaceValueTransform to do a conditional replacement with a fixed value (instead of a value from another column)
  */
+@JsonIgnoreProperties({"columnToReplaceIdx","sourceColumnIdx"})
 public class ConditionalCopyValueTransform implements Transform {
 
     private final String columnToReplace;

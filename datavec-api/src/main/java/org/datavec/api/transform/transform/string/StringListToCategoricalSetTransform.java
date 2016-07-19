@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -33,16 +34,17 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema","map","columnIdx"})
 public class StringListToCategoricalSetTransform extends BaseTransform {
 
     private final String columnName;
     private final List<String> newColumnNames;
     private final List<String> categoryTokens;
-    private final String delim;
+    private final String delimiter;
 
     private final Map<String,Integer> map;
 
-    private int columIdx = -1;
+    private int columnIdx = -1;
 
     /**
      *
@@ -50,15 +52,15 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
      * @param newColumnNames The names of the new columns to create
      * @param categoryTokens The possible tokens that may be present. Note this list must have the same length and order
      *                       as the newColumnNames list
-     * @param delim The delimiter for the Strings to convert
+     * @param delimiter The delimiter for the Strings to convert
      */
     public StringListToCategoricalSetTransform(String columnName, List<String> newColumnNames, List<String> categoryTokens,
-                                               String delim) {
+                                               String delimiter) {
         if(newColumnNames.size() !=  categoryTokens.size()) throw new IllegalArgumentException("Names/tokens sizes cannot differ");
         this.columnName = columnName;
         this.newColumnNames = newColumnNames;
         this.categoryTokens = categoryTokens;
-        this.delim = delim;
+        this.delimiter = delimiter;
 
         map = new HashMap<>();
         for( int i=0; i<categoryTokens.size(); i++ ){
@@ -102,13 +104,13 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
     @Override
     public void setInputSchema(Schema inputSchema) {
         this.inputSchema = inputSchema;
-        this.columIdx = inputSchema.getIndexOfColumn(columnName);
+        this.columnIdx = inputSchema.getIndexOfColumn(columnName);
     }
 
     @Override
     public String toString() {
         return "StringListToCategoricalSetTransform(columnName=" + columnName + ",newColumnNames=" + newColumnNames + ",categoryTokens="
-                + categoryTokens + ",delim=\"" + delim + "\")";
+                + categoryTokens + ",delimiter=\"" + delimiter + "\")";
     }
 
     @Override
@@ -122,11 +124,11 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
 
         int i=0;
         for(Writable w : writables){
-            if(i++ == columIdx){
+            if(i++ == columnIdx){
                 String str = w.toString();
                 boolean[] present = new boolean[categoryTokens.size()];
                 if(str != null && !str.isEmpty()){
-                    String[] split = str.split(delim);
+                    String[] split = str.split(delimiter);
                     for( String s : split){
                         Integer idx = map.get(s);
                         if(idx == null) throw new IllegalStateException("Encountered unknown String: \"" + s + "\"");

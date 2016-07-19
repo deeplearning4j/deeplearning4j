@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.time;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ColumnType;
@@ -45,13 +47,14 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema","insertAfterIdx","deriveFromIdx"})
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;
     private final String insertAfter;
+    private DateTimeZone inputTimeZone;
     private final List<DerivedColumn> derivedColumns;
     private Schema inputSchema;
-    private DateTimeZone inputTimeZone;
     private int insertAfterIdx = -1;
     private int deriveFromIdx = -1;
 
@@ -234,6 +237,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private static class DerivedColumn implements Serializable {
         private final String columnName;
         private final ColumnType columnType;
