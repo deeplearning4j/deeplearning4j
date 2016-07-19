@@ -58,7 +58,7 @@ Clustering or grouping is the detection of similarities. Deep learning does not 
 With classification, deep learning is able to establish correlations between, say, pixels in an image and the name of a person. You might call this a static prediction. By the same token, exposed to enough of the right data, deep learning is able to establish correlations between present events and future events. The future event is like the label in a sense. Deep learning doesn't necessarily care about time, or the fact that something hasn't happened yet. Given a time series, deep learning may read a string of number and predict the number most likely to occur next. 
 
 * Hardware breakdowns (data centers, manufacturing, transport)
-* Health breakdowns (healthcare, wearables)
+* Health breakdowns (strokes, heart attacks based on vital stats and data from wearables)
 * Customer churn (predicting the likelihood that a customer will leave, based on web activity and metadata)
 * Employee turnover (ditto, but for employees)
 
