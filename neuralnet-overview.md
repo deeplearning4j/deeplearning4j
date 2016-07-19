@@ -8,6 +8,7 @@ layout: default
 Contents
 
 * <a href="#define">Neural Network Definition</a>
+* * <a href="#concrete">A Few Concrete Examples</a>
 * <a href="#element">Neural Network Elements</a>
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
@@ -29,7 +30,7 @@ Neural networks help us cluster and classify. You can think of them as a cluster
 
 What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What outcomes do I care about? Those outcomes are labels that could be applied to data: for example, `spam` or `not_spam` in an email filter, `good_guy` or `bad_guy` in fraud detection, `angry_customer` or `happy_customer` in customer relationship management. Then ask: Do I have the data to accompany those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) where spam has been labeled as spam, in order to teach an algorithm the correlation between labels and inputs? 
 
-## A Few Concrete Examples
+## <a name="concrete">A Few Concrete Examples</a>
 
 Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. Here are a few examples of what deep learning can do. 
 
