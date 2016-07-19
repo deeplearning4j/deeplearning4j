@@ -255,7 +255,7 @@ template<typename OpType>
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
-						result[r] = sPartials[threadIdx.x].index;
+						result[r] = (T) sPartials[threadIdx.x].index;
 					}
 				}
 			} else {
@@ -276,7 +276,7 @@ template<typename OpType>
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
-						result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+						result[i] = (T)  sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
 					}
 				}
 			}
@@ -349,14 +349,14 @@ template<typename OpType>
 
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = sPartials[0].index;
+						result[0] = (T)  sPartials[0].index;
 					}
 				}
 			} else {
 				if (tid == 0) {
 					unsigned int *tc = (unsigned *) reductionBuffer;
 					tc[4096] = 0;
-					result[0] = sPartials[0].index;
+					result[0] = (T) sPartials[0].index;
 				}
 			}
 		}

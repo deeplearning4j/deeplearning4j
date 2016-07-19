@@ -766,18 +766,19 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 template <>
 __device__ nd4j::float16 nd4j_atomicAdd<nd4j::float16>(nd4j::float16* address, nd4j::float16 val)  {
 	int* address_as_ull = (int*) address;
-	PAIR *old = (PAIR *) *address_as_ull, assumed;
-	PAIR fresh;
+	PAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
 	do {
 
-		nd4j::float16 res = ((nd4j::float16) old->B.H) + val;
+		nd4j::float16 res = ((nd4j::float16) old.B.H) + val;
 		fresh.B.H = res.data;
-		fresh.B.L = old->B.L;
+		fresh.B.L = old.B.L;
 
-		assumed.W = old->W;
-		old->W = atomicCAS(address_as_ull, assumed.W, fresh.W);
-	} while (assumed.W != old->W);
-	return old->B.H;
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+	return old.B.H;
 }
 
 template <>

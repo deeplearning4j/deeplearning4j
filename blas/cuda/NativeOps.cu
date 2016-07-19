@@ -3269,7 +3269,7 @@ float   NativeOps::execReduce3ScalarHalf(
 	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 32, funcAttributes[7]);
+	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH11 opNum:[%i]\n", opNum);
