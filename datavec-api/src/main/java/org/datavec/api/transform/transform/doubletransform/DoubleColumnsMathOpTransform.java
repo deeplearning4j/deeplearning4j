@@ -16,12 +16,15 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+
+import java.util.List;
 
 /**
  * Add a new double column, calculated from one or more other columns. A new column (with the specified name) is added
@@ -33,6 +36,10 @@ import org.datavec.api.writable.Writable;
  * @see DoubleMathOpTransform To do an in-place mathematical operation of a double column and a double scalar value
  */
 public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
+
+    public DoubleColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") List<String> columns) {
+        this(newColumnName, mathOp, columns.toArray(new String[columns.size()]));
+    }
 
     public DoubleColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
         super(newColumnName, mathOp, columns);

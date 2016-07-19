@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -42,7 +43,8 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
      * @param mathOp        Mathematical operation. Only Add/Subtract/Multiply/Divide/Modulus is allowed here
      * @param columns       Columns to use in the mathematical operation
      */
-    public IntegerColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
+    public IntegerColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp,
+                                         @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 

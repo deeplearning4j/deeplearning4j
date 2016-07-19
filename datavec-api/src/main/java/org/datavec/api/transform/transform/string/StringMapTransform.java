@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Text;
@@ -43,7 +44,7 @@ public class StringMapTransform extends BaseStringTransform {
      * @param columnName Name of the column
      * @param map Key: From. Value: To
      */
-    public StringMapTransform(String columnName, Map<String, String> map) {
+    public StringMapTransform(@JsonProperty("columnName") String columnName, @JsonProperty("map") Map<String, String> map) {
         super(columnName);
         this.map = map;
     }

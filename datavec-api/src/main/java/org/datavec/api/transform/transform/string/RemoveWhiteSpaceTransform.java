@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Text;
@@ -29,7 +30,7 @@ import org.datavec.api.writable.Writable;
 public class RemoveWhiteSpaceTransform extends BaseStringTransform {
 
 
-    public RemoveWhiteSpaceTransform(String columnName) {
+    public RemoveWhiteSpaceTransform(@JsonProperty("columnName") String columnName) {
         super(columnName);
     }
 

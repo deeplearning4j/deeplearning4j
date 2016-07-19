@@ -100,6 +100,8 @@ public class TestJsonYaml {
         String asJson = tp.toJson();
         String asYaml = tp.toYaml();
 
+//        System.out.println(asJson);
+
 
         TransformProcess tpFromJson = TransformProcess.fromJson(asJson);
 

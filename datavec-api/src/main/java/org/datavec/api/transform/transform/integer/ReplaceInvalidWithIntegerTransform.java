@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 
@@ -24,11 +25,11 @@ import org.datavec.api.writable.Writable;
  */
 public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
 
-    private final int intValue;
+    private final int value;
 
-    public ReplaceInvalidWithIntegerTransform(String column, int intValue) {
-        super(column);
-        this.intValue = intValue;
+    public ReplaceInvalidWithIntegerTransform(@JsonProperty("columnName") String columnName, @JsonProperty("value") int value) {
+        super(columnName);
+        this.value = value;
     }
 
     @Override
@@ -36,7 +37,7 @@ public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
         if(inputSchema.getMetaData(columnNumber).isValid(writable)){
             return writable;
         } else {
-            return new IntWritable(intValue);
+            return new IntWritable(value);
         }
     }
 }

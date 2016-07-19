@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -35,7 +36,7 @@ public class LongMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final long scalar;
 
-    public LongMathOpTransform(String columnName, MathOp mathOp, long scalar) {
+    public LongMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") long scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;

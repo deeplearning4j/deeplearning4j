@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -30,19 +31,20 @@ import java.util.Set;
  */
 public class MapAllStringsExceptListTransform extends BaseStringTransform {
 
-    private final Set<String> exclusionSet;
+    private final Set<String> exceptions;
     private final String newValue;
 
-    public MapAllStringsExceptListTransform(String column, String newValue, List<String> exceptions) {
-        super(column);
+    public MapAllStringsExceptListTransform(@JsonProperty("columnName") String columnName, @JsonProperty("newValue")String newValue,
+                                            @JsonProperty("exceptions") List<String> exceptions) {
+        super(columnName);
         this.newValue = newValue;
-        this.exclusionSet = new HashSet<>(exceptions);
+        this.exceptions = new HashSet<>(exceptions);
     }
 
     @Override
     public Text map(Writable writable) {
         String str = writable.toString();
-        if(exclusionSet.contains(str)){
+        if(exceptions.contains(str)){
             return new Text(str);
         } else {
             return new Text(newValue);

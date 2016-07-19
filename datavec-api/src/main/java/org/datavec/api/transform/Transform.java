@@ -63,6 +63,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = ConditionalCopyValueTransform.class, name = "ConditionalCopyValueTransform"),
         @JsonSubTypes.Type(value = ConditionalReplaceValueTransform.class, name = "ConditionalReplaceValueTransform"),
         @JsonSubTypes.Type(value = DoubleColumnsMathOpTransform.class, name = "DoubleColumnsMathOpTransform"),
+        @JsonSubTypes.Type(value = DoubleMathOpTransform.class, name = "DoubleMathOpTransform"),
         @JsonSubTypes.Type(value = Log2Normalizer.class, name = "Log2Normalizer"),
         @JsonSubTypes.Type(value = MinMaxNormalizer.class, name = "MinMaxNormalizer"),
         @JsonSubTypes.Type(value = StandardizeNormalizer.class, name = "StandardizeNormalizer"),
