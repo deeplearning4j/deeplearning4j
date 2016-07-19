@@ -22,6 +22,13 @@ public class ObservationSpace<O> {
     INDArray low;
     INDArray high;
 
+    public ObservationSpace(int[] shape){
+        name = "Custom";
+        this.shape = shape;
+        low = Nd4j.create(1);
+        high = Nd4j.create(1);
+    }
+
     public ObservationSpace(JSONObject jsonObject) {
 
         name = jsonObject.getString("name");
