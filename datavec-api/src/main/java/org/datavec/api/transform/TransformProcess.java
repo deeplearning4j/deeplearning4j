@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
@@ -286,10 +285,6 @@ public class TransformProcess implements Serializable {
 
     public static TransformProcess fromJson(String json) {
         return fromJacksonString(json, new JsonFactory());
-    }
-
-    public static TransformProcess fromXml(String xml) {
-        return fromJacksonString(xml, new XmlFactory());
     }
 
     public static TransformProcess fromYaml(String yaml) {
