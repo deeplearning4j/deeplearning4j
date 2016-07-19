@@ -114,7 +114,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_elu(T val) {
-			return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
+			if (val >= 0.0) return val;
+			else return nd4j_exp<T>(val) - 1.0;
+			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
 
@@ -124,7 +126,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_leakyrelu(T val,T alpha) {
-			return val < 0 ?  alpha * val : val;
+			if (val < 0.0) return alpha * val;
+			else return val;
+			//return val < 0 ?  alpha * val : val;
 		}
 
 
@@ -134,7 +138,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_eluderivative(T val) {
-			return val >= 0.0 ? 1.0 : nd4j_exp(val);
+			if (val > 0.0) return 1.0;
+			else return nd4j_exp(val);
+			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
 		template<typename T>
 #ifdef __CUDACC__

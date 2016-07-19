@@ -379,7 +379,10 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
+			if (d1 < -1.0) return -1.0;
+			else if (d1 > 1.0) return 1.0;
+			else return d1;
+			//return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
 		}
 	};
 
@@ -690,7 +693,9 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (d1 >= 0 ? 1.0 : params[0]);
+			if (d1 > 0.0) return 1.0;
+			else return params[0];
+			//return (d1 >= (T) 0.0 ? 1.0 : params[0]);
 		}
 	};
 
