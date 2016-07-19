@@ -16,12 +16,17 @@
 
 package org.datavec.api.transform.rank;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.metadata.LongMetaData;
 import lombok.Data;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.writable.comparator.WritableComparator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -41,11 +46,14 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@JsonIgnoreProperties({"inputSchema"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 public class CalculateSortedRank implements Serializable {
 
     private final String newColumnName;
     private final String sortOnColumn;
-    private final Comparator<Writable> comparator;
+    private final WritableComparator comparator;
     private final boolean ascending;
     private Schema inputSchema;
 
@@ -55,7 +63,7 @@ public class CalculateSortedRank implements Serializable {
      * @param sortOnColumn     Name of the column to sort on
      * @param comparator       Comparator used to sort examples
      */
-    public CalculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator) {
+    public CalculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator) {
         this(newColumnName, sortOnColumn, comparator, true);
     }
 
@@ -66,7 +74,8 @@ public class CalculateSortedRank implements Serializable {
      * @param comparator       Comparator used to sort examples
      * @param ascending        Whether examples should be ascending or descending, using the comparator
      */
-    public CalculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator, boolean ascending) {
+    public CalculateSortedRank(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("sortOnColumn") String sortOnColumn,
+                               @JsonProperty("comparator") WritableComparator comparator, @JsonProperty("ascending") boolean ascending) {
         this.newColumnName = newColumnName;
         this.sortOnColumn = sortOnColumn;
         this.comparator = comparator;

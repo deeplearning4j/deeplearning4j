@@ -16,14 +16,21 @@
 
 package org.datavec.api.writable.comparator;
 
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.Comparator;
 
-public class DoubleWritableComparator implements Comparator<Writable>, Serializable {
+@EqualsAndHashCode
+public class DoubleWritableComparator implements WritableComparator {
     @Override
     public int compare(Writable o1, Writable o2) {
         return Double.compare(o1.toDouble(), o2.toDouble());
+    }
+
+    @Override
+    public String toString(){
+        return "DoubleWritableComparator()";
     }
 }

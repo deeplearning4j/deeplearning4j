@@ -39,6 +39,7 @@ import org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform;
 import org.datavec.api.transform.transform.string.StringListToCategoricalSetTransform;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -140,6 +141,8 @@ public class TestJsonYaml {
                                 .build())
 
                 //Calculate sorted rank
+                .convertFromSequence()
+                .calculateSortedRank("rankColName","TimeCol2",new LongWritableComparator())
 
                 .build();
 

@@ -63,6 +63,7 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
+import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
@@ -656,7 +657,7 @@ public class TransformProcess implements Serializable {
          * @param sortOnColumn  Column to sort on
          * @param comparator    Comparator used to sort examples
          */
-        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator) {
+        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator)));
             return this;
         }
@@ -676,7 +677,7 @@ public class TransformProcess implements Serializable {
          * @param comparator    Comparator used to sort examples
          * @param ascending     If true: sort ascending. False: descending
          */
-        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, Comparator<Writable> comparator, boolean ascending) {
+        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator, boolean ascending) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator, ascending)));
             return this;
         }

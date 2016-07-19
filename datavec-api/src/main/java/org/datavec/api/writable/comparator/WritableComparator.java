@@ -16,19 +16,21 @@
 
 package org.datavec.api.writable.comparator;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.Comparator;
 
-public class IntWritableComparator implements WritableComparator {
-    @Override
-    public int compare(Writable o1, Writable o2) {
-        return Integer.compare(o1.toInt(), o2.toInt());
-    }
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value= {
+        @JsonSubTypes.Type(value = DoubleWritableComparator.class, name = "DoubleWritableComparator"),
+        @JsonSubTypes.Type(value = FloatWritableComparator.class, name = "FloatWritableComparator"),
+        @JsonSubTypes.Type(value = IntWritableComparator.class, name = "IntWritableComparator"),
+        @JsonSubTypes.Type(value = LongWritableComparator.class, name = "LongWritableComparator"),
+        @JsonSubTypes.Type(value = TextWritableComparator.class, name = "TextWritableComparator")
+})
+public interface WritableComparator extends Comparator<Writable>, Serializable {
 
-    @Override
-    public String toString(){
-        return "IntWritableComparator()";
-    }
 }

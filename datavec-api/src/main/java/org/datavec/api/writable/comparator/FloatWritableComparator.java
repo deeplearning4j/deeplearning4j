@@ -21,9 +21,14 @@ import org.datavec.api.writable.Writable;
 import java.io.Serializable;
 import java.util.Comparator;
 
-public class FloatWritableComparator implements Comparator<Writable>, Serializable {
+public class FloatWritableComparator implements WritableComparator {
     @Override
     public int compare(Writable o1, Writable o2) {
         return Float.compare(o1.toFloat(), o2.toFloat());
+    }
+
+    @Override
+    public String toString(){
+        return "FloatWritableComparator()";
     }
 }
