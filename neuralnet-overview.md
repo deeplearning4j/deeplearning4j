@@ -64,7 +64,7 @@ With classification, deep learning is able to establish correlations between, sa
 
 The better we can predict, the better we can prevent and pre-empt. As you can see, with neural networks, we're moving towards a world of fewer surprises. Not zero surprises, just marginally fewer.
 
-With that brief overview of what deep learning can do, let's look at what neural nets are made of. 
+With that brief overview of [deep learning use cases](./use_cases), let's look at what neural nets are made of. 
 
 ## <a name="element">Neural Network Elements</a>
 
