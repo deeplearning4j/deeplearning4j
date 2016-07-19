@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -37,7 +38,7 @@ public class HalfOpsTests {
     @Before
     public void setUp() {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true);
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true).setAllocationModel(Configuration.AllocationModel.DIRECT);
     }
 
     @Test
@@ -109,6 +110,11 @@ public class HalfOpsTests {
     }
 
     @Test
+    public void testCreation1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{0.0f, 0.0f, 0.0f, 2.0f, 2.0f, 0.0f});
+    }
+
+    @Test
     public void testIndexReduce1() throws Exception {
         INDArray array1 = Nd4j.create(new float[]{0.0f, 0.0f, 0.0f, 2.0f, 2.0f, 0.0f});
 
@@ -150,6 +156,7 @@ public class HalfOpsTests {
     }
 
     @Test
+    @Ignore
     public void testReduce3_2() throws Exception {
         INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});

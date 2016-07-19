@@ -1261,7 +1261,7 @@ public class Nd4j {
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
