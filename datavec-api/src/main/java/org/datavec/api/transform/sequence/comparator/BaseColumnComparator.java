@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -27,6 +28,7 @@ import java.util.List;
  * Compare/sort a sequence by the values of a specific column
  */
 @EqualsAndHashCode(exclude = {"schema", "columnIdx"})
+@JsonIgnoreProperties({"schema", "columnIdx"})
 public abstract class BaseColumnComparator implements SequenceComparator {
 
     protected Schema schema;

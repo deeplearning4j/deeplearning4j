@@ -30,7 +30,7 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"columnType"})
+@JsonIgnoreProperties({"columnType","schema", "columnIdx"})
 @EqualsAndHashCode(callSuper = true, exclude = {"columnType"})
 public class NumericalColumnComparator extends BaseColumnComparator {
 

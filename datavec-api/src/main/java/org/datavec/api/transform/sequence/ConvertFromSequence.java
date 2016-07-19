@@ -17,6 +17,7 @@
 package org.datavec.api.transform.sequence;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -34,6 +35,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(exclude = {"inputSchema"})
+@JsonIgnoreProperties({"inputSchema"})
 public class ConvertFromSequence {
 
     private SequenceSchema inputSchema;

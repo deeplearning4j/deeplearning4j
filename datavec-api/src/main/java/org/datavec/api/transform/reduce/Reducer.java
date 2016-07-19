@@ -66,16 +66,6 @@ public class Reducer implements IReducer {
     private Set<String> ignoreInvalidInColumns;
 
     private Reducer(Builder builder) {
-//        if (builder.keyColumns == null ) builder.keyColumns = new String[0];
-//        this.keyColumns = new ArrayList<>(builder.keyColumns.length);
-//        Collections.addAll(keyColumns, builder.keyColumns);
-//        this.keyColumnsSet = new HashSet<>();
-//        Collections.addAll(keyColumnsSet, builder.keyColumns);
-//        this.defaultOp = builder.defaultOp;
-//        this.opMap = builder.opMap;
-//        this.customReductions = builder.customReductions;
-//        this.conditionalReductions = builder.conditionalReductions;
-//        this.ignoreInvalidInColumns = builder.ignoreInvalidInColumns;
         this((builder.keyColumns == null ? null : Arrays.asList(builder.keyColumns)), builder.defaultOp, builder.opMap,
                 builder.customReductions, builder.conditionalReductions, builder.ignoreInvalidInColumns);
     }
@@ -107,7 +97,8 @@ public class Reducer implements IReducer {
         return schema;
     }
 
-    public List<String> getKeyColumnsSet() {
+    @Override
+    public List<String> getKeyColumns() {
         return keyColumns;
     }
 

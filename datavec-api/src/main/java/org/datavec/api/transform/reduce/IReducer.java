@@ -43,6 +43,6 @@ public interface IReducer extends Serializable {
 
     List<Writable> reduce(List<List<Writable>> examplesList);
 
-    List<String> getKeyColumnsSet();
+    List<String> getKeyColumns();
 
 }

@@ -25,7 +25,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.*;
 
-//@Data
 @JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
 public class RemoveColumnsTransform extends BaseTransform {
 
