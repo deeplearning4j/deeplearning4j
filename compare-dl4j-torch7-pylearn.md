@@ -5,7 +5,7 @@ layout: default
 
 # DL4J vs. Torch vs. Theano vs. Caffe vs. TensorFlow
 
-Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
+Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. 
 
 <p align="center">
 <a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
@@ -29,7 +29,7 @@ Content
 
 ### <a name="tensorflow">TensorFlow</a>
 
-* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano went on to create Tensorflow at Google. 
+* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
 * Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
@@ -41,7 +41,7 @@ Content
 
 Pros and Cons
 
-* (+) Python + numpy
+* (+) Python + Numpy
 * (+) Computational graph abstraction, like Theano
 * (+) Faster compile times than Theano
 * (+) TensorBoard for visualization
@@ -61,7 +61,7 @@ In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the 
 
 Pros and Cons
 
-* (+) Python + numpy
+* (+) Python + Numpy
 * (+) Computational graph is nice abstraction
 * (+) RNNs fit nicely in computational graph
 * (-) Raw Theano is somewhat low-level
