@@ -8,7 +8,7 @@ layout: default
 Contents
 
 * <a href="#define">Neural Network Definition</a>
-* * <a href="#concrete">A Few Concrete Examples</a>
+* <a href="#concrete">A Few Concrete Examples</a>
 * <a href="#element">Neural Network Elements</a>
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
