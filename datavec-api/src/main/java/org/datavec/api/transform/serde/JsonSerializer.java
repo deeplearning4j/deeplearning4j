@@ -14,19 +14,21 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.transform.serde;
+package org.datavec.api.transform.serde;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- * Created by Alex on 20/07/2016.
+ * Serializer used for converting objects (Transforms, Conditions, etc) to JSON format
+ *
+ * @author Alex Black
  */
-public class YamlSerializer extends BaseSerializer {
+public class JsonSerializer extends BaseSerializer {
 
     private ObjectMapper om;
 
-    public YamlSerializer(){
+    public JsonSerializer(){
         this.om = getMapper();
     }
 
@@ -36,6 +38,6 @@ public class YamlSerializer extends BaseSerializer {
     }
 
     private ObjectMapper getMapper(){
-        return getObjectMapper(new YAMLFactory());
+        return getObjectMapper(new JsonFactory());
     }
 }

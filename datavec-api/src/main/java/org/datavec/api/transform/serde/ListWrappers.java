@@ -14,10 +14,11 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.transform.serde;
+package org.datavec.api.transform.serde;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
@@ -78,4 +79,11 @@ public class ListWrappers {
         }
     }
 
+    @Getter
+    public static class DataActionList {
+        private List<DataAction> list;
+        public DataActionList(@JsonProperty("list") List<DataAction> list) {
+            this.list = list;
+        }
+    }
 }

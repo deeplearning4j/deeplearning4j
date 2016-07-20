@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.serde;
 
+import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
@@ -30,6 +31,8 @@ import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.sequence.ConvertFromSequence;
+import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
@@ -51,8 +54,6 @@ import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueT
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.serde.JsonSerializer;
-import org.datavec.api.transform.transform.serde.YamlSerializer;
 import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
@@ -372,5 +373,49 @@ public class TestYamlJsonSerde {
             assertEquals(f,t2);
             assertEquals(f,t3);
         }
+    }
+
+
+    @Test
+    public void testDataAction(){
+        DataAction[] dataActions = new DataAction[]{
+                new DataAction(new CategoricalToIntegerTransform("Col")),
+                new DataAction(new ConditionFilter(new DoubleColumnCondition("Col",ConditionOp.Equal, 1))),
+                new DataAction(new ConvertToSequence("KeyCol",new NumericalColumnComparator("Col",true))),
+                new DataAction(new ConvertFromSequence()),
+                new DataAction(new SequenceSplitTimeSeparation("TimeCol",1,TimeUnit.HOURS)),
+                new DataAction(new Reducer.Builder(ReduceOp.TakeFirst).build()),
+                new DataAction(new CalculateSortedRank("NewCol","SortCol", new DoubleWritableComparator()))
+        };
+
+        for(DataAction f : dataActions){
+            String yaml = y.serialize(f);
+            String json = j.serialize(f);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            DataAction t2 = y.deserializeDataAction(yaml);
+            DataAction t3 = j.deserializeDataAction(json);
+            assertEquals(f,t2);
+            assertEquals(f,t3);
+        }
+
+        String arrAsYaml = y.serialize(dataActions);
+        String arrAsJson = j.serialize(dataActions);
+        String listAsYaml = y.serializeDataActionList(Arrays.asList(dataActions));
+        String listAsJson = j.serializeDataActionList(Arrays.asList(dataActions));
+
+        System.out.println("\n\n\n\n");
+        System.out.println(listAsYaml);
+
+        List<DataAction> lFromYaml = y.deserializeDataActionList(listAsYaml);
+        List<DataAction> lFromJson = j.deserializeDataActionList(listAsJson);
+
+        assertEquals(Arrays.asList(dataActions), y.deserializeDataActionList(arrAsYaml));
+        assertEquals(Arrays.asList(dataActions), j.deserializeDataActionList(arrAsJson));
+        assertEquals(Arrays.asList(dataActions), lFromYaml);
+        assertEquals(Arrays.asList(dataActions), lFromJson);
     }
 }
