@@ -43,6 +43,7 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -114,6 +115,9 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.network = network;
         if (!network.isInitCalled()) network.init();
         this.trainingMaster = trainingMaster;
+
+        //Check if kryo configuration is correct:
+        SparkUtils.checkKryoConfiguration(javaSparkContext, log);
     }
 
     private static MultiLayerNetwork initNetwork(MultiLayerConfiguration conf) {
