@@ -1,6 +1,6 @@
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.DoubleFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, Double> {
+public class ScoreFlatMapFunction implements DoubleFlatMapFunction<Iterator<DataSet>> {
 
     private String json;
     private Broadcast<INDArray> params;
