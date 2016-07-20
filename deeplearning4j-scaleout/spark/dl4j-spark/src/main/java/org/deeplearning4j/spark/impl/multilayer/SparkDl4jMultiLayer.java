@@ -216,6 +216,23 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
+        serializedDataSets.cache();
+        trainingMaster.executeTraining(this, serializedDataSets);
+        return network;
+    }
+
+    /**
+     * Fit the SparkDl4jMultiLayer network using a directory of serialized DataSet objects
+     * The assumption here is that the directory contains a number of {@link DataSet} objects, each serialized using
+     * {@link DataSet#save(OutputStream)}
+     *
+     * @param path          Path to the directory containing the serialized DataSet objcets
+     * @param minPartitions The minimum number of partitions initially (passed to {@link JavaSparkContext#binaryFiles(String, int)}
+     * @return The MultiLayerNetwork after training
+     */
+    public MultiLayerNetwork fit(String path, int minPartitions) {
+        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
+        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
