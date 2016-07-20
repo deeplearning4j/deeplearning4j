@@ -40,8 +40,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
-        log.info("Hgemm called");
-
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
