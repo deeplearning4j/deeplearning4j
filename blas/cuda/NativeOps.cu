@@ -132,7 +132,11 @@ int getDeviceSharedThreshold(int deviceId) {
 	// please note threshold isn't multiple of 32, and that's NOT a mistake
 
 	int shmemThreshold;
-	if (ccMajor == 5 && ccMinor == 2)
+	if (ccMajor == 6 && ccMinor == 0)
+		shmemThreshold = 65536;
+	else if (ccMajor == 6 && ccMinor == 1)
+		shmemThreshold = 49152;
+	else if (ccMajor == 5 && ccMinor == 2)
 		shmemThreshold = 98304;
 	else if (ccMajor == 5)
 		shmemThreshold = 65536;
