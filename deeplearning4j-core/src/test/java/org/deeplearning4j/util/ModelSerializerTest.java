@@ -14,6 +14,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -72,10 +73,13 @@ public class ModelSerializerTest {
 
         File tempFile = File.createTempFile("tsfs", "fdfsdf");
         tempFile.deleteOnExit();
+        FileOutputStream fos = new FileOutputStream(tempFile);
 
-        ModelSerializer.writeModel(net, tempFile, true);
+        ModelSerializer.writeModel(net, fos, true);
 
-        MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(tempFile);
+        FileInputStream fis = new FileInputStream(tempFile);
+
+        MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(fis);
 
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
         assertEquals(net.params(), network.params());
