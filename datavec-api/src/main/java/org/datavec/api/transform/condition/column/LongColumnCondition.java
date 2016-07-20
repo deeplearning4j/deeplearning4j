@@ -44,7 +44,7 @@ public class LongColumnCondition extends BaseColumnCondition {
      * @param op         Operation (<, >=, !=, etc)
      * @param value      Value to use in the condition
      */
-    public LongColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") long value) {
+    public LongColumnCondition(String columnName, ConditionOp op, long value) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
@@ -98,6 +98,14 @@ public class LongColumnCondition extends BaseColumnCondition {
         this.set = set;
     }
 
+    //Private constructor for Jackson deserialization only
+    private LongColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                @JsonProperty("value") long value, @JsonProperty("set") Set<Long> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = value;
+        this.set = set;
+    }
 
     @Override
     public boolean columnCondition(Writable writable) {

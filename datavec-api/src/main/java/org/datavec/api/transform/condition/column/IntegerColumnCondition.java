@@ -44,7 +44,7 @@ public class IntegerColumnCondition extends BaseColumnCondition {
      * @param op         Operation (<, >=, !=, etc)
      * @param value      Value to use in the condition
      */
-    public IntegerColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") int value) {
+    public IntegerColumnCondition(String columnName, ConditionOp op, int value) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
@@ -95,6 +95,15 @@ public class IntegerColumnCondition extends BaseColumnCondition {
         }
         this.op = op;
         this.value = 0;
+        this.set = set;
+    }
+
+    //Private constructor for Jackson deserialization only
+    private IntegerColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                   @JsonProperty("value") int value, @JsonProperty("set") Set<Integer> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = value;
         this.set = set;
     }
 

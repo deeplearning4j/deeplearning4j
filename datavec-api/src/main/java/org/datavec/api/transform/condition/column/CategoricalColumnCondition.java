@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
@@ -39,25 +40,25 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      * Constructor for conditions equal or not equal.
      * Uses default sequence condition mode, {@link BaseColumnCondition#DEFAULT_SEQUENCE_CONDITION_MODE}
      *
-     * @param column Column to check for the condition
-     * @param op     Operation (== or != only)
-     * @param value  Value to use in the condition
+     * @param columnName Column to check for the condition
+     * @param op         Operation (== or != only)
+     * @param value      Value to use in the condition
      */
-    public CategoricalColumnCondition(String column, ConditionOp op, String value) {
-        this(column, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
+    public CategoricalColumnCondition(String columnName, ConditionOp op, String value) {
+        this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
     /**
      * Constructor for conditions equal or not equal
      *
-     * @param column                Column to check for the condition
+     * @param columnName            Column to check for the condition
      * @param sequenceConditionMode Mode for handling sequence data
      * @param op                    Operation (== or != only)
      * @param value                 Value to use in the condition
      */
-    public CategoricalColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
+    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode,
                                       ConditionOp op, String value) {
-        super(column, sequenceConditionMode);
+        super(columnName, sequenceConditionMode);
         if (op != ConditionOp.Equal && op != ConditionOp.NotEqual) {
             throw new IllegalArgumentException("Invalid condition op: can only use this constructor with Equal or NotEqual conditions");
         }
@@ -71,25 +72,35 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      * Constructor for operations: ConditionOp.InSet, ConditionOp.NotInSet
      * Uses default sequence condition mode, {@link BaseColumnCondition#DEFAULT_SEQUENCE_CONDITION_MODE}
      *
-     * @param column Column to check for the condition
-     * @param op     Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
-     * @param set    Set to use in the condition
+     * @param columnName Column to check for the condition
+     * @param op         Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
+     * @param set        Set to use in the condition
      */
-    public CategoricalColumnCondition(String column, ConditionOp op, Set<String> set) {
-        this(column, DEFAULT_SEQUENCE_CONDITION_MODE, op, set);
+    public CategoricalColumnCondition(String columnName, ConditionOp op,
+                                      Set<String> set) {
+        this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, set);
+    }
+
+    //Private constructor for Jackson deserialization only
+    private CategoricalColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                       @JsonProperty("value") String value, @JsonProperty("set") Set<String> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = value;
+        this.set = set;
     }
 
     /**
      * Constructor for operations: ConditionOp.InSet, ConditionOp.NotInSet
      *
-     * @param column                Column to check for the condition
+     * @param columnName            Column to check for the condition
      * @param sequenceConditionMode Mode for handling sequence data
      * @param op                    Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
      * @param set                   Set to use in the condition
      */
-    public CategoricalColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
+    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode,
                                       ConditionOp op, Set<String> set) {
-        super(column, sequenceConditionMode);
+        super(columnName, sequenceConditionMode);
         if (op != ConditionOp.InSet && op != ConditionOp.NotInSet) {
             throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }

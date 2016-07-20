@@ -18,6 +18,14 @@ package org.datavec.api.transform.serde;
 
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.condition.BooleanCondition;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.*;
+import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
+import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
@@ -43,10 +51,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -55,6 +60,9 @@ import static org.junit.Assert.assertEquals;
  * Created by Alex on 20/07/2016.
  */
 public class TestYamlJsonSerde {
+
+    public static YamlSerializer y = new YamlSerializer();
+    public static JsonSerializer j = new JsonSerializer();
 
     @Test
     public void testTransforms(){
@@ -95,9 +103,6 @@ public class TestYamlJsonSerde {
                 new TimeMathOpTransform("TimeCol", MathOp.Add, 1, TimeUnit.HOURS)
         };
 
-        YamlSerializer y = new YamlSerializer();
-        JsonSerializer j = new JsonSerializer();
-
         for(Transform t : transforms){
             String yaml = y.serialize(t);
             String json = j.serialize(t);
@@ -131,5 +136,120 @@ public class TestYamlJsonSerde {
     }
 
 
+    @Test
+    public void testFilters(){
+        Filter[] filters = new Filter[]{
+                new FilterInvalidValues("A","B"),
+                new ConditionFilter(new DoubleColumnCondition("Col", ConditionOp.GreaterOrEqual, 10.0))
+        };
+
+        for(Filter f : filters){
+            String yaml = y.serialize(f);
+            String json = j.serialize(f);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            Filter t2 = y.deserializeFilter(yaml);
+            Filter t3 = j.deserializeFilter(json);
+            assertEquals(f,t2);
+            assertEquals(f,t3);
+        }
+
+        String arrAsYaml = y.serialize(filters);
+        String arrAsJson = j.serialize(filters);
+        String listAsYaml = y.serializeFilterList(Arrays.asList(filters));
+        String listAsJson = j.serializeFilterList(Arrays.asList(filters));
+
+        System.out.println("\n\n\n\n");
+        System.out.println(listAsYaml);
+
+        List<Filter> lFromYaml = y.deserializeFilterList(listAsYaml);
+        List<Filter> lFromJson = j.deserializeFilterList(listAsJson);
+
+        assertEquals(Arrays.asList(filters), y.deserializeFilterList(arrAsYaml));
+        assertEquals(Arrays.asList(filters), j.deserializeFilterList(arrAsJson));
+        assertEquals(Arrays.asList(filters), lFromYaml);
+        assertEquals(Arrays.asList(filters), lFromJson);
+    }
+
+    @Test
+    public void testConditions(){
+        Set<String> setStr = new HashSet<>();
+        setStr.add("A");
+        setStr.add("B");
+
+        Set<Double> setD = new HashSet<>();
+        setD.add(1.0);
+        setD.add(2.0);
+
+        Set<Integer> setI = new HashSet<>();
+        setI.add(1);
+        setI.add(2);
+
+        Set<Long> setL = new HashSet<>();
+        setL.add(1L);
+        setL.add(2L);
+
+        Condition[] conditions = new Condition[]{
+                new CategoricalColumnCondition("Col",ConditionOp.Equal, "A"),
+                new CategoricalColumnCondition("Col",ConditionOp.NotInSet, setStr),
+                new DoubleColumnCondition("Col", ConditionOp.Equal, 1.0),
+                new DoubleColumnCondition("Col", ConditionOp.InSet, setD),
+
+                new IntegerColumnCondition("Col", ConditionOp.Equal, 1),
+                new IntegerColumnCondition("Col", ConditionOp.InSet, setI),
+
+                new LongColumnCondition("Col", ConditionOp.Equal, 1),
+                new LongColumnCondition("Col", ConditionOp.InSet, setL),
+
+                new NullWritableColumnCondition("Col"),
+
+                new StringColumnCondition("Col", ConditionOp.NotEqual, "A"),
+                new StringColumnCondition("Col", ConditionOp.InSet, setStr),
+
+                new TimeColumnCondition("Col", ConditionOp.Equal, 1L),
+                new TimeColumnCondition("Col", ConditionOp.InSet, setL),
+
+                new StringRegexColumnCondition("Col", "Regex"),
+
+                BooleanCondition.OR(
+                        BooleanCondition.AND(
+                                new CategoricalColumnCondition("Col",ConditionOp.Equal, "A"),
+                                new LongColumnCondition("Col2", ConditionOp.Equal, 1)),
+                        BooleanCondition.NOT(new TimeColumnCondition("Col3", ConditionOp.Equal, 1L)))
+        };
+
+        for(Condition c : conditions){
+            String yaml = y.serialize(c);
+            String json = j.serialize(c);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            Condition t2 = y.deserializeCondition(yaml);
+            Condition t3 = j.deserializeCondition(json);
+            assertEquals(c,t2);
+            assertEquals(c,t3);
+        }
+
+        String arrAsYaml = y.serialize(conditions);
+        String arrAsJson = j.serialize(conditions);
+        String listAsYaml = y.serializeConditionList(Arrays.asList(conditions));
+        String listAsJson = j.serializeConditionList(Arrays.asList(conditions));
+
+        System.out.println("\n\n\n\n");
+        System.out.println(listAsYaml);
+
+        List<Condition> lFromYaml = y.deserializeConditionList(listAsYaml);
+        List<Condition> lFromJson = j.deserializeConditionList(listAsJson);
+
+        assertEquals(Arrays.asList(conditions), y.deserializeConditionList(arrAsYaml));
+        assertEquals(Arrays.asList(conditions), j.deserializeConditionList(arrAsJson));
+        assertEquals(Arrays.asList(conditions), lFromYaml);
+        assertEquals(Arrays.asList(conditions), lFromJson);
+    }
 
 }

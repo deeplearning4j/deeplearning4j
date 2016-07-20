@@ -44,7 +44,7 @@ public class StringColumnCondition extends BaseColumnCondition {
      * @param op         Operation (== or != only)
      * @param value      Value to use in the condition
      */
-    public StringColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") String value) {
+    public StringColumnCondition(String columnName, ConditionOp op, String value) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
@@ -95,6 +95,15 @@ public class StringColumnCondition extends BaseColumnCondition {
         }
         this.op = op;
         this.value = null;
+        this.set = set;
+    }
+
+    //Private constructor for Jackson deserialization only
+    private StringColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                  @JsonProperty("value") String value, @JsonProperty("set") Set<String> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = value;
         this.set = set;
     }
 

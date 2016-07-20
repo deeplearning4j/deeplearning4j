@@ -96,8 +96,8 @@ public abstract class BaseSerializer {
     }
 
 
-    public String serializeFilterList(Filter[] filters){
-        return serialize(Arrays.asList(filters));
+    public String serialize(Filter[] filters){
+        return serializeFilterList(Arrays.asList(filters));
     }
 
     public String serializeFilterList(List<Filter> list){

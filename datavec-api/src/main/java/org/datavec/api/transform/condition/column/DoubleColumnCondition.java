@@ -44,7 +44,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
      * @param op         Operation (<, >=, !=, etc)
      * @param value      Value to use in the condition
      */
-    public DoubleColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") double value) {
+    public DoubleColumnCondition(String columnName, ConditionOp op, double value) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
@@ -95,6 +95,15 @@ public class DoubleColumnCondition extends BaseColumnCondition {
         }
         this.op = op;
         this.value = 0;
+        this.set = set;
+    }
+
+    //Private constructor for Jackson deserialization only
+    private DoubleColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                  @JsonProperty("value") double value, @JsonProperty("set") Set<Double> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = value;
         this.set = set;
     }
 
