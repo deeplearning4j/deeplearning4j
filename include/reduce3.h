@@ -112,7 +112,7 @@ template<typename OpType>
 				T startingVal = this->startingValue(dx);
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extraZ[4];
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
@@ -169,7 +169,7 @@ template<typename OpType>
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extraZ[4];
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
@@ -310,7 +310,7 @@ template<typename OpType>
 				sPartials[threadIdx.x] = init;
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extraZ[4];
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
