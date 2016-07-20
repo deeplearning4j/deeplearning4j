@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -35,7 +36,8 @@ public class Log2Normalizer extends BaseDoubleTransform {
     protected final double columnMin;
     protected final double scalingFactor;
 
-    public Log2Normalizer(String columnName, double columnMean, double columnMin, double scalingFactor) {
+    public Log2Normalizer(@JsonProperty("columnName") String columnName, @JsonProperty("columnMean") double columnMean,
+                          @JsonProperty("columnMin") double columnMin, @JsonProperty("scalingFactor") double scalingFactor) {
         super(columnName);
         if (Double.isNaN(columnMean) || Double.isInfinite(columnMean))
             throw new IllegalArgumentException("Invalid input");

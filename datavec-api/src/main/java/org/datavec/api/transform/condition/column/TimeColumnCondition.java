@@ -33,7 +33,7 @@ import java.util.Set;
 public class TimeColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
-    private final long value;
+    private final Long value;
     private final Set<Long> set;
 
     /**
@@ -44,7 +44,7 @@ public class TimeColumnCondition extends BaseColumnCondition {
      * @param op         Operation (<, >=, !=, etc)
      * @param value      Time value (in epoch millisecond format) to use in the condition
      */
-    public TimeColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op, @JsonProperty("value") long value) {
+    public TimeColumnCondition(String columnName, ConditionOp op, long value) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, value);
     }
 
@@ -94,7 +94,16 @@ public class TimeColumnCondition extends BaseColumnCondition {
             throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
-        this.value = 0;
+        this.value = null;
+        this.set = set;
+    }
+
+    //Private constructor for Jackson deserialization only
+    private TimeColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
+                                @JsonProperty("value") long value, @JsonProperty("set") Set<Long> set) {
+        super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
+        this.op = op;
+        this.value = (set == null ? value : null);
         this.set = set;
     }
 

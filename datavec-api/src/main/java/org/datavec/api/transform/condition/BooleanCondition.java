@@ -17,6 +17,7 @@
 package org.datavec.api.transform.condition;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -28,6 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode
 public class BooleanCondition implements Condition {
 
     public enum Type {AND, OR, NOT, XOR}
