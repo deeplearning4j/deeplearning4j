@@ -305,13 +305,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param average Whether to sum the scores, or averag them
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average) {
-        long n = data.count();
-        JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
-        List<Double> scoresList = scores.collect();
-        double sum = 0.0;
-        for (Double d : scoresList) sum += d;
-        if (average) return sum / n;
-        return sum;
+        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
+        if (average) return scores.mean();
+        return scores.sum();
     }
 
     /**
