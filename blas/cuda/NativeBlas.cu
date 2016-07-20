@@ -1021,11 +1021,16 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                      Nd4jPointer B, int ldb,
                      float beta,
                      Nd4jPointer C, int ldc) {
+    void *aPointer = reinterpret_cast<void *>(A);
+    void *bPointer = reinterpret_cast<void *>(B);
+    void *cPointer = reinterpret_cast<void *>(C);
+    /*
     __half *aPointer = reinterpret_cast<__half *>(A);
     __half *bPointer = reinterpret_cast<__half *>(B);
     __half *cPointer = reinterpret_cast<__half *>(C);
+    */
     cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
-
+/*
     nd4j::float16 hAlpha = alpha;
     nd4j::float16 hBeta = beta;
 
@@ -1035,21 +1040,22 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                 &hAlpha.data,
                 aPointer, lda,
                 bPointer, ldb,
-                &hAlpha.data,
+                &hBeta.data,
                 cPointer, ldc);
+*/
 
 
-    /*
+    // CUDA_R_16F for CUDA 8
     cublasSgemmEx(*handle,
                    convertTranspose(TransA),
                    convertTranspose(TransB),
                    M, N, K,
                    &alpha,
-                   aPointer, CUDA_R_16F, lda,
-                   bPointer, CUDA_R_16F, ldb,
+                   aPointer, CUBLAS_DATA_HALF, lda,
+                   bPointer, CUBLAS_DATA_HALF, ldb,
                    &beta,
-                   cPointer, CUDA_R_16F, ldc);
-    */
+                   cPointer, CUBLAS_DATA_HALF, ldc);
+
 }
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
