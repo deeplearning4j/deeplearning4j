@@ -16,6 +16,7 @@ import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.slf4j.Logger;
 import scala.Tuple2;
 
 import java.io.*;
@@ -31,6 +32,29 @@ import java.util.Random;
 public class SparkUtils {
 
     private SparkUtils() {
+    }
+
+    /**
+     * Check the spark configuration for incorrect Kryo configuration, logging a warning message if necessary
+     *
+     * @param javaSparkContext Spark context
+     * @param log              Logger to log messages to
+     * @return True if ok (no kryo, or correct kryo setup)
+     */
+    public static boolean checkKryoConfiguration(JavaSparkContext javaSparkContext, Logger log) {
+        //Check if kryo configuration is correct:
+        String serializer = javaSparkContext.getConf().get("spark.serializer", null);
+        if (serializer != null && serializer.equals("org.apache.spark.serializer.KryoSerializer")) {
+            //conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+            String kryoRegistrator = javaSparkContext.getConf().get("spark.kryo.registrator", null);
+            if (kryoRegistrator == null || !kryoRegistrator.equals("org.nd4j.Nd4jRegistrator")) {
+                log.warn("***** Kryo serialization detected without Nd4j Registrator *****");
+                log.warn("***** ND4J Kryo registrator is required to avoid serialization (NullPointerException) issues on NDArrays *****");
+                log.warn("***** Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\"); *****");
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

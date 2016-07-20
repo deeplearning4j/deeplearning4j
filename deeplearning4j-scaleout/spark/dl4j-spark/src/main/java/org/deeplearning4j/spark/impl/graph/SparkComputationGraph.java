@@ -38,6 +38,7 @@ import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGDataSet;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGMultiDataSet;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -89,6 +90,9 @@ public class SparkComputationGraph implements Serializable {
         this.conf = network.getConfiguration().clone();
         this.network = network;
         this.network.init();
+
+        //Check if kryo configuration is correct:
+        SparkUtils.checkKryoConfiguration(javaSparkContext, log);
     }
 
 
@@ -102,6 +106,9 @@ public class SparkComputationGraph implements Serializable {
         this.conf = conf.clone();
         this.network = new ComputationGraph(conf);
         this.network.init();
+
+        //Check if kryo configuration is correct:
+        SparkUtils.checkKryoConfiguration(sparkContext, log);
     }
 
     public JavaSparkContext getSparkContext(){
