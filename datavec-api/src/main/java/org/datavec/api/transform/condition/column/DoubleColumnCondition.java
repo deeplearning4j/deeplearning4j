@@ -33,7 +33,7 @@ import java.util.Set;
 public class DoubleColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
-    private final double value;
+    private final Double value;
     private final Set<Double> set;
 
     /**
@@ -94,7 +94,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
             throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
-        this.value = 0;
+        this.value = null;
         this.set = set;
     }
 
@@ -103,7 +103,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
                                   @JsonProperty("value") double value, @JsonProperty("set") Set<Double> set) {
         super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
         this.op = op;
-        this.value = value;
+        this.value = (set == null ? value : null);
         this.set = set;
     }
 

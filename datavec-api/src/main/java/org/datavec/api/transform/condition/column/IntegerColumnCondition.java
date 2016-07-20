@@ -33,7 +33,7 @@ import java.util.Set;
 public class IntegerColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
-    private final int value;
+    private final Integer value;
     private final Set<Integer> set;
 
     /**
@@ -94,16 +94,16 @@ public class IntegerColumnCondition extends BaseColumnCondition {
             throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
-        this.value = 0;
+        this.value = null;
         this.set = set;
     }
 
     //Private constructor for Jackson deserialization only
     private IntegerColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
-                                   @JsonProperty("value") int value, @JsonProperty("set") Set<Integer> set) {
+                                   @JsonProperty("value") Integer value, @JsonProperty("set") Set<Integer> set) {
         super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
         this.op = op;
-        this.value = value;
+        this.value = (set == null ? value : null);
         this.set = set;
     }
 
