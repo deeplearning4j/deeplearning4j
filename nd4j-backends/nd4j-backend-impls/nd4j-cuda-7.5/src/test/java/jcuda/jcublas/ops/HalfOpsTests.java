@@ -74,6 +74,19 @@ public class HalfOpsTests {
     }
 
     @Test
+    public void testHDot1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f });
+        INDArray array2 = Nd4j.create(new float[]{1.15f, 1.15f, 1.15f, 1.15f, 1.15f, 1.15f});
+
+
+        double dotWrapped = 0;
+
+        dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
+
+        assertEquals(6.968f, dotWrapped, 0.01f);
+    }
+
+    @Test
     public void testHGemm1() throws Exception {
         INDArray array1 = Nd4j.ones(10, 10);
         INDArray array2 = Nd4j.ones(10, 10);

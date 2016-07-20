@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,6 +39,41 @@ public class JcublasLevel1 extends BaseLevel1 {
         throw new UnsupportedOperationException();
     }
 
+
+    @Override
+    protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+        DataTypeValidation.assertSameDataType(X, Y);
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
+
+        float ret = 1f;
+
+//        CublasPointer xCPointer = new CublasPointer(X, ctx);
+//        CublasPointer yCPointer = new CublasPointer(Y, ctx);
+
+        Dot dot = new Dot(X, Y);
+        Nd4j.getExecutioner().exec(dot);
+
+        ret = dot.getFinalResult().floatValue();
+/*
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            long result = nativeOps.setBlasStream(handle, ctx.getOldStream());
+            if (result == 0)
+                throw new IllegalStateException("cublasSetStream failed");
+
+            ret = nd4jBlas.sdot(new PointerPointer(new Pointer[] {handle}),
+                    N,
+                    xCPointer.getDevicePointer(),
+                    incX,
+                    yCPointer.getDevicePointer(),
+                    incY);
+        }
+        */
+
+//        allocator.registerAction(ctx, null, X, Y);
+
+        return ret;
+    }
 
 
     @Override
@@ -67,6 +103,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         allocator.registerAction(ctx, null, X, Y);
 
         return ret;
+    }
+
+    @Override
+    protected float hdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override

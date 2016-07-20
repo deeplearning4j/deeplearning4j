@@ -31,6 +31,16 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float hdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         return nd4jBlas.sdot(DUMMY,N,X.data().addressPointer(),incX,Y.data().addressPointer(),incY);
     }
