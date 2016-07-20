@@ -12,7 +12,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.nd4j.linalg.dataset.DataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -26,12 +32,15 @@ import org.nd4j.linalg.dataset.DataSet;
  * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
  *
  * @author Alex Black
+ * @author raver119@gmail.com
  */
 public class AsyncDataSetIterator implements DataSetIterator {
     private final DataSetIterator baseIterator;
     private final BlockingQueue<DataSet> blockingQueue;
     private Thread thread;
     private IteratorRunnable runnable;
+
+    protected static final Logger logger = LoggerFactory.getLogger(AsyncDataSetIterator.class);
 
     /**
      *
@@ -50,11 +59,18 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
         if(queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
+        if (queueSize < 2)
+            queueSize = 2;
+
         this.baseIterator = baseIterator;
+        this.baseIterator.reset();
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = new Thread(runnable);
 
+        /**
+         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
+         */
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
@@ -88,7 +104,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public synchronized void reset() {
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
-        if(runnable.isAlive) {
+        if(runnable.isAlive.get()) {
             thread.interrupt();
         }
         //Wait for runnable to exit, but should only have to wait very short period of time
@@ -142,15 +158,18 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     @Override
     public synchronized  boolean hasNext() {
-        if(!blockingQueue.isEmpty())
+        if(!blockingQueue.isEmpty()) {
             return true;
+        }
 
-        if(runnable.isAlive) {
+        if(runnable.isAlive.get()) {
             //Empty blocking queue, but runnable is alive
             //(a) runnable is blocking on baseIterator.next()
             //(b) runnable is blocking on blockingQueue.put()
             //either way: there's at least 1 more element to come
-            return true;
+
+            // this is fix for possible race condition within runnable cycle
+            return runnable.hasLatch();
         } else {
             if(!runnable.killRunnable && runnable.exception != null ) {
                 throw runnable.exception;   //Something went wrong
@@ -171,6 +190,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         }
 
         if(!blockingQueue.isEmpty()){
+            runnable.feeder.decrementAndGet();
             return blockingQueue.poll();    //non-blocking, but returns null if empty
         }
 
@@ -183,15 +203,16 @@ public class AsyncDataSetIterator implements DataSetIterator {
             //Reason: what if baseIterator.next() throws an exception after
             // blockingQueue.take() is called? In this case, next() will never return
             while(runnable.exception == null ){
-                DataSet ds = blockingQueue.poll(5,TimeUnit.SECONDS);
+                DataSet ds = blockingQueue.poll(2,TimeUnit.SECONDS);
                 if(ds != null) {
+                    runnable.feeder.decrementAndGet();
                     return ds;
                 }
                 if(runnable.killRunnable){
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
-                if(!runnable.isAlive && blockingQueue.isEmpty()){
+                if(!runnable.isAlive.get() && blockingQueue.isEmpty()){
                     throw new IllegalStateException("Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
                 }
             }
@@ -218,19 +239,48 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     private class IteratorRunnable implements Runnable {
         private volatile boolean killRunnable = false;
-        private volatile boolean isAlive = true;
+        private volatile AtomicBoolean isAlive = new AtomicBoolean(true);
         private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
+        private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+        private AtomicLong feeder = new AtomicLong(0);
 
         public IteratorRunnable(boolean hasNext){
-            this.isAlive = hasNext;
+            this.isAlive.set(hasNext);
+        }
+
+        public boolean hasLatch() {
+            /*
+            This method was added to address possible race condition within runnable loop.
+            Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
+            and if it's already locked within main runnable loop - we get fast TRUE.
+         */
+
+            // this is added just to avoid expensive lock
+            if (feeder.get() > 0 || !blockingQueue.isEmpty())
+                return true;
+
+            try {
+                lock.readLock().lock();
+                return baseIterator.hasNext() || feeder.get() != 0 || !blockingQueue.isEmpty();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void run() {
             try {
                 while (!killRunnable && baseIterator.hasNext()) {
-                    blockingQueue.put(baseIterator.next());
+
+                    lock.writeLock().lock();
+                    DataSet ds = baseIterator.next();
+
+                    // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
+                    feeder.incrementAndGet();
+                    lock.writeLock().unlock();
+
+                    blockingQueue.put(ds);
                 }
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
@@ -241,7 +291,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             } catch(RuntimeException e ) {
                 exception = e;
             } finally {
-                isAlive = false;
+                isAlive.set(false);
                 runCompletedSemaphore.release();
             }
         }
