@@ -59,8 +59,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
         if(queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
-        if (queueSize < 4)
-            queueSize = 4;
+        if (queueSize < 2)
+            queueSize = 2;
 
         this.baseIterator = baseIterator;
         this.baseIterator.reset();
