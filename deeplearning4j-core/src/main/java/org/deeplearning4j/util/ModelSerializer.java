@@ -16,6 +16,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -231,76 +234,9 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
-        ZipInputStream zipFile = new ZipInputStream(is);
-
-        boolean gotConfig = false;
-        boolean gotCoefficients = false;
-        boolean gotUpdater = false;
-        boolean gotPreProcessor = false;
-
-        String json = "";
-        INDArray params = null;
-        DataSetPreProcessor preProcessor = null;
-        Updater updater = null;
-
-
-        ZipEntry entry;
-        while((entry = zipFile.getNextEntry()) != null) {
-            switch (entry.getName()) {
-                case "configuration.json":
-                    DataInputStream dis = new DataInputStream(zipFile);
-                    params = Nd4j.read(dis);
-                    gotConfig = true;
-                    break;
-                case "coefficients.bin":
-                    DataInputStream dis2 = new DataInputStream(zipFile);
-                    params = Nd4j.read(dis2);
-                    gotCoefficients = true;
-                    break;
-                case UPDATER_BIN: {
-                    ObjectInputStream ois = new ObjectInputStream(zipFile);
-
-                    try {
-                        updater = (Updater) ois.readObject();
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    gotUpdater = true;
-                    }
-                    break;
-                case "preprocessor.bin": {
-                    ObjectInputStream ois = new ObjectInputStream(zipFile);
-
-                    try {
-                        preProcessor = (DataSetPreProcessor) ois.readObject();
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    gotPreProcessor = true;
-                }
-                break;
-
-            }
-
-            zipFile.closeEntry();
-
-        }
-
-
-        zipFile.close();
-
-        if (gotConfig && gotCoefficients) {
-            MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
-            MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
-            network.init(params, false);
-
-            if (gotUpdater && updater != null) {
-                network.setUpdater(updater);
-            }
-            return network;
-        } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
+        File tmpFile = File.createTempFile("restore", "multiLayer");
+        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return restoreMultiLayerNetwork(tmpFile);
     }
 
     /**
@@ -332,83 +268,9 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is) throws IOException {
-        ZipInputStream zis = new ZipInputStream(is);
-        boolean gotConfig = false;
-        boolean gotCoefficients = false;
-        boolean gotUpdater = false;
-        boolean gotPreProcessor = false;
-
-        String json = "";
-        INDArray params = null;
-        ComputationGraphUpdater updater = null;
-        DataSetPreProcessor preProcessor = null;
-        BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
-
-        ZipEntry entry;
-        while((entry = zis.getNextEntry()) != null) {
-            switch(entry.getName()) {
-                case "configuration.json":
-                    String line;
-                    StringBuilder js = new StringBuilder();
-                    while ((line = reader.readLine()) != null) {
-                        js.append(line).append("\n");
-                    }
-                    json = js.toString();
-
-                    gotConfig = true;
-                    break;
-                case "coefficients.bin":
-                    DataInputStream dis = new DataInputStream(zis);
-                    params = Nd4j.read(dis);
-
-                    gotCoefficients = true;
-                    break;
-                case UPDATER_BIN:{
-                    ObjectInputStream ois = new ObjectInputStream(zis);
-
-                    try {
-                        updater = (ComputationGraphUpdater) ois.readObject();
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    gotUpdater = true;
-                    }
-                    break;
-                case "preprocessor.bin": {
-                    ObjectInputStream ois = new ObjectInputStream(zis);
-
-                    try {
-                        preProcessor = (DataSetPreProcessor) ois.readObject();
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    gotPreProcessor = true;
-                    }
-                    break;
-            }
-
-            zis.closeEntry();
-        }
-
-        if (gotConfig && gotCoefficients) {
-            ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
-            ComputationGraph cg = new ComputationGraph(confFromJson);
-            cg.init(params, false);
-
-            if (gotUpdater && updater != null) {
-                cg.setUpdater(updater);
-            }
-
-            zis.close();
-
-            return cg;
-        }
-        else {
-            zis.close();
-            throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdater + "]");
-        }
+        File tmpFile = File.createTempFile("restore", "compGraph");
+        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return restoreComputationGraph(tmpFile);
     }
 
     /**
