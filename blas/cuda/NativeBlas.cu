@@ -2,6 +2,7 @@
 #include <cublas_v2.h>
 #include <pointercast.h>
 #include <stdio.h>
+#include "float16.hpp"
 
 
 
@@ -957,6 +958,62 @@ void Nd4jBlas::dspr2(Nd4jPointer *extraParams, int Order, int Uplo,
  * ------------------------------------------------------
  */
 
+half cpu_float2half_rn(float f) {
+    half ret;
+
+    unsigned x = *((int*)(void*)(&f));
+    unsigned u = (x & 0x7fffffff), remainder, shift, lsb, lsb_s1, lsb_m1;
+    unsigned sign, exponent, mantissa;
+
+    // Get rid of +NaN/-NaN case first.
+    if (u > 0x7f800000) {
+        ret.x = 0x7fffU;
+        return ret;
+    }
+
+    sign = ((x >> 16) & 0x8000);
+
+    // Get rid of +Inf/-Inf, +0/-0.
+    if (u > 0x477fefff) {
+        ret.x = sign | 0x7c00U;
+        return ret;
+    }
+    if (u < 0x33000001) {
+        ret.x = (sign | 0x0000);
+        return ret;
+    }
+
+    exponent = ((u >> 23) & 0xff);
+    mantissa = (u & 0x7fffff);
+
+    if (exponent > 0x70) {
+        shift = 13;
+        exponent -= 0x70;
+    } else {
+        shift = 0x7e - exponent;
+        exponent = 0;
+        mantissa |= 0x800000;
+    }
+    lsb = (1 << shift);
+    lsb_s1 = (lsb >> 1);
+    lsb_m1 = (lsb - 1);
+
+    // Round to nearest even.
+    remainder = (mantissa & lsb_m1);
+    mantissa >>= shift;
+    if (remainder > lsb_s1 || (remainder == lsb_s1 && (mantissa & 0x1))) {
+        ++mantissa;
+        if (!(mantissa & 0x3ff)) {
+            ++exponent;
+            mantissa = 0;
+        }
+    }
+
+    ret.x = (sign | (exponent << 10) | mantissa);
+
+    return ret;
+}
+
 void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
                      int M, int N, int K,
                      float alpha,
@@ -964,13 +1021,25 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                      Nd4jPointer B, int ldb,
                      float beta,
                      Nd4jPointer C, int ldc) {
-    void *aPointer = reinterpret_cast<void *>(A);
-    void *bPointer = reinterpret_cast<void *>(B);
-    void *cPointer = reinterpret_cast<void *>(C);
+    __half *aPointer = reinterpret_cast<__half *>(A);
+    __half *bPointer = reinterpret_cast<__half *>(B);
+    __half *cPointer = reinterpret_cast<__half *>(C);
     cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
 
+    nd4j::float16 hAlpha = alpha;
+    nd4j::float16 hBeta = beta;
+
+    cublasHgemm(*handle,
+                convertTranspose(TransA), convertTranspose(TransB),
+                M, N, K,
+                &hAlpha.data,
+                aPointer, lda,
+                bPointer, ldb,
+                &hAlpha.data,
+                cPointer, ldc);
 
 
+    /*
     cublasSgemmEx(*handle,
                    convertTranspose(TransA),
                    convertTranspose(TransB),
@@ -980,7 +1049,7 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                    bPointer, CUDA_R_16F, ldb,
                    &beta,
                    cPointer, CUDA_R_16F, ldc);
-
+    */
 }
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
