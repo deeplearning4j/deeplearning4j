@@ -274,24 +274,15 @@ public class SparkComputationGraph implements Serializable {
     }
 
     public double calculateScore(JavaRDD<DataSet> data, boolean average) {
-        long n = data.count();
-        JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false))));
-        List<Double> scoresList = scores.collect();
-        double sum = 0.0;
-        for (Double d : scoresList)
-            sum += d;
-        if (average) return sum / n;
-        return sum;
+        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false))));
+        if (average) return scores.mean();
+        return scores.sum();
     }
 
     public double calculateScoreMultiDataSet(JavaRDD<MultiDataSet> data, boolean average) {
-        long n = data.count();
-        JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(), sc.broadcast(network.params(false))));
-        List<Double> scoresList = scores.collect();
-        double sum = 0.0;
-        for (Double d : scoresList) sum += d;
-        if (average) return sum / n;
-        return sum;
+        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(), sc.broadcast(network.params(false))));
+        if (average) return scores.mean();
+        return scores.sum();
     }
 
     /**
