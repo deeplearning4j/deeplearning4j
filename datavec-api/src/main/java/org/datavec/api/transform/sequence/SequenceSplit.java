@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
+import org.datavec.api.transform.sequence.split.SplitMaxLengthSequence;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
@@ -35,7 +36,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value= {
-        @JsonSubTypes.Type(value = SequenceSplitTimeSeparation.class, name = "SequenceSplitTimeSeparation")
+        @JsonSubTypes.Type(value = SequenceSplitTimeSeparation.class, name = "SequenceSplitTimeSeparation"),
+        @JsonSubTypes.Type(value = SplitMaxLengthSequence.class, name = "SplitMaxLengthSequence")
 })
 public interface SequenceSplit extends Serializable {
 

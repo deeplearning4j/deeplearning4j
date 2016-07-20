@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.metadata.LongMetaData;
@@ -44,6 +45,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)

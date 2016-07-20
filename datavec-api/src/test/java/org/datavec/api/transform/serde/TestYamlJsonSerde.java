@@ -17,6 +17,7 @@
 package org.datavec.api.transform.serde;
 
 import org.datavec.api.transform.MathOp;
+import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.BooleanCondition;
 import org.datavec.api.transform.condition.Condition;
@@ -26,6 +27,15 @@ import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
+import org.datavec.api.transform.rank.CalculateSortedRank;
+import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.sequence.SequenceComparator;
+import org.datavec.api.transform.sequence.SequenceSplit;
+import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
+import org.datavec.api.transform.sequence.comparator.StringComparator;
+import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
+import org.datavec.api.transform.sequence.split.SplitMaxLengthSequence;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
@@ -47,6 +57,7 @@ import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
+import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -252,4 +263,114 @@ public class TestYamlJsonSerde {
         assertEquals(Arrays.asList(conditions), lFromJson);
     }
 
+    @Test
+    public void testReducer(){
+        IReducer[] reducers = new IReducer[]{
+                new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("KeyCol")
+                .stdevColumns("Stdev").minColumns("min").countUniqueColumns("B").build()
+        };
+
+        for(IReducer r : reducers){
+            String yaml = y.serialize(r);
+            String json = j.serialize(r);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            IReducer t2 = y.deserializeReducer(yaml);
+            IReducer t3 = j.deserializeReducer(json);
+            assertEquals(r,t2);
+            assertEquals(r,t3);
+        }
+
+        String arrAsYaml = y.serialize(reducers);
+        String arrAsJson = j.serialize(reducers);
+        String listAsYaml = y.serializeReducerList(Arrays.asList(reducers));
+        String listAsJson = j.serializeReducerList(Arrays.asList(reducers));
+
+        System.out.println("\n\n\n\n");
+        System.out.println(listAsYaml);
+
+        List<IReducer> lFromYaml = y.deserializeReducerList(listAsYaml);
+        List<IReducer> lFromJson = j.deserializeReducerList(listAsJson);
+
+        assertEquals(Arrays.asList(reducers), y.deserializeReducerList(arrAsYaml));
+        assertEquals(Arrays.asList(reducers), j.deserializeReducerList(arrAsJson));
+        assertEquals(Arrays.asList(reducers), lFromYaml);
+        assertEquals(Arrays.asList(reducers), lFromJson);
+    }
+
+    @Test
+    public void testSequenceComparator(){
+        SequenceComparator[] comparators = new SequenceComparator[]{
+                new NumericalColumnComparator("Col",true),
+                new StringComparator("Col")};
+
+        for(SequenceComparator f : comparators){
+            String yaml = y.serialize(f);
+            String json = j.serialize(f);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            SequenceComparator t2 = y.deserializeSequenceComparator(yaml);
+            SequenceComparator t3 = j.deserializeSequenceComparator(json);
+            assertEquals(f,t2);
+            assertEquals(f,t3);
+        }
+
+        String arrAsYaml = y.serialize(comparators);
+        String arrAsJson = j.serialize(comparators);
+        String listAsYaml = y.serializeSequenceComparatorList(Arrays.asList(comparators));
+        String listAsJson = j.serializeSequenceComparatorList(Arrays.asList(comparators));
+
+        System.out.println("\n\n\n\n");
+        System.out.println(listAsYaml);
+
+        List<SequenceComparator> lFromYaml = y.deserializeSequenceComparatorList(listAsYaml);
+        List<SequenceComparator> lFromJson = j.deserializeSequenceComparatorList(listAsJson);
+
+        assertEquals(Arrays.asList(comparators), y.deserializeSequenceComparatorList(arrAsYaml));
+        assertEquals(Arrays.asList(comparators), j.deserializeSequenceComparatorList(arrAsJson));
+        assertEquals(Arrays.asList(comparators), lFromYaml);
+        assertEquals(Arrays.asList(comparators), lFromJson);
+    }
+
+    @Test
+    public void testCalculateSortedRank(){
+        CalculateSortedRank rank = new CalculateSortedRank("RankCol","SortOnCol", new DoubleWritableComparator());
+
+        String asYaml = y.serialize(rank);
+        String asJson = j.serialize(rank);
+
+        CalculateSortedRank yRank = y.deserializeSortedRank(asYaml);
+        CalculateSortedRank jRank = j.deserializeSortedRank(asJson);
+
+        assertEquals(rank, yRank);
+        assertEquals(rank, jRank);
+    }
+
+    @Test
+    public void testSequenceSplit(){
+        SequenceSplit[] splits = new SequenceSplit[]{
+                new SequenceSplitTimeSeparation("col", 1, TimeUnit.HOURS),
+                new SplitMaxLengthSequence(100,false)
+        };
+
+        for(SequenceSplit f : splits){
+            String yaml = y.serialize(f);
+            String json = j.serialize(f);
+
+            System.out.println(yaml);
+            System.out.println(json);
+            System.out.println();
+
+            SequenceSplit t2 = y.deserializeSequenceSplit(yaml);
+            SequenceSplit t3 = j.deserializeSequenceSplit(json);
+            assertEquals(f,t2);
+            assertEquals(f,t3);
+        }
+    }
 }

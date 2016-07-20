@@ -28,8 +28,10 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
+import org.datavec.api.transform.sequence.SequenceSplit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -170,6 +172,14 @@ public abstract class BaseSerializer {
 
     public SequenceComparator deserializeSequenceComparator(String str){
         return load(str, SequenceComparator.class);
+    }
+
+    public CalculateSortedRank deserializeSortedRank(String str){
+        return load(str, CalculateSortedRank.class);
+    }
+
+    public SequenceSplit deserializeSequenceSplit(String str){
+        return load(str, SequenceSplit.class);
     }
 
     public List<Transform> deserializeTransformList(String str){

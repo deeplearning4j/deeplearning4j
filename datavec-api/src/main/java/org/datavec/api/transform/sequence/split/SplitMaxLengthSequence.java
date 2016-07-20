@@ -14,19 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.sequence;
+package org.datavec.api.transform.sequence.split;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**Split a sequence into a number of smaller sequences of length 'maxSequenceLength'.
+/**
+ * Split a sequence into a number of smaller sequences of length 'maxSequenceLength'.
  * If the sequence length is smaller than maxSequenceLength, the sequence is unchanged
  * Created by Alex on 16/03/2016.
  */
+@EqualsAndHashCode(exclude = {"inputSchema"})
+@JsonIgnoreProperties({"inputSchema"})
 public class SplitMaxLengthSequence implements SequenceSplit {
 
     private final int maxSequenceLength;
@@ -34,20 +41,21 @@ public class SplitMaxLengthSequence implements SequenceSplit {
     private Schema inputSchema;
 
     /**
-     * @param maxSequenceLength    max length of sequences
-     * @param equalSplits   if true: split larger sequences inte equal sized subsequences. If false: split into
+     * @param maxSequenceLength max length of sequences
+     * @param equalSplits       if true: split larger sequences into equal sized subsequences. If false: split into
+     *                          n maxSequenceLength sequences, and (if necessary) 1 with 1 <= length < maxSequenceLength
      */
-    public SplitMaxLengthSequence(int maxSequenceLength, boolean equalSplits){
+    public SplitMaxLengthSequence(@JsonProperty("maxSequenceLength") int maxSequenceLength, @JsonProperty("equalSplits") boolean equalSplits) {
         this.maxSequenceLength = maxSequenceLength;
         this.equalSplits = equalSplits;
     }
 
     public List<List<List<Writable>>> split(List<List<Writable>> sequence) {
         int n = sequence.size();
-        if(n <= maxSequenceLength) return Collections.singletonList(sequence);
+        if (n <= maxSequenceLength) return Collections.singletonList(sequence);
         int splitSize;
-        if(equalSplits){
-            if(n % maxSequenceLength == 0){
+        if (equalSplits) {
+            if (n % maxSequenceLength == 0) {
                 splitSize = n / maxSequenceLength;
             } else {
                 splitSize = n / maxSequenceLength + 1;
@@ -58,8 +66,8 @@ public class SplitMaxLengthSequence implements SequenceSplit {
 
         List<List<List<Writable>>> out = new ArrayList<>();
         List<List<Writable>> current = new ArrayList<>(splitSize);
-        for(List<Writable> step : sequence ){
-            if(current.size() >= splitSize ){
+        for (List<Writable> step : sequence) {
+            if (current.size() >= splitSize) {
                 out.add(current);
                 current = new ArrayList<>(splitSize);
             }
@@ -78,5 +86,10 @@ public class SplitMaxLengthSequence implements SequenceSplit {
     @Override
     public Schema getInputSchema() {
         return inputSchema;
+    }
+
+    @Override
+    public String toString(){
+        return "SplitMaxLengthSequence(maxSequenceLength=" + maxSequenceLength + ",equalSplits=" + equalSplits + ")";
     }
 }
