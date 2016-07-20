@@ -527,6 +527,14 @@ public:
      * GEMM
      * ------------------------------------------------------
      */
+    void hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
+               int M, int N, int K,
+               float alpha,
+               Nd4jPointer A, int lda,
+               Nd4jPointer B, int ldb,
+               float beta,
+               Nd4jPointer C, int ldc);
+
 
     void sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,

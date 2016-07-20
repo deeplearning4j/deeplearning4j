@@ -957,6 +957,32 @@ void Nd4jBlas::dspr2(Nd4jPointer *extraParams, int Order, int Uplo,
  * ------------------------------------------------------
  */
 
+void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
+                     int M, int N, int K,
+                     float alpha,
+                     Nd4jPointer A, int lda,
+                     Nd4jPointer B, int ldb,
+                     float beta,
+                     Nd4jPointer C, int ldc) {
+    void *aPointer = reinterpret_cast<void *>(A);
+    void *bPointer = reinterpret_cast<void *>(B);
+    void *cPointer = reinterpret_cast<void *>(C);
+    cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
+
+
+
+    cublasSgemmEx(*handle,
+                   convertTranspose(TransA),
+                   convertTranspose(TransB),
+                   M, N, K,
+                   &alpha,
+                   aPointer, CUDA_R_16F, lda,
+                   bPointer, CUDA_R_16F, ldb,
+                   &beta,
+                   cPointer, CUDA_R_16F, ldc);
+
+}
+
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
                      int M, int N, int K,
                      float alpha,

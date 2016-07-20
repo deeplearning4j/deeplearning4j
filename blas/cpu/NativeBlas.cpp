@@ -893,6 +893,15 @@ void Nd4jBlas::dspr2(Nd4jPointer *extraParams,int Order, int Uplo,
  * GEMM
  * ------------------------------------------------------
  */
+void Nd4jBlas::hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
+                     int M, int N, int K,
+                     float alpha,
+                     Nd4jPointer A, int lda,
+                     Nd4jPointer B, int ldb,
+                     float beta,
+                     Nd4jPointer C, int ldc) {
+    // no-op
+}
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      int M, int N, int K,
