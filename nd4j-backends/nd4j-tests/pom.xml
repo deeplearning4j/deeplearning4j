@@ -125,12 +125,7 @@
             <version>0.8.2.2</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kafka</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
+      
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -143,7 +138,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kafka</artifactId>
+            <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
