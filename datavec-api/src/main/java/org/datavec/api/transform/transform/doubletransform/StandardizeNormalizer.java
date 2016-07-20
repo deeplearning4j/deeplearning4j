@@ -16,11 +16,12 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
 /**
- * Normalize using (x-mean)/sigma.
+ * Normalize using (x-mean)/stdev.
  * Also known as a standard score, standardization etc.
  *
  * @author Alex Black
@@ -28,23 +29,23 @@ import org.datavec.api.writable.Writable;
 public class StandardizeNormalizer extends BaseDoubleTransform {
 
     protected final double mean;
-    protected final double sigma;
+    protected final double stdev;
 
-    public StandardizeNormalizer(String columnName, double mean, double sigma) {
+    public StandardizeNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("mean") double mean, @JsonProperty("stdev") double stdev) {
         super(columnName);
         this.mean = mean;
-        this.sigma = sigma;
+        this.stdev = stdev;
     }
 
 
     @Override
     public Writable map(Writable writable) {
         double val = writable.toDouble();
-        return new DoubleWritable((val - mean) / sigma);
+        return new DoubleWritable((val - mean) / stdev);
     }
 
     @Override
     public String toString() {
-        return "StandardizeNormalizer(mean=" + mean + ",sigma=" + sigma + ")";
+        return "StandardizeNormalizer(mean=" + mean + ",stdev=" + stdev + ")";
     }
 }

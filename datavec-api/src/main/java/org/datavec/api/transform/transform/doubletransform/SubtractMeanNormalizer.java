@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
@@ -26,18 +27,18 @@ public class SubtractMeanNormalizer extends BaseDoubleTransform {
 
     private final double mean;
 
-    public SubtractMeanNormalizer(String columnName, double mean){
+    public SubtractMeanNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("mean") double mean) {
         super(columnName);
         this.mean = mean;
     }
 
     @Override
     public Writable map(Writable writable) {
-        return new DoubleWritable(writable.toDouble()-mean);
+        return new DoubleWritable(writable.toDouble() - mean);
     }
 
     @Override
     public String toString() {
-        return "SubstractMean(mean=" + mean + ")";
+        return "SubstractMeanNormalizer(mean=" + mean + ")";
     }
 }

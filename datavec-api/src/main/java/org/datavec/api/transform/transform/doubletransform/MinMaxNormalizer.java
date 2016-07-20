@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.writable.DoubleWritable;
@@ -28,6 +30,7 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"ratio", "inputSchema", "columnNumber"})
 public class MinMaxNormalizer extends BaseDoubleTransform {
 
     protected final double min;
@@ -40,7 +43,8 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
         this(columnName, min, max, 0, 1);
     }
 
-    public MinMaxNormalizer(String columnName, double min, double max, double newMin, double newMax) {
+    public MinMaxNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("min") double min, @JsonProperty("max") double max,
+                            @JsonProperty("newMin") double newMin, @JsonProperty("newMax") double newMax) {
         super(columnName);
         this.min = min;
         this.max = max;
