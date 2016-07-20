@@ -22,6 +22,11 @@ public class CpuLevel3 extends BaseLevel3 {
     private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
 
     @Override
+    protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         nd4jBlas.sgemm(DUMMY,'f',TransA,TransB,M,N,K,alpha,A.data().addressPointer(),lda,B.data().addressPointer(),ldb,beta,C.data().addressPointer(),ldc);
     }

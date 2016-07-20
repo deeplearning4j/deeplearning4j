@@ -120,6 +120,22 @@ public class CublasTests {
     }
 
     @Test
+    public void testGemm8() throws Exception {
+        INDArray array1 = Nd4j.ones(10, 10);
+        INDArray array2 = Nd4j.ones(10, 10);
+        INDArray array3 = Nd4j.create(10, 10);
+
+        array1.mmul(array2, array3);
+
+        assertEquals(10.0f, array3.data().getFloat(0),0.001f);
+        assertEquals(10.0f, array3.data().getFloat(1),0.001f);
+        assertEquals(10.0f, array3.data().getFloat(10),0.001f);
+        assertEquals(10.0f, array3.data().getFloat(11),0.001f);
+        assertEquals(10.0f, array3.data().getFloat(20),0.001f);
+        assertEquals(10.0f, array3.data().getFloat(21),0.001f);
+    }
+
+    @Test
     public void testGemv1() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1,100, 100).reshape(100,1);

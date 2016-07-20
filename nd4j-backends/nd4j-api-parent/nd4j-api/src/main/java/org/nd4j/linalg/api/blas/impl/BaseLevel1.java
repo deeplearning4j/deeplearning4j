@@ -297,8 +297,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
             daxpy(n, alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-        else
+        else if(x.data().dataType() == DataBuffer.Type.FLOAT)
             saxpy(n, (float) alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
+        else haxpy(n, (float) alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
     }
 
     @Override
@@ -306,8 +307,10 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
         if(supportsDataBufferL1Ops()) {
             if (x.dataType() == DataBuffer.Type.DOUBLE) {
                 daxpy(n, alpha, x, offsetX, incrX, y, offsetY, incrY);
-            } else {
+            } else if (x.dataType() == DataBuffer.Type.FLOAT) {
                 saxpy(n, (float) alpha, x, offsetX, incrX, y, offsetY, incrY);
+            } else {
+                haxpy(n, (float) alpha, x, offsetX, incrX, y, offsetY, incrY);
             }
         } else {
             int[] shapex = {1,n};
@@ -516,8 +519,16 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
                                    INDArray Y,  int incY);
     protected abstract void scopy(int n, DataBuffer x, int offsetX, int incrX,
                                   DataBuffer y, int offsetY, int incrY );
+
+    protected abstract  void haxpy( int N,  float alpha,  INDArray X,
+                                    int incX, INDArray Y,  int incY);
+
     protected abstract  void saxpy( int N,  float alpha,  INDArray X,
                                     int incX, INDArray Y,  int incY);
+
+    protected abstract void haxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX,
+                                   DataBuffer y, int offsetY, int incrY );
+
     protected abstract void saxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX,
                                    DataBuffer y, int offsetY, int incrY );
 

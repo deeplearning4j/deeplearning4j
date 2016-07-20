@@ -172,8 +172,18 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         nd4jBlas.saxpy(DUMMY,N,alpha,X.data().addressPointer(),incX,Y.data().addressPointer(),incY);
+    }
+
+    @Override
+    public void haxpy(int n,float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException();
     }
 
     @Override

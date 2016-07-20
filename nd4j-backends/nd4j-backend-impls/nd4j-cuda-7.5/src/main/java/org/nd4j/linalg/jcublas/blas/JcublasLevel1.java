@@ -404,10 +404,10 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
-        CublasPointer xAPointer = new CublasPointer(X, ctx);
-        CublasPointer xBPointer = new CublasPointer(Y, ctx);
+//        CublasPointer xAPointer = new CublasPointer(X, ctx);
+//        CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
-        cublasHandle_t handle = ctx.getHandle();
+//        cublasHandle_t handle = ctx.getHandle();
 
         ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha));
 
@@ -425,6 +425,38 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 */
         allocator.registerAction(ctx, Y, X);
+    }
+
+    @Override
+    protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+
+//        CublasPointer xAPointer = new CublasPointer(X, ctx);
+//        CublasPointer xBPointer = new CublasPointer(Y, ctx);
+
+//        cublasHandle_t handle = ctx.getHandle();
+
+        ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha));
+
+/*        synchronized (handle) {
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
+
+            PointerPointer p = new PointerPointer(new Pointer[] {ctx.getHandle()});
+            nd4jBlas.saxpy(p,
+                    N,
+                    alpha,
+                    xAPointer.getDevicePointer(),
+                    incX,
+                    xBPointer.getDevicePointer(),
+                    incY);
+        }
+*/
+        allocator.registerAction(ctx, Y, X);
+    }
+
+    @Override
+    protected void haxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override

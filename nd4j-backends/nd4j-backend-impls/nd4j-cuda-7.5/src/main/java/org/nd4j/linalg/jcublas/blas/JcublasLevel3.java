@@ -37,6 +37,44 @@ public class JcublasLevel3 extends BaseLevel3 {
     private static Logger log = LoggerFactory.getLogger(JcublasLevel3.class);
 
     @Override
+    protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        //A = Shape.toOffsetZero(A);
+        //B = Shape.toOffsetZero(B);
+        log.info("Hgemm called");
+
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
+
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(B, ctx);
+        CublasPointer cCPointer = new CublasPointer(C, ctx);
+
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
+
+            nd4jBlas.hgemm(
+                    new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    Order,
+                    TransA,
+                    TransB,
+                    M,
+                    N,
+                    K,
+                    alpha,
+                    cAPointer.getDevicePointer(),
+                    lda,
+                    cBPointer.getDevicePointer(),
+                    ldb,
+                    beta,
+                    cCPointer.getDevicePointer(),
+                    ldc);
+        }
+
+        allocator.registerAction(ctx, C, A, B);
+    }
+
+
+    @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
