@@ -915,7 +915,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int numParams() {
-        return numParams(false);
+        if (isInitCalled()) 
+            return numParams(false);
+        else 
+            log.info("Model is not initialized. Initialize net with init()");
+            return 0;
     }
 
     @Override
@@ -1065,7 +1069,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
     protected void backprop() {
-        if(flattenedGradients == null) initGradientsView();
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
         this.epsilon = (pair == null ? null : pair.getSecond());
