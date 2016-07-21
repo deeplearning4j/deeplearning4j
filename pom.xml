@@ -71,6 +71,8 @@
         <failIfNoTests>false</failIfNoTests>
         <scala.binary.version>2.11</scala.binary.version>
         <scala.version>2.11.7</scala.version>
+        <hadoop.version>1.0.4</hadoop.version>
+        <spark.version>1.5.2</spark.version>
     </properties>
 
     <profiles>
