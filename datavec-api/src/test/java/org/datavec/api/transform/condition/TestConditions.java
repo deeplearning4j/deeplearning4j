@@ -251,4 +251,22 @@ public class TestConditions {
         assertFalse(andCondition.condition(Collections.singletonList((Writable)new IntWritable(0))));
         assertFalse(andCondition.condition(Collections.singletonList((Writable)new IntWritable(1))));
     }
+
+
+    @Test
+    public void testInvalidValueColumnConditionCondition(){
+        Schema schema = TestTransforms.getSchema(ColumnType.Integer);
+
+        Condition condition = new InvalidValueColumnCondition("column");
+        condition.setInputSchema(schema);
+
+        assertFalse(condition.condition(Collections.singletonList((Writable)new IntWritable(-1)))); //Not invalid -> condition does not apply
+        assertFalse(condition.condition(Collections.singletonList((Writable)new IntWritable(-2))));
+        assertFalse(condition.condition(Collections.singletonList((Writable)new LongWritable(1000))));
+        assertFalse(condition.condition(Collections.singletonList((Writable)new Text("1000"))));
+        assertTrue(condition.condition(Collections.singletonList((Writable)new Text("text"))));
+        assertTrue(condition.condition(Collections.singletonList((Writable)new Text("NaN"))));
+        assertTrue(condition.condition(Collections.singletonList((Writable)new LongWritable(1L + (long)Integer.MAX_VALUE))));
+        assertTrue(condition.condition(Collections.singletonList((Writable)new DoubleWritable(3.14159))));
+    }
 }
