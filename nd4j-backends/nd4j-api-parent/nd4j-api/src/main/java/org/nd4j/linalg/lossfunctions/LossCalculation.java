@@ -11,6 +11,8 @@ import org.nd4j.linalg.indexing.conditions.Or;
 import org.nd4j.linalg.indexing.functions.StableNumber;
 import org.nd4j.linalg.indexing.functions.Value;
 
+import java.util.Arrays;
+
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
@@ -34,7 +36,11 @@ class LossCalculation {
     /** Score the entire (mini)batch */
     public double score(){
         INDArray exampleScores = scoreArray();
-        double ret = exampleScores.sumNumber().doubleValue();
+        Number number = exampleScores.sumNumber();
+//        System.out.println("scoresLength: " + exampleScores.length());
+
+//        System.out.println("exampleScores: " + exampleScores);
+        double ret = number.doubleValue();
         switch(lossFunction){
             case MCXENT:
             case NEGATIVELOGLIKELIHOOD:
@@ -99,6 +105,9 @@ class LossCalculation {
                 if(preOut != null && "softmax".equals(activationFn)){
                     //Use LogSoftMax op to avoid numerical issues when calculating score
                     INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()));
+
+                    System.out.println("Input: " + Arrays.toString(preOut.dup().data().asFloat()));
+                    System.out.println("LogSoft: " + Arrays.toString(logsoftmax.data().asFloat()));
                     INDArray sums = labels.mul(logsoftmax);
                     if(mask != null) sums.muliColumnVector(mask);
                     scoreArray = sums;
