@@ -88,10 +88,13 @@ public class BalanceMinibatches {
             if(!rootSaveDir.exists())
                 rootSaveDir.mkdirs();
             //save with an incremental count of the number of minibatches saved
-            DataSet merge = DataSet.merge(miniBatch);
-            if(dataNormalization != null)
-                dataNormalization.transform(merge);
-            merge.save(new File(rootSaveDir,String.format("dataset-%d.bin",numsSaved++)));
+            if(!miniBatch.isEmpty()) {
+                DataSet merge = DataSet.merge(miniBatch);
+                if(dataNormalization != null)
+                    dataNormalization.transform(merge);
+                merge.save(new File(rootSaveDir,String.format("dataset-%d.bin",numsSaved++)));
+            }
+
 
         }
 

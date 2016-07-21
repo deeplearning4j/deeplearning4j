@@ -119,13 +119,14 @@
             <scope>test</scope>
 
         </dependency>
+
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_${scala.binary.version}</artifactId>
             <version>0.8.2.2</version>
             <scope>test</scope>
         </dependency>
-      
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
