@@ -103,6 +103,15 @@ public class HalfOpsTests {
     }
 
     @Test
+    public void testHasum1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[] {1.0f, -1.0f, 1.0f, -1.0f, -2.0f, 2.0f, -2.0f});
+
+        double sum = Nd4j.getBlasWrapper().asum(array1);
+
+        assertEquals(10.0f, sum, 0.01f);
+    }
+
+    @Test
     public void testBroadcasts1() throws Exception {
         INDArray array1 = Nd4j.zeros(1500,150);
         INDArray array2 = Nd4j.linspace(1,150,150);

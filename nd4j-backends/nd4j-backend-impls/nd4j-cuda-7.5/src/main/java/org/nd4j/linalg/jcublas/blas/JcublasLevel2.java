@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -15,6 +16,8 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -24,9 +27,13 @@ public class JcublasLevel2 extends BaseLevel2 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private static Logger logger = LoggerFactory.getLogger(JcublasLevel2.class);
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT gemv called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);

@@ -341,4 +341,14 @@ public class CpuLevel1 extends BaseLevel1 {
         throw new UnsupportedOperationException();
 
     }
+
+    @Override
+    protected float hasum(int N, INDArray X, int incX) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float hasum(int N, DataBuffer X, int offsetX, int incX) {
+        throw new UnsupportedOperationException();
+    }
 }

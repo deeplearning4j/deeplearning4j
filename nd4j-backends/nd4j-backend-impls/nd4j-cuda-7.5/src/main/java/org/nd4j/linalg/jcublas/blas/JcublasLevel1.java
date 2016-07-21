@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
@@ -20,6 +21,8 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Adam Gibson
@@ -28,6 +31,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private static Logger logger = LoggerFactory.getLogger(JcublasLevel1.class);
 
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
@@ -43,7 +47,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
-        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
+//        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
 
@@ -78,6 +82,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT dot called");
+
         DataTypeValidation.assertSameDataType(X, Y);
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
@@ -170,6 +177,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT nrm2 called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
 
@@ -191,7 +202,29 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float hasum(int N, INDArray X, int incX) {
+
+        ASum asum = new ASum(X);
+        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+
+        float ret = asum.getFinalResult().floatValue();
+
+        return ret;
+    }
+
+    @Override
     protected float sasum(int N, INDArray X, int incX) {
+        ASum asum = new ASum(X);
+        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+
+        float ret = asum.getFinalResult().floatValue();
+
+        return ret;
+
+  /*      if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT asum called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
 
@@ -209,6 +242,12 @@ public class JcublasLevel1 extends BaseLevel1 {
         allocator.registerAction(ctx, null, X);
 
         return ret;
+        */
+    }
+
+    @Override
+    protected float hasum(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -241,7 +280,13 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
-        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
+        ASum asum = new ASum(X);
+        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+
+        double ret = asum.getFinalResult().doubleValue();
+
+        return ret;
+        /*CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         double ret;
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -258,6 +303,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         allocator.registerAction(ctx, null, X);
 
         return ret;
+        */
     }
 
     @Override
@@ -329,6 +375,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT iamax called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
 
@@ -395,6 +445,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT swap called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -416,6 +470,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT copy called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -443,6 +501,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT axpy called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 //        CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -662,6 +724,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sscal(int N, float alpha, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT scal called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
