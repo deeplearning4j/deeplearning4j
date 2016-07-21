@@ -20,65 +20,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <camel.version>2.16.3</camel.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-        <kafka.version>0.8.2.2</kafka.version>
-        <spark.version>1.5.2</spark.version>
+
     </properties>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka_${scala.binary.version}</artifactId>
-                <version>${kafka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka-clients</artifactId>
-                <version>${kafka.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-    <profiles>
-        <profile>
-            <id>scala-2.11</id>
-            <activation>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.11</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.11.7</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.11.7</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>scala-2.10</id>
-            <activation>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.10</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.10.6</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.10.6</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
+
 
     <dependencies>
         <dependency>
@@ -192,36 +136,7 @@
                     <includePluginDependencies>false</includePluginDependencies>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.2</version>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <args>
-                        <arg>-deprecation</arg>
-                        <arg>-explaintypes</arg>
-                    </args>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+
         </plugins>
     </build>
 
