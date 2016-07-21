@@ -5814,3 +5814,15 @@ void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx,
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+    // to be implemented
+}
+
+void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+    // to be implemented
+}
+
+void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+    // to be implemented
+}

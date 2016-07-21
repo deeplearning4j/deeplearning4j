@@ -1400,6 +1400,29 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
     convertHalfsToGeneric<float>(dx, n, dz);
 }
 
+
+template <typename T>
+__device__ void averagingKernelGeneric(T **dx, T *dz, int n, int length) {
+
+    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+    extern __shared__ T shmem[];
+
+    // aggregation step
+    for (int ar = 0; ar < n; ar++) {
+        T *cdata = (T *) dx[ar];
+
+        for (int i = tid; i < length; i += blockDim.x * gridDim.x) {
+            shmem[i] += cdata[i];
+        }
+    }
+
+    // div step & write out step
+    for (int i = tid; i < blockDim.x; i+= blockDim.x) {
+        dz[i] = shmem[i] / n;
+    }
+
+}
+
 #endif
 
 #endif /* TRANSFORM_H_ */
