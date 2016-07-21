@@ -19,6 +19,7 @@ package org.datavec.spark.transform.analysis.aggregate;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
 import org.apache.spark.api.java.function.Function2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,9 +36,10 @@ public class AnalysisCombineFunction implements Function2<List<AnalysisCounter>,
         int size = l1.size();
         if(size != l2.size()) throw new IllegalStateException("List lengths differ");
 
+        List<AnalysisCounter> out = new ArrayList<>();
         for( int i=0; i<size; i++ ){
-            l1.get(i).merge(l2.get(i));
+            out.add(l1.get(i).merge(l2.get(i)));
         }
-        return l1;
+        return out;
     }
 }
