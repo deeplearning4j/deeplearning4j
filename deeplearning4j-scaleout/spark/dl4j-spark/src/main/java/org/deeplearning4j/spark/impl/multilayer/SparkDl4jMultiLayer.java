@@ -43,6 +43,7 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -114,6 +115,9 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.network = network;
         if (!network.isInitCalled()) network.init();
         this.trainingMaster = trainingMaster;
+
+        //Check if kryo configuration is correct:
+        SparkUtils.checkKryoConfiguration(javaSparkContext, log);
     }
 
     private static MultiLayerNetwork initNetwork(MultiLayerConfiguration conf) {
@@ -212,6 +216,23 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
+        serializedDataSets.cache();
+        trainingMaster.executeTraining(this, serializedDataSets);
+        return network;
+    }
+
+    /**
+     * Fit the SparkDl4jMultiLayer network using a directory of serialized DataSet objects
+     * The assumption here is that the directory contains a number of {@link DataSet} objects, each serialized using
+     * {@link DataSet#save(OutputStream)}
+     *
+     * @param path          Path to the directory containing the serialized DataSet objcets
+     * @param minPartitions The minimum number of partitions initially (passed to {@link JavaSparkContext#binaryFiles(String, int)}
+     * @return The MultiLayerNetwork after training
+     */
+    public MultiLayerNetwork fit(String path, int minPartitions) {
+        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
+        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -284,13 +305,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param average Whether to sum the scores, or averag them
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average) {
-        long n = data.count();
-        JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
-        List<Double> scoresList = scores.collect();
-        double sum = 0.0;
-        for (Double d : scoresList) sum += d;
-        if (average) return sum / n;
-        return sum;
+        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
+        if (average) return scores.mean();
+        return scores.sum();
     }
 
     /**

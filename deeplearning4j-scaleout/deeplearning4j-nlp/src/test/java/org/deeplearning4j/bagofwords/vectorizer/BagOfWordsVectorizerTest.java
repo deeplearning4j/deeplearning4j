@@ -19,6 +19,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.*;
 
 import org.apache.commons.io.FileUtils;
@@ -37,7 +38,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,8 +113,11 @@ public class BagOfWordsVectorizerTest {
 
         INDArray labelz = dataSet.getLabels();
         log.info("Labels array: " + labelz);
-        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
-        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
+
+        int idx2 =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult();
+
+//        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
+//        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
 
         dataSet = vectorizer.vectorize("This is 1 file.", "label1");
 
@@ -119,8 +127,12 @@ public class BagOfWordsVectorizerTest {
         assertEquals(1, dataSet.getFeatureMatrix().getDouble(3), 0.1);
         assertEquals(0, dataSet.getFeatureMatrix().getDouble(4), 0.1);
 
-        assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
-        assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);
+        int idx1 =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult();
+
+        //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
+        //assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);
+
+        assertNotEquals(idx2, idx1);
 
         // Serialization check
         File tempFile = File.createTempFile("fdsf", "fdfsdf");

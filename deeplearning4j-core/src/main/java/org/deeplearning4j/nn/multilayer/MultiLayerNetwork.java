@@ -1322,7 +1322,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void setListeners(IterationListener... listeners) {
         Collection<IterationListener> cListeners = new ArrayList<>();
-        Collections.addAll(cListeners, listeners);
+        //Check: user might have done setListeners(null) thinking this would clear the current listeners.
+        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        if (listeners != null && listeners.length > 0) {
+            for(IterationListener i : listeners){
+                if(i != null) cListeners.add(i);
+            }
+        }
         setListeners(cListeners);
     }
 
