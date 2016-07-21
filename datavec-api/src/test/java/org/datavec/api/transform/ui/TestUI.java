@@ -48,10 +48,8 @@ public class TestUI {
         List<ColumnAnalysis> list = new ArrayList<>();
         list.add( new StringAnalysis.Builder()
                 .countTotal(10)
-                .countUnique(5)
                 .maxLength(7)
                 .countTotal(999999999L)
-                .countUnique(999999999999L)
                 .minLength(99999999).maxLength(99999999).meanLength(9999999999.0).sampleStdevLength(99999999.0).sampleVarianceLength(0.99999999999)
                 .histogramBuckets(new double[]{0,1,2,3,4,5})
                 .histogramBucketCounts(new long[]{50,30,10,12,3})
