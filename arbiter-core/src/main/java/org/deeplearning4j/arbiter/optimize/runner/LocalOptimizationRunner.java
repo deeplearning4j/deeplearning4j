@@ -10,6 +10,7 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListenerImpl;
+import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +38,6 @@ public class LocalOptimizationRunner<C, M, D, A> extends BaseOptimizationRunner<
 
     private TaskCreator<C, M, D, A> taskCreator;
     private ListeningExecutorService executor;
-    private final boolean reportResults = true; //TODO
 
     public LocalOptimizationRunner(OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator) {
         this(DEFAULT_MAX_CONCURRENT_TASKS, config, taskCreator);
@@ -81,7 +81,7 @@ public class LocalOptimizationRunner<C, M, D, A> extends BaseOptimizationRunner<
         List<ListenableFuture<OptimizationResult<C, M, A>>> list = new ArrayList<>(candidates.size());
         for (Candidate<C> candidate : candidates) {
             Callable<OptimizationResult<C, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction,
-                    (reportResults ? new UICandidateStatusListenerImpl(candidate.getIndex()) : null));
+                    (ArbiterUIServer.isRunning() ? new UICandidateStatusListenerImpl(candidate.getIndex()) : null));
             list.add(executor.submit(task));
         }
         return list;
