@@ -412,6 +412,18 @@ namespace simdOps {
 		}
 	};
 
+    template<typename T>
+    class StabilizeFP16 {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            if (d1 <= 0.0) return 0.001;
+                else return d1;
+        }
+    };
+
 	template<typename T>
 	class SpecialDerivative {
 	public:

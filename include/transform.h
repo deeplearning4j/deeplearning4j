@@ -83,7 +83,8 @@
         (43,simdOps::DropOut), \
         (44,simdOps::DropOutInverted), \
         (45,simdOps::CompareAndSet), \
-        (46,simdOps::ReplaceNans)
+        (46,simdOps::ReplaceNans) ,\
+        (47,simdOps::StabilizeFP16)
 
 
 namespace functions {

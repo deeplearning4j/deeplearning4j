@@ -4508,6 +4508,13 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					execBroadcastHalf(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
+                    if (opNum == 40) {
+                        if (debug)
+                            checkCudaErrors(cudaStreamSynchronize(*stream));
+
+                        execTransformHalf(tempPointers, 47, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+                    }
+
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
