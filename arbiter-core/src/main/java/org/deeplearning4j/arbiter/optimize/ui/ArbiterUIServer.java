@@ -17,6 +17,8 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
@@ -126,11 +128,18 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     public static synchronized ArbiterUIServer getInstance(){
         if(instance == null){
-            File f;
+            File f = null;
             try{
-                f = new ClassPathResource("dropwizard.yml").getFile();
-            }catch(IOException e){
-                throw new RuntimeException("Could not find dropwizard.yml on classpath");
+                f = new ClassPathResource("arbiterdropwizard.yml").getFile();
+            }catch(Exception e){
+                //Didn't find arbiterdropwizard.yml -> look next for dropwizard.yml
+            }
+            if(f == null){
+                try{
+                    f = new ClassPathResource("dropwizard.yml").getFile();
+                }catch(Exception e){
+                    throw new RuntimeException("Could not find dropwizard configuration for UI: could not find arbiterdropwizard.yml or dropwizard.yml on classpath");
+                }
             }
 
             instance = new ArbiterUIServer();
@@ -209,6 +218,9 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         environment.jersey().register(new ConfigResource());
         environment.jersey().register(new SummaryResultsResource());
         environment.jersey().register(new CandidateResultsResource());
+
+        environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public void updateStatus(Component component){

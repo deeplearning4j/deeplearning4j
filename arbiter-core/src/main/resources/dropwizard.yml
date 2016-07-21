@@ -1,7 +1,3 @@
-template: Hello, %s!
-
-defaultName: ArbiterConf
-
 # use the simple server factory if you only want to run on a single port
 #server:
 #  type: simple
