@@ -808,6 +808,30 @@ namespace simdOps {
 		}
 	};
 
+    template<typename T>
+    class ASum {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(d1);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(reduction);
+        }
+    };
+
 
 	template<typename T>
 	class Prod {

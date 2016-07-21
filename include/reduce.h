@@ -31,7 +31,8 @@
         (7, simdOps::NormMax), \
         (8, simdOps::Prod), \
         (9, simdOps::StandardDeviation), \
-        (10,simdOps::Variance)
+        (10,simdOps::Variance), \
+		(11, simdOps::ASum)
 
         
 //an op for the kernel
