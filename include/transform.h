@@ -1402,25 +1402,43 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
 
 
 template <typename T>
-__device__ void averagingKernelGeneric(T **dx, T *dz, int n, int length) {
+__device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, bool propagate) {
 
     int tid = threadIdx.x + blockIdx.x * gridDim.x;
     extern __shared__ T shmem[];
 
-    // aggregation step
-    for (int ar = 0; ar < n; ar++) {
-        T *cdata = (T *) dx[ar];
+    // each block cycles over it's own part of arrays
+    for (int r = gridDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
+        shmem[threadIdx.x] = 0.0f;
 
-        for (int i = tid; i < length; i += blockDim.x * gridDim.x) {
-            shmem[i] += cdata[i];
+        Nd4jIndex baseIdx = r;
+
+        // aggregation step, we roll over all arrays
+        for (int ar = 0; ar < n; ar++) {
+            T *cdata = (T *) dx[ar];
+            cdata += baseIdx;
+
+            if (baseIdx + threadIdx.x < length)
+                shmem[threadIdx.x] += cdata[threadIdx.x];
         }
-    }
 
-    // div step & write out step
-    for (int i = tid; i < blockDim.x; i+= blockDim.x) {
-        dz[i] = shmem[i] / n;
-    }
+        // div step & write out step
+        T *wdata = dz + baseIdx;
 
+        if (baseIdx + threadIdx.x < length) {
+            shmem[threadIdx.x] /= n
+            wdata[i] = shmem[threadIdx.x];
+        }
+
+        if (propagate)
+            for (int ar = 0; ar < n; ar++) {
+                T *cdata = (T *) dx[ar];
+                cdata += baseIdx;
+
+                if (baseIdx + threadIdx.x < length)
+                    cdata[threadIdx.x] = shmem[threadIdx.x];
+            }
+    }
 }
 
 #endif
