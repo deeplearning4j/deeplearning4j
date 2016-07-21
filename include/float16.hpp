@@ -1,3 +1,9 @@
+/*
+
+ Half-precision data type, based on NVIDIA code: https://github.com/NVIDIA/caffe/tree/experimental/fp16
+
+ */
+
 #ifndef CAFFE_UTIL_FP16_H_
 #define CAFFE_UTIL_FP16_H_
 
