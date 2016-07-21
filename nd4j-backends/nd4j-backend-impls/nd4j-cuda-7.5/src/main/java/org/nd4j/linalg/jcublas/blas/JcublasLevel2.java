@@ -99,6 +99,9 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE gemv called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);

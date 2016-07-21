@@ -214,6 +214,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE gemm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
@@ -235,6 +238,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE symm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -266,6 +272,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE syrk called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -293,6 +302,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE syr2k called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -324,6 +336,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE trmm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -353,6 +368,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE trsm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);

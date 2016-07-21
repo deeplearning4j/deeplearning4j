@@ -124,6 +124,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE dot called");
+
         double ret;
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
@@ -257,6 +260,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dnrm2(int N, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE nrm2 called");
+
         double ret;
 
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
@@ -406,6 +412,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE imax called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
 
@@ -569,6 +578,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE swap called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -591,6 +603,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE copy called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -617,6 +632,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE axpy called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -748,6 +766,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dscal(int N, double alpha, INDArray X, int incX) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE scal called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
