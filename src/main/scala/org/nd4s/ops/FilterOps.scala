@@ -15,6 +15,8 @@ class FilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => Boo
   }
 
   x = _x
+  override def opNum(): Int = -1
+
   override def name(): String = "filter_scalar"
 
   override def opForDimension(index: Int, dimension: Int): Op = FilterOps(x.tensorAlongDimension(index,dimension),f,g)

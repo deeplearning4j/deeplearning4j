@@ -126,7 +126,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     b.get(1) should be(-3)
   }
 
-  it should "worked with ComplexNDArray correctly" in {
+  it should "worked with ComplexNDArray correctly" ignore {
     val complexNDArray =
       Array(
         Array(1 + i, 1 + i),
@@ -147,7 +147,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     val s:String = Nd4j.create(2,2) + ""
   }
 
-  "Sum function" should "choose return value depending on INDArray type" in {
+  "Sum function" should "choose return value depending on INDArray type" ignore {
     val ndArray =
       Array(
         Array(1, 2),

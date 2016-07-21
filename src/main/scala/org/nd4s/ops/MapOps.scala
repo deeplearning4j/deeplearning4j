@@ -14,6 +14,8 @@ class MapOps(_x:INDArray,f:Double => Double, g:IComplexNumber => IComplexNumber)
     this(0.toScalar,null,null)
   }
 
+  override def opNum(): Int = -1
+
   override def name(): String = "map_scalar"
 
   override def opForDimension(index: Int, dimension: Int): Op = MapOps(x.tensorAlongDimension(index,dimension),f,g)

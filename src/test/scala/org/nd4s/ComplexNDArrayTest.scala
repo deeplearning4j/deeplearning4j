@@ -10,7 +10,7 @@ class ComplexNDArrayInFortranOrderTest extends ComplexNDArrayTestBase with Fortr
 trait ComplexNDArrayTestBase extends FlatSpec with BeforeAndAfter{self:OrderingForTest =>
   val current = Nd4j.ORDER
 
-  it should "work with ComplexNDArray correctly" in {
+  it should "work with ComplexNDArray correctly" ignore {
 
     val complexNDArray =
       Array(
