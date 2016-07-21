@@ -26,8 +26,6 @@ import lombok.Data;
  */
 @Data
 public class StringAnalysis implements ColumnAnalysis {
-
-    private final long countUnique;
     private final int minLength;
     private final int maxLength;
     private final double meanLength;
@@ -38,7 +36,6 @@ public class StringAnalysis implements ColumnAnalysis {
     private long[] histogramBucketCounts;
 
     private StringAnalysis(Builder builder) {
-        this.countUnique = builder.countUnique;
         this.minLength = builder.minLength;
         this.maxLength = builder.maxLength;
         this.meanLength = builder.meanLength;
@@ -51,7 +48,7 @@ public class StringAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString() {
-        return "StringAnalysis(unique=" + countUnique + ",minLen=" + minLength + ",maxLen=" + maxLength + ",meanLen=" + meanLength +
+        return "StringAnalysis(minLen=" + minLength + ",maxLen=" + maxLength + ",meanLen=" + meanLength +
                 ",sampleStDevLen=" + sampleStdevLength + ",sampleVarianceLen=" + sampleVarianceLength + ",count=" + countTotal + ")";
     }
 
@@ -61,8 +58,6 @@ public class StringAnalysis implements ColumnAnalysis {
     }
 
     public static class Builder {
-
-        private long countUnique;
         private int minLength;
         private int maxLength;
         private double meanLength;
@@ -71,11 +66,6 @@ public class StringAnalysis implements ColumnAnalysis {
         private long countTotal;
         private double[] histogramBuckets;
         private long[] histogramBucketCounts;
-
-        public Builder countUnique(long countUnique) {
-            this.countUnique = countUnique;
-            return this;
-        }
 
         public Builder minLength(int minLength) {
             this.minLength = minLength;
