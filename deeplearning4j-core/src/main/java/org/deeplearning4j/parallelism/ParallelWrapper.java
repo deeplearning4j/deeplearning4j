@@ -37,6 +37,7 @@ public class ParallelWrapper {
     private int averagingFrequency = 1;
     private Trainer zoo[];
     private AtomicLong iterationsCounter = new AtomicLong(0);
+    private boolean reportScore = false;
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -105,7 +106,8 @@ public class ParallelWrapper {
                     score /= Math.min(workers, locker.get());
 
                     // TODO: improve this
-                    logger.info("Averaged score: " + score);
+                    if (reportScore)
+                        logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
                         UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
@@ -141,6 +143,7 @@ public class ParallelWrapper {
         private int workers = 2;
         private int prefetchSize = 2;
         private int averagingFrequency = 1;
+        private boolean reportScore = false;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -203,6 +206,11 @@ public class ParallelWrapper {
             return this;
         }
 
+        public Builder reportScoreAfterAveraging(boolean reallyReport) {
+            this.reportScore = reallyReport;
+            return this;
+        }
+
         /**
          * This method returns ParallelWrapper instance
          *
@@ -211,6 +219,7 @@ public class ParallelWrapper {
         public ParallelWrapper build() {
             ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize);
             wrapper.averagingFrequency = this.averagingFrequency;
+            wrapper.reportScore = this.reportScore;
 
             return wrapper;
         }
