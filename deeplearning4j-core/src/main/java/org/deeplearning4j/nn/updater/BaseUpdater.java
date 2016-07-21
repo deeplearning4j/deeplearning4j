@@ -225,9 +225,15 @@ public abstract class BaseUpdater implements Updater {
             } else {
                 if(ag.aggregatorMap == null) return;
                 for(String s : ag.aggregatorMap.keySet() ) {
-                    GradientUpdaterAggregator first = aggregatorMap.get(s);
                     GradientUpdaterAggregator second = ag.aggregatorMap.get(s);
-                    first.combine(second);
+                    if (second != null) {
+                        GradientUpdaterAggregator first = aggregatorMap.get(s);
+                        if (first == null) {
+                            aggregatorMap.put(s, second);
+                        } else {
+                            first.combine(second);
+                        }
+                    }
                 }
             }
         }
