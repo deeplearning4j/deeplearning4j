@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.DoubleFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a MultiDataSet using a given ComputationGraph */
-public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Iterator<MultiDataSet>, Double> {
+public class ScoreFlatMapFunctionCGMultiDataSet implements DoubleFlatMapFunction<Iterator<MultiDataSet>> {
 
     private String json;
     private Broadcast<INDArray> params;

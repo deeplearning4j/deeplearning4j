@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -10,6 +11,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -30,7 +33,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         if(queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
+        if(queueLength < 2)
+            queueLength = 2;
+
         this.iterator = iterator;
+        this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
         runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
@@ -90,7 +97,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             //(a) runnable is blocking on baseIterator.next()
             //(b) runnable is blocking on blockingQueue.put()
             //either way: there's at least 1 more element to come
-            return true;
+            return runnable.hasLatch();
         } else {
             if(!runnable.killRunnable && runnable.exception != null ) {
                 throw runnable.exception;   //Something went wrong
@@ -166,16 +173,43 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private volatile boolean isAlive = true;
         private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
+        private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+        private AtomicLong feeder = new AtomicLong(0);
 
         public IteratorRunnable(boolean hasNext){
             this.isAlive = hasNext;
+        }
+
+        public boolean hasLatch() {
+            /*
+            This method was added to address possible race condition within runnable loop.
+            Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
+            and if it's already locked within main runnable loop - we get fast TRUE.
+         */
+            // this is added just to avoid expensive lock
+            if (feeder.get() > 0 || !queue.isEmpty())
+                return true;
+
+            try {
+                lock.readLock().lock();
+                return iterator.hasNext() || feeder.get() != 0 || !queue.isEmpty();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void run() {
             try {
                 while (!killRunnable && iterator.hasNext()) {
-                    queue.put(iterator.next());
+                    lock.writeLock().lock();
+                    MultiDataSet ds = iterator.next();
+
+                    // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
+                    feeder.incrementAndGet();
+                    lock.writeLock().unlock();
+
+                    queue.put(ds);
                 }
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking

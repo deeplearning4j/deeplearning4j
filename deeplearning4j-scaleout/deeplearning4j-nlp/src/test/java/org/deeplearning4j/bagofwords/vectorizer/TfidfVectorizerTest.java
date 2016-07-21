@@ -100,9 +100,16 @@ public class TfidfVectorizerTest {
 
 
         DataSet dataSet = vectorizer.vectorize("This is 3 file.", "label3");
-        assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
-        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
-        assertEquals(1.0, dataSet.getLabels().getDouble(2), 0.1);
+        //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
+        //assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
+        //assertEquals(1.0, dataSet.getLabels().getDouble(2), 0.1);
+        int cnt = 0;
+        for (int i = 0; i < 3; i++) {
+            if (dataSet.getLabels().getDouble(i) > 0.1)
+                cnt++;
+        }
+
+        assertEquals(1, cnt);
 
 
         File tempFile = File.createTempFile("somefile","Dsdas");
