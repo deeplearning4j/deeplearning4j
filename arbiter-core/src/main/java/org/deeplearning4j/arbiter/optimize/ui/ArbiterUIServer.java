@@ -126,6 +126,10 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         return port;
     }
 
+    public static boolean isRunning(){
+        return instance != null;
+    }
+
     public static synchronized ArbiterUIServer getInstance(){
         if(instance == null){
             File f = null;

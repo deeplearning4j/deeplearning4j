@@ -24,6 +24,7 @@ import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.listener.runner.LoggingOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
@@ -162,8 +163,9 @@ public class TestDL4JLocalExecution {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
-        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+//        ArbiterUIServer server = ArbiterUIServer.getInstance();
+//        runner.addListeners(new UIOptimizationRunnerStatusListener(server), new LoggingOptimizationRunnerStatusListener());
+        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
         runner.execute();
 
