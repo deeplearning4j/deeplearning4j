@@ -135,7 +135,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     CudnnContext cudnnContext = new CudnnContext();
     WorkSpace workSpace = new WorkSpace();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     FloatPointer alpha = new FloatPointer(1.0f);
     FloatPointer beta  = new FloatPointer(0.0f);

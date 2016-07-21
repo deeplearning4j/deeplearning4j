@@ -122,7 +122,7 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     CudnnContext cudnnContext = new CudnnContext();
     Cache meanCache = new Cache();
     Cache varCache = new Cache();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
     FloatPointer alpha = new FloatPointer(1.0f);
