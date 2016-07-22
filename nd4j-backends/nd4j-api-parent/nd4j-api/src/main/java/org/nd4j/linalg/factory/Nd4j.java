@@ -4700,6 +4700,32 @@ public class Nd4j {
     }
 
 
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray average(INDArray... arrays) {
+        INDArray ret = INSTANCE.average(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray average(Collection<INDArray> arrays) {
+        INDArray ret = INSTANCE.average(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
 
     /**
      * Reshapes an ndarray to remove leading 1s

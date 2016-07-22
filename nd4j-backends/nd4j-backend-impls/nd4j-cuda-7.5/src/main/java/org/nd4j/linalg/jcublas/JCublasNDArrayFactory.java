@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.cache.TADManager;
@@ -53,6 +54,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -738,10 +740,84 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     tadShapeInfo,
                     tadOffsets
             );
+        } else {
+            nativeOps.pullRowsHalf(
+                    extras,
+                    x,
+                    xShape,
+                    z,
+                    zShape,
+                    indexes.length,
+                    pIndex,
+                    tadShapeInfo,
+                    tadOffsets
+            );
         }
 
         allocator.registerAction(context, ret, source);
 
         return ret;
+    }
+
+    @Override
+    public INDArray average(INDArray... arrays) {
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        if (arrays.length == 1)
+            return arrays[0].dup();
+
+        long len = arrays[0].lengthLong();
+
+        // we assume all arrays have equal length,
+        INDArray ret = Nd4j.create(arrays[0].shape(), arrays[0].stride(), arrays[0].ordering());
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        CudaContext context =  allocator.getFlowController().prepareAction(ret);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used
+                context.getOldStream(),
+                allocator.getDeviceIdPointer()
+        );
+
+
+
+        Pointer z = AtomicAllocator.getInstance().getPointer(ret, context);
+
+        long[] xPointers = new long[arrays.length];
+
+        for (int i = 0; i < arrays.length; i++) {
+            if (arrays[i].lengthLong() != len)
+                throw new RuntimeException("All arrays should have equal length for averaging");
+
+            AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
+            xPointers[i] = point.getPointers().getDevicePointer().address();
+            point.tickDeviceWrite();
+        }
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.length);
+
+        allocator.memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(tempX, context);
+
+        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.averageDouble(extras, x, z, arrays.length, len, true);
+        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.averageFloat(extras, x, z, arrays.length, len, true);
+        } else {
+            nativeOps.averageHalf(extras, x, z, arrays.length, len, true);
+        }
+
+        allocator.getFlowController().registerAction(context, ret);
+
+        return ret;
+    }
+
+    @Override
+    public INDArray average(Collection<INDArray> arrays) {
+        return average(arrays.toArray(new INDArray[0]));
     }
 }

@@ -36,11 +36,7 @@ class LossCalculation {
     /** Score the entire (mini)batch */
     public double score(){
         INDArray exampleScores = scoreArray();
-        Number number = exampleScores.sumNumber();
-//        System.out.println("scoresLength: " + exampleScores.length());
-
-//        System.out.println("exampleScores: " + exampleScores);
-        double ret = number.doubleValue();
+        double ret = exampleScores.sumNumber().doubleValue();
         switch(lossFunction){
             case MCXENT:
             case NEGATIVELOGLIKELIHOOD:
@@ -105,9 +101,6 @@ class LossCalculation {
                 if(preOut != null && "softmax".equals(activationFn)){
                     //Use LogSoftMax op to avoid numerical issues when calculating score
                     INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()));
-
-                    System.out.println("Input: " + Arrays.toString(preOut.dup().data().asFloat()));
-                    System.out.println("LogSoft: " + Arrays.toString(logsoftmax.data().asFloat()));
                     INDArray sums = labels.mul(logsoftmax);
                     if(mask != null) sums.muliColumnVector(mask);
                     scoreArray = sums;

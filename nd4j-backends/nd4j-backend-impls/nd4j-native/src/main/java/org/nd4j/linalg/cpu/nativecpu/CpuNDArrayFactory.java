@@ -663,7 +663,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     hostTadOffsets
             );
         }
-        else {
+        else if (ret.data().dataType() == DataBuffer.Type.FLOAT){
             nativeOps.pullRowsFloat(
                     dummy,
                     source.data().addressPointer(),
@@ -676,8 +676,30 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     hostTadOffsets
             );
 
+        } else {
+            nativeOps.pullRowsHalf(
+                    dummy,
+                    source.data().addressPointer(),
+                    source.shapeInfoDataBuffer().addressPointer(),
+                    ret.data().addressPointer(),
+                    ret.shapeInfoDataBuffer().addressPointer(),
+                    indexes.length,
+                    pIndex,
+                    hostTadShapeInfo,
+                    hostTadOffsets
+            );
         }
 
         return ret;
+    }
+
+    @Override
+    public INDArray average(INDArray... arrays) {
+        return null;
+    }
+
+    @Override
+    public INDArray average(Collection<INDArray> arrays) {
+        return null;
     }
 }
