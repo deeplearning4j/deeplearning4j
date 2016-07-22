@@ -99,7 +99,7 @@ public class Configuration implements Serializable {
     /**
      * True if allowed, false if relocation required
      */
-    @Getter private boolean crossDeviceAccessAllowed = false;
+    @Getter private boolean crossDeviceAccessAllowed = true;
 
     /**
      * True, if allowed, false otherwise
@@ -377,15 +377,15 @@ public class Configuration implements Serializable {
     }
 
     /**
-     * NOT IMPLEMENTED YET
+     * Enables/disables P2P memory access for multi-gpu
      *
      * @param reallyAllow
      * @return
      */
-    @Deprecated
     public Configuration allowCrossDeviceAccess(boolean reallyAllow) {
-        // TODO:  this thing should be implemented for specific algebra-related tasks
         this.crossDeviceAccessAllowed = reallyAllow;
+
+        nativeOps.enableP2P(reallyAllow);
 
         return this;
     }

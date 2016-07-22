@@ -16,6 +16,9 @@ public class CudaEnvironment {
         configuration = new Configuration();
         configuration.enableDebug(configuration.isDebug());
         configuration.setVerbose(configuration.isVerbose());
+        configuration.allowCrossDeviceAccess(configuration.isCrossDeviceAccessAllowed());
+        configuration.setMaximumGridSize(configuration.getMaximumGridSize());
+        configuration.setMaximumBlockSize(configuration.getMaximumBlockSize());
     }
 
     public static CudaEnvironment getInstance() {

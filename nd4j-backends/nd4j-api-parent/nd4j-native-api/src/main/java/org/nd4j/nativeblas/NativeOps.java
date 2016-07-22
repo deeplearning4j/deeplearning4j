@@ -1175,4 +1175,8 @@ public class NativeOps extends Pointer {
     public native void averageFloat(PointerPointer extraPointers, Pointer x, Pointer z, int n, long length, boolean propagate);
 
     public native void averageDouble(PointerPointer extraPointers, Pointer x, Pointer z, int n, long length, boolean propagate);
+
+    ///////////////////////
+
+    public native void enableP2P(boolean reallyEnable);
 }
