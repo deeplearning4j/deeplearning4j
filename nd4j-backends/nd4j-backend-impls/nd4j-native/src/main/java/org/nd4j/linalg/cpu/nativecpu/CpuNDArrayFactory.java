@@ -695,11 +695,39 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray average(INDArray... arrays) {
-        return null;
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        if (arrays.length == 1)
+            return arrays[0].dup();
+
+        long len = arrays[0].lengthLong();
+
+        PointerPointer dataPointers = new PointerPointer(arrays.length);
+
+        for (int i = 0; i < arrays.length; i++) {
+            if (arrays[i].lengthLong() != len)
+                throw new RuntimeException("All arrays should have equal length for averaging");
+
+            dataPointers.put(i,arrays[i].data().addressPointer());
+        }
+
+        // we assume all arrays have equal length,
+        INDArray ret = Nd4j.create(arrays[0].shape(), arrays[0].stride(), arrays[0].ordering());
+
+        if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.averageDouble(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
+        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT){
+            nativeOps.averageFloat(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
+        } else {
+            nativeOps.averageHalf(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
+        }
+
+        return ret;
     }
 
     @Override
     public INDArray average(Collection<INDArray> arrays) {
-        return null;
+        return average(arrays.toArray(new INDArray[0]));
     }
 }
