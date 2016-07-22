@@ -505,7 +505,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder setNGrams(int nGrams) {
-            this.nGrams = 1;
+            this.nGrams = nGrams;
             return this;
         }
 
@@ -562,6 +562,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setStopList(this.stopWords);
 
             ret.workers = this.workers;
+            ret.nGrams = this.nGrams;
 
             ret.configuration = this.configuration;
 
