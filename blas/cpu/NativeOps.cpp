@@ -2561,13 +2561,25 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
         }
     }
 
+    if (length > 8000) {
+#pragma omp parallel for simd schedule(guided)
+        for (Nd4jIndex i = 0; i < length; i++) {
+            z[i] /= n;
+        }
+    } else {
+#pragma omp simd
+        for (Nd4jIndex i = 0; i < length; i++) {
+            z[i] /= n;
+        }
+    }
+
     if (propagate) {
 #pragma omp parallel for if (n > 16 || length > 8000)
         for(int ar = 0; ar < n; ar++) {
 
 #pragma omp simd
             for (Nd4jIndex i = 0; i < length; i++) {
-                x[ar][i] = z[i] / n;
+                x[ar][i] = z[i];
             }
         }
     }
