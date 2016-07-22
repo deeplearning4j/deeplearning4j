@@ -16,3 +16,8 @@ DataVec allows a practitioner to take raw data and produce open standard complia
 
 DataVec also includes sophisticated functionality for feature engineering, data cleaning and data normalization both for static data and for sequences (time series).
 Such operations can be executed on spark using DataVec-Spark.
+
+
+## Examples
+
+Examples for using DataVec are available here: [https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/datavec-examples/src/main](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/datavec-examples/src/main)

@@ -39,7 +39,8 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     private long sum = 0;
     private long countTotal = 0;
 
-
+    private double mean;    //Running mean
+    private double m2;      //Running variance numerator (sum (x-mean)^2)
 
     public IntegerAnalysisCounter(){
 
@@ -73,6 +74,10 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
         sum += value;
         countTotal++;
 
+        double delta = value - mean;
+        mean += delta / countTotal;
+        m2 += delta * (value - mean);
+
         return this;
     }
 
@@ -93,6 +98,23 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
             countMaxValue = other.countMaxValue;
         } //else: Keep this max, no change to count
 
+        if(countTotal == 0){
+            mean = other.mean;
+            m2 = other.m2;
+        } else if(other.countTotal != 0){
+            double delta  = other.mean - mean;
+            long tCount = countTotal + other.countTotal;
+            //For numerical stability, as per Spark StatCounter
+            if(10 * other.countTotal < countTotal ){
+                mean = mean + (delta * other.countTotal) / tCount;
+            } else if(10 * countTotal < other.countTotal ){
+                mean = other.mean - (delta * countTotal) / tCount;
+            } else {
+                mean = (mean * countTotal + other.mean*other.countTotal) / tCount;
+            }
+            m2 += other.m2 + (delta * delta * countTotal * other.countTotal) / tCount;
+        }
+
         countZero += other.countZero;
         countPositive += other.countPositive;
         countNegative += other.countNegative;
@@ -100,6 +122,15 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
         countTotal += other.countTotal;
 
         return this;
+    }
+
+    public double getSampleVariance(){
+        if(countTotal <= 1) return Double.NaN;
+        return m2 / (countTotal - 1);
+    }
+
+    public double getSampleStdev(){
+        return Math.sqrt(getSampleVariance());
     }
 
 }

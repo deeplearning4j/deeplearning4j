@@ -37,7 +37,6 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
     private long sumLength = 0;
     private long countTotal = 0;
 
-
     public StringAnalysisCounter(){
 
     }
