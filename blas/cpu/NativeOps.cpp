@@ -2550,16 +2550,45 @@ void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n,
     convHalfsToGeneric<float>(x, n, z);
 }
 
+
+template<typename T>
+void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
+
+#pragma omp parallel for simd schedule(guided)
+    for (Nd4jIndex i = 0; i < length; i++) {
+        for (int ar = 0; ar < n; ar++) {
+            z[i] += x[ar][i];
+        }
+    }
+
+    if (propagate) {
+#pragma omp parallel for if (n > 16 || length > 8000)
+        for(int ar = 0; ar < n; ar++) {
+
+#pragma omp simd
+            for (Nd4jIndex i = 0; i < length; i++) {
+                x[ar][i] = z[i] / n;
+            }
+        }
+    }
+}
+
 void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     // no-op
 }
 
 void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
-    // to be implemented
+    float **x = reinterpret_cast<float **>(dx);
+    float *z = reinterpret_cast<float *>(dz);
+
+    averageGeneric<float>(x, z, n, length, propagate);
 }
 
 void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
-    // to be implemented
+    double **x = reinterpret_cast<double **>(dx);
+    double *z = reinterpret_cast<double *>(dz);
+
+    averageGeneric<double>(x, z, n, length, propagate);
 }
 
 void NativeOps::enableP2P(bool enable) {
