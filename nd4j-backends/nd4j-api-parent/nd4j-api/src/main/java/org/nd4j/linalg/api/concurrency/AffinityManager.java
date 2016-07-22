@@ -41,4 +41,10 @@ public interface AffinityManager {
      * @param deviceId
      */
     void attachThreadToDevice(long threadId, Integer deviceId);
+
+    /**
+     * This method returns number of available devices
+     * @return
+     */
+    int getNumberOfDevices();
 }

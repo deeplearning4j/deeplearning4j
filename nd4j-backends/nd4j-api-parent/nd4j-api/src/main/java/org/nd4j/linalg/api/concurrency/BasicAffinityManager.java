@@ -28,4 +28,9 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public void attachThreadToDevice(long threadId, Integer deviceId) {
         // no-op
     }
+
+    @Override
+    public int getNumberOfDevices() {
+        return 1;
+    }
 }

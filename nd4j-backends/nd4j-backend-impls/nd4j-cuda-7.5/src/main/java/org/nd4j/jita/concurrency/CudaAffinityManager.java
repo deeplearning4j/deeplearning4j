@@ -75,4 +75,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         return device;
     }
+
+    @Override
+    public int getNumberOfDevices() {
+        return new ArrayList<>(configuration.getAvailableDevices()).size();
+    }
 }
