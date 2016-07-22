@@ -2561,3 +2561,7 @@ void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz
 void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     // to be implemented
 }
+
+void NativeOps::enableP2P(bool enable) {
+    // no-op
+}

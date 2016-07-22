@@ -32,6 +32,7 @@ int blockLimit = 128;
 int maxThreads = 512;
 bool debug = false;
 bool verbose = true;
+bool allowedP2P = false;
 
 __constant__ char deviceConstantMemory[49152];
 
@@ -110,9 +111,11 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 	int blockThreshold = getDeviceBlockThreshold(deviceId);
 
 	int num_threads = problemLength / (countMP * blockThreshold);
-	num_threads = 64;
+    num_threads = nd4j::math::nd4j_min<int>(num_threads, maxThreads);
+    num_threads = nd4j::math::nd4j_max<int>(num_threads, 64);
 
-	int num_blocks = 64;
+	int num_blocks = nd4j::math::nd4j_max<int>(problemLength / num_threads, 1);
+    num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
 	int memory_limit = (sharedMemoryPerThread * num_threads) + getBaseMemorySize(1, funcAttr);
 
@@ -4984,6 +4987,48 @@ void NativeOps::flattenDouble(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+void NativeOps::enableP2P(bool enable) {
+    if (enable == allowedP2P)
+        return;
+
+    int curDevice = 0;
+
+    cudaGetDevice(&curDevice);
+
+    int devCnt = 0;
+    cudaGetDeviceCount(&devCnt);
+
+    if (devCnt > 1) {
+        for (int x = 0; x < devCnt; x++) {
+
+            for (int y = 0; y < devCnt; y++) {
+                if (x == y)
+                    continue;
+
+                int canAccess = 0;
+                cudaSetDevice(x);
+
+                cudaDeviceCanAccessPeer(&canAccess, x , y);
+
+                if (canAccess) {
+                    if (enable) {
+                        cudaDeviceEnablePeerAccess(y, 0);
+                    } else {
+                        cudaDeviceDisablePeerAccess(y);
+                    }
+                } else
+                    printf("Peer access [%i] -> [%i] isn't possible\n", x, y);
+            }
+        }
+
+        cudaSetDevice(0);
+    }
+
+    allowedP2P = enable;
+
+    cudaSetDevice(curDevice);
+}
+
 void NativeOps::initializeDevicesAndFunctions() {
 	int devCnt = 0;
 	cudaGetDeviceCount(&devCnt);
@@ -4996,6 +5041,8 @@ void NativeOps::initializeDevicesAndFunctions() {
 	}
 
 	cudaSetDevice(0);
+
+    enableP2P(allowedP2P);
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
@@ -5099,6 +5146,14 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
 
 	cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
+
+    /////////////////////////
+
+    cudaFuncGetAttributes(&funcAttributes[44], averagingKernelHalf);
+
+    cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
+
+    cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
 }
 
 
@@ -5842,7 +5897,12 @@ void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz,
     nd4j::float16 **x = reinterpret_cast<nd4j::float16 **>(dx);
     nd4j::float16 *z = reinterpret_cast<nd4j::float16 *>(dz);
 
-    averagingKernelHalf<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+    if (debug && verbose)
+        printf("averageHalf called\n");
+
+    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(nd4j::float16), funcAttributes[44]);
+
+    averagingKernelHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, z, n, length, propagate);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -5857,7 +5917,9 @@ void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz
     if (debug && verbose)
         printf("averageFloat called\n");
 
-    averagingKernelFloat<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);
+
+    averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, z, n, length, propagate);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -5868,7 +5930,12 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer d
     double **x = reinterpret_cast<double **>(dx);
     double *z = reinterpret_cast<double *>(dz);
 
-    averagingKernelDouble<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+    if (debug && verbose)
+        printf("averageDouble called\n");
+
+    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(double), funcAttributes[46]);
+
+    averagingKernelDouble<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, z, n, length, propagate);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }

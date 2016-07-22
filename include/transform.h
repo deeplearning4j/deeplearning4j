@@ -1414,7 +1414,7 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
 
 
     // each block cycles over it's own part of arrays
-    for (int r = gridDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
+    for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
         shmem[threadIdx.x] = 0.0f;
 
         Nd4jIndex baseIdx = r;

@@ -1182,6 +1182,12 @@ public:
     void averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate);
 
     void averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate);
+
+
+    /**
+     * P2P enabler
+     */
+    void enableP2P(bool enable);
 };
 
 
