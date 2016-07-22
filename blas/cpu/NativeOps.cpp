@@ -2366,6 +2366,10 @@ void pullRowsGeneric(T *x,
     }
 }
 
+void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // no-op
+}
+
 void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     float *xBuffer = reinterpret_cast<float *>(x);
     float *zBuffer = reinterpret_cast<float *>(z);

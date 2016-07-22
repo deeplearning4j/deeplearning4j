@@ -5727,6 +5727,27 @@ Nd4jPointer NativeOps::getConstantSpace() {
 	return dConstAddr;
 }
 
+void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    nd4j::float16 *xBuffer = reinterpret_cast<nd4j::float16 *>(x);
+    nd4j::float16 *zBuffer = reinterpret_cast<nd4j::float16 *>(z);
+    int *zShape = reinterpret_cast<int *>(zShapeInfo);
+    int *xShape = reinterpret_cast<int *>(xShapeInfo);
+
+    int *index = reinterpret_cast<int *>(indexes);
+    int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+    int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+
+    pullRowsKernelHalf<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
 void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -5831,6 +5852,10 @@ void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz
 
     float **x = reinterpret_cast<float **>(dx);
     float *z = reinterpret_cast<float *>(dz);
+
+
+    if (debug && verbose)
+        printf("averageFloat called\n");
 
     averagingKernelFloat<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
 
