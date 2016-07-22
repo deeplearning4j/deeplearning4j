@@ -5157,6 +5157,18 @@ public class Nd4j {
             is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
+
+            if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                System.out.println("                 Half-precision data type isn't support for nd4j-native");
+                System.out.println("                 Please, consider using FLOAT or DOUBLE data type instead");
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+            }
+
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

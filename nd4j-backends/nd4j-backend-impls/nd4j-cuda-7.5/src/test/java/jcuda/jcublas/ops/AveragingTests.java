@@ -29,7 +29,7 @@ public class AveragingTests {
 
     @Before
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
         CudaEnvironment.getInstance().getConfiguration()
                 .allowMultiGPU(true)
                 .allowCrossDeviceAccess(true)
