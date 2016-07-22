@@ -15,6 +15,8 @@ class BitFilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => 
   }
 
   x = _x
+  override def opNum(): Int = -1
+
   override def name(): String = "bitfilter_scalar"
 
   override def opForDimension(index: Int, dimension: Int): Op = BitFilterOps(x.tensorAlongDimension(index,dimension),f,g)

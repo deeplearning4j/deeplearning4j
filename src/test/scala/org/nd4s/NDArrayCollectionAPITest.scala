@@ -4,7 +4,7 @@ import org.nd4s.Implicits._
 import org.scalatest.{Matchers, FlatSpec}
 
 class NDArrayCollectionAPITest extends FlatSpec with Matchers{
-  "CollectionLikeNDArray" should "provides filter API" in {
+  "CollectionLikeNDArray" should "provides filter API" ignore {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -21,7 +21,7 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers{
         Array(7, 8, 9)
       ).toNDArray)
   }
-  it should "provides filter bitmask API" in {
+  it should "provides filter bitmask API" ignore {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -38,7 +38,7 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers{
         Array(0, 1, 0)
       ).toNDArray)
   }
-  it should "provides map API" in {
+  it should "provides map API" ignore {
     val ndArray =
       Array(
         Array(1, 2, 3),
