@@ -2546,14 +2546,14 @@ void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n,
     convHalfsToGeneric<float>(x, n, z);
 }
 
-void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     // no-op
 }
 
-void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     // to be implemented
 }
 
-void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
+void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     // to be implemented
 }

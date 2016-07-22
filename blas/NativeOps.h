@@ -1177,11 +1177,11 @@ public:
     /**
      * Array averaging op
      */
-    void averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length);
+    void averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate);
 
-    void averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length);
+    void averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate);
 
-    void averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length);
+    void averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate);
 };
 
 

@@ -5815,14 +5815,35 @@ void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx,
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
-    // to be implemented
+void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    nd4j::float16 **x = reinterpret_cast<nd4j::float16 **>(dx);
+    nd4j::float16 *z = reinterpret_cast<nd4j::float16 *>(dz);
+
+    averagingKernelHalf<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
-    // to be implemented
+void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float **x = reinterpret_cast<float **>(dx);
+    float *z = reinterpret_cast<float *>(dz);
+
+    averagingKernelFloat<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, int length) {
-    // to be implemented
+void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    double **x = reinterpret_cast<double **>(dx);
+    double *z = reinterpret_cast<double *>(dz);
+
+    averagingKernelDouble<<<64, 64, 1024, *stream>>>(x, z, n, length, propagate);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }

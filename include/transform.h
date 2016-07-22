@@ -1404,8 +1404,14 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
 template <typename T>
 __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, bool propagate) {
 
-    int tid = threadIdx.x + blockIdx.x * gridDim.x;
-    extern __shared__ T shmem[];
+    T *shmem;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char sharedmem[];
+        shmem = (T *) sharedmem;
+    }
+    __syncthreads();
+
 
     // each block cycles over it's own part of arrays
     for (int r = gridDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
@@ -1426,8 +1432,8 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
         T *wdata = dz + baseIdx;
 
         if (baseIdx + threadIdx.x < length) {
-            shmem[threadIdx.x] /= n
-            wdata[i] = shmem[threadIdx.x];
+            shmem[threadIdx.x] /= n;
+            wdata[threadIdx.x] = shmem[threadIdx.x];
         }
 
         if (propagate)
@@ -1439,6 +1445,19 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
                     cdata[threadIdx.x] = shmem[threadIdx.x];
             }
     }
+}
+
+
+extern "C" __global__ void averagingKernelHalf(nd4j::float16 **dx, nd4j::float16 *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<nd4j::float16>(dx, dz, n, length, propagate);
+}
+
+extern "C" __global__ void averagingKernelFloat(float **dx, float *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<float>(dx, dz, n, length, propagate);
+}
+
+extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<double>(dx, dz, n, length, propagate);
 }
 
 #endif
