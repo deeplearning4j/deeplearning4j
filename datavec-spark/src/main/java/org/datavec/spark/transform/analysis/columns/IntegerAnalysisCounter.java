@@ -125,13 +125,12 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     }
 
     public double getSampleVariance(){
-        if(countTotal < 1) return Double.NaN;
-        return m2 / countTotal;
+        if(countTotal <= 1) return Double.NaN;
+        return m2 / (countTotal - 1);
     }
 
     public double getSampleStdev(){
-        if(countTotal <= 1) return Double.NaN;
-        return m2 / (countTotal - 1);
+        return Math.sqrt(getSampleVariance());
     }
 
 }

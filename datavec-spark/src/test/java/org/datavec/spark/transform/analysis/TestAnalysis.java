@@ -16,11 +16,10 @@
 
 package org.datavec.spark.transform.analysis;
 
+import org.apache.spark.api.java.JavaDoubleRDD;
+import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
-import org.datavec.api.transform.analysis.columns.DoubleAnalysis;
-import org.datavec.api.transform.analysis.columns.IntegerAnalysis;
-import org.datavec.api.transform.analysis.columns.TimeAnalysis;
+import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.datavec.spark.transform.BaseSparkTest;
@@ -35,6 +34,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -103,6 +103,68 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(10.0, bucketsD[bucketsD.length-1], 0.0);
         assertEquals(1, countD[0]);
         assertEquals(1, countD[countD.length-1]);
+    }
+
+
+    @Test
+    public void testAnalysisStdev(){
+        //Test stdev calculations compared to Spark's stats calculation
+
+
+        Random r = new Random(12345);
+        List<Double> l1 = new ArrayList<>();
+        List<Integer> l2 = new ArrayList<>();
+        List<Long> l3 = new ArrayList<>();
+
+        int n = 10000;
+        for( int i=0; i<n; i++ ){
+            l1.add(10*r.nextDouble());
+            l2.add(-1000 + r.nextInt(2000));
+            l3.add(-1000L + r.nextInt(2000));
+        }
+
+        List<Double> l2d = new ArrayList<>();
+        for(Integer i : l2) l2d.add(i.doubleValue());
+        List<Double> l3d = new ArrayList<>();
+        for(Long l : l3) l3d.add(l.doubleValue());
+
+
+        StatCounter sc1 = sc.parallelizeDoubles(l1).stats();
+        StatCounter sc2 = sc.parallelizeDoubles(l2d).stats();
+        StatCounter sc3 = sc.parallelizeDoubles(l3d).stats();
+
+        List<List<Writable>> data = new ArrayList<>();
+        for( int i=0; i<n; i++ ){
+            List<Writable> l = new ArrayList<>();
+            l.add(new DoubleWritable(l1.get(i)));
+            l.add(new IntWritable(l2.get(i)));
+            l.add(new LongWritable(l3.get(i)));
+            data.add(l);
+        }
+
+        Schema schema = new Schema.Builder()
+                .addColumnDouble("d")
+                .addColumnInteger("i")
+                .addColumnLong("l")
+                .build();
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(data);
+        DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
+
+        double stdev1 = sc1.sampleStdev();
+        double stdev1a = ((DoubleAnalysis)da.getColumnAnalysis("d")).getSampleStdev();
+        double re1 = Math.abs(stdev1 - stdev1a) / (Math.abs(stdev1) + Math.abs(stdev1a));
+        assertTrue(re1 < 1e-6);
+
+        double stdev2 = sc2.sampleStdev();
+        double stdev2a = ((IntegerAnalysis)da.getColumnAnalysis("i")).getSampleStdev();
+        double re2 = Math.abs(stdev2 - stdev2a) / (Math.abs(stdev2) + Math.abs(stdev2a));
+        assertTrue(re2 < 1e-6);
+
+        double stdev3 = sc3.sampleStdev();
+        double stdev3a = ((LongAnalysis)da.getColumnAnalysis("l")).getSampleStdev();
+        double re3 = Math.abs(stdev3 - stdev3a) / (Math.abs(stdev3) + Math.abs(stdev3a));
+        assertTrue(re3 < 1e-6);
     }
 
 }
