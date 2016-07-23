@@ -75,12 +75,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         super.before();
     }
 
     @After
-    public void after() {
+    public void after() throws Exception {
         super.after();
     }
 

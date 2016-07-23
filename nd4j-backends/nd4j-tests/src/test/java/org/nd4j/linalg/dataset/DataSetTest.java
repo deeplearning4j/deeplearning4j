@@ -85,6 +85,27 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testSplitTestAndTrainRng() throws Exception {
+
+        Random rngHere;
+
+        DataSet x1 = new IrisDataSetIterator(150,150).next(); //original
+        DataSet x2 = x1.copy(); //call split test train with rng
+
+        //Manual shuffle
+        x1.shuffle(new Random(123).nextLong());
+        SplitTestAndTrain testAndTrain = x1.splitTestAndTrain(10);
+        // Pass rng with splt test train
+        rngHere = new Random(123);
+        SplitTestAndTrain testAndTrainRng = x2.splitTestAndTrain(10,rngHere);
+
+        assertArrayEquals(testAndTrainRng.getTrain().getFeatureMatrix().shape(), testAndTrain.getTrain().getFeatureMatrix().shape());
+        assertEquals(testAndTrainRng.getTrain().getFeatureMatrix(), testAndTrain.getTrain().getFeatureMatrix());
+        assertEquals(testAndTrainRng.getTrain().getLabels(),testAndTrain.getTrain().getLabels());
+
+    }
+
+    @Test
     public void testLabelCounts() {
         DataSet x0 = new IrisDataSetIterator(150,150).next();
         assertEquals(getFailureMessage(),0,x0.get(0).outcome());

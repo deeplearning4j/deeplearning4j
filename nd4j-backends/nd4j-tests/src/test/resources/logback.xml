@@ -26,7 +26,7 @@
     <logger name="org.apache.uima" level="OFF" />
     <logger name="org.cleartk" level="OFF" />
     <logger name="org.bytedeco.javacpp" level="DEBUG" />
-
+    <logger name="kafka.consumer" level="DEBUG" />
 
     <root level="ERROR">
         <appender-ref ref="STDOUT" />

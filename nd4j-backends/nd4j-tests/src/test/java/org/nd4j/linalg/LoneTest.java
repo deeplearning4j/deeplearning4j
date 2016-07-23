@@ -9,7 +9,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -65,5 +67,34 @@ public class LoneTest extends BaseNd4jTest {
         INDArray fAssertion = Nd4j.create(new double[] {33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10, 45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10});
         assertEquals(cAssertion,Nd4j.toFlattened('c', first));
         assertEquals(fAssertion,Nd4j.toFlattened('f', first));
+    }
+
+    @Test
+    public void testIndexingColVec() {
+        int elements = 5;
+        INDArray rowVector = Nd4j.linspace(1, elements, elements).reshape(1, elements);
+        INDArray colVector = rowVector.transpose();
+        int j;
+        INDArray jj;
+        for(int i = 0; i < elements; i++) {
+            j = i+1;
+            assertEquals(colVector.getRow(i).getInt(0), i+1);
+            assertEquals(rowVector.getColumn(i).getInt(0), i+1);
+            assertEquals(rowVector.get(NDArrayIndex.interval(i, j)).getInt(0),i+1);
+            assertEquals(colVector.get(NDArrayIndex.interval(i, j)).getInt(0),i+1);
+            System.out.println("Making sure index interval will not crash with begin/end vals...");
+            jj = colVector.get(NDArrayIndex.interval(i,i+10));
+            jj = colVector.get(NDArrayIndex.interval(i,i+10));
+        }
+    }
+
+    @Test
+    public void concatScalarVectorIssue() {
+        //A bug was found when the first array that concat sees is a scalar and the rest vectors + scalars
+        INDArray arr1 = Nd4j.create(1,1);
+        INDArray arr2 = Nd4j.create(1,8);
+        INDArray arr3 = Nd4j.create(1,1);
+        INDArray arr4 = Nd4j.concat(1,arr1,arr2,arr3);
+        assertTrue(arr4.sumNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
     }
 }

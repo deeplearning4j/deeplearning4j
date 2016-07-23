@@ -75,7 +75,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Before
-    public void before() {
+    public void before() throws  Exception {
         super.before();
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
@@ -84,7 +84,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @After
-    public void after() {
+    public void after() throws Exception {
         super.after();
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.dtype = DataBuffer.Type.DOUBLE;

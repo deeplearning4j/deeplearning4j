@@ -28,7 +28,11 @@ public class NativeOps extends Pointer {
         properties.remove("platform.preloadpath");
         String s = System.getProperty("org.nd4j.nativeblas.pathsfirst", "false").toLowerCase();
         boolean pathsFirst = s.equals("true") || s.equals("t") || s.equals("");
-        Loader.load(NativeOps.class, properties, pathsFirst);
+        try {
+            Loader.load(NativeOps.class, properties, pathsFirst);
+        } catch (UnsatisfiedLinkError e) {
+            throw new RuntimeException("ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html", e);
+        }
     }
 
     public NativeOps() {

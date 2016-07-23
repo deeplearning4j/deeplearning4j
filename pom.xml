@@ -136,6 +136,7 @@
                 <os.arch>x86_64</os.arch>
             </properties>
         </profile>
+
         <profile>
             <id>release-sign-artifacts</id>
             <activation>
