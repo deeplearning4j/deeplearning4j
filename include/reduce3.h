@@ -34,7 +34,8 @@
         (0, simdOps::ManhattanDistance), \
         (1, simdOps::EuclideanDistance), \
         (2, simdOps::CosineSimilarity), \
-        (3, simdOps::Dot)
+        (3, simdOps::Dot), \
+        (4, simdOps::EqualsWithEps)
 
         
 namespace functions {

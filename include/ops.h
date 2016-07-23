@@ -1197,6 +1197,55 @@ namespace simdOps {
 	};
 
 
+    /**
+	* Op to check equality within arrays
+	*/
+    template<typename T>
+    class EqualsWithEps {
+    public:
+        static const int extraParamsLen = 0;
+
+        op_def static T * generateExtraParams() {
+            return nullptr;
+        }
+
+        op_def static void finalizeExtraParams(T *extraParamsRef) {
+            //no-op
+        }
+
+        op_def static T startingValue(T *input) {
+            return 0.0;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
+            return reduction;
+        }
+
+        op_def static T op(T d1, T d2, T *extraParamsRef) {
+            if (nd4j::math::nd4j_abs<T>(d1 - d2) < 1e-5 ) return 0.0;
+            else return 1.0;
+        }
+
+
+#ifdef __CUDACC__
+        __device__
+		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
+			return op(d1, d2, extraParamsRef);
+		}
+#endif
+
+        op_def static T update(T old, T opOutput, T *extraParamsRef) {
+            return opOutput + old;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParamsRef) {
+            return update(old, opOutput, extraParamsRef);
+        }
+
+        op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
+    };
+
+
 
 	template<typename T>
 	class EuclideanDistance {
