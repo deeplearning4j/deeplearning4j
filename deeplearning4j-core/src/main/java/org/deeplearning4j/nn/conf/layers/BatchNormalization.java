@@ -8,7 +8,6 @@ import java.util.Map;
 /**
  * Batch normalization configuration
  *
- * @author Adam Gibson
  */
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
@@ -16,7 +15,7 @@ import java.util.Map;
 @Builder
 public class BatchNormalization extends FeedForwardLayer {
     protected double decay;
-    protected double eps = Nd4j.EPS_THRESHOLD;
+    protected double eps;
     protected boolean useBatchMean;
     protected double gamma;
     protected double beta;
@@ -25,6 +24,7 @@ public class BatchNormalization extends FeedForwardLayer {
     private BatchNormalization(Builder builder){
         super(builder);
         this.decay = builder.decay;
+        this.eps = builder.eps;
         this.useBatchMean = builder.useBatchMean;
         this.gamma = builder.gamma;
         this.beta = builder.beta;
@@ -40,6 +40,7 @@ public class BatchNormalization extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected double decay = 0.9;
+        protected double eps = Nd4j.EPS_THRESHOLD;
         protected boolean useBatchMean = true; // TODO auto set this if layer conf is batch
         protected boolean lockGammaBeta = false;
         protected double gamma = 1;
@@ -74,6 +75,11 @@ public class BatchNormalization extends FeedForwardLayer {
 
         public Builder beta(double beta){
             this.beta = beta;
+            return this;
+        }
+
+        public Builder eps(double eps){
+            this.eps = eps;
             return this;
         }
 
