@@ -693,15 +693,22 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return ret;
     }
 
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
     @Override
-    public INDArray average(INDArray... arrays) {
+    public INDArray average(INDArray target, INDArray[] arrays) {
         if (arrays == null || arrays.length == 0)
             throw new RuntimeException("Input arrays are missing");
 
         if (arrays.length == 1)
-            return arrays[0].dup();
+            return target.assign(arrays[0]);
 
-        long len = arrays[0].lengthLong();
+        long len = target.lengthLong();
 
         PointerPointer dataPointers = new PointerPointer(arrays.length);
 
@@ -712,18 +719,37 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             dataPointers.put(i,arrays[i].data().addressPointer());
         }
 
-        // we assume all arrays have equal length,
-        INDArray ret = Nd4j.create(arrays[0].shape(), arrays[0].stride(), arrays[0].ordering());
-
-        if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.averageDouble(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
-        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT){
-            nativeOps.averageFloat(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
+        if(target.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.averageDouble(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
+        } else if (target.data().dataType() == DataBuffer.Type.FLOAT){
+            nativeOps.averageFloat(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
         } else {
-            nativeOps.averageHalf(null, dataPointers, ret.data().addressPointer(), arrays.length, len, true);
+            nativeOps.averageHalf(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
         }
 
-        return ret;
+        return target;
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    @Override
+    public INDArray average(INDArray target, Collection<INDArray> arrays) {
+        return average(target, arrays.toArray(new INDArray[0]));
+    }
+
+    @Override
+    public INDArray average(INDArray[] arrays) {
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        INDArray ret = Nd4j.createUninitialized(arrays[0].shape(), arrays[0].ordering());
+
+        return average(ret, arrays);
     }
 
     @Override

@@ -397,7 +397,15 @@ public interface NDArrayFactory {
      * @param arrays
      * @return
      */
-    INDArray average(INDArray... arrays);
+    INDArray average(INDArray target, INDArray[] arrays);
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(INDArray[] arrays);
 
     /**
      * This method averages input arrays, and returns averaged array
@@ -406,6 +414,15 @@ public interface NDArrayFactory {
      * @return
      */
     INDArray average(Collection<INDArray> arrays);
+
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(INDArray target, Collection<INDArray> arrays);
 
     /**
      * Concatneate ndarrays along a dimension

@@ -760,21 +760,18 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray average(INDArray... arrays) {
+    public INDArray average(INDArray target, INDArray[] arrays) {
         if (arrays == null || arrays.length == 0)
             throw new RuntimeException("Input arrays are missing");
 
         if (arrays.length == 1)
-            return arrays[0].dup();
+            return target.assign(arrays[0]);
 
-        long len = arrays[0].lengthLong();
-
-        // we assume all arrays have equal length,
-        INDArray ret = Nd4j.create(arrays[0].shape(), arrays[0].stride(), arrays[0].ordering());
+        long len = target.lengthLong();
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        CudaContext context =  allocator.getFlowController().prepareAction(ret);
+        CudaContext context =  allocator.getFlowController().prepareAction(target);
 
         PointerPointer extras = new PointerPointer(
                 null, // not used
@@ -784,7 +781,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
 
 
-        Pointer z = AtomicAllocator.getInstance().getPointer(ret, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
 
         long[] xPointers = new long[arrays.length];
 
@@ -803,21 +800,51 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(tempX, context);
 
-        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.averageDouble(extras, x, z, arrays.length, len, true);
-        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.averageFloat(extras, x, z, arrays.length, len, true);
         } else {
             nativeOps.averageHalf(extras, x, z, arrays.length, len, true);
         }
 
-        allocator.getFlowController().registerAction(context, ret);
+        allocator.getFlowController().registerAction(context, target);
 
-        return ret;
+        return target;
     }
 
     @Override
     public INDArray average(Collection<INDArray> arrays) {
         return average(arrays.toArray(new INDArray[0]));
+    }
+
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    @Override
+    public INDArray average(INDArray[] arrays) {
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        // we assume all arrays have equal length,
+        INDArray ret = Nd4j.createUninitialized(arrays[0].shape(), arrays[0].ordering());
+
+        return average(ret, arrays);
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    @Override
+    public INDArray average(INDArray target, Collection<INDArray> arrays) {
+        return average(target, arrays.toArray(new INDArray[0]));
     }
 }
