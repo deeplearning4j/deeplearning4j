@@ -118,4 +118,17 @@ public class MultiLayerUpdater implements Updater {
 	public Updater clone(){
 		return new MultiLayerUpdater(this);
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		if(!(other instanceof MultiLayerUpdater)) return false;
+
+		MultiLayerUpdater multiLayerUpdater = (MultiLayerUpdater) other;
+		if(layerUpdaters.length != multiLayerUpdater.layerUpdaters.length) return false;
+
+		for(int i = 0; i < layerUpdaters.length; i++) {
+			if(!layerUpdaters[i].equals(multiLayerUpdater.layerUpdaters[i])) return false;
+		}
+		return true;
+	}
 }
