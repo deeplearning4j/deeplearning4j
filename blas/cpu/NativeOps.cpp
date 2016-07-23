@@ -2554,13 +2554,18 @@ void NativeOps::convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n,
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
 
+// aggregation step
+// TODO: this step should be improved, to exploit SIMD
 #pragma omp parallel for simd schedule(guided)
     for (Nd4jIndex i = 0; i < length; i++) {
+        z[i] = 0.0;
+
         for (int ar = 0; ar < n; ar++) {
             z[i] += x[ar][i];
         }
     }
 
+//div step
     if (length > 8000) {
 #pragma omp parallel for simd schedule(guided)
         for (Nd4jIndex i = 0; i < length; i++) {
@@ -2573,8 +2578,9 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
         }
     }
 
+//propagation step
     if (propagate) {
-#pragma omp parallel for if (n > 16 || length > 8000)
+#pragma omp parallel for if (n > 4 || length > 8000)
         for(int ar = 0; ar < n; ar++) {
 
 #pragma omp simd
