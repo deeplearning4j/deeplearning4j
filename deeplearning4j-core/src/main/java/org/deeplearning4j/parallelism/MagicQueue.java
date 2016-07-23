@@ -21,12 +21,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MagicQueue implements Queue<DataSet> {
     protected final List<Queue<DataSet>> backingQueues;
     protected final AtomicInteger nextBucket = new AtomicInteger(0);
+    protected final int numberOfBuckets;
+    protected final List<QueueHandler> handlers;
 
     protected MagicQueue(int numberOfFlows) {
         backingQueues = new ArrayList<>();
+        handlers = new ArrayList<>();
         for (int i = 0; i < numberOfFlows; i++) {
-            backingQueues.add(new ConcurrentLinkedQueue<DataSet>());
+            ConcurrentLinkedQueue<DataSet> queue = new ConcurrentLinkedQueue<>();
+            backingQueues.add(queue);
+
+            QueueHandler handler = new QueueHandler(queue);
+            handler.start();
+            handlers.add(handler);
         }
+
+
+
+
+        numberOfBuckets = numberOfFlows;
     }
 
     /**
@@ -35,7 +48,13 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public int size() {
-        return 0;
+
+        long cnt = 0;
+        for (int i = 0; i < numberOfBuckets; i++) {
+            cnt += backingQueues.get(i).size();
+        }
+
+        return (int) Math.floor(cnt / numberOfBuckets);
     }
 
     protected int size(int deviceId) {
@@ -90,9 +109,13 @@ public class MagicQueue implements Queue<DataSet> {
     }
 
     @Override
-    public synchronized boolean add(DataSet dataSet) {
+    public boolean add(DataSet dataSet) {
+        synchronized (this) {
+            if (nextBucket.get() >= backingQueues.size())
+                nextBucket.set(0);
+        }
 
-
+        handlers.get(nextBucket.getAndIncrement()).put(dataSet);
 
         return true;
     }
@@ -218,10 +241,17 @@ public class MagicQueue implements Queue<DataSet> {
         public void run() {
             while (true) {
                 try {
-                    DataSet ds = bufferQueue.poll(1, TimeUnit.SECONDS);
+                    DataSet ds = bufferQueue.poll(100, TimeUnit.MILLISECONDS);
 
                     if (ds != null) {
-                        // now we initialize dataset
+                        // now we initialize dataset on target device (if applicable)
+                        if (ds.getFeaturesMaskArray() != null)
+                            Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
+                        if (ds.getLabelsMaskArray() != null)
+                            Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+
+                        Nd4j.getAffinityManager().touch(ds.getFeatures());
+                        Nd4j.getAffinityManager().touch(ds.getLabels());
 
                         targetQueue.add(ds);
                     }
