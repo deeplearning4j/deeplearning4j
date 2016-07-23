@@ -32,6 +32,9 @@ public class MagicQueue implements Queue<DataSet> {
             backingQueues.add(queue);
 
             QueueHandler handler = new QueueHandler(queue);
+
+            Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
+
             handler.start();
             handlers.add(handler);
         }
@@ -241,7 +244,7 @@ public class MagicQueue implements Queue<DataSet> {
         public void run() {
             while (true) {
                 try {
-                    DataSet ds = bufferQueue.poll(100, TimeUnit.MILLISECONDS);
+                    DataSet ds = bufferQueue.poll(1, TimeUnit.SECONDS);
 
                     if (ds != null) {
                         // now we initialize dataset on target device (if applicable)
