@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
-    protected transient SequenceIterator<T> iterator;
+    @Getter protected transient SequenceIterator<T> iterator;
 
     protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
     protected transient SequenceLearningAlgorithm<T> sequenceLearningAlgorithm;
