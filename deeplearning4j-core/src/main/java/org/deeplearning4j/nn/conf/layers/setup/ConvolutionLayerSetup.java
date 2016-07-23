@@ -279,7 +279,12 @@ public class ConvolutionLayerSetup {
                             conf.inputPreProcessor(i+1, new FeedForwardToRnnPreProcessor());
                             break;
                         case BATCH_NORMALIZATION:
-                            throw new UnsupportedOperationException("Currently not implemented for " + inLayerName);
+                            BatchNormalization bnLayer = (BatchNormalization) outputLayer;
+                            conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
+                            lastnOut = lastOutChannels;
+                            storeNInAndNOut(outLayerName, lastnOut);
+                            bnLayer.setNOut(lastnOut);
+                            break;
                         case ACTIVATION_LAYER:
                             feedForwardLayer2 = (FeedForwardLayer) outputLayer;
                             lastnOut = feedForwardLayer.getNOut();

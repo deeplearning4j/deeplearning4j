@@ -15,7 +15,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.*;
-
+@Deprecated
 public class RecordReaderMultiDataSetIteratorTest {
 
     @Test
