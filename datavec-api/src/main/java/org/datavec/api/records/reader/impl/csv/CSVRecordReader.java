@@ -37,7 +37,9 @@ import java.util.*;
 public class CSVRecordReader extends LineRecordReader {
     private boolean skippedLines = false;
     private int skipNumLines = 0;
-    private String delimiter = ",";
+    // a regex delimiter that can parse quotes: http://stackoverflow.com/a/1757107/523744
+    private String delimiter = DEFAULT_DELIMITER;
+    public final static String DEFAULT_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
 
@@ -46,7 +48,7 @@ public class CSVRecordReader extends LineRecordReader {
      * @param skipNumLines the number of lines to skip
      */
     public CSVRecordReader(int skipNumLines) {
-        this(skipNumLines,",");
+        this(skipNumLines,DEFAULT_DELIMITER);
     }
 
     /**
@@ -60,14 +62,14 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     public CSVRecordReader() {
-        this(0,",");
+        this(0,DEFAULT_DELIMITER);
     }
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
-        this.delimiter = conf.get(DELIMITER, ",");
+        this.delimiter = conf.get(DELIMITER, DEFAULT_DELIMITER);
     }
 
     @Override

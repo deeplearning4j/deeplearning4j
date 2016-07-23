@@ -149,4 +149,14 @@ public class CSVRecordReaderTest {
             assertEquals(2, list.size());
         }
     }
+
+    @Test
+    public void testWithQuotes() throws Exception {
+        CSVRecordReader reader = new CSVRecordReader();
+        reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male"));
+        while (reader.hasNext()) {
+            Collection<Writable> vals = reader.next();
+            assertEquals("Entry count", 5, vals.size());
+        }
+    }
 }
