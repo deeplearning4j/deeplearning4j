@@ -282,7 +282,8 @@ public class ConvolutionLayerSetup {
                             BatchNormalization bnLayer = (BatchNormalization) outputLayer;
                             conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             lastnOut = lastOutChannels;
-                            bnLayer.setNIn(lastnOut);
+                            storeNInAndNOut(outLayerName, lastnOut);
+                            bnLayer.setNOut(lastnOut);
                             break;
                         case ACTIVATION_LAYER:
                             feedForwardLayer2 = (FeedForwardLayer) outputLayer;
