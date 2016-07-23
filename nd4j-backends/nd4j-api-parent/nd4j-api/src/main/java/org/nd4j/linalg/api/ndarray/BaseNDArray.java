@@ -3777,8 +3777,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == null)
+            return false;
+
         if (!(o instanceof INDArray))
             return false;
+
+
 
         INDArray n = (INDArray) o;
 
@@ -3803,6 +3808,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
         } else if (isVector() && n.isVector()) {
+            EqualsWithEps op = new EqualsWithEps(this, n);
+            Nd4j.getExecutioner().exec(op);
+            int diff = (int) op.getFinalResult().floatValue();
+
+            return diff == 0;
+
+            /*
             for (int i = 0; i < length; i++) {
                 if (data.dataType() == DataBuffer.Type.FLOAT) {
                     double curr = getDouble(i);
@@ -3826,6 +3838,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             return true;
+            */
 
         }
 
@@ -3838,6 +3851,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         if(n.ordering() == ordering()) {
+            EqualsWithEps op = new EqualsWithEps(this, n);
+            Nd4j.getExecutioner().exec(op);
+            int diff = (int) op.getFinalResult().floatValue();
+
+            return diff == 0;
+            /*
             for(int i = 0; i < length(); i++) {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
@@ -3849,9 +3868,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     return false;
                 }
             }
-
+            */
         }
         else {
+            EqualsWithEps op = new EqualsWithEps(this, n);
+            Nd4j.getExecutioner().exec(op);
+            int diff = (int) op.getFinalResult().floatValue();
+
+            return diff == 0;
+/*
             NdIndexIterator iter = new NdIndexIterator(n.shape());
             while(iter.hasNext()) {
                 int[] next = iter.next();
@@ -3865,11 +3890,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     return false;
                 }
             }
-
+*/
         }
-
-        return true;
-
     }
 
     @Override
