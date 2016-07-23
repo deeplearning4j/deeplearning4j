@@ -125,7 +125,7 @@ public class MultiLayerUpdater implements Updater {
 
 		MultiLayerUpdater multiLayerUpdater = (MultiLayerUpdater) other;
 		if(layerUpdaters.length != multiLayerUpdater.layerUpdaters.length) return false;
-		
+
 		for(int i = 0; i < layerUpdaters.length; i++) {
 			if(!layerUpdaters[i].equals(multiLayerUpdater.layerUpdaters[i])) return false;
 		}
