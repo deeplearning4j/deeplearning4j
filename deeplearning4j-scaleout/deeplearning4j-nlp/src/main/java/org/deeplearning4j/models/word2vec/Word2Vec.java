@@ -31,7 +31,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class Word2Vec extends SequenceVectors<VocabWord> {
-    @Getter protected transient SentenceIterator sentenceIter;
+    protected transient SentenceIterator sentenceIter;
     @Getter protected transient TokenizerFactory tokenizerFactory;
 
     /**
