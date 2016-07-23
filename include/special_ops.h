@@ -165,24 +165,22 @@ namespace simdOps {
 			int xOutFrom = 0;
 			int xOutTo = outSize(inShape[3], kernelWidth, strideX, padWidth, coverAll);
 
-
-			int *outIndices = new int[6];
-			int *inIndices = new int[4];
-
-			int inStride2 = inStride[2];
-			int inStride3 = inStride[3];
-			int outStride2 = outStride[2];
-			int outStride3 = outStride[3];
-			int inShape2 = inShape[2];
-			int inShape3 = inShape[3];
-
-			bool padding = padHeight > 0 || padWidth > 0;
-
 			T *dIn = dx;
 			T *dOut = result;
-			//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
+					int outIndices[6];
+					int inIndices[4];
+
+					int inStride2 = inStride[2];
+					int inStride3 = inStride[3];
+					int outStride2 = outStride[2];
+					int outStride3 = outStride[3];
+					int inShape2 = inShape[2];
+					int inShape3 = inShape[3];
+
+					bool padding = padHeight > 0 || padWidth > 0;
 					inIndices[0] = ex;
 					inIndices[1] = d;
 					outIndices[0] = ex;
@@ -278,9 +276,6 @@ namespace simdOps {
 					}
 				}
 			}
-
-			delete[] inIndices;
-			delete[] outIndices;
 
 		}
 
@@ -457,27 +452,26 @@ namespace simdOps {
 			int *outStride = shape::stride(resultShapeBuffer);
 
 
-			int *outIndices = new int[4];
-			int *inIndices = new int[6];
-
-			int inStride2 = inStride[2];
-			int inStride3 = inStride[3];
-			int outStride2 = outStride[2];
-			int outStride3 = outStride[3];
-			int outShape2 = outShape[2];
-			int outShape3 = outShape[3];
-
-			int yOutTo = inShape[4];
-			int xOutTo = inShape[5];
-
-
-			bool padding = padHeight > 0 || padWidth > 0;
-
 			T *fIn = dx;
 			T *fOut = result;
-			//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
+					int outIndices[4];
+					int inIndices[6];
+
+					int inStride2 = inStride[2];
+					int inStride3 = inStride[3];
+					int outStride2 = outStride[2];
+					int outStride3 = outStride[3];
+					int outShape2 = outShape[2];
+					int outShape3 = outShape[3];
+
+					int yOutTo = inShape[4];
+					int xOutTo = inShape[5];
+
+
+					bool padding = padHeight > 0 || padWidth > 0;
 					inIndices[0] = ex;
 					inIndices[1] = d;
 					outIndices[0] = ex;
@@ -566,8 +560,6 @@ namespace simdOps {
 			}
 
 
-			delete[] outIndices;
-			delete[] inIndices;
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -1218,16 +1210,27 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax) schedule(guided)
+#pragma omp parallel
+{
+						int maxIdxLocal = maxIdx;
+						T currMaxLocal = currMax;
+#pragma omp for nowait
 						for (int i = 0; i < length; i++) {
-							if (currMax < dx[i]) {
-								currMax = dx[i];
-								maxIdx = i;
+							if (currMaxLocal < dx[i]) {
+								currMaxLocal = dx[i];
+								maxIdxLocal = i;
 							}
 							result[i] = 0.0;
 
 						}
-
+#pragma omp critical
+{
+						if (currMax < currMaxLocal) {
+							currMax = currMaxLocal;
+							maxIdx = maxIdxLocal;
+						}
+}
+}
 						result[maxIdx] = 1.0;
 					}
 
@@ -1251,15 +1254,27 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax) schedule(guided)
+#pragma omp parallel
+{
+						int maxIdxLocal = maxIdx;
+						T currMaxLocal = currMax;
+#pragma omp for nowait
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
-							if (currMax < dx[i * eleStride]) {
-								currMax = dx[i * eleStride];
-								maxIdx = i;
+							if (currMaxLocal < dx[i * eleStride]) {
+								currMaxLocal = dx[i * eleStride];
+								maxIdxLocal = i;
 							}
 						}
 
+#pragma omp critical
+{
+						if (currMax < currMaxLocal) {
+							currMax = currMaxLocal;
+							maxIdx = maxIdxLocal;
+						}
+}
+}
 						result[maxIdx * resultEleStride] = 1.0;
 					}
 
@@ -1386,17 +1401,28 @@ namespace simdOps {
 							}
 						}
 						else {
-
-#pragma omp parallel for simd shared(maxIdx,currMax) schedule(guided)
+#pragma omp parallel
+{
+							int maxIdxLocal = maxIdx;
+							T currMaxLocal = currMax;
+#pragma omp for nowait
 							for (int i = 0; i < length; i++) {
-								if (currMax < dx[i]) {
-									currMax = dx[i];
-									maxIdx = i;
+								if (currMaxLocal < dx[i]) {
+									currMaxLocal = dx[i];
+									maxIdxLocal = i;
 								}
 
 								result[i] = 0.0;
 
 							}
+#pragma omp critical
+{
+							if (currMax < currMaxLocal) {
+								currMax = currMaxLocal;
+								maxIdx = maxIdxLocal;
+							}
+}
+}
 						}
 
 						result[maxIdx] = 1.0;
@@ -1420,16 +1446,28 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel for simd shared(maxIdx,currMax) schedule(guided)
+#pragma omp parallel
+{
+							int maxIdxLocal = maxIdx;
+							T currMaxLocal = currMax;
+#pragma omp for nowait
 							for (int i = 0; i < length; i++) {
-								if (currMax < dx[i * eleStride]) {
-									currMax = dx[i * eleStride];
-									maxIdx = i;
+								if (currMaxLocal < dx[i * eleStride]) {
+									currMaxLocal = dx[i * eleStride];
+									maxIdxLocal = i;
 								}
 
 								result[i] = 0.0;
 
 							}
+#pragma omp critical
+{
+							if (currMax < currMaxLocal) {
+								currMax = currMaxLocal;
+								maxIdx = maxIdxLocal;
+							}
+}
+}
 						}
 
 						result[maxIdx] = 1.0;
@@ -1441,7 +1479,7 @@ namespace simdOps {
 			}
 			else {
 				int dimensionLength = (int)extraParams[0];
-				int *dimension = (int *)malloc(sizeof(int) *dimensionLength);
+				int *dimension = new int[dimensionLength];
 				for (int i = 0; i < dimensionLength; i++) {
 					dimension[i] = (int)extraParams[i + 1];
 				}
@@ -1509,7 +1547,6 @@ namespace simdOps {
 						maxCursor[0] = 1.0;
 					}
 				}
-
 			}
 		}
 
