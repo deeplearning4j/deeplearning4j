@@ -121,12 +121,13 @@ public class MultiLayerUpdater implements Updater {
 
 	@Override
 	public boolean equals(Object other) {
-		if(!(other instanceof MultiLayerUpdater) ||
-				layerUpdaters.length != ((MultiLayerUpdater) other).layerUpdaters.length) return false;
+		if(!(other instanceof MultiLayerUpdater)) return false;
+
+		MultiLayerUpdater multiLayerUpdater = (MultiLayerUpdater) other;
+		if(layerUpdaters.length != multiLayerUpdater.layerUpdaters.length) return false;
+		
 		for(int i = 0; i < layerUpdaters.length; i++) {
-			if(!(layerUpdaters[i].equals(((MultiLayerUpdater) other).layerUpdaters[i]))) {
-				return false;
-			}
+			if(!layerUpdaters[i].equals(multiLayerUpdater.layerUpdaters[i])) return false;
 		}
 		return true;
 	}
