@@ -1222,6 +1222,9 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2, T *extraParamsRef) {
+            if (isnan(d1) != isnan(d2))
+                return 1.0;
+
             if (nd4j::math::nd4j_abs<T>(d1 - d2) < 1e-5 ) return 0.0;
             else return 1.0;
         }
