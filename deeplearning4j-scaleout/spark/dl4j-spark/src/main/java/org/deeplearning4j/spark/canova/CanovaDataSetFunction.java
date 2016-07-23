@@ -20,7 +20,9 @@ import java.util.List;
 /**Map {@code Collection<Writable>} objects (out of a canova-spark record reader function) to DataSet objects for Spark training.
  * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.spark.datavec.DataVecDataSetFunction}
  */
+@Deprecated
 public class CanovaDataSetFunction implements Function<Collection<Writable>,DataSet>, Serializable {
 
     private final int labelIndex;

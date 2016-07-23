@@ -23,7 +23,9 @@ import java.util.*;
  * Use with {@code JavaRDD<String>.foreachPartition()}
  *
  * @author Alex Black
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.spark.datavec.export.StringToDataSetExportFunction}
  */
+@Deprecated
 public class StringToDataSetExportFunction implements VoidFunction<Iterator<String>> {
 
     private static final Configuration conf = new Configuration();

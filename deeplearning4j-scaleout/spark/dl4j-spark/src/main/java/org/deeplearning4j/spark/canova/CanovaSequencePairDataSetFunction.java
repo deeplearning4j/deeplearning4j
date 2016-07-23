@@ -23,7 +23,9 @@ import java.util.Iterator;
  * Supports loading data from a TWO sources only; hence supports many-to-one and one-to-many situations.
  * see {@link CanovaSequenceDataSetFunction} for the single file version
  * @author Alex Black
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.spark.datavec.DataVecSequencePairDataSetFunction}
  */
+@Deprecated
 public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
