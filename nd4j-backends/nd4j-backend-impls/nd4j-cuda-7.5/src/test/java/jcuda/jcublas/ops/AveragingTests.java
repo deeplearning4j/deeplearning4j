@@ -2,6 +2,7 @@ package jcuda.jcublas.ops;
 
 import org.apache.commons.math3.util.Pair;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -29,7 +30,7 @@ public class AveragingTests {
 
     @Before
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
         CudaEnvironment.getInstance().getConfiguration()
                 .allowMultiGPU(true)
                 .allowCrossDeviceAccess(true)
@@ -37,6 +38,23 @@ public class AveragingTests {
                 .setMaximumGridSize(512)
                 .setMaximumBlockSize(256)
                 .setVerbose(true);
+    }
+
+    @Test
+    @Ignore
+    public void testReshape() {
+        INDArray a = Nd4j.linspace(0,1000 , 100000000).reshape(1000, 1000, 100).permutei(0, 2, 1);
+
+        long startDup = System.nanoTime();
+        INDArray a2 = a.dup().reshape(500, 2000, 100);
+        System.out.println(String.format("Dup time: %.3f s", (System.nanoTime() - startDup) / 1000000000.));
+
+        int[] newShape = new int[]{500, 2000, 100};
+        long startTime = System.nanoTime();
+        INDArray b = Nd4j.createUninitialized(newShape, 'c').assign(a);
+        System.out.println(String.format("Assign: %.3f s", (System.nanoTime() - startTime) / 1000000000.));
+
+        assertEquals(a2, b);
     }
 
 

@@ -61,7 +61,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * So, basically memory being used for internal calculations, not interfered with manual changes (aka putRow etc), are always available without locks
  *
- *  // TODO: compare, if referenceQueue-based garbage collection would be more efficient
+ *
  * @author raver119@gmail.com
  */
 public class AtomicAllocator implements Allocator {
