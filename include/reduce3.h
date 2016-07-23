@@ -555,7 +555,7 @@ template<typename OpType>
 
 				char xOrder = shape::order(xShapeInfo);
 				char yOrder = shape::order(yShapeInfo);
-				if(xOrder == yOrder) {
+				if(xOrder == yOrder && (xElementWiseStride  >= 1 && yElementWiseStride >= 1)) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 						for(int i = 0; i < length; i++) {
