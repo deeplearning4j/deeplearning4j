@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -112,9 +113,7 @@ public class ModelSerializerTest {
 
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
         assertEquals(cg.params(), network.params());
-
-        // updater breaks equality? huh?
-        //assertEquals(cg.getUpdater(), network.getUpdater());
+        assertEquals(cg.getUpdater(), network.getUpdater());
     }
 
     @Test
@@ -143,8 +142,6 @@ public class ModelSerializerTest {
 
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
         assertEquals(cg.params(), network.params());
-
-        // updater breaks equality? huh?
-        //assertEquals(cg.getUpdater(), network.getUpdater());
+        assertEquals(cg.getUpdater(), network.getUpdater());
     }
 }
