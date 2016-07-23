@@ -139,4 +139,9 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         }
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if(!(other instanceof ComputationGraphUpdater)) return false;
+        return layerUpdatersMap.equals(((ComputationGraphUpdater) other).layerUpdatersMap);
+    }
 }
