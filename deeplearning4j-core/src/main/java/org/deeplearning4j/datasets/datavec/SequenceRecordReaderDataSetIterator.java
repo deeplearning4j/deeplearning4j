@@ -21,6 +21,7 @@ import java.util.*;
  * Supports padding for one-to-many and many-to-one type data loading (i.e., with different number of inputs vs.
  * labels via the {@link SequenceRecordReaderDataSetIterator.AlignmentMode} mode.
  *
+ * @author Alex Black
  */
 public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).

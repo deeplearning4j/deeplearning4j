@@ -22,6 +22,8 @@ package org.deeplearning4j.datasets.iterator;
 /**
  * Pre preProcess a dataset
  * @author Adam Gibson
+ *
+ * @deprecated Use @deprecated Use {@link org.nd4j.linalg.dataset.api.DataSetPreProcessor}
  */
 @Deprecated
 public interface DataSetPreProcessor extends org.nd4j.linalg.dataset.api.DataSetPreProcessor {
