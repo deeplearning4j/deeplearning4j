@@ -50,6 +50,7 @@ import java.util.Iterator;
  *
  * @author Adam Gibson
  *
+ * @deprecated Use {@link org.nd4j.linalg.dataset.api.iterator.DataSetIterator}
  */
 @Deprecated
 public interface DataSetIterator extends Iterator<DataSet>,org.nd4j.linalg.dataset.api.iterator.DataSetIterator,Serializable {
