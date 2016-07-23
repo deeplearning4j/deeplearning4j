@@ -32,21 +32,17 @@ Typically, a DataSetIterator handles inputs and dataset-specific concerns like b
          //Train on batches of 100 out of 60000 examples
          DataSetIterator iter = new MnistDataSetIterator(100,60000);
 
-Traverse the input data with the `MnistDataSetIterator`. (You can see the entire example [here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java), and download it with [DL4J's examples repo](https://github.com/deeplearning4j/dl4j-0.4-examples/).)
+Traverse the input data with the `MnistDataSetIterator`. (You can see the entire example [here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java), and download it with [DL4J's examples repo](https://github.com/deeplearning4j/dl4j-0.4-examples/).)
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=42:45"></script>
 
 Set up the DBN with a `MultiLayerConfiguration` whose layers are RBMs:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=45:75"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=41:60"></script>
 
 Train the model by calling `fit`:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=75:82"></script>
-
-Then evaluate the performance of the net:
-
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=82:91"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=60:70"></script>
 
 Note that the *eval* class combines [confusion matrices](./glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data. This is useful for tracking how well your network trains over time. 
 
