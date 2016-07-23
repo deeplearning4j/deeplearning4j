@@ -4699,6 +4699,18 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(INDArray target, INDArray[] arrays) {
+        INDArray ret = INSTANCE.average(target, arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     /**
      * This method averages input arrays, and returns averaged array.
@@ -4707,7 +4719,7 @@ public class Nd4j {
      * @param arrays
      * @return
      */
-    public static INDArray averageAndPropagate(INDArray... arrays) {
+    public static INDArray averageAndPropagate(INDArray[] arrays) {
         INDArray ret = INSTANCE.average(arrays);
         logCreationIfNecessary(ret);
         return ret;
@@ -4723,6 +4735,19 @@ public class Nd4j {
      */
     public static INDArray averageAndPropagate(Collection<INDArray> arrays) {
         INDArray ret = INSTANCE.average(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(INDArray target, Collection<INDArray> arrays) {
+        INDArray ret = INSTANCE.average(target, arrays);
         logCreationIfNecessary(ret);
         return ret;
     }
