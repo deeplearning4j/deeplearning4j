@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -95,14 +96,13 @@ public class ParallelWrapper {
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 || !iterator.hasNext()) {
                     double score = 0.0;
-                    INDArray result = Nd4j.zeros(model.params().shape());
+                    List<INDArray> params = new ArrayList<>();
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        INDArray params = zoo[cnt].getModel().params();
-                        result.addi(params);
+                        params.add(zoo[cnt].getModel().params());
                         score += zoo[cnt].getModel().score();
                     }
-                    result.divi(Math.min(workers, locker.get()));
-                    model.setParams(result);
+                    Nd4j.averageAndPropagate(model.params(), params);
+
                     score /= Math.min(workers, locker.get());
 
                     // TODO: improve this
@@ -129,9 +129,11 @@ public class ParallelWrapper {
                         ((ComputationGraph) model).setUpdater(uag.getUpdater());
                     }
 
+                    // FIXME: updateModel() call should be removed
                     for (int i = 0; i < workers; i++) {
                         zoo[i].updateModel(model);
                     }
+
                 }
                 locker.set(0);
             }
