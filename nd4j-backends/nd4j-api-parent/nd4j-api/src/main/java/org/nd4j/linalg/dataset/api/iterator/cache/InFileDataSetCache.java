@@ -4,6 +4,8 @@ import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -33,6 +35,36 @@ public class InFileDataSetCache implements DataSetCache {
         return new File(cacheDirectory, filename);
     }
 
+    private File namespaceFile(String namespace) {
+        String filename = String.format("%s-complete.txt", namespace);
+        return new File(cacheDirectory, filename);
+    }
+
+    @Override
+    public boolean isComplete(String namespace) {
+        return namespaceFile(namespace).exists();
+    }
+
+    @Override
+    public void setComplete(String namespace, boolean value) {
+        File file = namespaceFile(namespace);
+        if (value) {
+            if (!file.exists()) {
+                File parentFile = file.getParentFile();
+                parentFile.mkdirs();
+                try {
+                    file.createNewFile();
+                } catch(IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } else {
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+    }
+
     @Override
     public DataSet get(String key) {
         File file = resolveKey(key);
@@ -52,18 +84,18 @@ public class InFileDataSetCache implements DataSetCache {
     public void put(String key, DataSet dataSet) {
         File file = resolveKey(key);
 
-        if (file.exists()) {
-            throw new IllegalStateException("ERROR: cannot write DataSet: cache path " + file + " already exists");
-        } else {
-            File parentDir = file.getParentFile();
-            if (!parentDir.exists()) {
-                if (!parentDir.mkdirs()) {
-                    throw new IllegalStateException("ERROR: cannot create parent directory: " + parentDir);
-                }
+        File parentDir = file.getParentFile();
+        if (!parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new IllegalStateException("ERROR: cannot create parent directory: " + parentDir);
             }
-
-            dataSet.save(file);
         }
+
+        if (file.exists()) {
+            file.delete();
+        }
+
+        dataSet.save(file);
     }
 
     @Override

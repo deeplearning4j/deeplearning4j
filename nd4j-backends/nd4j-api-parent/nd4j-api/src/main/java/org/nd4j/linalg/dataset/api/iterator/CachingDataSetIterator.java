@@ -19,6 +19,7 @@ public class CachingDataSetIterator implements DataSetIterator {
     private DataSetPreProcessor preProcessor;
     private String namespace;
     private int currentIndex = 0;
+    private boolean usingCache = false;
 
     public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache, String namespace) {
         this.sourceIterator = sourceIterator;
@@ -26,6 +27,8 @@ public class CachingDataSetIterator implements DataSetIterator {
         this.preProcessor = null;
         this.namespace = namespace;
         this.currentIndex = 0;
+
+        this.usingCache = cache.isComplete(namespace);
     }
 
     public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache) {
@@ -33,7 +36,7 @@ public class CachingDataSetIterator implements DataSetIterator {
     }
 
     private String makeKey(int index) {
-        return String.format("data-set-cache-%s-%d.bin", namespace, index);
+        return String.format("data-set-cache-%s-%06d.bin", namespace, index);
     }
 
     @Override
@@ -93,16 +96,26 @@ public class CachingDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return sourceIterator.hasNext() || cache.contains(makeKey(currentIndex));
+        if (usingCache) {
+            return cache.contains(makeKey(currentIndex));
+        } else {
+            if (sourceIterator.hasNext()) {
+                return true;
+            } else {
+                usingCache = true;
+                cache.setComplete(namespace, true);
+                return false;
+            }
+        }
     }
 
     @Override
     public DataSet next() {
         String key = makeKey(currentIndex);
 
-        DataSet ds = null;
+        DataSet ds;
 
-        if (cache.contains(key)) {
+        if (usingCache) {
             ds = cache.get(key);
         } else {
             ds = sourceIterator.next();

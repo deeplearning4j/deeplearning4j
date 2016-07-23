@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -60,11 +61,16 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
 
         DataSetIterator it = new SamplingDataSetIterator(dataSet, 10, 50);
 
-        DataSetIterator cachedIt = new CachingDataSetIterator(it, cache);
+        String namespace = "test-namespace";
+
+        DataSetIterator cachedIt = new CachingDataSetIterator(it, cache, namespace);
 
         while (cachedIt.hasNext()) {
+            assertFalse(cache.isComplete(namespace));
             cachedIt.next();
         }
+
+        assertTrue(cache.isComplete(namespace));
 
         cachedIt.reset();
         it.reset();
@@ -83,5 +89,8 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
             assertEquals(0.0, ds.getFeatureMatrix().sumNumber());
             assertEquals(20.0, ds.getLabels().sumNumber());
         }
+
+        assertFalse(cachedIt.hasNext());
+        assertFalse(it.hasNext());
     }
 }
