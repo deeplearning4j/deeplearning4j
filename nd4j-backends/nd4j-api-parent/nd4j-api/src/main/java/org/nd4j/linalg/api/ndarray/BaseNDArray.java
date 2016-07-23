@@ -3787,6 +3787,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray n = (INDArray) o;
 
+        if (this.lengthLong() != n.lengthLong())
+            return false;
+
         //epsilon equals
         if (isScalar() && n.isScalar()) {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
@@ -3810,9 +3813,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else if (isVector() && n.isVector()) {
             EqualsWithEps op = new EqualsWithEps(this, n);
             Nd4j.getExecutioner().exec(op);
-            int diff = (int) op.getFinalResult().floatValue();
+            double diff = op.getFinalResult().doubleValue();
 
-            return diff == 0;
+            return diff < 1;
 
             /*
             for (int i = 0; i < length; i++) {
@@ -3843,40 +3846,51 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        if (!Shape.shapeEquals(shape(), n.shape()))
+        if (!Shape.shapeEquals(shape(), n.shape())) {
+            log.info("Shape not equals");
             return false;
+        }
 
 
         if (slices() != n.slices())
             return false;
 
         if(n.ordering() == ordering()) {
+/*
             EqualsWithEps op = new EqualsWithEps(this, n);
             Nd4j.getExecutioner().exec(op);
-            int diff = (int) op.getFinalResult().floatValue();
+            double diff =  op.getFinalResult().doubleValue();
 
-            return diff == 0;
-            /*
+            return diff < 1;
+
+
+*/
+            log.info("AAAA");
             for(int i = 0; i < length(); i++) {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
 
-                if (Double.isNaN(val) != Double.isNaN(val2))
+                if (Double.isNaN(val) != Double.isNaN(val2)) {
+                    log.info("BEX");
                     return false;
+                }
 
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
+                    log.info("NEX");
                     return false;
                 }
             }
-            */
+            return true;
+
         }
         else {
-            EqualsWithEps op = new EqualsWithEps(this, n);
+/*            EqualsWithEps op = new EqualsWithEps(this, n);
             Nd4j.getExecutioner().exec(op);
-            int diff = (int) op.getFinalResult().floatValue();
+            double diff = op.getFinalResult().doubleValue();
 
-            return diff == 0;
-/*
+            return diff < 1;
+*/
+            log.info("BBB");
             NdIndexIterator iter = new NdIndexIterator(n.shape());
             while(iter.hasNext()) {
                 int[] next = iter.next();
@@ -3890,7 +3904,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     return false;
                 }
             }
-*/
+
+            return true;
+
         }
     }
 
