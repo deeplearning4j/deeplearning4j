@@ -27,20 +27,22 @@ public class MagicQueue implements Queue<DataSet> {
     protected MagicQueue(int numberOfFlows) {
         backingQueues = new ArrayList<>();
         handlers = new ArrayList<>();
-        for (int i = 0; i < numberOfFlows; i++) {
+        if (numberOfFlows > 1) {
+            for (int i = 0; i < numberOfFlows; i++) {
+                ConcurrentLinkedQueue<DataSet> queue = new ConcurrentLinkedQueue<>();
+                backingQueues.add(queue);
+
+                QueueHandler handler = new QueueHandler(queue);
+
+                Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
+
+                handler.start();
+                handlers.add(handler);
+            }
+        } else {
             ConcurrentLinkedQueue<DataSet> queue = new ConcurrentLinkedQueue<>();
             backingQueues.add(queue);
-
-            QueueHandler handler = new QueueHandler(queue);
-
-            Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
-
-            handler.start();
-            handlers.add(handler);
         }
-
-
-
 
         numberOfBuckets = numberOfFlows;
     }
@@ -51,13 +53,14 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public int size() {
+        if (numberOfBuckets > 1) {
+            long cnt = 0;
+            for (int i = 0; i < numberOfBuckets; i++) {
+                cnt += backingQueues.get(i).size();
+            }
 
-        long cnt = 0;
-        for (int i = 0; i < numberOfBuckets; i++) {
-            cnt += backingQueues.get(i).size();
-        }
-
-        return (int) Math.floor(cnt / numberOfBuckets);
+            return (int) Math.floor(cnt / numberOfBuckets);
+        } else return backingQueues.get(0).size();
     }
 
     protected int size(int deviceId) {
@@ -113,14 +116,19 @@ public class MagicQueue implements Queue<DataSet> {
 
     @Override
     public boolean add(DataSet dataSet) {
-        synchronized (this) {
-            if (nextBucket.get() >= backingQueues.size())
-                nextBucket.set(0);
+        if (numberOfBuckets > 1) {
+            synchronized (this) {
+                if (nextBucket.get() >= backingQueues.size())
+                    nextBucket.set(0);
+            }
+
+            handlers.get(nextBucket.getAndIncrement()).put(dataSet);
+
+            return true;
+        } else {
+            backingQueues.get(0).add(dataSet);
+            return true;
         }
-
-        handlers.get(nextBucket.getAndIncrement()).put(dataSet);
-
-        return true;
     }
 
     /**
