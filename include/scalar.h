@@ -19,6 +19,7 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <float16.hpp>
 #endif
 
 #define SCALAR_OPS \
@@ -138,11 +139,11 @@ template<typename OpType>
             int xIdx[MAX_RANK];
 
 #pragma unroll
-			for (int i = tid; i < length; i+= totalThreads) {
+			for (Nd4jIndex i = tid; i < length; i+= totalThreads) {
 				shape::ind2sub(xRank, xShape, i,xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 				int resultOffset = shape::getOffset(0, zShape, zStride, xIdx, zRank);
-				result[resultOffset] = OpType::op(dy[xOffset2],scalar, params);
+			    result[resultOffset] = OpType::op(dy[xOffset2],scalar, params);
 			}
 		}
 	}
@@ -631,6 +632,23 @@ extern "C" __global__ void scalarFloat(
 	scalarGeneric<float>(
 			opNum,
 			dx,
+			dy,
+			shapeInfo, xRank,
+			params,
+			result,resultShapeInfo, zRank, allocationBuffer);
+}
+
+
+extern "C" __global__ void scalarHalf(
+		int opNum,
+		float dx,
+		nd4j::float16 *dy,
+		int *shapeInfo, int xRank,
+		nd4j::float16 *params,
+		nd4j::float16 *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
+	scalarGeneric<nd4j::float16>(
+			opNum,
+			(nd4j::float16) dx,
 			dy,
 			shapeInfo, xRank,
 			params,

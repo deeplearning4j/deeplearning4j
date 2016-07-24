@@ -11,7 +11,23 @@
 #include <math.h>
 #include <dll.h>
 
+#ifdef __CUDACC__
+#include <float16.hpp>
+
+typedef union {
+		struct {
+			half H;
+			half L;
+		} B;
+		int W;
+} PAIR;
+#endif
+
 namespace nd4j {
+#ifdef __CUDACC__
+
+#endif
+
 	namespace math {
 		template<typename T>
 #ifdef __CUDACC__
@@ -98,7 +114,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_elu(T val) {
-			return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
+			if (val >= 0.0) return val;
+			else return nd4j_exp<T>(val) - 1.0;
+			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
 
@@ -108,7 +126,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_leakyrelu(T val,T alpha) {
-			return val < 0 ?  alpha * val : val;
+			if (val < 0.0) return alpha * val;
+			else return val;
+			//return val < 0 ?  alpha * val : val;
 		}
 
 
@@ -118,7 +138,9 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_eluderivative(T val) {
-			return val >= 0.0 ? 1.0 : nd4j_exp(val);
+			if (val > 0.0) return 1.0;
+			else return nd4j_exp(val);
+			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -206,6 +228,13 @@ namespace nd4j {
 #endif
 		inline T nd4j_atan(T val);
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_abs<nd4j::float16>(nd4j::float16 value) {
+			return (nd4j::float16) fabsf((float) value);
+		}
+#endif
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -229,6 +258,14 @@ namespace nd4j {
 		inline int nd4j_abs<int>(int value) {
 			return value < 0 ? -value : value;
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_max<nd4j::float16>(nd4j::float16 val1, nd4j::float16 val2) {
+			return val1 > val2 ? val1 : val2;
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -254,6 +291,14 @@ namespace nd4j {
 			return val1 > val2 ? val1 : val2;
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_min<nd4j::float16>(nd4j::float16 val1, nd4j::float16 val2) {
+			return val1 < val2 ? val1 : val2;
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -276,6 +321,14 @@ namespace nd4j {
 		inline int nd4j_min<int>(int val1, int val2) {
 			return val1 < val2 ? val1 : val2;
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_ceil<nd4j::float16>(nd4j::float16 val1) {
+			return (nd4j::float16) ceilf((float) val1);
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -303,6 +356,14 @@ namespace nd4j {
 			return ceil((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_cos<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) cosf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -326,6 +387,14 @@ namespace nd4j {
 		inline int nd4j_cos<int>(int val) {
 			return cosf((float) val);
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_exp<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) expf((float) val);
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -351,6 +420,14 @@ namespace nd4j {
 			return expf((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_floor<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) floorf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -375,11 +452,17 @@ namespace nd4j {
 			return floorf((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_log<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) logf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
-#else
-
 #endif
 		inline float nd4j_log<float>(float val) {
 			return logf(val);
@@ -405,6 +488,15 @@ namespace nd4j {
 			return logf((int) val);
 		}
 
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_pow<nd4j::float16>(nd4j::float16 val, nd4j::float16 val2) {
+			return (nd4j::float16) powf((float) val, (float) val2);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -428,6 +520,14 @@ namespace nd4j {
 		inline int nd4j_pow<int>(int val, int val2) {
 			return powf((float) val, (float) val2);
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_round<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) roundf((float) val);
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -453,6 +553,14 @@ namespace nd4j {
 			return round((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_sin<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) sinf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -476,6 +584,14 @@ namespace nd4j {
 		inline int nd4j_sin<int>(int val) {
 			return sin((float) val);
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_sqrt<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) sqrtf((float) val);
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -501,6 +617,14 @@ namespace nd4j {
 			return sqrtf((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_tanh<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) tanhf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -523,6 +647,15 @@ namespace nd4j {
 		inline int nd4j_tanh<int>(int val) {
 			return tanhf((float) val);
 		}
+
+#ifdef __CUDACC__
+template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_acos<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) acosf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -547,6 +680,14 @@ namespace nd4j {
 			return acosf((float) val);
 		}
 
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_asin<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) asinf((float) val);
+		}
+#endif
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -570,6 +711,14 @@ namespace nd4j {
 		inline int nd4j_asin<int>(int val) {
 			return asinf((float) val);
 		}
+
+#ifdef __CUDACC__
+		template<>
+		__host__ __device__
+		inline nd4j::float16 nd4j_atan<nd4j::float16>(nd4j::float16 val) {
+			return (nd4j::float16) atanf((float)val);
+		}
+#endif
 
 		template<>
 #ifdef __CUDACC__
@@ -599,6 +748,7 @@ namespace nd4j {
 		namespace atomics {
 template <typename T>
 __device__ T nd4j_atomicAdd(T* address, T val);
+
 template <typename T>
 __device__ T nd4j_atomicSub(T* address, T val);
 template <typename T>
@@ -617,6 +767,39 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 				__longlong_as_double(assumed)));
 	} while (assumed != old);
 	return __longlong_as_double(old);
+}
+
+template <>
+__device__ nd4j::float16 nd4j_atomicAdd<nd4j::float16>(nd4j::float16* address, nd4j::float16 val)  {
+	int* address_as_ull = (int*) address;
+
+	long addr = (long) address;
+	bool misaligned = addr & 0x3;
+
+	if (misaligned)
+		address_as_ull = (int *) (addr - 2);
+
+	PAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
+	do {
+
+		if (!misaligned) {
+			nd4j::float16 res = ((nd4j::float16) old.B.H) + val;
+			fresh.B.H = res.data;
+			fresh.B.L = old.B.L;
+		} else {
+			nd4j::float16 res = ((nd4j::float16) old.B.L) + val;
+			fresh.B.L = res.data;
+			fresh.B.H = old.B.H;
+		}
+
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+
+	if (!misaligned) return old.B.H;
+	else return old.B.L;
 }
 
 template <>
@@ -662,6 +845,7 @@ template <>
 __device__ float nd4j_atomicAdd<float>(float* address, float val)  {
 	return atomicAdd(address,val);
 }
+
 
 template <>
 __device__ float nd4j_atomicSub<float>(float* address, float val) {

@@ -83,7 +83,8 @@
         (43,simdOps::DropOut), \
         (44,simdOps::DropOutInverted), \
         (45,simdOps::CompareAndSet), \
-        (46,simdOps::ReplaceNans)
+        (46,simdOps::ReplaceNans) ,\
+        (47,simdOps::StabilizeFP16)
 
 
 namespace functions {
@@ -111,8 +112,7 @@ namespace functions {
 			int *indexes) {
 		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -179,7 +179,7 @@ static __inline__ __device__ void transformCuda(
 			int xCoord[MAX_RANK];
 
 #pragma unroll
-			for (int i = tid; i < length; i+= gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < length; i+= gridDim.x * blockDim.x) {
 				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
@@ -363,7 +363,7 @@ template<typename OpType>
 
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided)
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[resultIndexes[i]] = OpType::op(dx[indexes[i]], extraParams);
 				}
 			}
@@ -378,18 +378,18 @@ template<typename OpType>
                 if (xStride == 1 && resultStride == 1) {
 					if (n > 2048) {
 #pragma omp parallel for simd schedule(guided)
-						for (int i = 0; i < n; i++) {
+						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], extraParams);
 						}
 					} else {
 #pragma omp simd
-						for (int i = 0; i < n; i++) {
+						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], extraParams);
 						}
 					}
                 } else {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
-                        for (int i = 0; i < n; i++) {
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = OpType::op(dx[i * xStride], extraParams);
                         }
                 }
@@ -402,16 +402,6 @@ template<typename OpType>
 
 
 #ifdef __CUDACC__
-/*
- * 	T *dy,
-			int *shapeInfo,
-			T *params,
-			T *result,
-			int *indexes
- */
-
-
-
 /**
  * The c and driver interface
  *  for th kernels
@@ -510,6 +500,24 @@ __global__ void transformFloat(
 		float *result,int resultStride, int *allocationPointer, float *reductionPointer) {
 
 	transformGeneric<float>(
+			opNum,
+			n,
+			dy,
+			incy,
+			params,
+			result,resultStride, allocationPointer, reductionPointer);
+
+}
+
+__global__ void transformHalf(
+		int opNum,
+		Nd4jIndex n,
+		nd4j::float16 *dy,
+		int incy,
+		nd4j::float16 *params,
+		nd4j::float16 *result,int resultStride, int *allocationPointer, nd4j::float16 *reductionPointer) {
+
+	transformGeneric<nd4j::float16>(
 			opNum,
 			n,
 			dy,
@@ -622,7 +630,22 @@ extern "C" __global__ void transformFloat(
 
 }
 
+extern "C" __global__ void transformHalf(
+		int opNum,
+		nd4j::float16 *dy,
+		int *shapeInfo, int xRank,
+		nd4j::float16 *params,
+		nd4j::float16 *result,int *resultShapeInfo, int zRank, int *allocationPointer, nd4j::float16 *reductionPointer) {
 
+	transformGeneric<nd4j::float16>(
+			opNum,
+			dy,
+			shapeInfo, xRank,
+			params,
+			result,
+			resultShapeInfo, zRank, allocationPointer, reductionPointer);
+
+}
 
 /**
  * The c and driver interface
@@ -726,6 +749,24 @@ extern "C" __global__ void transformFloatIndexes(
 
 }
 
+extern "C" __global__ void transformHalfIndexes(
+		int opNum,
+		nd4j::float16 *dy,
+		int *shapeInfo, int xRank,
+		nd4j::float16 *params,
+		nd4j::float16 *result,int *indexes, int *allocationPointer, nd4j::float16 *reductionPointer) {
+
+	transformGenericIndexes<nd4j::float16>(
+			opNum,
+			dy,
+			shapeInfo, xRank,
+			params,
+			result,indexes, allocationPointer, reductionPointer);
+
+}
+
+
+
 /**
 * This is utility kernel, that updates given special buffer with proper values in device memory
 */
@@ -778,6 +819,9 @@ extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
     fillIsMaxGeneric<double>(dx, length, idx);
 }
 
+extern "C" __global__ void fillIsMaxHalf(nd4j::float16 *dx, long length, long idx) {
+    fillIsMaxGeneric<nd4j::float16>(dx, length, idx);
+}
 
 template <typename T>
 __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
@@ -834,6 +878,10 @@ extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo,
 
 extern "C" __global__ void fillDimensionalIsMaxDouble(double *dx, int *xShapeInfo, double *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
     fillDimensionalIsMaxGeneric<double>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+}
+
+extern "C" __global__ void fillDimensionalIsMaxHalf(nd4j::float16 *dx, int *xShapeInfo, nd4j::float16 *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
+    fillDimensionalIsMaxGeneric<nd4j::float16>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
 template <typename T>
@@ -1055,6 +1103,16 @@ extern "C" __global__ void concatKernelScalarFloat(int dimension,
     concatKernelScalarGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
+extern "C" __global__ void concatKernelScalarHalf(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  nd4j::float16 *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelScalarGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
 extern "C" __global__ void concatKernelScalarDouble(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
@@ -1135,6 +1193,16 @@ extern "C" __global__ void concatKernelHStackDouble(int dimension,
 }
 
 
+extern "C" __global__ void concatKernelHStackHalf(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  nd4j::float16 *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelHStackGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
 template <typename T>
 __device__ void concatKernelVStackGeneric(int dimension,
 									int numArrays,
@@ -1198,6 +1266,16 @@ extern "C" __global__ void concatKernelVStackDouble(int dimension,
     concatKernelVStackGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
+extern "C" __global__ void concatKernelVStackHalf(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  nd4j::float16 *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelVStackGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
 
 extern "C" __global__ void concatKernelDouble(int dimension,
 											  int numArrays,
@@ -1215,6 +1293,15 @@ extern "C" __global__ void concatKernelFloat(int dimension,
 											 float *result,
 											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
+extern "C" __global__ void concatKernelHalf(int dimension,
+											 int numArrays,
+											 Nd4jPointer *data,
+											 Nd4jPointer *inputShapeInfo,
+											 nd4j::float16 *result,
+											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+	concatKernelGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 
@@ -1245,6 +1332,18 @@ __device__ void pullRowsKernelGeneric(T *x,
     }
 }
 
+extern "C" __global__ void pullRowsKernelHalf(
+                                     nd4j::float16 *x,
+                                     int *xShapeInfo,
+                                     nd4j::float16 *z,
+                                     int *zShapeInfo,
+                                     int n,
+                                     int *indexes,
+                                     int *tadShapeInfo,
+                                     int *tadOffsets) {
+    pullRowsKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+}
+
 extern "C" __global__ void pullRowsKernelFloat(float *x,
                                      int *xShapeInfo,
                                      float *z,
@@ -1265,6 +1364,100 @@ extern "C" __global__ void pullRowsKernelDouble(double *x,
                                      int *tadShapeInfo,
                                      int *tadOffsets) {
     pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+}
+
+template <typename T>
+__device__ void convertToHalfGeneric(T *dx, int n, half *dz) {
+    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+
+    for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x ) {
+        dz[i] = __float2half((float) dx[i]);
+    }
+}
+
+extern "C" __global__ void kernelFloatsToHalfs(float *dx, int n, half *dz) {
+    convertToHalfGeneric<float>(dx, n, dz);
+}
+
+extern "C" __global__ void kernelDoublesToHalfs(double *dx, int n, half *dz) {
+    convertToHalfGeneric<double>(dx, n, dz);
+}
+
+template <typename T>
+__device__ void convertHalfsToGeneric(half *dx, int n, T *dz) {
+    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+
+    for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x ) {
+        dz[i] = (T) __half2float(dx[i]);
+    }
+}
+
+extern "C" __global__ void kernelHalfsToDoubles(half *dx, int n, double *dz) {
+    convertHalfsToGeneric<double>(dx, n, dz);
+}
+
+extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
+    convertHalfsToGeneric<float>(dx, n, dz);
+}
+
+
+template <typename T>
+__device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, bool propagate) {
+
+    T *shmem;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char sharedmem[];
+        shmem = (T *) sharedmem;
+    }
+    __syncthreads();
+
+
+    // each block cycles over it's own part of arrays
+    for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
+        shmem[threadIdx.x] = 0.0f;
+
+        Nd4jIndex baseIdx = r;
+
+        // aggregation step, we roll over all arrays
+        for (int ar = 0; ar < n; ar++) {
+            T *cdata = (T *) dx[ar];
+            cdata += baseIdx;
+
+            if (baseIdx + threadIdx.x < length)
+                shmem[threadIdx.x] += cdata[threadIdx.x];
+        }
+
+        // div step & write out step
+        T *wdata = dz + baseIdx;
+
+        if (baseIdx + threadIdx.x < length) {
+            shmem[threadIdx.x] /= n;
+            wdata[threadIdx.x] = shmem[threadIdx.x];
+        }
+
+        if (propagate)
+            for (int ar = 0; ar < n; ar++) {
+                T *cdata = (T *) dx[ar];
+                cdata += baseIdx;
+
+                if (baseIdx + threadIdx.x < length)
+                    cdata[threadIdx.x] = shmem[threadIdx.x];
+            }
+    }
+}
+
+
+extern "C" __global__ void averagingKernelHalf(nd4j::float16 **dx, nd4j::float16 *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<nd4j::float16>(dx, dz, n, length, propagate);
+}
+
+extern "C" __global__ void averagingKernelFloat(float **dx, float *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<float>(dx, dz, n, length, propagate);
+}
+
+extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<double>(dx, dz, n, length, propagate);
 }
 
 #endif

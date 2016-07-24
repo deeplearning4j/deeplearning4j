@@ -915,6 +915,29 @@ __global__ void summaryStatsReduceDouble(
 
 }
 
+__global__ void summaryStatsReduceHalf(
+		int op,
+		nd4j::float16 *dx,
+		int *xShapeInfo, int xRank,
+		nd4j::float16 *extraParams,
+		nd4j::float16 *result,
+		int *resultShapeInfo, int zRank,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+	summaryStatsReduceGeneric<nd4j::float16>(
+			op,
+			dx,
+			xShapeInfo, xRank,
+			extraParams,
+			result,
+			resultShapeInfo, zRank,
+			dimension,
+			dimensionLength,
+			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+
+}
+
 
 
 #endif

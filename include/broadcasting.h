@@ -91,18 +91,18 @@ template<typename OpType>
 
             if(tadEWS > 0) {
             	if (tadEWS == 1 && yStride == 1) {
-                	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                	for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
-					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+					for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i * tadEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
             }
             else {
                 int xCoord[MAX_RANK];
-                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     result[xOffset] = OpType::op(x[xOffset], y[i * yStride]);
@@ -386,6 +386,27 @@ extern "C" __global__ void broadcastFloat(
 		int *dimension,
 		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 	broadcastGeneric<float>(
+			opNum,
+			x,
+			xShapeInfo, xRank,
+			y,
+			yShapeInfo, yRank,
+			result,
+			resultShapeInfo, zRank,
+			dimension,
+			dimensionLength, tadOnlyShapeInfo, tadOffsets);
+
+}
+
+
+extern "C" __global__ void broadcastHalf(
+		int opNum,
+		nd4j::float16 *x, int *xShapeInfo, int xRank,
+		nd4j::float16 *y, int *yShapeInfo, int yRank,
+		nd4j::float16 *result, int *resultShapeInfo, int zRank,
+		int *dimension,
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
+	broadcastGeneric<nd4j::float16>(
 			opNum,
 			x,
 			xShapeInfo, xRank,

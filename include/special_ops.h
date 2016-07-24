@@ -119,7 +119,10 @@ namespace simdOps {
 							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
 							i_c_temp = i_c_temp / outShape[dim];
 						}
-						result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) result[i_f] = data_im_ptr[i * strideh + j*stridew];
+							else result[i_f] = 0;
+
+						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
 						data_col_ptr += height_col * width_col;
 						i_c += height_col * width_col;
 					}

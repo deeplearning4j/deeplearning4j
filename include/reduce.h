@@ -31,7 +31,8 @@
         (7, simdOps::NormMax), \
         (8, simdOps::Prod), \
         (9, simdOps::StandardDeviation), \
-        (10,simdOps::Variance)
+        (10,simdOps::Variance), \
+		(11, simdOps::ASum)
 
         
 //an op for the kernel
@@ -117,7 +118,7 @@ template<typename OpType>
 				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				if (elementWiseStride >= 1) {
-					for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
+					for (Nd4jIndex i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[i * elementWiseStride], extraParams), extraParams);
 					}
 				}
@@ -125,7 +126,7 @@ template<typename OpType>
 					int rank = shape::rank(xShapeInfo);
 					int ind2sub[MAX_RANK];
 
-					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
+					for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
 						int offset = shape::getOffset(0, shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
@@ -162,7 +163,7 @@ template<typename OpType>
 
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
-						for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+						for (Nd4jIndex i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
 							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 						}
 						__syncthreads();
@@ -1024,6 +1025,30 @@ extern "C" __global__ void reduceFloat(
             tadOffsets);
 }
 
+extern "C" __global__ void reduceHalf(
+        int op,
+        nd4j::float16 *dx,
+        int *xShapeInfo,
+        nd4j::float16 *extraParams,
+        nd4j::float16 *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+    reduceGeneric<nd4j::float16>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
+}
+
 extern "C" __global__ void reduceFloat1D(
         int op,
         float *dx,
@@ -1035,6 +1060,30 @@ extern "C" __global__ void reduceFloat1D(
         int dimensionLength,
         float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
     reduceGeneric1D<float>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
+}
+
+extern "C" __global__ void reduceHalf1D(
+        int op,
+        nd4j::float16 *dx,
+        int *xShapeInfo,
+        nd4j::float16 *extraParams,
+        nd4j::float16 *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+    reduceGeneric1D<nd4j::float16>(
             op,
             dx,
             xShapeInfo,
@@ -1060,6 +1109,30 @@ extern "C" __global__ void reduceFloat6D(
         int dimensionLength,
         float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
     reduceGeneric6D<float>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
+}
+
+extern "C" __global__ void reduceHalf6D(
+        int op,
+        nd4j::float16 *dx,
+        int *xShapeInfo,
+        nd4j::float16 *extraParams,
+        nd4j::float16 *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+    reduceGeneric6D<nd4j::float16>(
             op,
             dx,
             xShapeInfo,
@@ -1117,6 +1190,28 @@ extern "C" __global__ void reduceScalarFloat(
         int dimensionLength,
         float *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceScalarGeneric<float>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, tadOnlyShapeInfo);
+};
+
+extern "C" __global__ void reduceScalarHalf(
+        int op,
+        nd4j::float16 *dx,
+        int *xShapeInfo,
+        nd4j::float16 *extraParams,
+        nd4j::float16 *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceScalarGeneric<nd4j::float16>(
             op,
             dx,
             xShapeInfo,

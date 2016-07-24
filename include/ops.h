@@ -1,4 +1,6 @@
 #pragma once
+#ifndef OPS_H_
+#define OPS_H_
 
 #include <shape.h>
 #include <vector>
@@ -156,6 +158,23 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Axpy {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2 + d1;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T alpha = params[0];
+			return alpha * d1 + d2;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+	};
+
+	template<typename T>
 	class SetValOrLess {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
@@ -169,6 +188,15 @@ namespace simdOps {
 	template<typename T>
 	class Mod {
 	public:
+		/*
+
+		 // just a optional note, feel free to remove later
+
+		op_def static half op(half d1, half d2, half *params) {
+			return __float2half(simdOps::Mod<float>::op(__half2float(d1), __half2float(d2), nullptr));
+		}
+		 */
+
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}
@@ -353,7 +381,10 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
+			if (d1 < -1.0) return -1.0;
+			else if (d1 > 1.0) return 1.0;
+			else return d1;
+			//return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
 		}
 	};
 
@@ -380,6 +411,18 @@ namespace simdOps {
 			return nd4j::math::nd4j_log<T>(d1);
 		}
 	};
+
+    template<typename T>
+    class StabilizeFP16 {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            if (d1 <= 0.0) return 0.001;
+                else return d1;
+        }
+    };
 
 	template<typename T>
 	class SpecialDerivative {
@@ -664,7 +707,9 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (d1 >= 0 ? 1.0 : params[0]);
+			if (d1 >= 0.0) return 1.0;
+			else return params[0];
+			//return (d1 >= (T) 0.0 ? 1.0 : params[0]);
 		}
 	};
 
@@ -775,6 +820,30 @@ namespace simdOps {
 		}
 	};
 
+    template<typename T>
+    class ASum {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(d1);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(reduction);
+        }
+    };
+
 
 	template<typename T>
 	class Prod {
@@ -821,7 +890,7 @@ namespace simdOps {
 		}
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
-			return reduction / (T)n;
+			return reduction / (int) n;
 		}
 	};
 
@@ -988,7 +1057,7 @@ namespace simdOps {
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			T bias = extraParams[1];
-			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T)n))
+			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (int) n))
 				/ (T)(n - 1.0);
 		}
 	};
@@ -1061,8 +1130,8 @@ namespace simdOps {
 #ifdef __CUDACC__
 		__device__
 		static inline T opAtomic(T d1, T d2, T *extraParams) {
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], d1 * d1);
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], d2 * d2);
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],(T) (d1 * d1));
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],(T) (d2 * d2));
 
 			return (d1 * d2);
 		}
@@ -1126,6 +1195,58 @@ namespace simdOps {
 
 		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
 	};
+
+
+    /**
+	* Op to check equality within arrays
+	*/
+    template<typename T>
+    class EqualsWithEps {
+    public:
+        static const int extraParamsLen = 0;
+
+        op_def static T * generateExtraParams() {
+            return nullptr;
+        }
+
+        op_def static void finalizeExtraParams(T *extraParamsRef) {
+            //no-op
+        }
+
+        op_def static T startingValue(T *input) {
+            return 0.0;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
+            return reduction;
+        }
+
+        op_def static T op(T d1, T d2, T *extraParamsRef) {
+            if (isnan(d1) != isnan(d2))
+                return 1.0;
+
+            if (nd4j::math::nd4j_abs<T>(d1 - d2) < 1e-5 ) return 0.0;
+            else return 1.0;
+        }
+
+
+#ifdef __CUDACC__
+        __device__
+		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
+			return op(d1, d2, extraParamsRef);
+		}
+#endif
+
+        op_def static T update(T old, T opOutput, T *extraParamsRef) {
+            return opOutput + old;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParamsRef) {
+            return update(old, opOutput, extraParamsRef);
+        }
+
+        op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
+    };
 
 
 
@@ -1423,3 +1544,5 @@ template<typename T>
 		}
 	};
 }
+
+#endif

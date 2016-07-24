@@ -42,7 +42,9 @@
         (13,simdOps::Max),\
         (14,simdOps::Min),\
         (15,simdOps::NotEqualTo),\
-        (16,simdOps::Copy)
+        (16,simdOps::Copy),\
+        (17,simdOps::Axpy)
+
 
 
 namespace functions {
@@ -158,7 +160,7 @@ template<typename OpType>
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex n = shape::length(xShapeBuffer);
 
-		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+		for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 			result[resultIndexes[i]] = OpType::op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 		}
 	}
@@ -232,7 +234,7 @@ template<typename OpType>
 			int yCoord[MAX_RANK];
 
 			if (dx == result) {
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 
@@ -243,7 +245,7 @@ template<typename OpType>
 			} else {
     			int resultCoord[MAX_RANK];
 
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 					shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
@@ -287,11 +289,11 @@ template<typename OpType>
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if (incx == incy && incy == incz && incx == 1) {
-			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 				result[i] = OpType::op(dx[i], dy[i], params);
 			}
 		} else {
-			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+			for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
 				result[i * incz] = OpType::op(dx[i * incx], dy[i * incy], params);
 			}
 		}
@@ -699,7 +701,26 @@ extern "C" __global__ void pairWiseTransformFloat(
 
 }
 
+extern "C" __global__ void pairWiseTransformHalf(
+		int opNum,
+		nd4j::float16 *dx,
+		nd4j::float16 *dy,
+		nd4j::float16 *params,
+		nd4j::float16 *result,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer, int *tadOnlyShapeInfo) {
+	pairWiseTransformGeneric<nd4j::float16>(
+			opNum,
+			dx,
+			dy,
+			params,
+			result,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo);
 
+}
 
 /**
  * The api for the driver interface
@@ -775,7 +796,7 @@ __device__ void pairWiseTransformGeneric(
  * @param incz the result stride
  * @param blockSize the block size
  */
-__global__ void pairWiseTransformDoubleIndex(
+extern "C" __global__ void pairWiseTransformDoubleIndex(
 		int opNum,
 		double *dx,
 		double *dy,
@@ -820,7 +841,7 @@ __global__ void pairWiseTransformDoubleIndex(
  * @param incz the result stride
  * @param blockSize the block size
  */
-__global__ void pairWiseTransformFloatIndex(
+extern "C" __global__ void pairWiseTransformFloatIndex(
 		int opNum,
 		float *dx,
 		float *dy,
@@ -833,6 +854,32 @@ __global__ void pairWiseTransformFloatIndex(
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer, int *tadOnlyShapeInfo) {
 	pairWiseTransformGeneric<float>(
+			opNum,
+			dx,
+			dy,
+			params,
+			result,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank,
+			xIndexes,
+			yIndexes,
+			resultIndexes, allocationPointer, tadOnlyShapeInfo);
+}
+
+extern "C" __global__ void pairWiseTransformHalfIndex(
+		int opNum,
+		nd4j::float16 *dx,
+		nd4j::float16 *dy,
+		nd4j::float16 *params,
+		nd4j::float16 *result,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
+		int *xIndexes,
+		int *yIndexes,
+		int *resultIndexes, int *allocationPointer, int *tadOnlyShapeInfo) {
+	pairWiseTransformGeneric<nd4j::float16>(
 			opNum,
 			dx,
 			dy,
@@ -917,7 +964,7 @@ __device__ void pairWiseTransformStridedGeneric(
  * @param incz the result stride
  * @param blockSize the block size
  */
-__global__ void pairWiseTransformStridedDouble(
+extern "C" __global__ void pairWiseTransformStridedDouble(
 		int opNum,
 		Nd4jIndex n,
 		double *dx,
@@ -954,7 +1001,7 @@ __global__ void pairWiseTransformStridedDouble(
  * @param incz the result stride
  * @param blockSize the block size
  */
-__global__ void pairWiseTransformStridedFloat(
+extern "C" __global__ void pairWiseTransformStridedFloat(
 		int opNum,
 		Nd4jIndex n,
 		float *dx,
@@ -976,6 +1023,28 @@ __global__ void pairWiseTransformStridedFloat(
 			incz, allocationPointer, tadOnlyShapeInfo);
 }
 
+
+extern "C" __global__ void pairWiseTransformStridedHalf(
+		int opNum,
+		Nd4jIndex n,
+		nd4j::float16 *dx,
+		nd4j::float16 *dy,
+		int incx,
+		int incy,
+		nd4j::float16 *params,
+		nd4j::float16 *result,
+		int incz, int *allocationPointer, int *tadOnlyShapeInfo) {
+	pairWiseTransformStridedGeneric<nd4j::float16>(
+			opNum,
+			n,
+			dx,
+			dy,
+			incx,
+			incy,
+			params,
+			result,
+			incz, allocationPointer, tadOnlyShapeInfo);
+}
 
 
 #endif
