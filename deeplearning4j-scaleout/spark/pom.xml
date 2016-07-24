@@ -33,47 +33,6 @@
         <module>dl4j-spark-nlp</module>
     </modules>
 
-    <profiles>
-        <profile>
-            <id>scala-2.11</id>
-            <activation>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.11</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.11.7</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.11.7</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>scala-2.10</id>
-            <activation>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.10</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.10.6</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.10.6</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
