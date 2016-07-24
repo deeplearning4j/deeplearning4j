@@ -5,6 +5,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -61,7 +63,7 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         }
 
 
-        INDArray labelSet = Nd4j.zeros(samples,3);
+        INDArray labelSet = Nd4j.zeros(samples,3,timeSteps);
         DataSet sampleDataSet = new DataSet(featureMatrix, labelSet);
 
         myNormalizer.fit(sampleDataSet);
@@ -87,9 +89,9 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
          */
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
 
-        int timeSteps = 12;
+        int timeSteps = 5;
         int totalTimeSteps = timeSteps;
-        int samples = 10;
+        int samples = 100;
         //multiplier for the features
         INDArray featureABC = Nd4j.create(3,1);
         featureABC.put(0,0,1);
@@ -104,7 +106,7 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         INDArray featureMatrix = template.dup();
         // /\ /\ i = 0
         //the rest \/\/
-        int newStart = timeSteps;
+        int newStart = timeSteps+1;
         int newEnd;
         for (int i=1;i<samples;i++) {
             newEnd = newStart + timeSteps - 1;
@@ -116,21 +118,21 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
             newStart = newEnd + 1;
             featureMatrix = Nd4j.concat(0,featureMatrix,template);
         }
-        INDArray labelSet = Nd4j.zeros(samples,3);
+        INDArray labelSet = Nd4j.zeros(samples,3,timeSteps);
         DataSet sampleDataSetU = new DataSet(featureMatrix, labelSet);
 
 
         //Continuing on with a new dataset to merge with the one above
-        timeSteps = 8;
+        timeSteps = 3;
         totalTimeSteps += timeSteps;
         newEnd = newStart + timeSteps - 1;
-
         template = Nd4j.linspace(newStart,newEnd,timeSteps);
         template = Nd4j.concat(0,Nd4j.linspace(newStart,newEnd,timeSteps),template);
         template = Nd4j.concat(0,Nd4j.linspace(newStart,newEnd,timeSteps),template);
         template.muliColumnVector(featureABC);
         template = template.reshape(1,3,timeSteps);
         featureMatrix = template.dup();
+        newStart = newEnd + 1;
         // /\ /\ i = 0
         //the rest \/\/
         for (int i=1;i<samples;i++) {
@@ -143,7 +145,7 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
             newStart = newEnd + 1;
             featureMatrix = Nd4j.concat(0,featureMatrix,template);
         }
-        labelSet = Nd4j.zeros(samples,3);
+        labelSet = Nd4j.zeros(samples,3,timeSteps);
         DataSet sampleDataSetV = new DataSet(featureMatrix, labelSet);
 
 
@@ -153,14 +155,32 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         DataSet fullDataSetUV = DataSet.merge(dataSetList);
         myNormalizer.fit(fullDataSetUV);
         // The theoretical mean should be the mean of 1,..samples*timesteps
-        float theoreticalMean = (2*samples*totalTimeSteps + 1)/2.0f;
+        int maxN = samples*totalTimeSteps;
+        float theoreticalMean = (maxN + 1)/2.0f;
         INDArray expectedMean = Nd4j.create(new float[] {theoreticalMean,theoreticalMean,theoreticalMean}).reshape(3,1);
         expectedMean.muliColumnVector(featureABC);
-        float stdNaturalNums = (float) Math.sqrt((samples*samples*totalTimeSteps*totalTimeSteps - 1)/12);
+
+        float stdNaturalNums = (float) Math.sqrt((maxN*maxN- 1)/12);
         INDArray expectedStd = Nd4j.create(new float[] {stdNaturalNums,stdNaturalNums,stdNaturalNums}).reshape(3,1);
         expectedStd.muliColumnVector(featureABC);
+
         assertEquals(myNormalizer.getMean(),expectedMean);
-        assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd)).getFloat(0,0) < 1.0f);
+        assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd).div(expectedStd)).maxNumber().floatValue() < 0.03);
+        System.out.println("Actual std");
+        System.out.println(myNormalizer.getStd());
+        System.out.println("Expected std");
+        System.out.println(expectedStd);
+
+        //Same Test with an Iterator
+        DataSetIterator sampleIter = new TestDataSetIterator(fullDataSetUV,5);
+        myNormalizer.fit(sampleIter);
+        assertEquals(myNormalizer.getMean(),expectedMean);
+        assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd).div(expectedStd)).maxNumber().floatValue() < 0.03);
+        System.out.println("Actual std");
+        System.out.println(myNormalizer.getStd());
+        System.out.println("Expected std");
+        System.out.println(expectedStd);
+
     }
 
 

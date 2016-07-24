@@ -30,24 +30,14 @@ public class NormalizerStandardize implements DataNormalization {
     public void fit(DataSet dataSet) {
         int featureRank = dataSet.getFeatureMatrix().rank();
         INDArray theFeatures = dataSet.getFeatureMatrix();
+        // If 3d or 4d dataset convert to 2d
         if (featureRank > 2) {
             if (featureRank == 3) theFeatures = tailor3d2d(dataSet);
             if (featureRank == 4) theFeatures = tailor4d2d(dataSet);
         }
-        if (!dataSet.hasMaskArrays()) {
-            mean = theFeatures.mean(0);
-            std = theFeatures.std(0);
-        }
-        else {
-            INDArray beforeMean = theFeatures.sum(0);
-            //the mask gives the adjustment
-            mean = beforeMean.divColumnVector(dataSet.getFeaturesMaskArray().sum(1));
-            std = theFeatures.std(0);
-            std = Transforms.pow(std,2);
-            std.muli(theFeatures.size(0)); //now this is the square of the diff from mean
-            std.divColumnVector(dataSet.getFeaturesMaskArray().sum(1));
-            std = Transforms.pow(std,0.5);
-        }
+
+        mean = theFeatures.mean(0);
+        std = theFeatures.std(0);
         std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
@@ -64,38 +54,14 @@ public class NormalizerStandardize implements DataNormalization {
             INDArray theFeatures = next.getFeatureMatrix();
             int featureRank = theFeatures.rank();
             if (featureRank > 2) {
-                if (featureRank == 3)
-                    theFeatures = tailor3d2d(next);
-                if (featureRank == 4)
-                    theFeatures = tailor4d2d(next);
+                if (featureRank == 3) theFeatures = tailor3d2d(next);
+                if (featureRank == 4) theFeatures = tailor4d2d(next);
             }
-            if (next.hasMaskArrays()) {
-                //now features are in columns and rows are samples
-                //mask is features x timesteps
-                runningTotal += next.getFeaturesMaskArray().sum(0).getInt(0,0);
-                batchCount = next.getFeaturesMaskArray().sum(0).getInt(0,0);
-
-            }
-            else{
-                runningTotal += theFeatures.size(0);
-                batchCount = theFeatures.size(0);
-            }
+            batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  theFeatures.size(0);
+            runningTotal += batchCount;
             if(mean == null) {
-                //start with the mean and std of zero
-                //column wise
-                if (!next.hasMaskArrays()) {
-                    mean = theFeatures.mean(0);
-                    //batchCount can be 1 for 2d
-                    std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0), 2);
-                    std.muli(batchCount);
-                }
-                else {
-                    INDArray beforeMean = theFeatures.sum(0);
-                    mean = beforeMean.divColumnVector(next.getFeaturesMaskArray().sum(1));
-                    std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(theFeatures.std(0), 2);
-                    //std.muli(batchCount); //returning variance*n, the *n is because of the /n after the else
-                    std.muli(theFeatures.size(0)); //now this is the square of the diff from mean
-                }
+                mean = theFeatures.mean(0);
+                std = std.muli(batchCount);
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
@@ -116,7 +82,6 @@ public class NormalizerStandardize implements DataNormalization {
                 std = std.add(deltaSqScaled);
                 mean = newMean;
             }
-
         }
         std.divi(runningTotal);
         std = Transforms.sqrt(std);
@@ -213,21 +178,49 @@ public class NormalizerStandardize implements DataNormalization {
     }
 
     private INDArray tailor3d2d(DataSet dataset) {
+        /* A 2d dataset has dimemsions sample x features
+         * A 3d dataset is a timeseries with dimensions sample x features x timesteps
+         * A 3d dataset can also have a mask associated with it in case samples are of varying time steps
+         * Each sample has a mask associated with it that is applied to all features.
+         * Masks are of dimension sample x timesteps
+         */
         int instances = dataset.getFeatureMatrix().size(0);
         int features = dataset.getFeatureMatrix().size(1);
         int timesteps = dataset.getFeatureMatrix().size(2);
 
-        boolean hasMasks = dataset.hasMaskArrays();
+        boolean hasMasks = dataset.getFeaturesMaskArray() != null;
         INDArray in2d = Nd4j.create(features,timesteps*instances);
 
         int tads = dataset.getFeatureMatrix().tensorssAlongDimension(2,0);
+        // the number of tads are the number of features
         for(int i = 0; i < tads; i++){
             INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 2, 0);
+            //mask is samples x timesteps
             if (hasMasks)
+                //if there are masks they are multiplied with the mask array to wipe out the values associated with it
+                //to wipe out the values associated with it to wipe out the values associated with it
                 thisTAD.muli(dataset.getFeaturesMaskArray());
-            in2d.putRow(i, Nd4j.toFlattened(thisTAD));
+            //Each row is now values for a given feature across all time steps, across all samples
+            in2d.putRow(i, Nd4j.toFlattened('c',thisTAD));
         }
-        return in2d.transposei();
+        //Must transpose to return a matrix compatible with 2d viz samples x features
+        in2d = in2d.transpose();
+        //flatten mask
+        if (hasMasks) {
+            //only need rows where columnMask is 1
+            INDArray columnMask = Nd4j.toFlattened('c',dataset.getFeaturesMaskArray()).transpose();
+            int actualSamples = columnMask.sumNumber().intValue();
+            INDArray in2dMask = Nd4j.create(actualSamples,features);
+            int j = 0;
+            for (int i=0; i < timesteps*instances; i++){
+                if (columnMask.getInt(i, 0) != 0) {
+                    in2dMask.putRow(j, in2d.getRow(i));
+                    j++;
+                }
+            }
+            return in2dMask;
+        }
+        return in2d;
     }
 
     private INDArray tailor4d2d(DataSet dataset) {
