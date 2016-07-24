@@ -432,8 +432,13 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testGetColumns() {
         INDArray matrix = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        log.info("Original: {}", matrix);
         INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
         INDArray matrixAssertion = Nd4j.create(new double[][]{{3, 5}, {4, 6}});
+        log.info("order A: {}", Arrays.toString(matrixAssertion.shapeInfoDataBuffer().asInt()));
+        log.info("order B: {}", Arrays.toString(matrixGet.shapeInfoDataBuffer().asInt()));
+        log.info("data A: {}", Arrays.toString(matrixAssertion.data().asFloat()));
+        log.info("data B: {}", Arrays.toString(matrixGet.data().asFloat()));
         assertEquals(matrixAssertion, matrixGet);
     }
 
@@ -854,7 +859,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testRdivScalar() {
-        INDArray div = Nd4j.valueArrayOf(2, 4);
+        INDArray div = Nd4j.valueArrayOf(new int[]{1, 4}, 4);
         INDArray rdiv = div.rdiv(1);
         INDArray answer = Nd4j.valueArrayOf(new int[]{1, 4}, 0.25);
         assertEquals(rdiv, answer);

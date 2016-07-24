@@ -87,7 +87,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testVectorIndexing() {
         INDArray arr = Nd4j.linspace(1,10,10);
         INDArray assertion = Nd4j.create(new double[]{2,3,4,5});
-        INDArray viewTest = arr.get(NDArrayIndex.point(0),NDArrayIndex.interval(1,6));
+        INDArray viewTest = arr.get(NDArrayIndex.point(0),NDArrayIndex.interval(1,5));
         assertEquals(assertion,viewTest);
     }
 

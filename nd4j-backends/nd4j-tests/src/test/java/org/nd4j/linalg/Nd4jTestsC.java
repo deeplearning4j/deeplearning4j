@@ -2679,7 +2679,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testRdivScalar() {
-        INDArray div = Nd4j.valueArrayOf(2, 4);
+        INDArray div = Nd4j.valueArrayOf(new int[]{1, 4}, 4);
         INDArray rdiv = div.rdiv(1);
         INDArray answer = Nd4j.valueArrayOf(new int[]{1, 4}, 0.25);
         assertEquals(rdiv, answer);
