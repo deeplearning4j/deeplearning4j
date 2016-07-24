@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,6 +19,7 @@ public class StandardScalerTest extends BaseNd4jTest {
         super(backend);
     }
 
+    @Ignore
     @Test
     public void testScale() {
         StandardScaler scaler = new StandardScaler();

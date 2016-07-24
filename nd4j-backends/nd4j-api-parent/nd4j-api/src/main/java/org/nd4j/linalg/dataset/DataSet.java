@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -596,10 +597,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         getFeatures().putRow(example, feature);
     }
 
-    @Deprecated
     @Override
     public void normalize() {
-        FeatureUtil.normalizeMatrix(getFeatures());
+        //FeatureUtil.normalizeMatrix(getFeatures());
+        NormalizerStandardize inClassPreProcessor = new NormalizerStandardize();
+        inClassPreProcessor.fit(this);
+        inClassPreProcessor.transform(this);
     }
 
 
