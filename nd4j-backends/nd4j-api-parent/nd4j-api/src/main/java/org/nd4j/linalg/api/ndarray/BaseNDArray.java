@@ -3808,6 +3808,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
         } else if (isVector() && n.isVector()) {
+
             EqualsWithEps op = new EqualsWithEps(this, n);
             Nd4j.getExecutioner().exec(op);
             double diff = op.getFinalResult().doubleValue();
@@ -3838,7 +3839,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             return true;
-            */
+*/
         }
 
 
@@ -3855,23 +3856,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.getExecutioner().exec(op);
             double diff =  op.getFinalResult().doubleValue();
 
-//            log.info("AAAA, {}", diff);
-
             return diff < 0.5;
 
 /*
-            log.info("AAAA");
             for(int i = 0; i < length(); i++) {
                 double val = getDouble(i);
                 double val2 = n.getDouble(i);
 
                 if (Double.isNaN(val) != Double.isNaN(val2)) {
-                    log.info("BEX");
                     return false;
                 }
 
                 if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
-                    log.info("NEX");
                     return false;
                 }
             }
@@ -3883,11 +3879,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.getExecutioner().exec(op);
             double diff = op.getFinalResult().doubleValue();
 
-//            log.info("BBB, {}", diff);
-
             return diff < 0.5;
 /*
-            log.info("BBB");
             NdIndexIterator iter = new NdIndexIterator(n.shape());
             while(iter.hasNext()) {
                 int[] next = iter.next();

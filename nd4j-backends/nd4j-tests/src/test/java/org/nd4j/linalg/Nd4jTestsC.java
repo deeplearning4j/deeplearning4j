@@ -1667,7 +1667,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray getPoint = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(x));             //2d
             INDArray tad = arr3d.tensorAlongDimension(x,1,0);                                                       //2d
 
-            assertTrue(getPoint.equals(tad));   //OK, comparing 2d with 2d
+            assertEquals(getPoint, tad);
+            //assertTrue(getPoint.equals(tad));   //OK, comparing 2d with 2d
             assertArrayEquals(getInterval.shape(),new int[]{3,2,1});
             for( int i = 0; i < 3; i++ ){
                 for( int j = 0; j < 2; j++ ){
