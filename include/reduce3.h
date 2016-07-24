@@ -184,7 +184,8 @@ template<typename OpType>
 				int tid = blockIdx.x * blockDim.x + threadIdx.x;
 				char xOrder = shape::order(xShapeInfo);
 				char yOrder = shape::order(yShapeInfo);
-				if(xOrder == yOrder) {
+
+				if(xOrder == yOrder && (xElementWiseStride > 0 && yElementWiseStride > 0)) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], extraZ), extraZ);
