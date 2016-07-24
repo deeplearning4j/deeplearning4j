@@ -1,8 +1,13 @@
 package org.nd4j.jita.concurrency;
 
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,5 +79,43 @@ public class CudaAffinityManager extends BasicAffinityManager {
         }
 
         return device;
+    }
+
+    @Override
+    public int getNumberOfDevices() {
+        return new ArrayList<>(configuration.getAvailableDevices()).size();
+    }
+
+    /**
+     * Utility method, to associate INDArray with specific device (backend-specific)
+     *
+     * @param array
+     */
+    @Override
+    public void touch(INDArray array) {
+        if (array == null)
+            return;
+
+        touch(array.data());
+        touch(array.shapeInfoDataBuffer());
+    }
+
+    /**
+     * Utility method, to associate INDArray with specific device (backend-specific)
+     *
+     * @param buffer
+     */
+    @Override
+    public void touch(DataBuffer buffer) {
+        if (buffer == null)
+            return;
+
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+
+        if (point.isConstant()) {
+            Nd4j.getConstantHandler().relocateConstantSpace(buffer);
+        } else {
+            AtomicAllocator.getInstance().getMemoryHandler().relocateObject(buffer);
+        }
     }
 }

@@ -545,6 +545,15 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
+    public native void hgemm(PointerPointer extraPointers,int Order, int TransA, int TransB,
+                             int M, int N, int K,
+                             float alpha,
+                             Pointer A, int lda,
+                             Pointer B, int ldb,
+                             float beta,
+                             Pointer C, int ldc);
+
+
     public native void sgemm(PointerPointer extraPointers,int Order, int TransA, int TransB,
                                     int M, int N, int K,
                                     float alpha,

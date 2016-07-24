@@ -21,14 +21,8 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -44,11 +38,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.*;
 import java.util.*;
 
@@ -94,7 +91,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(pointer,length * getElementSize(),0);
         }
         //cuda specific bits
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
         this.trackingPoint = allocationPoint.getObjectId();
 
     }
@@ -143,7 +140,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
         this.allocationMode = AllocationMode.JAVACPP;
         initTypeAndSize();
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), initialize);
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
         this.elementSize = elementSize;
@@ -160,6 +157,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else if (dataType() == Type.INT){
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
+        } else if (dataType() == Type.HALF) {
+            // FIXME: proper pointer and proper indexer should be used here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
@@ -209,33 +210,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else if (underlyingBuffer.dataType() == Type.INT){
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
+        } else if (underlyingBuffer.dataType() == Type.HALF) {
+            // FIXME: proper pointer and indexer required here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
-//        log.info("Buffer info: dataType: ["+underlyingBuffer.dataType()+"], capacity: [" + this.wrappedBuffer.capacity()+ "], limit: ["+this.wrappedBuffer.limit()+"], position: ["+ this.wrappedBuffer.position() + "]");
-
-        // TODO: make sure we're getting pointer with offset at allocator
     }
 
     public BaseCudaDataBuffer(long length) {
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4);
+        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
     }
 
     public BaseCudaDataBuffer(float[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, false);
+        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(int[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, false);
+        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(double[] data) {
         // super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, false);
+        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
@@ -250,7 +252,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, long length, long offset) {
         //super(buffer, length, offset);
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, offset);
+        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, offset);
 
         Pointer srcPtr = new CudaPointer(new Pointer(buffer.order(ByteOrder.nativeOrder())));
 
@@ -279,23 +281,38 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void set(int[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
         if (dataType() == Type.DOUBLE) {
-            //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toDoubles(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toDoubles(data));
-            Pointer srcPtr = new CudaPointer(new DoublePointer(ArrayUtil.toDoubles(data)).address() + (dstOffset * elementSize));
+            DoublePointer pointer = new DoublePointer(ArrayUtil.toDouble(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.FLOAT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toFloats(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toFloats(data));
-            Pointer srcPtr = new CudaPointer(new FloatPointer(ArrayUtil.toFloats(data)).address() + (dstOffset * elementSize));
+            FloatPointer pointer = new FloatPointer(ArrayUtil.toFloats(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.INT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            Pointer srcPtr = new CudaPointer(new IntPointer(data).address() + (dstOffset * elementSize));
+            IntPointer pointer = new IntPointer(data);
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
+        } else if (dataType() == Type.HALF) {
+            ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         }
-        //   allocator.synchronizeHostData(this);
     }
 
     /**
@@ -309,24 +326,44 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public void set(float[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
+//        log.info("Set called");
         if (dataType() == Type.DOUBLE) {
             //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toDoubles(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toDoubles(data));
-            Pointer srcPtr = new CudaPointer(new DoublePointer(ArrayUtil.toDoubles(data)).address() + (dstOffset * elementSize));
+            DoublePointer pointer = new DoublePointer(ArrayUtil.toDoubles(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //memcpyAsync(dstPtr, srcPtr, length * 4);
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.FLOAT) {
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            Pointer srcPtr = new CudaPointer(new FloatPointer(data).address() + (dstOffset * elementSize));
+            FloatPointer pointer = new FloatPointer(data);
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
+//            log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.INT) {
             //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(new IntPointer(ArrayUtil.toInts(data)).address() + (dstOffset * elementSize));
+            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
+        } else if (dataType() == Type.HALF) {
+            ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         }
     }
 
@@ -342,22 +379,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void set(double[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
         if (dataType() == Type.DOUBLE) {
-            //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            Pointer srcPtr = new CudaPointer(new DoublePointer(data).address() + (dstOffset * elementSize));
+            DoublePointer pointer = new DoublePointer(data);
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //memcpyAsync(dstPtr, srcPtr, length * 4);
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.FLOAT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toFloats(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toFloats(data));
-            Pointer srcPtr = new CudaPointer(new FloatPointer(ArrayUtil.toFloats(data)).address() + (dstOffset * elementSize));
+            FloatPointer pointer = new FloatPointer(ArrayUtil.toFloats(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == Type.INT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(new IntPointer(ArrayUtil.toInts(data)).address() + (dstOffset * elementSize));
+            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
+        } else if (dataType() == Type.HALF) {
+            ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         }
     }
 
@@ -436,27 +488,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void put(long i, IComplexNumber result) {
         throw new UnsupportedOperationException("ComplexNumbers are not supported yet");
-        /*
-        modified.set(true);
-        if (dataType() == DataBuffer.Type.FLOAT) {
-            JCublas2.cublasSetVector(
-                    (int) length(),
-                    getElementSize(),
-                    PointerUtil.getPointer(CudaComplexConversion.toComplex(result.asFloat()))
-                    , 1
-                    , getHostPointer()
-                    , 1);
-        }
-        else {
-            JCublas2.cublasSetVector(
-                    (int) length(),
-                    getElementSize(),
-                    PointerUtil.getPointer(CudaComplexConversion.toComplexDouble(result.asDouble()))
-                    , 1
-                    , getHostPointer()
-                    , 1);
-        }
-        */
     }
 
 
@@ -468,29 +499,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Deprecated
     public void set(Pointer pointer) {
         throw new UnsupportedOperationException("set(Pointer) is not supported");
-        //modified.set(true);
-
-        /*
-        if (dataType() == DataBuffer.Type.DOUBLE) {
-            JCublas2.cublasDcopy(
-                    ContextHolder.getInstance().getHandle(),
-                    length(),
-                    pointer,
-                    1,
-                    getHostPointer(),
-                    1
-            );
-        } else {
-            JCublas2.cublasScopy(
-                    ContextHolder.getInstance().getHandle(),
-                    length(),
-                    pointer,
-                    1,
-                    getHostPointer(),
-                    1
-            );
-        }
-        */
     }
 
     @Override
@@ -597,8 +605,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void destroy() {
     }
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws IOException {
+    @Override
+    public void write(DataOutputStream out) throws IOException {
+        allocator.synchronizeHostData(this);
+        super.write(out);
+    }
+
+    @Override
+    public void write(OutputStream dos)  {
+        allocator.synchronizeHostData(this);
+        super.write(dos);
+    }
+
+    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        allocator.synchronizeHostData(this);
         stream.defaultWriteObject();
         write(stream);
     }
@@ -667,7 +687,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 		   	}
             if(t == Type.INT || globalType == Type.INT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, t), false);
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
@@ -682,12 +702,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = (int) s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = (int) s.readFloat();
+                    else if (t == Type.HALF)
+                        array[i] = (int) toFloat((int) s.readShort());
                 }
                 setData(array);
             }
             else if(globalType == Type.DOUBLE) {
                 this.elementSize = 8;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, globalType), false);
                 //allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
@@ -703,13 +725,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = (double) s.readFloat();
+                    else if (t == Type.HALF)
+                        array[i] = (double) toFloat((int) s.readShort());
                 }
                 setData(array);
 
             } else if(globalType == Type.FLOAT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
-                //allocationPoint.attachBuffer(this);
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
@@ -724,8 +747,56 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = (float) s.readDouble();
                     else if (t == Type.FLOAT)
                         array[i] = s.readFloat();
+                    else if (t == Type.HALF) {
+                        array[i] = toFloat((int) s.readShort());
+                    }
                 }
                 setData(array);
+            } else if (globalType == Type.HALF) {
+                this.elementSize = 2;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                indexer = HalfIndexer.create((ShortPointer) this.pointer);
+
+                float[] array = new float[(int) length];
+
+                for (int i = 0; i < length; i++) {
+                    if (t == Type.INT)
+                        array[i] = (float) s.readInt();
+                    else if (t == Type.DOUBLE)
+                        array[i] = (float) s.readDouble();
+                    else if (t == Type.FLOAT)
+                        array[i] = s.readFloat();
+                    else if (t == Type.HALF) {
+                        array[i] = toFloat((int) s.readShort());
+                    }
+                }
+
+                // now, easiest approach is conversion from float buffer to halfs buffer
+                // FIXME: this worth reimplementing as direct Half-allocation, instead of temporary array creation
+                CudaFloatDataBuffer tempBuffer = new CudaFloatDataBuffer(array);
+
+                AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+                AllocationPoint pointSrc = allocator.getAllocationPoint(tempBuffer);
+                AllocationPoint pointDst = allocationPoint;
+
+                CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+                PointerPointer extras = new PointerPointer(
+                        null, // not used for conversion
+                        context.getOldStream(),
+                        AtomicAllocator.getInstance().getDeviceIdPointer());
+
+                Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
+                Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+
+                NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
+
+                allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
+                pointDst.tickDeviceWrite();
             }
             else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
@@ -822,5 +893,59 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public int getInt(long ix) {
         allocator.synchronizeHostData(this);
         return super.getInt(ix);
+    }
+
+    protected float toFloat(int hbits) {
+        int mant = hbits & 0x03ff;            // 10 bits mantissa
+        int exp =  hbits & 0x7c00;            // 5 bits exponent
+        if( exp == 0x7c00 )                   // NaN/Inf
+            exp = 0x3fc00;                    // -> NaN/Inf
+        else if( exp != 0 )                   // normalized value
+        {
+            exp += 0x1c000;                   // exp - 15 + 127
+// "smooth transition" is nonstandard behavior
+//            if( mant == 0 && exp > 0x1c400 )  // smooth transition
+//                return Float.intBitsToFloat( ( hbits & 0x8000 ) << 16
+//                                                | exp << 13 | 0x3ff );
+        }
+        else if( mant != 0 )                  // && exp==0 -> subnormal
+        {
+            exp = 0x1c400;                    // make it normal
+            do {
+                mant <<= 1;                   // mantissa * 2
+                exp -= 0x400;                 // decrease exp by 1
+            } while( ( mant & 0x400 ) == 0 ); // while not normal
+            mant &= 0x3ff;                    // discard subnormal bit
+        }                                     // else +/-0 -> +/-0
+        return Float.intBitsToFloat(          // combine all parts
+                ( hbits & 0x8000 ) << 16          // sign  << ( 31 - 15 )
+                        | ( exp | mant ) << 13 );         // value << ( 23 - 10 )
+    }
+
+    @Override
+    public short fromFloat( float fval ) {
+        int fbits = Float.floatToIntBits( fval );
+        int sign = fbits >>> 16 & 0x8000;          // sign only
+        int val = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
+
+        if( val >= 0x47800000 )               // might be or become NaN/Inf
+        {                                     // avoid Inf due to rounding
+            if( ( fbits & 0x7fffffff ) >= 0x47800000 )
+            {                                 // is or must become NaN/Inf
+                if( val < 0x7f800000 )        // was value but too large
+                    return (short) (sign | 0x7c00);     // make it +/-Inf
+                return (short) (sign | 0x7c00 |        // remains +/-Inf or NaN
+                        ( fbits & 0x007fffff ) >>> 13); // keep NaN (and Inf) bits
+            }
+            return (short) (sign | 0x7bff);             // unrounded not quite Inf
+        }
+        if( val >= 0x38800000 )               // remains normalized value
+            return (short) (sign | val - 0x38000000 >>> 13); // exp - 127 + 15
+        if( val < 0x33000000 )                // too small for subnormal
+            return (short) sign;                      // becomes +/-0
+        val = ( fbits & 0x7fffffff ) >>> 23;  // tmp exp for subnormal calc
+        return (short) (sign | ( ( fbits & 0x7fffff | 0x800000 ) // add subnormal bit
+                + ( 0x800000 >>> val - 102 )     // round depending on cut off
+                >>> 126 - val ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
     }
 }

@@ -1,5 +1,8 @@
 package org.nd4j.linalg.api.concurrency;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * @author raver119@gmail.com
  */
@@ -41,4 +44,24 @@ public interface AffinityManager {
      * @param deviceId
      */
     void attachThreadToDevice(long threadId, Integer deviceId);
+
+    /**
+     * This method returns number of available devices
+     * @return
+     */
+    int getNumberOfDevices();
+
+    /**
+     * Utility method, to associate INDArray with specific device (backend-specific)
+     *
+     * @param array
+     */
+    void touch(INDArray array);
+
+    /**
+     * Utility method, to associate INDArray with specific device (backend-specific)
+     * 
+     * @param buffer
+     */
+    void touch(DataBuffer buffer);
 }

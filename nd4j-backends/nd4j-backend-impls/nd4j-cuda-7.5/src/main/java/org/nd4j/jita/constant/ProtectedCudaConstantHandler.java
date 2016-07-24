@@ -77,11 +77,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
+  //      logger.info("shape: " + point.getShape());
         // and release device memory :)
 
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH)  {
+        if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH )  {
             if (point.getAllocationStatus() == AllocationStatus.HOST && configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
                 AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
             }
@@ -99,7 +100,16 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             return 0;
         }
 
-        currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+        long bytes = requiredMemoryBytes;
+        // hack for misalignment avoidance for 16bit data type
+        if (dataBuffer.dataType() == DataBuffer.Type.HALF) {
+            if (bytes % 4 != 0) {
+                bytes += 2;
+            }
+        }
+
+
+        currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
         if (currentOffset >= MAX_CONSTANT_LENGTH)  {
             if (point.getAllocationStatus() == AllocationStatus.HOST && configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
                 AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);

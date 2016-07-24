@@ -52,8 +52,23 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,0
                     ,C
                     ,params.getLdc());
-        else
+        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
             sgemm(Order
+                    , params.getTransA()
+                    , params.getTransB()
+                    , params.getM()
+                    , params.getN()
+                    , params.getK()
+                    , 1.0f
+                    , params.getA()
+                    , params.getLda()
+                    , params.getB()
+                    , params.getLdb()
+                    , 0
+                    , C
+                    , params.getLdc());
+        else
+            hgemm(Order
                     , params.getTransA()
                     , params.getTransB()
                     , params.getM()
@@ -90,8 +105,23 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,beta
                     ,C
                     ,params.getLdc());
-        else
+        else if(A.data().dataType() == DataBuffer.Type.FLOAT)
             sgemm(A.ordering()
+                    , params.getTransA()
+                    , params.getTransB()
+                    , params.getM()
+                    , params.getN()
+                    , params.getK()
+                    , (float) alpha
+                    , params.getA()
+                    , params.getLda()
+                    , params.getB()
+                    , params.getLdb()
+                    , (float) beta
+                    , C
+                    , params.getLdc());
+        else
+            hgemm(A.ordering()
                     , params.getTransA()
                     , params.getTransB()
                     , params.getM()
@@ -492,6 +522,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     /* 
      * Routines with standard 4 prefixes (S, D, C, Z)
      */
+    protected abstract void hgemm( char Order,  char TransA,
+                                   char TransB,  int M,  int N,
+                                   int K,  float alpha,  INDArray A,
+                                   int lda,  INDArray B,  int ldb,
+                                   float beta, INDArray C,  int ldc);
+
+
     protected abstract void sgemm( char Order,  char TransA,
                                    char TransB,  int M,  int N,
                                    int K,  float alpha,  INDArray A,

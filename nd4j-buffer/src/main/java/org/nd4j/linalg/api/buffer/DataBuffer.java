@@ -40,7 +40,8 @@ public interface DataBuffer extends Serializable {
     enum Type {
         DOUBLE,
         FLOAT,
-        INT
+        INT,
+        HALF
     }
 
 

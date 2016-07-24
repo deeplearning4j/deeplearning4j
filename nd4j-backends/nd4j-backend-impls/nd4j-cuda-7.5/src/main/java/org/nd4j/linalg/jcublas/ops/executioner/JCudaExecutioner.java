@@ -130,8 +130,19 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                     dimensionPointer, dimension.length);
         }
-        else {
+        else if(op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.execBroadcastFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    y,
+                    AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
+                    z,
+                    AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                    dimensionPointer, dimension.length);
+        } else {
+            nativeOps.execBroadcastHalf(
                     xShapeInfoHostPointer,
                     op.opNum(),
                     x,
@@ -229,7 +240,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         log.info("X: " + x);
         log.info("xShapeInfo: " + xShapeInfo);
 */
-        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
                     AtomicAllocator.getInstance().tickHostWrite(ret);
@@ -314,7 +325,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             }
-        } else {
+        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT){
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
                     AtomicAllocator.getInstance().tickHostWrite(ret);
@@ -385,6 +396,91 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.setFinalResult(ret.getFloat(0));
                 } else {
                     nativeOps.execReduceFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            dimensionPointer,
+                            dimension.length
+                    );
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                }
+            }
+        } else {
+            if(op instanceof Variance) {
+                if(ret.isScalar()) {
+                    AtomicAllocator.getInstance().tickHostWrite(ret);
+
+                    ret.putScalar(0, nativeOps.execSummaryStatsScalarHalf(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execSummaryStatsFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            dimensionPointer,
+                            dimension.length,
+                            ((Variance) op).isBiasCorrected()
+                    );
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                }
+            } else if (op.y() != null) {
+                if (ret.isScalar()) {
+                    AtomicAllocator.getInstance().tickHostWrite(ret);
+
+                    ret.putScalar(0, nativeOps.execReduce3ScalarHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AtomicAllocator.getInstance().getPointer(op.y(), context),
+                            AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context)
+                    ));
+
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execReduce3Half(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AtomicAllocator.getInstance().getPointer(op.y(), context),
+                            AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
+                            AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            dimensionPointer,
+                            dimension.length
+                    );
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                }
+            } else {
+                if (ret.isScalar()) {
+                    AtomicAllocator.getInstance().tickHostWrite(ret);
+
+                    ret.putScalar(0, nativeOps.execReduceScalarHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs
+                    ));
+
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execReduceHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -497,9 +593,20 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     zShapeInfo,
                     dimensionPointer, dimension.length);
 
+        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT){
+            nativeOps.execIndexReduceFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    extraArgs,
+                    z,
+                    zShapeInfo,
+                    dimensionPointer, dimension.length);
+
         }
         else {
-            nativeOps.execIndexReduceFloat(
+            nativeOps.execIndexReduceHalf(
                     xShapeInfoHostPointer,
                     op.opNum(),
                     x,
@@ -629,7 +736,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer,
                     op.getDimension().length);
         }
-        else {
+        else if (op.x().data().dataType() == DataBuffer.Type.FLOAT){
             nativeOps.execBroadcastFloat(
                     xShapeInfoHostPointer,
                     op.opNum(),
@@ -642,6 +749,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer,
                     op.getDimension().length);
 
+        } else {
+            nativeOps.execBroadcastHalf(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    y,
+                    yShapeInfo,
+                    z,
+                    zShapeInfo,
+                    dimensionPointer,
+                    op.getDimension().length);
         }
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
@@ -655,7 +774,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
-        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
@@ -700,9 +819,17 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                         xShapeInfo,
                         extraArgs);
                 op.setFinalResult((int) result);
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+                float result = nativeOps.execIndexReduceScalarFloat(
+                        xShapeInfoHostPointer,
+                        op.opNum(),
+                        x,
+                        xShapeInfo,
+                        extraArgs);
+                op.setFinalResult((int) result);
             }
             else {
-                float result = nativeOps.execIndexReduceScalarFloat(
+                float result = nativeOps.execIndexReduceScalarHalf(
                         xShapeInfoHostPointer,
                         op.opNum(),
                         x,
@@ -733,9 +860,20 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                         zShapeInfo,
                         dimensionPointer,
                         dimension.length);
+            } else  if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.execIndexReduceFloat(
+                        xShapeInfoHostPointer,
+                        op.opNum(),
+                        x,
+                        xShapeInfo,
+                        extraArgs,
+                        z,
+                        zShapeInfo,
+                        dimensionPointer,
+                        dimension.length);
             }
             else {
-                nativeOps.execIndexReduceFloat(
+                nativeOps.execIndexReduceHalf(
                         xShapeInfoHostPointer,
                         op.opNum(),
                         x,
@@ -847,7 +985,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             extraArgs);
                     op.setFinalResult(result);
                 }
-            } else {
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 if(op instanceof Variance) {
                     float result = nativeOps.execSummaryStatsScalarFloat(
                             xShapeInfoHostPointer,
@@ -870,6 +1008,36 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.setFinalResult(result);
                 } else {
                     float result = nativeOps.execReduceScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs);
+                    op.setFinalResult(result);
+                }
+            } else {
+                if(op instanceof Variance) {
+                    float result = nativeOps.execSummaryStatsScalarHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x
+                            ,xShapeInfo,extraArgs, true);
+                    op.setFinalResult(result);
+                } else if (op.y() != null) {
+                    Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
+                    Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
+
+                    float result = nativeOps.execReduce3ScalarHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo);
+                    op.setFinalResult(result);
+                } else {
+                    float result = nativeOps.execReduceScalarHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -932,7 +1100,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             }
             //float
-            else {
+            else if(op.x().data().dataType() == DataBuffer.Type.FLOAT)  {
                 if(op.y() != null) {
                     Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                     Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
@@ -978,7 +1146,53 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                                 dimension.length);
                     }
                 }
+            } // Half
+            else {
+                if(op.y() != null) {
+                    Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
+                    Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
+                    nativeOps.execReduce3Half(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo,
+                            result,
+                            resultShapeInfo,
+                            dimensionPointer,
+                            dimension.length);
 
+                }
+                else {
+
+                    if(op instanceof Variance) {
+                        nativeOps.execSummaryStatsHalf(
+                                xShapeInfoHostPointer,
+                                op.opNum(),
+                                x,
+                                xShapeInfo,
+                                extraArgs,
+                                result,
+                                resultShapeInfo,
+                                dimensionPointer,
+                                dimension.length,
+                                ((Variance) op).isBiasCorrected());
+                    }
+                    else {
+                        nativeOps.execReduceHalf(
+                                xShapeInfoHostPointer,
+                                op.opNum(),
+                                x,
+                                xShapeInfo,
+                                extraArgs,
+                                result,
+                                resultShapeInfo,
+                                dimensionPointer,
+                                dimension.length);
+                    }
+                }
             }
 
         }
@@ -1030,8 +1244,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.scalar().doubleValue(),
                     extraArgs);
         }
-        else {
+        else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.execScalarFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    z,
+                    zShapeInfo,
+                    op.scalar().floatValue(),
+                    extraArgs);
+        } else {
+            nativeOps.execScalarHalf(
                     xShapeInfoHostPointer,
                     op.opNum(),
                     x,
@@ -1210,7 +1434,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             zShapeInfo,
                             extraArgs);
                 }
-            } else {
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
@@ -1226,6 +1450,32 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     );
                 } else {
                     nativeOps.execPairwiseTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            y,
+                            yShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
+            } else {
+                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    nativeOps.execPairwiseTransformHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            y,
+                            op.y().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execPairwiseTransformHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
@@ -1261,7 +1511,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             zShapeInfo,
                             extraArgs);
                 }
-            } else {
+            } else if(op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().ordering() == op.x().ordering()) {
                     nativeOps.execTransformFloat(
                             xShapeInfoHostPointer,
@@ -1275,6 +1525,28 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     );
                 } else {
                     nativeOps.execTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
+            } else {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().ordering() == op.x().ordering()) {
+                    nativeOps.execTransformHalf(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execTransformHalf(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,

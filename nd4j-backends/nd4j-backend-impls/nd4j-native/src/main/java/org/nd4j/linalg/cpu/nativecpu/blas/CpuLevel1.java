@@ -31,6 +31,16 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float hdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         return nd4jBlas.sdot(DUMMY,N,X.data().addressPointer(),incX,Y.data().addressPointer(),incY);
     }
@@ -172,8 +182,18 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         nd4jBlas.saxpy(DUMMY,N,alpha,X.data().addressPointer(),incX,Y.data().addressPointer(),incY);
+    }
+
+    @Override
+    public void haxpy(int n,float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -320,5 +340,15 @@ public class CpuLevel1 extends BaseLevel1 {
     protected void zdscal(int N, double alpha, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
 
+    }
+
+    @Override
+    protected float hasum(int N, INDArray X, int incX) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float hasum(int N, DataBuffer X, int offsetX, int incX) {
+        throw new UnsupportedOperationException();
     }
 }

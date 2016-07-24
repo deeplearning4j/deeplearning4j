@@ -16,8 +16,15 @@ public class AllocationShape {
     private int elementSize = 0;
     private DataBuffer.Type dataType = DataBuffer.Type.FLOAT;
 
+    /*
     public AllocationShape(long length, int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
+    }
+*/
+    public AllocationShape(long length, int elementSize, DataBuffer.Type dataType) {
+        this.length = length;
+        this.elementSize = elementSize;
+        this.dataType = dataType;
     }
 }

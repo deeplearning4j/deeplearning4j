@@ -52,7 +52,7 @@ public class DropOut extends BaseTransformOp {
     public DropOut(INDArray x, INDArray z, double p, long n) {
         super(x,z,n);
         this.p = p;
-        init(x, null, x, n);
+        init(x, null, z, n);
     }
 
     @Override

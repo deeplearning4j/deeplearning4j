@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.cache.TADManager;
@@ -53,6 +54,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -477,7 +479,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
-                allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
+                allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : m.data().dataType() == DataBuffer.Type.FLOAT ? 4 : 2));
                 linearIndex += m.length();
             } else {
                 Pointer hostYShapeInfo = AddressRetriever.retrieveHostPointer(m.shapeInfoDataBuffer());
@@ -514,7 +516,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                             allocator.getPointer(m.shapeInfoDataBuffer(), context));
 
                 } else {
-                    throw new UnsupportedOperationException("Illegal data type for copy");
+                    nativeOps.flattenHalf(
+                            extras,
+                            linearIndex,
+                            order,
+                            allocator.getPointer(ret, context),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context),
+                            allocator.getPointer(m, context),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context));
                 }
 
 
@@ -633,9 +642,21 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     dZShapeInfo,
                     new PointerPointer(new Pointer[] {tadPointer}),
                     new PointerPointer(new Pointer[] {offsetPointer}));
+        } else if(ret.data().dataType() == DataBuffer.Type.FLOAT)  {
+            nativeOps.concatFloat(
+                    extras,
+                    dimension,
+                    toConcat.length,
+                    new PointerPointer(new Pointer[] {dataPointer}),
+                    new PointerPointer(new Pointer[] {shapesPointer}),
+                    dZ,
+                    dZShapeInfo,
+                    new PointerPointer(new Pointer[] {tadPointer}),
+                    new PointerPointer(new Pointer[] {offsetPointer}));
+
         }
         else {
-            nativeOps.concatFloat(
+            nativeOps.concatHalf(
                     extras,
                     dimension,
                     toConcat.length,
@@ -719,10 +740,111 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     tadShapeInfo,
                     tadOffsets
             );
+        } else {
+            nativeOps.pullRowsHalf(
+                    extras,
+                    x,
+                    xShape,
+                    z,
+                    zShape,
+                    indexes.length,
+                    pIndex,
+                    tadShapeInfo,
+                    tadOffsets
+            );
         }
 
         allocator.registerAction(context, ret, source);
 
         return ret;
+    }
+
+    @Override
+    public INDArray average(INDArray target, INDArray[] arrays) {
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        if (arrays.length == 1)
+            return target.assign(arrays[0]);
+
+        long len = target.lengthLong();
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        CudaContext context =  allocator.getFlowController().prepareAction(target);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used
+                context.getOldStream(),
+                allocator.getDeviceIdPointer()
+        );
+
+
+
+        Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
+
+        long[] xPointers = new long[arrays.length];
+
+        for (int i = 0; i < arrays.length; i++) {
+            if (arrays[i].lengthLong() != len)
+                throw new RuntimeException("All arrays should have equal length for averaging");
+
+            AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
+            xPointers[i] = point.getPointers().getDevicePointer().address();
+            point.tickDeviceWrite();
+        }
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.length);
+
+        allocator.memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(tempX, context);
+
+        if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.averageDouble(extras, x, z, arrays.length, len, true);
+        } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.averageFloat(extras, x, z, arrays.length, len, true);
+        } else {
+            nativeOps.averageHalf(extras, x, z, arrays.length, len, true);
+        }
+
+        allocator.getFlowController().registerAction(context, target);
+
+        return target;
+    }
+
+    @Override
+    public INDArray average(Collection<INDArray> arrays) {
+        return average(arrays.toArray(new INDArray[0]));
+    }
+
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    @Override
+    public INDArray average(INDArray[] arrays) {
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        // we assume all arrays have equal length,
+        INDArray ret = Nd4j.createUninitialized(arrays[0].shape(), arrays[0].ordering());
+
+        return average(ret, arrays);
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    @Override
+    public INDArray average(INDArray target, Collection<INDArray> arrays) {
+        return average(target, arrays.toArray(new INDArray[0]));
     }
 }

@@ -519,4 +519,171 @@ public interface DataBufferFactory {
      */
     DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
 
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     * @param buffer
+     * @return
+     */
+    DataBuffer restoreFromHalfs(DataBuffer buffer);
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     * @param buffer
+     * @return
+     */
+    DataBuffer convertToHalfs(DataBuffer buffer);
+
+    /**
+     * Creates half-precision data buffer
+     *
+     * @param length length of new data buffer
+     * @return
+     */
+    DataBuffer createHalf(long length);
+
+    /**
+     * Creates half-precision data buffer
+     *
+     * @param length length of new data buffer
+     * @param initialize true if memset should be used on allocated memory, false otherwise
+     * @return
+     */
+    DataBuffer createHalf(long length, boolean initialize);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(float[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(double[] data, boolean copy);
+
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, double[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, float[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, int[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, double[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, float[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, int[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, byte[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int[] data, boolean copy);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(float[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(double[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int[] data);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, byte[] data, int length);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @return the new buffer
+     */
+    DataBuffer createHalf(int offset, int length);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @return the new buffer
+     */
+    DataBuffer createHalf(ByteBuffer buffer, int length);
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data
+     * @param length
+     * @return
+     */
+    DataBuffer createHalf(byte[] data, int length);
+
 }

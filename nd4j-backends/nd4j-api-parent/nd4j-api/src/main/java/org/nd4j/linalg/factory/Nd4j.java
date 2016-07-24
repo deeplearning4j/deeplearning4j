@@ -539,6 +539,14 @@ public class Nd4j {
     public static OpFactory getOpFactory() {
         return OP_FACTORY_INSTANCE;
     }
+
+    /**
+     *
+     * @return
+     */
+    public static DataBufferFactory getDataBufferFactory() {
+        return DATA_BUFFER_FACTORY_INSTANCE;
+    }
     /**
      * Returns the fft instance
      *
@@ -1057,8 +1065,13 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,length);
         else if(dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,length);
-        else
+        else if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,length);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset,length);
+        else ret = null;
+
+
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1073,6 +1086,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
@@ -1089,6 +1104,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
@@ -1113,6 +1130,9 @@ public class Nd4j {
         int length = ArrayUtil.prod(shape);
         if(type == DataBuffer.Type.INT)
             return createBuffer(new int[length]);
+        else if (type== DataBuffer.Type.HALF)
+            return createBuffer(new float[length]);
+
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
@@ -1132,6 +1152,7 @@ public class Nd4j {
             case INT: return DATA_BUFFER_FACTORY_INSTANCE.createInt(buffer,length);
             case DOUBLE: return DATA_BUFFER_FACTORY_INSTANCE.createDouble(buffer,length);
             case FLOAT: return DATA_BUFFER_FACTORY_INSTANCE.createFloat(buffer,length);
+            case HALF: return DATA_BUFFER_FACTORY_INSTANCE.createHalf(buffer, length);
             default: throw new IllegalArgumentException("Illegal type " + type);
         }
     }
@@ -1147,6 +1168,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data,length);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data,length);
         logCreationIfNecessary(ret);
@@ -1201,8 +1224,10 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);
         else if(dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize);
+        else ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1217,6 +1242,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
@@ -1233,6 +1260,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
@@ -3038,6 +3067,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int columns, char order) {
+        return Nd4j.create(columns, order);
+    }
+
     /**
      * Creates an ndarray
      *
@@ -3399,6 +3432,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, int offset) {
+        return create(rows, columns, stride, offset);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3433,6 +3470,10 @@ public class Nd4j {
 
     }
 
+    public static INDArray zeros(int[] shape, int[] stride, int offset) {
+        return create(shape, stride, offset);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3454,6 +3495,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride) {
+        return create(rows, columns, stride, order());
+    }
+
+    public static INDArray zeros(int rows, int columns, int[] stride) {
         return create(rows, columns, stride, order());
     }
 
@@ -3479,6 +3524,10 @@ public class Nd4j {
         return create(shape, stride, order());
     }
 
+    public static INDArray zeros(int[] shape, int[] stride) {
+        return create(shape, stride);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -3500,6 +3549,7 @@ public class Nd4j {
     public static INDArray create(int rows, int columns) {
         return create(rows, columns, order());
     }
+
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -3803,6 +3853,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int[] shape, DataBuffer.Type dataType) {
+        return zeros(shape, dataType);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4095,6 +4149,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, int offset, char ordering) {
+        return create(rows, columns, stride, offset, ordering);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4127,6 +4185,10 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
 
+    }
+
+    public static INDArray zeros(int[] shape, int[] stride, int offset, char ordering) {
+        return create(shape, stride, offset, ordering);
     }
 
     /**
@@ -4169,6 +4231,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray zeros(int rows, int columns, int[] stride, char ordering) {
+        return create(rows, columns, stride, ordering);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -4195,6 +4261,10 @@ public class Nd4j {
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    public static INDArray zeros(int[] shape, int[] stride, char ordering) {
+        return create(shape, stride, ordering);
     }
 
     /**
@@ -4224,6 +4294,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, char ordering) {
+        return create(new int[]{rows,columns},ordering);
+    }
+
+    public static INDArray zeros(int rows, int columns, char ordering) {
         return create(new int[]{rows,columns},ordering);
     }
 
@@ -4262,6 +4336,7 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
 
     /**
      * Creates an *uninitialized* ndarray with the specified shape and ordering.<br>
@@ -4620,6 +4695,59 @@ public class Nd4j {
     public static INDArray vstack(Collection<INDArray> arrs) {
         INDArray[] arrays = arrs.toArray(new INDArray[0]);
         INDArray ret = INSTANCE.vstack(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(INDArray target, INDArray[] arrays) {
+        INDArray ret = INSTANCE.average(target, arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(INDArray[] arrays) {
+        INDArray ret = INSTANCE.average(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(Collection<INDArray> arrays) {
+        INDArray ret = INSTANCE.average(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * This method averages input arrays, and returns averaged array.
+     * On top of that, averaged array is propagated to all input arrays
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray averageAndPropagate(INDArray target, Collection<INDArray> arrays) {
+        INDArray ret = INSTANCE.average(target, arrays);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5053,7 +5181,19 @@ public class Nd4j {
             Nd4jContext.getInstance().updateProperties(is);
             is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
+            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
+
+            if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+                System.out.println("                 Half-precision data type isn't support for nd4j-native");
+                System.out.println("                 Please, consider using FLOAT or DOUBLE data type instead");
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
+            }
+
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

@@ -66,7 +66,7 @@ public abstract class BaseOp implements Op {
     @Override
     public DataBuffer extraArgsDataBuff() {
         if(extraArgs != null) {
-            if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+            if(x.data().dataType() == DataBuffer.Type.FLOAT || x.data().dataType() == DataBuffer.Type.HALF) {
                 float extraz[] = new float[extraArgs.length];
                 for(int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
@@ -74,8 +74,7 @@ public abstract class BaseOp implements Op {
                     extraz[i] = val;
                 }
                 return Nd4j.getConstantHandler().getConstantBuffer(extraz);
-            }
-            else {
+            } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
                 for(int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];

@@ -370,4 +370,242 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         }
         throw new IllegalArgumentException("Invalid type " + type);
     }
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(long length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data, boolean copy) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param buffer
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(ByteBuffer buffer, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer createHalf(byte[] data, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
 }

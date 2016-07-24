@@ -796,6 +796,35 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    /**
+     * Special method for
+     * @param i
+     * @return
+     */
+    protected short getShort(long i) {
+        if (dataType() != Type.HALF)
+            throw new UnsupportedOperationException("getShort() is supported for Half-precision buffers only");
+
+
+        return fromFloat (((HalfIndexer) indexer).get(offset() + i));
+    }
+
+    public short fromFloat( float v ) {
+        if(Float.isNaN(v)) throw new UnsupportedOperationException("NaN to half conversion not supported!");
+        if(v == Float.POSITIVE_INFINITY) return(short)0x7c00;
+        if(v == Float.NEGATIVE_INFINITY) return(short)0xfc00;
+        if(v == 0.0f) return(short)0x0000;
+        if(v == -0.0f) return(short)0x8000;
+        if(v > 65504.0f) return 0x7bff;  // max value supported by half float
+        if(v < -65504.0f) return(short)( 0x7bff | 0x8000 );
+        if(v > 0.0f && v < 5.96046E-8f) return 0x0001;
+        if(v < 0.0f && v > -5.96046E-8f) return(short)0x8001;
+
+        final int f = Float.floatToIntBits(v);
+
+        return(short)((( f>>16 ) & 0x8000 ) | (((( f & 0x7f800000 ) - 0x38000000 )>>13 ) & 0x7c00 ) | (( f>>13 ) & 0x03ff ));
+    }
+
     @Override
     public float getFloat(long i) {
         if(dataType() == Type.DOUBLE) {
@@ -819,8 +848,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) other.get(offset() + i);
 
             }
-        }
-        else {
+        } else if (dataType() == Type.HALF) {
+            dirty.set(false);
+            if(indexer instanceof HalfIndexer) {
+                return ((HalfIndexer)indexer).get(offset() + i);
+
+            }
+
+            throw new RuntimeException("Unsupported indexer was used for Half-precision buffer");
+        } else {
             dirty.set(false);
             if(indexer instanceof FloatIndexer) {
                 return ((FloatIndexer)indexer).get(offset() + i);
@@ -901,7 +937,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             int anElement = element.intValue();
             put(i, anElement);
         }
-        else if (globalType == Type.FLOAT) {
+        else if (globalType == Type.FLOAT || globalType == Type.HALF) {
             float anElement = element.floatValue();
             put(i, anElement);
         }
@@ -971,6 +1007,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             else {
                 UByteRawIndexer other = (UByteRawIndexer) indexer;
                 other.put(offset() + i,(int) element);
+            }
+        }
+        else if (dataType() == Type.HALF) {
+            if(indexer instanceof HalfIndexer) {
+                ((HalfIndexer)indexer).put(offset() + i, (float) element);
+
             }
         }
         else {
@@ -1272,6 +1314,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(dataType() == Type.INT) {
             for(int i = 0; i < length(); i++)
                 out.writeInt(getInt(i));
+        } else if (dataType() == Type.HALF) {
+            for(int i = 0; i < length(); i++) {
+                out.writeShort(getShort(i));
+            }
         }
         else {
             for(int i = 0; i < length(); i++)

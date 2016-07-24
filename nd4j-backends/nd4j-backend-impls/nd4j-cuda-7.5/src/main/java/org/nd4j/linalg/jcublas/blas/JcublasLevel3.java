@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -34,12 +35,52 @@ public class JcublasLevel3 extends BaseLevel3 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-    private static Logger log = LoggerFactory.getLogger(JcublasLevel3.class);
+    private static Logger logger = LoggerFactory.getLogger(JcublasLevel3.class);
+
+    @Override
+    protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        //A = Shape.toOffsetZero(A);
+        //B = Shape.toOffsetZero(B);
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
+
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(B, ctx);
+        CublasPointer cCPointer = new CublasPointer(C, ctx);
+
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
+
+            nd4jBlas.hgemm(
+                    new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    Order,
+                    TransA,
+                    TransB,
+                    M,
+                    N,
+                    K,
+                    alpha,
+                    cAPointer.getDevicePointer(),
+                    lda,
+                    cBPointer.getDevicePointer(),
+                    ldb,
+                    beta,
+                    cCPointer.getDevicePointer(),
+                    ldc);
+        }
+
+        allocator.registerAction(ctx, C, A, B);
+    }
+
 
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT gemm called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
@@ -73,6 +114,10 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT symm called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A, ctx);
@@ -102,6 +147,11 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta, INDArray C, int ldc) {
+
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        logger.warn("FLOAT syrk called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -129,6 +179,10 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT trsm called");
+
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -160,6 +214,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE gemm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
@@ -181,6 +238,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE symm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -212,6 +272,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE syrk called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -239,6 +302,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE syr2k called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -270,6 +336,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE trmm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -299,6 +368,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE trsm called");
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);

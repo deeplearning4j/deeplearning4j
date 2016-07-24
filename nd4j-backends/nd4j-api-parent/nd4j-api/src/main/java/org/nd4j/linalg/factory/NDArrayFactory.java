@@ -392,6 +392,39 @@ public interface NDArrayFactory {
     INDArray pullRows(INDArray source, int sourceDimension, int[] indexes);
 
     /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(INDArray target, INDArray[] arrays);
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(INDArray[] arrays);
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(Collection<INDArray> arrays);
+
+
+    /**
+     * This method averages input arrays, and returns averaged array
+     *
+     * @param arrays
+     * @return
+     */
+    INDArray average(INDArray target, Collection<INDArray> arrays);
+
+    /**
      * Concatneate ndarrays along a dimension
      *
      * @param dimension the dimension to concatneate along

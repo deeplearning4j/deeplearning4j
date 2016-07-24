@@ -20,16 +20,23 @@
 package org.nd4j.linalg.jcublas.buffer.factory;
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.*;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -40,6 +47,7 @@ import java.nio.ByteBuffer;
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
     protected DataBuffer.AllocationMode allocationMode;
+    private static Logger log = LoggerFactory.getLogger(CudaDataBufferFactory.class);
 
     @Override
     public void setAllocationMode(DataBuffer.AllocationMode allocationMode) {
@@ -71,7 +79,9 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         }
         else if(underlyingBuffer.dataType() == DataBuffer.Type.INT) {
             return new CudaIntDataBuffer(underlyingBuffer,length,offset);
-
+        }
+        else if (underlyingBuffer.dataType() == DataBuffer.Type.HALF) {
+            return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
         }
         return null;
     }
@@ -370,7 +380,307 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case INT: return new CudaIntDataBuffer(pointer,indexer,length);
             case DOUBLE: return new CudaDoubleDataBuffer(pointer,indexer,length);
             case FLOAT: return new CudaFloatDataBuffer(pointer,indexer,length);
+            case HALF: return new CudaHalfDataBuffer(pointer, indexer, length);
         }
         throw new IllegalArgumentException("Illegal type " + type);
+    }
+
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        DataBuffer halfsBuffer = new CudaHalfDataBuffer(buffer.length());
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(halfsBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(halfsBuffer, context);
+
+        if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertDoublesToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        } else {
+            throw new UnsupportedOperationException("Conversion INT->HALF isn't supported yet.");
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return halfsBuffer;
+    }
+
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.HALF)
+            throw new IllegalStateException("Input DataBuffer should contain Halfs");
+
+        DataBuffer outputBuffer = null;
+
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            outputBuffer = new CudaFloatDataBuffer(buffer.length());
+
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            outputBuffer = new CudaDoubleDataBuffer(buffer.length());
+
+        } else throw new UnsupportedOperationException("DataType ["+Nd4j.dataType()+"] isn't supported yet");
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(outputBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(outputBuffer, context);
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToFloats(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToDoubles(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return outputBuffer;
+    }
+
+    @Override
+    public DataBuffer createHalf(long length) {
+        return new CudaHalfDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize) {
+        return new CudaHalfDataBuffer(length, initialize);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, double[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, float[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int[] data) {
+        return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, boolean copy) {
+        return new CudaHalfDataBuffer(ArrayUtil.toFloatArray(data), copy, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @param copy
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data, boolean copy) {
+        return new CudaHalfDataBuffer(data, copy);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(float[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(double[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int[] data) {
+        return new CudaHalfDataBuffer(data);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param data   the data to create the buffer from
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, byte[] data, int length) {
+        return new CudaHalfDataBuffer(ArrayUtil.toFloatArray(data), true, offset);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param offset
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(int offset, int length) {
+        return new CudaHalfDataBuffer(length);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param buffer
+     * @param length
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createHalf(ByteBuffer buffer, int length) {
+        return new CudaHalfDataBuffer(buffer, length);
+    }
+
+    /**
+     * Creates a half-precision data buffer
+     *
+     * @param data
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer createHalf(byte[] data, int length) {
+        return new CudaHalfDataBuffer(data, length);
     }
 }

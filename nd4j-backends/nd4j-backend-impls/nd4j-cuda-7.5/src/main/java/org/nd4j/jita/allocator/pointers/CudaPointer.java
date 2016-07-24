@@ -1,9 +1,6 @@
 package org.nd4j.jita.allocator.pointers;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +66,10 @@ public class CudaPointer extends Pointer {
 
     public IntPointer asIntPointer() {
         return new IntPointer(this);
+    }
+
+    public ShortPointer asShortPointer() {
+        return new ShortPointer(this);
     }
 
     public long getNativePointer() {
