@@ -1,6 +1,10 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,6 +25,7 @@ public class NormalizerStandardize implements DataNormalization {
     private INDArray mean,std;
     private int runningTotal = 0;
     private int batchCount = 0;
+    private int featureRank = 2;
 
     /**
      * Fit the given model with dataset
@@ -28,7 +33,7 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
-        int featureRank = dataSet.getFeatureMatrix().rank();
+        featureRank = dataSet.getFeatureMatrix().rank();
         INDArray theFeatures = dataSet.getFeatureMatrix();
         // If 3d or 4d dataset convert to 2d
         if (featureRank > 2) {
@@ -52,7 +57,7 @@ public class NormalizerStandardize implements DataNormalization {
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
             INDArray theFeatures = next.getFeatureMatrix();
-            int featureRank = theFeatures.rank();
+            featureRank = theFeatures.rank();
             if (featureRank > 2) {
                 if (featureRank == 3) theFeatures = tailor3d2d(next);
                 if (featureRank == 4) theFeatures = tailor4d2d(next);
@@ -61,6 +66,7 @@ public class NormalizerStandardize implements DataNormalization {
             runningTotal += batchCount;
             if(mean == null) {
                 mean = theFeatures.mean(0);
+                std = theFeatures.std(0);
                 std = std.muli(batchCount);
             }
             else {
@@ -94,8 +100,17 @@ public class NormalizerStandardize implements DataNormalization {
     @Override
     public void preProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        toPreProcess.getFeatures().subiRowVector(mean);
-        toPreProcess.getFeatures().diviRowVector(std);
+        if (featureRank == 2) {
+            toPreProcess.getFeatures().subiRowVector(mean);
+            toPreProcess.getFeatures().diviRowVector(std);
+        }
+        // if feature Rank is 3 (time series) samplesxfeaturesxtimesteps
+        // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
+        // both cases operations should be carried out in dimension 1
+        else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(toPreProcess.getFeatures(),mean,toPreProcess.getFeatures(),1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(toPreProcess.getFeatures(),std,toPreProcess.getFeatures(),1));
+        }
     }
 
     /**
@@ -107,23 +122,11 @@ public class NormalizerStandardize implements DataNormalization {
     }
 
     /**
-     * Transform the dataset from given iterator
-     * Need not set preprocessor on the iterator in this case
+     * Not supported
      * @param toPreProcessIter the dataset to transform
      */
     public void transform(DataSetIterator toPreProcessIter) {
-        while (toPreProcessIter.hasNext()) {
-            this.preProcess(toPreProcessIter.next());
-        }
-        toPreProcessIter.reset();
-    }
-
-
-
-    public void revertPreProcess(DataSet toPreProcess) {
-        if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        toPreProcess.getFeatures().muliRowVector(std);
-        toPreProcess.getFeatures().addiRowVector(mean);
+        logger.info("Transform with an iterator is NOT supported. Use setPreProcessor on the iterator instead.");
     }
 
     /**
@@ -131,16 +134,20 @@ public class NormalizerStandardize implements DataNormalization {
      * @param toPreProcess the dataset to revert back
      */
     public void revert(DataSet toPreProcess) {
-        if (toPreProcess.getFeatureMatrix().rank() == 2)
-            this.revertPreProcess(toPreProcess);
-        else
-            throw new RuntimeException("API_USE_ERROR: Reverting not supported for feature matrices with rank larger than 2");
-
+        if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureRank == 2) {
+            toPreProcess.getFeatures().muliRowVector(std);
+            toPreProcess.getFeatures().addiRowVector(mean);
+        }
+        else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getFeatures(),std,toPreProcess.getFeatures(),1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getFeatures(),mean,toPreProcess.getFeatures(),1));
+        }
     }
 
     public void revert(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
-            this.revertPreProcess(toPreProcessIter.next());
+            this.revert(toPreProcessIter.next());
         }
         toPreProcessIter.reset();
     }
@@ -233,7 +240,7 @@ public class NormalizerStandardize implements DataNormalization {
 
         int tads = dataset.getFeatureMatrix().tensorssAlongDimension(3,2,0);
         for(int i = 0; i < tads; i++){
-            INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 2, 0);
+            INDArray thisTAD = dataset.getFeatureMatrix().tensorAlongDimension(i, 3, 2, 0);
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));
         }
         return in2d.transposei();

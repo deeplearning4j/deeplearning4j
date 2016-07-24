@@ -174,6 +174,7 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         //Same Test with an Iterator
         DataSetIterator sampleIter = new TestDataSetIterator(fullDataSetUV,5);
         myNormalizer.fit(sampleIter);
+        System.out.println("Testing with an iterator...");
         assertEquals(myNormalizer.getMean(),expectedMean);
         assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd).div(expectedStd)).maxNumber().floatValue() < 0.03);
         System.out.println("Actual std");
@@ -183,6 +184,50 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void transform3d() {
+        // A single sample 2 features, 5 timesteps
+        INDArray singleSample = Nd4j.linspace(1,10,10).reshape(1,2,5);
+        INDArray allFeatures = Nd4j.concat(0,singleSample,singleSample,singleSample,singleSample,singleSample);
+        allFeatures = Nd4j.concat(0,allFeatures,allFeatures);
+        allFeatures = Nd4j.concat(0,allFeatures,allFeatures);
+        allFeatures = Nd4j.concat(0,allFeatures,allFeatures);
+        INDArray allLabels = Nd4j.create(40,2,5);
+        DataSet dataSet = new DataSet(allFeatures,allLabels);
+
+        NormalizerStandardize myNormalizer = new NormalizerStandardize();
+        myNormalizer.fit(dataSet);
+
+        INDArray theMean = Nd4j.create(new float[] {3.0f,8.0f},new int[] {1,2});
+        INDArray theStd = Nd4j.create(new float[] {(float) Math.sqrt(2), (float) (Math.sqrt(2))}, new int[] {1,2});
+        INDArray expected = singleSample.reshape(2,5).subiColumnVector(theMean.transpose());
+        expected.diviColumnVector(theStd.transpose());
+        myNormalizer.transform(dataSet);
+        assertEquals(expected.toString(),dataSet.getFeatures().slice(0,0).toString());
+    }
+
+    @Test
+    public void testBruteForce4d() {
+        //this is an image - #of images x channels x size x size
+        // test with 2 samples, 3 channels x 10 x 10
+        INDArray oneChannel = Nd4j.linspace(1,100,100).reshape(1,10,10);
+        INDArray imageOne = Nd4j.concat(0,oneChannel,oneChannel.mul(2),oneChannel.mul(3)).reshape(1,3,10,10);
+        INDArray imageTwo = imageOne.mul(-1);
+
+        INDArray allImages = Nd4j.concat(0,imageOne,imageTwo);
+        INDArray labels = Nd4j.create(2,1);
+
+        DataSet dataSet = new DataSet(allImages,labels);
+        NormalizerStandardize myNormalizer = new NormalizerStandardize();
+        myNormalizer.fit(dataSet);
+
+        //works out to be 1->100 and 99*(1->100)
+        //mean is 100*(1->100)/200  = (100*101/2)/2 = 25*101 = 2525
+        // std is 3194.82
+        DataSet copyDataSet = dataSet.copy();
+        myNormalizer.transform(copyDataSet);
+
+    }
 
     @Override
     public char ordering() {
