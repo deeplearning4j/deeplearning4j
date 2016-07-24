@@ -314,7 +314,7 @@ public class StatsUtils {
 
         StyleChart sc = new StyleChart.Builder()
                 .width(1280, LengthUnit.Px)
-                .height(50 * nLanes + (60 + 20 + 25), LengthUnit.Px)
+                .height(35 * nLanes + (60 + 20 + 25), LengthUnit.Px)
                 .margin(LengthUnit.Px, 60, 20, 200, 10) //top, bottom, left, right
                 .build();
 
