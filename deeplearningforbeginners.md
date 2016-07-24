@@ -29,6 +29,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Math for Machine Learning](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
 * [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
 * [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
+* [The best linear algebra books](https://begriffs.com/posts/2016-07-24-best-linear-algebra-books.html)
 
 ## Programming
 
