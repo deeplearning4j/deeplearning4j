@@ -32,6 +32,8 @@ public class ClientTest {
         String env = "Powermock-v0";
         String instanceID = "e15739cf";
         String testDir = "/tmp/testDir";
+        boolean render = true;
+        String renderStr = render ? "True" : "False";
 
         mockStatic(ClientUtils.class);
 
@@ -51,11 +53,11 @@ public class ClientTest {
         JsonNode resetRep = new JsonNode("{\"observation\":[0.021729452941849317,-0.04764548144956857,-0.024914502756611293,-0.04074903379512588]}");
         when(ClientUtils.post(eq(url + Client.ENVS_ROOT + instanceID + Client.RESET), JSONObjectMatcher.jsonEq(resetReq))).thenReturn(resetRep);
 
-        JSONObject stepReq = new JSONObject("{\"action\":0, \"render\":True}");
+        JSONObject stepReq = new JSONObject("{\"action\":0, \"render\":" +renderStr+"}");
         JsonNode stepRep = new JsonNode("{\"observation\":[0.020776543312857946,-0.24240146656155923,-0.02572948343251381,0.24397017400615437],\"reward\":1,\"done\":false,\"info\":{}}");
         when(ClientUtils.post(eq(url + Client.ENVS_ROOT + instanceID + Client.STEP), JSONObjectMatcher.jsonEq(stepReq))).thenReturn(stepRep);
 
-        JSONObject stepReq2 = new JSONObject("{\"action\":1, \"render\":True}");
+        JSONObject stepReq2 = new JSONObject("{\"action\":1, \"render\":"+renderStr+"}");
         JsonNode stepRep2 = new JsonNode("{\"observation\":[0.020776543312857946,-0.24240146656155923,-0.02572948343251381,0.24397017400615437],\"reward\":1,\"done\":false,\"info\":{}}");
         when(ClientUtils.post(eq(url + Client.ENVS_ROOT + instanceID + Client.STEP), JSONObjectMatcher.jsonEq(stepReq2))).thenReturn(stepRep2);
 
@@ -69,7 +71,7 @@ public class ClientTest {
 
         //test
 
-        Client<Box, Integer, DiscreteSpace> client = ClientFactory.build(url, env);
+        Client<Box, Integer, DiscreteSpace> client = ClientFactory.build(url, env, render);
         client.monitorStart(testDir, true, false);
 
         int episodeCount = 1;

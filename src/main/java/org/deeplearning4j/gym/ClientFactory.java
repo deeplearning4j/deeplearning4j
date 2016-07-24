@@ -13,7 +13,7 @@ import org.json.JSONObject;
  */
 public class ClientFactory {
 
-    public static <O, A, AS extends ActionSpace<A>> Client<O, A, AS> build(String url, String envId) {
+    public static <O, A, AS extends ActionSpace<A>> Client<O, A, AS> build(String url, String envId, boolean render) {
 
         JSONObject body = new JSONObject().put("env_id", envId);
         JSONObject reply = ClientUtils.post(url + Client.ENVS_ROOT, body).getObject();
@@ -23,12 +23,12 @@ public class ClientFactory {
         ObservationSpace<O> observationSpace = fetchObservationSpace(url, instanceId);
         AS actionSpace = fetchActionSpace(url, instanceId);
 
-        return new Client(url, envId, instanceId, observationSpace, actionSpace);
+        return new Client(url, envId, instanceId, observationSpace, actionSpace, render);
 
     }
 
-    public static <O, A, AS extends ActionSpace<A>> Client<O, A, AS> build(String envId) {
-        return build("http://127.0.0.1:5000", envId);
+    public static <O, A, AS extends ActionSpace<A>> Client<O, A, AS> build(String envId, boolean render) {
+        return build("http://127.0.0.1:5000", envId, render);
     }
 
     public static <AS extends ActionSpace> AS fetchActionSpace(String url, String instanceId) {

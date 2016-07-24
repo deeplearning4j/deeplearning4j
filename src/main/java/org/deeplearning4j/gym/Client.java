@@ -46,6 +46,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
     String instanceId;
     ObservationSpace<O> observationSpace;
     AS actionSpace;
+    boolean render;
 
 
     /**
@@ -82,7 +83,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
     public StepReply<O> step(A action) {
         JSONObject body = new JSONObject()
                 .put("action", action)
-                .put("render", true);
+                .put("render", render);
 
         JSONObject reply = ClientUtils.post(url + ENVS_ROOT + instanceId + STEP, body).getObject();
 
