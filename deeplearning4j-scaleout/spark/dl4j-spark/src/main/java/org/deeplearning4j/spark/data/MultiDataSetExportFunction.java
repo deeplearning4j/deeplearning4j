@@ -41,7 +41,8 @@ public class MultiDataSetExportFunction implements VoidFunction<Iterator<MultiDa
 
             String filename = "mds_" + uid + "_" + (outputCount++) + ".bin";
 
-            URI uri = new URI(outputDir.getPath() + "/" + filename);
+            String path = outputDir.getPath();
+            URI uri = new URI(path + (path.endsWith("/") || path.endsWith("\\") ? "" : "/") + filename);
             FileSystem file = FileSystem.get(uri, conf);
             try(FSDataOutputStream out = file.create(new Path(uri))){
                 next.save(out);
