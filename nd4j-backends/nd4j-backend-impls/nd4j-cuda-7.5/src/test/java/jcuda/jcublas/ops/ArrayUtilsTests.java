@@ -2,7 +2,11 @@ package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -71,5 +75,17 @@ public class ArrayUtilsTests {
         assertEquals(8, dst.length);
         assertEquals(1, dst[0]);
         assertEquals(8, dst[7]);
+    }
+
+    @Test
+    public void testArrayFlatten1() {
+        INDArray arrayC = Nd4j.create(new double[][]{{3, 5}, {4, 6}}, 'c');
+        INDArray arrayF = Nd4j.create(new double[][]{{3, 5}, {4, 6}}, 'f');
+
+        System.out.println("C: " + Arrays.toString(arrayC.data().asFloat()));
+        System.out.println("F: " + Arrays.toString(arrayF.data().asFloat()));
+
+        assertEquals(arrayC, arrayF);
+
     }
 }
