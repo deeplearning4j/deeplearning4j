@@ -3,14 +3,20 @@ package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
+import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
+import org.deeplearning4j.models.sequencevectors.graph.primitives.Edge;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
+import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
+import java.util.List;
+import java.util.Random;
+
 /**
- * This is vertex eight-based walker for SequenceVectors-based DeepWalk implementation.
- * Instead of random walks, this walker produces walks based on weight of the vertices.
+ * This is vertex weight-based walker for SequenceVectors-based DeepWalk implementation.
+ * Instead of random walks, this walker produces walks based on weight of the edges.
  *
  * @author AlexDBlack
  * @author raver119@gmail.com
@@ -18,7 +24,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
  */
 public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
 
-    protected WeightedWalker(IGraph<T, ?> sourceGraph) {
+    protected WeightedWalker(IGraph<T, ? extends Number> sourceGraph) {
 
     }
 
@@ -39,7 +45,67 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
      */
     @Override
     public Sequence<T> next() {
-        return null;
+        Sequence<T> sequence = new Sequence<>();
+
+        int startPosition = position.getAndIncrement();
+        int lastId = -1;
+        int currentPoint = order[startPosition];
+        for (int i = 0; i < walkLength; i++) {
+
+            // apply reset chance here
+
+
+            Vertex<T> vertex = sourceGraph.getVertex(currentPoint);
+            sequence.addElement(vertex.getValue());
+
+            List<? extends Edge<? extends Number>> edges = sourceGraph.getEdgesOut(currentPoint);
+
+            if (edges == null ||edges.isEmpty()) {
+                switch (noEdgeHandling) {
+                    case CUTOFF_ON_DISCONNECTED:
+                        // we just break this sequence
+                        i = walkLength;
+                        break;
+                    case EXCEPTION_ON_DISCONNECTED:
+                        throw new NoEdgesException("No available edges left");
+                    case PADDING_ON_DISCONNECTED:
+                        // TODO: implement padding
+                        throw new UnsupportedOperationException("Padding isn't implemented yet");
+                    case RESTART_ON_DISCONNECTED:
+                        currentPoint = order[startPosition];
+                        break;
+                    case SELF_LOOP_ON_DISCONNECTED:
+                        // we pad walk with this vertex, to do that - we just don't do anything, and currentPoint will be the same till the end of walk
+                        break;
+                }
+            } else {
+                double totalWeight = 0.0;
+                for (Edge<? extends Number> edge : edges) {
+                    totalWeight += edge.getValue().doubleValue();
+                }
+
+                double d = rng.nextDouble();
+                double threshold = d * totalWeight;
+                double sumWeight = 0.0;
+                for (Edge<? extends Number> edge : edges) {
+                    sumWeight += edge.getValue().doubleValue();
+                    if (sumWeight >= threshold) {
+                        if (edge.isDirected()) {
+                            currentPoint = edge.getTo();
+                        } else {
+                            if (edge.getFrom() == currentPoint) {
+                                currentPoint = edge.getTo();
+                            } else {
+                                currentPoint = edge.getFrom(); //Undirected edge: might be next--currVertexIdx instead of currVertexIdx--next
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return sequence;
     }
 
     /**
@@ -54,7 +120,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
 
     public static class Builder<T extends SequenceElement> extends RandomWalker.Builder<T>  {
 
-        public Builder(IGraph<T, ?> sourceGraph) {
+        public Builder(IGraph<T, ? extends Number> sourceGraph) {
             super(sourceGraph);
         }
 
@@ -121,6 +187,20 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
 
         public WeightedWalker<T> build() {
             WeightedWalker<T> walker = new WeightedWalker<>(sourceGraph);
+            walker.noEdgeHandling = this.noEdgeHandling;
+            walker.sourceGraph = this.sourceGraph;
+            walker.walkLength = this.walkLength;
+            walker.seed = this.seed;
+            walker.walkDirection = this.walkDirection;
+            walker.alpha = this.alpha;
+
+            walker.order = new int[sourceGraph.numVertices()];
+            for (int i =0; i <walker.order.length; i++) {
+                walker.order[i] = i;
+            }
+
+            if (this.seed != 0)
+                walker.rng = new Random(this.seed);
 
             return walker;
         }
