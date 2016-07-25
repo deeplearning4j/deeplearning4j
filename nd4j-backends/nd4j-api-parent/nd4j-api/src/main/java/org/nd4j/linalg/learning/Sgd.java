@@ -17,6 +17,16 @@ public class Sgd implements GradientUpdater {
     }
 
     @Override
+    public int stateSizeForInputSize(int inputSize){
+        return 0;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, boolean initialize){
+        //No op
+    }
+
+    @Override
     public void update(Object... args) {
         if(args.length > 0) {
             learningRate = (Double) args[0];

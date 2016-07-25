@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.Serializable;
 
@@ -49,6 +50,18 @@ public class AdaGrad implements Serializable,GradientUpdater {
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
     private double epsilon = 1e-6;
+
+    @Override
+    public int stateSizeForInputSize(int inputSize){
+        return inputSize;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, boolean initialize){
+        if(!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if(initialize) viewArray.assign(epsilon);
+        this.historicalGradient = viewArray;
+    }
 
     /**
      *
@@ -93,8 +106,9 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).addi(epsilon);
-        else historicalGradient.addi(gradient.mul(gradient));
+        if(historicalGradient == null ) throw new IllegalStateException("Updater has not been initialized with view state");
+//        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).addi(epsilon);
+        historicalGradient.addi(gradient.mul(gradient));
 
         INDArray sqrtHistory = sqrt(historicalGradient,true).addi(epsilon);
         // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)

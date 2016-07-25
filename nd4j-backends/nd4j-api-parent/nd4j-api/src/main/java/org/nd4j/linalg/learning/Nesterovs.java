@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.Serializable;
 
@@ -21,6 +22,18 @@ public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
     private INDArray v;
     private double learningRate = 0.1;
+
+    @Override
+    public int stateSizeForInputSize(int inputSize){
+        return inputSize;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, boolean initialize){
+        if(!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if(initialize) viewArray.assign(0);
+        this.v = viewArray;
+    }
 
     public Nesterovs(double momentum, double learningRate) {
         this.momentum = momentum;
@@ -50,8 +63,9 @@ public class Nesterovs implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(v == null)
-            v = Nd4j.zeros(gradient.shape());
+        if(v == null ) throw new IllegalStateException("Updater has not been initialized with view state");
+//        if(v == null)
+//            v = Nd4j.zeros(gradient.shape());
         INDArray vPrev = v;
         v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation

@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.Serializable;
@@ -29,6 +30,20 @@ public class AdaDelta implements Serializable,GradientUpdater {
     }
 
     @Override
+    public int stateSizeForInputSize(int inputSize){
+        return 2*inputSize;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, boolean initialize){
+        if(!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if(initialize) viewArray.assign(0);
+        int length = viewArray.length();
+        this.msg = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,length/2));
+        this.msdx = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length/2,length));
+    }
+
+    @Override
     public void update(Object... args) {
         //no op
     }
@@ -43,11 +58,12 @@ public class AdaDelta implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(msg == null)
-            msg = Nd4j.zeros(gradient.shape());
-
-        if(msdx == null)
-            msdx = Nd4j.zeros(gradient.shape());
+        if(msg == null || msdx == null) throw new IllegalStateException("Updater has not been initialized with view state");
+//        if(msg == null)
+//            msg = Nd4j.zeros(gradient.shape());
+//
+//        if(msdx == null)
+//            msdx = Nd4j.zeros(gradient.shape());
 
         msg.muli(rho);
         msg.addi(1 - rho).muli(gradient.mul(gradient));

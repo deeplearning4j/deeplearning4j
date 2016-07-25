@@ -4,6 +4,7 @@ import lombok.Data;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.Serializable;
@@ -25,6 +26,20 @@ public class Adam implements Serializable, GradientUpdater {
     private double beta2 = 0.999; // gradient sqrd decay rate
     private double epsilon = 1e-8;
     private INDArray m, v; // moving avg & sqrd gradients
+
+    @Override
+    public int stateSizeForInputSize(int inputSize){
+        return 2*inputSize;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, boolean initialize){
+        if(!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if(initialize) viewArray.assign(0);
+        int length = viewArray.length();
+        this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,length/2));
+        this.v = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length/2,length));
+    }
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
         this.learningRate = alpha;
@@ -59,8 +74,9 @@ public class Adam implements Serializable, GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (m == null) m = Nd4j.zeros(gradient.shape());
-        if (v == null) v = Nd4j.zeros(gradient.shape());
+        if(m == null || v == null) throw new IllegalStateException("Updater has not been initialized with view state");
+//        if (m == null) m = Nd4j.zeros(gradient.shape());
+//        if (v == null) v = Nd4j.zeros(gradient.shape());
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
         m.muli(beta1).addi(oneMinusBeta1Grad);
