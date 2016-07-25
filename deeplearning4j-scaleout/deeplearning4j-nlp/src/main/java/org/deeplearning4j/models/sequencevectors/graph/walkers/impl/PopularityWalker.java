@@ -29,8 +29,8 @@ import java.util.Random;
 
 /**
  * This is vertex popularity-based walker for SequenceVectors-based DeepWalk implementation.
- *  Instead of rand walks, this walker produces walks based on number of edges coming into each node.
- *  This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
+ * Instead of rand walks, this walker produces walks based on number of edges coming into each node.
+ * This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
  *
  * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
  * @author raver119@gmail.com
