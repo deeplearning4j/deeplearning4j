@@ -35,13 +35,19 @@ public class ParallelWrapper {
     private int workers = 2;
     private int prefetchSize = 2;
     private int averagingFrequency = 1;
+    private boolean verbose;
     private Trainer zoo[];
     private AtomicLong iterationsCounter = new AtomicLong(0);
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
+        this(model, workers, prefetchSize, false);
+    }
+
+    protected ParallelWrapper(Model model, int workers, int prefetchSize, boolean verbose) {
         this.model = model;
         this.workers = workers;
         this.prefetchSize = prefetchSize;
+        this.verbose = verbose;
 
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
@@ -105,7 +111,7 @@ public class ParallelWrapper {
                     score /= Math.min(workers, locker.get());
 
                     // TODO: improve this
-                    logger.info("Averaged score: " + score);
+                    if(verbose) logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
                         UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
@@ -141,6 +147,7 @@ public class ParallelWrapper {
         private int workers = 2;
         private int prefetchSize = 2;
         private int averagingFrequency = 1;
+        private boolean verbose = false;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -185,6 +192,7 @@ public class ParallelWrapper {
             return this;
         }
 
+
         /**
          * Size of prefetch buffer that will be used for background data prefetching.
          * Usually it's better to keep this value equal to the number of workers.
@@ -200,6 +208,17 @@ public class ParallelWrapper {
 
             this.prefetchSize = size;
 
+            return this;
+        }
+
+        /**
+         * Verbosity. Sharing average scores
+         *
+         * @param verbose true or false
+         * @return
+         */
+        public Builder verbose(boolean verbose) {
+            this.verbose = verbose;
             return this;
         }
 
