@@ -100,17 +100,23 @@ public class NormalizerStandardize implements DataNormalization {
     @Override
     public void preProcess(DataSet toPreProcess) {
         if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        INDArray theFeatures = toPreProcess.getFeatures();
+        this.preProcess(theFeatures);
+    }
+
+    private void preProcess(INDArray theFeatures) {
         if (featureRank == 2) {
-            toPreProcess.getFeatures().subiRowVector(mean);
-            toPreProcess.getFeatures().diviRowVector(std);
+            theFeatures.subiRowVector(mean);
+            theFeatures.diviRowVector(std);
         }
         // if feature Rank is 3 (time series) samplesxfeaturesxtimesteps
         // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
         // both cases operations should be carried out in dimension 1
         else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(toPreProcess.getFeatures(),mean,toPreProcess.getFeatures(),1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(toPreProcess.getFeatures(),std,toPreProcess.getFeatures(),1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(theFeatures,mean,theFeatures,1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theFeatures,std,theFeatures,1));
         }
+
     }
 
     /**
@@ -119,6 +125,14 @@ public class NormalizerStandardize implements DataNormalization {
      */
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
+    }
+
+    /**
+     * Transform the given INDArray
+     * @param theFeatures
+     */
+    public void transform(INDArray theFeatures) {
+        this.preProcess(theFeatures);
     }
 
     /**
