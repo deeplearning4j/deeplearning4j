@@ -6,11 +6,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import java.io.File;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by susaneraly on 5/25/16.
@@ -84,16 +84,23 @@ public class NormalizerMinMaxScaler implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        if (maxRange - minRange < 0) throw new RuntimeException("API_USE_ERROR: The given max value minus min value has to be greater than 0");
+        if (min == null || max == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (maxRange - minRange < 0)
+            throw new RuntimeException("API_USE_ERROR: The given max value minus min value has to be greater than 0");
+        INDArray theFeatures = toPreProcess.getFeatures();
+        preProcess(theFeatures);
+    }
+
+    public void preProcess(INDArray theFeatures) {
         // subtract by dataset min
-        toPreProcess.getFeatures().subiRowVector(min);
+        theFeatures.subiRowVector(min);
         // scale by dataset range
-        toPreProcess.getFeatures().diviRowVector(maxMinusMin);
+        theFeatures.diviRowVector(maxMinusMin);
         // scale by given or default feature range
-        toPreProcess.getFeatures().divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+        theFeatures.divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
         // offset by given min feature value
-        toPreProcess.getFeatures().addi(minRange);
+        theFeatures.addi(minRange);
     }
 
     /**
@@ -103,6 +110,10 @@ public class NormalizerMinMaxScaler implements DataNormalization {
     @Override
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
+    }
+
+    public void transform(INDArray theFeatures) {
+        this.preProcess(theFeatures);
     }
 
     @Override
