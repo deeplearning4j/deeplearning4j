@@ -23,7 +23,7 @@ public class AdaGradUpdater extends BaseUpdater {
     }
 
     @Override
-    public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
+    public GradientUpdater init(String variable, Layer layer) {
         AdaGrad adaGrad = (AdaGrad) updaterForVariable.get(variable);
         if(adaGrad == null) {
             adaGrad = new AdaGrad(layer.conf().getLearningRateByParam(variable));
