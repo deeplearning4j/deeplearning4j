@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 public class MagicQueue implements Queue<DataSet> {
-    protected final List<Queue<DataSet>> backingQueues;
+    protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
     protected final AtomicInteger nextBucket = new AtomicInteger(0);
     protected final int numberOfBuckets;
     protected final List<QueueHandler> handlers;
@@ -29,7 +29,7 @@ public class MagicQueue implements Queue<DataSet> {
         handlers = new ArrayList<>();
         if (numberOfFlows > 1) {
             for (int i = 0; i < numberOfFlows; i++) {
-                ConcurrentLinkedQueue<DataSet> queue = new ConcurrentLinkedQueue<>();
+                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
                 backingQueues.add(queue);
 
                 QueueHandler handler = new QueueHandler(queue);
@@ -40,7 +40,7 @@ public class MagicQueue implements Queue<DataSet> {
                 handlers.add(handler);
             }
         } else {
-            ConcurrentLinkedQueue<DataSet> queue = new ConcurrentLinkedQueue<>();
+            LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
             backingQueues.add(queue);
         }
 
@@ -193,9 +193,38 @@ public class MagicQueue implements Queue<DataSet> {
         return null;
     }
 
+
+    /**
+     * This method is supposed to be called from managed thread, attached to specific device.
+     * It returns 1 DataSet element from head of the queue, and deletes that element from Queue.
+     * If queue is empty,
+     *
+     * Please note: if there's nothing available in Queue - NULL will be returned
+     * @param time time to wait for something appear in queue
+     * @param timeUnit TimeUnit for time param
+     * @return
+     */
+    public DataSet poll(long time, TimeUnit timeUnit) throws InterruptedException {
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return backingQueues.get(deviceId).poll(time, timeUnit);
+        } else return backingQueues.get(0).poll(time, timeUnit);
+    }
+
+    /**
+     * This method is supposed to be called from managed thread, attached to specific device.
+     * It returns 1 DataSet element from head of the queue, and deletes that element from Queue
+     *
+     * Please note: if there's nothing available in Queue - NULL will be returned
+     *
+     * @return
+     */
     @Override
     public DataSet poll() {
-        return null;
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return backingQueues.get(deviceId).poll();
+        } else return backingQueues.get(0).poll();
     }
 
     @Override
