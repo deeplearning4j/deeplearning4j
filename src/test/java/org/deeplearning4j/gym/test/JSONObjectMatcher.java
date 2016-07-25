@@ -7,7 +7,7 @@ import org.mockito.ArgumentMatcher;
 import static org.mockito.Matchers.argThat;
 
 /**
- * @author rubenfiszel on 7/11/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/11/16.
  */
 
 

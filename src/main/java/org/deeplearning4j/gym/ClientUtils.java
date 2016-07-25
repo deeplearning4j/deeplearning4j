@@ -8,7 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * @author rubenfiszel on 7/8/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
  * ClientUtils contain the utility methods to post and get data from the server REST API through the library unirest.
  */

@@ -3,7 +3,7 @@ package org.deeplearning4j.gym.space;
 import org.json.JSONArray;
 
 /**
- * @author rubenfiszel on 7/8/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
  * A Box observation
  *

@@ -5,7 +5,7 @@ import lombok.Value;
 import java.util.Random;
 
 /**
- * @author rubenfiszel on 7/8/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
  * A discrete space of action. A discrete space is always isomorphic
  * to a space of integer so we can parametrize directly by Integer.

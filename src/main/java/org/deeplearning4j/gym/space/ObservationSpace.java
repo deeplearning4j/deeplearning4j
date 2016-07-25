@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * @author rubenfiszel on 7/8/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
  * Contain contextual information about the environment from which Observations are observed and must know how to build an Observation from json.
  *

@@ -18,7 +18,7 @@ import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 /**
- * @author rubenfiszel on 7/11/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/11/16.
  */
 
 @RunWith(PowerMockRunner.class)

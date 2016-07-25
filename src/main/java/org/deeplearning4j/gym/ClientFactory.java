@@ -7,7 +7,7 @@ import org.json.JSONObject;
 
 
 /**
- * @author rubenfiszel on 7/8/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
  * ClientFactory contains builder method to create a new {@link Client}
  */

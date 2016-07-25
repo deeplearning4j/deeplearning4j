@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @author rubenfiszel on 7/6/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
  *
  * A client represent an active connection to a specific instance of an environment on a gym-http-api server.
  * for API specification

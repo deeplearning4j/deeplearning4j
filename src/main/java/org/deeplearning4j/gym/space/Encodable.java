@@ -1,7 +1,7 @@
 package org.deeplearning4j.gym.space;
 
 /**
- * Created by rubenfiszel on 7/19/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/19/16.
  */
 public interface Encodable {
 
