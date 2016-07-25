@@ -50,9 +50,13 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
         int startPosition = position.getAndIncrement();
         int lastId = -1;
         int currentPoint = order[startPosition];
+        int startPoint = currentPoint;
         for (int i = 0; i < walkLength; i++) {
 
-            // apply reset chance here
+            if (alpha > 0 && lastId != startPoint && lastId != -1 && alpha > rng.nextDouble()) {
+                startPosition = startPoint;
+                continue;
+            }
 
 
             Vertex<T> vertex = sourceGraph.getVertex(currentPoint);
@@ -99,6 +103,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
                                 currentPoint = edge.getFrom(); //Undirected edge: might be next--currVertexIdx instead of currVertexIdx--next
                             }
                         }
+                        lastId = currentPoint;
                         break;
                     }
                 }
