@@ -139,13 +139,7 @@ In another window, a graph will appear, showing you how the multilayer perceptro
 
 ![run IntelliJ example](./img/mlp_classifier_viz.png)
 
-And congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [MNIST for Beginners](./mnist-for-beginners)...
-
-Additional links:
-
-- [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
-- [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
-- [Canova artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Ccanova)
+Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners)...
 
 ## Next Steps
 
@@ -156,6 +150,12 @@ Additional links:
 2. Read the [introduction to deep neural networks](./neuralnet-overview) or [one of our detailed tutorials](./tutorials). 
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
+
+### Additional links
+
+- [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+- [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
+- [Canova artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Ccanova)
 
 ### Troubleshooting
 
