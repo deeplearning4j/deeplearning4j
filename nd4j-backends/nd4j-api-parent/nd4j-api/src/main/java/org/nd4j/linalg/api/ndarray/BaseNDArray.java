@@ -167,12 +167,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[][] data, char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},Nd4j.getStrides(new int[]{data.length, data[0].length},ordering),0,ordering);
+        this(Nd4j.createBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)), new int[]{data.length, data[0].length},Nd4j.getStrides(new int[]{data.length, data[0].length},ordering),0,ordering);
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
         }
-
+/*
         this.data = Nd4j.createBuffer(length);
 
 
@@ -180,7 +180,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for (int c = 0; c < columns; c++) {
                 putScalar(r, c, data[r][c]);
             }
-        }
+        }*/
     }
 
 
@@ -629,12 +629,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(float[][] data,char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},Nd4j.getStrides(new int[]{data.length, data[0].length},ordering),0,ordering);
+        this(Nd4j.createBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)), new int[]{data.length, data[0].length},Nd4j.getStrides(new int[]{data.length, data[0].length},ordering),0,ordering);
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
         }
-
+/*
         this.data = Nd4j.createBuffer(length);
 
         for (int r = 0; r < rows; r++) {
@@ -642,6 +642,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 putScalar(r, c, data[r][c]);
             }
         }
+        */
     }
 
 

@@ -1216,6 +1216,8 @@ public class ArrayUtil {
         return ret;
     }
 
+
+
     public static int[] flatten(int[][] arr) {
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;
@@ -1236,6 +1238,30 @@ public class ArrayUtil {
         int count = 0;
         for (int i = 0; i < arr.length; i++)
             for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    /**
+     * Convert a 2darray in to a flat
+     * array (row wise)
+     * @param arr the array to flatten
+     * @return a flattened representation of the array
+     */
+    public static double[] flattenF(double[][] arr) {
+        double[] ret = new double[arr.length * arr[0].length];
+        int count = 0;
+        for (int j = 0; j < arr[0].length; j++)
+            for (int i = 0; i < arr.length; i++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static float[] flattenF(float[][] arr) {
+        float[] ret = new float[arr.length * arr[0].length];
+        int count = 0;
+        for (int j = 0; j < arr[0].length; j++)
+            for (int i = 0; i < arr.length; i++)
                 ret[count++] = arr[i][j];
         return ret;
     }
