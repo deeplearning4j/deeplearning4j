@@ -153,6 +153,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
 
                                         Vertex<T> nV = sourceGraph.getVertex(connections[con]);
                                         startPosition = nV.vertexID();
+                                        lastId = vertex.vertexID();
                                     }
                                     break;
                                 case PROPORTIONAL: {
@@ -162,6 +163,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                         for (int b = 0; b < weights.length; b++) {
                                             if (prob >= floor && prob < floor + norm[b]) {
                                                 startPosition = list.get(b).getVertexId();
+                                                lastId = startPosition;
                                                 break;
                                             } else {
                                                 floor += norm[b];
