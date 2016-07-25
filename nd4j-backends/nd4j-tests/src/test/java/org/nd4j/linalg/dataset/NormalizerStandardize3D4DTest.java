@@ -74,8 +74,9 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         float stdNaturalNums = (float) Math.sqrt((samples*samples*timeSteps*timeSteps - 1)/12);
         INDArray expectedStd = Nd4j.create(new float[] {stdNaturalNums,stdNaturalNums,stdNaturalNums}).reshape(3,1);
         expectedStd.muliColumnVector(featureABC);
-        assertEquals(myNormalizer.getMean(),expectedMean);
-        assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd)).getFloat(0,0) < 1.0f);
+        //assertEquals(myNormalizer.getMean(),expectedMean);
+        assertTrue(Transforms.abs(myNormalizer.getMean().sub(expectedMean)).div(expectedMean).maxNumber().floatValue() < 0.03f);
+        assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd)).div(expectedStd).maxNumber().floatValue() < 0.03f);
     }
 
 
