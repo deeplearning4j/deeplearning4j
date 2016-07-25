@@ -24,7 +24,7 @@ import java.util.Random;
  */
 public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
 
-    protected WeightedWalker(IGraph<T, ? extends Number> sourceGraph) {
+    protected WeightedWalker() {
 
     }
 
@@ -186,7 +186,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
         }
 
         public WeightedWalker<T> build() {
-            WeightedWalker<T> walker = new WeightedWalker<>(sourceGraph);
+            WeightedWalker<T> walker = new WeightedWalker<>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;
