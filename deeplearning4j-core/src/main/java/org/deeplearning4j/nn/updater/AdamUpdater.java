@@ -20,7 +20,7 @@ public class AdamUpdater extends BaseUpdater {
     }
 
     @Override
-    public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
+    public GradientUpdater init(String variable, Layer layer) {
         Adam adam = (Adam) updaterForVariable.get(variable);
         if(adam == null) {
             adam = new Adam(layer.conf().getLearningRateByParam(variable),

@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
 import com.google.common.base.Function;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -15,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
@@ -29,7 +28,39 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public abstract class BaseUpdater implements Updater {
-    protected Map<String, GradientUpdater> updaterForVariable = new HashMap<>();
+    protected Map<String, GradientUpdater> updaterForVariable = new LinkedHashMap<>();
+    protected INDArray viewArray;
+
+    @Override
+    public void setStateViewArray(Layer layer, INDArray viewArray, boolean initialize) {
+        //Need to split this up into each parameter type...
+
+        Map<String,INDArray> params = layer.paramTable();
+        int count = 0;
+        for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            GradientUpdater gu = init(entry.getKey(), layer);
+            int thisSize = gu.stateSizeForInputSize(entry.getValue().length());
+            INDArray subset = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(count, count+thisSize));
+            gu.setStateViewArray(subset, initialize);
+            count += thisSize;
+        }
+    }
+
+    @Override
+    public INDArray getStateViewArray() {
+        return viewArray;
+    }
+
+    @Override
+    public int stateSizeForLayer(Layer layer) {
+        Map<String,INDArray> params = layer.paramTable();
+        int count = 0;
+        for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            GradientUpdater gu = init(entry.getKey(), layer);
+            count += gu.stateSizeForInputSize(entry.getValue().length());
+        }
+        return count;
+    }
 
     @Override
     public void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize) {
@@ -44,7 +75,7 @@ public abstract class BaseUpdater implements Updater {
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
                 applyLrDecayPolicy(decay, layer, iteration, paramName);
-            updater = init(paramName, gradientOrig, layer);
+            updater = init(paramName, layer);
             gradient2 = updater.getGradient(gradientOrig, iteration);
             postApply(layer, gradient2, paramName, miniBatchSize);
             gradient.setGradientFor(paramName, gradient2);
@@ -195,7 +226,7 @@ public abstract class BaseUpdater implements Updater {
 
     public abstract void init();
 
-    public abstract GradientUpdater init(String variable, INDArray gradient, Layer layer);
+    public abstract GradientUpdater init(String variable, Layer layer);
 
     protected static abstract class UpdaterAggregatorImpl implements UpdaterAggregator {
         protected Map<String,GradientUpdaterAggregator> aggregatorMap = new LinkedHashMap<>();

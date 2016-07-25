@@ -74,6 +74,9 @@ public class TestUpdaters {
 		INDArray params = Nd4j.create(1, numParams);
 		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
+		int updaterStateSize = updater.stateSizeForLayer(layer);
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		updater.setStateViewArray(layer, updaterState, true);
 
 		Gradient gradientDup = new DefaultGradient();
 		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
@@ -129,6 +132,9 @@ public class TestUpdaters {
 		INDArray params = Nd4j.create(1, numParams);
 		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
+		int updaterStateSize = updater.stateSizeForLayer(layer);
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		updater.setStateViewArray(layer, updaterState, true);
 
 		updater.update(layer, gradient, -1, 1);
 
@@ -163,6 +169,9 @@ public class TestUpdaters {
 		INDArray params = Nd4j.create(1, numParams);
 		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
+		int updaterStateSize = updater.stateSizeForLayer(layer);
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		updater.setStateViewArray(layer, updaterState, true);
 
 		updater.update(layer, gradient, iteration, 1);
 
@@ -207,6 +216,9 @@ public class TestUpdaters {
 		INDArray params = Nd4j.create(1, numParams);
 		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
+		int updaterStateSize = updater.stateSizeForLayer(layer);
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		updater.setStateViewArray(layer, updaterState, true);
 
 		updater.update(layer, gradient, -1, 1);
 
@@ -246,6 +258,9 @@ public class TestUpdaters {
 		INDArray params = Nd4j.create(1, numParams);
 		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
+		int updaterStateSize = updater.stateSizeForLayer(layer);
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		updater.setStateViewArray(layer, updaterState, true);
 
 		updater.update(layer, gradient, -1, 1);
 
@@ -367,7 +382,14 @@ public class TestUpdaters {
 		uArr[0] = new SgdUpdater();
 		uArr[1] = new NoOpUpdater();
 		uArr[2] = new AdaGradUpdater();
+		int updaterStateSize = uArr[2].stateSizeForLayer(net.getLayer(2));
+		INDArray updaterState = Nd4j.create(1,updaterStateSize);
+		uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
+
 		uArr[3] = new NesterovsUpdater();
+		updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
+		updaterState = Nd4j.create(1,updaterStateSize);
+		uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
 		
 		int[] nIns = {4,5,6,7};
 		int[] nOuts = {5,6,7,8};
@@ -398,7 +420,7 @@ public class TestUpdaters {
 			}
 			
 			updater.update(net, gradient, i, 1);
-			assertTrue(gradient.gradientForVariable().equals(expectedGradient));
+			assertEquals(gradient.gradientForVariable(), expectedGradient);
 		}
 	}
 
