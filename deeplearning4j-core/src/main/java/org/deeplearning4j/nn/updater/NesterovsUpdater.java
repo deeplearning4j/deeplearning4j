@@ -20,7 +20,7 @@ public class NesterovsUpdater extends BaseUpdater {
     }
 
     @Override
-    public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
+    public GradientUpdater init(String variable, Layer layer) {
         Nesterovs nesterovs = (Nesterovs) updaterForVariable.get(variable);
         if(nesterovs == null) {
             nesterovs = new Nesterovs(layer.conf().getLayer().getMomentum(), layer.conf().getLearningRateByParam(variable));
