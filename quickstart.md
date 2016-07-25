@@ -139,7 +139,7 @@ In another window, a graph will appear, showing you how the multilayer perceptro
 
 ![run IntelliJ example](./img/mlp_classifier_viz.png)
 
-Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners)...
+Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners), where you'll learn how to classify images. 
 
 ## Next Steps
 
