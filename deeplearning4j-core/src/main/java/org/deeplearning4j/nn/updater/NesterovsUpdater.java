@@ -2,8 +2,6 @@ package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.Nesterovs;
 
@@ -28,12 +26,5 @@ public class NesterovsUpdater extends BaseUpdater {
         }
 
         return nesterovs;
-    }
-
-    protected static class NesterovsAggregator extends BaseUpdater.UpdaterAggregatorImpl {
-        @Override
-        public Updater getUpdater() {
-            return setUpdaterState(new NesterovsUpdater());
-        }
     }
 }
