@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import lombok.EqualsAndHashCode;
@@ -122,13 +123,12 @@ public class MultiLayerUpdater implements Updater {
 	@Override
 	public boolean equals(Object other) {
 		if(!(other instanceof MultiLayerUpdater)) return false;
-
 		MultiLayerUpdater multiLayerUpdater = (MultiLayerUpdater) other;
-		if(layerUpdaters.length != multiLayerUpdater.layerUpdaters.length) return false;
-
-		for(int i = 0; i < layerUpdaters.length; i++) {
-			if(!layerUpdaters[i].equals(multiLayerUpdater.layerUpdaters[i])) return false;
-		}
-		return true;
+		return Arrays.deepEquals(layerUpdaters, multiLayerUpdater.layerUpdaters);
 	}
+
+	@Override
+	public int hashCode() {
+	  return Arrays.deepHashCode(layerUpdaters);
+  }
 }
