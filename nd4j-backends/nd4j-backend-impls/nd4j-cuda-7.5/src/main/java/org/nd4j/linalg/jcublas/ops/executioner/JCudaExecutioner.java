@@ -27,6 +27,8 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.perf.OpDashboard;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -80,6 +82,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(BroadcastOp op,int...dimension) {
         Arrays.sort(dimension);
     //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
+
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -162,6 +167,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
 
   //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 //
@@ -507,6 +515,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
 
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -683,6 +693,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
+
      //   log.info("B1 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -771,6 +784,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -899,6 +915,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         // dimension is ALWAYS null here.
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
+
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
 
         Arrays.sort(dimension);
 
@@ -1205,6 +1224,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
+
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
+
       //  log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
@@ -1272,6 +1295,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processOpCall(op);
+
 //        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());

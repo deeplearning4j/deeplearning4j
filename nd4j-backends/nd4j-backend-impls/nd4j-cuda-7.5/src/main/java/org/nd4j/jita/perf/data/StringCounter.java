@@ -16,11 +16,18 @@ public class StringCounter {
 
     }
 
-    public long increment(String key) {
+    public long incrementCount(String key) {
         if (!counter.containsKey(key)) {
             counter.put(key, new AtomicLong(0));
         }
 
         return counter.get(key).incrementAndGet();
+    }
+
+    public long getCount(String key) {
+        if (!counter.containsKey(key))
+            return 0;
+
+        return counter.get(key).get();
     }
 }

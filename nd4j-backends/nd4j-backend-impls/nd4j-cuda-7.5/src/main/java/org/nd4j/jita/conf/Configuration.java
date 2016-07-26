@@ -50,6 +50,8 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
+    @Getter private boolean gatherStatistics = false;
+
     private boolean forceSingleGPU = true;
 
     /**
@@ -151,6 +153,17 @@ public class Configuration implements Serializable {
 
     public void setInitialized() {
         this.initialized.compareAndSet(false, true);
+    }
+
+    /**
+     * This method enables/disables
+     *
+     * @param reallyEnable
+     * @return
+     */
+    public Configuration enableStatisticsGathering(boolean reallyEnable) {
+        gatherStatistics = reallyEnable;
+        return this;
     }
 
     /**

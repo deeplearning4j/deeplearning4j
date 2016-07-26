@@ -1,7 +1,7 @@
 package org.nd4j.jita.perf;
 
 import org.nd4j.jita.perf.data.StringCounter;
-import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.*;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,6 +25,20 @@ public class OpDashboard {
 
     }
 
+    protected String getOpClass(Op op) {
+        if (op instanceof ScalarOp) {
+            return "ScalarOp";
+        } else if (op instanceof BroadcastOp) {
+            return "BroadcastOp";
+        } else if (op instanceof Accumulation) {
+            return "AccumulationOp";
+        } else if (op instanceof TransformOp) {
+            return "TransformOp";
+        } else if (op instanceof IndexAccumulation) {
+            return "IndexAccumulationOp";
+        } else return "UnknownUp";
+    }
+
     /**
      * This method tracks INDArray.putScalar()/getScalar() calls
      */
@@ -39,6 +53,8 @@ public class OpDashboard {
      */
     public void processOpCall(Op op) {
         invocationsCount.incrementAndGet();
+        opCounter.incrementCount(op.name());
+        classCounter.incrementCount(getOpClass(op));
     }
 
     /**
