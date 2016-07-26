@@ -385,6 +385,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * This method allows to use variable window size. In this case, every batch gets processed using one of predefined window sizes
+         *
+         * @param windows
+         * @return
+         */
+        @Override
+        public Builder useVariableWindow(int... windows) {
+            super.useVariableWindow(windows);
+            return this;
+        }
+
+        /**
          * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
          *
          * @param element
@@ -468,6 +480,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.workers = this.workers;
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
+            ret.variableWindows = this.variableWindows;
+
 
 
             ret.iterator = this.iterator;
@@ -493,6 +507,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setVariableWindows(variableWindows);
 
             ret.configuration = this.configuration;
 

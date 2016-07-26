@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
+import org.apache.commons.lang.math.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -36,6 +37,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected boolean useAdaGrad;
     protected double negative;
     protected double sampling;
+    protected int[] variableWindows;
 
     protected double[] expTable;
 
@@ -62,6 +64,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         this.syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
         this.expTable = ((InMemoryLookupTable<T>) lookupTable).getExpTable();
         this.table = ((InMemoryLookupTable<T>) lookupTable).getTable();
+        this.variableWindows = configuration.getVariableWindows();
     }
 
     /**
@@ -79,9 +82,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         Sequence<T> tempSequence = sequence;
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
 
+        int currentWindow = window;
+
+        if (variableWindows != null && variableWindows.length != 0) {
+            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+        }
+
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            cbow(i, tempSequence.getElements(),  (int) nextRandom.get() % window ,nextRandom, learningRate);
+            cbow(i, tempSequence.getElements(),  (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
         }
 
         return 0;
@@ -168,17 +177,16 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return neu1e;
     }
 
-    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
+    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         int end =  window * 2 + 1 - b;
         int cw = 0;
         INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
 
-
         T currentWord = sentence.get(i);
 
         for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
+            if(a != currentWindow) {
+                int c = i - currentWindow + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
 
