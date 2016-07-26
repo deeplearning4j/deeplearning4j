@@ -149,60 +149,6 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         return viewArray;
     }
 
-    /** Get an Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
-    @Deprecated
-    public Aggregator getAggregator(boolean addThis){
-        Aggregator aggregator = new Aggregator();
-        if(addThis) aggregator.aggregate(this);
-        return aggregator;
-    }
-
-    /** Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
-    @Deprecated
-    public static class Aggregator implements Serializable {
-
-        private UpdaterAggregator[] aggregators;
-        private Map<String,Integer> layerNamesMap;
-
-        /** Add another ComputationGraphUpdater to this aggregator */
-        public void aggregate(ComputationGraphUpdater updater){
-            if(aggregators == null){
-                aggregators = new UpdaterAggregator[updater.layerUpdaters.length];
-                for( int i=0; i<updater.layerUpdaters.length; i++ ){
-                    aggregators[i] = updater.layerUpdaters[i].getAggregator(true);
-                }
-                layerNamesMap = new HashMap<>(updater.layerUpdatersMap);
-            } else {
-                if(updater.layerUpdaters == null) return;
-                for( int i=0; i<aggregators.length; i++ ){
-                    aggregators[i].aggregate(updater.layerUpdaters[i]);
-                }
-            }
-        }
-
-        /** Merge a specified aggregator into this one */
-        public void merge(Aggregator aggregator){
-            if(aggregators == null){
-                aggregators = aggregator.aggregators;
-            } else {
-                if (aggregator.aggregators != null) {
-                    for( int i=0; i<aggregators.length; i++ ){
-                        aggregators[i].merge(aggregator.aggregators[i]);
-                    }
-                }
-            }
-        }
-
-        /** Get the final ComputationGraphUpdater given the internal (aggregated) updater state */
-        public ComputationGraphUpdater getUpdater(){
-            ComputationGraphUpdater updater = new ComputationGraphUpdater(aggregators.length,layerNamesMap);
-            for( int i=0; i<aggregators.length; i++ ){
-                updater.layerUpdaters[i] = aggregators[i].getUpdater();
-            }
-            return updater;
-        }
-    }
-
     @Override
     public boolean equals(Object other) {
         if(!(other instanceof ComputationGraphUpdater)) return false;

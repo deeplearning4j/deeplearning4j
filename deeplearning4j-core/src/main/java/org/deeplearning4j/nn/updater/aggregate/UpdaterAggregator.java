@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.Updater;
 
 import java.io.Serializable;
 
+@Deprecated
 public interface UpdaterAggregator extends Serializable {
 
     public void aggregate(Updater updater);

@@ -55,11 +55,6 @@ public class NoOpUpdater extends BaseUpdater {
 		}
 	}
 
-	@Override
-	public UpdaterAggregator getAggregator(boolean addThis){
-		return new NoOpAggregator();
-	}
-
 	@EqualsAndHashCode(callSuper=true)
 	protected static class NoOpAggregator extends BaseUpdater.UpdaterAggregatorImpl {
 		@Override

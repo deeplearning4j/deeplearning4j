@@ -33,15 +33,6 @@ public class AdaGradUpdater extends BaseUpdater {
         return adaGrad;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        AdaGradAggregator ag = new AdaGradAggregator();
-        if(addThis) {
-            ag.aggregate(this);
-        }
-        return ag;
-    }
-
     protected static class AdaGradAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {
