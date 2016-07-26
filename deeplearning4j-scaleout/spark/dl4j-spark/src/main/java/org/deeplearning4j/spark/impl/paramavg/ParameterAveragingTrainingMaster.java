@@ -111,7 +111,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public ParameterAveragingTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
         NetBroadcastTuple tuple = new NetBroadcastTuple(network.getNetwork().getLayerWiseConfigurations(),
                 network.getNetwork().params(),
-                network.getNetwork().getUpdater());
+                network.getNetwork().getUpdater().getStateViewArray());
 
         if (collectTrainingStats) stats.logBroadcastStart();
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
@@ -125,7 +125,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public ParameterAveragingTrainingWorker getWorkerInstance(SparkComputationGraph graph) {
         NetBroadcastTuple tuple = new NetBroadcastTuple(graph.getNetwork().getConfiguration(),
                 graph.getNetwork().params(),
-                graph.getNetwork().getUpdater());
+                graph.getNetwork().getUpdater().getStateViewArray());
 
         if (collectTrainingStats) stats.logBroadcastStart();
         Broadcast<NetBroadcastTuple> broadcast = graph.getSparkContext().broadcast(tuple);
@@ -413,18 +413,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
         INDArray updaterState = tuple.getUpdaterStateSum();
-        updaterState.divi(aggCount);
+        if(updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
 
         if (network != null) {
             MultiLayerNetwork net = network.getNetwork();
             net.setParameters(params);
-            net.getUpdater().setStateViewArray(null, updaterState, false);
+            if(updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
 
             network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         } else {
             ComputationGraph g = graph.getNetwork();
             g.setParams(params);
-            g.getUpdater().setStateViewArray(updaterState);
+            if(updaterState != null) g.getUpdater().setStateViewArray(updaterState);
 
             graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }
