@@ -36,10 +36,11 @@ public abstract class BaseUpdater implements Updater {
         Map<String,INDArray> params = layer.paramTable();
         int count = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            INDArray paramsArray = entry.getValue();
             GradientUpdater gu = init(entry.getKey(), layer);
             int thisSize = gu.stateSizeForInputSize(entry.getValue().length());
             INDArray subset = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(count, count+thisSize));
-            gu.setStateViewArray(subset, initialize);
+            gu.setStateViewArray(subset, paramsArray.shape(), paramsArray.ordering(), initialize);
             count += thisSize;
         }
     }
