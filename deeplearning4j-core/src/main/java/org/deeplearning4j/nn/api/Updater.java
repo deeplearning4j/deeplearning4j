@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
