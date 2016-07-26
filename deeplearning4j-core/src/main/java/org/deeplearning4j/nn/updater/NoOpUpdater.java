@@ -33,7 +33,7 @@ public class NoOpUpdater extends BaseUpdater {
 		}
 
 		@Override
-		public void setStateViewArray(INDArray viewArray, boolean initialize) {
+		public void setStateViewArray(INDArray viewArray, int[] shape, char order, boolean initialize) {
 			//No op
 		}
 

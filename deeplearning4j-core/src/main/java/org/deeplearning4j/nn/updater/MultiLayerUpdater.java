@@ -77,19 +77,6 @@ public class MultiLayerUpdater implements Updater {
         }
     }
 
-//    public MultiLayerUpdater(MultiLayerUpdater updater) {
-//        layerUpdaters = new Updater[updater.layerUpdaters.length];
-//        for (int i = 0; i < updater.layerUpdaters.length; i++) {
-//            layerUpdaters[i] = updater.layerUpdaters[i].clone();
-//        }
-//        throw new UnsupportedOperationException("TODO - not yet implemented");
-//    }
-//
-//    private MultiLayerUpdater(int size) {
-//        layerUpdaters = new Updater[size];
-//        throw new RuntimeException("TODO - not yet implemented");
-//    }
-
     @Override
     public void setStateViewArray(Layer layer, INDArray viewArray, boolean initialize){
         if(this.viewArray.length() != viewArray.length()) throw new IllegalStateException("Invalid input: view arrays differ in length. " +
@@ -104,7 +91,9 @@ public class MultiLayerUpdater implements Updater {
 
     @Override
     public int stateSizeForLayer(Layer layer) {
-        throw new RuntimeException("Not yet implemented");
+        if(!(layer instanceof MultiLayerNetwork)) throw new IllegalArgumentException("Expected MultiLayerNetwork");
+
+        return viewArray.length();
     }
 
     @Override

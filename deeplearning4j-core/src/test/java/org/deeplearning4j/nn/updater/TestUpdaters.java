@@ -31,7 +31,7 @@ public class TestUpdaters {
     protected int nIn = 3;
     protected int nOut = 2;
     protected double epsilon = 1e-8;
-    protected INDArray weightGradient = Nd4j.ones(1, nIn*nOut);
+    protected INDArray weightGradient = Nd4j.ones(nIn, nOut);
     protected INDArray biasGradient = Nd4j.ones(1, nOut);
     protected Gradient gradient = new DefaultGradient();
     protected INDArray val, gradExpected;
@@ -40,7 +40,7 @@ public class TestUpdaters {
 
     @Before
     public void beforeDo() {
-        weightGradient = Nd4j.ones(1, nIn*nOut);
+        weightGradient = Nd4j.ones(nIn, nOut);
         biasGradient = Nd4j.ones(1, nOut);
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
@@ -168,6 +168,7 @@ public class TestUpdaters {
         double beta1t = FastMath.pow(beta1, iteration);
         double beta2t = FastMath.pow(beta2, iteration);
         double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+        if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
