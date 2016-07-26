@@ -3,6 +3,7 @@ package org.deeplearning4j.gym;
 import org.deeplearning4j.gym.space.ActionSpace;
 import org.deeplearning4j.gym.space.DiscreteSpace;
 import org.deeplearning4j.gym.space.ObservationSpace;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 
@@ -18,7 +19,13 @@ public class ClientFactory {
         JSONObject body = new JSONObject().put("env_id", envId);
         JSONObject reply = ClientUtils.post(url + Client.ENVS_ROOT, body).getObject();
 
-        String instanceId = reply.getString("instance_id");
+        String instanceId;
+        
+        try {
+            instanceId = reply.getString("instance_id");
+        } catch (JSONException e) {
+            throw new RuntimeException("Environment id not found");
+        }
 
         ObservationSpace<O> observationSpace = fetchObservationSpace(url, instanceId);
         AS actionSpace = fetchActionSpace(url, instanceId);
