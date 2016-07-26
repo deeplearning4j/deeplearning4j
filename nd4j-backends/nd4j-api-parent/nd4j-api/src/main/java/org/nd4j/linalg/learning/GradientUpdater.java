@@ -26,11 +26,12 @@ public interface GradientUpdater extends Serializable {
     /**
      * For the internal updater state (if any): set this to use the provided array.
      * Used during initialization, and when restoring the updater state (after serialization, for example)
-     *
-     * @param viewArray    Array (that is a view of a larger array) to use for the state.
+     *  @param viewArray    Array (that is a view of a larger array) to use for the state.
+     * @param gradientShape
+     * @param gradientOrder
      * @param initialize   If true: the updater must initialize the view array. If false: no change to view array contents
      */
-    void setStateViewArray(INDArray viewArray, boolean initialize);
+    void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize);
 
     /**
      * update(learningRate,momentum)

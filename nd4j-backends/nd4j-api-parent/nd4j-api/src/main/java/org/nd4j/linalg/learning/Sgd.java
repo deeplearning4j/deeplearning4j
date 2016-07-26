@@ -22,7 +22,7 @@ public class Sgd implements GradientUpdater {
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, boolean initialize){
+    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize){
         //No op
     }
 

@@ -4,13 +4,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- *
  * RMS Prop updates:
- *
+ * <p>
  * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
  * http://cs231n.github.io/neural-networks-3/#ada
  *
@@ -24,44 +23,47 @@ public class RmsProp implements GradientUpdater {
     private double learningRate = 1e-1;
     private static final double epsilon = 1e-8;
 
-    public RmsProp(double learningRate, double rmsDecay){
-    	this.learningRate = learningRate;
-    	this.rmsDecay = rmsDecay;
+    public RmsProp(double learningRate, double rmsDecay) {
+        this.learningRate = learningRate;
+        this.rmsDecay = rmsDecay;
     }
 
     @Override
-    public int stateSizeForInputSize(int inputSize){
+    public int stateSizeForInputSize(int inputSize) {
         return inputSize;
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, boolean initialize){
-        if(!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if(initialize) viewArray.assign(epsilon);
+    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
+        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize) viewArray.assign(epsilon);
         this.lastGradient = viewArray;
+
+        //Reshape to match the expected shape of the input gradient arrays
+        this.lastGradient = Shape.newShapeNoCopy(this.lastGradient, gradientShape, gradientOrder == 'f');
+        if (lastGradient == null) throw new IllegalStateException("Could not correctly reshape gradient view array");
     }
 
     @Override
     public void update(Object... args) {
-        if(args.length > 0) {
+        if (args.length > 0) {
             learningRate = (Double) args[0];
         }
     }
 
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(lastGradient == null ) throw new IllegalStateException("Updater has not been initialized with view state");
-//        if(lastGradient == null)
-//            lastGradient = Nd4j.zeros(gradient.shape()).add(epsilon);
+        if (lastGradient == null) throw new IllegalStateException("Updater has not been initialized with view state");
+
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / (sqrt(cache) + 1e-8)
-        return gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient,true).addi(epsilon));
+        return gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient, true).addi(epsilon));
     }
 
     @Override
-    public GradientUpdaterAggregator getAggregator(boolean addThis){
+    public GradientUpdaterAggregator getAggregator(boolean addThis) {
         RmsPropAggregator ag = new RmsPropAggregator();
-        if(addThis) ag.aggregate(this);
+        if (addThis) ag.aggregate(this);
         return ag;
     }
 
@@ -73,16 +75,16 @@ public class RmsProp implements GradientUpdater {
 
         @Override
         public GradientUpdater getUpdater() {
-            RmsProp rmsProp = new RmsProp(lrSum/count,rmsDecaySum/count);
+            RmsProp rmsProp = new RmsProp(lrSum / count, rmsDecaySum / count);
             rmsProp.setLastGradient(lastGradientSum.div(count));
             return rmsProp;
         }
 
         @Override
         public void aggregate(GradientUpdater updater) {
-            if(!(updater instanceof RmsProp)) throw new UnsupportedOperationException();
-            RmsProp rmsProp = (RmsProp)updater;
-            if(lastGradientSum==null){
+            if (!(updater instanceof RmsProp)) throw new UnsupportedOperationException();
+            RmsProp rmsProp = (RmsProp) updater;
+            if (lastGradientSum == null) {
                 lastGradientSum = rmsProp.lastGradient.dup();
                 rmsDecaySum = rmsProp.rmsDecay;
                 lrSum = rmsProp.learningRate;
@@ -96,9 +98,9 @@ public class RmsProp implements GradientUpdater {
 
         @Override
         public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
-            if(!(other instanceof RmsPropAggregator))
+            if (!(other instanceof RmsPropAggregator))
                 throw new IllegalArgumentException("Cannot combine RmsPropAggregator with aggregator: " + other);
-            RmsPropAggregator aggregator = (RmsPropAggregator)other;
+            RmsPropAggregator aggregator = (RmsPropAggregator) other;
             lastGradientSum.addi(aggregator.lastGradientSum);
             rmsDecaySum += aggregator.rmsDecaySum;
             lrSum += aggregator.lrSum;
