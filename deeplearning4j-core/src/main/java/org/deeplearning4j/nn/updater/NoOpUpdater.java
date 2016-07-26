@@ -2,8 +2,6 @@ package org.deeplearning4j.nn.updater;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.GradientUpdaterAggregator;
@@ -52,14 +50,6 @@ public class NoOpUpdater extends BaseUpdater {
 		@Override
 		public GradientUpdaterAggregator getAggregator(boolean addThis) {
 			return new NoOpUpdaterAggregator();
-		}
-	}
-
-	@EqualsAndHashCode(callSuper=true)
-	protected static class NoOpAggregator extends BaseUpdater.UpdaterAggregatorImpl {
-		@Override
-		public Updater getUpdater() {
-			return setUpdaterState(new NoOpUpdater());
 		}
 	}
 

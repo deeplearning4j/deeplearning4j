@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -17,7 +16,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.learning.GradientUpdaterAggregator;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
@@ -227,56 +225,6 @@ public abstract class BaseUpdater implements Updater {
     public abstract void init();
 
     public abstract GradientUpdater init(String variable, Layer layer);
-
-    protected static abstract class UpdaterAggregatorImpl implements UpdaterAggregator {
-        protected Map<String,GradientUpdaterAggregator> aggregatorMap = new LinkedHashMap<>();
-
-        @Override
-        public void aggregate(Updater updater) {
-            BaseUpdater bu = (BaseUpdater)updater;
-            for(String s : bu.updaterForVariable.keySet() ) {
-                GradientUpdaterAggregator ag = aggregatorMap.get(s);
-                GradientUpdater guToAdd = bu.updaterForVariable.get(s);
-
-                if(ag == null){
-                    ag = guToAdd.getAggregator(true);
-                    aggregatorMap.put(s,ag);
-                    continue;
-                }
-
-                ag.aggregate(guToAdd);
-            }
-        }
-
-        @Override
-        public void merge(UpdaterAggregator aggregator) {
-            UpdaterAggregatorImpl ag = (UpdaterAggregatorImpl)aggregator;
-            if(aggregatorMap == null){
-                aggregatorMap = ag.aggregatorMap;
-            } else {
-                if(ag.aggregatorMap == null) return;
-                for(String s : ag.aggregatorMap.keySet() ) {
-                    GradientUpdaterAggregator second = ag.aggregatorMap.get(s);
-                    if (second != null) {
-                        GradientUpdaterAggregator first = aggregatorMap.get(s);
-                        if (first == null) {
-                            aggregatorMap.put(s, second);
-                        } else {
-                            first.combine(second);
-                        }
-                    }
-                }
-            }
-        }
-
-        protected Updater setUpdaterState(BaseUpdater updater){
-            updater.updaterForVariable = new LinkedHashMap<>();
-            for (Map.Entry<String, GradientUpdaterAggregator> entry : aggregatorMap.entrySet()) {
-                updater.updaterForVariable.put(entry.getKey(), entry.getValue().getUpdater());
-            }
-            return updater;
-        }
-    }
 
     @Override
     public boolean equals(Object other){
