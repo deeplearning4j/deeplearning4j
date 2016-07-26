@@ -144,4 +144,9 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         if(!(other instanceof ComputationGraphUpdater)) return false;
         return layerUpdatersMap.equals(((ComputationGraphUpdater) other).layerUpdatersMap);
     }
+
+    @Override
+    public int hashCode() {
+        return layerUpdatersMap.hashCode();
+    }
 }
