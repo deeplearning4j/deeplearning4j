@@ -179,7 +179,7 @@ var timed = function() {
 
            drawEmbedding();
 
-           //setTimeout(timed,10000);
+           setTimeout(timed,10000);
          } else {
            $.notify({
            	title: '<strong>No RL data available!</strong>',
