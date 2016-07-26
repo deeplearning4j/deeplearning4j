@@ -922,6 +922,18 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method has no effect for ParagraphVectors
+         *
+         * @param windows
+         * @return
+         */
+        @Override
+        public Builder useVariableWindow(int... windows) {
+            // no-op
+            return this;
+        }
+
         @Override
         public Builder elementsLearningAlgorithm(ElementsLearningAlgorithm<VocabWord> algorithm) {
             super.elementsLearningAlgorithm(algorithm);
