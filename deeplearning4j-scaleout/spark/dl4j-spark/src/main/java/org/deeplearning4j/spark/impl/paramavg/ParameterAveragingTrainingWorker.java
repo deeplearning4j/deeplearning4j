@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
@@ -46,8 +47,8 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters(), true);
 
-        if(tuple.getUpdater() != null){
-            net.setUpdater(tuple.getUpdater().clone()); //Again: can't have shared updaters
+        if(tuple.getUpdaterState() != null){
+            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().dup()));  //Can't have shared updater state
         }
 
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
@@ -67,8 +68,8 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters(), true);
 
-        if(tuple.getGraphUpdater() != null){
-            net.setUpdater(tuple.getGraphUpdater().clone()); //Again: can't have shared updaters
+        if(tuple.getUpdaterState() != null){
+            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().dup())); //Again: can't have shared updater state
         }
 
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
