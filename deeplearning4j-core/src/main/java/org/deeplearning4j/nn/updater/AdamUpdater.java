@@ -32,15 +32,6 @@ public class AdamUpdater extends BaseUpdater {
         return adam;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        AdamAggregator ag = new AdamAggregator();
-        if(addThis) {
-            ag.aggregate(this);
-        }
-        return ag;
-    }
-
     protected static class AdamAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {

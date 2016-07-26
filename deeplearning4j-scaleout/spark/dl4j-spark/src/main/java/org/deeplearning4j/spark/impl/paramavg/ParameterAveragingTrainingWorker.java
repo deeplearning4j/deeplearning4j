@@ -2,14 +2,17 @@ package org.deeplearning4j.spark.impl.paramavg;
 
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
@@ -127,24 +130,32 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     @Override
     public ParameterAveragingTrainingResult getFinalResult(MultiLayerNetwork network) {
-        //TODO: don't want to use java serialization for updater, in case worker is using cuda and master is using native, etc
-        return new ParameterAveragingTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
+        INDArray updaterState = null;
+        if(saveUpdater){
+            Updater u = network.getUpdater();
+            if(u != null) updaterState = u.getStateViewArray();
+        }
+        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
     }
 
     @Override
     public ParameterAveragingTrainingResult getFinalResult(ComputationGraph network) {
-        //TODO: don't want to use java serialization for updater, in case worker is using cuda and master is using native, etc
-        return new ParameterAveragingTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
+        INDArray updaterState = null;
+        if(saveUpdater){
+            ComputationGraphUpdater u = network.getUpdater();
+            if(u != null) updaterState = u.getStateViewArray();
+        }
+        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
     }
 
     @Override
     public ParameterAveragingTrainingResult getFinalResultNoData(){
-        return new ParameterAveragingTrainingResult(null, null, null, 0.0, null);
+        return new ParameterAveragingTrainingResult(null, null, 0.0, null);
     }
 
     @Override
     public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats(){
-        return new Pair<>(new ParameterAveragingTrainingResult(null, null, null, 0.0, null),null);
+        return new Pair<>(new ParameterAveragingTrainingResult(null, null, 0.0, null),null);
     }
 
     @Override

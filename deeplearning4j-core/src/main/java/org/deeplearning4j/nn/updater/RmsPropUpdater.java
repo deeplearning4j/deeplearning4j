@@ -28,13 +28,6 @@ public class RmsPropUpdater extends BaseUpdater {
         return rmsprop;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        RmsPropAggregator ag = new RmsPropAggregator();
-        if(addThis) ag.aggregate(this);
-        return ag;
-    }
-
     protected static class RmsPropAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {

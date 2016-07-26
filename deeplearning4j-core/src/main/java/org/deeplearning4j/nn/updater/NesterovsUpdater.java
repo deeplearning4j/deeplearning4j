@@ -30,13 +30,6 @@ public class NesterovsUpdater extends BaseUpdater {
         return nesterovs;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        NesterovsAggregator ag = new NesterovsAggregator();
-        if(addThis) ag.aggregate(this);
-        return ag;
-    }
-
     protected static class NesterovsAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {
