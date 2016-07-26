@@ -71,6 +71,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean trainElementsVectors = true;
     protected long seed;
     protected boolean useUnknown = false;
+    protected int[] variableWindows;
 
 
     public final static String DEFAULT_UNK = "UNK";
