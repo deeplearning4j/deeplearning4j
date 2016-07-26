@@ -3,9 +3,12 @@ package org.deeplearning4j.parallelism;
 import lombok.NonNull;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -104,25 +107,34 @@ public class ParallelWrapper {
                     logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
-                        throw new RuntimeException("TODO - updater aggregation");
-//                        UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
-//
-//                        for (int cnt = 0; cnt < workers; cnt++) {
-//                            uag.merge(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getAggregator(true));
-//                        }
-//
-//                        ((MultiLayerNetwork) model).setScore(score);
-//                        ((MultiLayerNetwork) model).setUpdater(uag.getUpdater());
+                        Updater updater = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater();
+
+
+                        INDArray updaterState = Nd4j.zeros(updater.getStateViewArray().shape());
+
+                        for( int cnt = 0; cnt< workers && cnt < locker.get(); cnt++ ){
+                            Updater u = ((MultiLayerNetwork)zoo[cnt].getModel()).getUpdater();
+                            INDArray updaterView = u.getStateViewArray();
+                            updaterState.addi(updaterView);
+                        }
+                        updaterState.divi(Math.min(workers, locker.get()));
+                        ((MultiLayerNetwork) model).getUpdater().setStateViewArray((Layer)model, updaterState, false);
+
+                        ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
-                        throw new RuntimeException("TODO - updater aggregation");
-//                        ComputationGraphUpdater.Aggregator uag = ((ComputationGraph)zoo[0].getModel()).getUpdater().getAggregator(false);
-//
-//                        for (int cnt = 0; cnt < workers; cnt++) {
-//                            uag.merge(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getAggregator(true));
-//                        }
-//
-//                        ((ComputationGraph) model).setScore(score);
-//                        ((ComputationGraph) model).setUpdater(uag.getUpdater());
+                        ComputationGraphUpdater updater = ((ComputationGraph)zoo[0].getModel()).getUpdater();
+
+                        INDArray updaterState = Nd4j.zeros(updater.getStateViewArray().shape());
+
+                        for( int cnt = 0; cnt< workers && cnt < locker.get(); cnt++ ){
+                            ComputationGraphUpdater u = ((ComputationGraph)zoo[cnt].getModel()).getUpdater();
+                            INDArray updaterView = u.getStateViewArray();
+                            updaterState.addi(updaterView);
+                        }
+                        updaterState.divi(Math.min(workers, locker.get()));
+                        ((ComputationGraph) model).getUpdater().setStateViewArray(updaterState);
+
+                        ((ComputationGraph) model).setScore(score);
                     }
 
                     for (int i = 0; i < workers; i++) {
