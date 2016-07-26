@@ -34,9 +34,11 @@ public class RlResource {
         // FIXME: getSorted should use derived types!
 
         List<Object> rewards = storage.getSorted(key, HistoryStorage.SortOutput.ASCENDING);
-        List<ReportBean> conv = new ArrayList<>();
+        List<String> conv = new ArrayList<>();
+
         for (Object object: rewards) {
-            conv.add((ReportBean) object);
+            ReportBean bean = (ReportBean) object;
+            conv.add(new String("" + bean.getEpochId() + "|" + bean.getReward() + "|Epoch_" + bean.getEpochId()));
         }
 
         return Response.ok(conv).build();

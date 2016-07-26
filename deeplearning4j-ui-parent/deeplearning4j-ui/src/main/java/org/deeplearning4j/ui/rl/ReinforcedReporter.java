@@ -37,4 +37,6 @@ public class ReinforcedReporter {
         Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(bean, MediaType.APPLICATION_JSON));
         log.debug("Response: " + resp);
     }
+
+
 }
