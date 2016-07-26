@@ -43,6 +43,7 @@ public class MultiLayerUpdater implements Updater {
             if(thisSize == 0) continue;
             INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+thisSize));
             layerUpdaters[i].setStateViewArray(layers[i], view, true);
+            soFar += thisSize;
         }
     }
 
@@ -68,6 +69,7 @@ public class MultiLayerUpdater implements Updater {
                 if(thisSize == 0) continue;
                 INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+thisSize));
                 layerUpdaters[i].setStateViewArray(layers[i], view, false);
+                soFar += thisSize;
             }
         } else if(updaterStateSize != 0){
             //Updater state size is non-zero, but we didn't get an array...

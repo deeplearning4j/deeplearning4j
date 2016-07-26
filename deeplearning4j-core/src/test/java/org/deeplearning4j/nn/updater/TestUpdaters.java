@@ -22,9 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -181,7 +179,6 @@ public class TestUpdaters {
             m.muli(beta1).addi(val.mul(1.0 - beta1));
             v.muli(beta2).addi(val.mul(val).mul(1.0 - beta2));
             gradExpected = m.mul(alphat).divi(Transforms.sqrt(v).addi(epsilon));
-
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
 
@@ -386,11 +383,11 @@ public class TestUpdaters {
 
         for (int i = 0; i < 5; i++) {
             Gradient gradient = new DefaultGradient();
-            Map<String, INDArray> expectedGradient = new HashMap<>();
+            Map<String, INDArray> expectedGradient = new LinkedHashMap<>();
 
             for (int j = 0; j < net.getnLayers(); j++) {
                 //Generate test gradient:
-                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
+                INDArray wGrad = Nd4j.rand(1, nIns[j]*nOuts[j]);
                 INDArray bGrad = Nd4j.rand(1, nOuts[j]);
 
                 String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;
@@ -403,6 +400,7 @@ public class TestUpdaters {
                 Gradient layerGradient = new DefaultGradient();
                 layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
                 layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
+
                 uArr[j].update(net.getLayer(j), layerGradient, i, 1);
                 for (String s : layerGradient.gradientForVariable().keySet()) {
                     expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
@@ -473,66 +471,4 @@ public class TestUpdaters {
         net.setUpdater(newUpdater);
         assertTrue(newUpdater == net.getUpdater());    //Should be identical object
     }
-
-    @Test
-    public void testUpdaterAggregationBasic() {
-
-        Updater[] updaters = new Updater[]{
-                new AdaDeltaUpdater(),
-                new AdaGradUpdater(),
-                new AdamUpdater(),
-                new NesterovsUpdater(),
-                new NoOpUpdater(),
-                new RmsPropUpdater(),
-                new SgdUpdater(),
-        };
-
-        org.deeplearning4j.nn.conf.Updater[] arr = new org.deeplearning4j.nn.conf.Updater[]{
-                org.deeplearning4j.nn.conf.Updater.ADADELTA,
-                org.deeplearning4j.nn.conf.Updater.ADAGRAD,
-                org.deeplearning4j.nn.conf.Updater.ADAM,
-                org.deeplearning4j.nn.conf.Updater.NESTEROVS,
-                org.deeplearning4j.nn.conf.Updater.NONE,
-                org.deeplearning4j.nn.conf.Updater.RMSPROP,
-                org.deeplearning4j.nn.conf.Updater.SGD
-        };
-
-        DataSet dsTemp = new DataSet(Nd4j.rand(5, 10), Nd4j.rand(5, 10));
-
-        for (int i = 0; i < updaters.length; i++) {
-
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                    .iterations(1)
-                    .updater(arr[i])
-                    .list()
-                    .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                    .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build())
-                    .backprop(true).pretrain(false).build();
-
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-
-            net.fit(dsTemp);
-
-            Updater updater = net.getUpdater();
-
-            System.out.println(i);
-            assertNotNull(updater);
-            assertTrue(updater instanceof MultiLayerUpdater);
-
-            fail("TODO");
-
-//			UpdaterAggregator ag = updater.getAggregator(true);
-//			Updater u2 = ag.getUpdater();
-//
-//			assertEquals(u2,updater);
-//
-//			UpdaterAggregator ag2 = updater.getAggregator(true);
-//			ag2.aggregate(updater);
-//			assertEquals(updater,ag2.getUpdater());
-        }
-    }
-
-
 }
