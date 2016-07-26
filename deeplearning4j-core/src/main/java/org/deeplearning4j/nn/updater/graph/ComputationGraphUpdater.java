@@ -9,6 +9,8 @@ import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -23,17 +25,65 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
     private final Updater[] layerUpdaters;
     private final Map<String,Integer> layerUpdatersMap;
+    private INDArray viewArray;
 
     public ComputationGraphUpdater(ComputationGraph graph){
         layerUpdaters = new Updater[graph.getNumLayers()];
         layerUpdatersMap = new HashMap<>();
 
         int i=0;
+        int updaterStateSize = 0;
         for(Layer layer : graph.getLayers()){
             Updater u = UpdaterCreator.getUpdater(layer);
             layerUpdaters[i] = u;
             layerUpdatersMap.put(layer.conf().getLayer().getLayerName(),i);
+            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
             i++;
+        }
+
+        //Initialize the updater state
+        if(updaterStateSize > 0) {
+            //May be 0 if all SGD updaters, for example
+            viewArray = Nd4j.createUninitialized(new int[]{1, updaterStateSize}, Nd4j.order());
+        }
+        int soFar = 0;
+        i=0;
+        for (Layer layer : graph.getLayers()) {
+            int thisSize = layerUpdaters[i].stateSizeForLayer(layer);
+            if(thisSize == 0) continue;
+            INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+thisSize));
+            layerUpdaters[i].setStateViewArray(layer, view, true);
+        }
+    }
+
+    public ComputationGraphUpdater(ComputationGraph graph, INDArray updaterState){
+        layerUpdatersMap = new HashMap<>();
+        Layer[] layers = graph.getLayers();
+        layerUpdaters = new Updater[layers.length];
+
+        int updaterStateSize = 0;
+        for (int i = 0; i < layers.length; i++) {
+            layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
+            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layers[i]);
+            layerUpdatersMap.put(layers[i].conf().getLayer().getLayerName(),i);
+        }
+
+        if(updaterState != null){
+            if(updaterState.length() != updaterStateSize){
+                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size " + updaterState.length());
+            }
+            //Assign subsets to the various updaters, without initializing (overwriting) the layer values
+            this.viewArray = updaterState;
+            int soFar = 0;
+            for (int i = 0; i < layers.length; i++) {
+                int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
+                if(thisSize == 0) continue;
+                INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+thisSize));
+                layerUpdaters[i].setStateViewArray(layers[i], view, false);
+            }
+        } else if(updaterStateSize != 0){
+            //Updater state size is non-zero, but we didn't get an array...
+            throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got null input");
         }
     }
 
@@ -87,7 +137,20 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         }
     }
 
+
+    public void setStateViewArray(INDArray viewArray){
+        if(this.viewArray.length() != viewArray.length()) throw new IllegalStateException("Invalid input: view arrays differ in length. " +
+                "Expected length " + this.viewArray.length() + ", got length " + viewArray.length());
+        this.viewArray.assign(viewArray);
+    }
+
+
+    public INDArray getStateViewArray(){
+        return viewArray;
+    }
+
     /** Get an Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
+    @Deprecated
     public Aggregator getAggregator(boolean addThis){
         Aggregator aggregator = new Aggregator();
         if(addThis) aggregator.aggregate(this);
@@ -95,6 +158,7 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
     }
 
     /** Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
+    @Deprecated
     public static class Aggregator implements Serializable {
 
         private UpdaterAggregator[] aggregators;
