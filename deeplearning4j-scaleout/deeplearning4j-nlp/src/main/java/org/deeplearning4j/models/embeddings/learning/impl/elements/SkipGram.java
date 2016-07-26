@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
+import org.apache.commons.lang.math.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -33,6 +34,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected boolean useAdaGrad;
     protected double negative;
     protected double sampling;
+    protected int[] variableWindows;
 
     protected INDArray syn0, syn1, syn1Neg, table;
 
@@ -76,6 +78,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
         this.sampling = configuration.getSampling();
+        this.variableWindows = configuration.getVariableWindows();
     }
 
     /**
@@ -126,9 +129,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         double score = 0.0;
 
+        int currentWindow = window;
+
+        if (variableWindows != null && variableWindows.length != 0) {
+            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+        }
+
         for(int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
+            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
         }
 
         return score;
@@ -144,7 +153,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return false;
     }
 
-    private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
+    private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         final T word = sentence.get(i);
         if(word == null || sentence.isEmpty())
             return 0.0;
@@ -152,10 +161,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         double score = 0.0;
         int cnt = 0;
 
-        int end =  window * 2 + 1 - b;
+        int end =  currentWindow * 2 + 1 - b;
         for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
+            if(a != currentWindow) {
+                int c = i - currentWindow + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
                     score = iterateSample(word,lastWord,nextRandom,alpha);

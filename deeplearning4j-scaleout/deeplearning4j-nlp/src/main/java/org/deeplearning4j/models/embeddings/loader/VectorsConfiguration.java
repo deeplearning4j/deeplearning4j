@@ -37,6 +37,7 @@ public class VectorsConfiguration implements Serializable {
     private double negative = 0.0d;
     private double sampling = 0.0d;
     private int learningRateDecayWords;
+    private int[] variableWindows;
 
     private boolean hugeModelExpected = false;
     private int scavengerActivationThreshold = 2000000;
