@@ -415,20 +415,19 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
+        INDArray updaterState = tuple.getUpdaterStateSum();
+        updaterState.divi(aggCount);
+
         if (network != null) {
             MultiLayerNetwork net = network.getNetwork();
-            UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
-            Updater updater = (updaterAg != null ? updaterAg.getUpdater() : null);
             net.setParameters(params);
-            net.setUpdater(updater);
+            net.getUpdater().setStateViewArray(null, updaterState, false);
 
             network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         } else {
             ComputationGraph g = graph.getNetwork();
-            ComputationGraphUpdater.Aggregator updaterAg = tuple.getUpdaterAggregatorGraph();
-            ComputationGraphUpdater updater = (updaterAg != null ? updaterAg.getUpdater() : null);
             g.setParams(params);
-            g.setUpdater(updater);
+            g.getUpdater().setStateViewArray(updaterState);
 
             graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }

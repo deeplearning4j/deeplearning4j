@@ -30,13 +30,6 @@ public class SgdUpdater extends BaseUpdater {
         return updater;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        SgdAggregator ag = new SgdAggregator();
-        if(addThis) ag.aggregate(this);
-        return ag;
-    }
-
     protected static class SgdAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {

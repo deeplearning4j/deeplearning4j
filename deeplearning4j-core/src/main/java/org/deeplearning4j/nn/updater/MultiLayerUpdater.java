@@ -76,20 +76,18 @@ public class MultiLayerUpdater implements Updater {
         }
     }
 
-    public MultiLayerUpdater(MultiLayerUpdater updater) {
-        layerUpdaters = new Updater[updater.layerUpdaters.length];
-        for (int i = 0; i < updater.layerUpdaters.length; i++) {
-            layerUpdaters[i] = updater.layerUpdaters[i].clone();
-        }
-        throw new UnsupportedOperationException("TODO - not yet implemented");
-    }
-
-
-
-    private MultiLayerUpdater(int size) {
-        layerUpdaters = new Updater[size];
-        throw new RuntimeException("TODO - not yet implemented");
-    }
+//    public MultiLayerUpdater(MultiLayerUpdater updater) {
+//        layerUpdaters = new Updater[updater.layerUpdaters.length];
+//        for (int i = 0; i < updater.layerUpdaters.length; i++) {
+//            layerUpdaters[i] = updater.layerUpdaters[i].clone();
+//        }
+//        throw new UnsupportedOperationException("TODO - not yet implemented");
+//    }
+//
+//    private MultiLayerUpdater(int size) {
+//        layerUpdaters = new Updater[size];
+//        throw new RuntimeException("TODO - not yet implemented");
+//    }
 
     @Override
     public void setStateViewArray(Layer layer, INDArray viewArray, boolean initialize){
@@ -133,59 +131,9 @@ public class MultiLayerUpdater implements Updater {
     }
 
     @Override
-    public UpdaterAggregator getAggregator(boolean addThis) {
-        MultiLayerUpdaterAggregator ag = new MultiLayerUpdaterAggregator();
-        if (addThis) ag.aggregate(this);
-        return ag;
-    }
-
-    protected static class MultiLayerUpdaterAggregator implements UpdaterAggregator {
-
-        private UpdaterAggregator[] aggregators;
-
-        @Override
-        public void aggregate(Updater updater) {
-            MultiLayerUpdater mlu = (MultiLayerUpdater) updater;
-            if (aggregators == null) {
-                aggregators = new UpdaterAggregator[mlu.layerUpdaters.length];
-                for (int i = 0; i < aggregators.length; i++) {
-                    aggregators[i] = mlu.layerUpdaters[i].getAggregator(true);
-                }
-            } else {
-                if (mlu.layerUpdaters == null) return;
-                for (int i = 0; i < aggregators.length; i++) {
-                    aggregators[i].aggregate(mlu.layerUpdaters[i]);
-                }
-            }
-        }
-
-        @Override
-        public void merge(UpdaterAggregator aggregator) {
-            MultiLayerUpdaterAggregator mlua = (MultiLayerUpdaterAggregator) aggregator;
-            if (aggregators == null) {
-                aggregators = mlua.aggregators;
-            } else {
-                if (mlua.aggregators != null) {
-                    for (int i = 0; i < aggregators.length; i++) {
-                        aggregators[i].merge(mlua.aggregators[i]);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public Updater getUpdater() {
-            MultiLayerUpdater multiLayerUpdater = new MultiLayerUpdater(aggregators.length);
-            for (int i = 0; i < aggregators.length; i++) {
-                multiLayerUpdater.layerUpdaters[i] = aggregators[i].getUpdater();
-            }
-            return multiLayerUpdater;
-        }
-    }
-
-    @Override
     public Updater clone() {
-        return new MultiLayerUpdater(this);
+        throw new UnsupportedOperationException("Not yet implemented");
+//        return new MultiLayerUpdater(this);
     }
 
     @Override

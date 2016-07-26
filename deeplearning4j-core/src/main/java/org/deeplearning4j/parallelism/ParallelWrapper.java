@@ -108,23 +108,25 @@ public class ParallelWrapper {
                     logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
-                        UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
-
-                        for (int cnt = 0; cnt < workers; cnt++) {
-                            uag.merge(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getAggregator(true));
-                        }
-
-                        ((MultiLayerNetwork) model).setScore(score);
-                        ((MultiLayerNetwork) model).setUpdater(uag.getUpdater());
+                        throw new RuntimeException("TODO - updater aggregation");
+//                        UpdaterAggregator uag = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater().getAggregator(false);
+//
+//                        for (int cnt = 0; cnt < workers; cnt++) {
+//                            uag.merge(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getAggregator(true));
+//                        }
+//
+//                        ((MultiLayerNetwork) model).setScore(score);
+//                        ((MultiLayerNetwork) model).setUpdater(uag.getUpdater());
                     } else if (model instanceof ComputationGraph) {
-                        ComputationGraphUpdater.Aggregator uag = ((ComputationGraph)zoo[0].getModel()).getUpdater().getAggregator(false);
-
-                        for (int cnt = 0; cnt < workers; cnt++) {
-                            uag.merge(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getAggregator(true));
-                        }
-
-                        ((ComputationGraph) model).setScore(score);
-                        ((ComputationGraph) model).setUpdater(uag.getUpdater());
+                        throw new RuntimeException("TODO - updater aggregation");
+//                        ComputationGraphUpdater.Aggregator uag = ((ComputationGraph)zoo[0].getModel()).getUpdater().getAggregator(false);
+//
+//                        for (int cnt = 0; cnt < workers; cnt++) {
+//                            uag.merge(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getAggregator(true));
+//                        }
+//
+//                        ((ComputationGraph) model).setScore(score);
+//                        ((ComputationGraph) model).setUpdater(uag.getUpdater());
                     }
 
                     for (int i = 0; i < workers; i++) {

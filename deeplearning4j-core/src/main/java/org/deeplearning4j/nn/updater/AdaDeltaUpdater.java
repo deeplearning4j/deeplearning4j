@@ -30,15 +30,6 @@ public class AdaDeltaUpdater extends BaseUpdater {
         return updater;
     }
 
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        AdaDeltaAggregator ag = new AdaDeltaAggregator();
-        if(addThis) {
-            ag.aggregate(this);
-        }
-        return ag;
-    }
-
     protected static class AdaDeltaAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {

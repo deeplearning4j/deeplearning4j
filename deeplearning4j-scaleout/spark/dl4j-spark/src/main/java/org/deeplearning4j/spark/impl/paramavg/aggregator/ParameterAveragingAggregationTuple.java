@@ -17,8 +17,7 @@ import java.io.Serializable;
 @AllArgsConstructor @Data
 public class ParameterAveragingAggregationTuple implements Serializable {
     private final INDArray parametersSum;
-    private final UpdaterAggregator updaterAggregator;
-    private final ComputationGraphUpdater.Aggregator updaterAggregatorGraph;
+    private final INDArray updaterStateSum;
     private final double scoreSum;
     private final int aggregationsCount;
     private final SparkTrainingStats sparkTrainingStats;
