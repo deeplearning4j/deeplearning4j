@@ -63,9 +63,19 @@ public class ClassPathResource extends AbstractFileResolvingResource {
      */
     public File getTempFileFromArchive() throws IOException {
         InputStream is = getInputStream();
-        File tmpFile = new File(path + "tmp");
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+        File tmpFile;
+        if(path.contains("/") || path.contains("\\")){
+            int idx = Math.max(path.lastIndexOf("/"),path.lastIndexOf("\\"));
+            String subpath = path.substring(idx+1);
+            tmpFile = new File(subpath+"tmp");
+        } else {
+            tmpFile = new File(path+"tmp");
+        }
         tmpFile.deleteOnExit();
+
+
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+
         IOUtils.copy(is,bos);
         bos.flush();
         bos.close();
