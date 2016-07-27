@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.Nesterovs;
 
@@ -20,7 +17,7 @@ public class NesterovsUpdater extends BaseUpdater {
     }
 
     @Override
-    public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
+    public GradientUpdater init(String variable, Layer layer) {
         Nesterovs nesterovs = (Nesterovs) updaterForVariable.get(variable);
         if(nesterovs == null) {
             nesterovs = new Nesterovs(layer.conf().getLayer().getMomentum(), layer.conf().getLearningRateByParam(variable));
@@ -28,19 +25,5 @@ public class NesterovsUpdater extends BaseUpdater {
         }
 
         return nesterovs;
-    }
-
-    @Override
-    public UpdaterAggregator getAggregator(boolean addThis){
-        NesterovsAggregator ag = new NesterovsAggregator();
-        if(addThis) ag.aggregate(this);
-        return ag;
-    }
-
-    protected static class NesterovsAggregator extends BaseUpdater.UpdaterAggregatorImpl {
-        @Override
-        public Updater getUpdater() {
-            return setUpdaterState(new NesterovsUpdater());
-        }
     }
 }
