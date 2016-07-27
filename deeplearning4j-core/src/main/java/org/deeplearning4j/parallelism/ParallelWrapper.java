@@ -6,6 +6,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -247,10 +248,9 @@ public class ParallelWrapper {
 
             this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
-                this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
-                if (threadId != 0)
-                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+//                if (threadId != 0)
+//                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             } else if (model instanceof ComputationGraph) {
                 this.replicatedModel = ((ComputationGraph) model).clone();
 
@@ -287,6 +287,17 @@ public class ParallelWrapper {
         @Override
         public void run() {
             try {
+                if (originalModel instanceof MultiLayerNetwork) {
+                    MultiLayerConfiguration conf = ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
+                    this.replicatedModel = new MultiLayerNetwork(conf);
+
+                    ((MultiLayerNetwork) replicatedModel).init();
+                } else if (originalModel instanceof ComputationGraph) {
+                    this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
+
+                    ((ComputationGraph) this.replicatedModel).init();
+                }
+
                 while (true) {
                     DataSet dataSet = queue.poll(1, TimeUnit.SECONDS);
                     if (dataSet != null) {
@@ -314,3 +325,4 @@ public class ParallelWrapper {
         }
     }
 }
+
