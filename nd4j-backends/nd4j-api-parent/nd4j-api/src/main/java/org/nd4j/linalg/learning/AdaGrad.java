@@ -41,7 +41,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  */
 @Data
 @NoArgsConstructor
-public class AdaGrad implements Serializable,GradientUpdater {
+public class AdaGrad implements Serializable, GradientUpdater {
 
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
@@ -50,8 +50,23 @@ public class AdaGrad implements Serializable,GradientUpdater {
     protected int numIterations = 0;
     private double epsilon = 1e-6;
 
+    @Override
+    public int stateSizeForInputSize(int inputSize) {
+        return inputSize;
+    }
+
+    @Override
+    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
+        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize) viewArray.assign(epsilon);
+        this.historicalGradient = viewArray;
+        //Reshape to match the expected shape of the input gradient arrays
+        this.historicalGradient = Shape.newShapeNoCopy(this.historicalGradient, gradientShape, gradientOrder == 'f');
+        if (historicalGradient == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view array");
+    }
+
     /**
-     *
      * @param rows
      * @param cols
      * @param learningRate
@@ -61,7 +76,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
         this.learningRate = learningRate;
     }
 
-    public AdaGrad(int rows, int cols){
+    public AdaGrad(int rows, int cols) {
         this(rows, cols, 0.1);
     }
 
@@ -76,7 +91,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
     @Override
     public void update(Object... args) {
-        if(args.length > 0) {
+        if (args.length > 0) {
             learningRate = (Double) args[0];
         }
     }
@@ -87,16 +102,18 @@ public class AdaGrad implements Serializable,GradientUpdater {
      * Note that each gradient passed in becomes adapted over time, hence
      * the name adagrad
      *
-     * @param gradient the gradient to get learning rates for
+     * @param gradient  the gradient to get learning rates for
      * @param iteration
      * @return the feature specific learning rates
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).addi(epsilon);
-        else historicalGradient.addi(gradient.mul(gradient));
+        if (historicalGradient == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
-        INDArray sqrtHistory = sqrt(historicalGradient,true).addi(epsilon);
+        historicalGradient.addi(gradient.mul(gradient));
+
+        INDArray sqrtHistory = sqrt(historicalGradient, true).addi(epsilon);
         // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
         INDArray ret = gradient.muli(sqrtHistory.rdivi(learningRate));
         numIterations++;
@@ -141,7 +158,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
         } catch (ArithmeticException ae) {
             learningRates = sqrtHistory.rdivi(learningRate + epsilon);
         }
-        if(gradient.length() != learningRates.length())
+        if (gradient.length() != learningRates.length())
             gradient.muli(learningRates.slice(slice));
         else
             gradient.muli(learningRates);
@@ -175,9 +192,9 @@ public class AdaGrad implements Serializable,GradientUpdater {
     }
 
     @Override
-    public GradientUpdaterAggregator getAggregator(boolean addThis){
+    public GradientUpdaterAggregator getAggregator(boolean addThis) {
         AdaGradAggregator ag = new AdaGradAggregator();
-        if(addThis) ag.aggregate(this);
+        if (addThis) ag.aggregate(this);
         return ag;
     }
 
@@ -189,17 +206,18 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
         @Override
         public GradientUpdater getUpdater() {
-            AdaGrad adaGrad = new AdaGrad(lrSum/count);
+            AdaGrad adaGrad = new AdaGrad(lrSum / count);
             adaGrad.setHistoricalGradient(historicalGradientSum.div(count));
-            adaGrad.setNumIterations((int)(numIterationsSum/count));
+            adaGrad.setNumIterations((int) (numIterationsSum / count));
             return adaGrad;
         }
 
         @Override
         public void aggregate(GradientUpdater updater) {
-            if(!(updater instanceof AdaGrad)) throw new UnsupportedOperationException("Cannot aggregate AdaGrad with updater: " + updater);
-            AdaGrad adagrad = (AdaGrad)updater;
-            if(historicalGradientSum ==null){
+            if (!(updater instanceof AdaGrad))
+                throw new UnsupportedOperationException("Cannot aggregate AdaGrad with updater: " + updater);
+            AdaGrad adagrad = (AdaGrad) updater;
+            if (historicalGradientSum == null) {
                 historicalGradientSum = adagrad.historicalGradient.dup();
                 lrSum = adagrad.learningRate;
                 numIterationsSum = adagrad.numIterations;
@@ -213,9 +231,9 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
         @Override
         public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
-            if(!(other instanceof AdaGradAggregator))
+            if (!(other instanceof AdaGradAggregator))
                 throw new IllegalArgumentException("Cannot combine AdaGradAggregator with aggregator: " + other);
-            AdaGradAggregator aggregator = (AdaGradAggregator)other;
+            AdaGradAggregator aggregator = (AdaGradAggregator) other;
             historicalGradientSum.addi(aggregator.historicalGradientSum);
             lrSum += aggregator.lrSum;
             numIterationsSum += aggregator.numIterationsSum;

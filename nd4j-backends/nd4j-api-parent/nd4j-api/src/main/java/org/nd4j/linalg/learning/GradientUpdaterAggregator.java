@@ -6,7 +6,9 @@ import java.io.Serializable;
  * separate GradientUpdater instances for different networks (usually by averaging).
  * Typically, this is done by averaging the states of the GradientUpdater instances, however this
  * need not be the case in general.
+ * @deprecated Use Updater view array functionality instead
  */
+@Deprecated
 public interface GradientUpdaterAggregator extends Serializable {
 
     /** Get the final updater after aggregation */
