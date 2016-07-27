@@ -54,7 +54,8 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<String,PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(4,origData.count());    //4 images
 
-        RecordReader rr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
+        ImageRecordReader rr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
+        rr.setLabels(labelsList);
         org.datavec.spark.functions.RecordReaderFunction rrf = new org.datavec.spark.functions.RecordReaderFunction(rr);
         JavaRDD<Collection<Writable>> rdd = origData.map(rrf);
         JavaRDD<DataSet> data = rdd.map(new DataVecDataSetFunction(1,2,false));

@@ -88,7 +88,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         //Check that best score actually matches (returned model vs. manually calculated score)
         MultiLayerNetwork bestNetwork = result.getBestModel();
         double score = bestNetwork.score(new IrisDataSetIterator(150,150).next());
-        assertEquals(result.getBestModelScore(), score, 1e-3);
+        double bestModelScore = result.getBestModelScore();
+        assertEquals(bestModelScore, score, 1e-3);
     }
 
     @Test

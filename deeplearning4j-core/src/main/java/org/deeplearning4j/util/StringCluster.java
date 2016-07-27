@@ -92,7 +92,7 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
                 return 0;
             } else if (s2 < s1) {
                 return -1;
-            } else if (s2 > s1) {
+            } else {
                 return 1;
             }
         }
