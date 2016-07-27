@@ -112,23 +112,27 @@ public class ParallelWrapper {
                     if (model instanceof MultiLayerNetwork) {
                         Updater updater = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater();
 
-                        List<INDArray> updaters = new ArrayList<>();
-                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                            updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
-                        }
-                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                        if (updater != null && updater.getStateViewArray() != null) {
+                            List<INDArray> updaters = new ArrayList<>();
+                            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                            }
+                            Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
 
+
+                        }
 
                         ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
                         ComputationGraphUpdater updater = ((ComputationGraph)zoo[0].getModel()).getUpdater();
 
-                        List<INDArray> updaters = new ArrayList<>();
-                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                            updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                        if (updater != null && updater.getStateViewArray() != null) {
+                            List<INDArray> updaters = new ArrayList<>();
+                            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                            }
+                            Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                         }
-                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-
 
                         ((ComputationGraph) model).setScore(score);
                     }
