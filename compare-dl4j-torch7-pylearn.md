@@ -69,7 +69,8 @@ Pros and Cons
 * (-) Error messages can be unhelpful
 * (-) Large models can have long compile times
 * (-) Much “fatter” than Torch; more magic
-* (-) Patchy support for pretrained mo
+* (-) Patchy support for pretrained models
+* (-) Buggy on AWS
 
 ### <a name="torch">Torch</a>
 
@@ -79,12 +80,12 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 Pros and Cons:
 
-* (-) Lua
-* You usually write your own training code (Less plug and play)
 * (+) Lots of modular pieces that are easy to combine
 * (+) Easy to write your own layer types and run on GPU
 * (+) Lua. ;) (Most of the library code is in Lua, easy to read)
 * (+) Lots of pretrained models!
+* (-) Who deploys Lua?
+* (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
 
 ### <a name="caffe">Caffe</a>
@@ -102,6 +103,7 @@ Pros and Cons:
 * (-) Need to write C++ / CUDA for new GPU layers
 * (-) Not good for recurrent networks
 * (-) Cumbersome for big networks (GoogLeNet, ResNet)
+* (-) Not extensible, bit of a hairball
 
 ### <a name="cntk">CNTK</a>
 
@@ -110,6 +112,8 @@ Pros and Cons:
 ### <a name="dsstne">DSSTNE</a>
 
 Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, appears to be fast, although it has not attracted as large a community as the other libraries. 
+
+* (+) Handles Sparse encoding!
 
 ### <a name="licensing">Licensing</a>
 
