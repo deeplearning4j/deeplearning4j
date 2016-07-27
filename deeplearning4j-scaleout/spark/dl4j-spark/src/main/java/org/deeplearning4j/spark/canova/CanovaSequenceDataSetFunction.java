@@ -22,7 +22,9 @@ import java.util.Iterator;
  * Supports loading data from a single source only (hence no masknig arrays, many-to-one etc here)
  * see {@link CanovaSequencePairDataSetFunction} for the separate collections for input and labels version
  * @author Alex Black
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.spark.datavec.DataVecSequenceDataSetFunction}
  */
+@Deprecated
 public class CanovaSequenceDataSetFunction implements Function<Collection<Collection<Writable>>,DataSet>, Serializable {
 
     private final boolean regression;

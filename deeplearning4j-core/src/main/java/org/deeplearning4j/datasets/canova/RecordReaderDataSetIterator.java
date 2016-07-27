@@ -44,7 +44,9 @@ import java.util.List;
  * Record reader dataset iterator
  *
  * @author Adam Gibson
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator}
  */
+@Deprecated
 public class RecordReaderDataSetIterator implements DataSetIterator {
     protected RecordReader recordReader;
     protected WritableConverter converter;

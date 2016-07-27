@@ -19,7 +19,9 @@ import java.util.List;
 
 /**
  * Created by nyghtowl on 1/16/16.
+ * @deprecated Canova deprecated
  */
+@Deprecated
 public class CanovaByteDataSetFunction implements PairFunction<Tuple2<Text, BytesWritable>, Double, DataSet> {
 
     private int labelIndex = 0;

@@ -106,6 +106,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReader() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
@@ -187,6 +192,10 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderRegression() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequence_0.txt");
@@ -243,6 +252,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderReset() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
@@ -345,6 +359,12 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testVariableLengthSequence() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        }
+
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
@@ -498,6 +518,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderSingleReader() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequenceSingle_%d.txt",i)).getTempFileFromArchive();
+        }
+
         ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
         String path = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 

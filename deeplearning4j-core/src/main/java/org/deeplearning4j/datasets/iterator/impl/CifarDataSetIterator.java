@@ -28,7 +28,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected static int numPixels = 3073;
     protected static CifarLoader loader;
     protected static InputStream inputStream = null;
-    protected int totalExamples = CifarLoader.NUM_TRAIN_IMAGES + CifarLoader.NUM_TRAIN_IMAGES;
+    protected int totalExamples = CifarLoader.NUM_TRAIN_IMAGES;
     // TODO use maxNumBatches and batchNum instead
     protected int numExamples = totalExamples;
     protected int exampleCount = 0;

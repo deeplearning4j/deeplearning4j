@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -1322,7 +1323,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void setListeners(IterationListener... listeners) {
         Collection<IterationListener> cListeners = new ArrayList<>();
-        Collections.addAll(cListeners, listeners);
+        //Check: user might have done setListeners(null) thinking this would clear the current listeners.
+        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        if (listeners != null && listeners.length > 0) {
+            for(IterationListener i : listeners){
+                if(i != null) cListeners.add(i);
+            }
+        }
         setListeners(cListeners);
     }
 
@@ -1644,7 +1651,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(network.solver != null){
             //Network updater state: should be cloned over also
-            this.setUpdater(network.getUpdater().clone());
+            INDArray updaterView = network.getUpdater().getStateViewArray();
+            if(updaterView != null){
+                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                this.setUpdater(newUpdater);
+            }
         } else {
             this.solver = null;
         }
