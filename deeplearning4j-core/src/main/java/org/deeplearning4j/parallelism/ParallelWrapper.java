@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -44,6 +45,7 @@ public class ParallelWrapper {
     private AtomicLong iterationsCounter = new AtomicLong(0);
     private boolean reportScore = false;
     private boolean averageUpdaters = true;
+    private boolean legacyAveraging = false;
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -99,14 +101,26 @@ public class ParallelWrapper {
                 /*
                     average model, and propagate it to whole
                 */
-                if (iterationsCounter.get() % averagingFrequency == 0) {
+                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
-                    List<INDArray> params = new ArrayList<>();
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        params.add(zoo[cnt].getModel().params());
-                        score += zoo[cnt].getModel().score();
+                    if (!legacyAveraging) {
+                        List<INDArray> params = new ArrayList<>();
+                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                            params.add(zoo[cnt].getModel().params());
+                            score += zoo[cnt].getModel().score();
+                        }
+                        Nd4j.averageAndPropagate(model.params(), params);
+                    } else {
+                        INDArray params = Nd4j.zeros(model.params().shape());
+                        int cnt = 0;
+                        for (; cnt < workers && cnt < locker.get(); cnt++) {
+                            params.addi(zoo[cnt].getModel().params());
+                            score += zoo[cnt].getModel().score();
+                        }
+
+                        params.divi(cnt);
+                        model.setParams(params);
                     }
-                    Nd4j.averageAndPropagate(model.params(), params);
 
                     score /= Math.min(workers, locker.get());
 
@@ -120,11 +134,21 @@ public class ParallelWrapper {
                             Updater updater = ((MultiLayerNetwork) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                List<INDArray> updaters = new ArrayList<>();
-                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                    updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                if (!legacyAveraging) {
+                                    List<INDArray> updaters = new ArrayList<>();
+                                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                        updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                                } else {
+                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape(), updater.getStateViewArray().ordering());
+                                    int cnt = 0;
+                                    for (; cnt < workers && cnt < locker.get(); cnt++) {
+                                        state.addi(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    state.divi(cnt);
+                                    updater.getStateViewArray().assign(state);
                                 }
-                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
                         }
 
@@ -134,15 +158,31 @@ public class ParallelWrapper {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                List<INDArray> updaters = new ArrayList<>();
-                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                    updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                if (!legacyAveraging) {
+                                    List<INDArray> updaters = new ArrayList<>();
+                                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                                } else {
+                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape(), updater.getStateViewArray().ordering());
+                                    int cnt = 0;
+                                    for (; cnt < workers && cnt < locker.get(); cnt++) {
+                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    state.divi(cnt);
+                                    updater.getStateViewArray().assign(state);
                                 }
-                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
                         }
 
                         ((ComputationGraph) model).setScore(score);
+                    }
+
+                    if (legacyAveraging) {
+                        for (int cnt = 0; cnt < workers; cnt++) {
+                            zoo[cnt].updateModel(model);
+                        }
                     }
                 }
                 locker.set(0);
@@ -160,6 +200,7 @@ public class ParallelWrapper {
         private int averagingFrequency = 1;
         private boolean reportScore = false;
         private boolean averageUpdaters = true;
+        private boolean legacyAveraging = false;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -238,6 +279,26 @@ public class ParallelWrapper {
             return this;
         }
 
+        /**
+         * If set to true, legacy averaging method is used. This might be used as fallback on multi-gpu systems without P2P access available.
+         *
+         * Default value: false
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder useLegacyAveraging(boolean reallyUse) {
+            this.legacyAveraging = reallyUse;
+            return this;
+        }
+
+
+        /**
+         * This method enables/disables averaged model score reporting
+         *
+         * @param reallyReport
+         * @return
+         */
         public Builder reportScoreAfterAveraging(boolean reallyReport) {
             this.reportScore = reallyReport;
             return this;
@@ -253,6 +314,7 @@ public class ParallelWrapper {
             wrapper.averagingFrequency = this.averagingFrequency;
             wrapper.reportScore = this.reportScore;
             wrapper.averageUpdaters = this.averageUpdaters;
+            wrapper.legacyAveraging = this.legacyAveraging;
 
             return wrapper;
         }
@@ -264,6 +326,7 @@ public class ParallelWrapper {
         private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
         private AtomicInteger running = new AtomicInteger(0);
         private int threadId;
+        private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
 
         public Trainer(int threadId, Model model) {
             this.threadId = threadId;
@@ -294,11 +357,10 @@ public class ParallelWrapper {
 
         public void updateModel(@NonNull Model model) {
 
+            this.shouldUpdate.set(true);
 
             if (model instanceof MultiLayerNetwork) {
                 replicatedModel = ((MultiLayerNetwork) model).clone();
-//                replicatedModel.setParams(model.params().dup());
-//                ((MultiLayerNetwork) replicatedModel).setUpdater(((MultiLayerNetwork)model).getUpdater().clone());
             } else if (model instanceof  ComputationGraph) {
                 replicatedModel = ((ComputationGraph) model).clone();
             }
@@ -327,6 +389,16 @@ public class ParallelWrapper {
                 }
 
                 while (true) {
+                    /*
+                    if (shouldUpdate.get()) {
+                        if (originalModel instanceof MultiLayerNetwork) {
+                            replicatedModel = ((MultiLayerNetwork) originalModel).clone();
+                        } else if (originalModel instanceof  ComputationGraph) {
+                            replicatedModel = ((ComputationGraph) originalModel).clone();
+                        }
+                        shouldUpdate.set(false);
+                    }
+                    */
                     DataSet dataSet = queue.poll(1, TimeUnit.SECONDS);
                     if (dataSet != null) {
                         if (replicatedModel instanceof MultiLayerNetwork) {
