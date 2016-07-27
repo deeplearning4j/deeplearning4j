@@ -55,7 +55,6 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
             layerUpdaters[i++].setStateViewArray(layer, view, true);
             soFar += thisSize;
         }
-        System.out.println();
     }
 
     public ComputationGraphUpdater(ComputationGraph graph, INDArray updaterState) {
