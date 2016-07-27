@@ -6,9 +6,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
-
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
-import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -22,7 +20,6 @@ import org.datavec.spark.util.DataVecSparkUtil;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
-
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -33,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -57,7 +53,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         ImageRecordReader rr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
         rr.setLabels(labelsList);
         org.datavec.spark.functions.RecordReaderFunction rrf = new org.datavec.spark.functions.RecordReaderFunction(rr);
-        JavaRDD<Collection<Writable>> rdd = origData.map(rrf);
+        JavaRDD<List<Writable>> rdd = origData.map(rrf);
         JavaRDD<DataSet> data = rdd.map(new DataVecDataSetFunction(1,2,false));
         List<DataSet> collected = data.collect();
 
@@ -114,7 +110,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
         SequenceRecordReader seqRR = new CSVSequenceRecordReader(1,",");
         SequenceRecordReaderFunction rrf = new SequenceRecordReaderFunction(seqRR);
-        JavaRDD<Collection<Collection<Writable>>> rdd = origData.map(rrf);
+        JavaRDD<List<List<Writable>>> rdd = origData.map(rrf);
         JavaRDD<DataSet> data = rdd.map(new DataVecSequenceDataSetFunction(2, -1, true, null, null));
         List<DataSet> collected = data.collect();
 
@@ -180,7 +176,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         SequenceRecordReader srr1 = new CSVSequenceRecordReader(1,",");
         SequenceRecordReader srr2 = new CSVSequenceRecordReader(1,",");
         PairSequenceRecordReaderBytesFunction psrbf = new PairSequenceRecordReaderBytesFunction(srr1,srr2);
-        JavaRDD<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> writables = fromSeq.map(psrbf);
+        JavaRDD<Tuple2<List<List<Writable>>,List<List<Writable>>>> writables = fromSeq.map(psrbf);
 
             //Map to DataSet:
         DataVecSequencePairDataSetFunction pairFn = new DataVecSequencePairDataSetFunction();
@@ -278,7 +274,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         SequenceRecordReader srr1 = new CSVSequenceRecordReader(1,",");
         SequenceRecordReader srr2 = new CSVSequenceRecordReader(1,",");
         PairSequenceRecordReaderBytesFunction psrbf = new PairSequenceRecordReaderBytesFunction(srr1,srr2);
-        JavaRDD<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> writables = fromSeq.map(psrbf);
+        JavaRDD<Tuple2<List<List<Writable>>,List<List<Writable>>>> writables = fromSeq.map(psrbf);
 
         //Map to DataSet:
         DataVecSequencePairDataSetFunction pairFn = new DataVecSequencePairDataSetFunction(4,false, DataVecSequencePairDataSetFunction.AlignmentMode.ALIGN_END);

@@ -1,7 +1,6 @@
 package org.deeplearning4j.spark.datavec;
 
 import org.apache.spark.api.java.function.Function;
-
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -14,8 +13,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**Map {@code Collection<Collection<Writable>>} objects (out of a datavec-spark sequence record reader function) to
  *  DataSet objects for Spark training.
@@ -24,7 +23,7 @@ import java.util.Iterator;
  * see {@link DataVecSequencePairDataSetFunction} for the separate collections for input and labels version
  * @author Alex Black
  */
-public class DataVecSequenceDataSetFunction implements Function<Collection<Collection<Writable>>,DataSet>, Serializable {
+public class DataVecSequenceDataSetFunction implements Function<List<List<Writable>>,DataSet>, Serializable {
 
     private final boolean regression;
     private final int labelIndex;
@@ -59,8 +58,8 @@ public class DataVecSequenceDataSetFunction implements Function<Collection<Colle
 
 
     @Override
-    public DataSet call(Collection<Collection<Writable>> input) throws Exception {
-        Iterator<Collection<Writable>> iter = input.iterator();
+    public DataSet call(List<List<Writable>> input) throws Exception {
+        Iterator<List<Writable>> iter = input.iterator();
 
         INDArray features = null;
         INDArray labels = Nd4j.zeros(1, (regression ? 1 : numPossibleLabels), input.size());
@@ -70,7 +69,7 @@ public class DataVecSequenceDataSetFunction implements Function<Collection<Colle
 
         int i=0;
         while(iter.hasNext()){
-            Collection<Writable> step = iter.next();
+            List<Writable> step = iter.next();
             if (i == 0) {
                 features = Nd4j.zeros(1, step.size()-1, input.size());
             }
