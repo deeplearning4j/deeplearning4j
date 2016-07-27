@@ -115,7 +115,7 @@ public class LocalWorkRetriever implements WorkRetriever {
         if(f == null || !f.exists())
             return null;
         Job d = SerializationUtils.readObject(f);
-        workerData.remove(f);
+        workerData.remove(worker);
         f.delete();
         return d;
     }

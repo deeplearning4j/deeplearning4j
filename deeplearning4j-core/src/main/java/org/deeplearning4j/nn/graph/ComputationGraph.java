@@ -1178,7 +1178,13 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setListeners(IterationListener... listeners) {
         List<IterationListener> list = new ArrayList<>();
-        Collections.addAll(list, listeners);
+        //Check: user might have done setListeners(null) thinking this would clear the current listeners.
+        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        if (listeners != null && listeners.length > 0) {
+            for(IterationListener i : listeners){
+                if(i != null) list.add(i);
+            }
+        }
         setListeners(list);
     }
 

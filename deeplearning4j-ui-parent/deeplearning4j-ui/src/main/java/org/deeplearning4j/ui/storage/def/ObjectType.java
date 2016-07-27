@@ -8,5 +8,6 @@ public enum  ObjectType {
     HISTOGRAM,
     ACTIVATIONS,
     FLOW,
-    WORD2VEC
+    WORD2VEC,
+    RL
 }

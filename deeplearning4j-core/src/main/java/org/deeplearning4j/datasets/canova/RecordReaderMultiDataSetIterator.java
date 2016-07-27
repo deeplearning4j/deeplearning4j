@@ -47,7 +47,9 @@ import java.util.NoSuchElementException;
  * Uses a builder pattern ({@link org.deeplearning4j.datasets.canova.RecordReaderMultiDataSetIterator.Builder} to specify the various
  * inputs and subsets.
  * @author Alex Black
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator}
  */
+@Deprecated
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
     /** When dealing with time series data of different lengths, how should we align the input/labels time series?

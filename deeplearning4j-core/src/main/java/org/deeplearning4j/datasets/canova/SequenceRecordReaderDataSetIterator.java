@@ -25,7 +25,9 @@ import java.util.NoSuchElementException;
  * Supports padding for one-to-many and many-to-one type data loading (i.e., with different number of inputs vs.
  * labels via the {@link org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator.AlignmentMode} mode.
  *
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator}
  */
+@Deprecated
 public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
