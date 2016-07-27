@@ -112,38 +112,31 @@ public class ParallelWrapper {
                     if (model instanceof MultiLayerNetwork) {
                         Updater updater = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater();
 
-
-                        INDArray updaterState = Nd4j.zeros(updater.getStateViewArray().shape());
-
-                        for( int cnt = 0; cnt< workers && cnt < locker.get(); cnt++ ){
-                            Updater u = ((MultiLayerNetwork)zoo[cnt].getModel()).getUpdater();
-                            INDArray updaterView = u.getStateViewArray();
-                            updaterState.addi(updaterView);
+                        List<INDArray> updaters = new ArrayList<>();
+                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                            updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
                         }
-                        updaterState.divi(Math.min(workers, locker.get()));
-                        ((MultiLayerNetwork) model).getUpdater().setStateViewArray((Layer)model, updaterState, false);
+                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+
 
                         ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
                         ComputationGraphUpdater updater = ((ComputationGraph)zoo[0].getModel()).getUpdater();
 
-                        INDArray updaterState = Nd4j.zeros(updater.getStateViewArray().shape());
-
-                        for( int cnt = 0; cnt< workers && cnt < locker.get(); cnt++ ){
-                            ComputationGraphUpdater u = ((ComputationGraph)zoo[cnt].getModel()).getUpdater();
-                            INDArray updaterView = u.getStateViewArray();
-                            updaterState.addi(updaterView);
+                        List<INDArray> updaters = new ArrayList<>();
+                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                            updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
                         }
-                        updaterState.divi(Math.min(workers, locker.get()));
-                        ((ComputationGraph) model).getUpdater().setStateViewArray(updaterState);
+                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+
 
                         ((ComputationGraph) model).setScore(score);
                     }
 
                     // FIXME: updateModel() call should be removed
-                    for (int i = 0; i < workers; i++) {
-                        zoo[i].updateModel(model);
-                    }
+//                    for (int i = 0; i < workers; i++) {
+  //                      zoo[i].updateModel(model);
+    //                }
 
                 }
                 locker.set(0);
