@@ -34,7 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -53,7 +52,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected int labelIndex = -1;
     protected int labelIndexTo = -1;
     protected int numPossibleLabels = -1;
-    protected Iterator<Collection<Writable>> sequenceIter;
+    protected Iterator<List<Writable>> sequenceIter;
     protected DataSet last;
     protected boolean useCurrent = false;
     protected boolean regression = false;
@@ -162,14 +161,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 break;
             if (recordReader instanceof SequenceRecordReader) {
                 if (sequenceIter == null || !sequenceIter.hasNext()) {
-                    Collection<Collection<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
+                    List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
                     sequenceIter = sequenceRecord.iterator();
                 }
 
-                Collection<Writable> record = sequenceIter.next();
+                List<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
             } else {
-                Collection<Writable> record = recordReader.next();
+                List<Writable> record = recordReader.next();
                 dataSets.add(getDataSet(record));
             }
         }
@@ -187,7 +186,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
-    private DataSet getDataSet(Collection<Writable> record) {
+    private DataSet getDataSet(List<Writable> record) {
         List<Writable> currList;
         if (record instanceof List)
             currList = (List<Writable>) record;
