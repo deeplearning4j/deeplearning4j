@@ -118,8 +118,6 @@ public class ParallelWrapper {
                                 updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
                             }
                             Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-
-
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
