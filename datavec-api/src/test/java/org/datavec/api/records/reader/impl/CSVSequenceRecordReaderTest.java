@@ -26,7 +26,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 

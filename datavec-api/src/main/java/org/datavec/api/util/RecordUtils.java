@@ -21,7 +21,6 @@ import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**

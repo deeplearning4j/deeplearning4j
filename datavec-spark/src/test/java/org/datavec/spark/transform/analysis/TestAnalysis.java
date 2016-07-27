@@ -16,7 +16,6 @@
 
 package org.datavec.spark.transform.analysis;
 
-import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;

@@ -24,7 +24,6 @@ import scala.Tuple2;
 
 import java.io.DataInputStream;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 
 /**RecordReaderFunction: Given a RecordReader and a file (via Spark PortableDataStream), load and parse the

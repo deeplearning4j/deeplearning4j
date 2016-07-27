@@ -17,7 +17,6 @@
 package org.datavec.image.recordreader;
 
 
-import java.util.*;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.image.transform.ImageTransform;
 

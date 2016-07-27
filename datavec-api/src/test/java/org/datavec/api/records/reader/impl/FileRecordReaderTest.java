@@ -21,7 +21,6 @@ import org.datavec.api.writable.Writable;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;

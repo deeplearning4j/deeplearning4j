@@ -26,7 +26,6 @@ import scala.Tuple2;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 
 /**RecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to DataVec format data

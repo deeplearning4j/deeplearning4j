@@ -29,7 +29,6 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 

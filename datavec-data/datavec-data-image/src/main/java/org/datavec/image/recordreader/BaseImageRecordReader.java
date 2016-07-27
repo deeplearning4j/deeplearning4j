@@ -18,7 +18,6 @@ package org.datavec.image.recordreader;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;

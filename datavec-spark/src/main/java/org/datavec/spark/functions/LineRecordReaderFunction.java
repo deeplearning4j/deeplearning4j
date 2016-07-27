@@ -21,7 +21,6 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
 
-import java.util.Collection;
 import java.util.List;
 
 /**

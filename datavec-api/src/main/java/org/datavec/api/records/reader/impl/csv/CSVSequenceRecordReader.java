@@ -25,7 +25,6 @@ import org.datavec.api.writable.Writable;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
