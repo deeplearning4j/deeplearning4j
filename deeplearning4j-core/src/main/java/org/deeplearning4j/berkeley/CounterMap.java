@@ -323,11 +323,12 @@ public class CounterMap<K, V> implements java.io.Serializable {
     public String toString(Collection<String> keyFilter) {
         StringBuilder sb = new StringBuilder("[\n");
         for (Map.Entry<K, Counter<V>> entry : counterMap.entrySet()) {
-            if (keyFilter != null && !keyFilter.contains(entry.getKey())) {
+            String keyString = entry.getKey().toString();
+            if (keyFilter != null && !keyFilter.contains(keyString)) {
                 continue;
             }
             sb.append("  ");
-            sb.append(entry.getKey());
+            sb.append(keyString);
             sb.append(" -> ");
             sb.append(entry.getValue().toString(20));
             sb.append("\n");

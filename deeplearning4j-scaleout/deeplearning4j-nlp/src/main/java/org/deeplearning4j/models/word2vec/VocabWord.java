@@ -91,7 +91,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null) return false;
+        if (!(o instanceof VocabWord)) return false;
         VocabWord vocabWord = (VocabWord) o;
 
         return this.word.equals(vocabWord.getWord());
