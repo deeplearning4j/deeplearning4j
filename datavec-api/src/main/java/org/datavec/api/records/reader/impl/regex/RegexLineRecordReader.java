@@ -26,7 +26,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,7 +63,7 @@ public class RegexLineRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
 
         if(numLinesSkipped < skipNumLines) {
             for(int i = numLinesSkipped; i < skipNumLines; i++, numLinesSkipped++) {
@@ -80,12 +79,12 @@ public class RegexLineRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         Writable w = ((List<Writable>)super.record(uri,dataInputStream)).get(0);
         return getRecord(w.toString());
     }
 
-    private Collection<Writable> getRecord(String line){
+    private List<Writable> getRecord(String line){
         Matcher m = pattern.matcher(line);
 
         List<Writable> ret;

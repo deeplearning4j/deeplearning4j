@@ -41,7 +41,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -76,15 +75,15 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
         SequenceRecordReader srr2 = getReader();
         PairSequenceRecordReaderBytesFunction psrbf = new PairSequenceRecordReaderBytesFunction(srr1,srr2);
 
-        JavaRDD<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> writables = fromSeq.map(psrbf);
-        List<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>> fromSequenceFile = writables.collect();
+        JavaRDD<Tuple2<List<List<Writable>>,List<List<Writable>>>> writables = fromSeq.map(psrbf);
+        List<Tuple2<List<List<Writable>>,List<List<Writable>>>> fromSequenceFile = writables.collect();
 
         //Load manually (single copy) and compare:
         InputSplit is = new FileSplit(new File(folder),new String[]{"mp4"}, true);
         SequenceRecordReader srr = getReader();
         srr.initialize(is);
 
-        List<Collection<Collection<Writable>>> list = new ArrayList<>(4);
+        List<List<List<Writable>>> list = new ArrayList<>(4);
         while(srr.hasNext()){
             list.add(srr.sequenceRecord());
         }
@@ -95,9 +94,9 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
         boolean[] found = new boolean[4];
         for( int i=0; i<4; i++ ){
             int foundIndex = -1;
-            Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>> tuple2 = fromSequenceFile.get(i);
-            Collection<Collection<Writable>> seq1 = tuple2._1();
-            Collection<Collection<Writable>> seq2 = tuple2._2();
+            Tuple2<List<List<Writable>>,List<List<Writable>>> tuple2 = fromSequenceFile.get(i);
+            List<List<Writable>> seq1 = tuple2._1();
+            List<List<Writable>> seq2 = tuple2._2();
             assertEquals(seq1,seq2);
 
             for( int j=0; j<4; j++ ){

@@ -21,7 +21,7 @@ import org.datavec.api.writable.Writable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * A sequence of records.
@@ -33,12 +33,12 @@ public interface SequenceRecordReader extends RecordReader {
      * Returns a sequence record`
      * @return a sequence of records
      */
-    Collection<Collection<Writable>> sequenceRecord();
+    List<List<Writable>> sequenceRecord();
 
     /**Load a sequence record from the given DataInputStream
      * Unlike {@link #next()} the internal state of the RecordReader is not modified
      * Implementations of this method should not close the DataInputStream
      * @throws IOException if error occurs during reading from the input stream
      */
-    Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException;
+    List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException;
 }

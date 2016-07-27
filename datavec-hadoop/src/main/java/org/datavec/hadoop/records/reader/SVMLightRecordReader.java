@@ -18,7 +18,7 @@ package org.datavec.hadoop.records.reader;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import org.datavec.api.conf.Configuration;
@@ -55,13 +55,13 @@ public class SVMLightRecordReader extends LineRecordReader {
      * 
      */
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
     	
         Text t =  (Text) super.next().iterator().next();
         
         
         String val = new String(t.getBytes());
-        Collection<Writable> ret = new ArrayList<>();
+        List<Writable> ret = new ArrayList<>();
         StringTokenizer tok;
         int	index,max;
         String	col;

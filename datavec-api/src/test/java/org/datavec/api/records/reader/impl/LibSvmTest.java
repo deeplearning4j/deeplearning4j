@@ -30,7 +30,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -51,16 +50,16 @@ public class LibSvmTest {
 
         RecordWriter writer = new LibSvmRecordWriter();
         writer.setConf(conf);
-        Collection<Collection<Writable>> data = new ArrayList<>();
+        List<List<Writable>> data = new ArrayList<>();
         while (libSvmRecordReader.hasNext()) {
-            Collection<Writable> record = libSvmRecordReader.next();
+            List<Writable> record = libSvmRecordReader.next();
             writer.write(record);
             data.add(record);
         }
         writer.close();
 
         out.deleteOnExit();
-        Collection<Collection<Writable>> test = new ArrayList<>();
+        List<List<Writable>> test = new ArrayList<>();
         RecordReader testLibSvmRecordReader = new LibSvmRecordReader();
         testLibSvmRecordReader.initialize(conf, new FileSplit(out));
         while (testLibSvmRecordReader.hasNext())

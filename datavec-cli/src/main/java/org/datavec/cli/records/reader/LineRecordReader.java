@@ -121,7 +121,7 @@ public class LineRecordReader extends FileRecordReader  {
      * 
      */
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
     	
     	//String currentLine = this.nextLine;
     	//String returnedLabelPath = this.currentPath;
@@ -251,7 +251,7 @@ public class LineRecordReader extends FileRecordReader  {
     	}
     	*/
     	    	    	
-        Collection<Writable> record = new ArrayList<>();
+        List<Writable> record = new ArrayList<>();
         
         record.add(new Text( this.currentLine ));
         record.add(new Text( this.getCurrentDirectoryLabelPath() ));

@@ -56,7 +56,7 @@ public class ComposableRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
         if (this.hasNext()) {
             for (RecordReader reader: readers) {
@@ -110,7 +110,7 @@ public class ComposableRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Generating records from DataInputStream not supported for ComposableRecordReader");
     }
 

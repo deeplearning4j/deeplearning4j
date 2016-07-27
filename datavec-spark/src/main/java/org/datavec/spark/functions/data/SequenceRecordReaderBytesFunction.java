@@ -26,13 +26,13 @@ import scala.Tuple2;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.net.URI;
-import java.util.Collection;
+import java.util.List;
 
 /**SequenceRecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to DataVec format data
- * ({@code Collection<Collection<<Writable>>}) using a SequenceRecordReader
+ * ({@code List<List<<Writable>>}) using a SequenceRecordReader
  * @author Alex Black
  */
-public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, BytesWritable>, Collection<Collection<Writable>>> {
+public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, BytesWritable>, List<List<Writable>>> {
 
     private final SequenceRecordReader recordReader;
 
@@ -41,7 +41,7 @@ public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, 
     }
 
     @Override
-    public Collection<Collection<Writable>> call(Tuple2<Text, BytesWritable> v1) throws Exception {
+    public List<List<Writable>> call(Tuple2<Text, BytesWritable> v1) throws Exception {
         URI uri = new URI(v1._1().toString());
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(v1._2().getBytes()));
         return recordReader.sequenceRecord(uri, dis);

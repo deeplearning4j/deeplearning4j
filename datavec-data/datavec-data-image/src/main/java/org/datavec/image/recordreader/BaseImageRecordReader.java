@@ -18,7 +18,6 @@ package org.datavec.image.recordreader;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -50,7 +49,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected PathLabelGenerator labelGenerator = null;
     protected List<String> labels = new ArrayList<>();
     protected boolean appendLabel = false;
-    protected Collection<Writable> record;
+    protected List<Writable> record;
     protected boolean hitImage = false;
     protected int height = 28, width = 28, channels = 1;
     protected boolean cropImage = false;
@@ -192,9 +191,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if (iter != null) {
-            Collection<Writable> ret = new ArrayList<>();
+            List<Writable> ret = new ArrayList<>();
             File image =  iter.next();
             currentFile = image;
 
@@ -320,13 +319,13 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         INDArray row = imageLoader.asMatrix(dataInputStream);
-        Collection<Writable> ret = RecordConverter.toRecord(row);
+        List<Writable> ret = RecordConverter.toRecord(row);
         if (appendLabel) ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
         return ret;
     }

@@ -21,7 +21,6 @@ import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -31,7 +30,7 @@ import java.util.List;
  */
 public class RecordUtils {
 
-    public static Collection<Writable> toRecord(double[] record) {
+    public static List<Writable> toRecord(double[] record) {
         List<Writable> ret = new ArrayList<>(record.length);
         for(int i = 0; i < record.length; i++)
            ret.add(new DoubleWritable(record[i]));
@@ -40,7 +39,7 @@ public class RecordUtils {
     }
 
 
-    public static Collection<Writable> toRecord(float[] record) {
+    public static List<Writable> toRecord(float[] record) {
         List<Writable> ret = new ArrayList<>(record.length);
         for(int i = 0; i < record.length; i++)
             ret.add(new FloatWritable(record[i]));

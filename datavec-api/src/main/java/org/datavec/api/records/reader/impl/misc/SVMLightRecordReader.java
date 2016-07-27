@@ -30,7 +30,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -50,10 +50,10 @@ public class SVMLightRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         Text t =  (Text) super.next().iterator().next();
         String val = new String(t.getBytes());
-        Collection<Writable> ret = new ArrayList<>();
+        List<Writable> ret = new ArrayList<>();
         StringTokenizer tok;
         int	index,max;
         String	col;
@@ -142,7 +142,7 @@ public class SVMLightRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         //Here: we are reading a single line from the DataInputStream. How to handle headers?
         throw new UnsupportedOperationException("Reading SVMLightRecordReader data from DataInputStream not yet implemented");
     }

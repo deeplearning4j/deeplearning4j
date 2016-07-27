@@ -29,7 +29,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Adam Gibson
@@ -58,7 +58,7 @@ public class LibSvmRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         Text record2 = (Text) super.next().iterator().next();
         String line = record2.toString();
 
@@ -80,7 +80,7 @@ public class LibSvmRecordReader extends LineRecordReader {
 
         tokens = line.trim().split("\\s+");
 
-        Collection<Writable> record = new ArrayList<>();
+        List<Writable> record = new ArrayList<>();
         int read = 0;
         for (int k = 1; k < tokens.length; k++) {
             String[] pair = tokens[k].split(":");
@@ -135,7 +135,7 @@ public class LibSvmRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         //Here: we are reading a single line from the DataInputStream. How to handle headers?
         throw new UnsupportedOperationException("Reading LibSVM data from DataInputStream not yet implemented");
     }

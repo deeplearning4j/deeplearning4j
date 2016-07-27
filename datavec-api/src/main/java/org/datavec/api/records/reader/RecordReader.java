@@ -62,7 +62,7 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
      * Get the next record
      * @return
      */
-    Collection<Writable> next();
+    List<Writable> next();
 
 
     /**
@@ -88,12 +88,12 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
      * Implementations of this method should not close the DataInputStream
      * @throws IOException if error occurs during reading from the input stream
      */
-    Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException;
+    List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException;
 
     /**
      * Get the record listeners for this record reader.
      */
-    Collection<RecordListener> getListeners();
+    List<RecordListener> getListeners();
 
     /**
      * Set the record listeners for this record reader.

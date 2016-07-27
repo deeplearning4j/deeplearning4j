@@ -69,7 +69,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
         JavaPairRDD<Text, BytesWritable> fromSeqFile = sc.sequenceFile(outPath, Text.class, BytesWritable.class);
         ImageRecordReader irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.setLabels(labelsList);
-        JavaRDD<Collection<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(irr));
+        JavaRDD<List<Writable>> dataVecData = fromSeqFile.map(new RecordReaderBytesFunction(irr));
 
 
         //Next: do the same thing locally, and compare the results
@@ -77,12 +77,12 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
         irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);
 
-        List<Collection<Writable>> list = new ArrayList<>(4);
+        List<List<Writable>> list = new ArrayList<>(4);
         while (irr.hasNext()) {
             list.add(irr.next());
         }
 
-        List<Collection<Writable>> fromSequenceFile = dataVecData.collect();
+        List<List<Writable>> fromSequenceFile = dataVecData.collect();
 
         assertEquals(4, list.size());
         assertEquals(4, fromSequenceFile.size());
@@ -91,7 +91,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
         boolean[] found = new boolean[4];
         for (int i = 0; i < 4; i++) {
             int foundIndex = -1;
-            Collection<Writable> collection = fromSequenceFile.get(i);
+            List<Writable> collection = fromSequenceFile.get(i);
             for (int j = 0; j < 4; j++) {
                 if (collection.equals(list.get(j))) {
                     if (foundIndex != -1)

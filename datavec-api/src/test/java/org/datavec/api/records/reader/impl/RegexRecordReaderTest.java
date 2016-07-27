@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -76,13 +75,13 @@ public class RegexRecordReaderTest {
         SequenceRecordReader rr = new RegexSequenceRecordReader(regex,1);
         rr.initialize(is);
 
-        Collection<Collection<Writable>> exp0 = new ArrayList<>();
+        List<List<Writable>> exp0 = new ArrayList<>();
         exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"), new Text("DEBUG"), new Text("First entry message!")));
         exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.002"), new Text("2"), new Text("INFO"), new Text("Second entry message!")));
         exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.003"), new Text("3"), new Text("WARN"), new Text("Third entry message!")));
 
 
-        Collection<Collection<Writable>> exp1 = new ArrayList<>();
+        List<List<Writable>> exp1 = new ArrayList<>();
         exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.011"), new Text("11"), new Text("DEBUG"), new Text("First entry message!")));
         exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.012"), new Text("12"), new Text("INFO"), new Text("Second entry message!")));
         exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.013"), new Text("13"), new Text("WARN"), new Text("Third entry message!")));

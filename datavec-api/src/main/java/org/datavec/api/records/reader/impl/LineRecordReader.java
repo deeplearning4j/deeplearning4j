@@ -73,7 +73,7 @@ public class LineRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
 
         if(iter.hasNext()) {
@@ -166,7 +166,7 @@ public class LineRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         //Here: we are reading a single line from the DataInputStream
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));

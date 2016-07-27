@@ -15,9 +15,8 @@
  */
 package org.datavec.api.records.reader;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
+
 import org.datavec.api.records.listener.RecordListener;
 
 /**
@@ -27,7 +26,7 @@ import org.datavec.api.records.listener.RecordListener;
  */
 public abstract class BaseRecordReader implements RecordReader {
 
-    protected Collection<RecordListener> listeners = new ArrayList<>();
+    protected List<RecordListener> listeners = new ArrayList<>();
 
     /** Invokes {@link RecordListener#recordRead(RecordReader, Object)} on all listeners. */
     protected void invokeListeners(Object record) {
@@ -37,19 +36,17 @@ public abstract class BaseRecordReader implements RecordReader {
     }
 
     @Override
-    public Collection<RecordListener> getListeners() {
+    public List<RecordListener> getListeners() {
         return listeners;
     }
 
     @Override
     public void setListeners(Collection<RecordListener> listeners) {
-        this.listeners = listeners;
+        this.listeners = (listeners instanceof List ? (List<RecordListener>)listeners : new ArrayList<>(listeners));
     }
 
     @Override
     public void setListeners(RecordListener... listeners) {
-        Collection<RecordListener> cListeners = new ArrayList<>();
-        Collections.addAll(cListeners, listeners);
-        setListeners(cListeners);
+        setListeners(Arrays.asList(listeners));
     }
 }

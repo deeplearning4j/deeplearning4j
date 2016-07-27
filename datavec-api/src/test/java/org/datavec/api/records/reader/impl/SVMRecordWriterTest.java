@@ -38,7 +38,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -60,10 +59,10 @@ public class SVMRecordWriterTest {
         InputSplit split = new FileSplit(tmp);
         tmp.deleteOnExit();
         RecordReader reader = new CSVRecordReader();
-        List<Collection<Writable>> records = new ArrayList<>();
+        List<List<Writable>> records = new ArrayList<>();
         reader.initialize(split);
         while(reader.hasNext()) {
-            Collection<Writable> record = reader.next();
+            List<Writable> record = reader.next();
             assertEquals(5, record.size());
             records.add(record);
         }
@@ -73,7 +72,7 @@ public class SVMRecordWriterTest {
         if(out.exists()) out.delete();
         out.deleteOnExit();
         RecordWriter writer = new SVMLightRecordWriter(out,true);
-        for(Collection<Writable> record : records)
+        for(List<Writable> record : records)
             writer.write(record);
 
         writer.close();
@@ -84,7 +83,7 @@ public class SVMRecordWriterTest {
         svmReader.initialize(svmSplit);
         assertTrue(svmReader.hasNext());
         while(svmReader.hasNext()) {
-            Collection<Writable> record = svmReader.next();
+            List<Writable> record = svmReader.next();
             assertEquals(5, record.size());
             records.add(record);
         }
@@ -98,7 +97,7 @@ public class SVMRecordWriterTest {
         conf.set(SVMLightRecordReader.NUM_ATTRIBUTES,"784");
         svmLightRecordReader.initialize(conf, new FileSplit(new ClassPathResource("mnist_svmlight.txt").getFile()));
         assertTrue(svmLightRecordReader.hasNext());
-        Collection<Writable> record = svmLightRecordReader.next();
+        List<Writable> record = svmLightRecordReader.next();
         assertEquals(785,record.size());
     }
 
