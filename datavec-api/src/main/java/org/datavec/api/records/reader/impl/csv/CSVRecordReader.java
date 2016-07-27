@@ -94,7 +94,7 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         //Here: we are reading a single line from the DataInputStream. How to handle skipLines???
         throw new UnsupportedOperationException("Reading CSV data from DataInputStream not yet implemented");
     }

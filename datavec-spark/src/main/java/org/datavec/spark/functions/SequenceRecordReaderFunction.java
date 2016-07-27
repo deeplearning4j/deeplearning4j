@@ -25,12 +25,13 @@ import scala.Tuple2;
 import java.io.DataInputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
 
 /**RecordReaderFunction: Given a SequenceRecordReader and a file (via Spark PortableDataStream), load and parse the
- * sequence data into a Collection<Collection<Writable>>
+ * sequence data into a {@code List<List<Writable>>}
  * @author Alex Black
  */
-public class SequenceRecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,Collection<Collection<Writable>>> {
+public class SequenceRecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,List<List<Writable>>> {
     protected SequenceRecordReader sequenceRecordReader;
 
     public SequenceRecordReaderFunction(SequenceRecordReader sequenceRecordReader){
@@ -38,7 +39,7 @@ public class SequenceRecordReaderFunction implements Function<Tuple2<String,Port
     }
 
     @Override
-    public Collection<Collection<Writable>> call(Tuple2<String, PortableDataStream> value) throws Exception {
+    public List<List<Writable>> call(Tuple2<String, PortableDataStream> value) throws Exception {
         URI uri = new URI(value._1());
         PortableDataStream ds = value._2();
         try(DataInputStream dis = ds.open()){

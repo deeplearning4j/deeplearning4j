@@ -320,13 +320,13 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         INDArray row = imageLoader.asMatrix(dataInputStream);
-        Collection<Writable> ret = RecordConverter.toRecord(row);
+        List<Writable> ret = RecordConverter.toRecord(row);
         if (appendLabel) ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
         return ret;
     }

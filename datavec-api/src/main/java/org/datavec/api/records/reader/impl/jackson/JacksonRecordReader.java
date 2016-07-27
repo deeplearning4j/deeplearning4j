@@ -149,7 +149,7 @@ public class JacksonRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
         StringBuilder sb = new StringBuilder();
         String line;
@@ -176,7 +176,7 @@ public class JacksonRecordReader extends BaseRecordReader {
     }
 
 
-    private Collection<Writable> readValues(URI uri, String fileContents){
+    private List<Writable> readValues(URI uri, String fileContents){
         List<Writable> out = new ArrayList<>();
         List<String[]> paths = selection.getFieldPaths();
         List<Writable> valueIfMissing = selection.getValueIfMissing();

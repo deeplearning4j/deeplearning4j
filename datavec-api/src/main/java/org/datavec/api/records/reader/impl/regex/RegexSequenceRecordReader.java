@@ -90,7 +90,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
     }
 
-    public Collection<Collection<Writable>> sequenceRecord() {
+    public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
 
         String fileContents;
@@ -104,16 +104,16 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
 
     @Override
     public
-    Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+    List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         String fileContents = org.apache.commons.io.IOUtils.toString(dataInputStream,charset.name());
         return loadSequence(fileContents, uri);
     }
 
-    private Collection<Collection<Writable>> loadSequence(String fileContents, URI uri){
+    private List<List<Writable>> loadSequence(String fileContents, URI uri){
         String[] lines = fileContents.split("(\r\n)|\n");  //TODO this won't work if regex allows for a newline
 
         int numLinesSkipped = 0;
-        Collection<Collection<Writable>> out = new ArrayList<>();
+        List<List<Writable>> out = new ArrayList<>();
         int lineCount = 0;
         for(String line : lines){
             lineCount++;

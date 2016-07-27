@@ -78,7 +78,7 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
         conf.set(CodecRecordReader.COLUMNS, "64");
         Configuration confCopy = new Configuration(conf);
         seqRR.setConf(conf);
-        JavaRDD<Collection<Collection<Writable>>> dataVecData = fromSeqFile.map(new SequenceRecordReaderBytesFunction(seqRR));
+        JavaRDD<List<List<Writable>>> dataVecData = fromSeqFile.map(new SequenceRecordReaderBytesFunction(seqRR));
 
 
 
@@ -88,13 +88,13 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
         srr.initialize(is);
         srr.setConf(confCopy);
 
-        List<Collection<Collection<Writable>>> list = new ArrayList<>(4);
+        List<List<List<Writable>>> list = new ArrayList<>(4);
         while(srr.hasNext()){
             list.add(srr.sequenceRecord());
         }
         assertEquals(4, list.size());
 
-        List<Collection<Collection<Writable>>> fromSequenceFile = dataVecData.collect();
+        List<List<List<Writable>>> fromSequenceFile = dataVecData.collect();
 
         assertEquals(4, list.size());
         assertEquals(4, fromSequenceFile.size());
@@ -102,7 +102,7 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
         boolean[] found = new boolean[4];
         for( int i=0; i<4; i++ ){
             int foundIndex = -1;
-            Collection<Collection<Writable>> collection = fromSequenceFile.get(i);
+            List<List<Writable>> collection = fromSequenceFile.get(i);
             for( int j=0; j<4; j++ ){
                 if(collection.equals(list.get(j))){
                     if(foundIndex != -1) fail();    //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)

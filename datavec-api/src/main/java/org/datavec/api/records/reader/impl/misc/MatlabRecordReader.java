@@ -113,7 +113,7 @@ public class MatlabRecordReader extends FileRecordReader {
   }
 
   @Override
-  public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+  public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
     throw new UnsupportedOperationException("Reading Matlab data from DataInputStream: not yet implemented");
   }
 }

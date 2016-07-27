@@ -54,14 +54,14 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         assertEquals(3,origData.count());    //3 CSV files
 
         SequenceRecordReaderFunction srrf = new SequenceRecordReaderFunction(new CSVSequenceRecordReader(1,","));    //CSV, skip 1 line
-        JavaRDD<Collection<Collection<Writable>>> rdd = origData.map(srrf);
-        List<Collection<Collection<Writable>>> listSpark = rdd.collect();
+        JavaRDD<List<List<Writable>>> rdd = origData.map(srrf);
+        List<List<List<Writable>>> listSpark = rdd.collect();
 
         assertEquals(3,listSpark.size());
         for( int i=0; i<3; i++ ){
-            Collection<Collection<Writable>> thisSequence = listSpark.get(i);
+            List<List<Writable>> thisSequence = listSpark.get(i);
             assertEquals(4, thisSequence.size());   //Expect exactly 4 time steps in sequence
-            for(Collection<Writable> c : thisSequence){
+            for(List<Writable> c : thisSequence){
                 assertEquals(3,c.size());   //3 values per time step
             }
         }
@@ -74,22 +74,22 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         SequenceRecordReader srr = new CSVSequenceRecordReader(1,",");
         srr.initialize(is);
 
-        List<Collection<Collection<Writable>>> list = new ArrayList<>(3);
+        List<List<List<Writable>>> list = new ArrayList<>(3);
         while(srr.hasNext()){
             list.add(srr.sequenceRecord());
         }
         assertEquals(3, list.size());
 
         System.out.println("Spark list:");
-        for(Collection<Collection<Writable>> c : listSpark ) System.out.println(c);
+        for(List<List<Writable>> c : listSpark ) System.out.println(c);
         System.out.println("Local list:");
-        for(Collection<Collection<Writable>> c : list ) System.out.println(c);
+        for(List<List<Writable>> c : list ) System.out.println(c);
 
         //Check that each of the values from Spark equals exactly one of the values doing it normally
         boolean[] found = new boolean[3];
         for( int i=0; i<3; i++ ){
             int foundIndex = -1;
-            Collection<Collection<Writable>> collection = listSpark.get(i);
+            List<List<Writable>> collection = listSpark.get(i);
             for( int j=0; j<3; j++ ){
                 if(collection.equals(list.get(j))){
                     if(foundIndex != -1) fail();    //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)
@@ -132,14 +132,14 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         sparkSeqReader.setConf(conf);
 
         SequenceRecordReaderFunction srrf = new SequenceRecordReaderFunction(sparkSeqReader);
-        JavaRDD<Collection<Collection<Writable>>> rdd = origData.map(srrf);
-        List<Collection<Collection<Writable>>> listSpark = rdd.collect();
+        JavaRDD<List<List<Writable>>> rdd = origData.map(srrf);
+        List<List<List<Writable>>> listSpark = rdd.collect();
 
         assertEquals(4,listSpark.size());
         for( int i=0; i<4; i++ ){
-            Collection<Collection<Writable>> thisSequence = listSpark.get(i);
+            List<List<Writable>> thisSequence = listSpark.get(i);
             assertEquals(25, thisSequence.size());   //Expect exactly 25 time steps (frames) in sequence
-            for(Collection<Writable> c : thisSequence){
+            for(List<Writable> c : thisSequence){
                 assertEquals(1,c.size());   //64*64 videos, RGB
                 assertEquals(64*64*3,((ArrayWritable)c.iterator().next()).length());
             }
@@ -155,22 +155,22 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         srr.setConf(confCopy);
 
 
-        List<Collection<Collection<Writable>>> list = new ArrayList<>(4);
+        List<List<List<Writable>>> list = new ArrayList<>(4);
         while(srr.hasNext()){
             list.add(srr.sequenceRecord());
         }
         assertEquals(4, list.size());
 
 //        System.out.println("Spark list:");
-//        for(Collection<Collection<Writable>> c : listSpark ) System.out.println(c);
+//        for(List<List<Writable>> c : listSpark ) System.out.println(c);
 //        System.out.println("Local list:");
-//        for(Collection<Collection<Writable>> c : list ) System.out.println(c);
+//        for(List<List<Writable>> c : list ) System.out.println(c);
 
         //Check that each of the values from Spark equals exactly one of the values doing it locally
         boolean[] found = new boolean[4];
         for( int i=0; i<4; i++ ){
             int foundIndex = -1;
-            Collection<Collection<Writable>> collection = listSpark.get(i);
+            List<List<Writable>> collection = listSpark.get(i);
             for( int j=0; j<4; j++ ){
                 if(collection.equals(list.get(j))){
                     if(foundIndex != -1) fail();    //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)

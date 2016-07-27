@@ -128,7 +128,7 @@ public class ListStringRecordReader extends BaseRecordReader {
      * @throws IOException if error occurs during reading from the input stream
      */
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         return null;
     }
 

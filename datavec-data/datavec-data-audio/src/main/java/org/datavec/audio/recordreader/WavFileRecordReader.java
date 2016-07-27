@@ -182,7 +182,7 @@ public class WavFileRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         Wave wave = new Wave(dataInputStream);
         return RecordUtils.toRecord(wave.getNormalizedAmplitudes());

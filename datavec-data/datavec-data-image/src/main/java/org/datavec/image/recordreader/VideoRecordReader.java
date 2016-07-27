@@ -265,16 +265,16 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord() {
+    public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
         invokeListeners(next);
         if(!next.isDirectory())
             return Collections.emptyList();
         File[] list = next.listFiles();
-        Collection<Collection<Writable>> ret = new ArrayList<>();
+        List<List<Writable>> ret = new ArrayList<>();
         for(File f : list) {
             try {
-                Collection<Writable> record = RecordConverter.toRecord(imageLoader.asRowVector(f));
+                List<Writable> record = RecordConverter.toRecord(imageLoader.asRowVector(f));
                 ret.add(record);
                 if(appendLabel)
                     record.add(new DoubleWritable(labels.indexOf(next.getName())));
@@ -312,12 +312,12 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
     }
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
     }
 
