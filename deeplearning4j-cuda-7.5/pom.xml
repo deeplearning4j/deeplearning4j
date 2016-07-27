@@ -27,7 +27,8 @@
 
     <properties>
         <cuda.version>7.5</cuda.version>
-        <javacpp.version>1.2</javacpp.version>
+        <javacpp-presets.version>1.2</javacpp-presets.version>
+        <javacpp.version>1.2.3-SNAPSHOT</javacpp.version>
     </properties>
 
     <dependencyManagement>
@@ -64,32 +65,37 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp.version}</version>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp.version}</version>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cuda</artifactId>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
             <classifier>linux-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp.version}</version>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
             <classifier>macosx-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp.version}</version>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
             <classifier>windows-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp.version}</version>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
             <classifier>linux-ppc64le</classifier>
         </dependency>
         <dependency>
