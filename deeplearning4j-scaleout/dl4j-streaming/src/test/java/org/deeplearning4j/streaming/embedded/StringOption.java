@@ -41,4 +41,9 @@ public class StringOption extends Option<String> {
     public boolean equals(Object that) {
         return that.equals(value);
     }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }
