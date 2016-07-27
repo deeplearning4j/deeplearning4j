@@ -2162,6 +2162,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray rnnTimeStep(INDArray input) {
         this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+        this.input = input;
         boolean inputIs2d = input.rank()==2;
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
@@ -2179,6 +2180,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             // instead of 3d output with shape [miniBatchSize,nOut,1]
             return input.tensorAlongDimension(0,1,0);
         }
+
+        this.input = null;
         return input;
     }
 
