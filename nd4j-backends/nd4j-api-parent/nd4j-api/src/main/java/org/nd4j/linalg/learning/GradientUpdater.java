@@ -56,6 +56,8 @@ public interface GradientUpdater extends Serializable {
      *
      * @param addThis If true: return a GradientUpdaterAggregator with the GradientUpdater already added.
      *                If false: return an empty (uninitialized) GradientUpdaterAggregator
+     * @deprecated Use Updater view array functionality instead
      */
+    @Deprecated
     GradientUpdaterAggregator getAggregator(boolean addThis);
 }
