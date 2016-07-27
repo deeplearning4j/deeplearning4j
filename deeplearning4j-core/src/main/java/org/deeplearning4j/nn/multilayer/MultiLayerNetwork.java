@@ -2101,7 +2101,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void update(Gradient gradient) {
-        throw new UnsupportedOperationException();
+        if(layers != null)
+            for(Layer layer : layers) {
+                for (String paramType : gradient.gradientForVariable().keySet()) {
+                    layer.update(gradient.getGradientFor(paramType), paramType);
+                }
+            }
+        String multiGradientKey;
+        for( String entry : gradient.gradientForVariable().entrySet()) {
+            multiGradientKey = String.valueOf(layer.getnum) + "_" + entry.getKey();
+
+        }
+        int backpropParamsSoFar = 0;
+        for(int i=0; i<layers.length; i++ ){
+            int numParms = layers[i].numParams();
+            if(numParms == 0) continue;   //This layer doesn't have any parameters...
+            INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + numParms));
+            layers[i].setBackpropGradientsViewArray(thisLayerGradView);
+            backpropParamsSoFar += numParms;
+        }
+
     }
 
     @Override
