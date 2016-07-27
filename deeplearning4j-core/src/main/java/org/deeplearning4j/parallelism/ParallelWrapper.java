@@ -40,6 +40,7 @@ public class ParallelWrapper {
     private Trainer zoo[];
     private AtomicLong iterationsCounter = new AtomicLong(0);
     private boolean reportScore = false;
+    private boolean averageUpdaters = true;
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -111,26 +112,30 @@ public class ParallelWrapper {
                         logger.info("Averaged score: " + score);
 
                     if (model instanceof MultiLayerNetwork) {
-                        Updater updater = ((MultiLayerNetwork)zoo[0].getModel()).getUpdater();
+                        if (averageUpdaters) {
+                            Updater updater = ((MultiLayerNetwork) zoo[0].getModel()).getUpdater();
 
-                        if (updater != null && updater.getStateViewArray() != null) {
-                            List<INDArray> updaters = new ArrayList<>();
-                            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                            if (updater != null && updater.getStateViewArray() != null) {
+                                List<INDArray> updaters = new ArrayList<>();
+                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                    updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                }
+                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
-                            Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
-                        ComputationGraphUpdater updater = ((ComputationGraph)zoo[0].getModel()).getUpdater();
+                        if (averageUpdaters) {
+                            ComputationGraphUpdater updater = ((ComputationGraph) zoo[0].getModel()).getUpdater();
 
-                        if (updater != null && updater.getStateViewArray() != null) {
-                            List<INDArray> updaters = new ArrayList<>();
-                            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                            if (updater != null && updater.getStateViewArray() != null) {
+                                List<INDArray> updaters = new ArrayList<>();
+                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                    updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                }
+                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
-                            Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                         }
 
                         ((ComputationGraph) model).setScore(score);
@@ -153,6 +158,7 @@ public class ParallelWrapper {
         private int prefetchSize = 2;
         private int averagingFrequency = 1;
         private boolean reportScore = false;
+        private boolean averageUpdaters = true;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -197,6 +203,21 @@ public class ParallelWrapper {
             return this;
         }
 
+        /**
+         * This method enables/disables updaters averaging.
+         *
+         * Default value: TRUE
+         *
+         * PLEASE NOTE: This method is suitable for debugging purposes mostly. So don't change default value, unless you're sure why you need it.
+         *
+         * @param reallyAverage
+         * @return
+         */
+        public Builder averageUpdaters(boolean reallyAverage) {
+            this.averageUpdaters = reallyAverage;
+            return this;
+        }
+
 
         /**
          * Size of prefetch buffer that will be used for background data prefetching.
@@ -230,6 +251,7 @@ public class ParallelWrapper {
             ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize);
             wrapper.averagingFrequency = this.averagingFrequency;
             wrapper.reportScore = this.reportScore;
+            wrapper.averageUpdaters = this.averageUpdaters;
 
             return wrapper;
         }
@@ -292,10 +314,14 @@ public class ParallelWrapper {
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     ((MultiLayerNetwork) replicatedModel).init();
+
+                //    this.replicatedModel = ((MultiLayerNetwork) originalModel).clone();
                 } else if (originalModel instanceof ComputationGraph) {
                     this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
 
                     ((ComputationGraph) this.replicatedModel).init();
+
+                //    this.replicatedModel = ((ComputationGraph) originalModel).clone();
                 }
 
                 while (true) {
