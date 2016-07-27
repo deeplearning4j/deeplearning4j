@@ -37,7 +37,9 @@ import java.util.List;
  * a record reader
  *
  * @author Adam Gibson
+ * @deprecated Canova deprecated; replaced by DataVec. Use {@link org.datavec.spark.functions.RecordReaderFunction}
  */
+@Deprecated
 public class RecordReaderFunction implements Function<String,DataSet> {
     private RecordReader recordReader;
     private int labelIndex = -1;

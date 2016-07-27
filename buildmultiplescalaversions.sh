@@ -1,4 +1,4 @@
 #! /bin/bash
 set -eu
-mvn -Dscala.binary.version=2.10 -Dscala.version=2.10.6 "$@"
-mvn -Dscala.binary.version=2.11 -Dscala.version=2.11.7 "$@"
+mvn -Pscala-2.11 "$@"
+mvn "$@"

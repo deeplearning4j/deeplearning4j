@@ -844,7 +844,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
     private boolean isCurrentlyJob(String id) {
         for(Job j : jobs)
-            if(j.equals(id))
+            if(j.workerId().equals(id))
                 return true;
         return false;
     }

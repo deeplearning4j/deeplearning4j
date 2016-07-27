@@ -45,6 +45,7 @@ import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz;
 import org.deeplearning4j.ui.renders.RendersDropwiz;
 import org.deeplearning4j.ui.renders.RendersResource;
+import org.deeplearning4j.ui.rl.RlDropwiz;
 import org.deeplearning4j.ui.tsne.TsneDropwiz;
 import org.deeplearning4j.ui.tsne.TsneResource;
 import org.deeplearning4j.ui.weights.WeightDropwiz;
@@ -146,6 +147,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new FlowDropwiz());
+        environment.jersey().register(new RlDropwiz());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz(conf.getUploadPath()));
 
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

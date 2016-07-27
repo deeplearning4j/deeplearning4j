@@ -44,6 +44,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 3/6/15.
  */
+@Deprecated
 public class RecordReaderDataSetiteratorTest {
 
     @Test

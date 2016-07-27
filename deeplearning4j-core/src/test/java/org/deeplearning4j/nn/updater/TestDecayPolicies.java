@@ -272,6 +272,8 @@ public class TestDecayPolicies {
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
             Updater updater = UpdaterCreator.getUpdater(layer);
+            int stateSize = updater.stateSizeForLayer(layer);
+            if(stateSize > 0) updater.setStateViewArray(layer, Nd4j.create(1,stateSize), true);
 
             Gradient gradientActual = new DefaultGradient();
             gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
@@ -330,11 +332,11 @@ public class TestDecayPolicies {
                 Gradient gradientExpected = new DefaultGradient();
                 for (int k = 0; k < net.getnLayers(); k++) {
                     wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-                    gradientActual.setGradientFor(wKey, weightGradient.dup());
-                    gradientExpected.setGradientFor(wKey, weightGradient.dup());
+                    gradientActual.setGradientFor(wKey, Nd4j.ones(nIns[k],nOuts[k]));
+                    gradientExpected.setGradientFor(wKey, Nd4j.ones(nIns[k],nOuts[k]));
                     bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
-                    gradientActual.setGradientFor(bKey, biasGradient.dup());
-                    gradientExpected.setGradientFor(bKey, biasGradient.dup());
+                    gradientActual.setGradientFor(bKey, Nd4j.ones(1,nOuts[k]));
+                    gradientExpected.setGradientFor(bKey, Nd4j.ones(1,nOuts[k]));
                 }
 
                 updater.update(net, gradientActual, i, 1);
@@ -448,6 +450,8 @@ public class TestDecayPolicies {
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
+        int stateSize = updater.stateSizeForLayer(layer);
+        updater.setStateViewArray(layer, Nd4j.create(1,stateSize), true);
 
         Gradient gradientExpected = new DefaultGradient();
         gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
@@ -482,15 +486,25 @@ public class TestDecayPolicies {
         net.init();
 
         Updater updater = UpdaterCreator.getUpdater(net);
+        int stateSize = updater.stateSizeForLayer(net);
+        updater.setStateViewArray(net, Nd4j.create(1,stateSize), true);
 
         String wKey, bKey;
 
         Gradient gradientExpected = new DefaultGradient();
         for (int k=0; k < net.getnLayers(); k++){
             wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            gradientExpected.setGradientFor(wKey, weightGradient.dup());
+            gradientExpected.setGradientFor(wKey, Nd4j.ones(nIns[k],nOuts[k]));
             bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY ;
-            gradientExpected.setGradientFor(bKey, biasGradient.dup());
+            gradientExpected.setGradientFor(bKey, Nd4j.ones(1,nOuts[k]));
+        }
+
+        Gradient gradientMLN = new DefaultGradient();
+        for (int j=0; j < 2; j++){
+            wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+            gradientMLN.setGradientFor(wKey, Nd4j.ones(nIns[j],nOuts[j]));
+            bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY ;
+            gradientMLN.setGradientFor(bKey, Nd4j.ones(1,nOuts[j]));
         }
 
         for (int i = 0; i < 2; i++) {

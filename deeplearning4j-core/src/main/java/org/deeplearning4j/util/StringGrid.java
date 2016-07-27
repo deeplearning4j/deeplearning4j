@@ -404,7 +404,7 @@ public class StringGrid extends ArrayList<List<String>> {
     private String maximalValue(Map<String,Integer> map) {
         Counter<String> counter = new Counter<>();
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
-            counter.incrementCount(entry.getKey(), map.get(entry.getValue()));
+            counter.incrementCount(entry.getKey(), entry.getValue());
         }
         return counter.argMax();
     }

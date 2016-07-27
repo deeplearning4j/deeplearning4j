@@ -30,7 +30,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<akka.version>2.3.4-spark</akka.version>
 		<hazelcast.version>3.4.2</hazelcast.version>
-		<scala.binary.version>2.10</scala.binary.version>
 		<akka.group>org.spark-project.akka</akka.group>
 	</properties>
 	<dependencyManagement>
