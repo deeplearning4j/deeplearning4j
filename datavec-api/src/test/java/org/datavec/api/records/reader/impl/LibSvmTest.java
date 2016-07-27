@@ -51,16 +51,16 @@ public class LibSvmTest {
 
         RecordWriter writer = new LibSvmRecordWriter();
         writer.setConf(conf);
-        Collection<Collection<Writable>> data = new ArrayList<>();
+        List<List<Writable>> data = new ArrayList<>();
         while (libSvmRecordReader.hasNext()) {
-            Collection<Writable> record = libSvmRecordReader.next();
+            List<Writable> record = libSvmRecordReader.next();
             writer.write(record);
             data.add(record);
         }
         writer.close();
 
         out.deleteOnExit();
-        Collection<Collection<Writable>> test = new ArrayList<>();
+        List<List<Writable>> test = new ArrayList<>();
         RecordReader testLibSvmRecordReader = new LibSvmRecordReader();
         testLibSvmRecordReader.initialize(conf, new FileSplit(out));
         while (testLibSvmRecordReader.hasNext())

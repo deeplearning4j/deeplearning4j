@@ -56,7 +56,7 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     private BaseImageLoader imageLoader;
     private List<String> labels  = new ArrayList<>();
     private boolean appendLabel = false;
-    private Collection<Writable> record;
+    private List<Writable> record;
     private boolean hitImage = false;
     private final List<String> allowedFormats = Arrays.asList("tif","jpg","png","jpeg");
     private Configuration conf;
@@ -204,7 +204,7 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if(iter != null) {
             List<Writable> ret = new ArrayList<>();
             File image = iter.next();

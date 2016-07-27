@@ -61,7 +61,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         throw new UnsupportedOperationException("next() not supported for CollectionSequencRecordReader; use sequenceRecord()");
     }
 

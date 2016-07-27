@@ -73,7 +73,7 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if(!skippedLines && skipNumLines > 0) {
             for(int i = 0; i < skipNumLines; i++) {
                 if(!hasNext()) {

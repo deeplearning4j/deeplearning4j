@@ -42,7 +42,7 @@ public class CSVRecordReaderTest {
         CSVRecordReader reader = new CSVRecordReader();
         reader.initialize(new StringSplit("1,1,8.0,,,,14.0,,,,15.0,,,,,,,,,,,,1"));
         while (reader.hasNext()) {
-            Collection<Writable> vals = reader.next();
+            List<Writable> vals = reader.next();
             List<Writable> arr = new ArrayList<>(vals);
 
             assertEquals("Entry count", 23, vals.size());
@@ -56,7 +56,7 @@ public class CSVRecordReaderTest {
         CSVRecordReader reader = new CSVRecordReader();
         reader.initialize(new StringSplit("1,1,8.0,,,,14.0,,,,15.0,,,,,,,,,,,,"));
         while (reader.hasNext()) {
-            Collection<Writable> vals = reader.next();
+            List<Writable> vals = reader.next();
             assertEquals("Entry count", 23, vals.size());
         }
     }
@@ -71,7 +71,7 @@ public class CSVRecordReaderTest {
 
             int lineCount = 0;
             while(rr.hasNext()){
-                Collection<Writable> line = rr.next();
+                List<Writable> line = rr.next();
                 assertEquals(5, line.size());
                 lineCount++;
             }
@@ -103,7 +103,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testWrite() throws Exception {
 
-        List<Collection<Writable>> list = new ArrayList<>();
+        List<List<Writable>> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         for( int i=0; i<10; i++ ){
             List<Writable> temp = new ArrayList<>();
@@ -123,7 +123,7 @@ public class CSVRecordReaderTest {
         p.toFile().deleteOnExit();
 
         FileRecordWriter writer = new CSVRecordWriter(p.toFile());
-        for( Collection<Writable> c : list ){
+        for( List<Writable> c : list ){
             writer.write(c);
         }
         writer.close();
@@ -155,7 +155,7 @@ public class CSVRecordReaderTest {
         CSVRecordReader reader = new CSVRecordReader();
         reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male"));
         while (reader.hasNext()) {
-            Collection<Writable> vals = reader.next();
+            List<Writable> vals = reader.next();
             assertEquals("Entry count", 5, vals.size());
         }
     }

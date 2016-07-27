@@ -22,6 +22,7 @@ import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * LineRecordReaderFunction: Used to map a {@code JavaRDD<String>} to a {@code JavaRDD<Collection<Writable>>}
@@ -29,7 +30,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-public class LineRecordReaderFunction implements Function<String,Collection<Writable>> {
+public class LineRecordReaderFunction implements Function<String,List<Writable>> {
     private final RecordReader recordReader;
 
     public LineRecordReaderFunction(RecordReader recordReader){
@@ -37,7 +38,7 @@ public class LineRecordReaderFunction implements Function<String,Collection<Writ
     }
 
     @Override
-    public Collection<Writable> call(String s) throws Exception {
+    public List<Writable> call(String s) throws Exception {
         recordReader.initialize(new StringSplit(s));
         return recordReader.next();
     }

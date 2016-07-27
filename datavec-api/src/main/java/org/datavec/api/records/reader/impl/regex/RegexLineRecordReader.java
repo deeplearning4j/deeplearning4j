@@ -64,7 +64,7 @@ public class RegexLineRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
 
         if(numLinesSkipped < skipNumLines) {
             for(int i = numLinesSkipped; i < skipNumLines; i++, numLinesSkipped++) {

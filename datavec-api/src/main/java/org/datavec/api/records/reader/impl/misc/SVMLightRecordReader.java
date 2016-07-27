@@ -51,10 +51,10 @@ public class SVMLightRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         Text t =  (Text) super.next().iterator().next();
         String val = new String(t.getBytes());
-        Collection<Writable> ret = new ArrayList<>();
+        List<Writable> ret = new ArrayList<>();
         StringTokenizer tok;
         int	index,max;
         String	col;

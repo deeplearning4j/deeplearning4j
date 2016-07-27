@@ -108,15 +108,15 @@ public class JacksonRecordReaderTest {
 
     private static void testJacksonRecordReader(RecordReader rr ){
 
-        Collection<Writable> json0 = rr.next();
+        List<Writable> json0 = rr.next();
         List<Writable> exp0 = Arrays.asList((Writable)new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"));
         assertEquals(exp0, json0);
 
-        Collection<Writable> json1 = rr.next();
+        List<Writable> json1 = rr.next();
         List<Writable> exp1 = Arrays.asList((Writable)new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"));
         assertEquals(exp1, json1);
 
-        Collection<Writable> json2 = rr.next();
+        List<Writable> json2 = rr.next();
         List<Writable> exp2 = Arrays.asList((Writable)new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"));
         assertEquals(exp2, json2);
 

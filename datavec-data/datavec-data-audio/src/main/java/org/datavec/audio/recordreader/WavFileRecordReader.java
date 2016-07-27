@@ -42,7 +42,7 @@ import java.util.*;
  */
 public class WavFileRecordReader extends BaseRecordReader {
     private Iterator<File> iter;
-    private Collection<Writable> record;
+    private List<Writable> record;
     private boolean hitImage = false;
     private boolean appendLabel = false;
     private List<String> labels = new ArrayList<>();
@@ -123,7 +123,7 @@ public class WavFileRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if(iter != null) {
             File next = iter.next();
             invokeListeners(next);

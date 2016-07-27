@@ -25,6 +25,7 @@ import org.datavec.api.writable.Writable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -55,8 +56,9 @@ public class CollectionRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
-        Collection<Writable> record = records.next();
+    public List<Writable> next() {
+        Collection<Writable> next = records.next();
+        List<Writable> record = (next instanceof List ? (List<Writable>)next : new ArrayList<>(next));
         invokeListeners(record);
         return record;
     }

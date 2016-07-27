@@ -73,7 +73,7 @@ public class LineRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
 
         if(iter.hasNext()) {

@@ -59,7 +59,7 @@ public class LibSvmRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         Text record2 = (Text) super.next().iterator().next();
         String line = record2.toString();
 
@@ -81,7 +81,7 @@ public class LibSvmRecordReader extends LineRecordReader {
 
         tokens = line.trim().split("\\s+");
 
-        Collection<Writable> record = new ArrayList<>();
+        List<Writable> record = new ArrayList<>();
         int read = 0;
         for (int k = 1; k < tokens.length; k++) {
             String[] pair = tokens[k].split(":");

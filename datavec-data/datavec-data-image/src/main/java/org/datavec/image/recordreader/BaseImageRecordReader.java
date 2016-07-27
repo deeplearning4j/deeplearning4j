@@ -50,7 +50,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected PathLabelGenerator labelGenerator = null;
     protected List<String> labels = new ArrayList<>();
     protected boolean appendLabel = false;
-    protected Collection<Writable> record;
+    protected List<Writable> record;
     protected boolean hitImage = false;
     protected int height = 28, width = 28, channels = 1;
     protected boolean cropImage = false;
@@ -192,9 +192,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if (iter != null) {
-            Collection<Writable> ret = new ArrayList<>();
+            List<Writable> ret = new ArrayList<>();
             File image =  iter.next();
             currentFile = image;
 

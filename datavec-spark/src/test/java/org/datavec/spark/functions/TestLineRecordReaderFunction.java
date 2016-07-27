@@ -48,13 +48,13 @@ public class TestLineRecordReaderFunction extends BaseSparkTest {
 
         CSVRecordReader rr = new CSVRecordReader(0,",");
 
-        JavaRDD<Collection<Writable>> out = linesRdd.map(new LineRecordReaderFunction(rr));
-        List<Collection<Writable>> outList = out.collect();
+        JavaRDD<List<Writable>> out = linesRdd.map(new LineRecordReaderFunction(rr));
+        List<List<Writable>> outList = out.collect();
 
 
         CSVRecordReader rr2 = new CSVRecordReader(0,",");
         rr2.initialize(new FileSplit(dataFile));
-        Set<Collection<Writable>> expectedSet = new HashSet<>();
+        Set<List<Writable>> expectedSet = new HashSet<>();
         int totalCount = 0;
         while(rr2.hasNext()){
             expectedSet.add(rr2.next());
@@ -63,7 +63,7 @@ public class TestLineRecordReaderFunction extends BaseSparkTest {
 
         assertEquals(totalCount, outList.size());
 
-        for(Collection<Writable> line : outList){
+        for(List<Writable> line : outList){
             assertTrue(expectedSet.contains(line));
         }
     }

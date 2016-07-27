@@ -37,10 +37,10 @@ import java.util.*;
  */
 public class TfidfRecordReader extends FileRecordReader  {
     private TfidfVectorizer tfidfVectorizer;
-    private Collection<Collection<Writable>> records = new ArrayList<>();
+    private List<List<Writable>> records = new ArrayList<>();
     private List<Integer> recordLabels = new ArrayList<>();
     private Iterator<Integer> labelIter;
-    private Iterator<Collection<Writable>> recordIter;
+    private Iterator<List<Writable>> recordIter;
     private int numFeatures;
 
 
@@ -98,10 +98,10 @@ public class TfidfRecordReader extends FileRecordReader  {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if(recordIter == null)
             return super.next();
-        Collection<Writable> record = recordIter.next();
+        List<Writable> record = recordIter.next();
         if(appendLabel) {
             record.add(new IntWritable(labelIter.next()));
         }

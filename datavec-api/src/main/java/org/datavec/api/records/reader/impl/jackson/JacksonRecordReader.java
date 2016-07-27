@@ -111,7 +111,7 @@ public class JacksonRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         if(uris == null) throw new IllegalStateException("URIs are null. Not initialized?");
         if(!hasNext()) throw new NoSuchElementException("No next element");
 

@@ -32,8 +32,8 @@ import java.util.*;
  */
 public class MatlabRecordReader extends FileRecordReader {
 
-  private List<Collection<Writable>> records = new ArrayList<>();
-  private Iterator<Collection<Writable>> currIter;
+  private List<List<Writable>> records = new ArrayList<>();
+  private Iterator<List<Writable>> currIter;
 
   @Override
   public boolean hasNext() {
@@ -41,13 +41,13 @@ public class MatlabRecordReader extends FileRecordReader {
   }
 
   @Override
-  public Collection<Writable> next() {
+  public List<Writable> next() {
     //use the current iterator
     if (currIter != null && currIter.hasNext())
-      return currIter.next();
+      return new ArrayList<>(currIter.next());
     records.clear();
     //next file
-    Collection<Writable> next = super.next();
+    List<Writable> next = super.next();
     String val = next.iterator().next().toString();
     StringReader reader = new StringReader(val);
     int c;
@@ -56,7 +56,7 @@ public class MatlabRecordReader extends FileRecordReader {
     boolean isComment;
 
 
-    Collection<Writable> currRecord = new ArrayList<>();
+    List<Writable> currRecord = new ArrayList<>();
     fileContent = new StringBuilder();
     isComment = false;
     records.add(currRecord);

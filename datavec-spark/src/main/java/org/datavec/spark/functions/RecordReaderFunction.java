@@ -25,13 +25,14 @@ import scala.Tuple2;
 import java.io.DataInputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
 
 /**RecordReaderFunction: Given a RecordReader and a file (via Spark PortableDataStream), load and parse the
  * data into a Collection<Writable>.
  * NOTE: This is only useful for "one record per file" type situations (ImageRecordReader, etc)
  * @author Alex Black
  */
-public class RecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,Collection<Writable>> {
+public class RecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,List<Writable>> {
     protected RecordReader recordReader;
 
     public RecordReaderFunction(RecordReader recordReader){
@@ -39,7 +40,7 @@ public class RecordReaderFunction implements Function<Tuple2<String,PortableData
     }
 
     @Override
-    public Collection<Writable> call(Tuple2<String, PortableDataStream> value) throws Exception {
+    public List<Writable> call(Tuple2<String, PortableDataStream> value) throws Exception {
         URI uri = new URI(value._1());
         PortableDataStream ds = value._2();
         try( DataInputStream dis = ds.open() ){

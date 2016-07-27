@@ -55,8 +55,8 @@ public class TestRecordReaderFunction extends BaseSparkTest {
         ImageRecordReader irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
         irr.setLabels(labelsList);
         RecordReaderFunction rrf = new RecordReaderFunction(irr);
-        JavaRDD<Collection<Writable>> rdd = origData.map(rrf);
-        List<Collection<Writable>> listSpark = rdd.collect();
+        JavaRDD<List<Writable>> rdd = origData.map(rrf);
+        List<List<Writable>> listSpark = rdd.collect();
 
         assertEquals(4,listSpark.size());
         for( int i=0; i<4; i++ ){
@@ -70,22 +70,22 @@ public class TestRecordReaderFunction extends BaseSparkTest {
         irr = new ImageRecordReader(28,28,1,new ParentPathLabelGenerator());
         irr.initialize(is);
 
-        List<Collection<Writable>> list = new ArrayList<>(4);
+        List<List<Writable>> list = new ArrayList<>(4);
         while(irr.hasNext()){
             list.add(irr.next());
         }
         assertEquals(4, list.size());
 
 //        System.out.println("Spark list:");
-//        for(Collection<Writable> c : listSpark ) System.out.println(c);
+//        for(List<Writable> c : listSpark ) System.out.println(c);
 //        System.out.println("Local list:");
-//        for(Collection<Writable> c : list ) System.out.println(c);
+//        for(List<Writable> c : list ) System.out.println(c);
 
         //Check that each of the values from Spark equals exactly one of the values doing it locally
         boolean[] found = new boolean[4];
         for( int i=0; i<4; i++ ){
             int foundIndex = -1;
-            Collection<Writable> collection = listSpark.get(i);
+            List<Writable> collection = listSpark.get(i);
             for( int j=0; j<4; j++ ){
                 if(collection.equals(list.get(j))){
                     if(foundIndex != -1) fail();    //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)

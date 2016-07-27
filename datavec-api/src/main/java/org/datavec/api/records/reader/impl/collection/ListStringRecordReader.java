@@ -79,7 +79,7 @@ public class ListStringRecordReader extends BaseRecordReader {
      * @return
      */
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<String> next = dataIter.next();
         invokeListeners(next);
         List<Writable> ret = new ArrayList<>();

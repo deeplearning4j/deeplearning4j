@@ -48,7 +48,7 @@ public class CSVSequenceRecordReaderTest {
             Iterator<List<Writable>> timeStepIter = sequence.iterator();
             int lineCount = 0;
             while(timeStepIter.hasNext()){
-                Collection<Writable> timeStep = timeStepIter.next();
+                List<Writable> timeStep = timeStepIter.next();
                 assertEquals(3,timeStep.size());
                 Iterator<Writable> lineIter = timeStep.iterator();
                 int countInLine = 0;

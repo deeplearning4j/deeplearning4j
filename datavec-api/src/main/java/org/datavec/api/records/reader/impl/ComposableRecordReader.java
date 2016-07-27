@@ -56,7 +56,7 @@ public class ComposableRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
         if (this.hasNext()) {
             for (RecordReader reader: readers) {

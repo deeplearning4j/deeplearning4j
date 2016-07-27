@@ -62,7 +62,7 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
      * Get the next record
      * @return
      */
-    Collection<Writable> next();
+    List<Writable> next();
 
 
     /**
