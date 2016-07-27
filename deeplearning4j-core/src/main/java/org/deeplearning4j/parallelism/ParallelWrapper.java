@@ -15,10 +15,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -60,6 +63,8 @@ public class ParallelWrapper {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        source.reset();
+
         DataSetIterator iterator;
         if (prefetchSize > 0 && (!(source instanceof AsyncDataSetIterator) && !(source instanceof ListDataSetIterator))) {
             iterator = new AsyncDataSetIterator(source, prefetchSize);
@@ -67,8 +72,6 @@ public class ParallelWrapper {
 
         AtomicInteger locker = new AtomicInteger(0);
 
-
-        iterator.reset();
         while (iterator.hasNext()) {
             DataSet dataSet = iterator.next();
 
@@ -96,7 +99,7 @@ public class ParallelWrapper {
                 /*
                     average model, and propagate it to whole
                 */
-                if (iterationsCounter.get() % averagingFrequency == 0 || !iterator.hasNext()) {
+                if (iterationsCounter.get() % averagingFrequency == 0) {
                     double score = 0.0;
                     List<INDArray> params = new ArrayList<>();
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
@@ -111,9 +114,10 @@ public class ParallelWrapper {
                     if (reportScore)
                         logger.info("Averaged score: " + score);
 
+                    // averaging updaters state
                     if (model instanceof MultiLayerNetwork) {
                         if (averageUpdaters) {
-                            Updater updater = ((MultiLayerNetwork) zoo[0].getModel()).getUpdater();
+                            Updater updater = ((MultiLayerNetwork) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 List<INDArray> updaters = new ArrayList<>();
@@ -127,7 +131,7 @@ public class ParallelWrapper {
                         ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
-                            ComputationGraphUpdater updater = ((ComputationGraph) zoo[0].getModel()).getUpdater();
+                            ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 List<INDArray> updaters = new ArrayList<>();
@@ -140,16 +144,13 @@ public class ParallelWrapper {
 
                         ((ComputationGraph) model).setScore(score);
                     }
-
-                    // FIXME: updateModel() call should be removed
-//                    for (int i = 0; i < workers; i++) {
-  //                      zoo[i].updateModel(model);
-    //                }
-
                 }
                 locker.set(0);
             }
         }
+
+        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        iterationsCounter.set(0);
     }
 
     public static class Builder {
@@ -185,8 +186,8 @@ public class ParallelWrapper {
          * @return
          */
         public Builder workers(int num) {
-            if (num < 1)
-                throw new RuntimeException("Number of workers can't be lower then 1!");
+            if (num < 2)
+                throw new RuntimeException("Number of workers can't be lower then 2!");
 
             this.workers = num;
             return this;
@@ -267,6 +268,7 @@ public class ParallelWrapper {
         public Trainer(int threadId, Model model) {
             this.threadId = threadId;
             this.setDaemon(true);
+            this.setName("ParallelWrapper trainer " + threadId);
 
             this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
