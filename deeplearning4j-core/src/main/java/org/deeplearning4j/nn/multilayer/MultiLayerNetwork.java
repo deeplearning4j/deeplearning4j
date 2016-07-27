@@ -820,16 +820,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public MultiLayerNetwork clone() {
-        MultiLayerNetwork ret;
-        try {
-            Constructor<MultiLayerNetwork> constructor = (Constructor<MultiLayerNetwork>) getClass().getDeclaredConstructor(MultiLayerConfiguration.class);
-            ret = constructor.newInstance(getLayerWiseConfigurations().clone());
-            ret.update(this);
-            ret.setParameters(params().dup());
-            ret.listeners = this.listeners;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to clone network",e);
+        MultiLayerConfiguration conf = this.layerWiseConfigurations.clone();
+        MultiLayerNetwork ret = new MultiLayerNetwork(conf);
+        ret.init(this.params().dup(),false);
+
+        if(solver != null) {
+            //If  solver is null: updater hasn't been initialized -> getUpdater call will force initialization, however
+            Updater u = this.getUpdater();
+            INDArray updaterState = u.getStateViewArray();
+            if (updaterState != null) {
+                ret.getUpdater().setStateViewArray(ret, updaterState.dup(), false);
+            }
         }
+
         return ret;
     }
 

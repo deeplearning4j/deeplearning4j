@@ -1125,10 +1125,16 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public ComputationGraph clone() {
-
         ComputationGraph cg = new ComputationGraph(configuration.clone());
-        cg.init();
-        cg.setParams(params().dup());
+        cg.init(params().dup(), false);
+        if(solver != null) {
+            //If  solver is null: updater hasn't been initialized -> getUpdater call will force initialization, however
+            ComputationGraphUpdater u = this.getUpdater();
+            INDArray updaterState = u.getStateViewArray();
+            if (updaterState != null) {
+                cg.getUpdater().setStateViewArray(updaterState.dup());
+            }
+        }
         cg.listeners = this.listeners;
         return cg;
     }
