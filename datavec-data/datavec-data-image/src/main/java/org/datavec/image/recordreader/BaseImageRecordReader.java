@@ -23,6 +23,7 @@ import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
 import org.datavec.image.loader.ImageLoader;
@@ -204,7 +205,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 INDArray row = imageLoader.asMatrix(image);
                 ret = RecordConverter.toRecord(row);
                 if (appendLabel)
-                    ret.add(new DoubleWritable(labels.indexOf(getLabel(image.getPath()))));
+                    ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -324,9 +325,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
-        INDArray row = imageLoader.asRowVector(dataInputStream);
+        INDArray row = imageLoader.asMatrix(dataInputStream);
         Collection<Writable> ret = RecordConverter.toRecord(row);
-        if (appendLabel) ret.add(new DoubleWritable(labels.indexOf(getLabel(uri.getPath()))));
+        if (appendLabel) ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
         return ret;
     }
 
