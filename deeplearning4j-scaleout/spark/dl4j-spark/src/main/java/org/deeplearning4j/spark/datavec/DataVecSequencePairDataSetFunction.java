@@ -14,8 +14,8 @@ import org.nd4j.linalg.util.FeatureUtil;
 import scala.Tuple2;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**Map {@code Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>} objects (out of a TWO datavec-spark
  *  sequence record reader functions) to  DataSet objects for Spark training.
@@ -24,7 +24,7 @@ import java.util.Iterator;
  * see {@link DataVecSequenceDataSetFunction} for the single file version
  * @author Alex Black
  */
-public class DataVecSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
+public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<List<Writable>>,List<List<Writable>>>,DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
      * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length<br>
@@ -84,16 +84,16 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<Colle
 
 
     @Override
-    public DataSet call(Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>> input) throws Exception {
-        Collection<Collection<Writable>> featuresSeq = input._1();
-        Collection<Collection<Writable>> labelsSeq = input._2();
+    public DataSet call(Tuple2<List<List<Writable>>,List<List<Writable>>> input) throws Exception {
+        List<List<Writable>> featuresSeq = input._1();
+        List<List<Writable>> labelsSeq = input._2();
 
         int featuresLength = featuresSeq.size();
         int labelsLength = labelsSeq.size();
 
 
-        Iterator<Collection<Writable>> fIter = featuresSeq.iterator();
-        Iterator<Collection<Writable>> lIter = labelsSeq.iterator();
+        Iterator<List<Writable>> fIter = featuresSeq.iterator();
+        Iterator<List<Writable>> lIter = labelsSeq.iterator();
 
         INDArray inputArr = null;
         INDArray outputArr = null;
@@ -101,7 +101,7 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<Colle
         int[] idx = new int[3];
         int i = 0;
         while(fIter.hasNext()){
-            Collection<Writable> step = fIter.next();
+            List<Writable> step = fIter.next();
             if (i == 0) {
                 int[] inShape = new int[]{1,step.size(),featuresLength};
                 inputArr = Nd4j.create(inShape);
@@ -131,7 +131,7 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<Colle
         idx = new int[3];
         i = 0;
         while(lIter.hasNext()){
-            Collection<Writable> step = lIter.next();
+            List<Writable> step = lIter.next();
             if (i == 0) {
                 int[] outShape = new int[]{1,(regression ? step.size() : numPossibleLabels),labelsLength};
                 outputArr = Nd4j.create(outShape);

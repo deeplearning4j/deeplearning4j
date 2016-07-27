@@ -17,7 +17,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -56,7 +55,7 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
         String jvmuid = UIDProvider.getJVMUID();
         uid = Thread.currentThread().getId() + jvmuid.substring(0,Math.min(8,jvmuid.length()));
 
-        List<Collection<Writable>> list = new ArrayList<>(batchSize);
+        List<List<Writable>> list = new ArrayList<>(batchSize);
 
         while(stringIterator.hasNext()){
             String next = stringIterator.next();
@@ -67,7 +66,7 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
         }
     }
 
-    private void processBatchIfRequired(List<Collection<Writable>> list, boolean finalRecord) throws Exception{
+    private void processBatchIfRequired(List<List<Writable>> list, boolean finalRecord) throws Exception{
         if(list.isEmpty()) return;
         if(list.size() < batchSize && !finalRecord) return;
 
