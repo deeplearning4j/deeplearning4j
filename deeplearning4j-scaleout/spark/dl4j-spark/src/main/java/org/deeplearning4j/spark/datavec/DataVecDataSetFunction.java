@@ -21,7 +21,7 @@ import java.util.List;
  * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
  */
-public class DataVecDataSetFunction implements Function<Collection<Writable>,DataSet>, Serializable {
+public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>, Serializable {
 
     private final int labelIndex;
     private final int labelIndexTo;
@@ -58,10 +58,7 @@ public class DataVecDataSetFunction implements Function<Collection<Writable>,Dat
     }
 
     @Override
-    public DataSet call(Collection<Writable> writables) throws Exception {
-        List<Writable> currList;
-        if(writables instanceof List) currList = (List<Writable>)writables;
-        else currList = new ArrayList<>(writables);
+    public DataSet call(List<Writable> currList) throws Exception {
 
         //allow people to specify label index as -1 and infer the last possible label
         int labelIndex = this.labelIndex;
