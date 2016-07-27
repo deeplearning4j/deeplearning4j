@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -1650,7 +1651,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(network.solver != null){
             //Network updater state: should be cloned over also
-            this.setUpdater(network.getUpdater().clone());
+            INDArray updaterView = network.getUpdater().getStateViewArray();
+            if(updaterView != null){
+                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                this.setUpdater(newUpdater);
+            }
         } else {
             this.solver = null;
         }

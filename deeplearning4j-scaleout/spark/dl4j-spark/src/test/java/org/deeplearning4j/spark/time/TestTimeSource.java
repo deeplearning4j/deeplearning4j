@@ -34,7 +34,7 @@ public class TestTimeSource {
             long ntpTime = timeSource.currentTimeMillis();
             long offset = ntpTime - systemTime;
             System.out.println("System: " + systemTime + "\tSystemClockTimeSource: " + ntpTime + "\tOffset: " + offset);
-            assertEquals(systemTime,ntpTime);
+            assertEquals(systemTime,ntpTime,2); //Should be exact, but we might randomly tick over between one ms and the next
             Thread.sleep(500);
         }
     }

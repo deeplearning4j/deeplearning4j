@@ -26,6 +26,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -388,6 +389,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                     .configure(conf())
                     .listeners(getListeners())
                     .model(this).build();
+            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
+            Updater updater = solver.getOptimizer().getUpdater();
+            int updaterStateSize = updater.stateSizeForLayer(this);
+            if(updaterStateSize > 0) updater.setStateViewArray(this, Nd4j.createUninitialized(new int[]{1,updaterStateSize},Nd4j.order()), true);
         }
         solver.optimize();
     }
