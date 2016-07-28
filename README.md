@@ -2,6 +2,8 @@ ND4J: Scientific Computing on the JVM
 ===========================================
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.nd4j/nd4j/badge.svg)](http://nd4j.org/doc)
 
 ND4J is an Apache2 Licensed open-sourced scientific computing library for the JVM. It is meant to be used in production environments
 rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
