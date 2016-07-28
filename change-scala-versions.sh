@@ -22,8 +22,8 @@
 set -e
 
 VALID_VERSIONS=( 2.10 2.11 )
-SCALA_211_VERSION="2\.11.7"
-SCALA_210_VERSION="2\.10.6"
+SCALA_211_VERSION="2.11.7"
+SCALA_210_VERSION="2.10.6"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <scala version to be used>
@@ -52,13 +52,13 @@ check_scala_version "$TO_VERSION"
 if [ $TO_VERSION = "2.11" ]; then
   FROM_BINARY="_2\.10"
   TO_BINARY="_2\.11"
-  FROM_VERSION=SCALA_210_VERSION;
-  TO_VERSION=SCALA_211_VERSION;
+  FROM_VERSION=SCALA_210_VERSION
+  TO_VERSION=SCALA_211_VERSION
 else
   FROM_BINARY="_2\.11"
   TO_BINARY="_2\.10"
-  FROM_VERSION=SCALA_211_VERSION;
-  TO_VERSION=SCALA_210_VERSION;
+  FROM_VERSION=SCALA_211_VERSION
+  TO_VERSION=SCALA_210_VERSION
 fi
 
 sed_i() {
@@ -73,7 +73,7 @@ BASEDIR=$(dirname $0)
 
 #Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
-  -exec bash -c "sed_i 's/\(artifactId>spark.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
+  -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
   
 #Scala versions, like <artifactId>scala-library</artifactId><version>2.10.6</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
@@ -82,5 +82,3 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
 #Scala maven plugin, <scalaVersion>2.10</scalaVersion>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
-  
-
