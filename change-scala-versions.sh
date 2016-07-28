@@ -55,8 +55,8 @@ if [ $TO_VERSION = "2.11" ]; then
   FROM_VERSION=SCALA_210_VERSION;
   TO_VERSION=SCALA_211_VERSION;
 else
-  FROM_SUFFIX="_2\.11"
-  TO_SUFFIX="_2\.10"
+  FROM_BINARY="_2\.11"
+  TO_BINARY="_2\.10"
   FROM_VERSION=SCALA_211_VERSION;
   TO_VERSION=SCALA_210_VERSION;
 fi
@@ -67,13 +67,13 @@ sed_i() {
 
 export -f sed_i
 
-echo "sed_i 's/\(artifactId>spark.*'$FROM_SUFFIX'\)<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}";
+echo "sed_i 's/\(artifactId>.*'$FROM_BINARY'\)<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}";
 
 BASEDIR=$(dirname $0)
 
 #Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
-  -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_SUFFIX'<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}" \;
+  -exec bash -c "sed_i 's/\(artifactId>spark.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
   
 #Scala versions, like <artifactId>scala-library</artifactId><version>2.10.6</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
