@@ -11,10 +11,6 @@
 
     <name>deeplearning4j-cli-spark</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
