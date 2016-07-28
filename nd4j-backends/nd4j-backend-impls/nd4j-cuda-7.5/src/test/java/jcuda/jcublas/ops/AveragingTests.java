@@ -138,7 +138,7 @@ public class AveragingTests {
             INDArray array = pairs.get(i).getKey();
             AllocationPoint point = allocator.getAllocationPoint(array.data());
 
-            if (point.getDeviceId().intValue() != 0 )
+            if (point.getDeviceId() != 0 )
                 hasNonZero.set(true);
 
             arrays.add(array);

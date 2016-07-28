@@ -140,5 +140,38 @@ public class WeirdSparkTests {
         thread.start();
         thread.join();
     }
+
+
+    @Test
+    public void testMultithreadedViews1() throws Exception {
+        final INDArray array = Nd4j.ones(10,10);
+        final INDArray view = array.getRow(1);
+
+        assertEquals(1.0f, view.getFloat(0), 0.01f);
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                assertEquals(1.0f, view.getFloat(0), 0.01f);
+
+                view.subi(1.0f);
+
+                try {
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    //
+                }
+
+                System.out.println(view);
+            }
+        });
+
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, 1);
+        thread.start();
+        thread.join();
+
+        //System.out.println(view);
+        assertEquals(0.0f, view.getFloat(0), 0.01f);
+    }
 }
 

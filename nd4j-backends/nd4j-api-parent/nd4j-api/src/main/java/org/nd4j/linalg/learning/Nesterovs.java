@@ -18,7 +18,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class Nesterovs implements Serializable, GradientUpdater {
     private double momentum = 0.5;
-    private INDArray v;
+    private volatile INDArray v;
     private double learningRate = 0.1;
 
     @Override

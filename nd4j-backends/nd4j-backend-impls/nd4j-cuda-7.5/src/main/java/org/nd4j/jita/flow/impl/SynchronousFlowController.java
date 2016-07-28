@@ -88,7 +88,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (result != null) {
             prepareDelayedMemory(result);
-            AllocationPoint pointData = allocator.getAllocationPoint(result.data());
+            AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
@@ -119,7 +119,7 @@ public class SynchronousFlowController implements FlowController {
         for (INDArray operand: operands) {
             if (operand == null) continue;
 
-            AllocationPoint pointData = allocator.getAllocationPoint(operand.data());
+            AllocationPoint pointData = allocator.getAllocationPoint(operand);
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
