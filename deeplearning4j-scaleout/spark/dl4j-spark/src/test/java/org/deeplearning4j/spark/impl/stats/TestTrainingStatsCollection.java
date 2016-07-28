@@ -122,6 +122,13 @@ public class TestTrainingStatsCollection {
             //First: master stats
             assertTrue(stats instanceof ParameterAveragingTrainingMasterStats);
             ParameterAveragingTrainingMasterStats masterStats = (ParameterAveragingTrainingMasterStats) stats;
+
+            List<EventStats> countRddTime = masterStats.getParameterAveragingMasterCountRddSizeTimesMs();
+            assertEquals(1, countRddTime.size());   //occurs once per fit
+            assertDurationGreaterEqZero(countRddTime);
+            assertNonNullFields(countRddTime);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(countRddTime,1,1,1);   //should occur only in master once
+
             List<EventStats> broadcastCreateTime = masterStats.getParameterAveragingMasterBroadcastCreateTimesMs();
             assertEquals(numberOfAveragings, broadcastCreateTime.size());
             assertDurationGreaterEqZero(broadcastCreateTime);
