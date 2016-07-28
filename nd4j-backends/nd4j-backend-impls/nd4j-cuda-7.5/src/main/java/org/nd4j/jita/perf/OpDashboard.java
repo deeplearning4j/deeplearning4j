@@ -36,7 +36,7 @@ public class OpDashboard {
             return "TransformOp";
         } else if (op instanceof IndexAccumulation) {
             return "IndexAccumulationOp";
-        } else return "UnknownUp";
+        } else return "Unknown Op calls";
     }
 
     /**
