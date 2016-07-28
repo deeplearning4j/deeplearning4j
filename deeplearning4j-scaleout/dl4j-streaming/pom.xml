@@ -17,13 +17,6 @@
     <name>Dl4j Streaming</name>
     <url>http://www.deeplearning4j.org</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-    </properties>
-
-
     <dependencies>
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -100,45 +93,10 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
-            <version>2.17.1</version>
+            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
-    <build>
-        <defaultGoal>install</defaultGoal>
-
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-
-            <!-- Allows the example to be run via 'mvn compile exec:java' -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.4.0</version>
-                <configuration>
-                    <mainClass>org.deeplearning4j.MainApp</mainClass>
-                    <includePluginDependencies>false</includePluginDependencies>
-                </configuration>
-            </plugin>
-
-        </plugins>
-    </build>
 
 </project>
