@@ -1,10 +1,8 @@
 package org.deeplearning4j.spark.impl.common;
 
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.input.PortableDataStream;
 import org.nd4j.linalg.dataset.DataSet;
-import scala.Tuple2;
 
 import java.io.InputStream;
 

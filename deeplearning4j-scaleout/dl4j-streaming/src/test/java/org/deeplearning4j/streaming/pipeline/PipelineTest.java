@@ -9,7 +9,6 @@ import org.deeplearning4j.streaming.embedded.EmbeddedZookeeper;
 import org.deeplearning4j.streaming.embedded.TestUtils;
 import org.deeplearning4j.streaming.pipeline.spark.PrintDataSet;
 import org.deeplearning4j.streaming.pipeline.spark.SparkStreamingPipeline;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,10 +43,10 @@ public class PipelineTest {
     public void testPipeline() throws Exception {
         SparkStreamingPipeline pipeline = SparkStreamingPipeline.builder()
                 .dataType("csv").kafkaBroker(kafkaCluster.getBrokerList())
-                .inputFormat("org.canova.api.formats.input.impl.ListStringInputFormat")
+                .inputFormat("org.datavec.api.formats.input.impl.ListStringInputFormat")
                 .inputUri("file:src/test/resources/?fileName=iris.dat&noop=true").streamingDuration(Durations.seconds(1))
                 .kafkaPartitions(1).kafkaTopic("test3").sparkMaster("local[*]").numLabels(3).recordToDataSetFunction(new CSVRecordToDataSet())
-                .zkHost("localhost:" + zkPort).sparkAppName("canova").build();
+                .zkHost("localhost:" + zkPort).sparkAppName("datavec").build();
         pipeline.init();
 
         final JavaDStream<DataSet> dataSetJavaDStream =  pipeline.run();

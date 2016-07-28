@@ -2,7 +2,7 @@ package org.deeplearning4j.streaming.serde;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.common.serialization.Serializer;
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.ByteArrayOutputStream;

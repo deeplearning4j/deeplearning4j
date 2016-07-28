@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
 import org.apache.commons.codec.binary.Base64;
 
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;

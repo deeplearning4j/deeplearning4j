@@ -18,11 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 /** Gated Recurrent Unit RNN Layer.<br>
  * The GRU was recently proposed by Cho et al. 2014 - http://arxiv.org/abs/1406.1078<br>

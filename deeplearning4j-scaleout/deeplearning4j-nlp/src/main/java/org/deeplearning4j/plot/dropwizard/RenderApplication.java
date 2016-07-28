@@ -18,17 +18,14 @@
 
 package org.deeplearning4j.plot.dropwizard;
 
+import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
-
 import org.apache.commons.compress.utils.IOUtils;
-
-
-import com.google.common.collect.ImmutableMap;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

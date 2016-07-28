@@ -18,10 +18,6 @@
 
 package org.deeplearning4j.eval;
 
-import java.io.Serializable;
-import java.text.DecimalFormat;
-import java.util.*;
-
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -32,6 +28,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.text.DecimalFormat;
+import java.util.*;
 
 /**
  * Evaluation metrics:

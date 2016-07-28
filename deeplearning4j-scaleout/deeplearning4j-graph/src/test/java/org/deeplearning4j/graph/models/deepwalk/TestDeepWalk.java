@@ -5,8 +5,8 @@ import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.graph.Graph;
-import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
+import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
 import org.deeplearning4j.graph.iterator.parallel.WeightedRandomWalkGraphIteratorProvider;
 import org.deeplearning4j.graph.models.GraphVectors;
@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestDeepWalk {
 

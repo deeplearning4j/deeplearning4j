@@ -18,11 +18,10 @@
 
 package org.deeplearning4j.nn.conf.distribution;
 
-import org.apache.commons.math3.exception.NumberIsTooLargeException;
-import org.apache.commons.math3.exception.util.LocalizedFormats;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
 
 /**
  * A uniform distribution.

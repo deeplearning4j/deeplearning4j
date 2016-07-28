@@ -1,9 +1,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
-import lombok.Data;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
@@ -12,7 +10,6 @@ import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;

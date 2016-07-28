@@ -25,9 +25,11 @@ import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
 
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 

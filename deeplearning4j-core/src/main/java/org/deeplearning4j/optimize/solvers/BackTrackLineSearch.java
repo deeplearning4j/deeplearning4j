@@ -19,14 +19,12 @@
 package org.deeplearning4j.optimize.solvers;
 
 import org.apache.commons.math3.util.FastMath;
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.LineOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,12 +32,13 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.optimize.api.LineOptimizer;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.nd4j.linalg.ops.transforms.Transforms.abs;
 
 
 //"Line Searches and Backtracking", p385, "Numeric Recipes in C"

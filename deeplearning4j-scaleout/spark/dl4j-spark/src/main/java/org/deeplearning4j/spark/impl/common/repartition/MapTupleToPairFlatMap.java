@@ -1,7 +1,6 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
 import org.apache.spark.api.java.function.PairFlatMapFunction;
-import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
 
 import java.util.ArrayList;

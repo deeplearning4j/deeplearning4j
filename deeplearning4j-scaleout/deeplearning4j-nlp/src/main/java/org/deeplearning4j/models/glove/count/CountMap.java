@@ -1,11 +1,9 @@
 package org.deeplearning4j.models.glove.count;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

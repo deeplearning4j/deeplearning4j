@@ -2,7 +2,7 @@ package org.deeplearning4j;
 
 /**
  * A pipeline consists of a
- * set of input,output, and canova uris.
+ * set of input,output, and datavec uris.
  * This is used to build a composable data pipeline
  * that can process or integrate any kind of data
  *
@@ -22,10 +22,10 @@ public interface Pipeline {
     String[] outputUris();
 
     /**
-     * The canova uris to use
-     * @return the uris used for canova
+     * The datavec uris to use
+     * @return the uris used for datavec
      * vectorization
      */
-    String[] canovaUris();
+    String[] datavecUris();
 
 }

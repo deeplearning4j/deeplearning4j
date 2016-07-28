@@ -1,6 +1,6 @@
 package org.deeplearning4j.text.documentiterator;
 
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
 

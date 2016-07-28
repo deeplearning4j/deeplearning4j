@@ -18,15 +18,7 @@ package org.deeplearning4j.streaming.embedded;
  */
 
 
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-
-import scala.Tuple2;
-
 import com.google.common.collect.Lists;
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function2;
@@ -35,6 +27,11 @@ import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import scala.Tuple2;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public final class JavaQueueStream {
     private JavaQueueStream() {

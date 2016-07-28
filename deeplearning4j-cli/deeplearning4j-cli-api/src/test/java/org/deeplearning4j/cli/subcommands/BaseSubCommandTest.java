@@ -17,8 +17,10 @@
  */
 
 package org.deeplearning4j.cli.subcommands;
-import static org.junit.Assert.*;
-import org.junit.*;
+
+import org.junit.Ignore;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by sonali on 2/11/15.

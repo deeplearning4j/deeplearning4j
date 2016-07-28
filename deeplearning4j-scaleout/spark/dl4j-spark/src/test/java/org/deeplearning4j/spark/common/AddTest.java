@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.spark.common;
 
-import static org.junit.Assert.*;
-
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.common.Add;
@@ -29,6 +27,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 2/8/15.
