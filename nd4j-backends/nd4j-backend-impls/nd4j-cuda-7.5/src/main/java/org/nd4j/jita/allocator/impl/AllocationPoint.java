@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-// DO NOT EVER MAKE THIS CLASSS SERIALIZABLE.
+// DO NOT EVER MAKE THIS CLASS SERIALIZABLE.
 public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
@@ -76,7 +76,15 @@ public class AllocationPoint {
      device, where memory was/will be allocated.
     Valid integer >= 0 is deviceId, null for undefined
     */
-    @Getter @Setter private volatile Integer deviceId;
+    private volatile int deviceId;
+
+    public int getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /*
         We assume 1D memory chunk allocations.

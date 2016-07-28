@@ -63,6 +63,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private INDArray featuresMask;
     private INDArray labelsMask;
 
+    private transient boolean preProcessed = false;
 
     public DataSet() {
         this(null,null);
@@ -94,6 +95,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labels = labels;
         this.featuresMask = featuresMask;
         this.labelsMask = labelsMask;
+    }
+
+    public boolean isPreProcessed() {
+        return preProcessed;
+    }
+
+    public void markAsPreProcessed() {
+        this.preProcessed = true;
     }
 
     /**
