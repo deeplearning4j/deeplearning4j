@@ -78,7 +78,7 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
         public int compare(Map<String,Integer> o1, Map<String,Integer> o2) {
             int s1 = o1.size();
             int s2 = o2.size();
-            if (o1 == o2) {
+            if (s1 == s2) {
                 int total1 = 0;
                 for (int i : o1.values()) {
                     total1 += i;
@@ -87,9 +87,13 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
                 for (int i : o2.values()) {
                     total2 += i;
                 }
-                return total2 - total1;
+                if (total2 < total1) return -1;
+                if (total2 > total1) return 1;
+                return 0;
+            } else if (s2 < s1) {
+                return -1;
             } else {
-                return s2 - s1;
+                return 1;
             }
         }
     }

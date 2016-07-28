@@ -75,6 +75,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         cudnnActivationStruct activationDesc = new cudnnActivationStruct();
 
         CudnnContext() {
+            // insure that cuDNN initializes on the same device as ND4J for this thread
+            Nd4j.create(1);
             createHandles();
             deallocator(new Deallocator(this));
         }

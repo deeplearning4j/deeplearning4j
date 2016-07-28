@@ -29,7 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -60,7 +59,7 @@ public class RecordReaderFunction implements Function<String,DataSet> {
     public DataSet call(String v1) throws Exception {
         recordReader.initialize(new StringSplit(v1));
         List<DataSet> dataSets = new ArrayList<>();
-        Collection<Writable> record = recordReader.next();
+        List<Writable> record = recordReader.next();
         List<Writable> currList;
         if(record instanceof List)
             currList = (List<Writable>) record;
