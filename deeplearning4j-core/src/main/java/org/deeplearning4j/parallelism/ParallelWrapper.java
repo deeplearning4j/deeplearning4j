@@ -52,6 +52,12 @@ public class ParallelWrapper {
         this.workers = workers;
         this.prefetchSize = prefetchSize;
 
+        if (this.model instanceof MultiLayerNetwork) {
+            ((MultiLayerNetwork) this.model).getUpdater();
+        } else if (this.model instanceof ComputationGraph) {
+            ((ComputationGraph) this.model).getUpdater();
+        }
+
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
             zoo[cnt] = new Trainer(cnt, model);
@@ -118,7 +124,7 @@ public class ParallelWrapper {
                             score += zoo[cnt].getModel().score();
                         }
 
-                        params.divi(cnt);
+                        params.divi(workers);
                         model.setParams(params);
                     }
 
@@ -141,13 +147,13 @@ public class ParallelWrapper {
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
-                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape(), updater.getStateViewArray().ordering());
+                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        state.addi(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray().dup());
                                     }
                                     state.divi(cnt);
-                                    updater.getStateViewArray().assign(state);
+                                    updater.setStateViewArray((MultiLayerNetwork) model, state, false);
                                 }
                             }
                         }
@@ -165,13 +171,13 @@ public class ParallelWrapper {
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
-                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape(), updater.getStateViewArray().ordering());
+                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
                                         state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
                                     }
                                     state.divi(cnt);
-                                    updater.getStateViewArray().assign(state);
+                                    updater.setStateViewArray(state);
                                 }
                             }
                         }
@@ -359,10 +365,22 @@ public class ParallelWrapper {
 
             this.shouldUpdate.set(true);
 
-            if (model instanceof MultiLayerNetwork) {
-                replicatedModel = ((MultiLayerNetwork) model).clone();
-            } else if (model instanceof  ComputationGraph) {
-                replicatedModel = ((ComputationGraph) model).clone();
+            if (replicatedModel instanceof MultiLayerNetwork) {
+                replicatedModel.setParams(model.params().dup());
+
+                Updater updater = ((MultiLayerNetwork) originalModel).getUpdater();
+                INDArray view = updater.getStateViewArray();
+
+                updater = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                updater.setStateViewArray((MultiLayerNetwork) replicatedModel, view.dup(), false);
+            } else if (replicatedModel instanceof  ComputationGraph) {
+                replicatedModel.setParams(model.params().dup());
+
+                ComputationGraphUpdater updater = ((ComputationGraph) originalModel).getUpdater();
+                INDArray view = updater.getStateViewArray();
+
+                updater = ((ComputationGraph) replicatedModel).getUpdater();
+                updater.setStateViewArray(view.dup());
             }
         }
 
@@ -373,32 +391,20 @@ public class ParallelWrapper {
         @Override
         public void run() {
             try {
+                // we create fresh network, with the same configuration, as initially created by user
+                // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
                     MultiLayerConfiguration conf = ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     ((MultiLayerNetwork) replicatedModel).init();
-
-                //    this.replicatedModel = ((MultiLayerNetwork) originalModel).clone();
                 } else if (originalModel instanceof ComputationGraph) {
                     this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
 
                     ((ComputationGraph) this.replicatedModel).init();
-
-                //    this.replicatedModel = ((ComputationGraph) originalModel).clone();
                 }
 
                 while (true) {
-                    /*
-                    if (shouldUpdate.get()) {
-                        if (originalModel instanceof MultiLayerNetwork) {
-                            replicatedModel = ((MultiLayerNetwork) originalModel).clone();
-                        } else if (originalModel instanceof  ComputationGraph) {
-                            replicatedModel = ((ComputationGraph) originalModel).clone();
-                        }
-                        shouldUpdate.set(false);
-                    }
-                    */
                     DataSet dataSet = queue.poll(1, TimeUnit.SECONDS);
                     if (dataSet != null) {
                         if (replicatedModel instanceof MultiLayerNetwork) {
