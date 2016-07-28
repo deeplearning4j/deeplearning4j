@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StringCounter {
     private Map<String, AtomicLong> counter = new ConcurrentHashMap<>();
+    private AtomicLong totals = new AtomicLong(0);
 
     public StringCounter() {
 
@@ -21,6 +22,8 @@ public class StringCounter {
             counter.put(key, new AtomicLong(0));
         }
 
+        totals.incrementAndGet();
+
         return counter.get(key).incrementAndGet();
     }
 
@@ -29,5 +32,19 @@ public class StringCounter {
             return 0;
 
         return counter.get(key).get();
+    }
+
+    public String asString() {
+        StringBuilder builder = new StringBuilder();
+
+        for (String key: counter.keySet()) {
+            long currentCnt = counter.get(key).get();
+            long totalCnt = totals.get();
+            float perc = currentCnt * 100 / totalCnt;
+
+            builder.append(key).append("  >>> [").append(currentCnt).append("]").append(" perc: [").append(perc).append("]").append("\n");
+        }
+
+        return builder.toString();
     }
 }
