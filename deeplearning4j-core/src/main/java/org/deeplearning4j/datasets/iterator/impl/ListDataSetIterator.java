@@ -134,8 +134,12 @@ public class ListDataSetIterator implements DataSetIterator {
 		}
 		
 		DataSet d = DataSet.merge(r);
-        if(preProcessor != null)
-            preProcessor.preProcess(d);
+        if(preProcessor != null) {
+        	if (!d.isPreProcessed()) {
+				preProcessor.preProcess(d);
+				d.markAsPreProcessed();
+			}
+		}
 		return d;
 	}
 
