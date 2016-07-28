@@ -1,8 +1,5 @@
 package org.deeplearning4j.ui.rl;
 
-import org.deeplearning4j.ui.flow.FlowResource;
-import org.deeplearning4j.ui.flow.FlowView;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;

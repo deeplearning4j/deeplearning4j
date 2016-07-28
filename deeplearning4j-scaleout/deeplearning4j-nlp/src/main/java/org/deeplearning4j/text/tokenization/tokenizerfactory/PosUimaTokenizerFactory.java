@@ -19,12 +19,6 @@
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 
-import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
-import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngine;
-
-import java.io.InputStream;
-import java.util.Collection;
-
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
@@ -33,6 +27,12 @@ import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenization.tokenizer.PosUimaTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+
+import java.io.InputStream;
+import java.util.Collection;
+
+import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngine;
+import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
 
 /**
  * Creates a tokenizer that filters by 

@@ -1,14 +1,14 @@
 package org.deeplearning4j.streaming.serde;
 
-import org.canova.api.io.data.DoubleWritable;
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 6/10/16.

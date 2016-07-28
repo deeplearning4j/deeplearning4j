@@ -4,7 +4,6 @@ import lombok.NonNull;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

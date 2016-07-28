@@ -18,19 +18,19 @@
 
 package org.deeplearning4j.util;
 
-import static org.junit.Assert.*;
-
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.movingwindow.ContextLabelRetriever;
-import org.junit.Test;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Basic test case for the context label test

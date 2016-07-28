@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
-
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

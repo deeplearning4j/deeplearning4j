@@ -6,7 +6,7 @@ package org.deeplearning4j;
  * @author Adam Gibson
  */
 public abstract  class BasePipeline implements Pipeline {
-    protected String[] inputUris,outputUris,canovaUris;
+    protected String[] inputUris,outputUris,datavecUris;
 
     @Override
     public String[] inputUris() {
@@ -19,8 +19,8 @@ public abstract  class BasePipeline implements Pipeline {
     }
 
     @Override
-    public String[] canovaUris() {
-        return canovaUris;
+    public String[] datavecUris() {
+        return datavecUris;
     }
 
     public static class Builder {

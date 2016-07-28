@@ -1,7 +1,5 @@
 package org.deeplearning4j.spark.api.stats;
 
-import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
-import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerMultiDataSetFlatMap;
 import org.deeplearning4j.spark.stats.BaseEventStats;
@@ -11,7 +9,6 @@ import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**

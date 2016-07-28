@@ -2,7 +2,6 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
 
-
 import java.io.*;
 import java.util.Iterator;
 

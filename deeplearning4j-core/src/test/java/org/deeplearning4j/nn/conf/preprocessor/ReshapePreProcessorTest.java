@@ -1,10 +1,10 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import static org.junit.Assert.*;
-
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by merlin on 7/31/15.

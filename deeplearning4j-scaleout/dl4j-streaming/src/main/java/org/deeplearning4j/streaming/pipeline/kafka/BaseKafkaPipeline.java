@@ -8,9 +8,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.component.kafka.KafkaConstants;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.commons.net.util.Base64;
-import org.canova.api.writable.Writable;
-import org.deeplearning4j.streaming.conversion.dataset.RecordToDataSet;
-import org.deeplearning4j.streaming.conversion.ndarray.RecordToNDArray;
+import org.datavec.api.writable.Writable;
 import org.deeplearning4j.streaming.routes.CamelKafkaRouteBuilder;
 import org.deeplearning4j.streaming.serde.RecordSerializer;
 
@@ -37,7 +35,7 @@ public abstract class BaseKafkaPipeline<E,RECORD_CONVERTER_FUNCTION> {
     protected CamelContext camelContext;
     protected String hadoopHome;
     protected String dataType;
-    protected String sparkAppName = "canova";
+    protected String sparkAppName = "datavec";
     protected int kafkaPartitions = 1;
     protected RECORD_CONVERTER_FUNCTION recordToDataSetFunction;
     protected int numLabels;
@@ -48,7 +46,7 @@ public abstract class BaseKafkaPipeline<E,RECORD_CONVERTER_FUNCTION> {
     /**
      * Initialize the pipeline
      * setting up camel routes,
-     * kafka,canova,and the
+     * kafka,datavec,and the
      * spark streaming DAG.
      * @throws Exception
      */

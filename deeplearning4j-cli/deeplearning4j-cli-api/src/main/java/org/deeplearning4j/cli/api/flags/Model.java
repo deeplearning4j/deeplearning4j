@@ -19,7 +19,6 @@
 package org.deeplearning4j.cli.api.flags;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.cli.subcommands.SubCommand;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 

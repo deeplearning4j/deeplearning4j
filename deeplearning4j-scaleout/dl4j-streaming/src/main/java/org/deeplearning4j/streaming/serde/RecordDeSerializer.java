@@ -2,16 +2,15 @@ package org.deeplearning4j.streaming.serde;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.Writable;
 import org.deeplearning4j.util.SerializationUtils;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * Record de serializer for canova
+ * Record de serializer for datavec
  * @author Adam Gibson
  */
 public class RecordDeSerializer implements Deserializer<Collection<Collection<Writable>>> {
