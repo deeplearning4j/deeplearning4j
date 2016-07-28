@@ -18,9 +18,10 @@
 
 package org.deeplearning4j.util;
 
-import java.util.Arrays;
 import org.junit.Test;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 /**

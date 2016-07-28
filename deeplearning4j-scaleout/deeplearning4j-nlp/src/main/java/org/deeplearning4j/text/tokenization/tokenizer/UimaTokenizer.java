@@ -18,18 +18,16 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.util.JCasUtil;
-import org.apache.uima.util.CasPool;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.text.uima.UimaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Tokenizer based on the passed in analysis engine

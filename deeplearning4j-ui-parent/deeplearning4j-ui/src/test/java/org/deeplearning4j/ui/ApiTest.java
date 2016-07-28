@@ -2,7 +2,7 @@ package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.api.UrlResource;
 import org.junit.Ignore;
@@ -12,14 +12,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Adam Gibson

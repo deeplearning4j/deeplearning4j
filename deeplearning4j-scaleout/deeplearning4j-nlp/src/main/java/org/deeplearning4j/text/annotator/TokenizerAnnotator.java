@@ -19,17 +19,16 @@
 package org.deeplearning4j.text.annotator;
 
 import opennlp.uima.tokenize.TokenizerModelResourceImpl;
-
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
 import org.apache.uima.fit.factory.ExternalResourceFactory;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.opennlp.tools.Tokenizer;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
-import org.deeplearning4j.text.tokenization.tokenizer.ConcurrentTokenizer;
 import org.deeplearning4j.text.movingwindow.Util;
+import org.deeplearning4j.text.tokenization.tokenizer.ConcurrentTokenizer;
 
-import static org.apache.uima.fit.factory.AnalysisEngineFactory.*;
+import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
 
 
 /**

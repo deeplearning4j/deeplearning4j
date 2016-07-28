@@ -20,16 +20,16 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
-
 import java.io.File;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 10/1/14.

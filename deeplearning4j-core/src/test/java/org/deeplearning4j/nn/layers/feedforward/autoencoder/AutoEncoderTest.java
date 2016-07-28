@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
-import java.util.Arrays;
-
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
@@ -36,6 +34,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 

@@ -18,40 +18,31 @@
 
 package org.deeplearning4j.cli.subcommands;
 
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
-import org.canova.api.formats.input.InputFormat;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
+import org.datavec.api.formats.input.InputFormat;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.api.LayerFactory;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Collections;
+import java.util.Properties;
 
 /**
  * Subcommand for training model
@@ -73,7 +64,7 @@ public class Train extends BaseSubCommand {
     public static final String INPUT_DATA_FILENAME_KEY = "input.directory";
 
     public static final String INPUT_FORMAT_KEY = "input.format";
-    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.SVMLightInputFormat";
+    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.datavec.api.formats.input.impl.SVMLightInputFormat";
 
 
 

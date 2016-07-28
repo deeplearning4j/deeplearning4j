@@ -16,7 +16,7 @@ public class StreamingPipeline implements Pipeline {
     }
 
     @Override
-    public String[] canovaUris() {
+    public String[] datavecUris() {
         return new String[0];
     }
 }

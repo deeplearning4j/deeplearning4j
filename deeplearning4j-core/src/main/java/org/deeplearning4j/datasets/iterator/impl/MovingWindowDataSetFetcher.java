@@ -19,11 +19,10 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
+import org.deeplearning4j.util.MovingWindowMatrix;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.util.MovingWindowMatrix;
-
 
 import java.util.ArrayList;
 import java.util.List;

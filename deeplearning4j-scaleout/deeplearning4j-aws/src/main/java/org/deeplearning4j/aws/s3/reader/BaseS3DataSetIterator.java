@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.aws.s3.reader;
 
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
-
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 /**
  * baseline data applyTransformToDestination iterator for
  * @author Adam Gibson

@@ -17,11 +17,15 @@
  */
 
 package org.deeplearning4j.eval;
-import java.io.Serializable;
-import java.util.*;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ConfusionMatrix<T extends Comparable<? super T>> implements Serializable {
     private Map<T, Multiset<T>> matrix;

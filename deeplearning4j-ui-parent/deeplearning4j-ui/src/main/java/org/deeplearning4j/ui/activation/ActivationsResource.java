@@ -19,16 +19,18 @@
 package org.deeplearning4j.ui.activation;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.activation.MimetypesFileTypeMap;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 
 /**

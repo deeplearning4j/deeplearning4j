@@ -1,11 +1,11 @@
 package org.deeplearning4j.nn.conf.stepfunctions;
 
-import java.io.Serializable;
-
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+
+import java.io.Serializable;
 
 /**
  * Custom step function for line search.

@@ -25,9 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 18/06/2016.

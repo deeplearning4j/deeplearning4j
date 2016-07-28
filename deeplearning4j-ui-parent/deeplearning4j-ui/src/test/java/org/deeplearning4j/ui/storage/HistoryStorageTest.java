@@ -8,7 +8,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * This set of tests addresses real-world use of UiServer: some views have use of history, some (like t-SNE) are not.

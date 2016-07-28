@@ -1,13 +1,8 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import lombok.NonNull;
-import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
-import org.deeplearning4j.models.sequencevectors.graph.huffman.GraphHuffman;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
-import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -16,9 +11,7 @@ import org.deeplearning4j.text.labels.LabelsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

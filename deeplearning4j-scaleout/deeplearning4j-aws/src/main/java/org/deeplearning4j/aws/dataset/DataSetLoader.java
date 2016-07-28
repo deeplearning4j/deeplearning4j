@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.aws.dataset;
 
-import java.io.InputStream;
-
 import org.deeplearning4j.aws.s3.reader.S3Downloader;
+
+import java.io.InputStream;
 
 public class DataSetLoader {
 

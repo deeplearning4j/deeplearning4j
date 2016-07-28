@@ -23,9 +23,8 @@ import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
+import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.uima.UimaResource;
 
 import java.io.File;

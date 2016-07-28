@@ -18,18 +18,16 @@
 
 package org.deeplearning4j.aws.s3.uploader;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.MultipleFileUpload;
 import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
 import org.deeplearning4j.aws.s3.BaseS3;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Uploads files to S3

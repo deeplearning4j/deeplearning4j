@@ -1,12 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
-import static org.junit.Assert.*;
-
-import java.util.List;
-import java.util.Random;
-
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -22,6 +16,11 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+
+import java.util.List;
+import java.util.Random;
+
+import static org.junit.Assert.*;
 
 
 public class GRUTest {

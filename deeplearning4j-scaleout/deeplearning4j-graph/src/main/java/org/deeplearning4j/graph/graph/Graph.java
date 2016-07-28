@@ -1,6 +1,9 @@
 package org.deeplearning4j.graph.graph;
 
-import org.deeplearning4j.graph.api.*;
+import org.deeplearning4j.graph.api.BaseGraph;
+import org.deeplearning4j.graph.api.Edge;
+import org.deeplearning4j.graph.api.IGraph;
+import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.exception.NoEdgesException;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 
