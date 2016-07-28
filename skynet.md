@@ -17,6 +17,10 @@ Even if they theoretically accepted the argument that we should globally regulat
 
 So we should not be so naive as to think it will be easy to impose constraints on AI research, even if we speculate on what the ideal constraints should be.
 
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
+
 Here are a few thoughts about what we might request of the makers of AI software:
 
 1) Give us a heartbeat. A heartbeat is a small bit of code that "phones home." That is, it lets its makers know that the code is being used. So for any program designated as AI, this constraint would be to notify an AI's makers (or some central, authorized body) that it's active.
