@@ -67,8 +67,7 @@ sed_i() {
 
 export -f sed_i
 
-echo "Updating Scala versions in pom.xml files to Scala $TO_BINARY";
-echo "sed_i 's/\(artifactId>.*'$FROM_BINARY'\)<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}";
+echo "Updating Scala versions in pom.xml files to Scala $1";
 
 BASEDIR=$(dirname $0)
 
@@ -83,3 +82,5 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 #Scala maven plugin, <scalaVersion>2.10</scalaVersion>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
+
+echo "Done updating Scala versions.";
