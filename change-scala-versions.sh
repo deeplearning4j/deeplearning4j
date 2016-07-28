@@ -70,8 +70,10 @@ export -f sed_i
 echo "sed_i 's/\(artifactId>spark.*'$FROM_SUFFIX'\)<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}";
 
 BASEDIR=$(dirname $0)
+
+#Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
-  -exec bash -c "sed_i 's/\(artifactId>spark.*\)'$FROM_SUFFIX'<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}" \;
+  -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_SUFFIX'<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}" \;
   
 #Scala versions, like <artifactId>scala-library</artifactId><version>2.10.6</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
