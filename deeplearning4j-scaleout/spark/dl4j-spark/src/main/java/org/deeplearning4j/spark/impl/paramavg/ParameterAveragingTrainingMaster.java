@@ -166,7 +166,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
         trainingData.persist(StorageLevel.MEMORY_ONLY());
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -191,7 +193,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             trainingData = trainingData.coalesce(numWorkers);
         }
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
         if (collectTrainingStats) stats.logSplitStart();
         JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
@@ -224,7 +228,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -254,7 +260,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             trainingData = trainingData.coalesce(numWorkers);
         }
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -276,7 +284,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         if (collectTrainingStats) stats.logFitStart();
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -413,18 +423,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
         INDArray updaterState = tuple.getUpdaterStateSum();
-        if(updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
+        if (updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
 
         if (network != null) {
             MultiLayerNetwork net = network.getNetwork();
             net.setParameters(params);
-            if(updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
+            if (updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
 
             network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         } else {
             ComputationGraph g = graph.getNetwork();
             g.setParams(params);
-            if(updaterState != null) g.getUpdater().setStateViewArray(updaterState);
+            if (updaterState != null) g.getUpdater().setStateViewArray(updaterState);
 
             graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }
