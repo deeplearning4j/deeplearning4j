@@ -61,7 +61,7 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
     }
 
     @Override
-    protected RoutesBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() throws Exception {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
