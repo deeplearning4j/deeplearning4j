@@ -40,3 +40,12 @@ Here are a few thoughts about what we might request of the makers of AI software
 8) For drones and other vehicles that contain AI, add a sensor that recognizes signs of human death, injury or distress (this is actually quite feasible). The militaries of the world already build drones to kill people. That is nothing new. In all likelihood, they will make drones kill people in smarter and smarter ways. What I am suggesting is that we automate the way in which we recognize how AI-enabled drones harm humans. By testing that system in drones authorized to exercise lethal force, we may come up with something we want to add to all AI-enabled machines, to make sure they don't stray.
 
 One way to thinking about controlling AIs, at least AIs of a certain level of intelligence, is to imagine animal control. People have pets and they are supposed to control and constrain their pets in certain ways: they shouldn't let them poop on the sidewalk, they should get them spade or neutered, they should teach them not to hurt or attack other humans in most cases. But not every pet owner does control or constrain their pets. Sometimes those pets go feral and breed uncontrollably, sometimes they damage property and persons, yet we still benefit from animal control laws, all in all.
+
+### <a name="beginner">Other Deeplearning4j Posts</a>
+* [Word2vec: Neural Embeddings for Java](./word2vec)
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
