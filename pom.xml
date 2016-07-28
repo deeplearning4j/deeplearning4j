@@ -62,8 +62,6 @@
         <commons-math3.version>3.3</commons-math3.version>
         <commons-io.version>2.4</commons-io.version>
         <args4j.version>2.0.29</args4j.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <scala.version>2.11.7</scala.version>
         <lombok.version>1.16.6</lombok.version>
         <jodatime.version>2.9.2</jodatime.version>
         <freemarker.version>2.3.23</freemarker.version>
@@ -84,20 +82,6 @@
 
 
     <profiles>
-        <profile>
-            <id>scala-2.11</id>
-            <activation>
-                <property>
-                    <name>scala-2.11</name>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.11.7</scala.version>
-                <scala.binary.version>2.11</scala.binary.version>
-            </properties>
-        </profile>
-
-
         <profile>
             <id>qa</id>
             <build>
