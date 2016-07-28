@@ -19,6 +19,10 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
@@ -52,6 +56,10 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -392,5 +400,62 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             ExampleCountEventStats eces = (ExampleCountEventStats)e;
             assertEquals(batchSizePerExecutor,eces.getTotalExampleCount());
         }
+    }
+
+
+    @Test
+    public void testFitViaStringPaths() throws Exception {
+
+        Path tempDir = Files.createTempDirectory("DL4J-testFitViaStringPaths");
+        File tempDirF = tempDir.toFile();
+        tempDirF.delete();
+
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,1000,false);
+        int i=0;
+        while(iter.hasNext()){
+            File nextFile = new File(tempDirF, i + ".bin");
+            DataSet ds = iter.next();
+            ds.save(nextFile);
+        }
+
+        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+
+
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+
+        //List files:
+        Configuration config = new Configuration();
+        FileSystem hdfs = FileSystem.get(tempDir.toUri(), config);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir.toString()), false);
+
+        while(fileIter.hasNext()){
+            System.out.println(fileIter.next().getPath());
+        }
+
     }
 }
