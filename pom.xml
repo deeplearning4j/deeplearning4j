@@ -75,9 +75,8 @@
         <zookeeper.version>3.4.6</zookeeper.version>
         <kafka.version>0.8.2.2</kafka.version>
         <spark.version>1.5.2</spark.version>
-        <scala.version>2.10.4</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
-
+        <scala.version>2.11.7</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
     <profiles>
@@ -93,7 +92,19 @@
                 <scala.binary.version>2.11</scala.binary.version>
             </properties>
         </profile>
+        <profile>
+            <id>scala-2.10</id>
+            <activation>
+                <property>
+                    <name>scala-2.10</name>
+                </property>
+            </activation>
+            <properties>
+                <scala.version>2.10.4</scala.version>
+                <scala.binary.version>2.10</scala.binary.version>
 
+            </properties>
+        </profile>
         <profile>
             <id>testresources</id>
             <activation>
