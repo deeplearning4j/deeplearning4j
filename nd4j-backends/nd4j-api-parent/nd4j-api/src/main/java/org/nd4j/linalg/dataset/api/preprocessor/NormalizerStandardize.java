@@ -64,7 +64,7 @@ public class NormalizerStandardize implements DataNormalization {
         }
         else {
             currentMeanStd.getRow(1).divi(runningTotal);
-            currentMeanStd.putRow(0,Transforms.sqrt(currentMeanStd.getRow(1));
+            currentMeanStd.putRow(0,Transforms.sqrt(currentMeanStd.getRow(1)));
             currentMeanStd.getRow(1).addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
             if (currentMeanStd.getRow(0).min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
                 logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
