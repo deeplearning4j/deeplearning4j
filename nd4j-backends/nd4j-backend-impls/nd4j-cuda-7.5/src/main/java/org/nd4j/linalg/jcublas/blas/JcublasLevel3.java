@@ -6,6 +6,8 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.perf.OpDashboard;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -80,6 +82,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT gemm called");
 
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processBlasCall("sgemm");
+
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
@@ -117,6 +122,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT symm called");
 
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processBlasCall("symm");
+
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
@@ -151,6 +159,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
         logger.warn("FLOAT syrk called");
 
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processBlasCall("ssyrk");
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
@@ -182,6 +192,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT trsm called");
 
+        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+            OpDashboard.getInstance().processBlasCall("strsm");
 
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 

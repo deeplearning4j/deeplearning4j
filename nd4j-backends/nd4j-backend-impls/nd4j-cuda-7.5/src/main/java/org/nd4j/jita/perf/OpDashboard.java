@@ -83,14 +83,18 @@ public class OpDashboard {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
+        updatePairs(op.name(), opClass);
+    }
+
+    protected void updatePairs(String opName, String opClass) {
         // now we save pairs of ops/classes
-        String cOpNameKey = prevOpName + " -> " + op.name();
+        String cOpNameKey = prevOpName + " -> " + opName;
         String cOpClassKey = prevOpClass + " -> " + opClass;
 
         classPairsCounter.incrementCount(cOpClassKey);
         opPairsCounter.incrementCount(cOpNameKey);
 
-        prevOpName = op.name();
+        prevOpName = opName;
         prevOpClass = opClass;
     }
 
@@ -101,8 +105,17 @@ public class OpDashboard {
     /**
      * This method tracks blasCalls
      */
-    public void processBlasCall() {
+    public void processBlasCall(String blasOpName) {
+        String key = "BLAS";
         invocationsCount.incrementAndGet();
+
+        // using blas function name as key
+        opCounter.incrementCount(blasOpName);
+
+        // all blas calls share the same key
+        classCounter.incrementCount(key);
+
+        updatePairs(blasOpName, key);
     }
 
     public void timeBlasCall() {
