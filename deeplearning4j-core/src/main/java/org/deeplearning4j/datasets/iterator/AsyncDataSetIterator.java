@@ -175,7 +175,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 throw runnable.exception;   //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
-            return !blockingQueue.isEmpty();
+            return runnable.hasLatch();
         }
     }
 
@@ -262,7 +262,15 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             try {
                 lock.readLock().lock();
-                return baseIterator.hasNext() || feeder.get() != 0 || !blockingQueue.isEmpty();
+                boolean result = baseIterator.hasNext() || feeder.get() != 0 || !blockingQueue.isEmpty();
+                if (!isAlive.get())
+                    return result;
+                else while (isAlive.get()) {
+                    // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
+                    result = feeder.get() != 0 || !blockingQueue.isEmpty() || baseIterator.hasNext() ;
+                    if (result) return true;
+                }
+                return result;
             } finally {
                 lock.readLock().unlock();
             }
@@ -272,16 +280,17 @@ public class AsyncDataSetIterator implements DataSetIterator {
         public void run() {
             try {
                 while (!killRunnable && baseIterator.hasNext()) {
-
+                    feeder.incrementAndGet();
                     lock.writeLock().lock();
                     DataSet ds = baseIterator.next();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
-                    feeder.incrementAndGet();
+
                     lock.writeLock().unlock();
 
                     blockingQueue.put(ds);
                 }
+                isAlive.set(false);
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
                 if(killRunnable) {

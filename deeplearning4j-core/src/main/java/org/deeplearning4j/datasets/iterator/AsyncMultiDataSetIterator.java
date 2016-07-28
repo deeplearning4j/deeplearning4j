@@ -103,7 +103,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 throw runnable.exception;   //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
-            return !queue.isEmpty();
+            return runnable.hasLatch();
         }
     }
 
@@ -118,6 +118,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         }
 
         if(!queue.isEmpty()){
+            runnable.feeder.decrementAndGet();
             return queue.poll();    //non-blocking, but returns null if empty
         }
 
@@ -132,6 +133,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             while(runnable.exception == null ){
                 MultiDataSet ds = queue.poll(5, TimeUnit.SECONDS);
                 if(ds != null) {
+                    runnable.feeder.decrementAndGet();
                     return ds;
                 }
                 if(runnable.killRunnable){
@@ -192,7 +194,15 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             try {
                 lock.readLock().lock();
-                return iterator.hasNext() || feeder.get() != 0 || !queue.isEmpty();
+                boolean result = iterator.hasNext() || feeder.get() != 0 || !queue.isEmpty();
+                if (!isAlive)
+                    return result;
+                else while (isAlive) {
+                    // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
+                    result = feeder.get() != 0 || !queue.isEmpty() || iterator.hasNext() ;
+                    if (result) return true;
+                }
+                return result;
             } finally {
                 lock.readLock().unlock();
             }
@@ -202,15 +212,17 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         public void run() {
             try {
                 while (!killRunnable && iterator.hasNext()) {
+                    feeder.incrementAndGet();
+
                     lock.writeLock().lock();
                     MultiDataSet ds = iterator.next();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
-                    feeder.incrementAndGet();
                     lock.writeLock().unlock();
 
                     queue.put(ds);
                 }
+                isAlive = false;
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
                 if(killRunnable) {
