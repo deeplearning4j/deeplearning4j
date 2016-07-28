@@ -137,7 +137,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         int minLength = 0;
         int maxLength = 0;
         for( int i=0; i<num && hasNext(); i++ ){
-            Collection<Collection<Writable>> sequence = recordReader.sequenceRecord();
+            List<List<Writable>> sequence = recordReader.sequenceRecord();
             INDArray[] fl = getFeaturesLabelsSingleReader(sequence);
             if(i == 0){
                 minLength = fl[0].size(0);
@@ -194,8 +194,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         List<INDArray> labelList = new ArrayList<>(num);
         for (int i = 0; i < num && hasNext(); i++) {
 
-            Collection<Collection<Writable>> featureSequence = recordReader.sequenceRecord();
-            Collection<Collection<Writable>> labelSequence = labelsReader.sequenceRecord();
+            List<List<Writable>> featureSequence = recordReader.sequenceRecord();
+            List<List<Writable>> labelSequence = labelsReader.sequenceRecord();
 
             INDArray features = getFeatures(featureSequence);
             INDArray labels = getLabels(labelSequence); //2d time series, with shape [timeSeriesLength,vectorSize]
@@ -414,18 +414,18 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         throw new UnsupportedOperationException("Remove not supported for this iterator");
     }
 
-    private INDArray getFeatures(Collection<Collection<Writable>> features) {
+    private INDArray getFeatures(List<List<Writable>> features) {
 
         //Size of the record?
         int[] shape = new int[2]; //[timeSeriesLength,vectorSize]
         shape[0] = features.size();
 
-        Iterator<Collection<Writable>> iter = features.iterator();
+        Iterator<List<Writable>> iter = features.iterator();
 
         int i = 0;
         INDArray out = null;
         while (iter.hasNext()) {
-            Collection<Writable> step = iter.next();
+            List<Writable> step = iter.next();
             if (i == 0) {
                 for( Writable w : step){
                     if(w instanceof NDArrayWritable){
@@ -457,18 +457,17 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         return out;
     }
 
-    private INDArray getLabels(Collection<Collection<Writable>> labels) {
+    private INDArray getLabels(List<List<Writable>> labels) {
         //Size of the record?
         int[] shape = new int[2];   //[timeSeriesLength,vectorSize]
         shape[0] = labels.size();   //time series/sequence length
 
-        Iterator<Collection<Writable>> iter = labels.iterator();
+        Iterator<List<Writable>> iter = labels.iterator();
 
         int i = 0;
         INDArray out = null;
         while (iter.hasNext()) {
-            Collection<Writable> stepCollection = iter.next();
-            List<Writable> step = (stepCollection instanceof List ? (List<Writable>)stepCollection : new ArrayList<>(stepCollection));
+            List<Writable> step = iter.next();
 
             if (i == 0) {
                 if (regression) {
@@ -512,8 +511,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         return out;
     }
 
-    private INDArray[] getFeaturesLabelsSingleReader(Collection<Collection<Writable>> input){
-        Iterator<Collection<Writable>> iter = input.iterator();
+    private INDArray[] getFeaturesLabelsSingleReader(List<List<Writable>> input){
+        Iterator<List<Writable>> iter = input.iterator();
 
         int i=0;
         INDArray features = null;
@@ -521,8 +520,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
         int featureSize = 0;
         while(iter.hasNext()){
-            Collection<Writable> stepCollection = iter.next();
-            List<Writable> step = (stepCollection instanceof List ? (List<Writable>)stepCollection : new ArrayList<>(stepCollection));
+            List<Writable> step = iter.next();
             if (i == 0) {
                 //First: determine the features size. Usually equal to the number of Writable objects, except when
                 // one or more of the Writables is an INDArray (i.e., NDArrayWritable)

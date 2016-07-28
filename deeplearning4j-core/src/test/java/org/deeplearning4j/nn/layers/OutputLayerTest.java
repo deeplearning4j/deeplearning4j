@@ -145,6 +145,7 @@ public class OutputLayerTest {
         OutputLayer o = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
 		o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
+
         int numSamples = 150;
         int batchSize = 150;
 

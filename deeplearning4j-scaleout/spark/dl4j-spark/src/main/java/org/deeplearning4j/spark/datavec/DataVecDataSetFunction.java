@@ -21,9 +21,10 @@ import java.util.List;
  * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
  */
-public class DataVecDataSetFunction implements Function<Collection<Writable>,DataSet>, Serializable {
+public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>, Serializable {
 
     private final int labelIndex;
+    private final int labelIndexTo;
     private final int numPossibleLabels;
     private final boolean regression;
     private final DataSetPreProcessor preProcessor;
@@ -42,8 +43,14 @@ public class DataVecDataSetFunction implements Function<Collection<Writable>,Dat
      * @param converter WritableConverter (may be null)
      */
     public DataVecDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
+                                  DataSetPreProcessor preProcessor, WritableConverter converter) {
+        this(labelIndex, labelIndex, numPossibleLabels, regression, preProcessor, converter);
+    }
+
+    public DataVecDataSetFunction(int labelIndexFrom, int labelIndexTo, int numPossibleLabels, boolean regression,
                                   DataSetPreProcessor preProcessor, WritableConverter converter){
-        this.labelIndex = labelIndex;
+        this.labelIndex = labelIndexFrom;
+        this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
         this.preProcessor = preProcessor;
@@ -51,51 +58,69 @@ public class DataVecDataSetFunction implements Function<Collection<Writable>,Dat
     }
 
     @Override
-    public DataSet call(Collection<Writable> writables) throws Exception {
-        List<Writable> list;
-        if(writables instanceof List) list = (List<Writable>)writables;
-        else list = new ArrayList<>(writables);
+    public DataSet call(List<Writable> currList) throws Exception {
 
         //allow people to specify label index as -1 and infer the last possible label
         int labelIndex = this.labelIndex;
         if (numPossibleLabels >= 1 && labelIndex < 0) {
-            labelIndex = list.size() - 1;
+            labelIndex = currList.size() - 1;
         }
 
         INDArray label = null;
         INDArray featureVector = null;
         int featureCount = 0;
-        for (int j = 0; j < list.size(); j++) {
-            Writable current = list.get(j);
-            if(converter != null) current = converter.convert(current);
+
+        //no labels
+        if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
+            NDArrayWritable writable = (NDArrayWritable)currList.get(0);
+            return new DataSet(writable.get(),writable.get());
+        }
+        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+            if(!regression)
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
+            else
+                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+            NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
+            featureVector = ndArrayWritable.get();
+            return new DataSet(featureVector,label);
+        }
+
+        for (int j = 0; j < currList.size(); j++) {
+            Writable current = currList.get(j);
+            //ndarray writable is an insane slow down herecd
+            if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
+                continue;
+
             if (labelIndex >= 0 && j == labelIndex) {
-                //Current value is the label
-                if (converter != null) {
+                //single label case (classification, etc)
+                if (converter != null)
                     try {
                         current = converter.convert(current);
                     } catch (WritableConverterException e) {
                         e.printStackTrace();
                     }
-                }
                 if (numPossibleLabels < 1)
                     throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
-
                 if (regression) {
                     label = Nd4j.scalar(current.toDouble());
                 } else {
-                    //Convert to one-hot vector for
                     int curr = current.toInt();
                     if (curr >= numPossibleLabels)
-                        throw new IllegalStateException("Invalid input: class label is " + curr
-                            + " with numPossibleLables = " + numPossibleLabels + " (class label must be 0 <= labelIdx < numPossibleLabels)");
+                        curr--;
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
-                //Current value is not the label
                 try {
                     double value = current.toDouble();
                     if (featureVector == null) {
-                        featureVector = Nd4j.create(labelIndex >= 0 ? list.size() - 1 : list.size());
+                        if(regression && labelIndex >= 0){
+                            //Handle the possibly multi-label regression case here:
+                            int nLabels = labelIndexTo - labelIndex + 1;
+                            featureVector = Nd4j.create(1, currList.size() - nLabels);
+                        } else {
+                            //Classification case, and also no-labels case
+                            featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+                        }
                     }
                     featureVector.putScalar(featureCount++, value);
                 } catch (UnsupportedOperationException e) {
