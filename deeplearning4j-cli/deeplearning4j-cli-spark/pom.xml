@@ -6,14 +6,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-cli-spark_${scala.binary.version}</artifactId>
+    <artifactId>deeplearning4j-cli-spark_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>deeplearning4j-cli-spark</name>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -23,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark-nlp_${scala.binary.version}</artifactId>
+            <artifactId>dl4j-spark-nlp_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

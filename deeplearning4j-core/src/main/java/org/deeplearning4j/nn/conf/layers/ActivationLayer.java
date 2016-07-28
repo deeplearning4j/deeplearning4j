@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
-import org.nd4j.linalg.convolution.Convolution;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  */

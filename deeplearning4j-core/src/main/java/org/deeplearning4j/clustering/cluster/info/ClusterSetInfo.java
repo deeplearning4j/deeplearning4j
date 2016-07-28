@@ -18,17 +18,16 @@
 
 package org.deeplearning4j.clustering.cluster.info;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import org.deeplearning4j.clustering.cluster.Cluster;
+import org.deeplearning4j.clustering.cluster.ClusterSet;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.deeplearning4j.clustering.cluster.Cluster;
-import org.deeplearning4j.clustering.cluster.ClusterSet;
-
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 
 public class ClusterSetInfo {
 

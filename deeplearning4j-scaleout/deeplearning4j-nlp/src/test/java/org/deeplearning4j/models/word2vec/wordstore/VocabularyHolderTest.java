@@ -3,7 +3,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by fartovii on 08.11.15.

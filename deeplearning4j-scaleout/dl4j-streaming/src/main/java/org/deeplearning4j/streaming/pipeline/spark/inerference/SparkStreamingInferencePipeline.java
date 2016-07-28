@@ -13,11 +13,9 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
-import org.deeplearning4j.streaming.conversion.dataset.RecordToDataSet;
 import org.deeplearning4j.streaming.conversion.ndarray.RecordToNDArray;
 import org.deeplearning4j.streaming.pipeline.kafka.BaseKafkaPipeline;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Collections;
 
@@ -79,7 +77,7 @@ public class SparkStreamingInferencePipeline extends BaseKafkaPipeline<JavaDStre
         JavaPairInputDStream<String, String> messages = KafkaUtils.createStream(
                 jssc,
                 zkHost,
-                "canova",
+                "datavec",
                 Collections.singletonMap(kafkaTopic, kafkaPartitions));
         JavaDStream<INDArray> dataset = messages.flatMap(new NDArrayFlatMap(recordToDataSetFunction)).cache();
         return dataset;

@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.text.stopwords;
 
+import org.apache.commons.io.IOUtils;
+import org.datavec.api.util.ClassPathResource;
+
 import java.io.IOException;
 import java.util.List;
-
-import org.apache.commons.io.IOUtils;
-import org.canova.api.util.ClassPathResource;
 
 /**
  * Loads stop words from the class path

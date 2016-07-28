@@ -20,13 +20,13 @@ package org.deeplearning4j.cli.files;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.io.FilenameUtils;
-import org.canova.api.exceptions.UnknownFormatException;
-import org.canova.api.records.reader.factory.RecordWriterFactory;
-import org.canova.api.records.writer.RecordWriter;
-import org.canova.api.records.writer.impl.CSVRecordWriter;
-import org.canova.api.records.writer.impl.FileRecordWriter;
-import org.canova.api.records.writer.impl.MatlabRecordWriter;
-import org.canova.api.records.writer.impl.SVMLightRecordWriter;
+import org.datavec.api.exceptions.UnknownFormatException;
+import org.datavec.api.records.reader.factory.RecordWriterFactory;
+import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.records.writer.impl.FileRecordWriter;
+import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
+import org.datavec.api.records.writer.impl.misc.MatlabRecordWriter;
+import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 
 import java.io.File;
 import java.net.URI;

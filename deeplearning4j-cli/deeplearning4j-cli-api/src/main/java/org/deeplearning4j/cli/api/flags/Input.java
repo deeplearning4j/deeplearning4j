@@ -18,9 +18,10 @@
 
 package org.deeplearning4j.cli.api.flags;
 
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.writer.RecordWriter;
+
 import java.net.URI;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.writer.RecordWriter;
 
 /**
  * Input flag for loading input data for the model

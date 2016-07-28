@@ -19,7 +19,6 @@
 package org.deeplearning4j.earlystopping;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
 import java.io.Serializable;

@@ -18,20 +18,13 @@
 
 package org.deeplearning4j.earlystopping.saver;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /** Save the best (and latest/most recent) {@link ComputationGraph}s learned during early stopping training to the local file system.<br>
  * Instances of this class will save 3 files for best (and optionally, latest) models:<br>

@@ -3,8 +3,6 @@ package org.deeplearning4j.ui;
 import lombok.Data;
 import lombok.NonNull;
 
-import java.util.Random;
-
 /**
  * POJO describing the location and credentials for DL4j UiServer instance
  *

@@ -25,7 +25,6 @@ import opennlp.uima.tokenize.AbstractTokenizer;
 import opennlp.uima.tokenize.TokenizerModelResource;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
-
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;

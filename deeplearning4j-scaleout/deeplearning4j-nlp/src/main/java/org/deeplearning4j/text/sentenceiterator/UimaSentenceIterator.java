@@ -18,12 +18,6 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.collection.CollectionReader;
@@ -37,6 +31,11 @@ import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.uima.UimaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Iterates over and returns sentences

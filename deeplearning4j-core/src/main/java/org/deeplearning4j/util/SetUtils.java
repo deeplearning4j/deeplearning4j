@@ -19,8 +19,8 @@
 package org.deeplearning4j.util;
 
 import java.util.Collection;
-import java.util.HashSet ;
-import java.util.Set ;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SetUtils
 {

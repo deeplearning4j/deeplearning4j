@@ -1,6 +1,6 @@
 package org.deeplearning4j.plot.iterationlistener;
 
-import org.canova.image.loader.ImageLoader;
+import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;

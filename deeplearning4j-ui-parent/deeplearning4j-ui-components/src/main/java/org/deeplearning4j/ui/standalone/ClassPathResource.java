@@ -81,7 +81,7 @@ public class ClassPathResource {
              */
             try {
                 url = extractActualUrl(url);
-                File file = File.createTempFile("canova_temp","file");
+                File file = File.createTempFile("datavec_temp","file");
                 file.deleteOnExit();
 
                 ZipFile zipFile = new ZipFile(url.getFile());

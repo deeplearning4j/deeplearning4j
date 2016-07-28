@@ -3,7 +3,6 @@ package org.deeplearning4j.graph.models.embeddings;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.graph.models.BinaryTree;
 import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
