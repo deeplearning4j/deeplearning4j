@@ -22,7 +22,6 @@ import java.io.IOException;
  */
 public class NormalizerStandardize implements DataNormalization {
     private static Logger logger = LoggerFactory.getLogger(NormalizerStandardize.class);
-    private INDArray mean,std, meanLabel, stdLabel;
     private int runningTotal , labelRunningTotal = 0;
     private int batchCount,labelbatchCount = 0;
     private int featureRank = 2;
@@ -60,7 +59,7 @@ public class NormalizerStandardize implements DataNormalization {
             mtwoB.muli(batchCount);
             currentStd.addi(mtwoB);
             currentStd.addi(deltaSqScaled);
-            currentMean = newMean;
+            currentMeanStd.putRow(0,newMean);
         }
         else {
             currentMeanStd.getRow(1).divi(runningTotal);
@@ -102,8 +101,6 @@ public class NormalizerStandardize implements DataNormalization {
             if (featureRank == 3) theLabels = tailor3d2d(dataSet,true);
             if (featureRank == 4) theLabels = tailor4d2d(dataSet,true);
             labelMeanStd = fit(theLabels);
-            labelMean = labelMeanStd.getRow(0).dup();
-            labelStd = labelMeanStd.getRow(1).dup();
         }
 
     }
@@ -242,8 +239,8 @@ public class NormalizerStandardize implements DataNormalization {
      */
     @Override
     public void load(File...statistics) throws IOException {
-        this.mean = Nd4j.readBinary(statistics[0]);
-        this.std = Nd4j.readBinary(statistics[1]);
+        this.featureMean = Nd4j.readBinary(statistics[0]);
+        this.featureStd = Nd4j.readBinary(statistics[1]);
     }
 
     /**
@@ -253,8 +250,8 @@ public class NormalizerStandardize implements DataNormalization {
      */
     @Override
     public void save(File...statistics) throws IOException {
-        Nd4j.saveBinary(this.mean,statistics[0]);
-        Nd4j.saveBinary(this.std,statistics[1]);
+        Nd4j.saveBinary(this.featureMean,statistics[0]);
+        Nd4j.saveBinary(this.featureStd,statistics[1]);
     }
 
     private INDArray tailor3d2d(DataSet dataset, boolean areFeatures) {
