@@ -202,7 +202,7 @@ public class ParallelWrapper {
     public static class Builder {
         private Model model;
         private int workers = 2;
-        private int prefetchSize = 2;
+        private int prefetchSize = 16;
         private int averagingFrequency = 1;
         private boolean reportScore = false;
         private boolean averageUpdaters = true;
