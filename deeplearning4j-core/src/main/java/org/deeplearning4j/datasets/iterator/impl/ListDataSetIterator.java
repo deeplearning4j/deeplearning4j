@@ -18,15 +18,14 @@
 
 package org.deeplearning4j.datasets.iterator.impl;
 
+import lombok.Getter;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-
-import lombok.Getter;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination collection

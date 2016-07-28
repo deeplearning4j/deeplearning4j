@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.cli.api.flags;
 
-import org.canova.api.conf.Configuration;
+import org.datavec.api.conf.Configuration;
 
 import java.io.BufferedInputStream;
 import java.io.File;

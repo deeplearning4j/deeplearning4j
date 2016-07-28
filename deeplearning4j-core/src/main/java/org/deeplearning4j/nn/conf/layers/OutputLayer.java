@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
-
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**

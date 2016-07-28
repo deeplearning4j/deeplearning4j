@@ -1,7 +1,6 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.Serializable;
 

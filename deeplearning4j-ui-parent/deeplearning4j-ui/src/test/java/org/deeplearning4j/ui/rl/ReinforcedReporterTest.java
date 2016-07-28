@@ -1,11 +1,8 @@
 package org.deeplearning4j.ui.rl;
 
-import org.apache.commons.lang.math.RandomUtils;
 import org.deeplearning4j.ui.UiServer;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com

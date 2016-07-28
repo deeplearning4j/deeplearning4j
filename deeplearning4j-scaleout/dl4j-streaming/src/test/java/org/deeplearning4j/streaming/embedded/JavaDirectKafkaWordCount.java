@@ -17,22 +17,22 @@ package org.deeplearning4j.streaming.embedded;
  */
 
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
+import kafka.serializer.StringDecoder;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.kafka.KafkaUtils;
 import scala.Tuple2;
 
-import kafka.serializer.StringDecoder;
-
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.function.*;
-import org.apache.spark.streaming.api.java.*;
-import org.apache.spark.streaming.kafka.KafkaUtils;
-import org.apache.spark.streaming.Durations;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Consumes messages from one or more topics in Kafka and does wordcount.

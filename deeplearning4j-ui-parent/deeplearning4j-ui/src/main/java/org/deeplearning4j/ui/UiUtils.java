@@ -1,9 +1,9 @@
 package org.deeplearning4j.ui;
 
+import org.slf4j.Logger;
+
 import java.awt.*;
 import java.net.URI;
-
-import org.slf4j.Logger;
 
 public class UiUtils {
 

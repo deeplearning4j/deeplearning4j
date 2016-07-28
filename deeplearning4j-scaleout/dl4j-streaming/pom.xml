@@ -45,9 +45,9 @@
             <version>${spark.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-spark_${scala.binary.version}</artifactId>
-            <version>${canova.version}</version>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark_${scala.binary.version}</artifactId>
+            <version>${datavec.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>

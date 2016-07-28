@@ -16,20 +16,19 @@
  */
 package org.deeplearning4j.streaming.embedded;
 
+import kafka.admin.AdminUtils;
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import org.I0Itec.zkclient.ZkClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-
-import kafka.admin.AdminUtils;
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-import org.I0Itec.zkclient.ZkClient;
-import org.deeplearning4j.streaming.embedded.TestUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EmbeddedKafkaCluster {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaCluster.class);

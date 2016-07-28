@@ -18,15 +18,15 @@
 
 package org.deeplearning4j.bagofwords.vectorizer;
 
-import java.io.InputStream;
-import java.io.File;
-
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+
+import java.io.File;
+import java.io.InputStream;
 
 /**
  * Vectorizes text
