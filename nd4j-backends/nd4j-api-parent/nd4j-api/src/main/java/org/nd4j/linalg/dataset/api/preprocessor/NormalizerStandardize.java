@@ -89,8 +89,8 @@ public class NormalizerStandardize implements DataNormalization {
         featureRank = dataSet.getFeatureMatrix().rank();
 
         INDArray theFeatures = dataSet.getFeatureMatrix();
-        if (featureRank == 3) theFeatures = tailor3d2d(dataSet,false);
-        if (featureRank == 4) theFeatures = tailor4d2d(dataSet,false);
+        if (featureRank == 3) theFeatures = tailor3d2d(dataSet,true);
+        if (featureRank == 4) theFeatures = tailor4d2d(dataSet,true);
         featureMeanStd = fit(theFeatures);
 
         featureMean = featureMeanStd.getRow(0).dup();
@@ -98,8 +98,8 @@ public class NormalizerStandardize implements DataNormalization {
 
         if (fitLabels) {
             INDArray theLabels = dataSet.getLabels();
-            if (featureRank == 3) theLabels = tailor3d2d(dataSet,true);
-            if (featureRank == 4) theLabels = tailor4d2d(dataSet,true);
+            if (featureRank == 3) theLabels = tailor3d2d(dataSet,false);
+            if (featureRank == 4) theLabels = tailor4d2d(dataSet,false);
             labelMeanStd = fit(theLabels);
         }
 
