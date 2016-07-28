@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Adam Gibson
@@ -74,8 +75,8 @@ public class RecordConverter {
      * @param array the array to convert
      * @return the record
      */
-    public static Collection<Writable> toRecord(INDArray array) {
-        Collection<Writable> writables = new ArrayList<>();
+    public static List<Writable> toRecord(INDArray array) {
+        List<Writable> writables = new ArrayList<>();
         writables.add(new NDArrayWritable(array));
         return writables;
     }

@@ -29,8 +29,8 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Adam Gibson
@@ -49,11 +49,11 @@ public class CodecReaderTest {
         reader.initialize(new FileSplit(file));
         reader.setConf(conf);
         assertTrue(reader.hasNext());
-        Collection<Collection<Writable>> record = reader.sequenceRecord();
+        List<List<Writable>> record = reader.sequenceRecord();
         System.out.println(record.size());
 
-        Iterator<Collection<Writable>> it = record.iterator();
-        Collection<Writable> first = it.next();
+        Iterator<List<Writable>> it = record.iterator();
+        List<Writable> first = it.next();
         System.out.println(first);
 
         //Expected size: 80x46x3
@@ -79,14 +79,14 @@ public class CodecReaderTest {
         reader.initialize(new FileSplit(file));
         reader.setConf(conf);
         assertTrue(reader.hasNext());
-        Collection<Collection<Writable>> expected = reader.sequenceRecord();
+        List<List<Writable>> expected = reader.sequenceRecord();
 
 
         SequenceRecordReader reader2 = new CodecRecordReader();
         reader2.setConf(conf2);
 
         DataInputStream dataInputStream = new DataInputStream(new FileInputStream(file));
-        Collection<Collection<Writable>> actual = reader2.sequenceRecord(null, dataInputStream);
+        List<List<Writable>> actual = reader2.sequenceRecord(null, dataInputStream);
 
         assertEquals(expected,actual);
     }

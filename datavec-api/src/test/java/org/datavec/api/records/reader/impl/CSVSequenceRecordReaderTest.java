@@ -26,8 +26,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,13 +41,13 @@ public class CSVSequenceRecordReaderTest {
 
         int sequenceCount = 0;
         while(seqReader.hasNext()){
-            Collection<Collection<Writable>> sequence = seqReader.sequenceRecord();
+            List<List<Writable>> sequence = seqReader.sequenceRecord();
             assertEquals(4,sequence.size());    //4 lines, plus 1 header line
 
-            Iterator<Collection<Writable>> timeStepIter = sequence.iterator();
+            Iterator<List<Writable>> timeStepIter = sequence.iterator();
             int lineCount = 0;
             while(timeStepIter.hasNext()){
-                Collection<Writable> timeStep = timeStepIter.next();
+                List<Writable> timeStep = timeStepIter.next();
                 assertEquals(3,timeStep.size());
                 Iterator<Writable> lineIter = timeStep.iterator();
                 int countInLine = 0;
@@ -74,10 +74,10 @@ public class CSVSequenceRecordReaderTest {
 
             int sequenceCount = 0;
             while (seqReader.hasNext()) {
-                Collection<Collection<Writable>> sequence = seqReader.sequenceRecord();
+                List<List<Writable>> sequence = seqReader.sequenceRecord();
                 assertEquals(4, sequence.size());    //4 lines, plus 1 header line
 
-                Iterator<Collection<Writable>> timeStepIter = sequence.iterator();
+                Iterator<List<Writable>> timeStepIter = sequence.iterator();
                 int lineCount = 0;
                 while (timeStepIter.hasNext()) {
                     timeStepIter.next();

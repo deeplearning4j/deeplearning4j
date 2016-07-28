@@ -102,7 +102,7 @@ public class FileRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
         try {
             File next = iter.next();
@@ -181,7 +181,7 @@ public class FileRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         //Here: reading the entire file to a Text writable
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));

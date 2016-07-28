@@ -21,7 +21,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,7 +41,7 @@ public class FileRecordReaderTest {
 
             int lineCount = 0;
             while(rr.hasNext()){
-                Collection<Writable> line = rr.next();
+                List<Writable> line = rr.next();
                 assertEquals(1, line.size());
                 lineCount++;
             }

@@ -27,7 +27,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -79,7 +78,7 @@ public class ListStringRecordReader extends BaseRecordReader {
      * @return
      */
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         List<String> next = dataIter.next();
         invokeListeners(next);
         List<Writable> ret = new ArrayList<>();
@@ -128,7 +127,7 @@ public class ListStringRecordReader extends BaseRecordReader {
      * @throws IOException if error occurs during reading from the input stream
      */
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         return null;
     }
 

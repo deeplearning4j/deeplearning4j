@@ -25,8 +25,8 @@ import org.datavec.api.writable.Writable;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * CSV Sequence Record Reader
@@ -53,7 +53,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
     }
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         @SuppressWarnings("unchecked")
         Iterator<String> lineIter = IOUtils.lineIterator(new InputStreamReader(dataInputStream));
@@ -62,7 +62,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
             while (count++ < skipNumLines && lineIter.hasNext()) lineIter.next();
         }
 
-        Collection<Collection<Writable>> out = new ArrayList<>();
+        List<List<Writable>> out = new ArrayList<>();
         while (lineIter.hasNext()) {
             String line = lineIter.next();
             String[] split = line.split(delimiter);
@@ -76,7 +76,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
 
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<Collection<Writable>> sequenceRecord() {
+    public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
         invokeListeners(next);
 
@@ -92,7 +92,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
             while (count++ < skipNumLines && lineIter.hasNext()) lineIter.next();
         }
 
-        Collection<Collection<Writable>> out = new ArrayList<>();
+        List<List<Writable>> out = new ArrayList<>();
         while (lineIter.hasNext()) {
             String line = lineIter.next();
             String[] split = line.split(delimiter);

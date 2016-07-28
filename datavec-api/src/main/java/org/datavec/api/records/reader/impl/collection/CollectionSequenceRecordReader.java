@@ -61,7 +61,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     }
 
     @Override
-    public Collection<Writable> next() {
+    public List<Writable> next() {
         throw new UnsupportedOperationException("next() not supported for CollectionSequencRecordReader; use sequenceRecord()");
     }
 
@@ -96,21 +96,21 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
     }
 
 
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<Collection<Writable>> sequenceRecord() {
-        Collection<Collection<Writable>> record = (Collection<Collection<Writable>>)records.next();
+    public List<List<Writable>> sequenceRecord() {
+        List<List<Writable>> record = (List<List<Writable>>)records.next();
         invokeListeners(record);
         return record;
     }
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
     }
 }

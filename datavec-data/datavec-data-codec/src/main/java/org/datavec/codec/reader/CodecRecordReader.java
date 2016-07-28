@@ -39,7 +39,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Codec record reader for parsing:
@@ -78,7 +78,7 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
 
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord() {
+    public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
 
         try{
@@ -89,7 +89,7 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
     }
 
     @Override
-    public Collection<Collection<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         //Reading video from DataInputStream: Need data from this stream in a SeekableByteChannel
         //Approach used here: load entire video into memory -> ByteBufferSeekableByteChanel
         byte[] data = IOUtils.toByteArray(dataInputStream);
@@ -98,8 +98,8 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
         return loadData(sbc);
     }
 
-    private Collection<Collection<Writable>> loadData( SeekableByteChannel seekableByteChannel ) throws IOException {
-        Collection<Collection<Writable>> record = new ArrayList<>();
+    private List<List<Writable>> loadData( SeekableByteChannel seekableByteChannel ) throws IOException {
+        List<List<Writable>> record = new ArrayList<>();
 
         if(numFrames >= 1) {
             FrameGrab fg;
@@ -154,12 +154,12 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
     }
 
     @Override
-    public Collection<Writable> next(){
+    public List<Writable> next(){
         throw new UnsupportedOperationException("next() not supported for CodecRecordReader (use: sequenceRecord)");
     }
 
     @Override
-    public Collection<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
+    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("record(URI,DataInputStream) not supported for CodecRecordReader");
     }
 
