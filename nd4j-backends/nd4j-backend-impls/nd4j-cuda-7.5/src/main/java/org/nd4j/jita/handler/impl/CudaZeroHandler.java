@@ -772,7 +772,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
     @Override
     public void relocateObject(DataBuffer buffer) {
-        log.info("Relocating object....");
         AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
 
         // we don't relocate non-DEVICE buffers (i.e HOST or CONSTANT)

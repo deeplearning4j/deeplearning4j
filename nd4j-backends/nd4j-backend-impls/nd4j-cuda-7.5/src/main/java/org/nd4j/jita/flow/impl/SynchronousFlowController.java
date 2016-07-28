@@ -93,7 +93,9 @@ public class SynchronousFlowController implements FlowController {
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
           //      log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
-                allocator.getMemoryHandler().relocateObject(result.data());
+
+                DataBuffer buffer = result.data().originalDataBuffer() == null ? result.data() : result.data().originalDataBuffer();
+                allocator.getMemoryHandler().relocateObject(buffer);
 
                 //allocator.getMemoryHandler().relocateObject(result.shapeInfoDataBuffer());
             }
@@ -125,7 +127,8 @@ public class SynchronousFlowController implements FlowController {
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
 //                log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
 
-                allocator.getMemoryHandler().relocateObject(operand.data());
+                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data() : operand.data().originalDataBuffer();
+                allocator.getMemoryHandler().relocateObject(buffer);
 
                 //allocator.getMemoryHandler().relocateObject(operand.shapeInfoDataBuffer());
             }
@@ -134,17 +137,6 @@ public class SynchronousFlowController implements FlowController {
                 ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
             }
 
-/*
-
-            pointData.addThreadToTrace(Thread.currentThread().getId());
-
-            if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0)
-                throw new RuntimeException("O data cId: [" +cId + "] != dId: ["+ pointData.getDeviceId() +"]; Size: " + AllocationUtils.getRequiredMemory(pointData.getShape()) + "; " + pointData.getThreadsTrace().toString());
-
-            AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
-            if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0)
-                throw new RuntimeException("O shape cId: [" +cId + "] != dId: ["+ pointShape.getDeviceId() +"]");
-*/
             prepareDelayedMemory(operand);
             allocator.getAllocationPoint(operand).setCurrentContext(context);
 
