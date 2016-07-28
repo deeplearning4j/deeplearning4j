@@ -7,7 +7,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.math.BigDecimal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

@@ -4,14 +4,10 @@ package org.deeplearning4j.nn.conf.layers.setup;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
-import org.deeplearning4j.nn.layers.normalization.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

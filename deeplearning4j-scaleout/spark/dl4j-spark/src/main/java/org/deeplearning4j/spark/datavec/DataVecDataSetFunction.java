@@ -13,8 +13,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**Map {@code Collection<Writable>} objects (out of a datavec-spark record reader function) to DataSet objects for Spark training.

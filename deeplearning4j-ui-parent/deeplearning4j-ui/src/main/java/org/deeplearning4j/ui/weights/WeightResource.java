@@ -19,21 +19,15 @@
 package org.deeplearning4j.ui.weights;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
-import io.dropwizard.views.View;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.ui.storage.HistoryStorage;
 import org.deeplearning4j.ui.storage.SessionStorage;
 import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
-
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**

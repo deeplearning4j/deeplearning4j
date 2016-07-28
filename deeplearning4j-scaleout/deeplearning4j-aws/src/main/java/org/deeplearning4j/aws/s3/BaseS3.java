@@ -18,9 +18,6 @@
 
 package org.deeplearning4j.aws.s3;
 
-import java.io.File;
-import java.io.InputStream;
-
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -28,6 +25,9 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+
+import java.io.File;
+import java.io.InputStream;
 
 
 /**

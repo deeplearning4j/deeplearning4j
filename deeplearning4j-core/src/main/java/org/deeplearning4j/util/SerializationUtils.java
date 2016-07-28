@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.util;
 
-import java.io.*;
-
 import org.apache.commons.io.FileUtils;
+
+import java.io.*;
 
 /**
  * Serialization utils for saving and reading serializable objects

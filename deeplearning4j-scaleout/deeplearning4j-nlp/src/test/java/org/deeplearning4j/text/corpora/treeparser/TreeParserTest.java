@@ -22,12 +22,12 @@ import org.cleartk.syntax.constituent.type.TreebankNode;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Basic Tree parser tests

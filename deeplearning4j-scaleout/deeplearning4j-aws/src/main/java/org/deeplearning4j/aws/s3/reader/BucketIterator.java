@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.aws.s3.reader;
 
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
-
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 /**
  * Iterator over individual S3 bucket
  * @author Adam Gibson

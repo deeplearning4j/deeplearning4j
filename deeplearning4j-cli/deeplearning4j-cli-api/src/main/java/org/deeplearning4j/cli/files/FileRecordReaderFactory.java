@@ -20,15 +20,16 @@ package org.deeplearning4j.cli.files;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.io.FilenameUtils;
-import org.canova.api.exceptions.UnknownFormatException;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.factory.RecordReaderFactory;
-import org.canova.api.records.reader.impl.CSVRecordReader;
-import org.canova.api.records.reader.impl.FileRecordReader;
-import org.canova.api.records.reader.impl.MatlabRecordReader;
-import org.canova.api.records.reader.impl.SVMLightRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
+import org.datavec.api.exceptions.UnknownFormatException;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.factory.RecordReaderFactory;
+import org.datavec.api.records.reader.impl.FileRecordReader;
+
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.records.reader.impl.misc.MatlabRecordReader;
+import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
+import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 
 import java.io.File;
 import java.net.URI;

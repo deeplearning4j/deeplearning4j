@@ -22,9 +22,6 @@ import lombok.Data;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.io.Serializable;
-import java.util.Arrays;
-
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data

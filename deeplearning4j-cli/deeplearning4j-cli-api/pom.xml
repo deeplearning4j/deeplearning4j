@@ -65,10 +65,6 @@
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>canova-api</artifactId>
-    </dependency>
   </dependencies>
   <build>
     <testResources>

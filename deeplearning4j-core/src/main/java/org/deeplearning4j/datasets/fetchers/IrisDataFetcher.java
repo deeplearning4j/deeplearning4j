@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
-import java.io.IOException;
-
 import org.deeplearning4j.base.IrisUtils;
+
+import java.io.IOException;
 
 
 public class IrisDataFetcher extends BaseDataFetcher {

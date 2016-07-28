@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import org.deeplearning4j.berkeley.Pair;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 public class InputSplit {

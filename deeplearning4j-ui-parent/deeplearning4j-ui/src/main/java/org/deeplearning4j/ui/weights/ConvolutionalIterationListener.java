@@ -1,8 +1,8 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
-import org.canova.api.util.ClassPathResource;
-import org.canova.image.loader.ImageLoader;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;

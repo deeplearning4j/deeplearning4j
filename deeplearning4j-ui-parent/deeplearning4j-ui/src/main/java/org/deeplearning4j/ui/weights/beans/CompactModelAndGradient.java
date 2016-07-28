@@ -1,8 +1,6 @@
 package org.deeplearning4j.ui.weights.beans;
 
 
-import org.deeplearning4j.nn.api.Model;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;

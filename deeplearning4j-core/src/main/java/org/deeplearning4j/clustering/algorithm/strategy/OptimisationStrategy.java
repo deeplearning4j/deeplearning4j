@@ -23,7 +23,6 @@ import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimization;
-
 import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimizationType;
 
 public class OptimisationStrategy extends BaseClusteringStrategy {

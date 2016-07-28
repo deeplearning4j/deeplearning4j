@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.cli.files;
 
-import org.canova.api.exceptions.UnknownFormatException;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.factory.RecordReaderFactory;
-import org.canova.api.records.reader.factory.RecordWriterFactory;
-import org.canova.api.records.writer.RecordWriter;
+import org.datavec.api.exceptions.UnknownFormatException;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.factory.RecordReaderFactory;
+import org.datavec.api.records.reader.factory.RecordWriterFactory;
+import org.datavec.api.records.writer.RecordWriter;
 import org.deeplearning4j.cli.api.schemes.BaseScheme;
 
 import java.net.URI;

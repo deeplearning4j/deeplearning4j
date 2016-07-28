@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.DoubleFlatMapFunction;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
