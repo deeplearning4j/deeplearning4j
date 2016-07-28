@@ -111,6 +111,7 @@ public class NormalizerStandardize implements DataNormalization {
      * @param iterator
      */
     public void fit(DataSetIterator iterator) {
+        featureMeanStd = null;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
             batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
