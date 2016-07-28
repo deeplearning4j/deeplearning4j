@@ -7,65 +7,43 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
+    <artifactId>nd4j-kafka_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kafka</name>
     <url>http://nd4j.org</url>
-    <profiles>
-        <profile>
-            <id>scala-2.11</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.11</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.11.7</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.11.7</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>scala-2.10</id>
-            <activation>
-                <property>
-                    <name>scala.binary.version</name>
-                    <value>2.10</value>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.10.6</scala.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>2.10.6</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
+
+    <properties>
+        <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+    </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.10</artifactId>
+            <version>${kafka.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
+            <!-- Exclude Kafka 2.11, for 2.10. Using property here so it isn't replaced by change-scala-versions.sh -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.kafka</groupId>
+                    <artifactId>kafka_${kafka.scala.exclusion.version}</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
+            <version>2.10.6</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
