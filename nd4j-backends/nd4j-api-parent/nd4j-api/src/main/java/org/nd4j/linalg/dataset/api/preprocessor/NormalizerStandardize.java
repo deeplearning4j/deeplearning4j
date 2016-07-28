@@ -114,6 +114,8 @@ public class NormalizerStandardize implements DataNormalization {
      */
     public void fit(DataSetIterator iterator) {
         featureMeanStd = null;
+        runningTotal = 0;
+        labelRunningTotal = 0;
         INDArray theFeatures, theLabels;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
