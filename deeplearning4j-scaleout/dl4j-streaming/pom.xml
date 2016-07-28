@@ -14,6 +14,10 @@
         <version>0.4.1-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+    </properties>
+
     <name>Dl4j Streaming</name>
     <url>http://www.deeplearning4j.org</url>
 
@@ -75,6 +79,13 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
+            <!-- Exclude Kafka 2.11, for 2.10. Using property here so it isn't replaced by change-scala-versions.sh -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.kafka</groupId>
+                    <artifactId>kafka_${kafka.scala.exclusion.version}</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
