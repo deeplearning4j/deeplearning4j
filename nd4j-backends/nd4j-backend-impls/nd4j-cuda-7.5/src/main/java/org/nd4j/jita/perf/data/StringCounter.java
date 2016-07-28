@@ -34,6 +34,10 @@ public class StringCounter {
         return counter.get(key).get();
     }
 
+    public void totalsIncrement() {
+        totals.incrementAndGet();
+    }
+
     public String asString() {
         StringBuilder builder = new StringBuilder();
 

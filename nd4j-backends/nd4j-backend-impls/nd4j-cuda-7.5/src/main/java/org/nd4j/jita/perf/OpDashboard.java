@@ -24,12 +24,16 @@ public class OpDashboard {
     private static StringCounter classPairsCounter = new StringCounter();
     private static StringCounter opPairsCounter = new StringCounter();
 
+    private static StringCounter matchingCounter = new StringCounter();
 
     private static Logger logger = LoggerFactory.getLogger(OpDashboard.class);
 
 
     private String prevOpClass = "";
     private String prevOpName = "";
+
+    private String prevOpMatching = "";
+    private long lastZ = 0;
 
 
     public static OpDashboard getInstance() {
@@ -83,6 +87,15 @@ public class OpDashboard {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
+        if (op.x().data().address() == lastZ) {
+            // we have possible shift here
+            matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
+        } else {
+            matchingCounter.totalsIncrement();
+        }
+        lastZ = op.z().data().address();
+        prevOpMatching = opClass;
+
         updatePairs(op.name(), opClass);
     }
 
@@ -116,6 +129,9 @@ public class OpDashboard {
         classCounter.incrementCount(key);
 
         updatePairs(blasOpName, key);
+
+        prevOpMatching = "";
+        lastZ = 0;
     }
 
     public void timeBlasCall() {
@@ -136,6 +152,9 @@ public class OpDashboard {
         System.out.println();
         logger.info("--- Individual Op calls statistics: ---");
         System.out.println(opCounter.asString());
+        System.out.println();
+        logger.info("--- Matching Op calls statistics: ---");
+        System.out.println(matchingCounter.asString());
         System.out.println();
     }
 
