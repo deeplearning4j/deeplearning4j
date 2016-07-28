@@ -63,7 +63,7 @@ public class NormalizerStandardize implements DataNormalization {
         }
         else {
             currentMeanStd.getRow(1).divi(runningTotal);
-            currentMeanStd.putRow(0,Transforms.sqrt(currentMeanStd.getRow(1)));
+            currentMeanStd.putRow(1,Transforms.sqrt(currentMeanStd.getRow(1)));
             currentMeanStd.getRow(1).addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
             if (currentMeanStd.getRow(0).min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
                 logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
@@ -116,13 +116,13 @@ public class NormalizerStandardize implements DataNormalization {
             DataSet next = iterator.next();
             batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
             runningTotal += batchCount;
+            labelbatchCount = next.getLabelsMaskArray() != null ? next.getLabelsMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
+            labelRunningTotal += batchCount;
             if(featureMeanStd == null) {
                 this.fit(next);
                 featureMeanStd.getRow(1).muli(batchCount);
                 if (fitLabels) {
                     labelMeanStd.getRow(1).muli(batchCount);
-                    labelbatchCount = next.getLabelsMaskArray() != null ? next.getLabelsMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
-                    labelRunningTotal += batchCount;
                 }
             }
             else {
