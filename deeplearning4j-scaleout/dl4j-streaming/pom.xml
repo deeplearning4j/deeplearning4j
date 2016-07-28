@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.deeplearning4j</groupId>
-    <artifactId>dl4j-streaming_${scala.binary.version}</artifactId>
+    <artifactId>dl4j-streaming_2.10</artifactId>
     <packaging>jar</packaging>
     <version>0.4.1-SNAPSHOT</version>
 
@@ -13,6 +13,10 @@
         <groupId>org.deeplearning4j</groupId>
         <version>0.4.1-SNAPSHOT</version>
     </parent>
+
+    <properties>
+        <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+    </properties>
 
     <name>Dl4j Streaming</name>
     <url>http://www.deeplearning4j.org</url>
@@ -25,28 +29,28 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_${scala.binary.version}</artifactId>
+            <artifactId>dl4j-spark_2.10</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-core_${scala.binary.version}</artifactId>
+                    <artifactId>spark-core_2.10</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_${scala.binary.version}</artifactId>
+            <artifactId>spark-streaming_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming-kafka_${scala.binary.version}</artifactId>
+            <artifactId>spark-streaming-kafka_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_${scala.binary.version}</artifactId>
+            <artifactId>datavec-spark_2.10</artifactId>
             <version>${datavec.version}</version>
         </dependency>
         <dependency>
@@ -62,7 +66,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_${scala.binary.version}</artifactId>
+            <artifactId>kafka_2.10</artifactId>
             <version>${kafka.version}</version>
         </dependency>
 
@@ -75,6 +79,13 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
+            <!-- Exclude Kafka 2.11, for 2.10. Using property here so it isn't replaced by change-scala-versions.sh -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.kafka</groupId>
+                    <artifactId>kafka_${kafka.scala.exclusion.version}</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
