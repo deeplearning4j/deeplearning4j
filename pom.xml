@@ -67,7 +67,6 @@
         <lombok.version>1.16.6</lombok.version>
         <jodatime.version>2.9.2</jodatime.version>
         <freemarker.version>2.3.23</freemarker.version>
-        <scala.binary.version>2.10</scala.binary.version>
     </properties>
 
     <distributionManagement>
