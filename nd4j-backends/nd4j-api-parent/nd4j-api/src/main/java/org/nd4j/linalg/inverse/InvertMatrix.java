@@ -31,7 +31,8 @@ public class InvertMatrix {
 
         RealMatrix rm = CheckUtil.convertToApacheMatrix(arr);
         RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
-        INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse);
+        INDArray inverse = inPlace ? arr : arr.dup();
+        inverse = CheckUtil.convertFromApacheMatrix(rmInverse);
         return inverse;
 
     }
