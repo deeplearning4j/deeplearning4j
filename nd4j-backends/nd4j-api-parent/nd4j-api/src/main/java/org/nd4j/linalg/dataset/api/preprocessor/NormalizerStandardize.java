@@ -101,6 +101,8 @@ public class NormalizerStandardize implements DataNormalization {
             if (featureRank == 3) theLabels = tailor3d2d(dataSet,false);
             if (featureRank == 4) theLabels = tailor4d2d(dataSet,false);
             labelMeanStd = fit(theLabels);
+            labelMean = labelMeanStd.getRow(0).dup();
+            labelStd = labelMeanStd.getRow(1).dup();
         }
 
     }
