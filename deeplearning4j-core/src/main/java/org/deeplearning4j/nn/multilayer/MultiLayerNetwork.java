@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -1650,7 +1651,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(network.solver != null){
             //Network updater state: should be cloned over also
-            this.setUpdater(network.getUpdater().clone());
+            INDArray updaterView = network.getUpdater().getStateViewArray();
+            if(updaterView != null){
+                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                this.setUpdater(newUpdater);
+            }
         } else {
             this.solver = null;
         }
@@ -2157,6 +2162,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray rnnTimeStep(INDArray input) {
         this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+        this.input = input;
         boolean inputIs2d = input.rank()==2;
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
@@ -2174,6 +2180,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             // instead of 3d output with shape [miniBatchSize,nOut,1]
             return input.tensorAlongDimension(0,1,0);
         }
+
+        this.input = null;
         return input;
     }
 

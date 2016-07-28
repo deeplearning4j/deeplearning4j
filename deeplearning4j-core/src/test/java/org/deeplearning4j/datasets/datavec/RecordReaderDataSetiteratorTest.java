@@ -106,6 +106,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReader() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
@@ -187,6 +192,10 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderRegression() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequence_0.txt");
@@ -243,6 +252,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderReset() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+        }
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
@@ -345,6 +359,12 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testVariableLengthSequence() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        }
+
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
@@ -498,6 +518,11 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSequenceRecordReaderSingleReader() throws Exception{
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequenceSingle_%d.txt",i)).getTempFileFromArchive();
+        }
+
         ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
         String path = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 
@@ -609,10 +634,10 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSeqRRDSIArrayWritableOneReader(){
 
-        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        List<List<Writable>> sequence1 = new ArrayList<>();
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new IntWritable(0)));
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new IntWritable(1)));
-        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        List<List<Writable>> sequence2 = new ArrayList<>();
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new IntWritable(2)));
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new IntWritable(3)));
 
@@ -638,10 +663,10 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testSeqRRDSIArrayWritableOneReaderRegression(){
         //Regression, where the output is an array writable
-        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        List<List<Writable>> sequence1 = new ArrayList<>();
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new NDArrayWritable(Nd4j.create(new double[]{100,200,300}))));
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new NDArrayWritable(Nd4j.create(new double[]{400,500,600}))));
-        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        List<List<Writable>> sequence2 = new ArrayList<>();
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new NDArrayWritable(Nd4j.create(new double[]{700,800,900}))));
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200}))));
 
@@ -668,10 +693,10 @@ public class RecordReaderDataSetiteratorTest {
     public void testSeqRRDSIMultipleArrayWritablesOneReader(){
         //Input with multiple array writables:
 
-        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        List<List<Writable>> sequence1 = new ArrayList<>();
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new NDArrayWritable(Nd4j.create(new double[]{100,200,300})), new IntWritable(0)));
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new NDArrayWritable(Nd4j.create(new double[]{400,500,600})), new IntWritable(1)));
-        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        List<List<Writable>> sequence2 = new ArrayList<>();
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new NDArrayWritable(Nd4j.create(new double[]{700,800,900})), new IntWritable(2)));
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200})), new IntWritable(3)));
 
@@ -696,18 +721,18 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testSeqRRDSIArrayWritableTwoReaders(){
-        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        List<List<Writable>> sequence1 = new ArrayList<>();
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new IntWritable(100)));
         sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new IntWritable(200)));
-        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        List<List<Writable>> sequence2 = new ArrayList<>();
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new IntWritable(300)));
         sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new IntWritable(400)));
         SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1,sequence2));
 
-        Collection<Collection<Writable>> sequence1L = new ArrayList<>();
+        List<List<Writable>> sequence1L = new ArrayList<>();
         sequence1L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{100,200,300})), new IntWritable(101)));
         sequence1L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{400,500,600})), new IntWritable(201)));
-        Collection<Collection<Writable>> sequence2L = new ArrayList<>();
+        List<List<Writable>> sequence2L = new ArrayList<>();
         sequence2L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{700,800,900})), new IntWritable(301)));
         sequence2L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200})), new IntWritable(401)));
         SequenceRecordReader rrLabels = new CollectionSequenceRecordReader(Arrays.asList(sequence1L,sequence2L));
