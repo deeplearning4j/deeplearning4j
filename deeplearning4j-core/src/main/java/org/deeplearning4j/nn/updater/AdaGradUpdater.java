@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.learning.GradientUpdater;
 

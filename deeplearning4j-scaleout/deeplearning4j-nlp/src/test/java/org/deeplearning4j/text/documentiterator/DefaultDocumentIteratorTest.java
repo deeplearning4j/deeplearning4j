@@ -17,20 +17,19 @@
  */
 
 package org.deeplearning4j.text.documentiterator;
-import static org.junit.Assert.*;
 
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.io.File;
 import java.io.InputStream;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 9/29/14.

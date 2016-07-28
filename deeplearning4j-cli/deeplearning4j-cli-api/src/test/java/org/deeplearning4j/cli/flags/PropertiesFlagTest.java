@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.cli.flags;
 
-import org.canova.api.conf.Configuration;
+import org.datavec.api.conf.Configuration;
 import org.deeplearning4j.cli.api.flags.Properties;
 import org.deeplearning4j.cli.api.flags.test.BaseFlagTest;
 import org.junit.Test;

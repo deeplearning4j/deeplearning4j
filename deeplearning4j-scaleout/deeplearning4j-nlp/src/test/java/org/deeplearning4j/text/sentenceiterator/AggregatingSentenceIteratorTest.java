@@ -1,11 +1,11 @@
 package org.deeplearning4j.text.sentenceiterator;
 
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by fartovii on 01.12.15.

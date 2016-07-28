@@ -1,6 +1,5 @@
 package org.deeplearning4j.models.sequencevectors.interfaces;
 
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;

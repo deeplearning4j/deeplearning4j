@@ -33,7 +33,6 @@ import org.deeplearning4j.spark.models.embeddings.word2vec.MapToPairFunction;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
-import org.deeplearning4j.spark.text.functions.TokenizerFunction;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,11 +41,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

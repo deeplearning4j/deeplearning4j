@@ -19,8 +19,6 @@
 package org.deeplearning4j.plot;
 
 
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
@@ -39,7 +37,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.AdaGrad;
 
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -48,9 +45,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.nd4j.linalg.factory.Nd4j.ones;
-import static org.nd4j.linalg.factory.Nd4j.randn;
-import static org.nd4j.linalg.factory.Nd4j.zeros;
+import static org.nd4j.linalg.factory.Nd4j.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 
 
 /**

@@ -2,7 +2,7 @@ package org.deeplearning4j.streaming.pipeline.spark;
 
 import org.apache.commons.net.util.Base64;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.Writable;
 import org.deeplearning4j.streaming.conversion.dataset.RecordToDataSet;
 import org.deeplearning4j.streaming.serde.RecordDeSerializer;
 import org.nd4j.linalg.dataset.DataSet;

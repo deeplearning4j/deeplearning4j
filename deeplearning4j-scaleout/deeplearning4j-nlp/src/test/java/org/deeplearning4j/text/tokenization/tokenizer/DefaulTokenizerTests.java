@@ -18,17 +18,18 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import static org.junit.Assert.*;
-
-import java.io.ByteArrayInputStream;
-
 import org.apache.commons.io.FileUtils;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DefaulTokenizerTests {
 

@@ -1,13 +1,13 @@
 package org.deeplearning4j.ui.flow.beans;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import lombok.Data;
 import lombok.NonNull;
-import org.deeplearning4j.berkeley.Pair;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This bean works as holder for unbounded list of layers. Each layer has it's own place in model's virtual coordinate space.

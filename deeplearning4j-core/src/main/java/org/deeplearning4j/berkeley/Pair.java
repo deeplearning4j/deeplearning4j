@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.berkeley;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Comparator;
 
 
 /**

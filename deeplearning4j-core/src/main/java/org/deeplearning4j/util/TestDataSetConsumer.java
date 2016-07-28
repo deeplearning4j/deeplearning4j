@@ -1,7 +1,6 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;

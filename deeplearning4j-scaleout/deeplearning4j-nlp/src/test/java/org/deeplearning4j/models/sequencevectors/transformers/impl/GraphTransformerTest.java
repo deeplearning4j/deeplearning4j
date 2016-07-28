@@ -1,12 +1,8 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
-import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
-import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFactory;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
@@ -17,7 +13,7 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

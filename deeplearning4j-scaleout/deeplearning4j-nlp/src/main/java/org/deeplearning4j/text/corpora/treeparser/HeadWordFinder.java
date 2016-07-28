@@ -18,16 +18,9 @@
 
 package org.deeplearning4j.text.corpora.treeparser;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
+
+import java.util.*;
 
 public class HeadWordFinder  {
 

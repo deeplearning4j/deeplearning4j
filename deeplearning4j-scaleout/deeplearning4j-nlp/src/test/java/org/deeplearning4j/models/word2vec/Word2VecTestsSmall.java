@@ -1,14 +1,14 @@
 package org.deeplearning4j.models.word2vec;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.Collection;
-
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collection;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class Word2VecTestsSmall

@@ -1,8 +1,6 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import lombok.Data;
-import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
