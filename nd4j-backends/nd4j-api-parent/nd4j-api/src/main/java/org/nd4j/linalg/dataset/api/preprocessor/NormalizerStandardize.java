@@ -112,6 +112,7 @@ public class NormalizerStandardize implements DataNormalization {
      */
     public void fit(DataSetIterator iterator) {
         featureMeanStd = null;
+        INDArray theFeatures, theLabels;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
             batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
@@ -126,8 +127,16 @@ public class NormalizerStandardize implements DataNormalization {
                 }
             }
             else {
-                this.runnningFit(next.getFeatures(),featureMeanStd,batchCount,runningTotal,false);
-                if (fitLabels) this.runnningFit(next.getLabels(),labelMeanStd,labelbatchCount,labelRunningTotal,false);
+                theFeatures = next.getFeatures();
+                if (featureRank == 3) theFeatures = tailor3d2d(next,true);
+                if (featureRank == 4) theFeatures = tailor4d2d(next,true);
+                this.runnningFit(theFeatures,featureMeanStd,batchCount,runningTotal,false);
+                if (fitLabels) {
+                    theLabels = next.getLabels();
+                    if (featureRank == 3) theLabels = tailor3d2d(next,false);
+                    if (featureRank == 4) theLabels = tailor4d2d(next,false);
+                    this.runnningFit(theLabels,labelMeanStd,labelbatchCount,labelRunningTotal,false);
+                }
             }
         }
         this.runnningFit(featureMeanStd,featureMeanStd,batchCount,runningTotal,true);
