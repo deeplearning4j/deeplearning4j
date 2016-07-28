@@ -9,7 +9,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by raver on 16.06.2016.

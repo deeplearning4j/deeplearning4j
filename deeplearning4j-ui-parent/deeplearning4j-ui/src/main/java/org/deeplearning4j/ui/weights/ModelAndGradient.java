@@ -4,7 +4,6 @@ package org.deeplearning4j.ui.weights;
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;

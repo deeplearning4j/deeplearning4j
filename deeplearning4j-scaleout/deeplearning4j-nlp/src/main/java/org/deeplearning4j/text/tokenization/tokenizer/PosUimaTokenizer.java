@@ -18,10 +18,6 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import lombok.NonNull;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
@@ -33,6 +29,10 @@ import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Filter by part of speech tag.

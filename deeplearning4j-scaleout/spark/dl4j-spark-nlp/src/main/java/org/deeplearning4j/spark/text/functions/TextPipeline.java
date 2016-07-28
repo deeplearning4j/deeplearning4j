@@ -29,9 +29,7 @@ import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.spark.text.accumulators.WordFreqAccumulator;
-import org.deeplearning4j.text.stopwords.StopWords;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -19,12 +19,12 @@
 package org.deeplearning4j.util;
 
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
 /**
  * Copied from google refine:
  * takes the key and gets rid of all punctuation, transforms to lower case

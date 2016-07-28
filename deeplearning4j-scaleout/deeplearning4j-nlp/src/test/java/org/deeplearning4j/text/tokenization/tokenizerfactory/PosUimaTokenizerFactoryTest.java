@@ -1,6 +1,5 @@
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
-import org.deeplearning4j.text.tokenization.tokenizer.PosUimaTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,7 +7,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

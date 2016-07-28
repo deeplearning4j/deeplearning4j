@@ -19,20 +19,6 @@
 package org.deeplearning4j.ui.nearestneighbors;
 
 import io.dropwizard.views.View;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.*;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -45,6 +31,16 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.ui.api.UrlResource;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.deeplearning4j.util.SerializationUtils;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
+import java.net.URL;
+import java.util.*;
 
 /**
  * Nearest neighbors

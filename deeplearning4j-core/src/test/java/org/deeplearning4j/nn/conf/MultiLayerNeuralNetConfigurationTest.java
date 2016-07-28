@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-import static org.junit.Assert.*;
-
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -38,6 +36,8 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 11/27/14.

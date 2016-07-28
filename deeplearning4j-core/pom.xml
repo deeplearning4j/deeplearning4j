@@ -90,20 +90,7 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-common</artifactId>
-        </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-image</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

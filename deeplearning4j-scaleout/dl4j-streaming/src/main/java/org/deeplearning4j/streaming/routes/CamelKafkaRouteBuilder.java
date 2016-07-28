@@ -19,8 +19,8 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
     private String topicName;
     private String kafkaBrokerList;
     private static RecordSerializer serializer = new RecordSerializer();
-    private String writableConverter = "org.canova.api.io.converters.SelfWritableConverter";
-    private String canovaMarshaller = "org.canova.camel.component.csv.marshaller.ListStringInputMarshaller";
+    private String writableConverter = "org.datavec.api.io.converters.SelfWritableConverter";
+    private String datavecMarshaller = "org.datavec.camel.component.csv.marshaller.ListStringInputMarshaller";
     private String inputUri;
     private String inputFormat;
     private Processor processor;
@@ -34,7 +34,7 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
     public void configure() {
         from(inputUri)
                 .unmarshal(dataTypeUnMarshal)
-                .to(String.format("canova://%s?inputMarshaller=%s&writableConverter=%s",inputFormat,canovaMarshaller,writableConverter))
+                .to(String.format("datavec://%s?inputMarshaller=%s&writableConverter=%s",inputFormat,datavecMarshaller,writableConverter))
                 .process(processor)
                 .to(String.format("kafka:%s?topic=%s&zookeeperHost=%szookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
                         kafkaBrokerList,
@@ -51,8 +51,8 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
 
 
     public static class Builder {
-        private String writableConverter = "org.canova.api.io.converters.SelfWritableConverter";
-        private String canovaMarshaller = "org.canova.camel.component.csv.marshaller.ListStringInputMarshaller";
+        private String writableConverter = "org.datavec.api.io.converters.SelfWritableConverter";
+        private String datavecMarshaller = "org.datavec.camel.component.csv.marshaller.ListStringInputMarshaller";
         private String inputUri;
         private String topicName;
         private String kafkaBrokerList = "localhost:9092";
@@ -104,8 +104,8 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
         }
 
 
-        public Builder canovaMarshaller(String canovaMarshaller) {
-            this.canovaMarshaller = canovaMarshaller;
+        public Builder datavecMarshaller(String datavecMarshaller) {
+            this.datavecMarshaller = datavecMarshaller;
             return this;
         }
 
@@ -136,7 +136,7 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
                     topicName,
                     kafkaBrokerList,
                     writableConverter,
-                    canovaMarshaller,
+                    datavecMarshaller,
                     inputUri,
                     inputFormat
                     ,processor,

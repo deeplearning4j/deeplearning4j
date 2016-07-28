@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer.tokenprepreprocessor;
 
-import static org.junit.Assert.*;
-
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.EndingPreProcessor;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 10/18/14.

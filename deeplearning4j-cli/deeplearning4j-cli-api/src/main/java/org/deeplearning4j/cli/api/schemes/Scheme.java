@@ -18,10 +18,10 @@
 
 package org.deeplearning4j.cli.api.schemes;
 
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.factory.RecordReaderFactory;
-import org.canova.api.records.reader.factory.RecordWriterFactory;
-import org.canova.api.records.writer.RecordWriter;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.factory.RecordReaderFactory;
+import org.datavec.api.records.reader.factory.RecordWriterFactory;
+import org.datavec.api.records.writer.RecordWriter;
 
 import java.net.URI;
 

@@ -51,7 +51,7 @@
 
         <dependency>
             <groupId>org.graphchi</groupId>
-            <artifactId>graphchi-java_2.11</artifactId>
+            <artifactId>graphchi-java_2.10</artifactId>
             <version>${graphchi.version}</version>
         </dependency>
     </dependencies>
