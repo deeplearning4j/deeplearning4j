@@ -3,7 +3,6 @@ package org.deeplearning4j.graph.iterator.parallel;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
-import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.WeightedRandomWalkIterator;
 
 import java.util.ArrayList;

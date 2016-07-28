@@ -28,8 +28,6 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;

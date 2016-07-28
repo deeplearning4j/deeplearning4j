@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.cli.schemes;
 
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.writer.RecordWriter;
-import org.canova.api.writable.Writable;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.writable.Writable;
 import org.deeplearning4j.cli.api.schemes.Scheme;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +31,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests scheme for creating record writers and readers

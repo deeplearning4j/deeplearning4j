@@ -1,12 +1,8 @@
 package org.deeplearning4j.ui.rl;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
-import org.deeplearning4j.ui.flow.beans.NodeReport;
 import org.deeplearning4j.ui.rl.beans.ReportBean;
 import org.deeplearning4j.ui.storage.HistoryStorage;
-import org.deeplearning4j.ui.storage.SessionStorage;
-import org.deeplearning4j.ui.storage.def.ObjectType;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

@@ -18,12 +18,6 @@
 
 package org.deeplearning4j.clustering.algorithm;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationInfo;
@@ -40,6 +34,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
 
 /**
  *

@@ -18,10 +18,6 @@
 
 package org.deeplearning4j.text.annotator;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.uima.postag.POSModelResource;
@@ -30,7 +26,6 @@ import opennlp.uima.util.AnnotationComboIterator;
 import opennlp.uima.util.AnnotationIteratorPair;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
-
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
@@ -49,6 +44,10 @@ import org.apache.uima.util.Logger;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.text.movingwindow.Util;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 
 

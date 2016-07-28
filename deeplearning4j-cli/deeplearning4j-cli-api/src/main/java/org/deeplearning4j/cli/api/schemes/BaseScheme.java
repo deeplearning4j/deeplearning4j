@@ -18,15 +18,11 @@
 
 package org.deeplearning4j.cli.api.schemes;
 
-import org.canova.api.records.reader.factory.RecordReaderFactory;
-import org.canova.api.records.reader.factory.RecordWriterFactory;
-import org.canova.api.writable.Writable;
-
-import java.net.URI;
-import java.util.Collection;
+import org.datavec.api.records.reader.factory.RecordReaderFactory;
+import org.datavec.api.records.reader.factory.RecordWriterFactory;
 
 /**
- * Base scheme for reading in data via Canova RecordReader
+ * Base scheme for reading in data via datavec RecordReader
  * @author sonali
  */
 public abstract class BaseScheme implements Scheme {

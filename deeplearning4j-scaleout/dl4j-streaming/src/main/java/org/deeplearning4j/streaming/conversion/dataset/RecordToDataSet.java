@@ -1,6 +1,6 @@
 package org.deeplearning4j.streaming.conversion.dataset;
 
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;

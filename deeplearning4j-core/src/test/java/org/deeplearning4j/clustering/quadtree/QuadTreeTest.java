@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.clustering.quadtree;
 
-import java.util.Set;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

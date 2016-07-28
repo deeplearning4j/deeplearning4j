@@ -1,10 +1,8 @@
 package org.deeplearning4j.spark.api.worker;
 
 import lombok.Data;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;

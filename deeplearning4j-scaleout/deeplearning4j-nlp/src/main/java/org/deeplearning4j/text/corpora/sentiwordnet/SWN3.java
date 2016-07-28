@@ -18,22 +18,21 @@
 
 package org.deeplearning4j.text.corpora.sentiwordnet;
 
+import com.google.common.collect.Sets;
+import org.apache.uima.analysis_engine.AnalysisEngine;
+import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.CASException;
+import org.apache.uima.fit.util.JCasUtil;
+import org.datavec.api.util.ClassPathResource;
+import org.cleartk.token.type.Sentence;
+import org.cleartk.token.type.Token;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.*;
-
-import org.apache.uima.analysis_engine.AnalysisEngine;
-import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.CASException;
-import org.apache.uima.fit.util.JCasUtil;
-import org.canova.api.util.ClassPathResource;
-import org.cleartk.token.type.Sentence;
-import org.cleartk.token.type.Token;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-
-import com.google.common.collect.Sets;
 /**
  * Based on SentiWordnet
  * @author Adam Gibson

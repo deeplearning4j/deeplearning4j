@@ -2,7 +2,7 @@ package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

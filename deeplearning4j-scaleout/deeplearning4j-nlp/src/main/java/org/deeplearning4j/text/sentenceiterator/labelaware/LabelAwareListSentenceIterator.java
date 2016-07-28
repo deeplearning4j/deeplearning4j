@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.text.sentenceiterator.labelaware;
 
-import org.deeplearning4j.util.StringGrid;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
+import org.deeplearning4j.util.StringGrid;
 
 import java.io.IOException;
 import java.io.InputStream;

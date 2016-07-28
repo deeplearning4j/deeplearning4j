@@ -4,17 +4,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.ui.api.Component;
-
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.Version;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.ui.api.Component;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;

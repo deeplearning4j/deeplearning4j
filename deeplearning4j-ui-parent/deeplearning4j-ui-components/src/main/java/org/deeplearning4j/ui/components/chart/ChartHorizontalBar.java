@@ -23,7 +23,6 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)

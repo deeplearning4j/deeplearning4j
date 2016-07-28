@@ -18,6 +18,10 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,10 +30,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.zip.GZIPInputStream;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
 
 @SuppressWarnings("unchecked")
 public class FileSentenceIterator extends BaseSentenceIterator {
