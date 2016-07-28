@@ -17,11 +17,13 @@
 # limitations under the License.
 #
 
-# This shell script is from Apache Spark with some modification.
+# This shell script is adapted from Apache Flink (in turn, adapted from Apache Spark) some modifications.
 
 set -e
 
 VALID_VERSIONS=( 2.10 2.11 )
+SCALA_211_VERSION="2\.11.7"
+SCALA_210_VERSION="2\.10.6"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <scala version to be used>
@@ -44,14 +46,19 @@ check_scala_version() {
   exit 1
 }
 
+
 check_scala_version "$TO_VERSION"
 
 if [ $TO_VERSION = "2.11" ]; then
-  FROM_SUFFIX="_2\.10"
-  TO_SUFFIX="_2\.11"
+  FROM_BINARY="_2\.10"
+  TO_BINARY="_2\.11"
+  FROM_VERSION=SCALA_210_VERSION;
+  TO_VERSION=SCALA_211_VERSION;
 else
   FROM_SUFFIX="_2\.11"
   TO_SUFFIX="_2\.10"
+  FROM_VERSION=SCALA_211_VERSION;
+  TO_VERSION=SCALA_210_VERSION;
 fi
 
 sed_i() {
@@ -65,3 +72,6 @@ echo "sed_i 's/\(artifactId>spark.*'$FROM_SUFFIX'\)<\/artifactId>/\1'$TO_SUFFIX'
 BASEDIR=$(dirname $0)
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
   -exec bash -c "sed_i 's/\(artifactId>spark.*\)'$FROM_SUFFIX'<\/artifactId>/\1'$TO_SUFFIX'<\/artifactId>/g' {}" \;
+  
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
+  -exec bash -c "sed_i 's/\(version>'$FROM_SUFFIX'<\/version>/\1'$TO_SUFFIX'<\/version>/g' {}" \;
