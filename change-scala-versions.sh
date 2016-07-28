@@ -67,18 +67,20 @@ sed_i() {
 
 export -f sed_i
 
-echo "sed_i 's/\(artifactId>.*'$FROM_BINARY'\)<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}";
+echo "Updating Scala versions in pom.xml files to Scala $1";
 
 BASEDIR=$(dirname $0)
 
 #Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
-  
+
 #Scala versions, like <artifactId>scala-library</artifactId> <version>2.10.6</version>
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(version>\)'$FROM_VERSION'<\/version>/\1'$TO_VERSION'<\/version>/g' {}" \;
 
 #Scala maven plugin, <scalaVersion>2.10</scalaVersion>
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
+
+echo "Done updating Scala versions.";
