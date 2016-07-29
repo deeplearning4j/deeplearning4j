@@ -166,7 +166,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
         trainingData.persist(StorageLevel.MEMORY_ONLY());
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -187,11 +189,13 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int origNumPartitions = trainingData.partitions().size();
         if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
-            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            log.info("Coalesing PortableDataStreams from {} to {} partitions", origNumPartitions, numWorkers);
             trainingData = trainingData.coalesce(numWorkers);
         }
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
         if (collectTrainingStats) stats.logSplitStart();
         JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
@@ -201,6 +205,30 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         for (JavaPairRDD<String, PortableDataStream> split : splits) {
             JavaRDD<PortableDataStream> streams = split.values();
             doIterationPDS(network, null, streams, splitNum++, splits.length);
+        }
+
+        if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    @Override
+    public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths){
+        if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (collectTrainingStats) stats.logFitStart();
+
+        if (collectTrainingStats) stats.logCountStart();
+        long totalDataSetObjectCount = trainingDataPaths.count();
+        if (collectTrainingStats) stats.logCountEnd();
+
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths);
+        if (collectTrainingStats) stats.logSplitEnd();
+
+
+        int splitNum = 1;
+        for (JavaRDD<String> split : splits) {
+            doIterationPaths(network, null, split, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
@@ -224,7 +252,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -254,7 +284,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             trainingData = trainingData.coalesce(numWorkers);
         }
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -276,7 +308,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         if (collectTrainingStats) stats.logFitStart();
 
+        if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
+        if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
 
         if (collectTrainingStats) stats.logSplitStart();
@@ -291,6 +325,54 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
 
             doIterationPDS_MDS(graph, streams, splitNum++, splits.length);
+        }
+
+        if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    @Override
+    public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths){
+        if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (collectTrainingStats) stats.logFitStart();
+
+        if (collectTrainingStats) stats.logCountStart();
+        long totalDataSetObjectCount = trainingDataPaths.count();
+        if (collectTrainingStats) stats.logCountEnd();
+
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths);
+        if (collectTrainingStats) stats.logSplitEnd();
+
+
+        int splitNum = 1;
+        for (JavaRDD<String> split : splits) {
+            doIterationPaths(null, network, split, splitNum++, splits.length);
+        }
+
+        if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    @Override
+    public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths){
+        if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (collectTrainingStats) stats.logFitStart();
+
+        if (collectTrainingStats) stats.logCountStart();
+        long totalDataSetObjectCount = trainingMultiDataPaths.count();
+        if (collectTrainingStats) stats.logCountEnd();
+
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit();
+        if (collectTrainingStats) stats.logSplitStart();
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingMultiDataPaths);
+        if (collectTrainingStats) stats.logSplitEnd();
+
+
+        int splitNum = 1;
+        for (JavaRDD<String> split : splits) {
+            doIterationPathsMDS(network, split, splitNum++, splits.length);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
@@ -359,6 +441,49 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
     }
 
+    private void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<String> splitData = split;
+        if (collectTrainingStats) stats.logRepartitionStart();
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = splitData.partitions().size();
+        if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+
+        FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
+        if (network != null) function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network));
+        else function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph));
+
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(network, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
+    private void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
+        if (collectTrainingStats) stats.logMapPartitionsStart();
+
+        JavaRDD<String> splitData = split;
+        if (collectTrainingStats) stats.logRepartitionStart();
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(), numWorkers);
+        int nPartitions = splitData.partitions().size();
+        if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
+
+
+        FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function
+                = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph));
+
+        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
+        processResults(null, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
+    }
+
     private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                 splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
@@ -413,18 +538,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
         params.divi(aggCount);
         INDArray updaterState = tuple.getUpdaterStateSum();
-        if(updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
+        if (updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
 
         if (network != null) {
             MultiLayerNetwork net = network.getNetwork();
             net.setParameters(params);
-            if(updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
+            if (updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
 
             network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         } else {
             ComputationGraph g = graph.getNetwork();
             g.setParams(params);
-            if(updaterState != null) g.getUpdater().setStateViewArray(updaterState);
+            if (updaterState != null) g.getUpdater().setStateViewArray(updaterState);
 
             graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
         }

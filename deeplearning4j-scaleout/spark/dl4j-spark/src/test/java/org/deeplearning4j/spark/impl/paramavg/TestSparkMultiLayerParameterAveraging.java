@@ -19,6 +19,10 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
@@ -30,6 +34,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -40,21 +45,28 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 
 /**
@@ -392,5 +404,174 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             ExampleCountEventStats eces = (ExampleCountEventStats)e;
             assertEquals(batchSizePerExecutor,eces.getTotalExampleCount());
         }
+    }
+
+
+    @Test
+    public void testFitViaStringPaths() throws Exception {
+
+        Path tempDir = Files.createTempDirectory("DL4J-testFitViaStringPaths");
+        File tempDirF = tempDir.toFile();
+        tempDirF.deleteOnExit();
+
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,1000,false);
+        int i=0;
+        while(iter.hasNext()){
+            File nextFile = new File(tempDirF, i + ".bin");
+            DataSet ds = iter.next();
+            ds.save(nextFile);
+            i++;
+        }
+
+        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+
+
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+
+        //List files:
+        Configuration config = new Configuration();
+        FileSystem hdfs = FileSystem.get(tempDir.toUri(), config);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir.toString()), false);
+
+        List<String> paths = new ArrayList<>();
+        while(fileIter.hasNext()){
+            String path = fileIter.next().getPath().toString();
+            paths.add(path);
+        }
+
+        INDArray paramsBefore = sparkNet.getNetwork().params().dup();
+        JavaRDD<String> pathRdd = sc.parallelize(paths);
+        sparkNet.fitPaths(pathRdd);
+
+        INDArray paramsAfter = sparkNet.getNetwork().params().dup();
+        assertNotEquals(paramsBefore, paramsAfter);
+
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+        System.out.println(stats.statsAsString());
+    }
+
+
+    @Test
+    public void testFitViaStringPathsCompGraph() throws Exception {
+
+        Path tempDir = Files.createTempDirectory("DL4J-testFitViaStringPathsCG");
+        Path tempDir2 = Files.createTempDirectory("DL4J-testFitViaStringPathsCG-MDS");
+        File tempDirF = tempDir.toFile();
+        File tempDirF2 = tempDir2.toFile();
+        tempDirF.deleteOnExit();
+        tempDirF2.deleteOnExit();
+
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,1000,false);
+        int i=0;
+        while(iter.hasNext()){
+            File nextFile = new File(tempDirF, i + ".bin");
+            File nextFile2 = new File(tempDirF2, i + ".bin");
+            DataSet ds = iter.next();
+            MultiDataSet mds = new MultiDataSet(ds.getFeatures(), ds.getLabels());
+            ds.save(nextFile);
+            mds.save(nextFile2);
+            i++;
+        }
+
+        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+        System.out.println("Saved to: " + tempDirF2.getAbsolutePath());
+
+
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50).activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10).activation("softmax").build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkComputationGraph sparkNet = new SparkComputationGraph(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .workerPrefetchNumBatches(5)
+                        .workerPrefetchNumBatches(0)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+
+        //List files:
+        Configuration config = new Configuration();
+        FileSystem hdfs = FileSystem.get(tempDir.toUri(), config);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir.toString()), false);
+
+        List<String> paths = new ArrayList<>();
+        while(fileIter.hasNext()){
+            String path = fileIter.next().getPath().toString();
+            paths.add(path);
+        }
+
+        INDArray paramsBefore = sparkNet.getNetwork().params().dup();
+        JavaRDD<String> pathRdd = sc.parallelize(paths);
+        sparkNet.fitPaths(pathRdd);
+
+        INDArray paramsAfter = sparkNet.getNetwork().params().dup();
+        assertNotEquals(paramsBefore, paramsAfter);
+
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+        System.out.println(stats.statsAsString());
+
+        //Same thing, buf for MultiDataSet objects:
+        config = new Configuration();
+        hdfs = FileSystem.get(tempDir2.toUri(), config);
+        fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir2.toString()), false);
+
+        paths = new ArrayList<>();
+        while(fileIter.hasNext()){
+            String path = fileIter.next().getPath().toString();
+            paths.add(path);
+        }
+
+        paramsBefore = sparkNet.getNetwork().params().dup();
+        pathRdd = sc.parallelize(paths);
+        sparkNet.fitPathsMultiDataSet(pathRdd);
+
+        paramsAfter = sparkNet.getNetwork().params().dup();
+        assertNotEquals(paramsBefore, paramsAfter);
+
+        stats = sparkNet.getSparkTrainingStats();
+        System.out.println(stats.statsAsString());
+
     }
 }
