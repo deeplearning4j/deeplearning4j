@@ -426,11 +426,13 @@ public class TestOptimizers {
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(100,conf);
+            int nParams = m.numParams();
             if(i == 0) {
                 m.computeGradientAndScore();
                 scores[0] = m.score();	//Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa,conf,m);
+                opt.getUpdater().setStateViewArray((Layer)m,Nd4j.createUninitialized(new int[]{1,nParams},'c'),true);
                 opt.optimize();
                 m.computeGradientAndScore();
                 scores[i] = m.score();

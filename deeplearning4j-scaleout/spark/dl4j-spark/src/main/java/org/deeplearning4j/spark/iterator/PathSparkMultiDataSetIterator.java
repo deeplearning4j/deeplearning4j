@@ -1,33 +1,40 @@
 package org.deeplearning4j.spark.iterator;
 
-import org.apache.spark.input.PortableDataStream;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * A DataSetIterator that loads serialized MultiDataSet objects (saved with {@link MultiDataSet#save(OutputStream)}) from
- * a {@link PortableDataStream}, usually obtained from SparkContext.binaryFiles()
+ * A DataSetIterator that loads serialized DataSet objects (saved with {@link MultiDataSet#save(OutputStream)}) from
+ * a String that represents the path (for example, on HDFS)
  *
  * @author Alex Black
  */
-public class PortableDataStreamMultiDataSetIterator implements MultiDataSetIterator {
+public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
 
-    private final Collection<PortableDataStream> dataSetStreams;
+    public static final int BUFFER_SIZE = 4194304;  //4 MB
+
+    private final Collection<String> dataSetStreams;
     private MultiDataSetPreProcessor preprocessor;
-    private Iterator<PortableDataStream> iter;
+    private Iterator<String> iter;
+    private FileSystem fileSystem;
 
-    public PortableDataStreamMultiDataSetIterator(Iterator<PortableDataStream> iter){
+    public PathSparkMultiDataSetIterator(Iterator<String> iter){
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PortableDataStreamMultiDataSetIterator(Collection<PortableDataStream> dataSetStreams){
+    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams){
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -60,15 +67,7 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
 
     @Override
     public MultiDataSet next() {
-        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
-        PortableDataStream pds = iter.next();
-        try {
-            ds.load(pds.open());
-        } catch(IOException e){
-            throw new RuntimeException(e);
-        } finally {
-            pds.close();
-        }
+        MultiDataSet ds = load(iter.next());
 
         if(preprocessor != null) preprocessor.preProcess(ds);
         return ds;
@@ -77,5 +76,25 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
+    }
+
+
+    private synchronized MultiDataSet load(String path){
+        if(fileSystem == null){
+            try{
+                fileSystem = FileSystem.get(new URI(path), new Configuration());
+            }catch(Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
+        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+            ds.load(inputStream);
+        }catch(IOException e){
+            throw new RuntimeException(e);
+        }
+
+        return ds;
     }
 }

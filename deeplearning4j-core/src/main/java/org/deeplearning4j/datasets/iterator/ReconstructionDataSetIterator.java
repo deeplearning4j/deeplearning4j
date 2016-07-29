@@ -84,6 +84,11 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
         return iter.totalOutcomes();
     }
 
+    @Override
+    public boolean resetSupported(){
+        return iter.resetSupported();
+    }
+
     /**
      * Resets the iterator back to the beginning
      */

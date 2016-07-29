@@ -1,38 +1,46 @@
 package org.deeplearning4j.spark.iterator;
 
-import org.apache.spark.input.PortableDataStream;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 /**
  * A DataSetIterator that loads serialized DataSet objects (saved with {@link DataSet#save(OutputStream)}) from
- * a {@link PortableDataStream}, usually obtained from SparkContext.binaryFiles()
+ * a String that represents the path (for example, on HDFS)
  *
  * @author Alex Black
  */
-public class PortableDataStreamDataSetIterator implements DataSetIterator {
+public class PathSparkDataSetIterator implements DataSetIterator {
 
-    private final Collection<PortableDataStream> dataSetStreams;
+    public static final int BUFFER_SIZE = 4194304;  //4 MB
+
+    private final Collection<String> dataSetStreams;
     private DataSetPreProcessor preprocessor;
-    private Iterator<PortableDataStream> iter;
+    private Iterator<String> iter;
     private int totalOutcomes = -1;
     private int inputColumns = -1;
     private int batch = -1;
     private int cursor = 0;
     private DataSet preloadedDataSet;
+    private FileSystem fileSystem;
 
-    public PortableDataStreamDataSetIterator(Iterator<PortableDataStream> iter){
+    public PathSparkDataSetIterator(Iterator<String> iter){
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PortableDataStreamDataSetIterator(Collection<PortableDataStream> dataSetStreams){
+    public PathSparkDataSetIterator(Collection<String> dataSetStreams){
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -44,7 +52,7 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalExamples() {
-        throw new UnsupportedOperationException("Total examples unknown for PortableDataStreamDataSetIterator");
+        throw new UnsupportedOperationException("Total examples unknown for PathSparkDataSetIterator");
     }
 
     @Override
@@ -137,13 +145,22 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
         batch = preloadedDataSet.numExamples();
     }
 
-    private DataSet load(PortableDataStream pds){
-        DataSet ds = new DataSet();
-        try{
-            ds.load(pds.open());
-        } finally {
-            pds.close();
+    private synchronized DataSet load(String path){
+        if(fileSystem == null){
+            try{
+                fileSystem = FileSystem.get(new URI(path), new Configuration());
+            }catch(Exception e){
+                throw new RuntimeException(e);
+            }
         }
+
+        DataSet ds = new DataSet();
+        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+            ds.load(inputStream);
+        }catch(IOException e){
+            throw new RuntimeException(e);
+        }
+
         cursor++;
         return ds;
     }

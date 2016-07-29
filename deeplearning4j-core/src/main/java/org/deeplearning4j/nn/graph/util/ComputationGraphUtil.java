@@ -73,6 +73,11 @@ public class ComputationGraphUtil {
         }
 
         @Override
+        public boolean resetSupported(){
+            return iter.resetSupported();
+        }
+
+        @Override
         public void reset() {
             iter.reset();
         }
