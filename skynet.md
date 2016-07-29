@@ -41,6 +41,8 @@ Here are a few thoughts about what we might request of the makers of AI software
 
 One way to thinking about controlling AIs, at least AIs of a certain level of intelligence, is to imagine animal control. People have pets and they are supposed to control and constrain their pets in certain ways: they shouldn't let them poop on the sidewalk, they should get them spade or neutered, they should teach them not to hurt or attack other humans in most cases. But not every pet owner does control or constrain their pets. Sometimes those pets go feral and breed uncontrollably, sometimes they damage property and persons, yet we still benefit from animal control laws, all in all.
 
+* - Chris Nicholson, July 2016*
+
 ### <a name="beginner">Other Deeplearning4j Posts</a>
 * [Word2vec: Neural Embeddings for Java](./word2vec)
 * [Introduction to Neural Networks](./neuralnet-overview)
