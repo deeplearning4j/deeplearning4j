@@ -3244,7 +3244,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-        if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape())) {
+        if(isRowVector() && toPut.isVector()) {
             return assign(toPut);
         }
         return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
@@ -3261,8 +3261,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        if(isColumnVector() && Shape.shapeEquals(shape(), toPut.shape()))
+        if(isColumnVector() && toPut.isVector()) {
             return assign(toPut);
+        }
         return put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
 
     }
