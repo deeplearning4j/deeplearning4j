@@ -369,6 +369,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return true;
+    }
+
+    @Override
     public void reset() {
         for(RecordReader rr : recordReaders.values()) rr.reset();
         for(SequenceRecordReader rr: sequenceRecordReaders.values()) rr.reset();

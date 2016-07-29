@@ -79,6 +79,11 @@ public class ExistingDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return iterable != null;
+    }
+
+    @Override
     public void reset() {
         if (iterable != null)
             this.iterator = iterable.iterator();

@@ -61,6 +61,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return iterator.resetSupported();
+    }
+
+    @Override
     public void reset() {
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;

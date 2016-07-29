@@ -84,6 +84,11 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
         return numLabels;
     }
 
+    @Override
+    public boolean resetSupported(){
+        return iterable != null;
+    }
+
     /**
      * Resets the iterator back to the beginning
      */

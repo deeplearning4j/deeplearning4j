@@ -80,6 +80,11 @@ public class TestDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
+	public boolean resetSupported(){
+		return wrapped.resetSupported();
+	}
+
+	@Override
 	public void reset() {
 		wrapped.reset();
 	}
