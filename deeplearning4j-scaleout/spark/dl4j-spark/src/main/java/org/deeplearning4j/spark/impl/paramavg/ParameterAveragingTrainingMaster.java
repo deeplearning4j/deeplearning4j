@@ -214,6 +214,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths){
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
+        if (collectTrainingStats) stats.logFitStart();
+
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingDataPaths.count();
         if (collectTrainingStats) stats.logCountEnd();
@@ -332,6 +334,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths){
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
+        if (collectTrainingStats) stats.logFitStart();
+
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingDataPaths.count();
         if (collectTrainingStats) stats.logCountEnd();
@@ -353,6 +357,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     @Override
     public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths){
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (collectTrainingStats) stats.logFitStart();
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingMultiDataPaths.count();
@@ -470,7 +476,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
 
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function
-                = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph));
+                = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph));
 
         JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
         processResults(null, graph, result, splitNum, numSplits);
