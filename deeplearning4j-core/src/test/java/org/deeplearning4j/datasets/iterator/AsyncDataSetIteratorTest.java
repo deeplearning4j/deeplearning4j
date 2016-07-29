@@ -20,8 +20,9 @@ public class AsyncDataSetIteratorTest {
     private static final int TEST_SIZE = 100;
     private static final int ITERATIONS = 100;
 
-    // time spent in consumer thread
+    // time spent in consumer thread, milliseconds
     private static final long EXECUTION_TIME = 5;
+    private static final long EXECUTION_SMALL = 1;
 
     @Before
     public void setUp() throws Exception {
@@ -36,15 +37,14 @@ public class AsyncDataSetIteratorTest {
     @Test
     public void hasNext1() throws Exception {
         for (int iter = 0; iter < ITERATIONS; iter++) {
-            for (int prefetchSize = 1; prefetchSize <= 10; prefetchSize++) {
+            for (int prefetchSize = 2; prefetchSize <= 8; prefetchSize++) {
                 AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
                 int cnt = 0;
                 while (iterator.hasNext()) {
                     DataSet ds = iterator.next();
+
                     assertNotEquals(null, ds);
                     cnt++;
-                    assertEquals(100, ds.getFeatureMatrix().length());
-                    assertEquals(10, ds.getLabels().length());
                 }
 
                 assertEquals("Failed on iteration: " + iter + ", prefetchSize: " + prefetchSize, TEST_SIZE, cnt);
@@ -53,14 +53,16 @@ public class AsyncDataSetIteratorTest {
     }
 
     @Test
-    public void hasNextWithReset() throws Exception {
+    public void hasNextWithResetAndLoad() throws Exception {
         for (int iter = 0; iter < ITERATIONS; iter++) {
-            for (int prefetchSize = 1; prefetchSize <= 10; prefetchSize++) {
+            for (int prefetchSize = 2; prefetchSize <= 8; prefetchSize++) {
                 AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
+                TestDataSetConsumer consumer = new TestDataSetConsumer(EXECUTION_SMALL);
                 int cnt = 0;
                 while (iterator.hasNext()) {
                     DataSet ds = iterator.next();
-                    assertNotEquals(null, ds);
+                    consumer.consumeOnce(ds, false);
+
                     cnt++;
                     if (cnt == TEST_SIZE / 2)
                         iterator.reset();

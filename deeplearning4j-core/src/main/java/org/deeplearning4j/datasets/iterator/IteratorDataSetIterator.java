@@ -85,7 +85,12 @@ public class IteratorDataSetIterator implements DataSetIterator {
             out = DataSet.merge(list);
         }
 
-        if(preProcessor != null) preProcessor.preProcess(out);
+        if(preProcessor != null) {
+            if (!out.isPreProcessed()) {
+                preProcessor.preProcess(out);
+                out.markAsPreProcessed();
+            }
+        }
         cursor += out.numExamples();
         return out;
     }

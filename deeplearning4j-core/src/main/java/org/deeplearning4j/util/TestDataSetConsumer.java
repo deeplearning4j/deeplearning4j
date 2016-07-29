@@ -59,7 +59,7 @@ public class TestDataSetConsumer {
         while (System.currentTimeMillis() < timeMs) {
             if (consumeWithSleep)
                 try {
-                    Thread.sleep(delay + 1);
+                    Thread.sleep(delay);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

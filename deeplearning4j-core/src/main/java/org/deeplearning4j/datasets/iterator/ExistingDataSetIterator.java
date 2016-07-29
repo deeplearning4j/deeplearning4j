@@ -127,7 +127,10 @@ public class ExistingDataSetIterator implements DataSetIterator {
     public DataSet next() {
         if (preProcessor != null) {
             DataSet ds = iterator.next();
-            preProcessor.preProcess(ds);
+            if (!ds.isPreProcessed()) {
+                preProcessor.preProcess(ds);
+                ds.markAsPreProcessed();
+            }
             return ds;
         } else return iterator.next();
     }
