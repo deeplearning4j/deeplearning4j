@@ -6,6 +6,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -261,6 +262,18 @@ public class Glove extends SequenceVectors<VocabWord> {
          */
         public Builder shuffle(boolean reallyShuffle) {
             this.shuffle = reallyShuffle;
+            return this;
+        }
+
+        /**
+         * This method has no effect for ParagraphVectors
+         *
+         * @param windows
+         * @return
+         */
+        @Override
+        public Builder useVariableWindow(int... windows) {
+            // no-op
             return this;
         }
 
