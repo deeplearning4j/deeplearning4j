@@ -50,6 +50,7 @@ Pros and Cons
 * (-) Much “fatter” than Torch; more magic
 * (-) Not many pretrained models
 * (-) Computational graph is pure Python, therefore slow
+* (-) No commercial support
 
 ### <a name="theano">Theano and Ecosystem</a>
 
@@ -71,6 +72,7 @@ Pros and Cons
 * (-) Much “fatter” than Torch; more magic
 * (-) Patchy support for pretrained models
 * (-) Buggy on AWS
+* (-) No commercial support
 
 ### <a name="torch">Torch</a>
 
@@ -87,6 +89,7 @@ Pros and Cons:
 * (-) Who deploys Lua?
 * (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
+* (-) No commercial support
 
 ### <a name="caffe">Caffe</a>
 
@@ -104,6 +107,7 @@ Pros and Cons:
 * (-) Not good for recurrent networks
 * (-) Cumbersome for big networks (GoogLeNet, ResNet)
 * (-) Not extensible, bit of a hairball
+* (-) No commercial support
 
 ### <a name="cntk">CNTK</a>
 
