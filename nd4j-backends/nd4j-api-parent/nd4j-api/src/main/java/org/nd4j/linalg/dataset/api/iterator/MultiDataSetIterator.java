@@ -24,6 +24,14 @@ public interface MultiDataSetIterator extends Iterator<MultiDataSet>, Serializab
     void setPreProcessor(MultiDataSetPreProcessor preProcessor);
 
     /**
+     * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
+     * but some don't
+     *
+     * @return true if reset method is supported; false otherwise
+     */
+    boolean resetSupported();
+
+    /**
      * Resets the iterator back to the beginning
      */
     void reset();

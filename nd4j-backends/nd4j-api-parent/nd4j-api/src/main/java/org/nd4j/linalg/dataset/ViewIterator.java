@@ -43,6 +43,11 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return true;
+    }
+
+    @Override
     public void reset() {
         cursor = 0;
     }
