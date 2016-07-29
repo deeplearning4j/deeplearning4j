@@ -96,6 +96,19 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark_2.10</artifactId>
+            <version>${datavec.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui-components</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Test Dependencies -->
 
 
         <dependency>
@@ -105,26 +118,11 @@
             <scope>test</scope>
         </dependency>
 
-
-
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.10</artifactId>
-            <version>${datavec.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui-components</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
