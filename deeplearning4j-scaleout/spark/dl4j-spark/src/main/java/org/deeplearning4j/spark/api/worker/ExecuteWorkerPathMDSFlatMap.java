@@ -3,8 +3,8 @@ package org.deeplearning4j.spark.api.worker;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
-import org.deeplearning4j.spark.iterator.PathSparkDataSetIterator;
-import org.nd4j.linalg.dataset.DataSet;
+import org.deeplearning4j.spark.iterator.PathSparkMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Iterator;
 
@@ -14,15 +14,15 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPathFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
-    private final FlatMapFunction<Iterator<DataSet>, R> workerFlatMap;
+public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
+    private final FlatMapFunction<Iterator<MultiDataSet>, R> workerFlatMap;
 
-    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker){
-        this.workerFlatMap = new ExecuteWorkerFlatMap<>(worker);
+    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker){
+        this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMap<>(worker);
     }
 
     @Override
     public Iterable<R> call(Iterator<String> iter) throws Exception {
-        return workerFlatMap.call(new PathSparkDataSetIterator(iter));
+        return workerFlatMap.call(new PathSparkMultiDataSetIterator(iter));
     }
 }
