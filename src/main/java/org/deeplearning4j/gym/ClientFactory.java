@@ -2,9 +2,13 @@ package org.deeplearning4j.gym;
 
 import org.deeplearning4j.gym.space.ActionSpace;
 import org.deeplearning4j.gym.space.DiscreteSpace;
+import org.deeplearning4j.gym.space.HighLowDiscrete;
 import org.deeplearning4j.gym.space.ObservationSpace;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 
 /**
@@ -20,7 +24,7 @@ public class ClientFactory {
         JSONObject reply = ClientUtils.post(url + Client.ENVS_ROOT, body).getObject();
 
         String instanceId;
-        
+
         try {
             instanceId = reply.getString("instance_id");
         } catch (JSONException e) {
@@ -47,8 +51,18 @@ public class ClientFactory {
         switch (infoName) {
             case "Discrete":
                 return (AS) new DiscreteSpace(info.getInt("n"));
+            case "HighLow":
+                int numRows = info.getInt("num_rows");
+                int size = 3 * numRows;
+                JSONArray matrixJson = info.getJSONArray("matrix");
+                INDArray matrix = Nd4j.create(numRows, 3);
+                for (int i = 0; i < size; i++) {
+                    matrix.putScalar(i, matrixJson.getDouble(i));
+                }
+                matrix.reshape(numRows, 3);
+                return (AS) new HighLowDiscrete(matrix);
             default:
-                throw new RuntimeException("Unknown space " + infoName);
+                throw new RuntimeException("Unknown action space " + infoName);
         }
     }
 

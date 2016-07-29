@@ -1,5 +1,6 @@
 package org.deeplearning4j.gym.space;
 
+import lombok.Getter;
 import lombok.Value;
 
 import java.util.Random;
@@ -12,12 +13,12 @@ import java.util.Random;
  * Benefit of using Integers directly is that you can use it as the
  * id of the node assigned to that action in the outpout of a DQN.
  */
-@Value
 public class DiscreteSpace implements ActionSpace<Integer> {
 
     //size of the space also defined as the number of different actions
-    int size;
-    Random rd;
+    @Getter
+    final protected int size;
+    final protected Random rd;
 
     public DiscreteSpace(int size) {
         this.size = size;
@@ -26,6 +27,10 @@ public class DiscreteSpace implements ActionSpace<Integer> {
 
     public Integer randomAction() {
         return rd.nextInt(size);
+    }
+
+    public Object encode(Integer a){
+        return a;
     }
 
 }

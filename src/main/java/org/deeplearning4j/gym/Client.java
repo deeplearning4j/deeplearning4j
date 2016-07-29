@@ -19,7 +19,6 @@ import java.util.logging.Logger;
  *
  * @param <O>  Observation type
  * @param <A>  Action type
- * @param <OS> Observation Space type
  * @param <AS> Action Space type
  * @see <a href="https://github.com/openai/gym-http-api#api-specification">https://github.com/openai/gym-http-api#api-specification</a>
  */
@@ -82,7 +81,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
      */
     public StepReply<O> step(A action) {
         JSONObject body = new JSONObject()
-                .put("action", action)
+                .put("action", getActionSpace().encode(action))
                 .put("render", render);
 
         JSONObject reply = ClientUtils.post(url + ENVS_ROOT + instanceId + STEP, body).getObject();

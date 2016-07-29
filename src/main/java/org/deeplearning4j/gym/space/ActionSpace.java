@@ -15,4 +15,6 @@ public interface ActionSpace<A> {
      */
     A randomAction();
 
+    Object encode(A action);
+
 }
