@@ -58,7 +58,9 @@ public class OpDashboard {
         } else if (op instanceof Accumulation) {
             return "AccumulationOp";
         } else if (op instanceof TransformOp) {
-            return "TransformOp";
+            if (op.y() == null) {
+                return "TransformOp";
+            } else return "PairWiseTransformOp";
         } else if (op instanceof IndexAccumulation) {
             return "IndexAccumulationOp";
         } else return "Unknown Op calls";
@@ -91,7 +93,9 @@ public class OpDashboard {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
         } else {
-            matchingCounter.totalsIncrement();
+            if (op.y() != null && op.y().data().address() == lastZ) {
+                matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
+            } else matchingCounter.totalsIncrement();
         }
         lastZ = op.z().data().address();
         prevOpMatching = opClass;
