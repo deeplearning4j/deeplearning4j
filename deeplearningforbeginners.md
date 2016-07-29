@@ -30,6 +30,8 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
 * [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
 * [The best linear algebra books](https://begriffs.com/posts/2016-07-24-best-linear-algebra-books.html)
+* [Markov Chains, Explained](http://setosa.io/ev/markov-chains/)
+* [An Introduction to MCMC for Machine Learning](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf)
 
 ## Programming
 
