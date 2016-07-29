@@ -62,7 +62,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             queueSize = 2;
 
         this.baseIterator = baseIterator;
-        this.baseIterator.reset();
+        if(this.baseIterator.resetSupported()) this.baseIterator.reset();
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = new Thread(runnable);
@@ -106,6 +106,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     @Override
     public synchronized void reset() {
+        if(!resetSupported()) throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if(runnable.isAlive.get()) {
