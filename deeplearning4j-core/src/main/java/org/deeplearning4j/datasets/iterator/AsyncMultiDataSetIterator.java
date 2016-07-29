@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
- *
+ * <p>
  * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
  *
  * @author Alex Black
@@ -29,14 +29,14 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private Thread thread;
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
-        if(queueLength <= 0)
+        if (queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
-        if(queueLength < 2)
+        if (queueLength < 2)
             queueLength = 2;
 
         this.iterator = iterator;
-        if(this.iterator.resetSupported()) this.iterator.reset();
+        if (this.iterator.resetSupported()) this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
         runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
@@ -61,24 +61,26 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return iterator.resetSupported();
     }
 
     @Override
     public void reset() {
-        if(!resetSupported()) throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
+        if (!resetSupported())
+            throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
 
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
-        if(runnable.isAlive) {
+        if (runnable.isAlive) {
             thread.interrupt();
         }
         //Wait for runnable to exit, but should only have to wait very short period of time
         //This probably isn't necessary, but is included as a safeguard against race conditions
-        try{
+        try {
             runnable.runCompletedSemaphore.tryAcquire(5, TimeUnit.SECONDS);
-        } catch( InterruptedException e ){ }
+        } catch (InterruptedException e) {
+        }
 
         //Clear the queue, reset the base iterator, set up a new thread
         queue.clear();
@@ -95,17 +97,17 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public boolean hasNext() {
-        if(!queue.isEmpty())
+        if (!queue.isEmpty())
             return true;
 
-        if(runnable.isAlive) {
+        if (runnable.isAlive) {
             //Empty blocking queue, but runnable is alive
             //(a) runnable is blocking on baseIterator.next()
             //(b) runnable is blocking on blockingQueue.put()
             //either way: there's at least 1 more element to come
             return runnable.hasLatch();
         } else {
-            if(!runnable.killRunnable && runnable.exception != null ) {
+            if (!runnable.killRunnable && runnable.exception != null) {
                 throw runnable.exception;   //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
@@ -115,15 +117,15 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next() {
-        if(!hasNext()) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
-        if(runnable.exception != null) {
+        if (runnable.exception != null) {
             throw runnable.exception;
         }
 
-        if(!queue.isEmpty()){
+        if (!queue.isEmpty()) {
             runnable.feeder.decrementAndGet();
             return queue.poll();    //non-blocking, but returns null if empty
         }
@@ -132,27 +134,29 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         //Possible reasons:
         // (a) runnable died (already handled - runnable.exception != null)
         // (b) baseIterator.next() hasn't returned yet -> wait for it
-        try{
+        try {
             //Normally: just do blockingQueue.take(), but can't do that here
             //Reason: what if baseIterator.next() throws an exception after
             // blockingQueue.take() is called? In this case, next() will never return
-            while(runnable.exception == null ){
+            while (runnable.exception == null) {
                 MultiDataSet ds = queue.poll(5, TimeUnit.SECONDS);
-                if(ds != null) {
+                if (ds != null) {
                     runnable.feeder.decrementAndGet();
                     return ds;
                 }
-                if(runnable.killRunnable){
+                if (runnable.killRunnable) {
                     //should never happen
                     throw new ConcurrentModificationException("Reset while next() is waiting for element?");
                 }
-                if(!runnable.isAlive && queue.isEmpty()){
+                if (!runnable.isAlive && queue.isEmpty()) {
+                    if (runnable.exception != null)
+                        throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
                     throw new IllegalStateException("Unexpected state occurred for AsyncMultiDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
-        }catch(InterruptedException e ){
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);  //Shouldn't happen under normal circumstances
         }
     }
@@ -163,14 +167,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     /**
-     *
      * Shut down the async data set iterator thread
      * This is not typically necessary if using a single AsyncDataSetIterator
      * (thread is a daemon thread and so shouldn't block the JVM from exiting)
      * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
      */
     public void shutdown() {
-        if(thread.isAlive()) {
+        if (thread.isAlive()) {
             runnable.killRunnable = true;
             thread.interrupt();
         }
@@ -184,7 +187,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
         private AtomicLong feeder = new AtomicLong(0);
 
-        public IteratorRunnable(boolean hasNext){
+        public IteratorRunnable(boolean hasNext) {
             this.isAlive = hasNext;
         }
 
@@ -205,7 +208,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     return result;
                 else while (isAlive) {
                     // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
-                    result = feeder.get() != 0 || !queue.isEmpty() || iterator.hasNext() ;
+                    result = feeder.get() != 0 || !queue.isEmpty() || iterator.hasNext();
                     if (result) return true;
                 }
                 return result;
@@ -229,13 +232,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     queue.put(ds);
                 }
                 isAlive = false;
-            } catch( InterruptedException e ){
+            } catch (InterruptedException e) {
                 //thread.interrupt() while put(DataSet) was blocking
-                if(killRunnable) {
+                if (killRunnable) {
                     return;
-                }
-                else exception = new RuntimeException("Runnable interrupted unexpectedly",e); //Something else interrupted
-            } catch(RuntimeException e ){
+                } else
+                    exception = new RuntimeException("Runnable interrupted unexpectedly", e); //Something else interrupted
+            } catch (RuntimeException e) {
                 exception = e;
             } finally {
                 isAlive = false;
