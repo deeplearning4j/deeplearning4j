@@ -306,6 +306,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return true;
+    }
+
+    @Override
     public void reset() {
         batchNum = 0;
         recordReader.reset();

@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.impl.graph;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
+import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -188,6 +189,21 @@ public class SparkComputationGraph implements Serializable {
     }
 
     /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     * Similar to {@link #fit(String)} but without the PortableDataStream objects
+     *
+     * @param paths    List of paths
+     * @return trained network
+     */
+    @Experimental
+    public ComputationGraph fitPaths(JavaRDD<String> paths){
+        paths.cache();
+        trainingMaster.executeTrainingPaths(this, paths);
+        return network;
+    }
+
+    /**
      * Fit the ComputationGraph with the given data set
      *
      * @param rdd Data to train on
@@ -219,6 +235,21 @@ public class SparkComputationGraph implements Serializable {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
         serializedDataSets.cache();
         trainingMaster.executeTrainingMDS(this, serializedDataSets);
+        return network;
+    }
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized MultiDataSet objects.
+     * Similar to {@link #fitMultiDataSet(String)} but without the PortableDataStream objects
+     *
+     * @param paths    List of paths
+     * @return trained network
+     */
+    @Experimental
+    public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths){
+        paths.cache();
+        trainingMaster.executeTrainingPathsMDS(this, paths);
         return network;
     }
 

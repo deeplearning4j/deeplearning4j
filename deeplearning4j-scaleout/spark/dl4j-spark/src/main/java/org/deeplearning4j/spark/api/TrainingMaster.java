@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.api;
 
+import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.input.PortableDataStream;
@@ -55,7 +56,18 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * @param network      Current network state
      * @param trainingData Data to train on
      */
-    void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String,PortableDataStream> trainingData);
+    void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData);
+
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     *
+     * @param network           Current network state
+     * @param trainingDataPaths Data to train on
+     */
+    @Experimental
+    void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths);
 
     /**
      * Train the SparkComputationGraph with the specified data set
@@ -73,7 +85,27 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * @param network      Current network state
      * @param trainingData Data to train on
      */
-    void executeTraining(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
+    void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     *
+     * @param network           Current network state
+     * @param trainingDataPaths Data to train on
+     */
+    @Experimental
+    void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized MultiDataSet objects.
+     *
+     * @param network           Current network state
+     * @param trainingMultiDataSetPaths Data to train on
+     */
+    @Experimental
+    void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
 
     /**
      * Train the SparkComputationGraph with the specified data set
@@ -90,7 +122,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * @param network      Current network state
      * @param trainingData Data to train on
      */
-    void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String,PortableDataStream> trainingData);
+    void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
 
     /**
      * Set whether the training statistics should be collected. Training statistics may include things like per-epoch run times,
@@ -119,7 +151,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Set the iteration listeners. These should be called after every averaging (or similar) operation in the TrainingMaster,
      * though the exact behaviour may be dependent on each IterationListener
      *
-     * @param listeners     Listeners to set
+     * @param listeners Listeners to set
      */
     void setListeners(Collection<IterationListener> listeners);
 }
