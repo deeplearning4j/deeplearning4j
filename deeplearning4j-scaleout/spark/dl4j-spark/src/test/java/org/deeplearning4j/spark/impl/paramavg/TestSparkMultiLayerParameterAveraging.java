@@ -63,6 +63,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 
 /**
@@ -408,7 +409,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         Path tempDir = Files.createTempDirectory("DL4J-testFitViaStringPaths");
         File tempDirF = tempDir.toFile();
-        tempDirF.delete();
+//        tempDirF.deleteOnExit();
 
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 25;
@@ -418,6 +419,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             File nextFile = new File(tempDirF, i + ".bin");
             DataSet ds = iter.next();
             ds.save(nextFile);
+            i++;
         }
 
         System.out.println("Saved to: " + tempDirF.getAbsolutePath());
@@ -441,6 +443,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
                 new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .workerPrefetchNumBatches(5)
                         .batchSizePerWorker(batchSizePerExecutor)
                         .averagingFrequency(1)
                         .repartionData(Repartition.Always)
@@ -453,9 +456,20 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         FileSystem hdfs = FileSystem.get(tempDir.toUri(), config);
         RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir.toString()), false);
 
+        List<String> paths = new ArrayList<>();
         while(fileIter.hasNext()){
-            System.out.println(fileIter.next().getPath());
+            String path = fileIter.next().getPath().toString();
+            paths.add(path);
         }
 
+        INDArray paramsBefore = sparkNet.getNetwork().params().dup();
+        JavaRDD<String> pathRdd = sc.parallelize(paths);
+        sparkNet.fitPaths(pathRdd);
+
+        INDArray paramsAfter = sparkNet.getNetwork().params().dup();
+        assertNotEquals(paramsBefore, paramsAfter);
+
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+        System.out.println(stats.statsAsString());
     }
 }
