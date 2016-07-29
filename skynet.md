@@ -3,7 +3,7 @@ title: How Can We Control AI?
 layout: default
 ---
 
-# How Can We Control AI?
+# The Skynet Issue: How Can We Control AI?
 
 AI is inherently hard to regulate, since it is nothing more than math and code running on a few chips, which any programmer, in the freedom of their garage, can work with in order to advance the state of the art.
 
