@@ -36,7 +36,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             queueLength = 2;
 
         this.iterator = iterator;
-        this.iterator.reset();
+        if(this.iterator.resetSupported()) this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
         runnable = new AsyncMultiDataSetIterator.IteratorRunnable(iterator.hasNext());
@@ -67,6 +67,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public void reset() {
+        if(!resetSupported()) throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
+
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if(runnable.isAlive) {
