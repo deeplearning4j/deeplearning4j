@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class PathDataStreamDataSetIterator implements DataSetIterator {
+public class PathSparkDataSetIterator implements DataSetIterator {
 
     public static final int BUFFER_SIZE = 4194304;  //4 MB
 
@@ -35,12 +35,12 @@ public class PathDataStreamDataSetIterator implements DataSetIterator {
     private DataSet preloadedDataSet;
     private FileSystem fileSystem;
 
-    public PathDataStreamDataSetIterator(Iterator<String> iter){
+    public PathSparkDataSetIterator(Iterator<String> iter){
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PathDataStreamDataSetIterator(Collection<String> dataSetStreams){
+    public PathSparkDataSetIterator(Collection<String> dataSetStreams){
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -52,7 +52,7 @@ public class PathDataStreamDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalExamples() {
-        throw new UnsupportedOperationException("Total examples unknown for PathDataStreamDataSetIterator");
+        throw new UnsupportedOperationException("Total examples unknown for PathSparkDataSetIterator");
     }
 
     @Override

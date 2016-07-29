@@ -88,6 +88,26 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
     void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
 
     /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     *
+     * @param network           Current network state
+     * @param trainingDataPaths Data to train on
+     */
+    @Experimental
+    void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized MultiDataSet objects.
+     *
+     * @param network           Current network state
+     * @param trainingMultiDataSetPaths Data to train on
+     */
+    @Experimental
+    void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
+
+    /**
      * Train the SparkComputationGraph with the specified data set
      *
      * @param graph        Current network state
