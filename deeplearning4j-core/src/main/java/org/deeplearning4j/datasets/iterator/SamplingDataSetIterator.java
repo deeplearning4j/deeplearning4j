@@ -89,6 +89,11 @@ public class SamplingDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
+	public boolean resetSupported(){
+		return true;
+	}
+
+	@Override
 	public void reset() {
 		numTimesSampled = 0;
 	}

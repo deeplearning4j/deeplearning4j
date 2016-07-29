@@ -100,6 +100,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return baseIterator.resetSupported();
+    }
+
+    @Override
     public synchronized void reset() {
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
