@@ -9,7 +9,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.Iterator;
 
 /**
- * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded using a PortableDataStream
+ * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
+ * that is specified as a String
  * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
  *
  * @author Alex Black
