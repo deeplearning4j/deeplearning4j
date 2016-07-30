@@ -9,16 +9,31 @@ import java.util.Random;
 import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
+ * Resize image transform is suited to force the same image size for whole pipeline.
+ *
  * @author raver119@gmail.com
  */
 public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat>  {
 
     int newHeight, newWidth;
 
+    /**
+     * Returns new ResizeImageTransform object
+     *
+     * @param newWidth new Width for the outcome images
+     * @param newHeight new Height for outcome images
+     */
     public ResizeImageTransform(int newWidth, int newHeight) {
         this(null, newWidth, newHeight);
     }
 
+    /**
+     * Returns new ResizeImageTransform object
+     *
+     * @param random Random
+     * @param newWidth new Width for the outcome images
+     * @param newHeight new Height for outcome images
+     */
     public ResizeImageTransform(Random random, int newWidth, int newHeight) {
         super(random);
 
