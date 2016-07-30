@@ -254,6 +254,13 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         INDArray divIs = dataSet.getFeatures().slice(0).div(diffUnoDos).mul(2); //should be the std dev now
         //System.out.println(divIs);
 
+        INDArray template = Nd4j.ones(new int[] {1,10,10});
+        INDArray expecteddiv = Nd4j.concat(0,
+                template.mul(myNormalizer.getStd().getDouble(0,0)),
+                template.mul(myNormalizer.getStd().getDouble(0,1)),
+                template.mul(myNormalizer.getStd().getDouble(0,2))
+                );
+        assertTrue(Transforms.abs(expecteddiv.sub(divIs)).maxNumber().floatValue() < 0.001);
     }
 
     @Override
