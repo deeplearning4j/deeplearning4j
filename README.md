@@ -74,7 +74,7 @@ Then run the following command on the dl4j repo packages to install them on your
     $ sudo yum install [package name] -y
     $ sudo yum install DL4J-Distro -y 
 
-Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
+Note, be sure to install the ND4J modules you need first, especially the backend and then install DataVec and DL4J.
 
 ---
 ## Contribute

@@ -52,7 +52,6 @@
 
     <properties>
         <nd4j.version>0.4.1-SNAPSHOT</nd4j.version>
-        <canova.version>0.0.0.18-SNAPSHOT</canova.version>
         <datavec.version>0.4.1-SNAPSHOT</datavec.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
@@ -433,12 +432,6 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
             </dependency>
 
 
