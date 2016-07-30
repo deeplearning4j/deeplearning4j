@@ -35,14 +35,14 @@ While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It,
 
 A system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
-* Cities on a map are states. (A road trip strings them together.) 
-* Words in a language are states. (A sentence strings them to together in sequences. Moving from one to the next is a transition.) 
-* Genes in a chromosome are states. 
-* Web pages on the Internet are states. Hyperlinks are the transitions. 
+* Cities on a map are states. A road trip strings them together in transitions.
+* Words in a language are states. A sentence strings them to together in word to word transitions.
+* Genes on a chromosome are states. 
+* Web pages on the Internet are states. Links are the transitions. 
 * Bank accounts are states. Transactions are the transitions.
 * Emotions are states. Mood swings are the transitions. 
 * Social media profiles are states in the network. Follows, likes and friendships are the transitions. 
-* Ocean and land are states in geography. 
+* Ocean and land are states in geography. Only amphibians know the transitions. 
 
 So states are an abstraction used to describe all these discrete, or separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others (we are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby). 
 
