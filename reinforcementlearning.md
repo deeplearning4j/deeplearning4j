@@ -9,7 +9,7 @@ Neural networks have become well known for recent advances in such diverse field
 
 Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
 
-Reinforcement algorithms with deep learning at their core are currently beating expert humans at numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments, and they are advancing rapidly courtesy of [Google's DeepMind](http://deepmind.com/). 
+Reinforcement algorithms with deep learning at their core are currently beating expert humans at numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. A form of RL called Deep-Q learning has been implemented in [Scala atop Deeplearning4j](https://github.com/rubenfiszel/scala-drl), and it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
 In time, we expect RL to perform better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. When people talk about building robot armies, this is what they mean. :) 
 
