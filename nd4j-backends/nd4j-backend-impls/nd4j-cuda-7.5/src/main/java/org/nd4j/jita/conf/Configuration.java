@@ -196,6 +196,17 @@ public class Configuration implements Serializable {
      * @param maxCache
      * @return
      */
+    public Configuration setMaximumHostCache(long maxCache) {
+        this.maximumHostCache = maxCache;
+        return this;
+    }
+
+    /**
+     * This method allows you to specify maximum memory cache per device
+     *
+     * @param maxCache
+     * @return
+     */
     public Configuration setMaximumDeviceCache(long maxCache) {
         this.maximumDeviceCache = maxCache;
         return this;

@@ -231,12 +231,18 @@ public class CudaBroadcastTests {
 
     @Test
     public void execBroadcastOpTimed2() throws Exception {
+        Nd4j.create(1);
+        System.out.println("A ----------------");
         INDArray array = Nd4j.zeros(2048, 1024);
+        System.out.println("0 ----------------");
         INDArray arrayRow = Nd4j.ones(1024);
+
+        System.out.println("1 ----------------");
 
         float sum = (float) array.sumNumber().doubleValue();
         float sum2 = (float) arrayRow.sumNumber().doubleValue();
 
+        System.out.println("2 ----------------");
 
         long time1 = System.nanoTime();
         for (int x = 0; x < 1000; x++) {
