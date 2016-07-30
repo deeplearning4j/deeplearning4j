@@ -211,9 +211,10 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
     public void testBruteForce4d() {
         //this is an image - #of images x channels x size x size
         // test with 2 samples, 3 channels x 10 x 10
+        // the two samples are multiples of each other 1:3
         INDArray oneChannel = Nd4j.linspace(1,100,100).reshape(1,10,10);
         INDArray imageOne = Nd4j.concat(0,oneChannel,oneChannel.mul(2),oneChannel.mul(3)).reshape(1,3,10,10);
-        INDArray imageTwo = imageOne.mul(-1);
+        INDArray imageTwo = imageOne.mul(3);
 
         INDArray allImages = Nd4j.concat(0,imageOne,imageTwo);
         INDArray labels = Nd4j.create(2,1);
@@ -222,11 +223,36 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(dataSet);
 
-        //works out to be 1->100 and 99*(1->100)
-        //mean is 100*(1->100)/200  = (100*101/2)/2 = 25*101 = 2525
-        // std is 3194.82
+        //works out to be 1->100 and 3*(1->100)
+        //mean is 4*(1->100)/200  = (100*101/2)/50 = 101
+        // std is 82.1599
+
+        INDArray expectedMean = Nd4j.linspace(1,3,3).reshape(1,3).mul(101);
+        INDArray expectedStd = Nd4j.linspace(1,3,3).reshape(1,3).mul(82.1599);
+        System.out.println("Actual std");
+        System.out.println(myNormalizer.getStd());
+        System.out.println("Expected std");
+        System.out.println(expectedStd);
+
+        assertTrue(Transforms.abs(expectedMean.sub(myNormalizer.getMean()).div(expectedMean)).maxNumber().floatValue() < 0.03f);
+        assertTrue(Transforms.abs(expectedStd.sub(myNormalizer.getStd()).div(expectedStd)).maxNumber().floatValue() < 0.03f);
+
         DataSet copyDataSet = dataSet.copy();
         myNormalizer.transform(copyDataSet);
+        //all the channels should have the same value now -> since they are multiples of each other
+        //across images (x-k1)/k2 and (3x-k1)/k2
+        //difference is 3x/k2 - k1/k2 - x/k2 + k1/k2 = 2x/k2; k2 is the stdDev
+
+        //checks to see if all values are the same
+        INDArray transformedVals = copyDataSet.getFeatures();
+        INDArray imageUno = transformedVals.slice(0);
+        assertEquals(imageUno.slice(0),imageUno.slice(1));
+        assertEquals(imageUno.slice(0),imageUno.slice(2));
+
+        INDArray imageDos = transformedVals.slice(1);
+        INDArray diffUnoDos = imageDos.sub(imageUno);
+        INDArray divIs = dataSet.getFeatures().slice(0).div(diffUnoDos).mul(2); //should be the std dev now
+        //System.out.println(divIs);
 
     }
 
