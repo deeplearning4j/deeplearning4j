@@ -25,7 +25,11 @@ We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable t
 
 Another example: Perhaps during your conquest you stumble across the quaint language of English, and wonder if any particular letters are more important that others. By randomly sampling letters from the works of an infinite library, you would soon discover that "e" is in fact the [most commonly used letter](https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language) in the alphabet. (Unless you are sampling from the works of the novelist Georges Perec, who wrote [a fairly long novel](https://en.wikipedia.org/wiki/A_Void) without our hardest-working vowel.) You order your team of researchers to produce a report on "e".
 
-[An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): "While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It, then, occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation."
+[An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
+
+```
+While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It, then, occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation.
+```
 
 ## Markov Chains
 
