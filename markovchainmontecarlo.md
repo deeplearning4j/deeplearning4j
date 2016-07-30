@@ -7,7 +7,7 @@ layout: default
 
 Let's say you're a horrific alien looking for the perfect planet to colonize. 
 
-You have been instructed by a distant galactic empress to find a planet covered with water and dirt, but which has more of the first than the second. Round and juicy. Your space ship is hovering over the planet Earth, somewhere in the stratosphere, but the planet is covered in clouds... You peer through the cloud cover onto humanity's modest ball of mud and waves, squinting to see if it is suitable for conquest. 
+You have been instructed by a distant galactic empress to find a tolerable globe covered with water and dirt, but which has more of the first than the second. Round and juicy. Your space ship is hovering over the planet Earth, somewhere in the stratosphere, but the planet is covered in clouds... You peer through the cloud cover onto humanity's modest ball of mud and waves, squinting to see if it is suitable for conquest. 
 
 That's where the socks come in. 
 
@@ -17,13 +17,13 @@ It's time to prepare the invasion.
 
 ## Monte Carlo 
 
-That's a Monte Carlo simulation. With a little more jargon, you might say it's a mathematical simulation using a pseudo-random number generator that will produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method is called Monte Carlo, because the capital of Monaco, which borders southern France, is well known for its casinos and games of chance, where winning is a matter of probabilities. James Bond would like math like this. 
+That's a Monte Carlo simulation. With a little more jargon, you might say it's a mathematical simulation using a pseudo-random number generator that will produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method is called Monte Carlo, because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning is a matter of probabilities. This is James Bond math. 
 
 You can drop a sock on anything. It's called *sampling*. And randomly distributing those socks over a limited, pre-ordained set of possibilities, which together add up to 100% of the earth's surface, is called the Monte Carlo method. 
 
-We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable to precisely gauge reality around us. You gamble and you roll the die, not knowing if the die is fair or loaded. That's where Monte Carlo comes in.  
+We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable to gauge reality around us with much precision. You gamble and you roll the die, not knowing if the die is fair or loaded. Monte Carlo looks at the results of rolling the die many times. It is an inductive method; it draws from experience.  
 
-Another example: Perhaps during your conquest you stumble across the quaint language of English, and wonder if any particular letters are more important that others. By randomly sampling letters from the works of an infinite library, you would soon discover that "e" is in fact the [most commonly used letter](https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language) in the alphabet. (Unless you are sampling from the works of the novelist Georges Perec, who wrote [a fairly long novel](https://en.wikipedia.org/wiki/A_Void) without our hardest-working vowel.) You order your team of researchers to produce a report on "e".
+Another example: Perhaps during your conquest you stumble across the quaint language of English, and wonder if any particular letters are more important that others. By randomly sampling letters from the works of an infinite library, you would soon discover that "e" is in fact the [most commonly used letter](https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language) in the alphabet. (Unless you are sampling from the works of the novelist Georges Perec, who wrote [a fairly long novel](https://en.wikipedia.org/wiki/A_Void) without our hardest-working vowel.) You order your team of alien linguists to produce a report on "e" to better communicate with the natives. 
 
 [An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
 
@@ -42,7 +42,7 @@ A system is a set of things connected together. You might say it's a set of stat
 * Bank accounts are states. Transactions are the transitions.
 * Emotions are states. Mood swings are the transitions. 
 * Social media profiles are states in the network. Follows, likes and friendships are the transitions. 
-* Ocean and land are states on the planet. 
+* Ocean and land are states in geography. 
 
 So states are an abstraction used to describe all these discrete, or separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others (we are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby). 
 
