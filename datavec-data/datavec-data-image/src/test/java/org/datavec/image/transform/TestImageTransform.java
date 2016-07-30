@@ -155,7 +155,7 @@ public class TestImageTransform {
         assertEquals(null, transform.transform(null));
     }
 
-    ImageWritable makeRandomImage(int height, int width, int channels) {
+    public static ImageWritable makeRandomImage(int height, int width, int channels) {
         if (height <= 0) {
             height = rng.nextInt() % 100 + 100;
         }
