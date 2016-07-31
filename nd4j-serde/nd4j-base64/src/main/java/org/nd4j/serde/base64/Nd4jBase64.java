@@ -17,9 +17,21 @@ public class Nd4jBase64 {
     }
 
     /**
+     * Returns true if the base64
+     * contains multiple arrays
+     * This is delimited by tab
+     * @param base64 the base 64 to test
+     * @return true if the given base 64
+     * is tab delimited or not
+     */
+    public static boolean isMultiple(String base64) {
+        return base64.contains("\t");
+    }
+
+    /**
      * Returns a set of arrays
      * from base 64 that is tab delimited.
-     * @param base64 the base 64 that's tab delmited
+     * @param base64 the base 64 that's tab delimited
      * @return the set of arrays
      */
     public static INDArray[] arraysFromBase64(String base64) throws IOException {
