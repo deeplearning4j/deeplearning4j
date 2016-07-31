@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
@@ -16,6 +17,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.spark.functions.SequenceRecordReaderFunction;
 import org.datavec.spark.functions.pairdata.*;
+import org.datavec.spark.transform.misc.StringToWritablesFunction;
 import org.datavec.spark.util.DataVecSparkUtil;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
@@ -92,6 +94,51 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         int count = 0;
         for (boolean b : found) if (b) count++;
         assertEquals(4, count);  //Expect all 4 and exactly 4 pairwise matches between spark and local versions
+    }
+
+    @Test
+    public void testDataVecDataSetFunctionMultiLabelRegression() throws Exception {
+        JavaSparkContext sc = getContext();
+
+        List<String> stringData = new ArrayList<>();
+        int n = 6;
+        for( int i=0; i<10; i++ ){
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for( int j=0; j<n; j++ ){
+                if(!first) sb.append(",");
+                sb.append(10*i + j);
+                first = false;
+            }
+            stringData.add(sb.toString());
+        }
+
+        JavaRDD<String> stringList = sc.parallelize(stringData);
+        JavaRDD<List<Writable>> writables = stringList.map(new StringToWritablesFunction(new CSVRecordReader()));
+        JavaRDD<DataSet> dataSets = writables.map(new DataVecDataSetFunction(3,5,-1,true,null,null));
+
+        List<DataSet> ds = dataSets.collect();
+        assertEquals(10, ds.size());
+
+        boolean[] seen = new boolean[10];
+        for(DataSet d : ds){
+            INDArray f = d.getFeatureMatrix();
+            INDArray l = d.getLabels();
+            assertEquals(3, f.length());
+            assertEquals(3, l.length());
+
+            int exampleIdx = ((int)f.getDouble(0))/10;
+            seen[exampleIdx] = true;
+
+            for( int j=0; j<3; j++ ){
+                assertEquals(10*exampleIdx+j, (int)f.getDouble(j));
+                assertEquals(10*exampleIdx+j+3, (int)l.getDouble(j));
+            }
+        }
+
+        int seenCount = 0;
+        for(boolean b : seen) if(b) seenCount++;
+        assertEquals(10, seenCount);
     }
 
     @Test
