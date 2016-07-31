@@ -3,7 +3,7 @@ title: Markov Chain Monte Carlo and Deep Learning
 layout: default
 ---
 
-# Introduction to Monte Carlo Methods & Markov Chains
+# Monte Carlo Methods, Markov Chains and Neural Nets
 
 Let's say you're a horrific alien looking for the perfect planet to colonize. 
 
