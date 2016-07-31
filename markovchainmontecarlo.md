@@ -51,3 +51,9 @@ A list of all the states is known as the "state space." The more states you add,
 Markov chains have a particular property, and that is oblivion, or forgetting. 
 
 That is, they have no memory; they know nothing beyond the present, which means that the only factor determining the transition to a future state is a chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/).
+
+So imagine the current state as the input data, and the distribution of future states as the dependent data, or the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
+
+## Markov Chains and Neural Networks
+
+Now the nodes of a neural network are states in a system, and the weights between those nodes are the transitions, continuing all the way through to the output layer. Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
