@@ -18,7 +18,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ## Main Features
 - Versatile n-dimensional array class
-- GPU integration
+- GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
 - Scalable on Hadoop, Spark and Akka + AWS et al
 
 ---
