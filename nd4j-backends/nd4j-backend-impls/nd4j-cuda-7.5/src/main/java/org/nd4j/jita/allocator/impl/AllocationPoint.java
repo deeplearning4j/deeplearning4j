@@ -103,7 +103,19 @@ public class AllocationPoint {
 
     private cudaEvent_t lastEvent;
 
-    @Getter @Setter private volatile CudaContext currentContext;
+    private volatile CudaContext currentContext;
+
+    public CudaContext getCurrentContext() {
+        synchronized (this) {
+            return currentContext;
+        }
+    }
+
+    public void setCurrentContext(CudaContext context) {
+        synchronized (this) {
+            this.currentContext = context;
+        }
+    }
 
     public void addReadLane(cudaEvent_t event) {
         readLane.add(event);
