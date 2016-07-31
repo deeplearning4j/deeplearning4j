@@ -18,7 +18,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ## Main Features
 - Versatile n-dimensional array class
-- GPU integration
+- GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
 - Scalable on Hadoop, Spark and Akka + AWS et al
 
 ---
@@ -74,7 +74,7 @@ Then run the following command on the dl4j repo packages to install them on your
     $ sudo yum install [package name] -y
     $ sudo yum install DL4J-Distro -y 
 
-Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
+Note, be sure to install the ND4J modules you need first, especially the backend and then install DataVec and DL4J.
 
 ---
 ## Contribute
