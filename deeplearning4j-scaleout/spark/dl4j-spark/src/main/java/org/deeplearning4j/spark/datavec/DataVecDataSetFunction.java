@@ -45,6 +45,14 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
         this(labelIndex, labelIndex, numPossibleLabels, regression, preProcessor, converter);
     }
 
+    /**
+     * Main constructor, including for multi-label regression
+     *
+     * @param labelIndexFrom    Index of the first target
+     * @param labelIndexTo      Index of the last target, inclusive (for classification or single-output regression: same as labelIndexFrom)
+     * @param numPossibleLabels Unused for regression, or number of classes for classification
+     * @param regression        If true: regression. false: classification
+     */
     public DataVecDataSetFunction(int labelIndexFrom, int labelIndexTo, int numPossibleLabels, boolean regression,
                                   DataSetPreProcessor preProcessor, WritableConverter converter){
         this.labelIndex = labelIndexFrom;
@@ -67,6 +75,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
         INDArray label = null;
         INDArray featureVector = null;
         int featureCount = 0;
+        int labelCount = 0;
 
         //no labels
         if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
@@ -89,22 +98,27 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
             if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
                 continue;
 
-            if (labelIndex >= 0 && j == labelIndex) {
-                //single label case (classification, etc)
-                if (converter != null)
+            if (labelIndex >= 0 && j >= labelIndex && j<= labelIndexTo ) {
+                //single label case (classification, single label regression etc)
+                if (converter != null) {
                     try {
                         current = converter.convert(current);
                     } catch (WritableConverterException e) {
                         e.printStackTrace();
                     }
-                if (numPossibleLabels < 1)
-                    throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
-                if (regression) {
-                    label = Nd4j.scalar(current.toDouble());
+                }
+                if(regression){
+                    //single and multi-label regression
+                    if(label == null){
+                        label = Nd4j.zeros(labelIndexTo-labelIndex+1);
+                    }
+                    label.putScalar(0,labelCount++, current.toDouble());
                 } else {
+                    if (numPossibleLabels < 1)
+                        throw new IllegalStateException("Number of possible labels invalid, must be >= 1 for classification");
                     int curr = current.toInt();
                     if (curr >= numPossibleLabels)
-                        curr--;
+                        throw new IllegalStateException("Invalid index: got index " + curr + " but numPossibleLabels is " + numPossibleLabels + " (must be 0 <= idx < numPossibleLabels");
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
