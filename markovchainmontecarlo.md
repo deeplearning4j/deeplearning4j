@@ -36,7 +36,7 @@ While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It,
 A system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
 * Cities on a map are states. A road trip strings them together in transitions.
-* Words in a language are states. A sentence strings them to together in word to word transitions.
+* Words in a language are states. A sentence is a series of transitions.
 * Genes on a chromosome are states. 
 * Web pages on the Internet are states. Links are the transitions. 
 * Bank accounts are states. Transactions are the transitions.
@@ -55,3 +55,5 @@ So imagine the current state as the input data, and the distribution of future s
 ## Markov Chains and Neural Networks
 
 Now the nodes of a neural network are states in a system, and the weights between those nodes are the transitions, continuing all the way through to the output layer. Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
+
+You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states. 
