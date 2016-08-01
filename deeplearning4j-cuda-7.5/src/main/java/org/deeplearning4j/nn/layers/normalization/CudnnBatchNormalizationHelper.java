@@ -17,8 +17,11 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -123,8 +126,12 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
-    FloatPointer alpha = new FloatPointer(1.0f);
-    FloatPointer beta  = new FloatPointer(0.0f);
+    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(1.0f)});
+    Pointer beta  = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(0.0f)});;
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,
