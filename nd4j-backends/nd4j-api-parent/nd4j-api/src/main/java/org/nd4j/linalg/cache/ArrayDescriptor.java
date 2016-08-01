@@ -12,21 +12,33 @@ public class ArrayDescriptor {
     float[] floatArray = null;
     double[] doubleArray = null;
     long[] longArray = null;
+    private enum DTYPE {
+        INT,
+        FLOAT,
+        DOUBLE,
+        LONG
+    }
+
+    private DTYPE dtype;
 
     public ArrayDescriptor(int[] array) {
         this.intArray = array;
+        this.dtype = DTYPE.INT;
     }
 
     public ArrayDescriptor(float[] array) {
         this.floatArray = array;
+        this.dtype = DTYPE.FLOAT;
     }
 
     public ArrayDescriptor(double[] array) {
         this.doubleArray = array;
+        this.dtype = DTYPE.DOUBLE;
     }
 
     public ArrayDescriptor(long[] array) {
         this.longArray = array;
+        this.dtype = DTYPE.LONG;
     }
 
     @Override
@@ -35,6 +47,9 @@ public class ArrayDescriptor {
         if (o == null || getClass() != o.getClass()) return false;
 
         ArrayDescriptor that = (ArrayDescriptor) o;
+
+        if (this.dtype != that.dtype)
+            return false;
 
         if (intArray != null && that.intArray != null) {
             return Arrays.equals(intArray, that.intArray);

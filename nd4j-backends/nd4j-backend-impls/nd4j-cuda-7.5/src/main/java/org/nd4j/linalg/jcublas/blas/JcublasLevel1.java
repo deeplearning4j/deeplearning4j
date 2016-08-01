@@ -637,6 +637,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
+
+    //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
+
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
 
 /*
