@@ -513,18 +513,17 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT axpy called");
 
-        logger.info("incX: {}, incY {}", incX, incY);
-
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+/*
+        CublasPointer xAPointer = new CublasPointer(X, ctx);
+        CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
-//        CublasPointer xAPointer = new CublasPointer(X, ctx);
-//        CublasPointer xBPointer = new CublasPointer(Y, ctx);
+        cublasHandle_t handle = ctx.getHandle();
 
-//        cublasHandle_t handle = ctx.getHandle();
 
-        ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
 
-/*        synchronized (handle) {
+        synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             PointerPointer p = new PointerPointer(new Pointer[] {ctx.getHandle()});

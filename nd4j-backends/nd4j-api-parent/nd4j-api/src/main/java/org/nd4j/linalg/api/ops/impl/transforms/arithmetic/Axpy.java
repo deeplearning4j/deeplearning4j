@@ -38,19 +38,19 @@ public class Axpy extends BaseTransformOp {
     }
 
     public Axpy(INDArray x, INDArray z, double p) {
-        super(x, z, z, z.lengthLong());
+  //      super(x, z, z, z.lengthLong());
         this.p = p;
         init(x, z, z, x.length());
     }
 
     public Axpy(INDArray x, INDArray z, double p, long n) {
-        super(x, z, n);
+//        super(x, z, n);
         this.p = p;
         init(x, z, z, n);
     }
 
     public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
-        super(x,y,z,n);
+//        super(x,y,z,n);
         this.p = p;
         init(x, y, z, x.length());
     }
