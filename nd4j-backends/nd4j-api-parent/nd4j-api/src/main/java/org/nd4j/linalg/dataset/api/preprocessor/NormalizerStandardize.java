@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
+ * Created by susaneraly on 5/25/16.
  * Standard scaler calculates a moving column wise
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
