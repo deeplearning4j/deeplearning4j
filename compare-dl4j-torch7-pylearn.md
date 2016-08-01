@@ -13,9 +13,9 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Content
 
-* <a href="#tensorflow">TensorFlow</a>
-* <a href="#theano">Theano, Pylearn2 & Ecosystem</a>
+* <a href="#theano">Theano & Ecosystem</a>
 * <a href="#torch">Torch</a>
+* <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
@@ -26,31 +26,6 @@ Content
 * <a href="#scala">DL4S: Deep Learning in Scala</a>
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
-
-### <a name="tensorflow">TensorFlow</a>
-
-* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google. 
-* For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
-* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
-* TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
-* Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
-* TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
-* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
-* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
-* Caveat: Not all operations in Tensorflow work as they do in Numpy. 
-
-Pros and Cons
-
-* (+) Python + Numpy
-* (+) Computational graph abstraction, like Theano
-* (+) Faster compile times than Theano
-* (+) TensorBoard for visualization
-* (+) Data and model parallelism
-* (-) Slower than other frameworks
-* (-) Much “fatter” than Torch; more magic
-* (-) Not many pretrained models
-* (-) Computational graph is pure Python, therefore slow
-* (-) No commercial support
 
 ### <a name="theano">Theano and Ecosystem</a>
 
@@ -90,6 +65,34 @@ Pros and Cons:
 * (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
 * (-) No commercial support
+
+### <a name="tensorflow">TensorFlow</a>
+
+* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google. 
+* For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
+* TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
+* Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
+* TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
+* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
+* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
+* Caveat: Not all operations in Tensorflow work as they do in Numpy. 
+
+Pros and Cons
+
+* (+) Python + Numpy
+* (+) Computational graph abstraction, like Theano
+* (+) Faster compile times than Theano
+* (+) TensorBoard for visualization
+* (+) Data and model parallelism
+* (-) Slower than other frameworks
+* (-) Much “fatter” than Torch; more magic
+* (-) Not many pretrained models
+* (-) Computational graph is pure Python, therefore slow
+* (-) No commercial support
+* (-) Inefficient: Drops out to Python to load each new training batch
+* (-) Not very toolable
+* (-) Dynamic typing is error-prone on large software projects
 
 ### <a name="caffe">Caffe</a>
 
