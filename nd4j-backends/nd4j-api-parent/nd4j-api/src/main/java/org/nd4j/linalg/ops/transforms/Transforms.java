@@ -211,7 +211,7 @@ public class Transforms {
     }
 
     public static INDArray atan(INDArray arr) {
-        return acos(arr,Nd4j.copyOnOps);
+        return atan(arr,Nd4j.copyOnOps);
     }
 
 
