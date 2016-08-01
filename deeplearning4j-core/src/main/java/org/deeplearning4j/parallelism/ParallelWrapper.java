@@ -206,7 +206,7 @@ public class ParallelWrapper {
         private int averagingFrequency = 1;
         private boolean reportScore = false;
         private boolean averageUpdaters = true;
-        private boolean legacyAveraging = false;
+        private boolean legacyAveraging = true;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
