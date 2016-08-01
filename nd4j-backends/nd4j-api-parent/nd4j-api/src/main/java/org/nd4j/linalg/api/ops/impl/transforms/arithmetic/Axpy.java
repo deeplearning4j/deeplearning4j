@@ -130,6 +130,10 @@ public class Axpy extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x,y,z,n);
+
+        if (x.lengthLong() < n || y.lengthLong() < n || z.lengthLong() < n)
+            throw new IllegalStateException("Mis matched lengths: X: ["+x.lengthLong()+"], Y: ["+y.lengthLong()+"], Z: ["+z.lengthLong()+"], N: ["+n+"]");
+
         this.extraArgs = new Object[]{p, (double) n};
     }
 }
