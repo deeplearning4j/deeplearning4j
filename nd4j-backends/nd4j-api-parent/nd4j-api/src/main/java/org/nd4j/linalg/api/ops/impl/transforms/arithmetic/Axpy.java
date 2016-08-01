@@ -134,6 +134,6 @@ public class Axpy extends BaseTransformOp {
         if (x.lengthLong() < n || y.lengthLong() < n || z.lengthLong() < n)
             throw new IllegalStateException("Mis matched lengths: X: ["+x.lengthLong()+"], Y: ["+y.lengthLong()+"], Z: ["+z.lengthLong()+"], N: ["+n+"]");
 
-        this.extraArgs = new Object[]{p, (double) n, 0.0};
+        this.extraArgs = new Object[]{p, (double) n};
     }
 }
