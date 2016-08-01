@@ -637,6 +637,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+
+/*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
@@ -649,7 +652,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX, xBPointer.getDevicePointer(),
                     incY);
         }
-
+*/
         allocator.registerAction(ctx, Y, X);
     }
 
