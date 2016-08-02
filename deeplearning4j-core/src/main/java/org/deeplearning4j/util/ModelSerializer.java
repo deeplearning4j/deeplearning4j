@@ -115,6 +115,9 @@ public class ModelSerializer {
                 Nd4j.write(updaterState, dos);
                 dos.flush();
                 dos.close();
+
+                inputStream = new ByteArrayInputStream(bos.toByteArray());
+                writeEntry(inputStream, zipfile);
             }
         }
 
