@@ -1,2 +1,0 @@
-go dogs, go 1
-go dogs, go 2
