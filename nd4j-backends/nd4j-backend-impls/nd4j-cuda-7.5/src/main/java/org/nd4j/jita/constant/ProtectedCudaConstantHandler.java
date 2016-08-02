@@ -108,11 +108,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        }
+        } //else if (dataBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+        //    bytes += 8;
+    //    }
 
+        currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
 
-
-        currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes + 4);
         if (currentOffset >= MAX_CONSTANT_LENGTH)  {
             if (point.getAllocationStatus() == AllocationStatus.HOST && configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
                 AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
@@ -288,7 +289,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
+//        logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();

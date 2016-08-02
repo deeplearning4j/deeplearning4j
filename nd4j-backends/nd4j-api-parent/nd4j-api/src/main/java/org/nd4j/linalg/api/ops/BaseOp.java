@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.nio.Buffer;
 

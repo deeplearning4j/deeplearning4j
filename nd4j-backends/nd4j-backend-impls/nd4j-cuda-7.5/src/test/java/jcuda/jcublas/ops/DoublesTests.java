@@ -27,17 +27,20 @@ public class DoublesTests {
     public void setUp() throws Exception {
         System.out.println("----------------------");
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        Nd4j.create(1);
 
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).allowMultiGPU(false);
+
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true).allowMultiGPU(false);
     }
 
     @Test
     public void testDoubleAxpy1() throws Exception {
-        Nd4j.getConstantHandler().getConstantBuffer(new double[]{7.0});
+//        Nd4j.getConstantHandler().getConstantBuffer(new double[]{7.0});
+        Nd4j.getConstantHandler().getConstantBuffer(new int[10]);
+        Nd4j.getConstantHandler().getConstantBuffer(new int[7]);
 //        Nd4j.getConstantHandler().getConstantBuffer(new double[]{1.0, 63.0});
 
         INDArray array1 = Nd4j.zeros(63).reshape('f', 7, 9);
+        //INDArray array1 = Nd4j.create(7, 9, 'f');
 
         array1.assign(0);
 
