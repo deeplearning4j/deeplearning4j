@@ -157,7 +157,7 @@ public class NormalizerStandardize implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        if (featureMeanStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         INDArray theFeatures = toPreProcess.getFeatures();
         INDArray theLabels = toPreProcess.getLabels();
         this.preProcess(theFeatures,true);
@@ -256,6 +256,10 @@ public class NormalizerStandardize implements DataNormalization {
     public void load(File...statistics) throws IOException {
         this.featureMean = Nd4j.readBinary(statistics[0]);
         this.featureStd = Nd4j.readBinary(statistics[1]);
+        if (fitLabels) {
+            this.labelMean = Nd4j.readBinary(statistics[2]);
+            this.labelStd = Nd4j.readBinary(statistics[3]);
+        }
     }
 
     /**
@@ -267,6 +271,10 @@ public class NormalizerStandardize implements DataNormalization {
     public void save(File...statistics) throws IOException {
         Nd4j.saveBinary(this.featureMean,statistics[0]);
         Nd4j.saveBinary(this.featureStd,statistics[1]);
+        if (fitLabels) {
+            Nd4j.saveBinary(this.labelMean,statistics[2]);
+            Nd4j.saveBinary(this.labelStd,statistics[3]);
+        }
     }
 
     private INDArray tailor3d2d(DataSet dataset, boolean areFeatures) {
