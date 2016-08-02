@@ -102,8 +102,6 @@ public class ClassPathResource {
              */
             try {
                 url = extractActualUrl(url);
-                File file = File.createTempFile("datavec_temp","file");
-                file.deleteOnExit();
 
                 ZipFile zipFile = new ZipFile(url.getFile());
                 ZipEntry entry = zipFile.getEntry(this.resourceName);
@@ -116,9 +114,23 @@ public class ClassPathResource {
                     } else throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
-                long size = entry.getSize();
-
                 InputStream stream = zipFile.getInputStream(entry);
+
+                if (entry.isDirectory() || stream == null) {
+                    zipFile.close();
+
+                    File dir = new File(System.getProperty("java.io.tmpdir"), "datavec_temp" + System.nanoTime() + "dir");
+                    if (dir.mkdir()) {
+                        dir.deleteOnExit();
+                    }
+                    ArchiveUtils.unzipFileTo(url.getFile(), dir.getAbsolutePath());
+                    return new File(dir, this.resourceName);
+                }
+
+                long size = entry.getSize();
+                File file = File.createTempFile("datavec_temp","file");
+                file.deleteOnExit();
+
                 FileOutputStream outputStream = new FileOutputStream(file);
                 byte[] array = new byte[1024];
                 int rd = 0;

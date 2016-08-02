@@ -51,7 +51,7 @@ public class ArchiveUtils {
         int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
 
-        if(file.endsWith(".zip")) {
+        if(file.endsWith(".zip") || file.endsWith(".jar")) {
             //getFromOrigin the zip file content
             ZipInputStream zis =
                     new ZipInputStream(fin);
