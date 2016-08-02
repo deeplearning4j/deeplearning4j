@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
