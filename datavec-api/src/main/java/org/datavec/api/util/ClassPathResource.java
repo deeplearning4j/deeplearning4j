@@ -88,12 +88,25 @@ public class ClassPathResource {
     /**
      * Returns requested ClassPathResource as File object
      *
-     * Please note: if this method called from compiled jar, temporary file will be created to provide File access
+     * Please note: if this method called from compiled jar, temporary file or dir will be created to provide File access
      *
      * @return File requested at constructor call
      * @throws FileNotFoundException
      */
     public File getFile() throws FileNotFoundException {
+        return getFile(null);
+    }
+
+    /**
+     * Returns requested ClassPathResource as File object
+     *
+     * Please note: if this method called from compiled jar, temporary file or dir will be created to provide File access
+     *
+     * @param suffix suffix of temporary file (if null suffix == "file" or "dir")
+     * @return File requested at constructor call
+     * @throws FileNotFoundException
+     */
+    public File getFile(String suffix) throws FileNotFoundException {
         URL url = this.getUrl();
 
         if (isJarURL(url)) {
@@ -102,8 +115,6 @@ public class ClassPathResource {
              */
             try {
                 url = extractActualUrl(url);
-                File file = File.createTempFile("datavec_temp","file");
-                file.deleteOnExit();
 
                 ZipFile zipFile = new ZipFile(url.getFile());
                 ZipEntry entry = zipFile.getEntry(this.resourceName);
@@ -116,9 +127,23 @@ public class ClassPathResource {
                     } else throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
-                long size = entry.getSize();
-
                 InputStream stream = zipFile.getInputStream(entry);
+
+                if (entry.isDirectory() || stream == null) {
+                    zipFile.close();
+
+                    File dir = new File(System.getProperty("java.io.tmpdir"), "datavec_temp" + System.nanoTime() + (suffix != null ? suffix : "dir"));
+                    if (dir.mkdir()) {
+                        dir.deleteOnExit();
+                    }
+                    ArchiveUtils.unzipFileTo(url.getFile(), dir.getAbsolutePath());
+                    return new File(dir, this.resourceName);
+                }
+
+                long size = entry.getSize();
+                File file = File.createTempFile("datavec_temp",(suffix != null ? suffix : "file"));
+                file.deleteOnExit();
+
                 FileOutputStream outputStream = new FileOutputStream(file);
                 byte[] array = new byte[1024];
                 int rd = 0;
