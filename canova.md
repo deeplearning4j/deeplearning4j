@@ -7,7 +7,7 @@ layout: default
 
 The Canova library has been merged into [DataVec](./datavec) with release 0.4.0.
 
-The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). Anyone using older versions of DL4J, ND4J and therefore Canova can refer to the documentation below. 
+The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec), and its [Javadoc is here](./datavecdoc/). Anyone using older versions of DL4J, ND4J and Canova can refer to the documentation below. 
 
 # Canova
 
