@@ -1233,6 +1233,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @return
      */
+    @Deprecated
     @Override
     public List<String> getColumnNames() {
         return columnNames;
@@ -1244,6 +1245,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @param columnNames
      */
+    @Deprecated
     @Override
     public void setColumnNames(List<String> columnNames) {
         this.columnNames = columnNames;
