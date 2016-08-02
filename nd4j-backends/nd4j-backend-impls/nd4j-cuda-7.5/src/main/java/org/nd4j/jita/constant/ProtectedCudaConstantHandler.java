@@ -108,9 +108,11 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } //else if (dataBuffer.dataType() == DataBuffer.Type.DOUBLE) {
-        //    bytes += 8;
-    //    }
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            long div = bytes / 4;
+            if (div % 2 != 0)
+                bytes += 4;
+        }
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
 
@@ -139,7 +141,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long cAddr = deviceAddresses.get(deviceId).address() + currentOffset;
 
-        logger.info("copying to constant: {}, bufferLength: {}, bufferDtype: {}, currentOffset: {}, currentAddres: {}", requiredMemoryBytes, dataBuffer.length(), dataBuffer.dataType(), currentOffset, cAddr);
+        //logger.info("copying to constant: {}, bufferLength: {}, bufferDtype: {}, currentOffset: {}, currentAddres: {}", requiredMemoryBytes, dataBuffer.length(), dataBuffer.dataType(), currentOffset, cAddr);
 
         point.setAllocationStatus(AllocationStatus.CONSTANT);
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
