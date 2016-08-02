@@ -138,7 +138,7 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_eluderivative(T val) {
-			if (val > 0.0) return 1.0;
+			if (val >= 0.0) return 1.0;
 			else return nd4j_exp(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
