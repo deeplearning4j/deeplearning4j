@@ -137,8 +137,8 @@ public class SentenceIteratorTest {
     public void after() throws Exception {
         File test = new File("dir");
         test.mkdir();
-        FileUtils.deleteDirectory(test);
-        FileUtils.deleteDirectory(new File("multidir"));
+        FileUtils.deleteQuietly(test);
+        FileUtils.deleteQuietly(new File("multidir"));
     }
 
 
