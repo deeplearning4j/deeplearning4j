@@ -27,7 +27,6 @@
     <modules>
         <module>datavec-api</module>
         <module>datavec-data</module>
-        <module>datavec-cli</module>
         <module>datavec-hadoop</module>
         <module>datavec-spark</module>
         <module>datavec-camel</module>
