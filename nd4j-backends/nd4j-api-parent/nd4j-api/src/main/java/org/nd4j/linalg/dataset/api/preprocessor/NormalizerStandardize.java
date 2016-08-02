@@ -204,15 +204,6 @@ public class NormalizerStandardize implements DataNormalization {
     }
 
     /**
-     * Not supported
-     * @param toPreProcessIter the dataset to transform
-     */
-    @Override
-    public void transform(DataSetIterator toPreProcessIter) {
-        logger.info("Transform with an iterator is NOT supported. Use setPreProcessor on the iterator instead.");
-    }
-
-    /**
      * Revert the data to what it was before transform
      * @param toPreProcess the dataset to revert back
      */
