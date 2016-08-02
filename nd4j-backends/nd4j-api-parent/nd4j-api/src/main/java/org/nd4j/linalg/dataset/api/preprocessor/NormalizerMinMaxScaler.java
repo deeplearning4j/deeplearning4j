@@ -116,14 +116,6 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         this.preProcess(theFeatures);
     }
 
-    @Override
-    public void transform(DataSetIterator toPreProcessIter) {
-        while (toPreProcessIter.hasNext()) {
-            this.preProcess(toPreProcessIter.next());
-        }
-        toPreProcessIter.reset();
-    }
-
     public void revertPreProcess(DataSet toPreProcess) {
         if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
 
