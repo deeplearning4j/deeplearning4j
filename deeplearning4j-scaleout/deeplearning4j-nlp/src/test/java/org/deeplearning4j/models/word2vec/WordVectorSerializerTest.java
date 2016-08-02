@@ -68,7 +68,7 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if(binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile();
+            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(".gz");
         }
         pathToWriteto =  new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt")
                 .getFile().getAbsolutePath();
