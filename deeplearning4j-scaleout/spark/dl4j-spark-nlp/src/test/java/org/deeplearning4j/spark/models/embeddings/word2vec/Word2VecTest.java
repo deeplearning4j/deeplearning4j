@@ -56,7 +56,7 @@ public class Word2VecTest {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         // Path of data part-00000
-        String dataPath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
+        String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
 //        dataPath = "/ext/Temp/part-00000";
 //        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
@@ -160,7 +160,6 @@ public class Word2VecTest {
     }
 
     @Test
-    @Ignore
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[8]")
