@@ -23,7 +23,7 @@
 
     <packaging>pom</packaging>
 
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.5.0</version>
     <modules>
         <module>datavec-api</module>
         <module>datavec-data</module>
@@ -167,7 +167,7 @@
         <connection>scm:git:git@github.com:SkymindIO/Canova.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/Canova.git</developerConnection>
         <url>git@github.com:SkymindIO/Canova.git</url>
-        <tag>HEAD</tag>
+        <tag>datavec-parent-0.5.0</tag>
     </scm>
 
     <licenses>
