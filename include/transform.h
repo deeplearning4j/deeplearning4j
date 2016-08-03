@@ -84,7 +84,9 @@
         (44,simdOps::DropOutInverted), \
         (45,simdOps::CompareAndSet), \
         (46,simdOps::ReplaceNans) ,\
-        (47,simdOps::StabilizeFP16)
+        (47,simdOps::StabilizeFP16), \
+        (48,simdOps::Shuffle), \
+        (49,simdOps::ShuffleSymmetric)
 
 
 namespace functions {

@@ -19,6 +19,73 @@ namespace functions {
 }
 
 namespace simdOps {
+
+template<typename T>
+    class Shuffle {
+    public:
+        static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+        static inline __device__ void execSpecialCuda(
+            T *dx,
+            int *xShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+
+        }
+#endif
+
+        static void execSpecial(
+                T *dx,
+                int *xShapeBuffer,
+                T *result,
+                int *resultShapeBuffer,
+                T *extraParams) {
+
+        }
+
+        op_def static T op(T d1, T *params) {
+            return d1;
+        }
+
+
+};
+
+
+template<typename T>
+    class ShuffleSymmetric {
+    public:
+        static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+        static inline __device__ void execSpecialCuda(
+            T *dx,
+            int *xShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+
+        }
+#endif
+
+    static void execSpecial(
+        T *dx,
+        int *xShapeBuffer,
+        T *result,
+        int *resultShapeBuffer,
+        T *extraParams) {
+
+    }
+
+    op_def static T op(T d1, T *params) {
+        return d1;
+    }
+
+
+};
+
+
 	template<typename T>
 	class Im2col {
 	public:
