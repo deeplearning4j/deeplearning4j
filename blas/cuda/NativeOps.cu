@@ -1156,22 +1156,20 @@ double   NativeOps::execReduce3ScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(double), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
-	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
-			xPointer,
-			xShapeInfoPointer,
-			yPointer,
-			yShapeInfoPointer,
-			extraParamsPointer,
-			resultPointer,
-			nullptr,
-			nullptr,
-			1,
-			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+					xPointer,
+					xShapeInfoPointer,
+					yPointer,
+					yShapeInfoPointer,
+					extraParamsPointer,
+					resultPointer,
+					nullptr,
+					nullptr,
+					1,
+					1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
