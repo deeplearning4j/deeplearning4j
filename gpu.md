@@ -34,3 +34,61 @@ If you have several GPUs, but your system is forcing you to use just one, there'
 <p align="center">
 <a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j on GPUs</a>
 </p>
+
+
+## Multi-GPU data parallelism
+
+If your system has multiple GPUs installed, you can train your model in data-parallel mode. We have simple wrapper available for that:
+
+Consider using something like this:
+
+        ParallelWrapper wrapper = new ParallelWrapper.Builder(YourExistingModel)
+            .prefetchBuffer(24)
+            .workers(4)
+            .averagingFrequency(1)
+            .reportScoreAfterAveraging(true)
+            .useLegacyAveraging(false)
+            .build();
+
+ParallelWrapper takes your existing model as primary argument, and does training in parallel. In case of GPUs, it’s worth keeping number of workers equal or higher then number of GPUs. Exact values are subject for tuning, since they depend on your task, and hardware available.
+
+Within ParallelWrapper, your initial model will be duplicated, and each worker will be training it’s own model. After every X iterations, defined by averagingFrequency(X), all models will be averaged, and training will continue after that. 
+
+Also, worth a note: for data-parallel training it’s recommended to use higher learning rate. Something around +20% should be good starting value.
+
+## HALF datatype
+
+If your app can afford using half-precision math (typically neural nets can afford this), you can enable this as data type for your app, and get following benefits:
+
+* x2 less GPU ram used
+* up to 200% performance gains on memory-intensive operations, but actual performance boost depends on task and hardware used.
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+
+Place this call as first line of your app, so all subsequent allocations/calculations will be done using HALF data type. 
+
+## Larger grids
+
+For most GPUs, default values are fine, but if you’re using high-end hardware and your data is massive enough, it might be worth trying bigger grid/block limits. Something like this might be used:
+
+    CudaEnvironment.getInstance().getConfiguration()
+          .setMaximumGridSize(512)
+          .setMaximumBlockSize(512);
+
+This won’t force all, even minor operations, to use specified grid dimensions, but it’ll rise up theoretical limits for them. 
+
+## Allow for a larger cache
+
+Due to Java nature of ND4j, cache size is very important for CUDA backend, and it’s able to dramatically increase or decrease performance. If you have plenty of RAM - just allow larger caches.
+
+Something like this might be used:
+
+        CudaEnvironment.getInstance().getConfiguration()
+        .setMaximumDeviceCacheableLength(1024 * 1024 * 1024L)
+        .setMaximumDeviceCache(6L * 1024 * 1024 * 1024L)
+        .setMaximumHostCacheableLength(1024 * 1024 * 1024L)
+        .setMaximumHostCache(6L * 1024 * 1024 * 1024L);
+
+This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individual cached memory chunk for both host and GPU memory might be up to 1GB worth of size. 
+
+Since cache in Nd4j works in «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
