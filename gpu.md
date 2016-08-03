@@ -50,24 +50,24 @@ Consider using something like this:
             .useLegacyAveraging(false)
             .build();
 
-ParallelWrapper takes your existing model as primary argument, and does training in parallel. In case of GPUs, it’s worth keeping number of workers equal or higher then number of GPUs. Exact values are subject for tuning, since they depend on your task, and hardware available.
+ParallelWrapper takes your existing model as primary argument, and does training in parallel. In the case of GPUs, it’s worth keeping the number of workers equal to or higher than number of GPUs. Exact values are subject to tuning, since they depend on your task as well as the hardware available.
 
-Within ParallelWrapper, your initial model will be duplicated, and each worker will be training it’s own model. After every X iterations, defined by averagingFrequency(X), all models will be averaged, and training will continue after that. 
+Within `ParallelWrapper`, your initial model will be duplicated, and each worker will be training its own model. After every *X* iterations, defined by `averagingFrequency(X)`, all models will be averaged, and training will continue after that. 
 
-Also, worth a note: for data-parallel training it’s recommended to use higher learning rate. Something around +20% should be good starting value.
+It's worth noting that for data-parallel training, a higher learning rate is recommended. Something around +20% should be a good starting value.
 
-## HALF datatype
+## HALF Datatype
 
-If your app can afford using half-precision math (typically neural nets can afford this), you can enable this as data type for your app, and get following benefits:
+If your app can afford using half-precision math (typically neural nets can afford this), you can enable this as data type for your app, and you'll see following benefits:
 
-* x2 less GPU ram used
-* up to 200% performance gains on memory-intensive operations, but actual performance boost depends on task and hardware used.
+* 2x less GPU ram used
+* up to 200% performance gains on memory-intensive operations, though the actual performance boost depends on the task and hardware used.
 
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
 
-Place this call as first line of your app, so all subsequent allocations/calculations will be done using HALF data type. 
+Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type. 
 
-## Larger grids
+## Larger Grids
 
 For most GPUs, default values are fine, but if you’re using high-end hardware and your data is massive enough, it might be worth trying bigger grid/block limits. Something like this might be used:
 
@@ -75,11 +75,11 @@ For most GPUs, default values are fine, but if you’re using high-end hardware 
           .setMaximumGridSize(512)
           .setMaximumBlockSize(512);
 
-This won’t force all, even minor operations, to use specified grid dimensions, but it’ll rise up theoretical limits for them. 
+This won’t force all, even minor operations, to use specified grid dimensions, but it’ll create theoretical limits for them. 
 
 ## Allow for a larger cache
 
-Due to Java nature of ND4j, cache size is very important for CUDA backend, and it’s able to dramatically increase or decrease performance. If you have plenty of RAM - just allow larger caches.
+Since ND4J is based on JAva, the cache size is very important for CUDA backend, and it’s able to dramatically increase or decrease performance. If you have plenty of RAM - just allow larger caches.
 
 Something like this might be used:
 
@@ -89,6 +89,6 @@ Something like this might be used:
         .setMaximumHostCacheableLength(1024 * 1024 * 1024L)
         .setMaximumHostCache(6L * 1024 * 1024 * 1024L);
 
-This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individual cached memory chunk for both host and GPU memory might be up to 1GB worth of size. 
+This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individually cached memory chunk for both host and GPU memory might be up to 1GB in size. 
 
-Since cache in Nd4j works in «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
+Since the cache in Nd4j works has a «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
