@@ -46,9 +46,7 @@ import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Jblas NDArray Factory
@@ -767,6 +765,19 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public void shuffle(INDArray array, int... dimension) {
-        // TODO: implement this
+        shuffle(Collections.singletonList(array));
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. All arrays
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(Collection<INDArray> array, int... dimension) {
+        // TODO: to be implemented
     }
 }

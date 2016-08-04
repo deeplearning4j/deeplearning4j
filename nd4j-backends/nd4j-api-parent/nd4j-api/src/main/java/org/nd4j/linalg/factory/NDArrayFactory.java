@@ -394,11 +394,22 @@ public interface NDArrayFactory {
     /**
      * In place shuffle of an ndarray
      * along a specified set of dimensions
+     *
      * @param array the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
      * @return
      */
     void shuffle(INDArray array, int... dimension);
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. All arrays
+     *
+     * @param array the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    void shuffle(Collection<INDArray> array, int... dimension);
 
     /**
      * This method averages input arrays, and returns averaged array

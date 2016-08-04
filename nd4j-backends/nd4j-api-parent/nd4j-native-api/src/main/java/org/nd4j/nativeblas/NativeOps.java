@@ -1186,9 +1186,9 @@ public class NativeOps extends Pointer {
 
     //
 
-    public native void shuffleDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
 
-    public native void shuffleFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
 
-    public native void shuffleHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
 }
