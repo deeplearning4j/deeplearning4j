@@ -3,7 +3,18 @@ title: Release Notes
 layout: default
 ---
 
-# Release Notes for version 4.0
+# Release Notes for Version 5.0
+
+* FP16 support for CUDA
+* [Better performance for multi-gpu}(http://deeplearning4j.org/gpu)
+* Including optional P2P memory access support
+* Normalization support for time series and images
+* Normalization support for labels
+* Removal of Canova and shift to DataVec: [Javadoc](http://deeplearning4j.org/datavecdoc/), [Github Repo](https://github.com/deeplearning4j/datavec)
+* Numerous bug fixes
+* Spark improvements
+
+## Release Notes for version 4.0
 
 * Initial multi-GPU support viable for standalone and Spark. 
 * Refactored the Spark API significantly
