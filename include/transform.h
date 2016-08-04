@@ -1489,27 +1489,46 @@ __device__ void shuffleKernelGeneric(T *x, int *xShapeInfo, T *z, int *zShapeInf
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
             for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
-                int oldOffset = r;
-                int newOffset = shuffleMap[r];
+                int oldOffset = tadOffsets[r];
+                int newOffset = tadOffsets[shuffleMap[r]];
 
-                T *rX = x + tadOffsets[oldOffset];
-                T *rY = x + tadOffsets[newOffset];
+
+
+                T *rX = x + oldOffset;
+                T *rY = x + newOffset;
+
+                T *zX = z + oldOffset;
+                T *zY = z + newOffset;
 
                 // so we're going to change TAD[oldOffset] with TAD[newOffset]
                 if (tadEWS > 0) {
-                    /*
-                        TODO: This should be changed to respect op.Z
-                    */
                     for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
                         T oldX = rX[i * tadEWS];
                         T oldY = rY[i * tadEWS];
 
-                        rY[i * tadEWS] = oldX;
-                        rX[i * tadEWS] = oldY;
+                        zY[i * tadEWS] = oldX;
+                        zX[i * tadEWS] = oldY;
                     }
 
                 } else {
                     // well have to iterate using ind2sub
+                    for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                        int xCoord[MAX_RANK];
+                        int yCoord[MAX_RANK];
+                        for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                            shape::ind2subC(tadRank,tadShape, i, xCoord);
+                            shape::ind2subC(tadRank,tadShape, i, yCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
+                            Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
+
+                            T oldX = x[xOffset];
+                            T oldY = x[yOffset];
+
+                            z[xOffset] = oldY;
+                            z[yOffset] = oldX;
+                        }
+                    }
                 }
             }
 }
