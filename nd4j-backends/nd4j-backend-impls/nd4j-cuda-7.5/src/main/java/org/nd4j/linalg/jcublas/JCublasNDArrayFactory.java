@@ -44,6 +44,7 @@ import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -846,5 +847,93 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray average(INDArray target, Collection<INDArray> arrays) {
         return average(target, arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(INDArray array, int... dimension) {
+        // no dimension - no shuffle
+        if (dimension == null || dimension.length == 0)
+            return;
+
+        // first we build TAD for input array and dimensions
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        CudaContext context =  allocator.getFlowController().prepareAction(array);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used
+                context.getOldStream(),
+                allocator.getDeviceIdPointer()
+        );
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(array, context);
+        Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
+
+
+        TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+
+        Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        Pointer tadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
+
+        // FIXME: temporal map impl
+        int[] map = new int[10];
+        for (int i = 0; i < 10; i++) {
+            System.out.println("ShuffleMap: I: "+ i + ", V: "+ (9 - i));
+            map[i] = 9 - i;
+        }
+        CudaIntDataBuffer shuffle = new CudaIntDataBuffer(map);
+
+        Pointer shuffleMap = allocator.getPointer(shuffle, context);
+
+        if (array.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.shuffleDouble(
+                    extras,
+                    x,
+                    xShapeInfo,
+                    x,
+                    xShapeInfo,
+                    shuffleMap,
+                    tadShapeInfo,
+                    tadOffsets
+            );
+        } else if (array.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.shuffleFloat(
+                    extras,
+                    x,
+                    xShapeInfo,
+                    x,
+                    xShapeInfo,
+                    shuffleMap,
+                    tadShapeInfo,
+                    tadOffsets
+            );
+        } else {
+            // HALFs
+            nativeOps.shuffleHalf(
+                    extras,
+                    x,
+                    xShapeInfo,
+                    x,
+                    xShapeInfo,
+                    shuffleMap,
+                    tadShapeInfo,
+                    tadOffsets
+            );
+        }
+
+        allocator.getFlowController().registerAction(context, array);
     }
 }

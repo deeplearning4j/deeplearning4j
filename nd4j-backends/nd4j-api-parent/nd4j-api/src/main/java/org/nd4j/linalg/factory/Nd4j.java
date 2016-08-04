@@ -402,7 +402,8 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,int...dimension) {
-        shuffle(toShuffle, new Random(), dimension);
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, dimension);
     }
 
     /**

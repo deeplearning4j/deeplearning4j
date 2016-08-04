@@ -756,4 +756,17 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray average(Collection<INDArray> arrays) {
         return average(arrays.toArray(new INDArray[0]));
     }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(INDArray array, int... dimension) {
+        // TODO: implement this
+    }
 }
