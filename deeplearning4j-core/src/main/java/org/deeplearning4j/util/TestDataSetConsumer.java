@@ -1,7 +1,6 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
@@ -60,7 +59,7 @@ public class TestDataSetConsumer {
         while (System.currentTimeMillis() < timeMs) {
             if (consumeWithSleep)
                 try {
-                    Thread.sleep(delay + 1);
+                    Thread.sleep(delay);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

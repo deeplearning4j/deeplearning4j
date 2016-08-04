@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
     </parent>
     <build>
         <pluginManagement>
@@ -68,21 +68,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-nd4j-image</artifactId>
-                <version>${canova.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-nd4j-common</artifactId>
-                <version>${canova.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
                 <version>${commonsmath.version}</version>
@@ -90,20 +75,7 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-common</artifactId>
-        </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-image</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

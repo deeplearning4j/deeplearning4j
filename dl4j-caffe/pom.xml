@@ -2,7 +2,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -51,7 +51,7 @@
 
         <dependency>
             <groupId>org.graphchi</groupId>
-            <artifactId>graphchi-java_2.11</artifactId>
+            <artifactId>graphchi-java_2.10</artifactId>
             <version>${graphchi.version}</version>
         </dependency>
     </dependencies>

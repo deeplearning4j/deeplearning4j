@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
+import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,6 +38,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
@@ -53,6 +55,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -238,6 +241,21 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     * Similar to {@link #fit(String)} but without the PortableDataStream objects
+     *
+     * @param paths    List of paths
+     * @return trained network
+     */
+    @Experimental
+    public MultiLayerNetwork fitPaths(JavaRDD<String> paths){
+        paths.cache();
+        trainingMaster.executeTrainingPaths(this, paths);
+        return network;
+    }
+
+    /**
      * Fit a MultiLayerNetwork using Spark MLLib LabeledPoint instances.
      * This will convert the labeled points to the internal DL4J data format and train the model on that
      *
@@ -299,15 +317,36 @@ public class SparkDl4jMultiLayer implements Serializable {
     /**
      * Calculate the score for all examples in the provided {@code JavaRDD<DataSet>}, either by summing
      * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
-     * or one of the similar methods
+     * or one of the similar methods. Uses default minibatch size in each worker, {@link SparkDl4jMultiLayer#DEFAULT_EVAL_SCORE_BATCH_SIZE}
      *
      * @param data    Data to score
-     * @param average Whether to sum the scores, or averag them
+     * @param average Whether to sum the scores, or average them
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average) {
-        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
-        if (average) return scores.mean();
-        return scores.sum();
+        return calculateScore(data, average, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<DataSet>}, either by summing
+     * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
+     * or one of the similar methods
+     *
+     * @param data          Data to score
+     * @param average       Whether to sum the scores, or average them
+     * @param minibatchSize The number of examples to use in each minibatch when scoring. If more examples are in a partition than
+     *                      this, multiple scoring operations will be done (to avoid using too much memory by doing the whole partition
+     *                      in one go)
+     */
+    public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+
+        //Reduce to a single tuple, with example count + sum of scores
+        Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
+        if (average) {
+            return countAndSumScores._2() / countAndSumScores._1();
+        } else {
+            return countAndSumScores._2();
+        }
     }
 
     /**

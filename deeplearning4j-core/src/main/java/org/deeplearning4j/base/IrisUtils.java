@@ -18,15 +18,15 @@
 
 package org.deeplearning4j.base;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IrisUtils {
 

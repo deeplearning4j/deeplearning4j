@@ -32,23 +32,16 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.ui.activation.ActivationsDropwiz;
-import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.api.ApiResource;
 import org.deeplearning4j.ui.defaults.DefaultDropwiz;
-import org.deeplearning4j.ui.defaults.DefaultResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
 import org.deeplearning4j.ui.flow.FlowDropwiz;
-import org.deeplearning4j.ui.flow.FlowResource;
-import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
-import org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz;
 import org.deeplearning4j.ui.renders.RendersDropwiz;
-import org.deeplearning4j.ui.renders.RendersResource;
+import org.deeplearning4j.ui.rl.RlDropwiz;
 import org.deeplearning4j.ui.tsne.TsneDropwiz;
-import org.deeplearning4j.ui.tsne.TsneResource;
 import org.deeplearning4j.ui.weights.WeightDropwiz;
-import org.deeplearning4j.ui.weights.WeightResource;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -60,7 +53,10 @@ import org.nd4j.serde.jackson.VectorSerializer;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.EnumSet;
 
 
@@ -146,6 +142,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new FlowDropwiz());
+        environment.jersey().register(new RlDropwiz());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz(conf.getUploadPath()));
 
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

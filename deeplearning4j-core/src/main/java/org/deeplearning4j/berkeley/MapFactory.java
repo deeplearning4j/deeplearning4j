@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.berkeley;
 
-import java.util.*;
 import java.io.Serializable;
+import java.util.*;
 
 /**
  * The MapFactory is a mechanism for specifying what kind of map is to be used

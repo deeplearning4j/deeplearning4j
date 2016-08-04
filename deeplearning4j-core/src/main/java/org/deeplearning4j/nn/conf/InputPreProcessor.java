@@ -21,8 +21,6 @@ package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

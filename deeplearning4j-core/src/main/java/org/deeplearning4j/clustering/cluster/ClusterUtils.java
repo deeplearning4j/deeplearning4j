@@ -18,12 +18,6 @@
 
 package org.deeplearning4j.clustering.cluster;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimizationType;
 import org.deeplearning4j.clustering.algorithm.strategy.OptimisationStrategy;
@@ -33,6 +27,9 @@ import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 /**
  *

@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.ui.tsne;
 
-import io.dropwizard.views.View;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.ui.storage.HistoryStorage;
 import org.deeplearning4j.ui.storage.SessionStorage;
 import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;

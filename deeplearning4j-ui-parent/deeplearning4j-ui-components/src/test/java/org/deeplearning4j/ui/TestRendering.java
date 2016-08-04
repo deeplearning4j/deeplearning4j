@@ -19,8 +19,9 @@ package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.api.Style;
 import org.deeplearning4j.ui.components.chart.*;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
@@ -34,10 +35,9 @@ import org.deeplearning4j.ui.components.text.style.StyleText;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 

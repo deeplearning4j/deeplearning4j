@@ -18,7 +18,10 @@
 
 package org.deeplearning4j.nn.conf.inputs;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.io.Serializable;
 

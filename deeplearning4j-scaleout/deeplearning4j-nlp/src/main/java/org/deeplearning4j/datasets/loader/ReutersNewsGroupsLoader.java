@@ -18,25 +18,6 @@
 
 package org.deeplearning4j.datasets.loader;
 
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
-import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-import org.deeplearning4j.util.ArchiveUtils;
-import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * @author Adam Gibson
  */

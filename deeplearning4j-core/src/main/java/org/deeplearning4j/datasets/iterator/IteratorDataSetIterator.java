@@ -13,7 +13,7 @@ import java.util.*;
  * required to get a consistent batch size.
  *
  * Typically used in Spark training, but may be used elsewhere.
- * NOTE: some methods are not supported here.
+ * NOTE: reset method is not supported here.
  */
 public class IteratorDataSetIterator implements DataSetIterator {
 
@@ -85,7 +85,12 @@ public class IteratorDataSetIterator implements DataSetIterator {
             out = DataSet.merge(list);
         }
 
-        if(preProcessor != null) preProcessor.preProcess(out);
+        if(preProcessor != null) {
+            if (!out.isPreProcessed()) {
+                preProcessor.preProcess(out);
+                out.markAsPreProcessed();
+            }
+        }
         cursor += out.numExamples();
         return out;
     }
@@ -107,6 +112,11 @@ public class IteratorDataSetIterator implements DataSetIterator {
         if(totalOutcomes != -1) return totalOutcomes;
         prefetchBatchSetInputOutputValues();
         return totalOutcomes;
+    }
+
+    @Override
+    public boolean resetSupported(){
+        return false;
     }
 
     @Override

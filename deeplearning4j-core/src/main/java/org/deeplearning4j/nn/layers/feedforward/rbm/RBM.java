@@ -32,9 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
-import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
-import static org.nd4j.linalg.ops.transforms.Transforms.max;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 
 /**

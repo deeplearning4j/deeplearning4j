@@ -17,14 +17,14 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -33,7 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -70,6 +69,8 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
                           gammaBetaTensorDesc = new cudnnTensorStruct();
 
         CudnnContext() {
+            // insure that cuDNN initializes on the same device as ND4J for this thread
+            Nd4j.create(1);
             createHandles();
             deallocator(new Deallocator(this));
         }
@@ -122,11 +123,15 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     CudnnContext cudnnContext = new CudnnContext();
     Cache meanCache = new Cache();
     Cache varCache = new Cache();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
-    FloatPointer alpha = new FloatPointer(1.0f);
-    FloatPointer beta  = new FloatPointer(0.0f);
+    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(1.0f)});
+    Pointer beta  = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(0.0f)});;
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,

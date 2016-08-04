@@ -5,7 +5,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.StatsUtils;
-import org.deeplearning4j.spark.util.SparkUtils;
 
 import java.io.IOException;
 import java.util.*;

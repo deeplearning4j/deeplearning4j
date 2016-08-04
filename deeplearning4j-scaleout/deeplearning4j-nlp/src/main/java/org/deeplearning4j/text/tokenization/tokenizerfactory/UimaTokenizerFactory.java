@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
-import java.io.InputStream;
-
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.resource.ResourceInitializationException;
@@ -29,6 +27,8 @@ import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.UimaTokenizer;
 import org.deeplearning4j.text.uima.UimaResource;
+
+import java.io.InputStream;
 
 
 /**

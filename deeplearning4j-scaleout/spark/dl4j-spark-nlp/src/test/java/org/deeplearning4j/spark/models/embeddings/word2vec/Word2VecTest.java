@@ -21,7 +21,7 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
@@ -35,7 +35,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
 
 import java.io.File;
 import java.util.Arrays;
@@ -57,7 +56,7 @@ public class Word2VecTest {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         // Path of data part-00000
-        String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
+        String dataPath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
 //        dataPath = "/ext/Temp/part-00000";
 //        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
@@ -160,6 +159,7 @@ public class Word2VecTest {
         assertEquals(array1, array2);
     }
 
+    @Ignore
     @Test
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf()
@@ -174,8 +174,8 @@ public class Word2VecTest {
 
         // Path of data part-00000
         //String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
-        String dataPath = "/ext/Temp/SampleRussianCorpus.txt";
-//        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
+//        String dataPath = "/ext/Temp/SampleRussianCorpus.txt";
+        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
         // Read in data
         JavaRDD<String> corpus = sc.textFile(dataPath);

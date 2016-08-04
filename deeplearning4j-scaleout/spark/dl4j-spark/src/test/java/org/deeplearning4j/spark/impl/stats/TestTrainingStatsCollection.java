@@ -18,7 +18,6 @@ import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMa
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.StatsUtils;
-import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -29,9 +28,7 @@ import java.util.*;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 17/06/2016.
@@ -122,6 +119,13 @@ public class TestTrainingStatsCollection {
             //First: master stats
             assertTrue(stats instanceof ParameterAveragingTrainingMasterStats);
             ParameterAveragingTrainingMasterStats masterStats = (ParameterAveragingTrainingMasterStats) stats;
+
+            List<EventStats> countRddTime = masterStats.getParameterAveragingMasterCountRddSizeTimesMs();
+            assertEquals(1, countRddTime.size());   //occurs once per fit
+            assertDurationGreaterEqZero(countRddTime);
+            assertNonNullFields(countRddTime);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(countRddTime,1,1,1);   //should occur only in master once
+
             List<EventStats> broadcastCreateTime = masterStats.getParameterAveragingMasterBroadcastCreateTimesMs();
             assertEquals(numberOfAveragings, broadcastCreateTime.size());
             assertDurationGreaterEqZero(broadcastCreateTime);

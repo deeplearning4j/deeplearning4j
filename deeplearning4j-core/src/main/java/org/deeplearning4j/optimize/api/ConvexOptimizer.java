@@ -25,12 +25,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
-import org.nd4j.linalg.learning.GradientUpdater;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Convex optimizer.

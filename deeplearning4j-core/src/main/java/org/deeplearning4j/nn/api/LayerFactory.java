@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.nn.api;
 
-import java.util.Collection;
-
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /**
  *

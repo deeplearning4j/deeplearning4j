@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
 import org.apache.commons.codec.binary.Base64;
 
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -37,6 +36,7 @@ public class VectorsConfiguration implements Serializable {
     private double negative = 0.0d;
     private double sampling = 0.0d;
     private int learningRateDecayWords;
+    private int[] variableWindows;
 
     private boolean hugeModelExpected = false;
     private int scavengerActivationThreshold = 2000000;
