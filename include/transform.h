@@ -1463,7 +1463,7 @@ extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n,
 
 
 template<typename T>
-__device__ void shuffleKernelGeneric(T *x, int *xShapeInfo, T *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
+__device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
 
             // we assume that shuffle map for each X contains pair TAD Y
 
@@ -1475,22 +1475,31 @@ __device__ void shuffleKernelGeneric(T *x, int *xShapeInfo, T *z, int *zShapeInf
             __shared__ int *tadStride;
             __shared__ int yStride;
 
-            if (threadIdx.x == 0) {
-                tadLength = shape::length(tadOnlyShapeInfo);
-                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                tadRank = shape::rank(tadOnlyShapeInfo);
-                numTads = shape::length(xShapeInfo) / tadLength;
 
-                tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                tadStride = shape::stride(tadOnlyShapeInfo);
+        for (int i = 0; i < N; i++) {
+            T *x = (T *) dX[i];
+            T *z = (T *) dZ[i];
+
+
+
+            __syncthreads();
+
+            if (threadIdx.x == 0) {
+                tadLength = shape::length(tadOnlyShapeInfo[i]);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[i]);
+                tadRank = shape::rank(tadOnlyShapeInfo[i]);
+                numTads = shape::length(xShapeInfo[i]) / tadLength;
+
+                tadShape = shape::shapeOf(tadOnlyShapeInfo[i]);
+                tadStride = shape::stride(tadOnlyShapeInfo[i]);
             }
             __syncthreads();
 
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
             for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
-                int oldOffset = tadOffsets[r];
-                int newOffset = tadOffsets[shuffleMap[r]];
+                int oldOffset = tadOffsets[i][r];
+                int newOffset = tadOffsets[i][shuffleMap[r]];
 
 
 
@@ -1531,18 +1540,19 @@ __device__ void shuffleKernelGeneric(T *x, int *xShapeInfo, T *z, int *zShapeInf
                     }
                 }
             }
+        }
 }
 
-extern "C" __global__ void shuffleKernelDouble(double *x, int *xShapeInfo, double *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
-    shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+extern "C" __global__ void shuffleKernelDouble(double **x, int **xShapeInfo, double **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void shuffleKernelFloat(float *x, int *xShapeInfo, float *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
-    shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+extern "C" __global__ void shuffleKernelFloat(float **x, int **xShapeInfo, float **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void shuffleKernelHalf(nd4j::float16 *x, int *xShapeInfo, nd4j::float16 *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
-    shuffleKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+extern "C" __global__ void shuffleKernelHalf(nd4j::float16 **x, int **xShapeInfo, nd4j::float16 **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
 #endif
