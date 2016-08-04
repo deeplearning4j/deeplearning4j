@@ -11,6 +11,7 @@ Building locally requires that you build the entire Deeplearning4j stack which i
 
 - [libnd4j](https://github.com/deeplearning4j/libnd4j)
 - [nd4j](https://github.com/deeplearning4j/nd4j)
+- [datavec](https://github.com/deeplearning4j/datavec)
 - [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
@@ -278,6 +279,7 @@ The overall procedure looks like the following commands below, with the exceptio
 # removes any existing repositories to ensure a clean build
 rm -rf libnd4j
 rm -rf nd4j
+rm -rf datavec
 rm -rf deeplearning4j
 
 # compile libnd4j
