@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -51,9 +51,8 @@
 
 
     <properties>
-        <nd4j.version>0.4.1-SNAPSHOT</nd4j.version>
-        <canova.version>0.0.0.18-SNAPSHOT</canova.version>
-        <datavec.version>0.4.1-SNAPSHOT</datavec.version>
+        <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
+        <datavec.version>0.5.1-SNAPSHOT</datavec.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
@@ -61,7 +60,7 @@
         <slf4j.version>1.7.12</slf4j.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
-        <jackson.version>2.5.1</jackson.version>
+        <jackson.version>2.5.1</jackson.version>    <!-- Issues: Dropwizard requires 2.5.1; Spark (local) requires 2.4.4 (spark submit will package correct version) -->
         <lombok.version>1.16.4</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <dropwizard.version>0.8.0</dropwizard.version>
@@ -69,31 +68,14 @@
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
-        <scala.binary.version>2.10</scala.binary.version>
         <hadoop.version>1.0.4</hadoop.version>
         <camel.version>2.16.3</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <kafka.version>0.8.2.2</kafka.version>
         <spark.version>1.5.2</spark.version>
-        <scala.version>2.10.4</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
-
     </properties>
 
     <profiles>
-        <profile>
-            <id>scala-2.11</id>
-            <activation>
-                <property>
-                    <name>scala-2.11</name>
-                </property>
-            </activation>
-            <properties>
-                <scala.version>2.11.7</scala.version>
-                <scala.binary.version>2.11</scala.binary.version>
-            </properties>
-        </profile>
-
         <profile>
             <id>testresources</id>
             <activation>
@@ -202,7 +184,6 @@
     <modules>
         <module>deeplearning4j-core</module>
         <module>deeplearning4j-scaleout</module>
-        <module>deeplearning4j-cli</module>
         <module>dl4j-caffe</module>
         <module>deeplearning4j-ui-parent</module>
         <module>deeplearning4j-cuda-7.5</module>
@@ -297,7 +278,7 @@
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>3.2.2</version>
                 <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
+                    <scalaVersion>2.10.6</scalaVersion>
                     <args>
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
@@ -450,12 +431,6 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
             </dependency>
 
 

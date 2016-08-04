@@ -18,11 +18,6 @@
 
 package org.deeplearning4j.aws.ec2.provision;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-
 import com.amazonaws.regions.Regions;
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
 import org.kohsuke.args4j.CmdLineException;
@@ -30,6 +25,10 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Sets up a DL4J cluster

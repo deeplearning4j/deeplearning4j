@@ -1,6 +1,9 @@
 package org.deeplearning4j.graph.iterator;
 
-import org.deeplearning4j.graph.api.*;
+import org.deeplearning4j.graph.api.Edge;
+import org.deeplearning4j.graph.api.IGraph;
+import org.deeplearning4j.graph.api.IVertexSequence;
+import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.exception.NoEdgesException;
 import org.deeplearning4j.graph.graph.VertexSequence;
 

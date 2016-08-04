@@ -18,14 +18,14 @@
 
 package org.deeplearning4j.text.movingwindow;
 
+import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.berkeley.MapFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.berkeley.MapFactory;
 
 
 public class Util {

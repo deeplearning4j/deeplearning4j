@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.aws.ec2;
 
-import com.amazonaws.regions.*;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.model.*;
 import org.deeplearning4j.aws.s3.BaseS3;

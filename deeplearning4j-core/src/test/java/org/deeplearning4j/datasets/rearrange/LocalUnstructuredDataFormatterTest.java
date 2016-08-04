@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 
 /**

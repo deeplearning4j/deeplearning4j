@@ -2,7 +2,6 @@ package org.deeplearning4j.earlystopping.saver;
 
 import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
 

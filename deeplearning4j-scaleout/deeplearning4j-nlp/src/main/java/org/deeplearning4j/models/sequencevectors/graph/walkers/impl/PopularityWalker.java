@@ -6,7 +6,6 @@ import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.math3.util.MathArrays;
-import org.apache.commons.math3.util.MathUtils;
 import org.deeplearning4j.berkeley.PriorityQueue;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
@@ -18,7 +17,6 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +27,8 @@ import java.util.Random;
 
 /**
  * This is vertex popularity-based walker for SequenceVectors-based DeepWalk implementation.
- *  Instead of rand walks, this walker produces walks based on number of edges coming into each node.
- *  This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
+ * Instead of rand walks, this walker produces walks based on number of edges coming into each node.
+ * This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
  *
  * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
  * @author raver119@gmail.com
@@ -153,6 +151,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
 
                                         Vertex<T> nV = sourceGraph.getVertex(connections[con]);
                                         startPosition = nV.vertexID();
+                                        lastId = vertex.vertexID();
                                     }
                                     break;
                                 case PROPORTIONAL: {
@@ -162,6 +161,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                         for (int b = 0; b < weights.length; b++) {
                                             if (prob >= floor && prob < floor + norm[b]) {
                                                 startPosition = list.get(b).getVertexId();
+                                                lastId = startPosition;
                                                 break;
                                             } else {
                                                 floor += norm[b];

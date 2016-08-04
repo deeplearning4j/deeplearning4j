@@ -18,29 +18,19 @@
 
 package org.deeplearning4j.util;
 
-import static org.deeplearning4j.berkeley.StringUtils.splitOnCharWithQuoting;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+
+import static org.deeplearning4j.berkeley.StringUtils.splitOnCharWithQuoting;
 
 
 
@@ -404,7 +394,7 @@ public class StringGrid extends ArrayList<List<String>> {
     private String maximalValue(Map<String,Integer> map) {
         Counter<String> counter = new Counter<>();
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
-            counter.incrementCount(entry.getKey(), map.get(entry.getValue()));
+            counter.incrementCount(entry.getKey(), entry.getValue());
         }
         return counter.argMax();
     }

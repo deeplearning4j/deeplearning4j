@@ -2,24 +2,18 @@ package org.deeplearning4j.graph.models.deepwalk;
 
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.graph.api.IGraph;
-import org.deeplearning4j.graph.api.NoEdgeHandling;
-import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.api.IVertexSequence;
+import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
 import org.deeplearning4j.graph.iterator.parallel.RandomWalkGraphIteratorProvider;
-import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.GraphVectorLookupTable;
 import org.deeplearning4j.graph.models.embeddings.GraphVectorsImpl;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;

@@ -21,7 +21,7 @@ package org.deeplearning4j.models.word2vec;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -50,9 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author jeffreytang
@@ -70,7 +68,7 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if(binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile();
+            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(".gz");
         }
         pathToWriteto =  new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt")
                 .getFile().getAbsolutePath();

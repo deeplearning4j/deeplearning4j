@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.impl.graph;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
+import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -32,6 +33,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
@@ -49,6 +51,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -186,6 +189,21 @@ public class SparkComputationGraph implements Serializable {
     }
 
     /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized DataSet objects.
+     * Similar to {@link #fit(String)} but without the PortableDataStream objects
+     *
+     * @param paths    List of paths
+     * @return trained network
+     */
+    @Experimental
+    public ComputationGraph fitPaths(JavaRDD<String> paths){
+        paths.cache();
+        trainingMaster.executeTrainingPaths(this, paths);
+        return network;
+    }
+
+    /**
      * Fit the ComputationGraph with the given data set
      *
      * @param rdd Data to train on
@@ -217,6 +235,21 @@ public class SparkComputationGraph implements Serializable {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
         serializedDataSets.cache();
         trainingMaster.executeTrainingMDS(this, serializedDataSets);
+        return network;
+    }
+
+    /**
+     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+     * Fit the network using a list of paths for serialized MultiDataSet objects.
+     * Similar to {@link #fitMultiDataSet(String)} but without the PortableDataStream objects
+     *
+     * @param paths    List of paths
+     * @return trained network
+     */
+    @Experimental
+    public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths){
+        paths.cache();
+        trainingMaster.executeTrainingPathsMDS(this, paths);
         return network;
     }
 
@@ -273,16 +306,72 @@ public class SparkComputationGraph implements Serializable {
         this.lastScore = lastScore;
     }
 
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<DataSet>}, either by summing
+     * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
+     * or one of the similar methods. Uses default minibatch size in each worker, {@link SparkComputationGraph#DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     *
+     * @param data    Data to score
+     * @param average Whether to sum the scores, or average them
+     */
     public double calculateScore(JavaRDD<DataSet> data, boolean average) {
-        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false))));
-        if (average) return scores.mean();
-        return scores.sum();
+        return calculateScore(data, average, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<DataSet>}, either by summing
+     * or averaging over the entire data set. To calculate a score for each example individually, use {@link #scoreExamples(JavaPairRDD, boolean)}
+     * or one of the similar methods
+     *
+     * @param data          Data to score
+     * @param average       Whether to sum the scores, or average them
+     * @param minibatchSize The number of examples to use in each minibatch when scoring. If more examples are in a partition than
+     *                      this, multiple scoring operations will be done (to avoid using too much memory by doing the whole partition
+     *                      in one go)
+     */
+    public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+
+        //Reduce to a single tuple, with example count + sum of scores
+        Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
+        if (average) {
+            return countAndSumScores._2() / countAndSumScores._1();
+        } else {
+            return countAndSumScores._2();
+        }
+    }
+
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<MultiDataSet>}, either by summing
+     * or averaging over the entire data set.
+     * Uses default minibatch size in each worker, {@link SparkComputationGraph#DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     *
+     * @param data    Data to score
+     * @param average Whether to sum the scores, or average them
+     */
     public double calculateScoreMultiDataSet(JavaRDD<MultiDataSet> data, boolean average) {
-        JavaDoubleRDD scores = data.mapPartitionsToDouble(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(), sc.broadcast(network.params(false))));
-        if (average) return scores.mean();
-        return scores.sum();
+        return calculateScoreMultiDataSet(data, average, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Calculate the score for all examples in the provided {@code JavaRDD<MultiDataSet>}, either by summing
+     * or averaging over the entire data set.
+     *      *
+     * @param data          Data to score
+     * @param average       Whether to sum the scores, or average them
+     * @param minibatchSize The number of examples to use in each minibatch when scoring. If more examples are in a partition than
+     *                      this, multiple scoring operations will be done (to avoid using too much memory by doing the whole partition
+     *                      in one go)
+     */
+    public double calculateScoreMultiDataSet(JavaRDD<MultiDataSet> data, boolean average, int minibatchSize) {
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+        //Reduce to a single tuple, with example count + sum of scores
+        Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
+        if (average) {
+            return countAndSumScores._2() / countAndSumScores._1();
+        } else {
+            return countAndSumScores._2();
+        }
     }
 
     /**

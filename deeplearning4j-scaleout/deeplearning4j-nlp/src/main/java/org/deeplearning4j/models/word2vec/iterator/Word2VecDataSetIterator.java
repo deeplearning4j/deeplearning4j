@@ -19,19 +19,19 @@
 package org.deeplearning4j.models.word2vec.iterator;
 
 import lombok.Getter;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.text.inputsanitation.InputHomogenization;
-import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
-import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.movingwindow.Window;
 import org.deeplearning4j.text.movingwindow.WindowConverter;
 import org.deeplearning4j.text.movingwindow.Windows;
+import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -214,6 +214,11 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     @Override
     public int totalOutcomes() {
         return labels.size();
+    }
+
+    @Override
+    public boolean resetSupported(){
+        return true;
     }
 
     @Override

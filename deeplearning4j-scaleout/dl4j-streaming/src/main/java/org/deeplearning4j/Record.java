@@ -1,6 +1,6 @@
 package org.deeplearning4j;
 
-import org.canova.api.writable.Writable;
+import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.Collection;

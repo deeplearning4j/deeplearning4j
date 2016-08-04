@@ -18,14 +18,11 @@
 
 package org.deeplearning4j.nn.layers;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -33,15 +30,17 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
@@ -388,6 +387,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                     .configure(conf())
                     .listeners(getListeners())
                     .model(this).build();
+            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
+            Updater updater = solver.getOptimizer().getUpdater();
+            int updaterStateSize = updater.stateSizeForLayer(this);
+            if(updaterStateSize > 0) updater.setStateViewArray(this, Nd4j.createUninitialized(new int[]{1,updaterStateSize},Nd4j.order()), true);
         }
         solver.optimize();
     }
