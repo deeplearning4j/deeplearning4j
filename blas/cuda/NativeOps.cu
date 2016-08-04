@@ -5937,3 +5937,25 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer d
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer shuffleMap,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // to be implemented
+}
+
+void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer shuffleMap,   Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *>(dx);
+    float *z = reinterpret_cast<float *>(dz);
+    int *xShape = reinterpret_cast<int *>(xShapeInfo);
+    int *zShape = reinterpret_cast<int *>(zShapeInfo);
+    int *shuffle = reinterpret_cast<int *>(shuffleMap);
+    int *tadOnlyShapeInfo = reinterpret_cast<int *>(tadShapeInfo);
+    int *tadOffset = reinterpret_cast<int *>(tadOffsets);
+
+    shuffleKernelFloat<<<32, 32, 1024, *stream>>>(x, xShape, z, zShape, shuffle, tadOnlyShapeInfo, tadOffset);
+}
+
+void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // to be implemented
+}

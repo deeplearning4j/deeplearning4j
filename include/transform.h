@@ -84,9 +84,7 @@
         (44,simdOps::DropOutInverted), \
         (45,simdOps::CompareAndSet), \
         (46,simdOps::ReplaceNans) ,\
-        (47,simdOps::StabilizeFP16), \
-        (48,simdOps::Shuffle), \
-        (49,simdOps::ShuffleSymmetric)
+        (47,simdOps::StabilizeFP16)
 
 
 namespace functions {
@@ -1460,6 +1458,72 @@ extern "C" __global__ void averagingKernelFloat(float **dx, float *dz, int n, Nd
 
 extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n, Nd4jIndex length, bool propagate) {
     averagingKernelGeneric<double>(dx, dz, n, length, propagate);
+}
+
+
+
+template<typename T>
+__device__ void shuffleKernelGeneric(T *x, int *xShapeInfo, T *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
+
+            // we assume that shuffle map for each X contains pair TAD Y
+
+            __shared__ int tadLength;
+            __shared__ int tadEWS;
+            __shared__ int tadRank;
+            __shared__ int numTads;
+            __shared__ int *tadShape;
+            __shared__ int *tadStride;
+            __shared__ int yStride;
+
+            if (threadIdx.x == 0) {
+                tadLength = shape::length(tadOnlyShapeInfo);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                tadRank = shape::rank(tadOnlyShapeInfo);
+                numTads = shape::length(xShapeInfo) / tadLength;
+
+                tadShape = shape::shapeOf(tadOnlyShapeInfo);
+                tadStride = shape::stride(tadOnlyShapeInfo);
+            }
+            __syncthreads();
+
+
+            // we roll over the pairs of TADs, thus limit is numTads / 2
+            for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
+                int oldOffset = r;
+                int newOffset = shuffleMap[r];
+
+                T *rX = x + tadOffsets[oldOffset];
+                T *rY = x + tadOffsets[newOffset];
+
+                // so we're going to change TAD[oldOffset] with TAD[newOffset]
+                if (tadEWS > 0) {
+                    /*
+                        TODO: This should be changed to respect op.Z
+                    */
+                    for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                        T oldX = rX[i * tadEWS];
+                        T oldY = rY[i * tadEWS];
+
+                        rY[i * tadEWS] = oldX;
+                        rX[i * tadEWS] = oldY;
+                    }
+
+                } else {
+                    // well have to iterate using ind2sub
+                }
+            }
+}
+
+extern "C" __global__ void shuffleKernelDouble(double *x, int *xShapeInfo, double *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
+    shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void shuffleKernelFloat(float *x, int *xShapeInfo, float *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
+    shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void shuffleKernelHalf(nd4j::float16 *x, int *xShapeInfo, nd4j::float16 *z, int *zShapeInfo, int *shuffleMap, int *tadOnlyShapeInfo, int *tadOffsets) {
+    shuffleKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
 #endif
