@@ -25,9 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 18/06/2016.
@@ -181,7 +179,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
                     if (!saveUpdater) net.setUpdater(null);
-                    net.fit(ds);
+                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
 

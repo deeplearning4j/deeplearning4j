@@ -18,13 +18,6 @@
 
 package org.deeplearning4j.ui.nearestneighbors.word2vec;
 
-import io.dropwizard.views.View;
-import org.apache.commons.collections.map.HashedMap;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.clustering.sptree.DataPoint;
-import org.deeplearning4j.clustering.vptree.VPTree;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -37,7 +30,6 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

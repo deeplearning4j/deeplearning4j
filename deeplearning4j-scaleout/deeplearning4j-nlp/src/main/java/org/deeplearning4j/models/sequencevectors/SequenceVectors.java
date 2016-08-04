@@ -1,34 +1,29 @@
 package org.deeplearning4j.models.sequencevectors;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.nd4j.linalg.heartbeat.Heartbeat;
-import org.nd4j.linalg.heartbeat.reports.Environment;
-import org.nd4j.linalg.heartbeat.reports.Event;
-import org.nd4j.linalg.heartbeat.reports.Task;
-import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
-    protected transient SequenceIterator<T> iterator;
+    @Getter protected transient SequenceIterator<T> iterator;
 
     protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
     protected transient SequenceLearningAlgorithm<T> sequenceLearningAlgorithm;
@@ -118,10 +113,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
             if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
-                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                log.warn("!                                                                                      !");
-                log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
-                log.warn("!                                                                                      !");
+                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                log.warn("!                                                                                       !");
+                log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer !");
+                log.warn("!                                                                                       !");
                 log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             }
         }
@@ -263,6 +258,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean resetModel = true;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected boolean useUnknown = false;
+        protected int[] variableWindows;
 
         protected boolean trainSequenceVectors = false;
         protected boolean trainElementsVectors = true;
@@ -303,6 +299,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.window = configuration.getWindow();
             this.UNK = configuration.getUNK();
             this.STOP = configuration.getSTOP();
+            this.variableWindows = configuration.getVariableWindows();
 
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
@@ -648,6 +645,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * This method allows to use variable window size. In this case, every batch gets processed using one of predefined window sizes
+         *
+         * @param windows
+         * @return
+         */
+        public Builder<T> useVariableWindow(int... windows) {
+            if (windows == null || windows.length == 0)
+                throw new IllegalStateException("Variable windows can't be empty");
+
+            variableWindows = windows;
+
+            return this;
+        }
 
         /**
          * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
@@ -733,6 +744,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.modelUtils = this.modelUtils;
             vectors.useUnknown = this.useUnknown;
             vectors.unknownElement = this.unknownElement;
+            vectors.variableWindows = this.variableWindows;
 
 
             vectors.trainElementsVectors = this.trainElementsVectors;
@@ -761,6 +773,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUNK(this.UNK);
+            this.configuration.setVariableWindows(variableWindows);
 
             vectors.configuration = this.configuration;
 

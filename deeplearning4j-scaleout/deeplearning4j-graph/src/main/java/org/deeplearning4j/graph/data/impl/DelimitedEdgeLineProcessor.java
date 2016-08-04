@@ -1,6 +1,5 @@
 package org.deeplearning4j.graph.data.impl;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.data.EdgeLineProcessor;
 

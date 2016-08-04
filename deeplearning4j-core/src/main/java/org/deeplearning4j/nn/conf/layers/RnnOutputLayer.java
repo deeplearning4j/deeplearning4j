@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 @Data @NoArgsConstructor

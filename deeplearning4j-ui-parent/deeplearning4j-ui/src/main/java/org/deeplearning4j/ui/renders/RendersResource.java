@@ -20,7 +20,6 @@ package org.deeplearning4j.ui.renders;
 
 import org.apache.commons.compress.utils.IOUtils;
 
-import javax.activation.MimetypesFileTypeMap;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -30,7 +29,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.Map;
 
 /**
  * Renders filters

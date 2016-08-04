@@ -22,7 +22,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -41,7 +40,6 @@ public class MiniBatchTests extends BaseSparkTest {
     @Test
     public void testMiniBatches() throws Exception {
         log.info("Setting up Spark Context...");
-
         JavaRDD<String> lines = sc.textFile(new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive().toURI().toString()).cache();
         long count = lines.count();
         assertEquals(300,count);

@@ -17,28 +17,26 @@
  */
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.util.Dropout;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.util.ArrayUtil;
 
-import static org.bytedeco.javacpp.cuda.*;
+import static org.bytedeco.javacpp.cuda.CUstream_st;
+import static org.bytedeco.javacpp.cuda.cudaSuccess;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**
@@ -73,6 +71,8 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         cudnnPoolingStruct poolingDesc = new cudnnPoolingStruct();
 
         CudnnContext() {
+            // insure that cuDNN initializes on the same device as ND4J for this thread
+            Nd4j.create(1);
             createHandles();
             deallocator(new Deallocator(this));
         }
@@ -103,10 +103,14 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
     }
 
     CudnnContext cudnnContext = new CudnnContext();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
-    FloatPointer alpha = new FloatPointer(1.0f);
-    FloatPointer beta  = new FloatPointer(0.0f);
+    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(1.0f)});
+    Pointer beta  = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
+                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
+                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(0.0f)});;
     INDArray reduced = null;
 
     @Override

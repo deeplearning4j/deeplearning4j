@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -33,9 +32,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
-import org.deeplearning4j.nn.graph.vertex.*;
-import org.deeplearning4j.nn.graph.vertex.impl.*;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
@@ -49,6 +48,7 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -1125,10 +1125,16 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public ComputationGraph clone() {
-
         ComputationGraph cg = new ComputationGraph(configuration.clone());
-        cg.init();
-        cg.setParams(params().dup());
+        cg.init(params().dup(), false);
+        if(solver != null) {
+            //If  solver is null: updater hasn't been initialized -> getUpdater call will force initialization, however
+            ComputationGraphUpdater u = this.getUpdater();
+            INDArray updaterState = u.getStateViewArray();
+            if (updaterState != null) {
+                cg.getUpdater().setStateViewArray(updaterState.dup());
+            }
+        }
         cg.listeners = this.listeners;
         return cg;
     }
@@ -1605,6 +1611,7 @@ public class ComputationGraph implements Serializable, Model {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
+        this.inputs = inputs;
         //Idea: if 2d in, want 2d out
         boolean inputIs2d = true;
         for (INDArray i : inputs) {
@@ -1678,6 +1685,7 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
+        this.inputs = null;
         return outputs;
     }
 

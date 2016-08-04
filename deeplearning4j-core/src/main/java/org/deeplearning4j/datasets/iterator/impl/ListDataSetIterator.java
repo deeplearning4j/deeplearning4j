@@ -18,15 +18,14 @@
 
 package org.deeplearning4j.datasets.iterator.impl;
 
+import lombok.Getter;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-
-import lombok.Getter;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination collection
@@ -92,6 +91,11 @@ public class ListDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
+	public boolean resetSupported(){
+		return true;
+	}
+
+	@Override
 	public synchronized void reset() {
 		curr = 0;
 	}
@@ -134,8 +138,12 @@ public class ListDataSetIterator implements DataSetIterator {
 		}
 		
 		DataSet d = DataSet.merge(r);
-        if(preProcessor != null)
-            preProcessor.preProcess(d);
+        if(preProcessor != null) {
+        	if (!d.isPreProcessed()) {
+				preProcessor.preProcess(d);
+				d.markAsPreProcessed();
+			}
+		}
 		return d;
 	}
 

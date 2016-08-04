@@ -5,7 +5,6 @@ import org.deeplearning4j.graph.api.Vertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**Vectors for nodes in a graph.
  * Provides lookup table and convenience methods for graph vectors

@@ -25,12 +25,11 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
-//import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.plot.dropwizard.ObjectMapperProvider;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -53,6 +52,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+//import org.deeplearning4j.ui.UiServer;
 
 /**
  * Default word lookup table

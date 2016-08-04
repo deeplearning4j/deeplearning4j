@@ -2,6 +2,8 @@ Deeplearning4J: Neural Net Platform
 =========================
  
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.deeplearning4j/deeplearning4j-core/badge.svg)](http://deeplearning4j.org/doc)
 
 Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala.
 
@@ -16,7 +18,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ## Main Features
 - Versatile n-dimensional array class
-- GPU integration
+- GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
 - Scalable on Hadoop, Spark and Akka + AWS et al
 
 ---
@@ -72,7 +74,7 @@ Then run the following command on the dl4j repo packages to install them on your
     $ sudo yum install [package name] -y
     $ sudo yum install DL4J-Distro -y 
 
-Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
+Note, be sure to install the ND4J modules you need first, especially the backend and then install DataVec and DL4J.
 
 ---
 ## Contribute

@@ -1,15 +1,10 @@
 package org.deeplearning4j.ui.flow.beans;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * This bean describes abstract layer and it's connections

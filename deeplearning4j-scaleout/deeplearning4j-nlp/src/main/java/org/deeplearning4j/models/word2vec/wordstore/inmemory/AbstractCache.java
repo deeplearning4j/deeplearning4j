@@ -3,7 +3,6 @@ package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -386,8 +385,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public void removeElement(String label) {
         if (vocabulary.containsKey(label)) {
-            totalWordCount.getAndAdd((long) vocabulary.get(label).getElementFrequency() * -1);
-            idxMap.remove(label);
+            SequenceElement element = vocabulary.get(label);
+            totalWordCount.getAndAdd((long) element.getElementFrequency() * -1);
+            idxMap.remove(element.getIndex());
             vocabulary.remove(label);
         } else throw new IllegalStateException("Can't get label: '" + label + "'");
     }

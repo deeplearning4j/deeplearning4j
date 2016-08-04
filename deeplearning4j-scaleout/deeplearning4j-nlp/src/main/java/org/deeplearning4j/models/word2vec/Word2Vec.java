@@ -2,18 +2,16 @@ package org.deeplearning4j.models.word2vec;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
@@ -31,7 +29,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class Word2Vec extends SequenceVectors<VocabWord> {
-    @Getter protected transient SentenceIterator sentenceIter;
+    protected transient SentenceIterator sentenceIter;
     @Getter protected transient TokenizerFactory tokenizerFactory;
 
     /**
@@ -385,6 +383,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * This method allows to use variable window size. In this case, every batch gets processed using one of predefined window sizes
+         *
+         * @param windows
+         * @return
+         */
+        @Override
+        public Builder useVariableWindow(int... windows) {
+            super.useVariableWindow(windows);
+            return this;
+        }
+
+        /**
          * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
          *
          * @param element
@@ -468,6 +478,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.workers = this.workers;
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
+            ret.variableWindows = this.variableWindows;
+
 
 
             ret.iterator = this.iterator;
@@ -493,6 +505,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setVariableWindows(variableWindows);
 
             ret.configuration = this.configuration;
 

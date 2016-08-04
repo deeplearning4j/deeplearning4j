@@ -29,15 +29,11 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
-import org.deeplearning4j.models.embeddings.reader.ModelUtils;
-import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
-import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
-import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -505,7 +501,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder setNGrams(int nGrams) {
-            this.nGrams = 1;
+            this.nGrams = nGrams;
             return this;
         }
 
@@ -562,6 +558,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setStopList(this.stopWords);
 
             ret.workers = this.workers;
+            ret.nGrams = this.nGrams;
 
             ret.configuration = this.configuration;
 

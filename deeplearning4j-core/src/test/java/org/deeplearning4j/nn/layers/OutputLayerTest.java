@@ -18,13 +18,8 @@
 
 package org.deeplearning4j.nn.layers;
 
-import java.util.Arrays;
-import java.util.Random;
-
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -44,11 +39,15 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -144,6 +143,7 @@ public class OutputLayerTest {
 		INDArray params = Nd4j.create(1, numParams);
         OutputLayer o = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
 		o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
+
 
         int numSamples = 150;
         int batchSize = 150;

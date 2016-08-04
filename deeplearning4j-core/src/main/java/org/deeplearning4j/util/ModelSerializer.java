@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -31,7 +30,8 @@ import java.util.zip.ZipOutputStream;
  */
 public class ModelSerializer {
 
-    public static final String UPDATER_BIN = "updater.bin";
+    public static final String OLD_UPDATER_BIN = "updater.bin";
+    public static final String UPDATER_BIN = "updaterState.bin";
 
     private ModelSerializer() {
     }
@@ -99,22 +99,26 @@ public class ModelSerializer {
         writeEntry(inputStream, zipfile);
 
         if (saveUpdater) {
-            ZipEntry updater = new ZipEntry(UPDATER_BIN);
-            zipfile.putNextEntry(updater);
-
-
-            bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            INDArray updaterState = null;
             if (model instanceof  MultiLayerNetwork) {
-                oos.writeObject(((MultiLayerNetwork) model).getUpdater());
+                updaterState = ((MultiLayerNetwork) model).getUpdater().getStateViewArray();
             } else if (model instanceof ComputationGraph) {
-                oos.writeObject(((ComputationGraph) model).getUpdater());
+                updaterState = ((ComputationGraph) model).getUpdater().getStateViewArray();
             }
-            oos.flush();
-            oos.close();
 
-            inputStream = new ByteArrayInputStream(bos.toByteArray());
-            writeEntry(inputStream, zipfile);
+            if(updaterState != null && updaterState.length() > 0){
+                ZipEntry updater = new ZipEntry(UPDATER_BIN);
+                zipfile.putNextEntry(updater);
+
+                bos = new ByteArrayOutputStream();
+                dos = new DataOutputStream(bos);
+                Nd4j.write(updaterState, dos);
+                dos.flush();
+                dos.close();
+
+                inputStream = new ByteArrayInputStream(bos.toByteArray());
+                writeEntry(inputStream, zipfile);
+            }
         }
 
         zipfile.flush();
@@ -142,12 +146,14 @@ public class ModelSerializer {
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotUpdater = false;
+        boolean gotOldUpdater = false;
+        boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
         Updater updater = null;
+        INDArray updaterState = null;
         DataSetPreProcessor preProcessor = null;
 
 
@@ -173,17 +179,17 @@ public class ModelSerializer {
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
         if (coefficients != null) {
             InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(stream);
+            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
             params = Nd4j.read(dis);
 
             dis.close();
             gotCoefficients = true;
         }
 
-
-        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
-        if (updaters != null) {
-            InputStream stream = zipFile.getInputStream(updaters);
+        //This can be removed a few releases after 0.4.1...
+        ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
+        if (oldUpdaters != null) {
+            InputStream stream = zipFile.getInputStream(oldUpdaters);
             ObjectInputStream ois = new ObjectInputStream(stream);
 
             try {
@@ -192,7 +198,17 @@ public class ModelSerializer {
                 throw new RuntimeException(e);
             }
 
-            gotUpdater = true;
+            gotOldUpdater = true;
+        }
+
+        ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
+        if(updaterStateEntry != null){
+            InputStream stream = zipFile.getInputStream(updaterStateEntry);
+            DataInputStream dis = new DataInputStream(stream);
+            updaterState = Nd4j.read(dis);
+
+            dis.close();
+            gotUpdaterState = true;
         }
 
         ZipEntry prep = zipFile.getEntry("preprocessor.bin");
@@ -217,12 +233,13 @@ public class ModelSerializer {
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
             network.init(params, false);
 
-
-            if (gotUpdater && updater != null) {
+            if(gotUpdaterState && updaterState != null){
+                network.getUpdater().setStateViewArray(network, updaterState, false);
+            } else if (gotOldUpdater && updater != null) {
                 network.setUpdater(updater);
             }
             return network;
-        } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
+        } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdaterState+"]");
     }
 
 
@@ -285,12 +302,14 @@ public class ModelSerializer {
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotUpdater = false;
+        boolean gotOldUpdater = false;
+        boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
         String json = "";
         INDArray params = null;
         ComputationGraphUpdater updater = null;
+        INDArray updaterState = null;
         DataSetPreProcessor preProcessor = null;
 
 
@@ -324,9 +343,9 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry updaters = zipFile.getEntry(UPDATER_BIN);
-        if (updaters != null) {
-            InputStream stream = zipFile.getInputStream(updaters);
+        ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
+        if (oldUpdaters != null) {
+            InputStream stream = zipFile.getInputStream(oldUpdaters);
             ObjectInputStream ois = new ObjectInputStream(stream);
 
             try {
@@ -335,7 +354,17 @@ public class ModelSerializer {
                 throw new RuntimeException(e);
             }
 
-            gotUpdater = true;
+            gotOldUpdater = true;
+        }
+
+        ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
+        if(updaterStateEntry != null){
+            InputStream stream = zipFile.getInputStream(updaterStateEntry);
+            DataInputStream dis = new DataInputStream(stream);
+            updaterState = Nd4j.read(dis);
+
+            dis.close();
+            gotUpdaterState = true;
         }
 
         ZipEntry prep = zipFile.getEntry("preprocessor.bin");
@@ -361,12 +390,14 @@ public class ModelSerializer {
             cg.init(params, false);
 
 
-            if (gotUpdater && updater != null) {
+            if(gotUpdaterState && updaterState != null){
+                cg.getUpdater().setStateViewArray(updaterState);
+            } else if (gotOldUpdater && updater != null) {
                 cg.setUpdater(updater);
             }
             return cg;
         }
-        else throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdater+  "]");
+        else throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState+  "]");
     }
 
     /**

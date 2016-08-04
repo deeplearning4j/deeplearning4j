@@ -18,16 +18,16 @@
 
 package org.deeplearning4j.text.movingwindow;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
-
 import lombok.NonNull;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.DefaultStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Static utility class for textual based windowing cooccurrences

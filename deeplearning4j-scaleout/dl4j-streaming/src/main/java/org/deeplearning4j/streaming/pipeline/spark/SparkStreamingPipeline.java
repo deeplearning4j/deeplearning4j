@@ -3,7 +3,6 @@ package org.deeplearning4j.streaming.pipeline.spark;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.camel.CamelContext;
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -18,7 +17,7 @@ import org.deeplearning4j.streaming.conversion.dataset.RecordToDataSet;
 import org.deeplearning4j.streaming.pipeline.kafka.BaseKafkaPipeline;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.util.*;
+import java.util.Collections;
 
 /**
  * Spark streaming pipeline.
@@ -60,7 +59,7 @@ public class SparkStreamingPipeline extends BaseKafkaPipeline<JavaDStream<DataSe
         JavaPairInputDStream<String, String> messages = KafkaUtils.createStream(
                 jssc,
                 zkHost,
-                "canova",
+                "datavec",
                 Collections.singletonMap(kafkaTopic, kafkaPartitions));
         JavaDStream<DataSet> dataset = messages.flatMap(new DataSetFlatmap(numLabels,recordToDataSetFunction)).cache();
         return dataset;

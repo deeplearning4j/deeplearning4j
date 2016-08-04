@@ -1,7 +1,6 @@
 package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.SparkContext;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -11,7 +10,6 @@ import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.deeplearning4j.spark.stats.StatsUtils;
 import org.deeplearning4j.spark.time.TimeSource;
 import org.deeplearning4j.spark.time.TimeSourceProvider;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
 import java.util.*;

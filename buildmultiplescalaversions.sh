@@ -1,4 +1,7 @@
 #! /bin/bash
 set -eu
-mvn -Pscala-2.11 "$@"
+./change-scala-versions.sh 2.10
 mvn "$@"
+./change-scala-versions.sh 2.11
+mvn "$@"
+./change-scala-versions.sh 2.10

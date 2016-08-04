@@ -88,13 +88,13 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         if(!hasNext()) throw new NoSuchElementException("No next elements");
 
         //First: load the next values from the RR / SeqRRs
-        Map<String,List<Collection<Writable>>> nextRRVals = new HashMap<>();
-        Map<String,List<Collection<Collection<Writable>>>> nextSeqRRVals = new HashMap<>();
+        Map<String,List<List<Writable>>> nextRRVals = new HashMap<>();
+        Map<String,List<List<List<Writable>>>> nextSeqRRVals = new HashMap<>();
 
         int minExamples = Integer.MAX_VALUE;
         for(Map.Entry<String,RecordReader> entry : recordReaders.entrySet() ){
             RecordReader rr = entry.getValue();
-            List<Collection<Writable>> writables = new ArrayList<>(num);
+            List<List<Writable>> writables = new ArrayList<>(num);
             for( int i=0; i<num && rr.hasNext(); i++ ){
                 writables.add(rr.next());
             }
@@ -105,9 +105,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
         for(Map.Entry<String,SequenceRecordReader> entry : sequenceRecordReaders.entrySet() ){
             SequenceRecordReader rr = entry.getValue();
-            List<Collection<Collection<Writable>>> writables = new ArrayList<>(num);
+            List<List<List<Writable>>> writables = new ArrayList<>(num);
             for( int i=0; i<num && rr.hasNext(); i++ ){
-                Collection<Collection<Writable>> next = rr.sequenceRecord();
+                List<List<Writable>> next = rr.sequenceRecord();
                 writables.add(next);
             }
             minExamples = Math.min(minExamples,writables.size());
@@ -122,8 +122,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         int[] longestSequence = null;
         if(alignmentMode == AlignmentMode.ALIGN_END){
             longestSequence = new int[minExamples];
-            for(Map.Entry<String,List<Collection<Collection<Writable>>>> entry : nextSeqRRVals.entrySet()){
-                List<Collection<Collection<Writable>>> list = entry.getValue();
+            for(Map.Entry<String,List<List<List<Writable>>>> entry : nextSeqRRVals.entrySet()){
+                List<List<List<Writable>>> list = entry.getValue();
                 for( int i=0; i<list.size() && i<minExamples; i++ ){
                     longestSequence[i] = Math.max(longestSequence[i],list.get(i).size());
                 }
@@ -134,9 +134,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             //To do this, we need to know longest time series length, so we can do padding
         int longestTS = -1;
         if(alignmentMode != AlignmentMode.EQUAL_LENGTH) {
-            for (Map.Entry<String, List<Collection<Collection<Writable>>>> entry : nextSeqRRVals.entrySet()) {
-                List<Collection<Collection<Writable>>> list = entry.getValue();
-                for(Collection<Collection<Writable>> c : list){
+            for (Map.Entry<String, List<List<List<Writable>>>> entry : nextSeqRRVals.entrySet()) {
+                List<List<List<Writable>>> list = entry.getValue();
+                for(List<List<Writable>> c : list){
                     longestTS = Math.max(longestTS,c.size());
                 }
             }
@@ -149,11 +149,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         for(SubsetDetails d : inputs){
             if(nextRRVals.containsKey(d.readerName)) {
                 //Standard reader
-                List<Collection<Writable>> list = nextRRVals.get(d.readerName);
+                List<List<Writable>> list = nextRRVals.get(d.readerName);
                 inputArrs[i] = convertWritables(list,minExamples,d);
             } else {
                 //Sequence reader
-                List<Collection<Collection<Writable>>> list = nextSeqRRVals.get(d.readerName);
+                List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
                 Pair<INDArray,INDArray> p = convertWritablesSequence(list,minExamples,longestTS,d,longestSequence);
                 inputArrs[i] = p.getFirst();
                 inputArrMasks[i] = p.getSecond();
@@ -172,11 +172,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         for(SubsetDetails d : outputs){
             if(nextRRVals.containsKey(d.readerName)) {
                 //Standard reader
-                List<Collection<Writable>> list = nextRRVals.get(d.readerName);
+                List<List<Writable>> list = nextRRVals.get(d.readerName);
                 outputArrs[i] = convertWritables(list,minExamples,d);
             } else {
                 //Sequence reader
-                List<Collection<Collection<Writable>>> list = nextSeqRRVals.get(d.readerName);
+                List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
                 Pair<INDArray,INDArray> p = convertWritablesSequence(list,minExamples,longestTS,d,longestSequence);
                 outputArrs[i] = p.getFirst();
                 outputArrMasks[i] = p.getSecond();
@@ -191,14 +191,14 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         return mds;
     }
 
-    private INDArray convertWritables(List<Collection<Writable>> list, int minValues, SubsetDetails details ){
+    private INDArray convertWritables(List<List<Writable>> list, int minValues, SubsetDetails details ){
         INDArray arr;
         if(details.entireReader) arr = Nd4j.create(minValues, list.get(0).size());
         else if(details.oneHot) arr = Nd4j.zeros(minValues, details.oneHotNumClasses);
         else arr = Nd4j.create(minValues, details.subsetEndInclusive-details.subsetStart + 1);
 
         for( int i=0; i<minValues; i++){
-            Collection<Writable> c = list.get(i);
+            List<Writable> c = list.get(i);
             if(details.entireReader) {
                 //Convert entire reader contents, without modification
                 int j = 0;
@@ -252,7 +252,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     /** Convert the writables to a sequence (3d) data set, and also return the mask array (if necessary) */
-    private Pair<INDArray,INDArray> convertWritablesSequence(List<Collection<Collection<Writable>>> list, int minValues,
+    private Pair<INDArray,INDArray> convertWritablesSequence(List<List<List<Writable>>> list, int minValues,
                                                              int maxTSLength, SubsetDetails details, int[] longestSequence ){
         if(maxTSLength == -1) maxTSLength = list.get(0).size();
         INDArray arr;
@@ -264,7 +264,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         else arr = Nd4j.create(new int[]{minValues,details.subsetEndInclusive-details.subsetStart+1,maxTSLength},'f');
 
         boolean needMaskArray = false;
-        for( Collection<Collection<Writable>> c : list ){
+        for( List<List<Writable>> c : list ){
             if(c.size() < maxTSLength ) needMaskArray = true;
         }
         INDArray maskArray;
@@ -272,7 +272,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         else maskArray = null;
 
         for( int i=0; i<minValues; i++ ){
-            Collection<Collection<Writable>> sequence = list.get(i);
+            List<List<Writable>> sequence = list.get(i);
 
             //Offset for alignment:
             int startOffset;
@@ -286,7 +286,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
             int t=0;
             int k;
-            for (Collection<Writable> timeStep : sequence) {
+            for (List<Writable> timeStep : sequence) {
                 k = startOffset + t++;
 
                 if(details.entireReader) {
@@ -366,6 +366,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public boolean resetSupported(){
+        return true;
     }
 
     @Override

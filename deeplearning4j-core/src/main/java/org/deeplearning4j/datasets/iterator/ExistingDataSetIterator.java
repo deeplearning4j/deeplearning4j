@@ -3,10 +3,9 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.nd4j.linalg.dataset.api.*;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Iterator;
 import java.util.List;
@@ -80,6 +79,11 @@ public class ExistingDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean resetSupported(){
+        return iterable != null;
+    }
+
+    @Override
     public void reset() {
         if (iterable != null)
             this.iterator = iterable.iterator();
@@ -123,7 +127,10 @@ public class ExistingDataSetIterator implements DataSetIterator {
     public DataSet next() {
         if (preProcessor != null) {
             DataSet ds = iterator.next();
-            preProcessor.preProcess(ds);
+            if (!ds.isPreProcessed()) {
+                preProcessor.preProcess(ds);
+                ds.markAsPreProcessed();
+            }
             return ds;
         } else return iterator.next();
     }

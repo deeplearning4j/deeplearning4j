@@ -26,17 +26,20 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -63,7 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.lang.String;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -819,16 +821,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public MultiLayerNetwork clone() {
-        MultiLayerNetwork ret;
-        try {
-            Constructor<MultiLayerNetwork> constructor = (Constructor<MultiLayerNetwork>) getClass().getDeclaredConstructor(MultiLayerConfiguration.class);
-            ret = constructor.newInstance(getLayerWiseConfigurations().clone());
-            ret.update(this);
-            ret.setParameters(params().dup());
-            ret.listeners = this.listeners;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to clone network",e);
+        MultiLayerConfiguration conf = this.layerWiseConfigurations.clone();
+        MultiLayerNetwork ret = new MultiLayerNetwork(conf);
+        ret.init(this.params().dup(),false);
+
+        if(solver != null) {
+            //If  solver is null: updater hasn't been initialized -> getUpdater call will force initialization, however
+            Updater u = this.getUpdater();
+            INDArray updaterState = u.getStateViewArray();
+            if (updaterState != null) {
+                ret.getUpdater().setStateViewArray(ret, updaterState.dup(), false);
+            }
         }
+
         return ret;
     }
 
@@ -1650,7 +1655,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(network.solver != null){
             //Network updater state: should be cloned over also
-            this.setUpdater(network.getUpdater().clone());
+            INDArray updaterView = network.getUpdater().getStateViewArray();
+            if(updaterView != null){
+                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                this.setUpdater(newUpdater);
+            }
         } else {
             this.solver = null;
         }
@@ -2176,6 +2185,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray rnnTimeStep(INDArray input) {
         this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+        this.input = input;
         boolean inputIs2d = input.rank()==2;
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
@@ -2193,6 +2203,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             // instead of 3d output with shape [miniBatchSize,nOut,1]
             return input.tensorAlongDimension(0,1,0);
         }
+
+        this.input = null;
         return input;
     }
 
