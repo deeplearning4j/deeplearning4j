@@ -5,7 +5,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
@@ -61,6 +64,50 @@ public class ShufflesTests {
         System.out.println(array);
 
         assertTrue(scanner.compareColumn(array));
+    }
+
+
+    @Test
+    public void testSymmetricShuffle1() {
+        INDArray features = Nd4j.zeros(10, 10);
+        INDArray labels = Nd4j.zeros(10, 3);
+        for (int x = 0; x < 10; x++) {
+            features.getRow(x).assign(x);
+            labels.getRow(x).assign(x);
+        }
+
+        System.out.println(features);
+
+        OrderScanner2D scanner = new OrderScanner2D(features);
+
+        assertArrayEquals(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
+
+        System.out.println();
+
+        List<INDArray> list = new ArrayList<>();
+        list.add(features);
+        list.add(labels);
+
+        Nd4j.shuffle(list, 1);
+
+        System.out.println(features);
+
+        System.out.println();
+
+        System.out.println(labels);
+
+        ArrayUtil.argMin(new int[]{});
+
+        assertTrue(scanner.compareRow(features));
+
+        for (int x = 0; x < 10; x++) {
+            double val = features.getRow(x).getDouble(0);
+            INDArray row = labels.getRow(x);
+
+            for (int y = 0; y < row.length(); y++ ) {
+                assertEquals(val, row.getDouble(y), 0.001);
+            }
+        }
     }
 
 

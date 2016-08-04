@@ -379,7 +379,7 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,Random random,int...dimension) {
-        List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
+        /*List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
         Collections.rotate(vectorsAlongDimension, 3);
         Collections.shuffle(vectorsAlongDimension, random);
         for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
@@ -391,7 +391,8 @@ public class Nd4j {
             INDArray temp = curr.dup();
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);
-        }
+        }*/
+        shuffle(toShuffle, dimension);
     }
 
     /**
@@ -402,6 +403,18 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,int...dimension) {
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, dimension);
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(Collection<INDArray> toShuffle,int...dimension) {
         //shuffle(toShuffle, new Random(), dimension);
         INSTANCE.shuffle(toShuffle, dimension);
     }
