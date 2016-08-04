@@ -14,6 +14,10 @@ layout: default
 * Numerous bug fixes
 * Spark improvements
 
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
+
 ## Release Notes for version 4.0
 
 * Initial multi-GPU support viable for standalone and Spark. 
@@ -26,11 +30,6 @@ layout: default
 * New native ops for better performance: DropOut, DropOutInverted, CompareAndSet, ReplaceNaNs
 * Shadow asynchronous datasets prefetch enabled by default for both MultiLayerNetwork and ComputationGraph
 * Better memory handling with JVM GC and CUDA backend, resulting in significantly lower memory footprint
-
-
-<p align="center">
-<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
-</p>
 
 ## Resources
 
