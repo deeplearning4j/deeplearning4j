@@ -5940,6 +5940,17 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer d
 
 void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     // to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    double **x = reinterpret_cast<double **>(dx);
+    double **z = reinterpret_cast<double **>(dz);
+    int **xShape = reinterpret_cast<int **>(xShapeInfo);
+    int **zShape = reinterpret_cast<int **>(zShapeInfo);
+    int *shuffle = reinterpret_cast<int *>(shuffleMap);
+    int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
+    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+
+    shuffleKernelDouble<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
 }
 
 void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap,   Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -5953,9 +5964,19 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xS
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
-    shuffleKernelFloat<<<32, 32, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+    shuffleKernelFloat<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
 }
 
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
-    // to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    nd4j::float16 **x = reinterpret_cast<nd4j::float16 **>(dx);
+    nd4j::float16 **z = reinterpret_cast<nd4j::float16 **>(dz);
+    int **xShape = reinterpret_cast<int **>(xShapeInfo);
+    int **zShape = reinterpret_cast<int **>(zShapeInfo);
+    int *shuffle = reinterpret_cast<int *>(shuffleMap);
+    int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
+    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+
+    shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
 }
