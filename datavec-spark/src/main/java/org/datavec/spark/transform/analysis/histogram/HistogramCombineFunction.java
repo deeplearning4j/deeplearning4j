@@ -18,6 +18,7 @@ package org.datavec.spark.transform.analysis.histogram;
 
 import org.apache.spark.api.java.function.Function2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,9 +35,20 @@ public class HistogramCombineFunction implements Function2<List<HistogramCounter
         int size = l1.size();
         if(size != l2.size()) throw new IllegalStateException("List lengths differ");
 
+        List<HistogramCounter> out = new ArrayList<>();
         for( int i=0; i<size; i++ ){
-            l1.get(i).merge(l2.get(i));
+            HistogramCounter c1 = l1.get(i);
+            HistogramCounter c2 = l2.get(i);
+
+            //Normally shouldn't get null values here - but maybe for Bytes column, etc.
+            if(c1 == null){
+                out.add(c2);
+            } else if(c2 == null){
+                out.add(c1);
+            } else {
+                out.add(c1.merge(c2));
+            }
         }
-        return l1;
+        return out;
     }
 }
