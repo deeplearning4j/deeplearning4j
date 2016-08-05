@@ -1481,13 +1481,22 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
-    public void setParamsViewArray(INDArray params) {
+    public void setParamsViewArray(INDArray gradient) {
         throw new RuntimeException("Not yet implemented");
     }
 
     @Override
-    public void setBackpropGradientsViewArray(INDArray gradients) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void setBackpropGradientsViewArray(INDArray gradient) {
+        int paramsSoFar = 0;
+        for (int i = 0; i < topologicalOrder.length; i++) {
+            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+            Layer layer = vertices[topologicalOrder[i]].getLayer();
+            int range = layer.numParams();
+            if (range <= 0) continue;    //Some layers: no parameters (subsampling etc)
+            layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar + range)));
+            paramsSoFar += range;
+        }
     }
 
     @Override
