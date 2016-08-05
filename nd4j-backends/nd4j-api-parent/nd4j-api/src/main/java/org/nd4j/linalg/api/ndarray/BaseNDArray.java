@@ -2005,7 +2005,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
-        System.out.println("DOCOLUMNWISE: isColVector=" + columnVector.isColumnVector() + "\tsizes: " + this.size(0) + "\t" + columnVector.size(0));
         if(!columnVector.isColumnVector() || this.size(0) != columnVector.size(0)){
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(columnVector.shape()) + ")");
         }
