@@ -86,7 +86,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     public InMemoryLookupTable() {}
 
-    public InMemoryLookupTable(VocabCache vocab,int vectorLength,boolean useAdaGrad,double lr,Random gen,double negative) {
+    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
+                               double lr, Random gen, double negative) {
         this.vocab = vocab;
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
@@ -682,7 +683,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            InMemoryLookupTable table = new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
+            InMemoryLookupTable<T> table = new InMemoryLookupTable<>(vocabCache, vectorLength,
+                    useAdaGrad, lr, gen, negative);
             table.seed = seed;
 
             return table;
@@ -692,15 +694,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     public String toString() {
         return "InMemoryLookupTable{" +
-                "syn0=" + syn0 +
-                ", syn1=" + syn1 +
-                ", vectorLength=" + vectorLength +
+                "vectorLength=" + vectorLength +
                 ", rng=" + rng +
                 ", lr=" + lr +
-                ", expTable=" + Arrays.toString(expTable) +
                 ", seed=" + seed +
-                ", table=" + table +
-                ", syn1Neg=" + syn1Neg +
                 ", useAdaGrad=" + useAdaGrad +
                 ", negative=" + negative +
                 ", vocab=" + vocab +
