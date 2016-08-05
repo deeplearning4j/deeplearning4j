@@ -19,6 +19,7 @@ namespace functions {
 }
 
 namespace simdOps {
+
 	template<typename T>
 	class Im2col {
 	public:

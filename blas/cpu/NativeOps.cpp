@@ -6,6 +6,7 @@
 #include "../NativeOpExcutioner.h"
 #include <pointercast.h>
 #include <pairwise_util.h>
+#include <templatemath.h>
 
 typedef struct {
 unsigned short x;
@@ -2613,5 +2614,97 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer d
 }
 
 void NativeOps::enableP2P(bool enable) {
+    // no-op
+}
+
+template<typename T>
+void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+
+
+#pragma omp parallel for if (N > 1)
+    for (int f = 0; f < N; f++) {
+        T *x = (T *) dX[f];
+        T *z = (T *) dZ[f];
+
+        int *tadOffset = (int *) tadOffsets[f];
+
+
+        const int tadLength = shape::length(tadOnlyShapeInfo[f]);
+        int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+        int tadRank = shape::rank(tadOnlyShapeInfo[f]);
+        int numTads = shape::length(xShapeInfo[f]) / tadLength;
+
+        int *tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+        int *tadStride = shape::stride(tadOnlyShapeInfo[f]);
+
+        //printf("Array: [%i], tadEWS: [%i], tadLength: [%i]\n", f, tadEWS, tadLength);
+
+        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
+
+        for (Nd4jIndex r = 0; r < numTads / 2; r++) {
+            int oldOffset = tadOffset[r];
+            int newOffset = tadOffset[shuffleMap[r]];
+
+            T *rX = x + oldOffset;
+            T *rY = x + newOffset;
+
+            T *zX = z + oldOffset;
+            T *zY = z + newOffset;
+
+
+            if (tadEWS == 1) {
+
+#pragma omp simd
+                    for (Nd4jIndex i = 0; i < tadLength; i++) {
+                        /*T oldX = rX[i];
+                        T oldY = rY[i];
+
+                        zX[i] = oldY;
+                        zY[i] = oldX;*/
+                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                    }
+
+            } else {
+                // ind2sub branch
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+
+#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
+                for (Nd4jIndex i = 0; i < tadLength; i++) {
+                    shape::ind2subC(tadRank,tadShape, i, xCoord);
+                    shape::ind2subC(tadRank,tadShape, i, yCoord);
+
+                    Nd4jIndex xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
+                    Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
+
+
+                    nd4j::math::nd4j_swap<T>(x[xOffset], x[yOffset]);
+                }
+
+            }
+
+        }
+
+    }
+}
+
+void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // to be implemented
+    float **x = reinterpret_cast<float **>(dx);
+    float **z = reinterpret_cast<float **>(dz);
+    int **xShape = reinterpret_cast<int **>(xShapeInfo);
+    int **zShape = reinterpret_cast<int **>(zShapeInfo);
+    int *shuffle = reinterpret_cast<int *>(shuffleMap);
+    int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
+    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+
+    shuffleGeneric<float>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+}
+
+void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
+    // to be implemented
+}
+
+void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     // no-op
 }

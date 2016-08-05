@@ -36,6 +36,13 @@ namespace nd4j {
 #endif
 		inline T nd4j_abs(T value);
 
+template<typename T>
+#ifdef __CUDACC__
+		__host__ __device__
+
+#endif
+		inline T nd4j_swap(T &val1, T &val2);
+
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -743,6 +750,16 @@ template<>
 		inline int nd4j_atan<int>(int val) {
 			return atanf((float) val);
 		}
+
+
+template<typename T>
+#ifdef __CUDACC__
+		__host__ __device__
+
+#endif
+		inline T nd4j_swap(T &val1, T &val2) {
+            T temp(val1); val1=val2; val2=temp;
+		};
 
 #ifdef __CUDACC__
 		namespace atomics {

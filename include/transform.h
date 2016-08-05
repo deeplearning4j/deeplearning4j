@@ -1460,6 +1460,96 @@ extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n,
     averagingKernelGeneric<double>(dx, dz, n, length, propagate);
 }
 
+
+
+template<typename T>
+__device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+
+            // we assume that shuffle map for each X contains pair TAD Y
+
+            __shared__ int tadLength;
+            __shared__ int tadEWS;
+            __shared__ int tadRank;
+            __shared__ int numTads;
+            __shared__ int *tadShape;
+            __shared__ int *tadStride;
+            __shared__ int yStride;
+
+
+        for (int f = 0; f < N; f++) {
+            T *x = (T *) dX[f];
+            T *z = (T *) dZ[f];
+
+
+
+            __syncthreads();
+
+            if (threadIdx.x == 0) {
+                tadLength = shape::length(tadOnlyShapeInfo[f]);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+                tadRank = shape::rank(tadOnlyShapeInfo[f]);
+                numTads = shape::length(xShapeInfo[f]) / tadLength;
+
+                tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+                tadStride = shape::stride(tadOnlyShapeInfo[f]);
+            }
+            __syncthreads();
+
+
+            // we roll over the pairs of TADs, thus limit is numTads / 2
+            for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
+                int oldOffset = tadOffsets[f][r];
+                int newOffset = tadOffsets[f][shuffleMap[r]];
+
+
+
+                T *rX = x + oldOffset;
+                T *rY = x + newOffset;
+
+                T *zX = z + oldOffset;
+                T *zY = z + newOffset;
+
+                // so we're going to change TAD[oldOffset] with TAD[newOffset]
+                if (tadEWS == 1) {
+                    for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                        T oldX = rX[i];
+
+                        rX[i] = rY[i];
+                        zY[i] = oldX;
+                    }
+
+                } else {
+                    // well have to iterate using ind2sub
+                        int xCoord[MAX_RANK];
+                        int yCoord[MAX_RANK];
+                        for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                            shape::ind2subC(tadRank,tadShape, i, xCoord);
+                            shape::ind2subC(tadRank,tadShape, i, yCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
+                            Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
+
+                            T oldX = x[xOffset];
+                            z[xOffset] = x[yOffset];
+                            z[yOffset] = oldX;
+                        }
+                    }
+            }
+        }
+}
+
+extern "C" __global__ void shuffleKernelDouble(double **x, int **xShapeInfo, double **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void shuffleKernelFloat(float **x, int **xShapeInfo, float **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void shuffleKernelHalf(nd4j::float16 **x, int **xShapeInfo, nd4j::float16 **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+}
+
 #endif
 
 #endif /* TRANSFORM_H_ */
