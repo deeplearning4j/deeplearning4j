@@ -1990,12 +1990,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.scalar(getDouble(i));
     }
 
-    protected void assertColumnVector(INDArray column) {
-        assert column.isColumnVector() || column.columns() == columns() && column.rows() == 1 : "Must only add a column vector";
-        assert column.length() == rows() || column.columns() == columns() && column.rows() == 1 : "Illegal column vector must have the same length as the number of rows in this ndarray";
-
-    }
-
     /**
      * Do a row wise op (a,s,m,d)
      * a : add
@@ -2011,7 +2005,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
-        if(!columnVector.isColumnVector() || this.size(0) != columnVector.size(1)){
+        System.out.println("DOCOLUMNWISE: isColVector=" + columnVector.isColumnVector() + "\tsizes: " + this.size(0) + "\t" + columnVector.size(0));
+        if(!columnVector.isColumnVector() || this.size(0) != columnVector.size(0)){
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(columnVector.shape()) + ")");
         }
 
@@ -2045,7 +2040,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             applyScalarOp(columnVector, operation);
         }
         else {
-            assertColumnVector(columnVector);
             applyBroadcastOp(columnVector, operation);
 
         }
@@ -2064,11 +2058,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
         cleanedUp = true;
-    }
-
-    protected void assertRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Must only add a row vector";
-        assert rowVector.length() == columns() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Illegal row vector must have the same length as the number of rows in this ndarray";
     }
 
 
@@ -2126,7 +2115,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
         else {
-            assertRowVector(rowVector);
             applyBroadcastOp(rowVector, operation);
         }
 
