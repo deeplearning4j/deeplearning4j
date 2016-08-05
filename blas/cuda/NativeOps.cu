@@ -492,8 +492,6 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -558,7 +556,6 @@ void   NativeOps::execIndexReduceDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -684,10 +681,7 @@ void   NativeOps::execPairwiseTransformDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -759,13 +753,11 @@ void NativeOps::execPairwiseTransformDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
 		printf("D5 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[24], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[24]);
 
@@ -826,10 +818,7 @@ void NativeOps::execPairwiseTransformDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[23], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -877,16 +866,12 @@ void   NativeOps::execReduceDouble(
 	if (debug && verbose)
 		printf("D7 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
@@ -934,8 +919,6 @@ void   NativeOps::execReduceDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -946,7 +929,6 @@ void   NativeOps::execReduceDouble(
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[getDeviceId(extraPointers[2])]);
 
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
@@ -1011,8 +993,6 @@ double NativeOps::execReduceScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -1020,11 +1000,8 @@ double NativeOps::execReduceScalarDouble(
 	if (debug && verbose)
 		printf("D9 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
@@ -1078,10 +1055,7 @@ void   NativeOps::execReduce3Double(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -1093,8 +1067,6 @@ void   NativeOps::execReduce3Double(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(double), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
@@ -1137,18 +1109,13 @@ double   NativeOps::execReduce3ScalarDouble(
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
 	double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[21], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	if (debug && verbose)
 		printf("D11 opNum:[%i]\n", opNum);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -1215,13 +1182,8 @@ void   NativeOps::execReduce3Double(
 	if (debug && verbose)
 		printf("D12 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[21], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -1282,8 +1244,6 @@ void   NativeOps::execScalarDouble(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[20], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -1331,7 +1291,6 @@ void NativeOps::execScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
@@ -1388,7 +1347,6 @@ void NativeOps::execScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
@@ -1431,8 +1389,6 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -1498,7 +1454,6 @@ void   NativeOps::execSummaryStatsDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -1555,7 +1510,6 @@ void   NativeOps::execSummaryStatsDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -1613,13 +1567,9 @@ void   NativeOps::execTransformDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("D19 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[16], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
@@ -1876,7 +1826,6 @@ void   NativeOps::execTransformDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
@@ -1980,8 +1929,6 @@ float   NativeOps::execIndexReduceScalarHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -2045,7 +1992,6 @@ void   NativeOps::execIndexReduceFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -2101,7 +2047,6 @@ void   NativeOps::execIndexReduceHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -2286,10 +2231,6 @@ void   NativeOps::execPairwiseTransformFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
-
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -2338,10 +2279,7 @@ void   NativeOps::execPairwiseTransformHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -2549,7 +2487,6 @@ void NativeOps::execPairwiseTransformFloat(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -2605,7 +2542,6 @@ void NativeOps::execPairwiseTransformHalf(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -2663,8 +2599,6 @@ void   NativeOps::execReduceFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -2672,9 +2606,6 @@ void   NativeOps::execReduceFloat(
 	if (debug && verbose)
 		printf("F7 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, sizeof(float), 1);
@@ -2713,8 +2644,6 @@ void   NativeOps::execReduceHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -2722,9 +2651,6 @@ void   NativeOps::execReduceHalf(
 	if (debug && verbose)
 		printf("H7 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, sizeof(nd4j::float16), 1);
@@ -2774,8 +2700,6 @@ void   NativeOps::execReduceFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -2784,23 +2708,8 @@ void   NativeOps::execReduceFloat(
 	if (debug && verbose)
 		printf("F8 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-
-	// DO NOT REMOVE COMMENTS OR CODE BELOW.
-	// raver119@gmail.com
-
-//	shape::TAD *tad = new shape::TAD();
-//	tad->init(xShapeInfoPointer, dimensionPointer, dimensionLength);
-//	tad->setOutputBuffer(allocPointer);
-//	tad->createTadOnlyShapeInfo();
-
-//	shape::printShapeInfo(tad->tadOnlyShapeInfo);
-
-// dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction)
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
 
@@ -2869,8 +2778,6 @@ void   NativeOps::execReduceHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -2881,7 +2788,7 @@ void   NativeOps::execReduceHalf(
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
 
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(nd4j::float16), 1);
@@ -2953,10 +2860,6 @@ float NativeOps::execReduceScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
-
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -2965,7 +2868,7 @@ float NativeOps::execReduceScalarFloat(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
@@ -3006,10 +2909,7 @@ float NativeOps::execReduceScalarHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
@@ -3078,10 +2978,7 @@ void   NativeOps::execReduce3Float(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
@@ -3137,10 +3034,7 @@ void   NativeOps::execReduce3Half(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
@@ -3201,10 +3095,7 @@ float   NativeOps::execReduce3ScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -3260,10 +3151,7 @@ float   NativeOps::execReduce3ScalarHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -3335,10 +3223,8 @@ void   NativeOps::execReduce3Float(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -3412,10 +3298,8 @@ void   NativeOps::execReduce3Half(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -3492,8 +3376,6 @@ void   NativeOps::execScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -3547,7 +3429,6 @@ void NativeOps::execScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	Nd4jIndex n = shape::length(hostXShapeInfo);
@@ -3593,7 +3474,6 @@ void NativeOps::execScalarHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	Nd4jIndex n = shape::length(hostXShapeInfo);
@@ -3652,8 +3532,6 @@ void NativeOps::execScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
@@ -3701,8 +3579,6 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -3754,8 +3630,6 @@ float   NativeOps::execSummaryStatsScalarHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
@@ -3820,7 +3694,6 @@ void   NativeOps::execSummaryStatsFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -3873,7 +3746,6 @@ void   NativeOps::execSummaryStatsHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -3939,7 +3811,6 @@ void   NativeOps::execSummaryStatsFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -3995,7 +3866,6 @@ void   NativeOps::execSummaryStatsHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -4058,8 +3928,6 @@ void   NativeOps::execTransformFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("F19 opNum:[%i]\n", opNum);
@@ -4103,8 +3971,6 @@ void   NativeOps::execTransformHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("H19 opNum:[%i]\n", opNum);
@@ -4302,7 +4168,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				case 41: {
 					// IsMax along all dimensions
 
-					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
+//					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
 
 					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
@@ -4535,7 +4401,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 				case 41: {
 					// IsMax along all dimensions
 
-					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
+			//		int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
 
 					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
@@ -4629,8 +4495,6 @@ void   NativeOps::execTransformFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("F21 opNum:[%i]\n", opNum);
@@ -4679,13 +4543,9 @@ void   NativeOps::execTransformHalf(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("H21 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[0], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
@@ -4880,9 +4740,7 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 
@@ -4918,11 +4776,7 @@ void NativeOps::flattenHalf(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	if (debug && verbose)
 		printf("H22 opNum:[7]\n");
@@ -4966,9 +4820,7 @@ void NativeOps::flattenDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("D30 opNum:[7]\n");
@@ -5456,8 +5308,6 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
 
@@ -5547,8 +5397,6 @@ void NativeOps::concatHalf(
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
 
@@ -5641,8 +5489,6 @@ void NativeOps::concatDouble(
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
 
