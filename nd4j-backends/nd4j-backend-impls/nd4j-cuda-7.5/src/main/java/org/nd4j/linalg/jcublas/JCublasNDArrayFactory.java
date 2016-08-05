@@ -880,6 +880,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (sourceArrays == null || sourceArrays.size() ==0)
             throw new RuntimeException("No input arrays provided");
 
+        if (dimensions.size() > 1 && sourceArrays.size() != dimensions.size())
+            throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
+
         List<INDArray> arrays = new ArrayList<>(sourceArrays);
 
         // first we build TAD for input array and dimensions
@@ -926,7 +929,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
 
-            int[] dimension = dimensions.get(i);
+            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
