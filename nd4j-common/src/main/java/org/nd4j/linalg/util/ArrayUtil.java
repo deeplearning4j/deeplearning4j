@@ -1593,6 +1593,26 @@ public class ArrayUtil {
         return minIdx;
     }
 
+    /**
+     *
+     * @return
+     */
+    public static int[] buildHalfVector(Random rng, int from, int to) {
+        int[] result = new int[to - from];
+        for (int f = from; f < to; f++) {
+            result[f - from] = f;
+        }
+
+        for(int i=result.length-1; i>0; i-- ){
+            int j = rng.nextInt(i+1);
+            int temp = result[j];
+            result[j] = result[i];
+            result[i] = temp;
+        }
+
+        return result;
+    }
+
     public static int argMinOfMax(int[] first, int[] second){
         int minIdx = 0;
         int maxAtMinIdx = Math.max(first[0],second[0]);

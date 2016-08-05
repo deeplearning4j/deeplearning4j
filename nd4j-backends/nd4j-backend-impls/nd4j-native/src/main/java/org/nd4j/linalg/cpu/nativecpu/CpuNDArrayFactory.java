@@ -46,9 +46,7 @@ import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Jblas NDArray Factory
@@ -755,5 +753,131 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray average(Collection<INDArray> arrays) {
         return average(arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(INDArray array, Random rnd, int... dimension) {
+        shuffle(Collections.singletonList(array), rnd, dimension);
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. All arrays
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(Collection<INDArray> array, Random rnd, int... dimension) {
+        shuffle(new ArrayList<INDArray>(array), rnd, Collections.singletonList(dimension));
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
+     *
+     * @param arrays      the ndarrays to shuffle
+     * @param dimensions the dimensions to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
+        if (dimensions == null || dimensions.size() == 0)
+            throw new RuntimeException("Dimension can't be null or 0-length");
+
+        if (arrays == null || arrays.size() ==0)
+            throw new RuntimeException("No input arrays provided");
+
+        if (dimensions.size() > 1 && arrays.size() != dimensions.size())
+            throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
+
+        int tadLength = 1;
+        for (int i = 0; i < dimensions.get(0).length; i++) {
+            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
+        }
+
+        int numTads = arrays.get(0).length() / tadLength;
+
+        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
+
+        PointerPointer dataPointers = new PointerPointer(arrays.size());
+        PointerPointer shapePointers = new PointerPointer(arrays.size());
+        PointerPointer tadPointers = new PointerPointer(arrays.size());
+        PointerPointer offsetPointers = new PointerPointer(arrays.size());
+
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
+        List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
+
+        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+        IntPointer ptrMap = new IntPointer(map);
+
+        long[] ptrs = new long[arrays.size()];
+
+        for (int i = 0; i < arrays.size(); i++) {
+            INDArray array = arrays.get(i);
+
+
+            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
+
+            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+            list.add(tadBuffers);
+
+            Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+
+            DataBuffer offsets = tadBuffers.getSecond();
+
+            if (offsets == null)
+                throw new IllegalStateException("Offsets for shuffle can't be null");
+
+
+            dataPointers.put(i, array.data().addressPointer());
+            shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
+            offsetPointers.put(i, offsets.addressPointer());
+            tadPointers.put(i, tadBuffers.getFirst().addressPointer());
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.shuffleDouble(
+                    dummy,
+                    dataPointers,
+                    shapePointers,
+                    dataPointers,
+                    shapePointers,
+                    arrays.size(),
+                    ptrMap,
+                    tadPointers,
+                    offsetPointers
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.shuffleFloat(
+                    dummy,
+                    dataPointers,
+                    shapePointers,
+                    dataPointers,
+                    shapePointers,
+                    arrays.size(),
+                    ptrMap,
+                    tadPointers,
+                    offsetPointers
+            );
+        } else {
+            // HALFs
+        }
+
+        dataPointers.address();
+        shapePointers.address();
+        tadPointers.address();
+        offsetPointers.address();
     }
 }
