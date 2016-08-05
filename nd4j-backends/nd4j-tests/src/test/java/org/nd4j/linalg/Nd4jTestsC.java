@@ -760,11 +760,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(arr,vstacked);
     }
 
-    @Test(expected = AssertionError.class)
-    public void testBroadcastIllegalArgument() {
-        Nd4j.ones(3,5).addiRowVector(Nd4j.ones(1,3));
-    }
-
 
     @Test
     public void testEps3(){
