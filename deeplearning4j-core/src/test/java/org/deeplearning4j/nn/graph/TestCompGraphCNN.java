@@ -7,10 +7,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
@@ -258,5 +255,47 @@ public class TestCompGraphCNN {
         model.fit(trainInput);
     }
 
+    @Test
+    public void testCnnLRN_BN(){
+
+        int imageHeight = 40;
+        int imageWidth = 40;
+        int nChannels = 1;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .seed(123)
+                .graphBuilder()
+                .addInputs("input")
+                .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
+                //-- kernel size, stride , padding
+                .addLayer("cnn1", new ConvolutionLayer.Builder(new int[]{2, 2}, new int[]{1, 1}, new int[]{0, 0}) //Out: 39x39x64
+                        .nIn(nChannels)
+                        .nOut(64)
+                        .biasInit(0.2)
+                        .build(), "input")
+
+                //-- kernel size, stride
+                .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{1, 1}) //Out: 38x38x64
+                        .build(), "cnn1")
+
+                //--
+                .addLayer("lrn1", new LocalResponseNormalization.Builder(5, 1e-4, 0.75)
+                        .build(), "max1")
+
+                .addLayer("batchnorm", new BatchNormalization.Builder().nOut(64).build(), "lrn1")
+
+                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "batchnorm")
+
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+
+    }
 
 }
