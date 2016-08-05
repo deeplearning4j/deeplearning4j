@@ -65,6 +65,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -908,7 +909,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        int paramsSoFar = 0;
+        for(Layer layer: layers) {
+            if(layer.numParams() == 0) continue;
+            layer.setBackpropGradientsViewArray(gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
+            paramsSoFar += layer.numParams();
+        }
     }
 
     /**
@@ -2110,26 +2116,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void update(Gradient gradient) {
-        if(layers != null)
-            for(Layer layer : layers) {
-                for (String paramType : gradient.gradientForVariable().keySet()) {
-                    layer.update(gradient.getGradientFor(paramType), paramType);
-                }
-            }
-        String multiGradientKey;
-        for( String entry : gradient.gradientForVariable().entrySet()) {
-            multiGradientKey = String.valueOf(layer.getnum) + "_" + entry.getKey();
-
+        if (gradient.gradient().length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
+        for(Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+            String key = entry.getKey();
+            INDArray val = entry.getValue();
+            int layerId = Integer.valueOf(key.split("_")[0]);
+            String paramType = key.split("_")[1];
+            // Update MLN gradient
+            this.gradient.setGradientFor(key, val);
+            // Update layer params
+            layers[layerId].update(val, paramType);
         }
-        int backpropParamsSoFar = 0;
-        for(int i=0; i<layers.length; i++ ){
-            int numParms = layers[i].numParams();
-            if(numParms == 0) continue;   //This layer doesn't have any parameters...
-            INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + numParms));
-            layers[i].setBackpropGradientsViewArray(thisLayerGradView);
-            backpropParamsSoFar += numParms;
-        }
-
+        // Update layerwise gradient view
+        setBackpropGradientsViewArray(gradient.gradient());
     }
 
     @Override
