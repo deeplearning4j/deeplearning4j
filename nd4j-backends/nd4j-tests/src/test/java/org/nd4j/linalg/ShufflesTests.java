@@ -11,6 +11,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
@@ -214,7 +215,7 @@ public class ShufflesTests extends BaseNd4jTest {
         dimensions.add(ArrayUtil.range(1,featuresMask.rank()));
         dimensions.add(ArrayUtil.range(1,labelsMask.rank()));
 
-        Nd4j.shuffle(arrays, dimensions);
+        Nd4j.shuffle(arrays, new Random(11), dimensions);
 
         assertTrue(scannerFeatures.compareSlice(features));
         assertTrue(scannerLabels.compareSlice(labels));
@@ -249,8 +250,8 @@ public class ShufflesTests extends BaseNd4jTest {
      */
     @Test
     public void testHalfVectors1() throws Exception {
-        int[] array1 = ArrayUtil.buildHalfVector(10, 20);
-        int[] array2 = ArrayUtil.buildHalfVector(10, 20);
+        int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 10, 20);
+        int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 10, 20);
 
         assertFalse(Arrays.equals(array1, array2));
 

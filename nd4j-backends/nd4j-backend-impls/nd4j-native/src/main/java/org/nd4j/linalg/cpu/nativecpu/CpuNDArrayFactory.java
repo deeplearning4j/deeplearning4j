@@ -764,8 +764,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(INDArray array, int... dimension) {
-        shuffle(Collections.singletonList(array), dimension);
+    public void shuffle(INDArray array, Random rnd, int... dimension) {
+        shuffle(Collections.singletonList(array), rnd, dimension);
     }
 
     /**
@@ -777,8 +777,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(Collection<INDArray> array, int... dimension) {
-        shuffle(new ArrayList<INDArray>(array), Collections.singletonList(dimension));
+    public void shuffle(Collection<INDArray> array, Random rnd, int... dimension) {
+        shuffle(new ArrayList<INDArray>(array), rnd, Collections.singletonList(dimension));
     }
 
     /**
@@ -790,7 +790,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> arrays, List<int[]> dimensions) {
+    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
         if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
 
@@ -807,7 +807,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         int numTads = arrays.get(0).length() / tadLength;
 
-        int[] map = ArrayUtil.buildHalfVector(numTads / 2, numTads);
+        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
 
         PointerPointer dataPointers = new PointerPointer(arrays.size());
         PointerPointer shapePointers = new PointerPointer(arrays.size());
@@ -816,33 +816,35 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
+        List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
+
+        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+        IntPointer ptrMap = new IntPointer(map);
+
+        long[] ptrs = new long[arrays.size()];
+
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
 
-            TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
-            System.out.println("Calling for TAD: " + Arrays.toString(dimension));
-
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+            list.add(tadBuffers);
 
             Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
             DataBuffer offsets = tadBuffers.getSecond();
-            Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
+            if (offsets == null)
+                throw new IllegalStateException("Offsets for shuffle can't be null");
 
-            if (hostTadShapeInfo == null)
-                throw new RuntimeException("AFSDFSD");
-
-            if (hostTadOffsets == null)
-                throw new RuntimeException("EWWW");
 
             dataPointers.put(i, array.data().addressPointer());
             shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
-            tadPointers.put(i, hostTadShapeInfo);
-            offsetPointers.put(i, hostTadOffsets);
+            offsetPointers.put(i, offsets.addressPointer());
+            tadPointers.put(i, tadBuffers.getFirst().addressPointer());
         }
 
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -853,7 +855,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     dataPointers,
                     shapePointers,
                     arrays.size(),
-                    new IntPointer(map),
+                    ptrMap,
                     tadPointers,
                     offsetPointers
             );
@@ -865,12 +867,17 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     dataPointers,
                     shapePointers,
                     arrays.size(),
-                    new IntPointer(map),
+                    ptrMap,
                     tadPointers,
                     offsetPointers
             );
         } else {
             // HALFs
         }
+
+        dataPointers.address();
+        shapePointers.address();
+        tadPointers.address();
+        offsetPointers.address();
     }
 }

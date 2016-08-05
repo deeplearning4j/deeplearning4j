@@ -54,10 +54,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Jcublas ndarray factory. Handles creation of
@@ -859,8 +856,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(INDArray array, int... dimension) {
-        shuffle(Collections.singletonList(array), dimension);
+    public void shuffle(INDArray array, Random rnd, int... dimension) {
+        shuffle(Collections.singletonList(array), rnd, dimension);
     }
 
     /**
@@ -872,7 +869,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> arrays, List<int[]> dimensions) {
+    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
         // no dimension - no shuffle
         if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
@@ -901,7 +898,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         int numTads = arrays.get(0).length() / tadLength;
 
-        int[] map = ArrayUtil.buildHalfVector(numTads / 2, numTads);
+        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
 
         CudaIntDataBuffer shuffle = new CudaIntDataBuffer(map);
 
@@ -1018,7 +1015,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(Collection<INDArray> sourceArrays, int... dimension) {
-        shuffle(new ArrayList<INDArray>(sourceArrays), Collections.singletonList(dimension));
+    public void shuffle(Collection<INDArray> sourceArrays, Random rnd, int... dimension) {
+        shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
     }
 }

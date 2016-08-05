@@ -567,7 +567,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             dimensions.add(ArrayUtil.range(1,getLabelsMaskArray().rank()));
         }
 
-        Nd4j.shuffle(arrays, dimensions);
+        Nd4j.shuffle(arrays, new Random(seed), dimensions);
 
         /*
         int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());

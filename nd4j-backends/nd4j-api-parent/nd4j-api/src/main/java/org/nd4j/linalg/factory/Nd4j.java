@@ -392,7 +392,7 @@ public class Nd4j {
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);
         }*/
-        shuffle(toShuffle, dimension);
+        shuffle(toShuffle, random, dimension);
     }
 
     /**
@@ -404,7 +404,20 @@ public class Nd4j {
      */
     public static void shuffle(INDArray toShuffle,int...dimension) {
         //shuffle(toShuffle, new Random(), dimension);
-        INSTANCE.shuffle(toShuffle, dimension);
+        INSTANCE.shuffle(toShuffle, new Random(), dimension);
+    }
+
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(Collection<INDArray> toShuffle, int...dimension) {
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
 
     /**
@@ -414,9 +427,9 @@ public class Nd4j {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    public static void shuffle(Collection<INDArray> toShuffle,int...dimension) {
+    public static void shuffle(Collection<INDArray> toShuffle, Random rnd,int...dimension) {
         //shuffle(toShuffle, new Random(), dimension);
-        INSTANCE.shuffle(toShuffle, dimension);
+        INSTANCE.shuffle(toShuffle, rnd, dimension);
     }
 
     /**
@@ -427,9 +440,9 @@ public class Nd4j {
      * @param dimensions the dimension to do the shuffle. Please note - order matters here.
      * @return
      */
-    public static void shuffle(List<INDArray> toShuffle, List<int[]> dimensions) {
+    public static void shuffle(List<INDArray> toShuffle,Random rnd, List<int[]> dimensions) {
 
-        INSTANCE.shuffle(toShuffle, dimensions);
+        INSTANCE.shuffle(toShuffle, rnd, dimensions);
     }
 
 

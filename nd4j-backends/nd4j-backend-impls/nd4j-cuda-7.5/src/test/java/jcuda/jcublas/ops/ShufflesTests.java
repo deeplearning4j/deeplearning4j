@@ -252,6 +252,41 @@ public class ShufflesTests {
     }
 
     @Test
+    public void testSymmetricShuffle4F() throws Exception {
+        INDArray features = Nd4j.create(new int[] {10, 3, 4, 2} , 'f');
+        INDArray labels = Nd4j.create(new int[] {10, 5}, 'f');
+
+        for (int x = 0; x < 10; x++) {
+            features.slice(x).assign(x);
+            labels.slice(x).assign(x);
+        }
+
+
+        System.out.println("features.length: " + features.length());
+
+        System.out.println(labels);
+
+        System.out.println();
+
+        DataSet ds = new DataSet(features, labels);
+        ds.shuffle();
+
+        System.out.println(labels);
+
+        System.out.println("------------------");
+
+
+        for (int x = 0; x < 10; x++) {
+            double val = features.slice(x).getDouble(0);
+            INDArray row = labels.slice(x);
+
+            for (int y = 0; y < row.length(); y++ ) {
+                assertEquals(val, row.getDouble(y), 0.001);
+            }
+        }
+    }
+
+    @Test
     public void testHalfVectors() throws Exception {
         int[] array = ArrayUtil.buildHalfVector(5, 11);
 

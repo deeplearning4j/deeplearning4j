@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -399,7 +400,7 @@ public interface NDArrayFactory {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    void shuffle(INDArray array, int... dimension);
+    void shuffle(INDArray array, Random rnd, int... dimension);
 
     /**
      * Symmetric in place shuffle of an ndarray
@@ -409,7 +410,7 @@ public interface NDArrayFactory {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    void shuffle(Collection<INDArray> array, int... dimension);
+    void shuffle(Collection<INDArray> array, Random rnd, int... dimension);
 
     /**
      * Symmetric in place shuffle of an ndarray
@@ -419,7 +420,7 @@ public interface NDArrayFactory {
      * @param dimensions the dimensions to do the shuffle
      * @return
      */
-    void shuffle(List<INDArray> array, List<int[]> dimensions);
+    void shuffle(List<INDArray> array, Random rnd, List<int[]> dimensions);
 
     /**
      * This method averages input arrays, and returns averaged array

@@ -1597,13 +1597,11 @@ public class ArrayUtil {
      *
      * @return
      */
-    public static int[] buildHalfVector(int from, int to) {
+    public static int[] buildHalfVector(Random rng, int from, int to) {
         int[] result = new int[to - from];
         for (int f = from; f < to; f++) {
             result[f - from] = f;
         }
-
-        Random rng = new Random();
 
         for(int i=result.length-1; i>0; i-- ){
             int j = rng.nextInt(i+1);
