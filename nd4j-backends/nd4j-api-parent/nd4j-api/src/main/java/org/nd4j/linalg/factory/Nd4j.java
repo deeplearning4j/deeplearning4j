@@ -1919,27 +1919,9 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(OutputStream writer,INDArray write) throws IOException {
-        DataOutputStream dos = new DataOutputStream(writer);
-        dos.writeChar(write instanceof IComplexNDArray ? 'c' : 'r');
-        dos.writeInt(write.rank());
-        dos.writeChar(write.ordering());
-        for(int i = 0; i < write.rank(); i++)
-            dos.writeInt(write.size(i));
-        for(int i = 0; i < write.rank(); i++)
-            dos.writeInt(write.stride(i));
-        dos.writeInt(write.offset());
-        if(write instanceof IComplexNDArray) {
-            for(int i = 0; i < write.data().length() / 2; i++) {
-                dos.writeUTF(String.valueOf(write.data().getComplex(i)));
-                dos.writeUTF("\n");
-            }
-        }
-        else {
-            for(int i = 0; i < write.data().length(); i++) {
-                dos.writeUTF(String.valueOf(write.data().getDouble(i)));
-                dos.writeUTF("\n");
-            }
-        }
+        DataOutputStream stream = new DataOutputStream(writer);
+        write(write, stream);
+        stream.close();
     }
 
 
