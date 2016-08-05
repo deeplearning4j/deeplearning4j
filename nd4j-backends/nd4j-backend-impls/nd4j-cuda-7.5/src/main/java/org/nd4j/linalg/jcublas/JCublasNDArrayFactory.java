@@ -867,23 +867,22 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      * Symmetric in place shuffle of an ndarray
      * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
      *
-     * @param sourceArrays      the ndarray to shuffle
+     * @param arrays      the ndarrays to shuffle
      * @param dimensions the dimensions to do the shuffle
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> sourceArrays, List<int[]> dimensions) {
+    public void shuffle(List<INDArray> arrays, List<int[]> dimensions) {
         // no dimension - no shuffle
         if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
 
-        if (sourceArrays == null || sourceArrays.size() ==0)
+        if (arrays == null || arrays.size() ==0)
             throw new RuntimeException("No input arrays provided");
 
-        if (dimensions.size() > 1 && sourceArrays.size() != dimensions.size())
+        if (dimensions.size() > 1 && arrays.size() != dimensions.size())
             throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
 
-        List<INDArray> arrays = new ArrayList<>(sourceArrays);
 
         // first we build TAD for input array and dimensions
 

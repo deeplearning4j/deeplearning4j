@@ -765,7 +765,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public void shuffle(INDArray array, int... dimension) {
-        shuffle(Collections.singletonList(array));
+        shuffle(Collections.singletonList(array), dimension);
     }
 
     /**
@@ -778,19 +778,88 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public void shuffle(Collection<INDArray> array, int... dimension) {
-        // TODO: to be implemented
+        shuffle(new ArrayList<INDArray>(array), Collections.singletonList(dimension));
     }
 
     /**
      * Symmetric in place shuffle of an ndarray
      * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
      *
-     * @param array      the ndarray to shuffle
+     * @param arrays      the ndarrays to shuffle
      * @param dimensions the dimensions to do the shuffle
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> array, List<int[]> dimensions) {
-        // TODO: to be implemented
+    public void shuffle(List<INDArray> arrays, List<int[]> dimensions) {
+        if (dimensions == null || dimensions.size() == 0)
+            throw new RuntimeException("Dimension can't be null or 0-length");
+
+        if (arrays == null || arrays.size() ==0)
+            throw new RuntimeException("No input arrays provided");
+
+        if (dimensions.size() > 1 && arrays.size() != dimensions.size())
+            throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
+
+        int tadLength = 1;
+        for (int i = 0; i < dimensions.get(0).length; i++) {
+            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
+        }
+
+        int numTads = arrays.get(0).length() / tadLength;
+
+        int[] map = ArrayUtil.buildHalfVector(numTads / 2, numTads);
+
+        PointerPointer dataPointers = new PointerPointer(arrays.size());
+        PointerPointer shapePointers = new PointerPointer(arrays.size());
+        PointerPointer tadPointers = new PointerPointer(arrays.size());
+        PointerPointer offsetPointers = new PointerPointer(arrays.size());
+
+        for (int i = 0; i < arrays.size(); i++) {
+            INDArray array = arrays.get(i);
+
+            TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
+
+            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+
+            Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+
+            DataBuffer offsets = tadBuffers.getSecond();
+            Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
+
+            dataPointers.put(i, array.data().addressPointer());
+            shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
+            tadPointers.put(i, hostTadShapeInfo);
+            offsetPointers.put(i, hostTadOffsets);
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.shuffleDouble(
+                    null,
+                    dataPointers,
+                    shapePointers,
+                    dataPointers,
+                    shapePointers,
+                    arrays.size(),
+                    new IntPointer(map),
+                    tadPointers,
+                    offsetPointers
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.shuffleFloat(
+                    null,
+                    dataPointers,
+                    shapePointers,
+                    dataPointers,
+                    shapePointers,
+                    arrays.size(),
+                    new IntPointer(map),
+                    tadPointers,
+                    offsetPointers
+            );
+        } else {
+            // HALFs
+        }
     }
 }
