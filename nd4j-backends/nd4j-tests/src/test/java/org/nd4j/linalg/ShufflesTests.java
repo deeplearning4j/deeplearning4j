@@ -15,6 +15,7 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author raver119@gmail.com
@@ -72,6 +73,29 @@ public class ShufflesTests extends BaseNd4jTest {
         assertTrue(scanner.compareColumn(array));
     }
 
+    @Test
+    public void testSimpleShuffle3() {
+        INDArray array = Nd4j.zeros(11, 10);
+        for (int x = 0; x < 11; x++) {
+            array.getRow(x).assign(x);
+        }
+
+        System.out.println(array);
+
+        OrderScanner2D scanner = new OrderScanner2D(array);
+
+        assertArrayEquals(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f}, scanner.getMap(), 0.01f);
+
+        System.out.println();
+
+        Nd4j.shuffle(array, 1);
+
+        System.out.println(array);
+
+        ArrayUtil.argMin(new int[]{});
+
+        assertTrue(scanner.compareRow(array));
+    }
 
     @Test
     public void testSymmetricShuffle1() {
@@ -219,11 +243,19 @@ public class ShufflesTests extends BaseNd4jTest {
     }
 
 
+    /**
+     * There's SMALL chance this test will randomly fail, since spread isn't too big
+     * @throws Exception
+     */
     @Test
-    public void testHalfVectors() throws Exception {
-        int[] array = ArrayUtil.buildHalfVector(5, 11);
+    public void testHalfVectors1() throws Exception {
+        int[] array1 = ArrayUtil.buildHalfVector(10, 20);
+        int[] array2 = ArrayUtil.buildHalfVector(10, 20);
 
-        System.out.println("HalfVec: " + Arrays.toString(array));
+        assertFalse(Arrays.equals(array1, array2));
+
+        assertEquals(10, array1.length);
+        assertEquals(10, array2.length);
     }
 
 
