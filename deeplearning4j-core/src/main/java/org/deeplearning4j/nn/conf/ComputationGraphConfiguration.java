@@ -398,7 +398,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             break;
                     }
 
-                } else {
+                } else if(l instanceof FeedForwardLayer ){
                     //Feed forward layer
                     switch (layerInput.getType()) {
                         case FF:
@@ -419,7 +419,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             ((FeedForwardLayer) lv.getLayerConf().getLayer()).setNIn(nIn);
                             break;
                     }
-                }
+                } //Other cases: LRN
                 inputTypeList.add(layerInput);
             } else {
                 List<String> inputs = vertexInputs.get(s);
