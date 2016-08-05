@@ -814,6 +814,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         PointerPointer tadPointers = new PointerPointer(arrays.size());
         PointerPointer offsetPointers = new PointerPointer(arrays.size());
 
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
 
@@ -821,12 +823,21 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
+            System.out.println("Calling for TAD: " + Arrays.toString(dimension));
+
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
             Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
             DataBuffer offsets = tadBuffers.getSecond();
             Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
+
+
+            if (hostTadShapeInfo == null)
+                throw new RuntimeException("AFSDFSD");
+
+            if (hostTadOffsets == null)
+                throw new RuntimeException("EWWW");
 
             dataPointers.put(i, array.data().addressPointer());
             shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
@@ -836,7 +847,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.shuffleDouble(
-                    null,
+                    dummy,
                     dataPointers,
                     shapePointers,
                     dataPointers,
@@ -848,7 +859,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.shuffleFloat(
-                    null,
+                    dummy,
                     dataPointers,
                     shapePointers,
                     dataPointers,

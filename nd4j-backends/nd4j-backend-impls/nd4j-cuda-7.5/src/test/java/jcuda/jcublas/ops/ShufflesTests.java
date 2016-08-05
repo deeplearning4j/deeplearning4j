@@ -2,6 +2,7 @@ package jcuda.jcublas.ops;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -212,6 +213,43 @@ public class ShufflesTests {
         }
     }
 
+
+    @Test
+    public void testSymmetricShuffle4() throws Exception {
+        INDArray features = Nd4j.zeros(10, 3, 4, 2);
+        INDArray labels = Nd4j.zeros(10, 5);
+
+        for (int x = 0; x < 10; x++) {
+            features.slice(x).assign(x);
+            labels.slice(x).assign(x);
+        }
+
+        OrderScanner3D scannerFeatures = new OrderScanner3D(features);
+        OrderScanner3D scannerLabels = new OrderScanner3D(labels);
+
+        System.out.println(features);
+
+        System.out.println();
+
+        DataSet ds = new DataSet(features, labels);
+        ds.shuffle();
+
+        System.out.println(features);
+
+        System.out.println("------------------");
+
+        assertTrue(scannerFeatures.compareSlice(features));
+        assertTrue(scannerLabels.compareSlice(labels));
+
+        for (int x = 0; x < 10; x++) {
+            double val = features.slice(x).getDouble(0);
+            INDArray row = labels.slice(x);
+
+            for (int y = 0; y < row.length(); y++ ) {
+                assertEquals(val, row.getDouble(y), 0.001);
+            }
+        }
+    }
 
     @Test
     public void testHalfVectors() throws Exception {

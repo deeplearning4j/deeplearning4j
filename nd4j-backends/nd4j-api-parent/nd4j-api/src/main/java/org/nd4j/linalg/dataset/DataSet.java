@@ -540,12 +540,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     public void shuffle(long seed) {
         //note here we use the same seed with different random objects guaranteeing same order
-
+/*
         if (getFeatures().rank() == 2 && getLabels().rank() == 2) {
             Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), 1);
         } else {
             Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), ArrayUtil.range(1,getFeatures().rank()));
         }
+*/
 
         List<INDArray> arrays = new ArrayList<>();
         List<int[]> dimensions = new ArrayList<>();
