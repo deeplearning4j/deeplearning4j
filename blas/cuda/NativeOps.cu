@@ -5238,8 +5238,10 @@ Nd4jPointer NativeOps::createEvent() {
 Nd4jPointer NativeOps::createBlasHandle() {
 	Nd4jPointer nativeHandle= 0;
 	cublasStatus_t result = cublasCreate((cublasHandle_t *) &nativeHandle);
-	if (result != 0)
+	if (result != 0) {
+        printf("cuBLAS errorCode: [%i]\n", result);
 		return 0L;
+    }
 	else return nativeHandle;
 }
 
