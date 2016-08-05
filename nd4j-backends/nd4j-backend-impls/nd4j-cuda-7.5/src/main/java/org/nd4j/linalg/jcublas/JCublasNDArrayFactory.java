@@ -865,16 +865,16 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     /**
      * Symmetric in place shuffle of an ndarray
-     * along a specified set of dimensions. All arrays
+     * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
      *
-     * @param sourceArrays     the ndarray to shuffle
-     * @param dimension the dimension to do the shuffle
+     * @param sourceArrays      the ndarray to shuffle
+     * @param dimensions the dimensions to do the shuffle
      * @return
      */
     @Override
-    public void shuffle(Collection<INDArray> sourceArrays, int... dimension) {
+    public void shuffle(List<INDArray> sourceArrays, List<int[]> dimensions) {
         // no dimension - no shuffle
-        if (dimension == null || dimension.length == 0)
+        if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
 
         if (sourceArrays == null || sourceArrays.size() ==0)
@@ -893,8 +893,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         }
 
         int tadLength = 1;
-        for (int i = 0; i < dimension.length; i++) {
-            tadLength *= arrays.get(0).shape()[dimension[i]];
+        for (int i = 0; i < dimensions.get(0).length; i++) {
+            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
         }
 
         int numTads = arrays.get(0).length() / tadLength;
@@ -925,6 +925,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
 
             TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+            int[] dimension = dimensions.get(i);
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
@@ -1003,5 +1005,18 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         tempShapes.dataType();
         tempOffsets.dataType();
         tempTAD.dataType();
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. All arrays
+     *
+     * @param sourceArrays     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(Collection<INDArray> sourceArrays, int... dimension) {
+        shuffle(new ArrayList<INDArray>(sourceArrays), Collections.singletonList(dimension));
     }
 }

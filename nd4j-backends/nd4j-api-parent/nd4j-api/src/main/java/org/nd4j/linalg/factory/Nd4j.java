@@ -420,6 +420,21 @@ public class Nd4j {
     }
 
     /**
+     * Symmetric in place shuffle of an ndarray
+     * along a variable dimensions
+     *
+     * @param toShuffle the ndarray to shuffle
+     * @param dimensions the dimension to do the shuffle. Please note - order matters here.
+     * @return
+     */
+    public static void shuffle(List<INDArray> toShuffle, List<int[]> dimensions) {
+
+        INSTANCE.shuffle(toShuffle, dimensions);
+    }
+
+
+
+    /**
      * The reference queue used for cleaning up
      * ndarrays
      *

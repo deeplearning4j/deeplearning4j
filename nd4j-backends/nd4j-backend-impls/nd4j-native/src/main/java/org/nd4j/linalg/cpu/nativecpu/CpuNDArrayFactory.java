@@ -780,4 +780,17 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public void shuffle(Collection<INDArray> array, int... dimension) {
         // TODO: to be implemented
     }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
+     *
+     * @param array      the ndarray to shuffle
+     * @param dimensions the dimensions to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(List<INDArray> array, List<int[]> dimensions) {
+        // TODO: to be implemented
+    }
 }
