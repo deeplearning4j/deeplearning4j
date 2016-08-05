@@ -2010,6 +2010,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
+        //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
+        if(!columnVector.isColumnVector() || this.size(0) != columnVector.size(1)){
+            throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(columnVector.shape()) + ")");
+        }
+
         if(columnVector.data().sameUnderlyingData(data()))
             return doColumnWise(columnVector.dup(),operation);
         if(isVector()) {
@@ -2082,6 +2087,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
+        //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
+        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)){
+            throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(rowVector.shape()) + ")");
+        }
+
         if(rowVector.data().sameUnderlyingData(data()))
             return doRowWise(rowVector.dup(),operation);
 
