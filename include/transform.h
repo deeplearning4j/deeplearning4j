@@ -1476,30 +1476,30 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
             __shared__ int yStride;
 
 
-        for (int i = 0; i < N; i++) {
-            T *x = (T *) dX[i];
-            T *z = (T *) dZ[i];
+        for (int f = 0; f < N; f++) {
+            T *x = (T *) dX[f];
+            T *z = (T *) dZ[f];
 
 
 
             __syncthreads();
 
             if (threadIdx.x == 0) {
-                tadLength = shape::length(tadOnlyShapeInfo[i]);
-                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[i]);
-                tadRank = shape::rank(tadOnlyShapeInfo[i]);
-                numTads = shape::length(xShapeInfo[i]) / tadLength;
+                tadLength = shape::length(tadOnlyShapeInfo[f]);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+                tadRank = shape::rank(tadOnlyShapeInfo[f]);
+                numTads = shape::length(xShapeInfo[f]) / tadLength;
 
-                tadShape = shape::shapeOf(tadOnlyShapeInfo[i]);
-                tadStride = shape::stride(tadOnlyShapeInfo[i]);
+                tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+                tadStride = shape::stride(tadOnlyShapeInfo[f]);
             }
             __syncthreads();
 
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
             for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
-                int oldOffset = tadOffsets[i][r];
-                int newOffset = tadOffsets[i][shuffleMap[r]];
+                int oldOffset = tadOffsets[f][r];
+                int newOffset = tadOffsets[f][shuffleMap[r]];
 
 
 
@@ -1510,13 +1510,12 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
                 T *zY = z + newOffset;
 
                 // so we're going to change TAD[oldOffset] with TAD[newOffset]
-                if (tadEWS > 0) {
+                if (tadEWS == 1) {
                     for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                        T oldX = rX[i * tadEWS];
-                        T oldY = rY[i * tadEWS];
+                        T oldX = rX[i];
 
-                        zY[i * tadEWS] = oldX;
-                        zX[i * tadEWS] = oldY;
+                        rX[i] = rY[i];
+                        zY[i] = oldX;
                     }
 
                 } else {
@@ -1531,9 +1530,7 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
                             Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
 
                             T oldX = x[xOffset];
-                            T oldY = x[yOffset];
-
-                            z[xOffset] = oldY;
+                            z[xOffset] = x[yOffset];
                             z[yOffset] = oldX;
                         }
                     }

@@ -2622,25 +2622,28 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
 
 #pragma omp parallel for if (N > 1)
-    for (int i = 0; i < N; i++) {
-        T *x = (T *) dX[i];
-        T *z = (T *) dZ[i];
+    for (int f = 0; f < N; f++) {
+        T *x = (T *) dX[f];
+        T *z = (T *) dZ[f];
+
+        int *tadOffset = (int *) tadOffsets[f];
 
 
-        const int tadLength = shape::length(tadOnlyShapeInfo[i]);
-        int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[i]);
-        int tadRank = shape::rank(tadOnlyShapeInfo[i]);
-        int numTads = shape::length(xShapeInfo[i]) / tadLength;
+        const int tadLength = shape::length(tadOnlyShapeInfo[f]);
+        int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+        int tadRank = shape::rank(tadOnlyShapeInfo[f]);
+        int numTads = shape::length(xShapeInfo[f]) / tadLength;
 
-        int *tadShape = shape::shapeOf(tadOnlyShapeInfo[i]);
-        int *tadStride = shape::stride(tadOnlyShapeInfo[i]);
+        int *tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+        int *tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        T *shared = new T[tadLength];
+        //printf("Array: [%i], tadEWS: [%i], tadLength: [%i]\n", f, tadEWS, tadLength);
 
-        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside. but worth a check
+        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
+
         for (Nd4jIndex r = 0; r < numTads / 2; r++) {
-            int oldOffset = tadOffsets[i][r];
-            int newOffset = tadOffsets[i][shuffleMap[r]];
+            int oldOffset = tadOffset[r];
+            int newOffset = tadOffset[shuffleMap[r]];
 
             T *rX = x + oldOffset;
             T *rY = x + newOffset;
@@ -2649,21 +2652,17 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
             T *zY = z + newOffset;
 
 
-            if (tadEWS > 0) {
-
-                if (tadEWS == 1) {
+            if (tadEWS == 1) {
 
 #pragma omp simd
                     for (Nd4jIndex i = 0; i < tadLength; i++) {
+                        /*T oldX = rX[i];
+                        T oldY = rY[i];
+
+                        zX[i] = oldY;
+                        zY[i] = oldX;*/
                         nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
                     }
-                } else {
-
-#pragma omp simd
-                    for (Nd4jIndex i = 0; i < tadLength; i++) {
-                        nd4j::math::nd4j_swap<T>(rX[i * tadEWS], rY[i * tadEWS]);
-                    }
-                }
 
             } else {
                 // ind2sub branch
@@ -2678,12 +2677,14 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
                     Nd4jIndex xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
                     Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
 
+
                     nd4j::math::nd4j_swap<T>(x[xOffset], x[yOffset]);
                 }
+
             }
+
         }
 
-        delete[] shared;
     }
 }
 
