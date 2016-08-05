@@ -20,20 +20,14 @@ import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.*;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.datavec.spark.transform.BaseSparkTest;
 import org.apache.spark.api.java.JavaRDD;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,32 +39,36 @@ import static org.junit.Assert.assertTrue;
 public class TestAnalysis extends BaseSparkTest {
 
     @Test
-    public void TestAnalysisBasic(){
+    public void TestAnalysisBasic() {
 
         Schema schema = new Schema.Builder()
                 .addColumnInteger("intCol")
                 .addColumnDouble("doubleCol")
                 .addColumnTime("timeCol", DateTimeZone.UTC)
+                .addColumnCategorical("catCol", "A", "B")
                 .build();
 
         List<List<Writable>> data = new ArrayList<>();
-        data.add(Arrays.asList((Writable)new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000)));
-        data.add(Arrays.asList((Writable)new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000)));
-        data.add(Arrays.asList((Writable)new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000)));
-        data.add(Arrays.asList((Writable)new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000)));
+        data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000), new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000), new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000), new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000), new Text("B")));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
 
+        System.out.println(da);
+
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
-        assertEquals(3, ca.size());
+        assertEquals(4, ca.size());
 
         assertTrue(ca.get(0) instanceof IntegerAnalysis);
         assertTrue(ca.get(1) instanceof DoubleAnalysis);
         assertTrue(ca.get(2) instanceof TimeAnalysis);
+        assertTrue(ca.get(3) instanceof CategoricalAnalysis);
 
-        IntegerAnalysis ia = (IntegerAnalysis)ca.get(0);
+        IntegerAnalysis ia = (IntegerAnalysis) ca.get(0);
         assertEquals(-1, ia.getMin());
         assertEquals(5, ia.getMax());
         assertEquals(4, ia.getCountTotal());
@@ -80,10 +78,16 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(10.0, dba.getMax(), 0.0);
         assertEquals(4, dba.getCountTotal());
 
-        TimeAnalysis ta = (TimeAnalysis)ca.get(2);
+        TimeAnalysis ta = (TimeAnalysis) ca.get(2);
         assertEquals(1000, ta.getMin());
         assertEquals(20000, ta.getMax());
         assertEquals(4, ta.getCountTotal());
+
+        CategoricalAnalysis cata = (CategoricalAnalysis) ca.get(3);
+        Map<String, Long> map = cata.getMapOfCounts();
+        assertEquals(2, map.keySet().size());
+        assertEquals(3L, (long) map.get("A"));
+        assertEquals(1L, (long) map.get("B"));
 
         assertNotNull(ia.getHistogramBuckets());
         assertNotNull(ia.getHistogramBucketCounts());
@@ -95,18 +99,19 @@ public class TestAnalysis extends BaseSparkTest {
         assertNotNull(ta.getHistogramBucketCounts());
 
 
+
         double[] bucketsD = dba.getHistogramBuckets();
         long[] countD = dba.getHistogramBucketCounts();
 
         assertEquals(-1.0, bucketsD[0], 0.0);
-        assertEquals(10.0, bucketsD[bucketsD.length-1], 0.0);
+        assertEquals(10.0, bucketsD[bucketsD.length - 1], 0.0);
         assertEquals(1, countD[0]);
-        assertEquals(1, countD[countD.length-1]);
+        assertEquals(1, countD[countD.length - 1]);
     }
 
 
     @Test
-    public void testAnalysisStdev(){
+    public void testAnalysisStdev() {
         //Test stdev calculations compared to Spark's stats calculation
 
 
@@ -116,16 +121,16 @@ public class TestAnalysis extends BaseSparkTest {
         List<Long> l3 = new ArrayList<>();
 
         int n = 10000;
-        for( int i=0; i<n; i++ ){
-            l1.add(10*r.nextDouble());
+        for (int i = 0; i < n; i++) {
+            l1.add(10 * r.nextDouble());
             l2.add(-1000 + r.nextInt(2000));
             l3.add(-1000L + r.nextInt(2000));
         }
 
         List<Double> l2d = new ArrayList<>();
-        for(Integer i : l2) l2d.add(i.doubleValue());
+        for (Integer i : l2) l2d.add(i.doubleValue());
         List<Double> l3d = new ArrayList<>();
-        for(Long l : l3) l3d.add(l.doubleValue());
+        for (Long l : l3) l3d.add(l.doubleValue());
 
 
         StatCounter sc1 = sc.parallelizeDoubles(l1).stats();
@@ -133,7 +138,7 @@ public class TestAnalysis extends BaseSparkTest {
         StatCounter sc3 = sc.parallelizeDoubles(l3d).stats();
 
         List<List<Writable>> data = new ArrayList<>();
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             List<Writable> l = new ArrayList<>();
             l.add(new DoubleWritable(l1.get(i)));
             l.add(new IntWritable(l2.get(i)));
@@ -151,17 +156,17 @@ public class TestAnalysis extends BaseSparkTest {
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
 
         double stdev1 = sc1.sampleStdev();
-        double stdev1a = ((DoubleAnalysis)da.getColumnAnalysis("d")).getSampleStdev();
+        double stdev1a = ((DoubleAnalysis) da.getColumnAnalysis("d")).getSampleStdev();
         double re1 = Math.abs(stdev1 - stdev1a) / (Math.abs(stdev1) + Math.abs(stdev1a));
         assertTrue(re1 < 1e-6);
 
         double stdev2 = sc2.sampleStdev();
-        double stdev2a = ((IntegerAnalysis)da.getColumnAnalysis("i")).getSampleStdev();
+        double stdev2a = ((IntegerAnalysis) da.getColumnAnalysis("i")).getSampleStdev();
         double re2 = Math.abs(stdev2 - stdev2a) / (Math.abs(stdev2) + Math.abs(stdev2a));
         assertTrue(re2 < 1e-6);
 
         double stdev3 = sc3.sampleStdev();
-        double stdev3a = ((LongAnalysis)da.getColumnAnalysis("l")).getSampleStdev();
+        double stdev3a = ((LongAnalysis) da.getColumnAnalysis("l")).getSampleStdev();
         double re3 = Math.abs(stdev3 - stdev3a) / (Math.abs(stdev3) + Math.abs(stdev3a));
         assertTrue(re3 < 1e-6);
     }
