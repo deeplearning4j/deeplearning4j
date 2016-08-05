@@ -124,18 +124,6 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     INDArray activationMean();
 
-
-    /**
-     * Update layer weights and biases with gradient change
-     */
-
-    void update(Gradient gradient);
-    /**
-     * Update layer weights and biases with gradient change
-     */
-
-    void update(INDArray gradient, String paramType);
-
     /**
      * Raw activations
      * @param x the input to transform
