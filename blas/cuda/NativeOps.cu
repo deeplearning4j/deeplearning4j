@@ -5939,7 +5939,6 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer d
 }
 
 void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap,  Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
-    // to be implemented
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
     double **x = reinterpret_cast<double **>(dx);

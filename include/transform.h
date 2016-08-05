@@ -1521,7 +1521,6 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
 
                 } else {
                     // well have to iterate using ind2sub
-                    for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
                         int xCoord[MAX_RANK];
                         int yCoord[MAX_RANK];
                         for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
@@ -1538,7 +1537,6 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
                             z[yOffset] = oldX;
                         }
                     }
-                }
             }
         }
 }
