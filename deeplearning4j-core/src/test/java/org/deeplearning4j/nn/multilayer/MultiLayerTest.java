@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.multilayer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -42,6 +44,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -713,5 +716,50 @@ public class MultiLayerTest {
 
         assertEquals(expectedOut, actualOut);
     }
+
+    @Test
+    public void testGradientUpdate() throws Exception{
+        DataSetIterator iter = new IrisDataSetIterator(1,1);
+
+        Gradient expectedGradient = new DefaultGradient();
+        expectedGradient.setGradientFor("0_W", Nd4j.ones(4,5));
+        expectedGradient.setGradientFor("0_b", Nd4j.ones(1,5));
+        expectedGradient.setGradientFor("1_W", Nd4j.ones(5,3));
+        expectedGradient.setGradientFor("1_b", Nd4j.ones(1,3));
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(1)
+                .activation("relu").weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().name("dnn1").nIn(4).nOut(5).build())
+                .layer(1, new OutputLayer.Builder().name("output").nIn(5).nOut(3).activation("softmax").weightInit(WeightInit.XAVIER).build())
+                .backprop(true).pretrain(false)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.fit(iter.next());
+        Gradient actualGradient = net.gradient();
+        assertNotEquals(expectedGradient.gradient(), actualGradient.gradient());
+
+        net.update(expectedGradient);
+        actualGradient = net.gradient();
+        assertEquals(expectedGradient.gradient(), actualGradient.gradient());
+
+        // Update params with set
+        net.setParam("0_W", Nd4j.ones(4,5));
+        net.setParam("0_b", Nd4j.ones(1,5));
+        net.setParam("1_W", Nd4j.ones(5,3));
+        net.setParam("1_b", Nd4j.ones(1,3));
+        INDArray actualParams = net.params();
+
+        // Confirm params
+        assertEquals(expectedGradient.gradient(), actualParams);
+
+        net.update(expectedGradient);
+        actualParams = net.params();
+        assertEquals(Nd4j.ones(1,43).addi(1), actualParams);
+    }
+
 
 }

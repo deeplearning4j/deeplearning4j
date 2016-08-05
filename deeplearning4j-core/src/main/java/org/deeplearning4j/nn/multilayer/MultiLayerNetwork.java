@@ -65,6 +65,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -908,7 +909,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        int paramsSoFar = 0;
+        for(Layer layer: layers) {
+            if(layer.numParams() == 0) continue;
+            layer.setBackpropGradientsViewArray(gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
+            paramsSoFar += layer.numParams();
+        }
     }
 
     /**
@@ -1779,6 +1785,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 
@@ -2110,7 +2117,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void update(Gradient gradient) {
-        throw new UnsupportedOperationException();
+        if (gradient.gradient().length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
+        for(Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+            String key = entry.getKey();
+            INDArray val = entry.getValue();
+            int idx = key.indexOf('_');
+            if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+            Integer layerId = Integer.parseInt(key.substring(0, idx));
+            String paramType = key.substring(idx+1);
+            // Update MLN gradient
+            this.gradient.setGradientFor(key, val);
+            // Update layer params
+            layers[layerId].update(val, paramType);
+        }
+        // Update layerwise gradient view
+        setBackpropGradientsViewArray(gradient.gradient());
+
     }
 
     @Override
