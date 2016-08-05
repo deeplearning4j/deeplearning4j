@@ -4,11 +4,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.updater.BaseUpdater;
 import org.deeplearning4j.nn.updater.NesterovsUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -40,21 +39,33 @@ public class TestUpdaters {
                 .updater(Updater.NESTEROVS).momentum(0.9)
                 .graphBuilder()
                 .addInputs("input") // 40x40x1
-                .addLayer("l0_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1}).nIn(1).nOut(100).build(), "input") // 40x40x100
+                .addLayer("l0_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(1)*/.nOut(100).build(), "input") // 40x40x100
                 .addLayer("l1_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l0_cnn") // 20x20x100
                 .addLayer("l2_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l1_max") // 10x10x100
-                .addLayer("l3_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1}).nIn(1).nOut(832).build(), "l2_max") // 10x10x832
+                .addLayer("l3_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(100)*/.nOut(832).build(), "l2_max") // 10x10x832
                 .addLayer("l4_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l3_cnn") // 5x5x832
-                .addLayer("l5_fc", new DenseLayer.Builder().nOut(1024).build(), "l4_max") // output: 1x1x1024
+                .addLayer("l5_fc", new DenseLayer.Builder()/*.nIn(5*5*832)*/.nOut(1024).build(), "l4_max") // output: 1x1x1024
                 .addLayer("l6_out", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(1024).nOut(10).activation("softmax").build(), "l5_fc")
+                        /*.nIn(1024)*/.nOut(10).activation("softmax").build(), "l5_fc")
                 .setOutputs("l6_out")
                 .backprop(true).pretrain(false)
                 .setInputTypes(InputType.convolutional(40,40,1))
                 .build();
 
+        //First: check that the nIns are set properly...
+        Map<String,GraphVertex> map = conf.getVertices();
+        LayerVertex l0_cnn = (LayerVertex)map.get("l0_cnn");
+        LayerVertex l3_cnn = (LayerVertex)map.get("l3_cnn");
+        LayerVertex l5_fc = (LayerVertex)map.get("l5_fc");
+        LayerVertex l6_out = (LayerVertex)map.get("l6_out");
+
+        assertEquals(1, ((FeedForwardLayer)l0_cnn.getLayerConf().getLayer()).getNIn());
+        assertEquals(100, ((FeedForwardLayer)l3_cnn.getLayerConf().getLayer()).getNIn());
+        assertEquals(5*5*832, ((FeedForwardLayer)l5_fc.getLayerConf().getLayer()).getNIn());
+        assertEquals(1024, ((FeedForwardLayer)l6_out.getLayerConf().getLayer()).getNIn());
 
 
+        //Check updaters state:
         ComputationGraph g = new ComputationGraph(conf);
         g.init();
         g.initGradientsView();
