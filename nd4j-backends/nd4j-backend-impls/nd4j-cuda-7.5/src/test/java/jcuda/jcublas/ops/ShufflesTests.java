@@ -6,10 +6,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
@@ -185,7 +182,7 @@ public class ShufflesTests {
         dimensions.add(ArrayUtil.range(1,featuresMask.rank()));
         dimensions.add(ArrayUtil.range(1,labelsMask.rank()));
 
-        Nd4j.shuffle(arrays, dimensions);
+        Nd4j.shuffle(arrays, new Random(), dimensions);
 
         assertTrue(scannerFeatures.compareSlice(features));
         assertTrue(scannerLabels.compareSlice(labels));
@@ -288,7 +285,7 @@ public class ShufflesTests {
 
     @Test
     public void testHalfVectors() throws Exception {
-        int[] array = ArrayUtil.buildHalfVector(5, 11);
+        int[] array = ArrayUtil.buildHalfVector(new Random(12), 5, 11);
 
         System.out.println("HalfVec: " + Arrays.toString(array));
     }
