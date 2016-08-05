@@ -1785,6 +1785,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 
@@ -2120,8 +2121,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for(Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
             INDArray val = entry.getValue();
-            int layerId = Integer.valueOf(key.split("_")[0]);
-            String paramType = key.split("_")[1];
+            int idx = key.indexOf('_');
+            if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+            Integer layerId = Integer.parseInt(key.substring(0, idx));
+            String paramType = key.substring(idx+1);
             // Update MLN gradient
             this.gradient.setGradientFor(key, val);
             // Update layer params
@@ -2129,6 +2132,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
+
     }
 
     @Override

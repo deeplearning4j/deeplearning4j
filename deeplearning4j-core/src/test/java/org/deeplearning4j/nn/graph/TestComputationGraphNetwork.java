@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -636,4 +637,51 @@ public class TestComputationGraphNetwork {
                 extErrorGrad.gradient());
 
     }
+
+    @Test
+    public void testGradientUpdate(){
+        DataSetIterator iter = new IrisDataSetIterator(1,1);
+
+        Gradient expectedGradient = new DefaultGradient();
+        expectedGradient.setGradientFor("first_W", Nd4j.ones(4,5));
+        expectedGradient.setGradientFor("first_b", Nd4j.ones(1,5));
+        expectedGradient.setGradientFor("output_W", Nd4j.ones(5,3));
+        expectedGradient.setGradientFor("output_b", Nd4j.ones(1,3));
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
+                .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first")
+                .setOutputs("output")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+        net.fit(iter.next());
+        Gradient actualGradient = net.gradient();
+        assertNotEquals(expectedGradient.gradient(), actualGradient.gradient());
+
+        net.update(expectedGradient);
+        actualGradient = net.gradient();
+        assertEquals(expectedGradient.gradient(), actualGradient.gradient());
+
+        // Update params with set
+        net.setParam("first_W", Nd4j.ones(4,5));
+        net.setParam("first_b", Nd4j.ones(1,5));
+        net.setParam("output_W", Nd4j.ones(5,3));
+        net.setParam("output_b", Nd4j.ones(1,3));
+        INDArray actualParams = net.params();
+
+        // Confirm params
+        assertEquals(Nd4j.ones(1,43), actualParams);
+
+        net.update(expectedGradient);
+        actualParams = net.params();
+        assertEquals(Nd4j.ones(1,43).addi(1), actualParams);
+
+    }
+
 }

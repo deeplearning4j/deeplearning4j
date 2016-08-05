@@ -739,13 +739,12 @@ public class MultiLayerTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.fit(iter.next());
-        Gradient trainGradient = net.gradient();
-        net.update(expectedGradient);
-
         Gradient actualGradient = net.gradient();
+        assertNotEquals(expectedGradient.gradient(), actualGradient.gradient());
 
-        assertEquals(expectedGradient.gradient(),actualGradient);
-        assertNotEquals(actualGradient, trainGradient.gradient());
+        net.update(expectedGradient);
+        actualGradient = net.gradient();
+        assertEquals(expectedGradient.gradient(), actualGradient.gradient());
 
         // Update params with set
         net.setParam("0_W", Nd4j.ones(4,5));
@@ -758,7 +757,6 @@ public class MultiLayerTest {
         assertEquals(expectedGradient.gradient(), actualParams);
 
         net.update(expectedGradient);
-
         actualParams = net.params();
         assertEquals(Nd4j.ones(1,43).addi(1), actualParams);
     }
