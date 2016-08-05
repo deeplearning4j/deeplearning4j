@@ -17,6 +17,7 @@
 package org.datavec.spark.transform.analysis.histogram;
 
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
@@ -57,7 +58,8 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>,Li
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Categorical:
-                        histogramCounters.add(null);    //TODO
+                        CategoricalMetaData meta = (CategoricalMetaData)schema.getMetaData(i);
+                        histogramCounters.add(new CategoricalHistogramCounter(meta.getStateNames()));
                         break;
                     case Time:
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
