@@ -1415,6 +1415,26 @@ public class ComputationGraph implements Serializable, Model {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    @Override
+    public void update(Gradient gradient) {
+        if (gradient.gradient().length() != numParams(true))
+            throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
+        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+            String key = entry.getKey();
+            INDArray val = entry.getValue();
+            int idx = key.indexOf('_');
+            if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+            String layerName = key.substring(0, idx);
+            String paramType = key.split("_")[1];
+            // Update graph gradient
+            this.gradient.setGradientFor(key, val);
+            // Update layer params
+            getLayer(layerName).update(val, paramType);
+        }
+        // Update layerwise gradient view
+        setBackpropGradientsViewArray(gradient.gradient());
+    }
+
     private void update(Task task) {
         if (!initDone) {
             initDone = true;
@@ -1587,7 +1607,12 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParam(String key, INDArray val) {
-        throw new UnsupportedOperationException("Not implemented");
+//        throw new UnsupportedOperationException("Not implemented");
+        int idx = key.indexOf('_');
+        if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+        String layerName = key.substring(0, idx);
+        String paramType = key.substring(idx+1);
+        getLayer(layerName).setParam(paramType,val);
     }
 
     @Override

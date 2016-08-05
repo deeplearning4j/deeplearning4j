@@ -460,6 +460,11 @@ public class BarnesHutTsne extends Tsne implements Model {
         }
     }
 
+    @Override
+    public void update(Gradient gradient) {
+
+    }
+
 
     /**
      * An individual iteration
