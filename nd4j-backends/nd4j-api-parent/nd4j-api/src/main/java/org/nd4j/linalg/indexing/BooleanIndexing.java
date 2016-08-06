@@ -23,8 +23,10 @@ import com.google.common.base.Function;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -122,7 +124,12 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-        Shape.iterate(to, new CoordinateFunction() {
+        double number = function.apply(new Double(0.0)).doubleValue();
+
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(to, number, condition));
+
+        /*Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
                 if(condition.apply(to.getDouble(coord[0])))
@@ -130,6 +137,7 @@ public class BooleanIndexing {
 
             }
         });
+        */
     }
 
     /**

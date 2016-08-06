@@ -35,6 +35,16 @@ public class EqualsCondition extends BaseCondition {
         super(complexNumber);
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 0;
+    }
+
     @Override
     public Boolean apply(Number input) {
         if (Nd4j.dtype == DataBuffer.Type.DOUBLE)

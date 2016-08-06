@@ -34,6 +34,16 @@ public class EpsilonEquals extends BaseCondition {
         super(complexNumber);
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 0;
+    }
+
     @Override
     public Boolean apply(Number input) {
         return Math.abs(input.floatValue() - value.floatValue()) < Nd4j.EPS_THRESHOLD;

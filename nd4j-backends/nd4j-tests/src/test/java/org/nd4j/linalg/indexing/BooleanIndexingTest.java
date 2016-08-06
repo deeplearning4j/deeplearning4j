@@ -5,8 +5,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 
@@ -226,6 +228,58 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
+    }
+
+    @Test
+    public void testCaSTransform1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3, Conditions.equals(0)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSTransform2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{3, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3.0, Conditions.lessThan(2)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, comp, Conditions.lessThan(1)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 4, 0, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(x, y, Conditions.epsNotEquals(0.0)));
+
+        assertEquals(comp, x);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform3() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(x, y, Conditions.lessThan(2)));
+
+        assertEquals(comp, x);
     }
 
     @Override

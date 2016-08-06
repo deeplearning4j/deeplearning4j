@@ -28,6 +28,21 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  */
 public class IsNaN implements Condition {
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 9;
+    }
+
+    @Override
+    public double getValue() {
+        return -1;
+    }
+
     @Override
     public Boolean apply(Number input) {
         return Double.isNaN(input.doubleValue());

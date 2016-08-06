@@ -42,9 +42,15 @@ public class Conditions {
         return new EqualsCondition(value);
     }
 
+    public static Condition epsNotEquals(Number value) {
+        return new EpsilonNotEquals(value);
+    }
+
     public static Condition epsEquals(Number value) {
         return new EqualsCondition(value);
     }
+
+
 
     public static Condition equals(IComplexNumber value) {
         return new EqualsCondition(value);
