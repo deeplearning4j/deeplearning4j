@@ -24,6 +24,7 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -84,17 +86,27 @@ public class BooleanIndexing {
      * condition false otherwise
      */
     public static boolean and(final INDArray n, final Condition cond) {
-        boolean ret = true;
-        final AtomicBoolean a = new AtomicBoolean(ret);
-        Shape.iterate(n, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if (a.get())
-                    a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
-            }
-        });
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
 
-        return a.get();
+            if (val == n.lengthLong())
+                return true;
+            else
+                return false;
+
+        } else {
+            boolean ret = true;
+            final AtomicBoolean a = new AtomicBoolean(ret);
+            Shape.iterate(n, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (a.get())
+                        a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
+                }
+            });
+
+            return a.get();
+        }
     }
 
     /**
@@ -105,17 +117,27 @@ public class BooleanIndexing {
      * @return
      */
     public static boolean or(final INDArray n, final Condition cond) {
-        boolean ret = false;
-        final AtomicBoolean a = new AtomicBoolean(ret);
-        Shape.iterate(n, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if (!a.get())
-                    a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
-            }
-        });
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
 
-        return a.get();
+            if (val > 0)
+                return true;
+            else
+                return false;
+
+        } else {
+            boolean ret = false;
+            final AtomicBoolean a = new AtomicBoolean(ret);
+            Shape.iterate(n, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (!a.get())
+                        a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
+                }
+            });
+
+            return a.get();
+        }
     }
 
     /**

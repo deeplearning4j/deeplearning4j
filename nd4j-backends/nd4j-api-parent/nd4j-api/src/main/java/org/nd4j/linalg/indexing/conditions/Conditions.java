@@ -60,6 +60,10 @@ public class Conditions {
         return new EqualsCondition(value);
     }
 
+    public static Condition notEquals(Number value) {
+        return new NotEqualsCondition(value);
+    }
+
     public static Condition greaterThan(IComplexNumber value) {
         return new GreaterThan(value);
     }

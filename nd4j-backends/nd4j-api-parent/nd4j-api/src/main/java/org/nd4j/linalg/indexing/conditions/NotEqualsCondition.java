@@ -26,12 +26,12 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class EqualsCondition extends BaseCondition {
-    public EqualsCondition(Number value) {
+public class NotEqualsCondition extends BaseCondition {
+    public NotEqualsCondition(Number value) {
         super(value);
     }
 
-    public EqualsCondition(IComplexNumber complexNumber) {
+    public NotEqualsCondition(IComplexNumber complexNumber) {
         super(complexNumber);
     }
 
@@ -42,7 +42,7 @@ public class EqualsCondition extends BaseCondition {
      */
     @Override
     public int condtionNum() {
-        return 10;
+        return 11;
     }
 
     @Override

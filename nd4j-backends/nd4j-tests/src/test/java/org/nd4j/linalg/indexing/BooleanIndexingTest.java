@@ -167,7 +167,12 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         array.slice(4).putScalar(2, 1e-5f);
 
+
+        System.out.println(array);
+
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
+
+
     }
 
     @Test
