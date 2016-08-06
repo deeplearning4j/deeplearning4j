@@ -92,7 +92,9 @@ public  class VocabWord extends SequenceElement implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof VocabWord)) return false;
-        VocabWord vocabWord = (VocabWord) o;
+        final VocabWord vocabWord = (VocabWord) o;
+        if (this.word == null)
+            return vocabWord.word == null;
 
         return this.word.equals(vocabWord.getWord());
         /*
@@ -109,7 +111,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = this.word == null ? 0 : this.word.hashCode(); //this.elementFrequency.hashCode();
+        final int result = this.word == null ? 0 : this.word.hashCode(); //this.elementFrequency.hashCode();
         /*result = 31 * result + index;
         result = 31 * result + codes.hashCode();
         result = 31 * result + word.hashCode();
@@ -124,10 +126,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
         return "VocabWord{" +
                 "wordFrequency=" + this.elementFrequency +
                 ", index=" + index +
-                ", codes=" + codes +
                 ", word='" + word + '\'' +
-                ", historicalGradient=" + historicalGradient +
-                ", points=" + points +
                 ", codeLength=" + codeLength +
                 '}';
     }
