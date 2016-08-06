@@ -10,7 +10,7 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 *DataVec* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [DataVec Javadoc is here](http://deeplearning4j.org/datavecdoc/).)
 
 This tutorial will walk through how to load an image dataset and carry out transforms on them. For the sake of simplicity this tutorial uses only 10 images from 3 of the classes in the *Oxford flower dataset*. Please do not copy paste the code below as they are only snippets for reference. 
-[Use the code from the full example here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
+[Use the code from the full example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
 
 ## Setting up your images in the correct directory structure
 In short, images in your dataset have to be organized in directories by class/label and these label/class directories live together in the parent directory.

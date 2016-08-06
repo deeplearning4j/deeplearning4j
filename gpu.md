@@ -9,7 +9,7 @@ Deeplearning4j works on distributed GPUs, as well as on native. We allow users t
 
 In order to train a neural network on GPUs, you need to make a single change your POM.xml file. In the [Quickstart](./quickstart), you'll find a POM file configured to run on CPUs by default. It looks like this:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml?slice=52:62"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml?slice=52:62"></script>
 
 You want to make Deeplearning4j run on GPUs, you swap out the `artifactId` line under `nd4j` in your dependencies, replacing `nd4j-native` with `nd4j-cuda-7.5`. That's it...
 

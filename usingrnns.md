@@ -287,7 +287,7 @@ In some cases, you will have to do something that doesn't fit into a typical dat
 
 Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded.
 
-For example of this approach in practice, see the the iterator for the [character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
+For example of this approach in practice, see the the iterator for the [character example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
 
 **Note**: When creating a custom DataSetIterator, it is important that your data arrays - the input features, the labels, and any mask arrays - are created in 'f' (fortran) order. See the [ND4J user guide](http://nd4j.org/userguide.html#inmemory) for details on array orders. In practice, this means using the Nd4j.create methods that allow you to specify the array order: ```Nd4j.create(new int[]{numExamples, inputSize, timeSeriesLength},'f')```. Though 'c' order arrays will also work, performance will be reduced due to the need to copy the arrays to 'f' order first, for certain operations.
 
@@ -295,9 +295,9 @@ For example of this approach in practice, see the the iterator for the [characte
 
 ## <a name="examples">Examples</a>
 
-DL4J currently has the following [recurrent neural network examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent):
+DL4J currently has the following [recurrent neural network examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent):
 
-* A [character modelling example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
-* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
-* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
+* A [character modelling example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
+* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
+* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
 
