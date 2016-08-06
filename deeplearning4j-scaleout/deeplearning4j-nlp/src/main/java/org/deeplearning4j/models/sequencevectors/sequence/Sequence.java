@@ -18,7 +18,7 @@ public class Sequence<T extends SequenceElement> implements Serializable {
 
     protected List<T> elements = new ArrayList<>();
 
-    // elements map needed to speedup searches againt elements in sequence
+    // elements map needed to speedup searches against elements in sequence
     protected Map<String, T> elementsMap = new LinkedHashMap<>();
 
     // each document can have multiple labels
@@ -90,7 +90,7 @@ public class Sequence<T extends SequenceElement> implements Serializable {
     }
 
     /**
-     * Returns ordered list of elements from this sequence
+     * Returns an ordered unmodifiable list of elements from this sequence
      *
      * @return
      */
@@ -172,11 +172,11 @@ public class Sequence<T extends SequenceElement> implements Serializable {
         return elements.get(index);
     }
 
-    @Override
-    public String toString() {
-        return "Sequence{" +
-                " labels=" + labels +
-                ", elements=" + elements +
-                '}';
-    }
+//    @Override
+//    public String toString() {
+//        return "Sequence{" +
+//                " labels=" + labels +
+//                ", elements=" + elements +
+//                '}';
+//    }
 }
