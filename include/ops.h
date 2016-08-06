@@ -1573,8 +1573,12 @@ template<typename T>
                 return isinf(d1) ? 1.0 : 0.0;
             else if (mode == 9) // is nan
                 return isnan(d1) ? 1.0 : 0.0;
+            else if (mode == 10)
+                return (d1 == compare) ? 1.0 : 0.0;
+            else if (mode == 11)
+                return (d1 != compare) ? 1.0 : 0.0;
             else
-                printf("Undefined boolean operation: [%i]\n", mode);
+                printf("Undefined match condition: [%i]\n", mode);
             return d1;
         }
 
@@ -1597,9 +1601,9 @@ template<typename T>
             int mode = (int) params[3];
             if (mode == 0) // equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
-            else if (mode == 1) // not equals
+            else if (mode == 1) // not equals eps
                 return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
-            else if (mode == 2) // less_than
+            else if (mode == 2) // less_than eps
                 return d1 < compare? d2 : d1;
             else if (mode ==3) // greater_than
                 return d1 > compare? d2 : d1;
@@ -1615,6 +1619,10 @@ template<typename T>
                 return isinf(d1) ? d2 : d1;
             else if (mode == 9) // is nan
                 return isnan(d1) ? d2 : d1;
+            else if (mode == 10)
+                return (d1 == compare) ? d2 : d1;
+            else if (mode == 11)
+                return (d1 != compare) ? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -1655,6 +1663,10 @@ template<typename T>
                 return isinf(d1) ? set : d1;
             else if (mode == 9) // is nan
                 return isnan(d1) ? set : d1;
+            else if (mode == 10)
+                return (d1 == compare) ? set : d1;
+            else if (mode == 11)
+                return (d1 != compare) ? set : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -1685,6 +1697,10 @@ template<typename T>
                 return isinf(d2) ? d2 : d1;
             else if (mode == 9) // is nan
                 return isnan(d2) ? d2 : d1;
+            else if (mode == 10)
+                return (d2 == compare) ? d2 : d1;
+            else if (mode == 11)
+                return (d2 != compare) ? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
