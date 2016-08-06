@@ -1547,9 +1547,35 @@ template<typename T>
             return old + opOutput;
         }
 
+        // this op return 1.0 if condition met, 0.0 otherwise
         op_def static T op(T d1, T *extraParams) {
-            // check if condition matches
-            return 1.0;
+            T compare = extraParams[0];
+            T eps = extraParams[1];
+
+            int mode = (int) extraParams[2];
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0 : 0.0;
+            else if (mode == 2) // less_than
+                return d1 < compare? 1.0 : 0.0;
+            else if (mode ==3) // greater_than
+                return d1 > compare? 1.0 : 0.0;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? 1.0 : 0.0;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? 1.0 : 0.0;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? 1.0 : 0.0;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? 1.0 : 0.0;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? 1.0 : 0.0;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
         }
 
         op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
