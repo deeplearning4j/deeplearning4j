@@ -422,17 +422,13 @@ public class Tree implements Serializable {
     @Override
     public String toString() {
         return "Tree{" +
-                "vector=" + vector +
-                ", prediction=" + prediction +
-                ", error=" + error +
+                "error=" + error +
                 ", parent=" + parent +
                 ", headWord='" + headWord + '\'' +
                 ", value='" + value + '\'' +
                 ", label='" + label + '\'' +
                 ", type='" + type + '\'' +
                 ", goldLabel=" + goldLabel +
-                ", tokens=" + tokens +
-                ", tags=" + tags +
                 ", parse='" + parse + '\'' +
                 ", begin=" + begin +
                 ", end=" + end +

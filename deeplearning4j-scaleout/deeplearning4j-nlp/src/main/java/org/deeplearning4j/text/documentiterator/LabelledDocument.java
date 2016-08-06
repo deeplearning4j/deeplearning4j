@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.documentiterator;
 
 import lombok.Data;
+import lombok.ToString;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Data
+@ToString(exclude="referencedContent")
 public class LabelledDocument {
     // initial text representation of current document
     private String content;
