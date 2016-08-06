@@ -40,7 +40,7 @@ Deeplearning4jにあるニューラルネットワークを使って回帰を行
 
 `nOut`は、各層のノード数です。`nIn`は、前層から通過してきた特徴の数です。つまり、上図の例の場合だと、その値は4となります。`activationFunction`は`'identity'`に設定します。
 
-より簡単な数学関数に近似させるための回帰を使ったニューラルネットワークについてをより網羅した例は、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/feedforward/regression)をご覧ください。 
+より簡単な数学関数に近似させるための回帰を使ったニューラルネットワークについてをより網羅した例は、[こちら](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/feedforward/regression)をご覧ください。 
 
 ### <a name="beginner">その他の Deeplearning4jのチュートリアル</a>
 * [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](./ja-restrictedboltzmannmachine)

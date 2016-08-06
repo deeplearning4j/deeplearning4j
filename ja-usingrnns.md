@@ -287,12 +287,12 @@ AlignmentMode機能を例3に使用して多対1の再帰型シーケンス分�
 
 このアプローチはかなり低いレベルであることに注意してください。DataSetIteratorを実装する場合、入力とラベルに必要なINDArraysや（必要な場合は）入力とラベルのマスク配列を手作業で作成する必要があります。しかし、このアプローチだと、データの読み込み方法にかなりの柔軟性を持たせることができます。
 
-実際のアプローチの例については、[tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
+実際のアプローチの例については、[tex/character example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
 
 ## <a name="examples">例</a>
 
-現在、以下のようなDL4Jの[再帰型ネットワークの例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)があります。
+現在、以下のようなDL4Jの[再帰型ネットワークの例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)があります。
 
-* [登場人物のモデリング例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
-* [基本的なビデオフレーム分類例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
-* [word2vecシーケンス分類例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。
+* [登場人物のモデリング例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
+* [基本的なビデオフレーム分類例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
+* [word2vecシーケンス分類例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。

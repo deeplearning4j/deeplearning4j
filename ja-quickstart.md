@@ -25,10 +25,10 @@ Deeplearning4jは、プロのJava開発者向けのオープンソースプロ�
 
 上記をインストールした後、以下のステップを踏んでいただくと、すぐにお使いいただけます。（Windowsのユーザーの方は、このページ下方の[ステップごとの手順](#walk)をお読みください。）
 
-* コマンドラインに`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`と入力します。（現在使用中のexampleバージョンは0.0.4です。）
+* コマンドラインに`git clone https://github.com/deeplearning4j/dl4j-examples.git`と入力します。（現在使用中のexampleバージョンは0.0.4です。）
 * IntelliJを開き、Mavenを使ってメニューツリーの`File/New/Project from Existing Sources`へ行き、新しいプロジェクトを作成します。上記のexampleのルートディレクトリを指定すると、統合開発環境でexampleが開きます。
 ![Alt text](./img/IntelliJ_New_Project.png) 
-* 以下のコードをPOM.xmlにコピー＆ペーストし、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようにします。 
+* 以下のコードをPOM.xmlにコピー＆ペーストし、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようにします。 
 * 追加の[Windowsユーザー向け手引きは、こちらをお読みください](./ja-gettingstarted.html#windows)。 
 * 左側のファイルツリーから`DBNIrisExample.java`を選びます。
 * runを押すと、完了です！（ソースファイルを右クリックしたときに表示される緑色のボタンです。)
@@ -47,11 +47,11 @@ Databricks、Domino、 Sense.ioなどの管理された環境で作業してい�
 * exampleのすべての依存関係は、ローカルでなくMavenからダウンロードするようにしてください。`(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
 * dl4j-0.4-exampleのディレクトリで`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`を実行し、正常にインストールされているか確認してください。
 * TSNEについては、`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`と実行し、TSNE、または他のexampleを実行します。実行に失敗し、 Mavenのデーモンスレッドが終了時に停止しない場合には、最後に引数が必要になる場合があります。
-* 1000回のイテレーションは、`dl4j-0.4-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
+* 1000回のイテレーションは、`dl4j-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
 
 F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。
 
-何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようになっているか、確認してください。 
+何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようになっているか、確認してください。 
 
 ## 依存関係およびバックエンド
 
@@ -87,7 +87,7 @@ AWSサーバーでLinux OSにDeeplearningをインストールし、最初のexa
 
 そして具体的にはコマンドは大体以下のようになります。
 
-    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+    java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
 
 つまり、更新すると変更するワイルドカードが2つあり、以下のようなexampleになります。
 
@@ -97,7 +97,7 @@ AWSサーバーでLinux OSにDeeplearningをインストールし、最初のexa
 
 ## Scala 
 
-[Scalaバージョンでの例はこちら](https://github.com/kogecoo/dl4j-0.4-examples-scala)。
+[Scalaバージョンでの例はこちら](https://github.com/kogecoo/dl4j-examples-scala)。
 
 ## 次のステップ
 
@@ -114,7 +114,7 @@ exampleを実行し終えた後は、 [フルインストール・ページ](./g
 * Windowsをご使用の場合、スタートアップメニューで「Git Bash」を探して開きます。Git Bashターミナルは、cmd.exeのようなものです。
 * DL4Jのexampleを配置したいディレクトリに`cd`コマンドを実行します。新しいものを`mkdir dl4j-examples`で作成し、`cd`コマンドをそこに入力します。そして以下を実行します。
 
-    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
+    `git clone https://github.com/deeplearning4j/dl4j-examples`
 * `ls`コマンドを実行して必ずファイルをダウンロードするようにしてください。 
 * 次にIntelliJを開きます。 
 * 「File（ファイル）」メニューをクリックし、「Import Project（プロジェクトをインポート）」または「New Project from Existing Sources（既存のソースからの新規プロジェクト）」を選びます。これにより、ローカルのファイルメニューが提供されます。 

@@ -373,9 +373,9 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 ### <a name="code">코드 예제</a>
 
-이제 여러분께서는 Word2Vec 코드의 설정 방법을 대략 이해하고 계실 것 입니다. 이제 이 Word2vec이 어떻게 DL4J의 다른 API에서 쓰이는지를 보여주는 [예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java)를 참고하시기 바랍니다.
+이제 여러분께서는 Word2Vec 코드의 설정 방법을 대략 이해하고 계실 것 입니다. 이제 이 Word2vec이 어떻게 DL4J의 다른 API에서 쓰이는지를 보여주는 [예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java)를 참고하시기 바랍니다.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
 [퀵 스타트 가이드](./kr-quickstart.html)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다. 
 
@@ -465,7 +465,7 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 
 ### 학습 자료
 
-* [DL4J 단락 벡터로 텍스트를 분류](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java)
+* [DL4J 단락 벡터로 텍스트를 분류](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java)
 * [DL4J의 Doc2vec(문서 벡터), 또는 단락 벡터](./doc2vec.html)
 * [사고 벡터, 자연어 처리 & AI의 미래](./thoughtvectors.html)
 * [Quora: Word2vec의 작동 원리](http://www.quora.com/How-does-word2vec-work)

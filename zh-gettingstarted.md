@@ -44,7 +44,7 @@ layout: default
 * 如您使用Windows，请在开始菜单中找到“Git Bash”并打开。Git Bash终端的外观应与cmd.exe相似。
 * 用`cd`命令进入想要存放DL4J示例的文件夹。您可以建立名为`mkdir dl4j-examples`的新文件夹，再`cd`进入该文件夹。接着运行：
 
-    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
+    `git clone https://github.com/deeplearning4j/dl4j-examples`
 * 输入`ls`，确认文件已下载。 
 * 打开IntelliJ。 
 * 选择“文件”菜单，点击“导入项目”或“从已有来源新建项目”，显示本地文件菜单。 
@@ -134,7 +134,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
       
 ## Scala 
 
-[Scala版本的示例见此处](https://github.com/kogecoo/dl4j-0.4-examples-scala)。
+[Scala版本的示例见此处](https://github.com/kogecoo/dl4j-examples-scala)。
       
 ### 托管环境
 
@@ -154,7 +154,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 
 需要输入的命令应当与以下示例相类似：
 
-    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+    java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
 
 在版本更新后，或使用不同的示例时，有两个项目会发生改变：
 

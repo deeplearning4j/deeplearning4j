@@ -54,7 +54,7 @@ Autoencoders are at the heart of representation learning. They encode input, usu
 * [Auto-Encoding Variational Bayes](http://arxiv.org/abs/1312.6114)
 * [Stacked Denoising Autoencoders: Learning Useful Representations in a Deep Network with a Local Denoising Criterion](http://www.jmlr.org/papers/volume11/vincent10a/vincent10a.pdf)
 * [Semi-supervised Sequence Learning](http://arxiv.org/abs/1511.01432)
-* [Autoencoder in Deeplearning4j](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/autoencoder/StackedAutoEncoderMnistExample.java)
+* [Autoencoder in Deeplearning4j](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/autoencoder/StackedAutoEncoderMnistExample.java)
 
 ### <a name="backprop">Backpropagation</a> 
 To calculate the [gradient](#gradient) the relate weights to error, we use a technique known as backpropagation, which is also referred to as the backward pass of the network. Backpropagation is a repeated application of chain rule of calculus for partial
@@ -210,7 +210,7 @@ A neural network that takes the initial input and triggers the [activation](#act
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
 ### <a name="glove">Gloval Vectores (GloVe)</a>
-GloVe is a generalization of Tomas Mikolov's word2vec algorithms, a technique for creating neural word embeddings. It was first presented at NIPS by Jeffrey Pennington, Richard Socher and Christopher Manning of Stanford's NLP department. [Deeplearning4j's implementation of GloVe is here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/glove/GloVeExample.java). 
+GloVe is a generalization of Tomas Mikolov's word2vec algorithms, a technique for creating neural word embeddings. It was first presented at NIPS by Jeffrey Pennington, Richard Socher and Christopher Manning of Stanford's NLP department. [Deeplearning4j's implementation of GloVe is here](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/glove/GloVeExample.java). 
 
 * [GloVe: Global Vectors for Word Representation](http://nlp.stanford.edu/pubs/glove.pdf)
 
@@ -251,7 +251,7 @@ Google's LeNet architecture is a deep convolutional network. It won ILSVRC in 20
 * [Going Deeper with Convolutions](http://arxiv.org/abs/1409.4842)
 
 ### <a name="lstm">Long Short-Term Memory Units (LSTM)</a>
-LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochreiter and Juergen Schmidhuber, and now widely used for image, sound and time series analysis, because they help solve the vanishing gradient problem by using a memory gates. Alex Graves made significant improvements to the LSTM with what is now known as the Graves LSTM, which [Deeplearning4j implements here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/rnn). 
+LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochreiter and Juergen Schmidhuber, and now widely used for image, sound and time series analysis, because they help solve the vanishing gradient problem by using a memory gates. Alex Graves made significant improvements to the LSTM with what is now known as the Graves LSTM, which [Deeplearning4j implements here](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/rnn). 
 
 * [LSTMs with Deeplearning4j](./lstm.html)
 * [Using RNNs with Deeplearning4j](./usingrnns.html)
@@ -272,7 +272,7 @@ Momentum also known as Nesterov’s momentum, influences the speed of learning. 
 * [Nesterov's Momentum Updater in Deeplearnign4j](https://github.com/deeplearning4j/deeplearning4j/blob/b585d6c1ae75e48e06db86880a5acd22593d3889/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/NesterovsUpdater.java)
 
 ### <a name="mlp">Multilayer Perceptron</a>
-MLPs are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
+MLPs are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
 
 ### <a name="nmt">Neural Machine Translation</a>
 Neural machine translation maps one language to another using neural networks. Typically, recurrent neural networks are use to ingest a sequence from the input language and output a sequence in the target language. 
