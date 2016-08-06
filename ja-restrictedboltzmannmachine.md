@@ -191,7 +191,7 @@ RBMには多くの利用方法がありますが、後の学習と分類を容�
 このコードはgist-itから引用しました。こちらを参照してください。
 [src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java)
 
-上記のコーディングは、[Iris flowerのデータセットを処理するRBM](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)のサンプルです。これについては、別にチュートリアルがあります。
+上記のコーディングは、Iris flowerのデータセットを処理するRBM のサンプルです。
 
 ## <a name="params">パラメータ及びkについて</a>
 

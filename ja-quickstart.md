@@ -49,7 +49,7 @@ Databricks、Domino、 Sense.ioなどの管理された環境で作業してい�
 * TSNEについては、`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`と実行し、TSNE、または他のexampleを実行します。実行に失敗し、 Mavenのデーモンスレッドが終了時に停止しない場合には、最後に引数が必要になる場合があります。
 * 1000回のイテレーションは、`dl4j-0.4-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
 
-F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。exampleのステップごとの手順は、弊社の[Iris DBNチュートリアル](./iris-flower-dataset-tutorial.html)をお読みください。
+F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。
 
 何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようになっているか、確認してください。 
 

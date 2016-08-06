@@ -23,6 +23,12 @@ Convolutional nets overlap with text analysis via optical character recognition 
 
 The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
+Deeplearning4j wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world.
+
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
+
 ## <a name="tensors">Images Are 4-D Tensors?</a>
 
 Convolutional nets ingest and process images as tensors, and tensors are matrices of numbers with additional dimensions. 
@@ -148,7 +154,7 @@ As more and more information is lost, the patterns processed by the convolutiona
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=42:73"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=43:87"></script>
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
@@ -162,4 +168,4 @@ Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 * [Andrej Karpathy's Stanford course](https://cs231n.github.io/) on Convolutional Nets is fantastic. We highly recommend it as an introduction to the major ideas. (*Exercises in Python.*)
-* To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/convolution) after following the instructions on the [Quickstart page](http://deeplearning4j.org/quickstart.html). 
+* To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/) after following the instructions on the [Quickstart page](./quickstart). 

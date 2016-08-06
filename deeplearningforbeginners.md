@@ -13,13 +13,12 @@ In the case of Deeplearning4j, you should know Java well and be comfortable with
 
 Below you'll find a list of resources. The sections are roughly organized in the order they will be useful. 
 
-## Machine- and Deep-learning courses
+## Free Machine- and Deep-learning Courses Online
 
 * [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info) 
 * [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
-* [Google's Intro to Machine Learning on YouTube](https://www.youtube.com/watch?v=cKxRvEZd3Mw&index=2&list=PLOU2XLYxmsIIuiBfYad6rFYQU_jL2ryal)
 
 ## Math
 
@@ -30,6 +29,9 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Math for Machine Learning](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
 * [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
 * [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
+* [The best linear algebra books](https://begriffs.com/posts/2016-07-24-best-linear-algebra-books.html)
+* [Markov Chains, Explained](http://setosa.io/ev/markov-chains/)
+* [An Introduction to MCMC for Machine Learning](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf)
 
 ## Programming
 
@@ -63,19 +65,24 @@ With that under your belt, we recommend you approach Deeplearning4j through its 
 
 Once you get those up and running, and you've understood the API, you're ready for a full install.
 
-* [Getting Started](./gettingstarted.html)
+* [Getting Started](./gettingstarted)
 
 ## Other Resources
 
 Most of what we know about deep learning is contained in academic papers.
 
-We've linked to a number of them [here](./deeplearningpapers.html). 
+We've linked to a number of them [here](./deeplearningpapers). 
 
 While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
 
 ## DL4J Beginner's Guides
 
-* [Regression & Neural Networks](./linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
-* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Regression & Neural Networks](./linear-regression)
+* [Word2vec: Extracting Relations From Raw Text With Neural Word Embeddings](./word2vec)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine)
+* [Recurrent Networks and Long Short-Term Memory Units](./lstm)
+* [Convolutional Networks for Image Processing](./convolutionalnets)
+* [Artificial Intelligence vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning)
+* [Comparing Open-Source Deep Learning Frameworks](./compare-dl4j-torch7-pylearn)
+* [Eigenvectors, PCA, Covariance and Entropy](/eigenvector)

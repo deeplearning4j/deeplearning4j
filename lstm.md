@@ -168,7 +168,11 @@ A gated recurrent unit (GRU) is basically an LSTM without an output gate, which 
 
 ## <a name="code">Code Sample</a>
 
-A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. The API is commented where it's not self-explanatory. If you have questions, please join us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. The API is commented where it's not self-explanatory. If you have questions, please join us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+
+Here's what the LSTM configuration looks like:
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java?slice=61:82"></script>
 
 ## <a name="tuning">LSTM Hyperparameter Tuning</a>
 

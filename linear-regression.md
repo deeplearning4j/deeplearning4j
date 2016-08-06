@@ -27,7 +27,7 @@ To perform backpropagation and make the network learn, you simply compare ŷ to 
 
 In this way, you can use a neural network to get the function relating an arbitrary number of independent variables x to a dependent variable y that you're trying to predict. 
 
-To perform regression with a neural network in Deeplearning4j, you would [set up a multilayer neural network](./iris-flower-dataset-tutorial.html), and add an output layer at the end with the following properties:
+To perform regression with a neural network in Deeplearning4j, you would set up a multilayer neural network, and add an output layer at the end with the following properties:
 
 ```
 //Create output layer

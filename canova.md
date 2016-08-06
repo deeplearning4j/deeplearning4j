@@ -1,9 +1,15 @@
 ---
-title: "Canova: A Vectorization Lib for Machine Learning"
+title: "Canova Is Now DataVec"
 layout: default
 ---
 
-# Canova: A Vectorization Lib for ML
+# Canova Is Now DataVec
+
+The Canova library has been merged into [DataVec](./datavec) with release 0.4.0.
+
+The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec), and its [Javadoc is here](./datavecdoc/). Anyone using older versions of DL4J, ND4J and Canova can refer to the documentation below. 
+
+# Canova
 
 Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. Please **read this entire page**, particularly the section [Reading Records](#record) below, before working with Canova.
 

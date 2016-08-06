@@ -125,7 +125,7 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
 
 - `deeplearning4j-core`, which contains the neural network implementations
 - `nd4j-native`, the CPU version of the ND4J library that powers DL4J
-- `datavec-api` - Canova is our library vectorizing and loading data
+- `datavec-api` - Datavec is our library vectorizing and loading data
 
 Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml) when you run your examples.
 
@@ -139,13 +139,7 @@ In another window, a graph will appear, showing you how the multilayer perceptro
 
 ![run IntelliJ example](./img/mlp_classifier_viz.png)
 
-And congratulations! You just trained your first neural network with Deeplearning4j...
-
-Additional links:
-
-- [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
-- [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
-- [Datavec artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdatavec)
+Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners), where you'll learn how to classify images.
 
 ## Next Steps
 
@@ -153,14 +147,19 @@ Additional links:
   * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
   * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
-2. Read the [introduction to deep neural networks](./neuralnet-overview) or one of our detailed tutorials. 
+2. Read the [introduction to deep neural networks](./neuralnet-overview) or [one of our detailed tutorials](./tutorials). 
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
 
+### Additional links
+
+- [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+- [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
+- [Datavec artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdatavec)
 
 ### Troubleshooting
 
-#### **Q:** I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
+**Q:** I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
 
 **A:** You may have incompatible DLLs on your PATH. To tell DL4J to ignore those, you have to add the following as a VM parameter (Run -> Edit Configurations -> VM Options in IntelliJ):
 
@@ -168,6 +167,6 @@ Additional links:
 -Djava.library.path=""
 ```
 
-#### **Q:** I'm getting this error: `Intel MKL FATAL ERROR: Cannot load mkl_intel_thread.dll`. It shuts down the JVM (i.e. doesn't crash it, but simply halts it...).
+**Q:** I'm getting this error: `Intel MKL FATAL ERROR: Cannot load mkl_intel_thread.dll`. It shuts down the JVM (i.e. doesn't crash it, but simply halts it...).
 
-**A:** With the rc3.10 release currently on Maven central, the library `libnd4j` doesn't load Intel's MKL correctly even when it is found on the path. This can be solved by adding `System.loadLibrary("mkl_rt")`.
+**A:** As of `rc3.10` and above (we're now on 0.4.0), the library `libnd4j` doesn't load Intel's MKL correctly even when it is found on the path. This can be solved by adding `System.loadLibrary("mkl_rt")`.

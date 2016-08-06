@@ -195,7 +195,6 @@ layout: zh-default
 * [卷积网络教程](./zh-convolutionalnets)
 * [递归网络和LSTM](./zh-lstm)
 * [Word2vec和自然语言处理](./zh-word2vec)
-* [鸢尾花数据集教程](./zh-iris-flower-dataset-tutorial.html)
 * [Deeplearning4j快速入门](./zh-quickstart)
 * [神经网络解密](https://www.youtube.com/watch?v=bxe2T-V8XRs)（全系列共七个视频）
 * [11行Python代码实现的神经网络](https://iamtrask.github.io/2015/07/12/basic-python-network/)
