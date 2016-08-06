@@ -20,13 +20,16 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
+import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -124,20 +127,60 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-        double number = function.apply(new Double(0.0)).doubleValue();
+        if (condition instanceof BaseCondition) {
+            // for all static conditions we go native
+
+            double number = function.apply(new Double(0.0)).doubleValue();
+
+            Nd4j.getExecutioner().exec(new CompareAndSet(to, number, condition));
+
+        } else {
+            // keep original java implementation for dynamic
+
+            Shape.iterate(to, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (condition.apply(to.getDouble(coord[0])))
+                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+
+                }
+            });
+        }
+    }
+
+    /**
+     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     *
+     * @param to
+     * @param from
+     * @param condition
+     */
+    public static void assignWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        if (to.lengthLong() != from.lengthLong())
+            throw new IllegalStateException("Mis matched length for to and from");
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(to, from, condition));
+    }
 
 
-        Nd4j.getExecutioner().exec(new CompareAndSet(to, number, condition));
+    /**
+     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     *
+     * @param to
+     * @param from
+     * @param condition
+     */
+    public static void replaceWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        /*Shape.iterate(to, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if(condition.apply(to.getDouble(coord[0])))
-                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+        if (to.lengthLong() != from.lengthLong())
+            throw new IllegalStateException("Mis matched length for to and from");
 
-            }
-        });
-        */
+        Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
     }
 
     /**

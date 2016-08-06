@@ -26,7 +26,11 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  *
  * @author Adam Gibson
  */
-public class IsNaN implements Condition {
+public class IsNaN extends BaseCondition {
+
+    public IsNaN() {
+        super(-1);
+    }
 
     /**
      * Returns condition ID for native side
@@ -38,10 +42,6 @@ public class IsNaN implements Condition {
         return 9;
     }
 
-    @Override
-    public double getValue() {
-        return -1;
-    }
 
     @Override
     public Boolean apply(Number input) {
