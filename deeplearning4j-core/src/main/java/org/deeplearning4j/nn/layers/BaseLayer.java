@@ -574,8 +574,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public String toString() {
         return getClass().getName() + "{" +
                 "conf=" + conf +
-                ", input=" + input +
-                ", params=" + params +
                 ", dropoutMask=" + dropoutMask +
                 ", score=" + score +
                 ", optimizer=" + optimizer +
