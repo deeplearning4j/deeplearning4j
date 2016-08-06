@@ -1544,20 +1544,43 @@ template<typename T>
 
             // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
             int mode = (int) params[3];
-            if (mode == 0)
+            if (mode == 0) // equals
 			    return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
-            else
+            else if (mode == 1) // not equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
+            else if (mode == 2) // less_than
+                return d1 < compare? set : d1;
+            else if (mode ==3) // greater_than
+                return d1 > compare? set : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? set : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? set : d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
 		}
 
         // op definition for PairWise Transform
         op_def static T op(T d1, T d2, T *params) {
+            T compare = params[0];
             T eps = params[2];
             int mode = (int) params[3];
-            if (mode == 0)
-                return nd4j::math::nd4j_abs<T>(d1 - d2) <= eps ? d2 : d1;
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
+            else if (mode == 2) // less_than
+                return d1 < compare? d2 : d1;
+            else if (mode ==3) // greater_than
+                return d1 > compare? d2 : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? d2 : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? d2 : d1;
             else
-                return nd4j::math::nd4j_abs<T>(d1 - d2) > eps ? d2 : d1;
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
         }
 	};
 }
