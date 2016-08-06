@@ -3,13 +3,13 @@ title: Deeplearning4j Models
 layout: default
 ---
 
-# Deeplearning4j Models
+# Preconfigured Deeplearning4j Models
 
-The Deeplearning4j community has built a number of models for image recognition:
+The Deeplearning4j community has built a number of preconfigured neural networks for image recognition:
 
-*[AlexNet](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/AlexNet.java)
-*[LeNet](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/LeNet.java)
-*[VGGNetA](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/VGGNetA.java)
-*[VGGNetD](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/VGGNetD.java)
+* [AlexNet](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/AlexNet.java)
+* [LeNet](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/LeNet.java)
+* [VGGNetA](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/VGGNetA.java)
+* [VGGNetD](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/VGGNetD.java)
 
-We'll be adding to this page as we have pretrained parameters to offer.
+While this is not exactly Caffe's model zoo, it will give you a headstart when creating models for image recognition. We'll be adding to this page as we have pretrained parameters to offer.

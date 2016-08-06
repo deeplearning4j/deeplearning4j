@@ -5,7 +5,7 @@ layout: default
 
 # DL4J vs. Torch vs. Theano vs. Caffe vs. TensorFlow
 
-Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
+Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. 
 
 <p align="center">
 <a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
@@ -13,9 +13,9 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Content
 
-* <a href="#tensorflow">TensorFlow</a>
-* <a href="#theano">Theano, Pylearn2 & Ecosystem</a>
+* <a href="#theano">Theano & Ecosystem</a>
 * <a href="#torch">Torch</a>
+* <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
@@ -27,28 +27,6 @@ Content
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
 
-### <a name="tensorflow">TensorFlow</a>
-
-* For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
-* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
-* TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
-* Google's acknowledged goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
-* TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
-* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
-* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
-
-Pros and Cons
-
-* (+) Python + numpy
-* (+) Computational graph abstraction, like Theano
-* (+) Much faster compile times than Theano
-* (+) TensorBoard for visualization
-* (+) Data AND model parallelism
-* (-) Slower than other frameworks
-* (-) Much “fatter” than Torch; more magic
-* (-) Not many pretrained models
-* (-) Computational graph is pure Python, so slow
-
 ### <a name="theano">Theano and Ecosystem</a>
 
 Most academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
@@ -59,7 +37,7 @@ In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the 
 
 Pros and Cons
 
-* (+) Python + numpy
+* (+) Python + Numpy
 * (+) Computational graph is nice abstraction
 * (+) RNNs fit nicely in computational graph
 * (-) Raw Theano is somewhat low-level
@@ -67,23 +45,54 @@ Pros and Cons
 * (-) Error messages can be unhelpful
 * (-) Large models can have long compile times
 * (-) Much “fatter” than Torch; more magic
-* (-) Patchy support for pretrained mo
+* (-) Patchy support for pretrained models
+* (-) Buggy on AWS
+* (-) No commercial support
 
 ### <a name="torch">Torch</a>
 
-[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google DeepMind and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
+[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
 
 Pros and Cons:
 
-* (-) Lua
-* You usually write your own training code (Less plug and play)
 * (+) Lots of modular pieces that are easy to combine
 * (+) Easy to write your own layer types and run on GPU
 * (+) Lua. ;) (Most of the library code is in Lua, easy to read)
 * (+) Lots of pretrained models!
+* (-) Who deploys Lua?
+* (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
+* (-) No commercial support
+
+### <a name="tensorflow">TensorFlow</a>
+
+* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google. 
+* For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
+* TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
+* Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
+* TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
+* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
+* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
+* Caveat: Not all operations in Tensorflow work as they do in Numpy. 
+
+Pros and Cons
+
+* (+) Python + Numpy
+* (+) Computational graph abstraction, like Theano
+* (+) Faster compile times than Theano
+* (+) TensorBoard for visualization
+* (+) Data and model parallelism
+* (-) Slower than other frameworks
+* (-) Much “fatter” than Torch; more magic
+* (-) Not many pretrained models
+* (-) Computational graph is pure Python, therefore slow
+* (-) No commercial support
+* (-) Inefficient: Drops out to Python to load each new training batch
+* (-) Not very toolable
+* (-) Dynamic typing is error-prone on large software projects
 
 ### <a name="caffe">Caffe</a>
 
@@ -100,6 +109,8 @@ Pros and Cons:
 * (-) Need to write C++ / CUDA for new GPU layers
 * (-) Not good for recurrent networks
 * (-) Cumbersome for big networks (GoogLeNet, ResNet)
+* (-) Not extensible, bit of a hairball
+* (-) No commercial support
 
 ### <a name="cntk">CNTK</a>
 
@@ -108,6 +119,8 @@ Pros and Cons:
 ### <a name="dsstne">DSSTNE</a>
 
 Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, appears to be fast, although it has not attracted as large a community as the other libraries. 
+
+* (+) Handles Sparse encoding!
 
 ### <a name="licensing">Licensing</a>
 

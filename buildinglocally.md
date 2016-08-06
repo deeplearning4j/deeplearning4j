@@ -11,7 +11,7 @@ Building locally requires that you build the entire Deeplearning4j stack which i
 
 - [libnd4j](https://github.com/deeplearning4j/libnd4j)
 - [nd4j](https://github.com/deeplearning4j/nd4j)
-- [canova](https://github.com/deeplearning4j/canova)
+- [datavec](https://github.com/deeplearning4j/datavec)
 - [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
@@ -243,7 +243,7 @@ copy mkl_rt.dll libblas3.dll
 
 ### Build Script
 
-A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
+A community-provided script [build-dl4j-stack.sh](https://gist.github.com/treo/6e243d616ba1ff8ac201444f8e910471) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
 Use the build script as follows for CPU architectures:
 
@@ -275,11 +275,11 @@ If you prefer, you can build each piece in the DL4J stack by hand. The procedure
 
 The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for.
 
-```
+``` shell
 # removes any existing repositories to ensure a clean build
 rm -rf libnd4j
 rm -rf nd4j
-rm -rf canova
+rm -rf datavec
 rm -rf deeplearning4j
 
 # compile libnd4j
@@ -294,17 +294,19 @@ cd ..
 # build and install nd4j to maven locally
 git clone https://github.com/deeplearning4j/nd4j.git
 cd nd4j
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-tests'
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-cuda-7.5-platform,!:nd4j-tests'
 # or when using GPU
 #mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
 
-# build and install canova
-git clone https://github.com/deeplearning4j/canova.git
-cd canova
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-# or cross-build across Scala versions
-#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+# build and install datavec
+checkexit git clone https://github.com/deeplearning4j/datavec.git
+cd datavec
+if [ "$SCALAV" == "" ]; then
+  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+else
+  checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
+fi
 cd ..
 
 # build and install deeplearning4j

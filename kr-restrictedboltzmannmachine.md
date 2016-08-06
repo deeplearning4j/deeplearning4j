@@ -207,7 +207,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
     }
 ```
 
-이 코드는 [RBM processing the Iris flower dataset](./iris-flower-dataset-tutorial.html)의 일부입니다. 자세한 설명은 해당 링크를 참고하시기 바랍니다.
+이 코드는 RBM processing the Iris flower dataset의 일부입니다. 자세한 설명은 해당 링크를 참고하시기 바랍니다.
 
 ## <a name="params">파라미터들 & k</a>
 

@@ -207,7 +207,7 @@ Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguratio
      // A single layer learns features unsupervised.	
     }
 
-This is an example of an [RBM processing the Iris flower dataset](./iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
+This is an example of an RBM processing the Iris flower dataset.
 
 ## <a name="params">Parameters & k</a>
 

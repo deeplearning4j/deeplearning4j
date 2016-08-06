@@ -8,6 +8,7 @@ layout: default
 Contents
 
 * <a href="#define">Neural Network Definition</a>
+* <a href="#concrete">A Few Concrete Examples</a>
 * <a href="#element">Neural Network Elements</a>
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
@@ -21,23 +22,55 @@ Contents
 
 Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensory data through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, into which all real-world data, be it images, sound, text or time series, must be translated. 
 
-Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involved algorithms for [reinforcement learning](./reinforcementlearning.html), classification and [regression](./linear-regression.html).)
+Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help to group unlabeled data according to similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involving algorithms for [reinforcement learning](./reinforcementlearning.html), classification and [regression](./linear-regression.html).)
 
 <p align="center">
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
 </p>
 
-As you think about one problem deep learning can solve, ask yourself: What categories do I care about? What information can I act upon? Those outcomes are labels that would be applied to data: `spam` or `not_spam`, `good_guy` or `bad_guy`, `angry_customer` or `happy_customer`. Then ask: Do I have the data to accompany those labels? Can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) that I can use to teach an algorithm the correlation between labels and inputs?
+What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What outcomes do I care about? Those outcomes are labels that could be applied to data: for example, `spam` or `not_spam` in an email filter, `good_guy` or `bad_guy` in fraud detection, `angry_customer` or `happy_customer` in customer relationship management. Then ask: Do I have the data to accompany those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) where spam has been labeled as spam, in order to teach an algorithm the correlation between labels and inputs? 
 
-For example, if you want to identify a group of people at risk for cancer, your training set might be a list of cancer patients and people without cancer, along with all the data associated to their unique IDs, including everything from explicit features like age and smoking habits to raw data such as time series tracking their motion, or logs of their behavior online, which likely indicate a great deal about lifestyle, habits, interests and risks. 
+## <a name="concrete">A Few Concrete Examples</a>
 
-With that dataset, you could train a neural network to classify people as having cancer or not, and then apply that classification model to people whose risk of cancer is unknown, in order to predict cancer risk for new patients and provide those at risk with better attention and pre-emptive treatment. 
+Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. Here are a few examples of what deep learning can do. 
 
-Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital statistics, social graphs, raw text communications, click streams, etc., and then comparing them to others in order to surface patterns as well as persons of interest. 
+### Classification
+
+All classification tasks depend upon labeled datasets; that is, humans must transfer their knowledge to the dataset in order for a neural to learn the correlation between labels and data. This is known as *supervised learning*.
+
+* Detect faces, identify people in images, recognize facial expressions (angry, joyful)
+* Identify objects in images (stop signs, pedestrians, lane markers...)
+* Recognize gestures in video
+* Detect voices, identify speakers, transcribe speech to text, recognize sentiment in voices
+* Classify text as spam (in emails), or fraudulent (in insurance claims); recognize sentiment in text (customer feedback)
+
+Any labels that humans can generate, any outcomes you care about and which correlate to data, can be used to train a neural network.
+
+### Clustering
+
+Clustering or grouping is the detection of similarities. Deep learning does not require labels to detect similarities. Learning without labels is called *unsupervised learning*. Unlabeled data is the majority of data in the world. One law of machine learning is: the more data an algorithm can train on, the more accurate it will be. Therefore, unsupervised learning has the potential to produce highly accurate models. 
+
+* Search: Comparing documents, images or sounds to surface similar items.
+* Anomaly detection: The flipside of detecting similarities is detectin anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
+
+### Predictive Analytics
+
+With classification, deep learning is able to establish correlations between, say, pixels in an image and the name of a person. You might call this a static prediction. By the same token, exposed to enough of the right data, deep learning is able to establish correlations between present events and future events. The future event is like the label in a sense. Deep learning doesn't necessarily care about time, or the fact that something hasn't happened yet. Given a time series, deep learning may read a string of number and predict the number most likely to occur next. 
+
+* Hardware breakdowns (data centers, manufacturing, transport)
+* Health breakdowns (strokes, heart attacks based on vital stats and data from wearables)
+* Customer churn (predicting the likelihood that a customer will leave, based on web activity and metadata)
+* Employee turnover (ditto, but for employees)
+
+The better we can predict, the better we can prevent and pre-empt. As you can see, with neural networks, we're moving towards a world of fewer surprises. Not zero surprises, just marginally fewer.
+
+With that brief overview of [deep learning use cases](./use_cases), let's look at what neural nets are made of. 
 
 ## <a name="element">Neural Network Elements</a>
 
-Deep learning is a name for a certain set of stacked neural networks composed of several layers. The layers are made of nodes. A node is a place where computation happens, loosely patterned on the human neuron, and firing when it encounters sufficient stimuli. It combines input from the data with a set of coefficients, or weights, that either amplify or dampen that input, thereby assigning significance to it in the task the algorithm is trying to learn. These input-weight products are summed and the sum is passed through a node's so-called activation function, to determine whether and to what extent that signal progresses further in the net to affect the ultimate outcome, say, an act of classification. 
+Deep learning is the name we use for "stacked neural networks"; that is, networks composed of several layers. 
+
+The layers are made of *nodes*. A node is just a place where computation happens, loosely patterned on a neuron in the human brain, which fires when it encounters sufficient stimuli. A node combines input from the data with a set of coefficients, or weights, that either amplify or dampen that input, thereby assigning significance to inputs for the task the algorithm is trying to learn. (For example, which input is most helpful is classifying data without error?) These input-weight products are summed and the sum is passed through a node's so-called activation function, to determine whether and to what extent that signal progresses further through the network to affect the ultimate outcome, say, an act of classification. 
 
 Here's a diagram of what one node might look like.
 
@@ -194,14 +227,18 @@ To train complex neural networks on very large datasets, a deep learning cluster
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
+* [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Word2vec and Natural-Language Processing](./lstm.html)
-* [Iris Flower Dataset Tutorial](./iris-flower-dataset-tutorial.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
+
+```
+Here, then, is Darwin's dangerous idea: the algorithmic level is the level that best accounts for the speed of the antelope, the wing of the eagle, the shape of the orchid, the diversity of species, and all the other occasions for wonder in the world of nature. - Daniel C. Dennett
+```
