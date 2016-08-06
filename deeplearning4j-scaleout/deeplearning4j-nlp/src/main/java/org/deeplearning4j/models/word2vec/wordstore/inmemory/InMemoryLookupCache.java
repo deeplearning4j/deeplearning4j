@@ -461,12 +461,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
     @Override
     public String toString() {
         return "InMemoryLookupCache{" +
-                "wordIndex=" + wordIndex +
-                ", wordFrequencies=" + wordFrequencies +
-                ", docFrequencies=" + docFrequencies +
-                ", vocabs=" + vocabs +
-                ", tokens=" + tokens +
-                ", totalWordOccurrences=" + totalWordOccurrences +
+                "totalWordOccurrences=" + totalWordOccurrences +
                 ", numDocs=" + numDocs +
                 '}';
     }
