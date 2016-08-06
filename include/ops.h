@@ -1530,6 +1530,71 @@ template<typename T>
 		}
 	};
 
+
+    template<typename T>
+    class MatchCondition {
+    public:
+
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            // check if condition matches
+            return 1.0;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
+
+    // this op is used for conditional pairwise transforms only
+    template<typename T>
+    class CompareAndReplace{
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        // op definition for PairWise Transform
+        op_def static T op(T d1, T d2, T *params) {
+            T compare = params[0];
+            T eps = params[2];
+            int mode = (int) params[3];
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
+            else if (mode == 2) // less_than
+                return d1 < compare? d2 : d1;
+            else if (mode ==3) // greater_than
+                return d1 > compare? d2 : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? d2 : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? d2 : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? d2 : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? d2 : d1;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? d2 : d1;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? d2 : d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
+        }
+    };
+
 	template<typename T>
 	class CompareAndSet {
 	public:
@@ -1575,25 +1640,25 @@ template<typename T>
             T eps = params[2];
             int mode = (int) params[3];
             if (mode == 0) // equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
+                return nd4j::math::nd4j_abs<T>(d2 - compare) <= eps ? d2 : d1;
             else if (mode == 1) // not equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
+                return nd4j::math::nd4j_abs<T>(d2 - compare) > eps ? d2 : d1;
             else if (mode == 2) // less_than
-                return d1 < compare? d2 : d1;
+                return d2 < compare? d2 : d1;
             else if (mode ==3) // greater_than
-                return d1 > compare? d2 : d1;
+                return d2 > compare? d2 : d1;
             else if (mode == 4) // less_or_equals_than
-                return d1 <= compare? d2 : d1;
+                return d2 <= compare? d2 : d1;
             else if (mode == 5) // greater_or_equals_than
-                return d1 >= compare? d2 : d1;
+                return d2 >= compare? d2 : d1;
             else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d1) < compare? d2 : d1;
+                return nd4j::math::nd4j_abs<T>(d2) < compare? d2 : d1;
             else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d1) > compare? d2 : d1;
+                return nd4j::math::nd4j_abs<T>(d2) > compare? d2 : d1;
             else if (mode == 8) // is inf
-                return isinf(d1) ? d2 : d1;
+                return isinf(d2) ? d2 : d1;
             else if (mode == 9) // is nan
-                return isnan(d1) ? d2 : d1;
+                return isnan(d2) ? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;

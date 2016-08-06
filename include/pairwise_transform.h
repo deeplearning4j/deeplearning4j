@@ -44,7 +44,8 @@
         (15,simdOps::NotEqualTo),\
         (16,simdOps::Copy),\
         (17,simdOps::Axpy),\
-        (45,simdOps::CompareAndSet)
+        (45,simdOps::CompareAndSet),\
+        (46,simdOps::CompareAndReplace)
 
 
 
