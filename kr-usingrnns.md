@@ -287,12 +287,12 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 하지만 이 방법은 상당히 로우레벨의 작업입니다. `DataSetIterator`를 구현하려면 직접 입력/레이블의 마스크 어레이를 구현하고 적합한 `INDArrays`를 생성해야합니다. 물론, 그 대신에 데이터를 정확히 어떻게 불러오고 사용하는지를 이해할 수 있고 더 다양한 학습 상황을 구현할 수 있습니다.
 
-[tex/character 예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)와 [Word2Vec move review sentiment 예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)에서 사용하는 iterator를 참고하시기 바랍니다. 
+[tex/character 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)와 [Word2Vec move review sentiment 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)에서 사용하는 iterator를 참고하시기 바랍니다. 
 
 ## <a name="examples">예제</a>
 
 DL4J는 현재 세 가지 RNNs 예제를 제공합니다.
 
-* [글자(character) 모델링 예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java)로, 셰익스피어의 작품을 글자(character) 기반으로 학습하고 생성합니다.
-* [간단한 비디오 프레임 분류 예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java)로, 비디오 (.mp4 형식)를 불러와서 각 프레임의 객체를 분류합니다.
-* [Word2vec 시퀀스 분류 예제](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java)는 영화 리뷰를 긍정적/부정적 리뷰로 분류하는 예제이며 사전에 학습된 단어 벡터와 RNNs을 사용합니다.
+* [글자(character) 모델링 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java)로, 셰익스피어의 작품을 글자(character) 기반으로 학습하고 생성합니다.
+* [간단한 비디오 프레임 분류 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java)로, 비디오 (.mp4 형식)를 불러와서 각 프레임의 객체를 분류합니다.
+* [Word2vec 시퀀스 분류 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java)는 영화 리뷰를 긍정적/부정적 리뷰로 분류하는 예제이며 사전에 학습된 단어 벡터와 RNNs을 사용합니다.

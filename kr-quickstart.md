@@ -24,9 +24,9 @@ Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사
 
 위 소프트웨어를 설치한 뒤엔 아래의 단계를 따라 하시면 바로 딥러닝 코드를 실행하실 수 있습니다. 아래의 내용은 맥 사용을 가정하고 쓰여졌습니다. 윈도우 사용자들은 아래 [Walkthrough](http://deeplearning4j.org/kr-quickstart.html#walk) 섹션을 참고하시기 바랍니다
 
-* 터미널을 열고 `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`을 입력 합니다. (예제의 현재 버전은 0.0.4.x 입니다.)
+* 터미널을 열고 `git clone https://github.com/deeplearning4j/dl4j-examples.git`을 입력 합니다. (예제의 현재 버전은 0.0.4.x 입니다.)
 * IntelliJ에서 File/New/Project from Existing Sources로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
-* 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 `POM.xml`이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
+* 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 `POM.xml`이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
 * [윈도우 사용자를 위한 추가 안내는 여기](http://deeplearning4j.org/kr-gettingstarted.html#windows)를 참고하세요.
 * 화면 왼쪽의 파일 트리에서 DBNIrisExample.java를 선택하십시오.
 * 실행을 누르세요 (소스 파일 위에서 마우스 우클릭 후 나타나는 녹색 버튼을 누르시면 됩니다).
@@ -43,13 +43,13 @@ mvn clean package
 ## 몇 가지 주의사항
 * 예제를 실행하는 경우엔 다른 브랜치나 버전의 git 저장소를 복제하지 않도록 주의하세요. Deeplearning4j 저장소는 지속적으로 업데이트되고 있기 때문에 최신 버전의 코드는 이 예제와 호환되지 않을 수 있습니다.
 * 반드시 Maven을 사용해서 모든 필요한 패키지(dependencies)를 다운받아야 합니다. `(rm -rf ls ~/.m2/repository/org/deeplearning4j)`
-* 제대로 설치되어 있는지 확인하려면 dl4j-0.4-examples 디렉토리에서 `mvn clean pack clean install -DskipTests=true -Dmaven.javadoc.skip=true`를 실행하십시오.
+* 제대로 설치되어 있는지 확인하려면 dl4j-examples 디렉토리에서 `mvn clean pack clean install -DskipTests=true -Dmaven.javadoc.skip=true`를 실행하십시오.
 * TSNE 예제 혹은 다른 예제를 실행하려면 `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` 를 입력하십시오. 실행이 실패하거나 Maven 종료 후 데몬 스레드를 멈출 수 없는 경우 마지막 매개변수 `-Dexec.cleanupDaemonThreads=false`가 필요할 수 있습니다.
-* TSNE 학습을 1000회 반복한 결과는 `dl4j-0.4-examples/target/archive-tmp/`의 `tsne-standard-coords.csv`를 확인하세요.
+* TSNE 학습을 1000회 반복한 결과는 `dl4j-examples/target/archive-tmp/`의 `tsne-standard-coords.csv`를 확인하세요.
 
 Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나와야 정상입니다.
 
-만일 실행중에 문제가 생기면 우선 여러분의 POM.xml파일을 확인해 보세요. 정상적인 경우라면 [이 파일](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)과 비슷해야 합니다.
+만일 실행중에 문제가 생기면 우선 여러분의 POM.xml파일을 확인해 보세요. 정상적인 경우라면 [이 파일](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)과 비슷해야 합니다.
 
 ## 디펜던시와 백엔드(Dependencies and Backends)
 
@@ -93,7 +93,7 @@ Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나�
 예를 들면 아래와 같습니다.
 
 ```
-      java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+      java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
 ```
 
 와일드 카드 *를 사용해 표현하면 아래와 같이 표현할 경우 자동으로 예제를 실행합니다.
@@ -106,7 +106,7 @@ Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나�
 
 ## 스칼라 (Scala)
 
-[예제의 스칼라 버전은 여기](https://github.com/kogecoo/dl4j-0.4-examples-scala)를 참고하십시오.
+[예제의 스칼라 버전은 여기](https://github.com/kogecoo/dl4j-examples-scala)를 참고하십시오.
 
 ## 다음 단계
 
@@ -125,7 +125,7 @@ Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나�
 * 터미널에서 `cd` 명령어를 이용해 DL4J 예제를 다운받을 디렉토리로 이동하십시오. 그리고 `mkdir dl4j-examples`로 새 디렉토리를 만들고 `cd dl4j-examples`를 입력하여 그 디렉토리로 이동하십시오. 그리고 아래의 명령어를 실행하십시오.
 
 ```
-git clone https://github.com/deeplearning4j/dl4j-0.4-examples
+git clone https://github.com/deeplearning4j/dl4j-examples
 ```
 
 * `ls` 명령어로 파일이 전부 다운로드 되었는지 확인하십시오.

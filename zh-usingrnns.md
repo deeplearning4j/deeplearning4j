@@ -287,7 +287,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 需要注意的是，这一方法的级别较低：运用DataSetIterator时，必须手动创建所需的输入和标签INDArrays，以及输入和标签掩模数组（如需要）。但这一方法可以让数据加载方式变得十分灵活。
 
-本方法的实践应用可参考[文字/字符示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)以及[Word2Vec电影评论情绪示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)对迭代器的应用。
+本方法的实践应用可参考[文字/字符示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)以及[Word2Vec电影评论情绪示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)对迭代器的应用。
 
 **注**：在创建自定义的DataSetIterator时，包括输入特征、标签以及任何掩模数组在内的数组都应当按“f”（fortran）顺序创建。有关数组顺序的详情请参阅[ND4J用户指南](http://nd4j.org/userguide.html#inmemory)。在实际操作中，这意味着要使用Nd4j.create方法来指定数组顺序：```Nd4j.create(new int[]{numExamples, inputSize, timeSeriesLength},'f')```。虽然“c”顺序的数组也可以运行，但由于在进行某些运算时需要先将数组复制到“f”顺序，会导致性能有所下降。
 
@@ -295,8 +295,8 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 ## <a name="examples">示例</a>
 
-DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)：
+DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)：
 
-* [字符建模示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文
-* [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类
-* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个RNN将电影评论分为正面和负面两类。
+* [字符建模示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文
+* [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类
+* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个RNN将电影评论分为正面和负面两类。

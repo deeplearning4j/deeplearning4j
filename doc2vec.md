@@ -15,7 +15,7 @@ In the ParagraphVectors builder pattern, the `labels()` method points to the lab
     .labels(Arrays.asList("negative", "neutral","positive"))
 ```
 
-Here's a full working example of [classification with paragraph vectors](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java):
+Here's a full working example of [classification with paragraph vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java):
 
 ``` java
     public void testDifferentLabels() throws Exception {

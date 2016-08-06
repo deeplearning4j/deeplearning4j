@@ -103,11 +103,11 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 1.在命令行中输入：
 
-        $ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
-        $ cd dl4j-0.4-examples/
+        $ git clone https://github.com/deeplearning4j/dl4j-examples.git
+        $ cd dl4j-examples/
         $ mvn clean install
 
-2.打开IntelliJ，选择“导入项目”。然后选择“dl4j-0.4-examples”主目录。 
+2.打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。 
 
 ![select directory](./img/Install_IntJ_1.png)
 
@@ -128,9 +128,9 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 - `nd4j-native`，ND4J库的CPU版本，驱动DL4J
 - `canova-api` - Canova是我们的数据向量化和加载库
 
-每个Maven项目都有一个POM文件。运行示例时，[POM文件的内容应当如此处所示](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)。
+每个Maven项目都有一个POM文件。运行示例时，[POM文件的内容应当如此处所示](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)。
 
-在IntelliJ中，你需要选择将要运行的第一个Deeplearning4j示例。我们建议选择`MLPLinearClassifier`，在我们的用户界面中几乎能立即看到该网络将数据分类为两组。文件可以[在Github上找到](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)。 
+在IntelliJ中，你需要选择将要运行的第一个Deeplearning4j示例。我们建议选择`MLPLinearClassifier`，在我们的用户界面中几乎能立即看到该网络将数据分类为两组。文件可以[在Github上找到](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)。 
 
 右击示例，在下拉菜单中选择绿色按钮即可运行。你会在IntelliJ底部的窗口中看到一系列分值。最右边的数字是网络分类的误差得分。如果网络在进行学习，该数字就会随着处理批次的增加而减少。最后，该窗口会告诉你神经网络模型最终的准确度。
 

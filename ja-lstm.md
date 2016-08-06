@@ -162,7 +162,7 @@ layout: ja-default
 
 ## <a name="code">コードのサンプル</a>
 
-シェークスピアのドラマの復元を学習し、Deeplearning4jに実装したコメント付きサンプルのGraves長・短期記憶を、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)でご覧いただけます。説明が必要と思われるAPIには、コメントが付けてあります。質問がある方は、是非[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)に参加してください。
+シェークスピアのドラマの復元を学習し、Deeplearning4jに実装したコメント付きサンプルのGraves長・短期記憶を、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)でご覧いただけます。説明が必要と思われるAPIには、コメントが付けてあります。質問がある方は、是非[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)に参加してください。
 
 ## <a name="tuning">LSTMハイパーパラメーターの調整</a>
 

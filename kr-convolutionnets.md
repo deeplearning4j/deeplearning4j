@@ -143,7 +143,7 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 
 아래 예제를 참고하면 Deeplearning4j에서 어떻게 컨브넷을 사용할 수 있는지 알 수 있습니다.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=57:160"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=57:160"></script>
 
 ## <a name="resource">그 외 참고 자료</a>
 

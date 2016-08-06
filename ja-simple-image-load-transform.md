@@ -10,7 +10,7 @@ Deeplearning4jのexamplesに使用する標準データセットは抽象化さ�
 *DataVec*は、弊社の機械学習ベクトル化ライブラリで、ニューラルネットワークが学習できるデータを準備するための方法をカスタマイズするのに役に立ちます。([DataVecのJavadocはこちらをご参照ください。](http://deeplearning4j.org/canovadoc/).)
 
 こちらのチュートリアルでは、画像のデータセットの読み込み方法、変換の実行についてご説明します。ここでは簡単に*Oxford flower dataset（オックスフォードの花のデータセット）*の3クラスの画像10個のみを使用します。下記のコードは参照用のみとしてご利用いただき、コピー・ペーストはご遠慮願います。 
-[こちらから全exampleのコードをご利用ください。](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
+[こちらから全exampleのコードをご利用ください。](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
 
 ## 該当するディレクトリ構造に画像を収納
 手短に言うと、データセット内の画像は、ディレクトリのクラス/ラベルにより整理され、これらのクラス/ラベルのディレクトリは、親ディレクトリ内に収められている必要があります。
