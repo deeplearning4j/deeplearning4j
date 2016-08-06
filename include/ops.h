@@ -1536,12 +1536,29 @@ template<typename T>
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+        // op definition for Transform
 		op_def static T op(T d1, T *params) {
 			T compare = params[0];
 			T set = params[1];
 			T eps = params[2];
-			return d1 <= compare + eps && d1 >= compare - eps ? set : d1;
+
+            // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
+            int mode = (int) params[3];
+            if (mode == 0)
+			    return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
+            else
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
 		}
+
+        // op definition for PairWise Transform
+        op_def static T op(T d1, T d2, T *params) {
+            T eps = params[2];
+            int mode = (int) params[3];
+            if (mode == 0)
+                return nd4j::math::nd4j_abs<T>(d1 - d2) <= eps ? d2 : d1;
+            else
+                return nd4j::math::nd4j_abs<T>(d1 - d2) > eps ? d2 : d1;
+        }
 	};
 }
 
