@@ -170,9 +170,9 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 isMax.muliColumnVector(epsilon1d);
                 break;
             case AVG:
-                //TODO: We could further optimize this by creating an uninitialized array, and doing a 'putiRowVector' operation
-                // instead of a zero initialization + an addiRowVector op
-                col2d.addiRowVector(epsilon1d);
+                //TODO: We could further optimize this by creating an uninitialized array, and doing a 'putiColumnVector' operation
+                // instead of a zero initialization + an addiColumnVector op
+                col2d.addiColumnVector(epsilon1d);
                 break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
