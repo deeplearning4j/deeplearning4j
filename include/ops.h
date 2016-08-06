@@ -1556,6 +1556,14 @@ template<typename T>
                 return d1 <= compare? set : d1;
             else if (mode == 5) // greater_or_equals_than
                 return d1 >= compare? set : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? set : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? set : d1;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? set : d1;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? set : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -1578,6 +1586,14 @@ template<typename T>
                 return d1 <= compare? d2 : d1;
             else if (mode == 5) // greater_or_equals_than
                 return d1 >= compare? d2 : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? d2 : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? d2 : d1;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? d2 : d1;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
