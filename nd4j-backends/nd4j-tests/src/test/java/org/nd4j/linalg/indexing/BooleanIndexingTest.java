@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -326,6 +327,34 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.lessThan(2)));
 
         assertEquals(comp, x);
+    }
+
+
+    @Test
+    public void testMatchConditionAllDimensions1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(5, val);
+    }
+
+    @Test
+    public void testMatchConditionAllDimensions2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(1, val);
+    }
+
+    @Test
+    public void testMatchConditionAllDimensions3() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isInfinite()), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(1, val);
     }
 
     @Override

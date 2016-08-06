@@ -25,9 +25,9 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Sum the components
+ * Absolute sum the components
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 public class ASum extends BaseAccumulation {
 

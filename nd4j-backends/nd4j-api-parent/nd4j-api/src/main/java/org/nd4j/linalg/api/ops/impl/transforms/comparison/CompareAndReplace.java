@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
- * Element-wise Compare-and-set implementation as Op
+ * Element-wise Compare-and-Replace implementation as Op
  *
  * @author raver119@gmail.com
  */

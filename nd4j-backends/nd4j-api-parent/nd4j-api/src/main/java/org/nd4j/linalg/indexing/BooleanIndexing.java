@@ -155,7 +155,7 @@ public class BooleanIndexing {
      * @param from
      * @param condition
      */
-    public static void assignWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+    public static void assignIf(@NonNull INDArray to, @NonNull INDArray from, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
