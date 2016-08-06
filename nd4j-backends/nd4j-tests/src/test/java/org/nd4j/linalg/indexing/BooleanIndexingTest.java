@@ -362,6 +362,45 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         assertEquals(1, val);
     }
 
+    @Test
+    public void testMatchConditionAlongDimension1() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0);
+
+        boolean result[] = BooleanIndexing.and(array, Conditions.equals(0.0), 1);
+        boolean comp[] = new boolean[]{false, false, true};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
+    @Test
+    public void testMatchConditionAlongDimension2() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0).putScalar(0, 1.0);
+
+        System.out.println("Array: " + array);
+
+        boolean result[] = BooleanIndexing.or(array, Conditions.lessThan(0.9), 1);
+        boolean comp[] = new boolean[]{false, false, true};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
+    @Test
+    public void testMatchConditionAlongDimension3() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0).putScalar(0, 1.0);
+
+        boolean result[] = BooleanIndexing.and(array, Conditions.lessThan(0.0), 1);
+        boolean comp[] = new boolean[]{false, false, false};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
+
     @Override
     public char ordering() {
         return 'c';

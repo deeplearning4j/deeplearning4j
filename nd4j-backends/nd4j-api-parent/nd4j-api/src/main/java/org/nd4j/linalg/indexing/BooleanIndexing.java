@@ -110,6 +110,61 @@ public class BooleanIndexing {
     }
 
     /**
+     * And over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] and(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition);
+        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        boolean[] result = new boolean[arr.length()];
+
+        long tadLength = Shape.getTADLength(n.shape(), dimension);
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) == tadLength)
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Or over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] or(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition);
+        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        boolean[] result = new boolean[arr.length()];
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) > 0 )
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
+    }
+
+    /**
      * Or over the whole ndarray given some condition
      *
      * @param n
