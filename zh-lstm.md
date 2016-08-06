@@ -168,7 +168,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 
 ## <a name="code">代码示例</a>
 
-点击此处查看一个使用Deeplearning4j的[Graves LSTM示例（附说明）](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)学习如何复制莎士比亚风格的戏剧。这个API在较难理解之处都附有说明。若有任何问题，请在[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)上加入我们。
+点击此处查看一个使用Deeplearning4j的[Graves LSTM示例（附说明）](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)学习如何复制莎士比亚风格的戏剧。这个API在较难理解之处都附有说明。若有任何问题，请在[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)上加入我们。
 
 ## <a name="tuning">LSTM超参数调试</a>
 

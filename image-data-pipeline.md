@@ -61,7 +61,7 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 Below is a neural net configuration example. Many of the hyperparameters are explained in the [NeuralNetConfiguration Class glossary](./neuralnet-configuration.html); thus, we'll summarize a few distinguishing characteristics.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
 * *optimizationAlgo* relies on LINE_GRADIENT_DESCENT, rather than LBFGS. 
 * *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.

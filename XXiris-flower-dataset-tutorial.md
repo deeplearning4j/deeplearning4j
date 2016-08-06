@@ -294,7 +294,7 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 
 ^ This line sets the loss function. The loss function calculates the error produced by the weights of the model, which is used to determine the gradient along which a learning algorithm adjust those weights in search of less error. Here, the loss function is root-means-squared-error-cross entropy (RMSE_XENT). RMSE is the square root of the mean of the squares of the errors. It is useful in penalizing large errors. Cross-entropy assumes predicted values (which are contrasted with the ground truth) are probabilities between 0 and 1.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=84:90"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=84:90"></script>
 
 **Lines 19-25** override the default layer type of RBM to create an output layer that classifies input by Iris label using a multinomial sigmoid classifier called softmax. The loss function for this layer is Monte Carlo cross entropy. 
 

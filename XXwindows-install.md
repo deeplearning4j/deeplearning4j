@@ -18,7 +18,7 @@ layout: default
 			https://github.com/deeplearning4j/nd4j.git
 			https://github.com/deeplearning4j/deeplearning4j.git
 			https://github.com/deeplearning4j/Canova.git
-			https://github.com/deeplearning4j/dl4j-0.4-examples.git
+			https://github.com/deeplearning4j/dl4j-examples.git
 
 * Install Visual Studio 2013 (if not freely available, download [Visual Studio Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * Add the Visual Studio bin directory to the Path; for example `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin` (you can take the 64 bit folder as well)
@@ -33,7 +33,7 @@ layout: default
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 		cd ../deeplearning4j
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-		cd ../dl4j-0.4-examples
+		cd ../dl4j-examples
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 * Open Netbeans and import "deeplearning4jExamples"

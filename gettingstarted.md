@@ -44,7 +44,7 @@ This section provides a more comprehensive version of the steps contained in the
 * For Windows, find "Git Bash" in your Startup Menu and open it. The Git Bash terminal should look like cmd.exe.
 * `cd` into the directory where you want to place the DL4J examples. You may want to create a new one with `mkdir dl4j-examples` and then `cd` into that. Then run:
 
-    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
+    `git clone https://github.com/deeplearning4j/dl4j-examples`
 * Make sure the files were downloaded by entering `ls`. 
 * Now open IntelliJ. 
 * Click on the "File" menu, and then on "Import Project" or "New Project from Existing Sources". This will give you a local file menu. 
@@ -154,7 +154,7 @@ Here is a template:
 
 And here is a concrete example, to show you roughly what your command should look like:
 
-    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+    java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
 
 That is, there are two wild cards that will change as we update and you go through the examples:
 

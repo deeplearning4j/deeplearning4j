@@ -34,7 +34,7 @@ Word2vec的目的和功用是在向量空间内将词的向量按相似性进行
 <a href="http://deeplearning4j.org/zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', a?quickstart', 'click');">Deeplearning4j入门教程</a>
 </p>
 
-给出足够的数据、用法和上下文，Word2vec就能根据过去经验对词的意义进行高度准确的预测。这样的预测结果可以用于建立一个词与其他词之间的联系（例如，“男人”和“男孩”的关系与“女人”和“女孩”的关系相同），或者可以将文档聚类并按主题分类。而这些聚类结果是搜索、[情感分析](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)和推荐算法的基础，广泛应用于科研、调查取证、电子商务、客户关系管理等领域。 
+给出足够的数据、用法和上下文，Word2vec就能根据过去经验对词的意义进行高度准确的预测。这样的预测结果可以用于建立一个词与其他词之间的联系（例如，“男人”和“男孩”的关系与“女人”和“女孩”的关系相同），或者可以将文档聚类并按主题分类。而这些聚类结果是搜索、[情感分析](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)和推荐算法的基础，广泛应用于科研、调查取证、电子商务、客户关系管理等领域。 
 
 Word2vec神经网络的输出是一个词汇表，其中每个词都有一个对应的向量，可以将这些向量输入深度学习网络，也可以只是通过查询这些向量来识别词之间的关系。 
 
@@ -386,9 +386,9 @@ WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.tx
 
 ### <a name="code">实用示例</a>
 
-上文介绍了Word2Vec的基本设置方法，以下是一个[具体示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)，说明如何在DL4J的API中使用Word2vec：
+上文介绍了Word2Vec的基本设置方法，以下是一个[具体示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)，说明如何在DL4J的API中使用Word2vec：
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
 你可以参照[快速入门](./quickstart.html)中的指示在IntelliJ中打开这一示例，点击运行，看它如何运作。如果你向Word2vec模型查询一个定型语料中没有的词，那么返回的结果会是零。 
 
@@ -478,8 +478,8 @@ Deeplearning4j有一个叫做[SequenceVectors](https://github.com/deeplearning4j
 
 ### Doc2vec和其他NLP资源
 
-* [使用Word2vec和RNN的DL4J文本分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
-* [使用段落向量的DL4J文本分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+* [使用Word2vec和RNN的DL4J文本分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+* [使用段落向量的DL4J文本分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 * [用Deeplearning4j实现的Doc2vec，或称段落向量](./doc2vec.html)
 * [思维向量、自然语言处理与人工智能的未来](./thoughtvectors.html)
 * [Quora：Word2vec的工作原理是什么？](http://www.quora.com/How-does-word2vec-work)
