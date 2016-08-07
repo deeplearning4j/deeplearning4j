@@ -39,6 +39,9 @@ public abstract class InputType implements Serializable {
 
     public abstract Type getType();
 
+    @Override
+    public abstract String toString();
+
     /** InputType for feed forward network data
      * @param size The size of the activations
      */
@@ -73,6 +76,11 @@ public abstract class InputType implements Serializable {
         public Type getType() {
             return Type.FF;
         }
+
+        @Override
+        public String toString(){
+            return "InputTypeFeedForward(" + size + ")";
+        }
     }
 
     @AllArgsConstructor @Getter
@@ -82,6 +90,11 @@ public abstract class InputType implements Serializable {
         @Override
         public Type getType() {
             return Type.RNN;
+        }
+
+        @Override
+        public String toString(){
+            return "InputTypeRecurrent(" + size + ")";
         }
     }
 
@@ -94,6 +107,11 @@ public abstract class InputType implements Serializable {
         @Override
         public Type getType() {
             return Type.CNN;
+        }
+
+        @Override
+        public String toString(){
+            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
         }
     }
 
