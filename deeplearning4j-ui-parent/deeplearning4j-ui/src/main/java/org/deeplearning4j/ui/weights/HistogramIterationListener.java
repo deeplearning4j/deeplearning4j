@@ -35,6 +35,7 @@ public class HistogramIterationListener implements IterationListener {
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
     private WebTarget target;
     private int iterations = 1;
+    private int curIteration = 0;
     private ArrayList<Double> scoreHistory = new ArrayList<>();
     private List<Map<String,List<Double>>> meanMagHistoryParams = new ArrayList<>();    //1 map per layer; keyed by new param name
     private List<Map<String,List<Double>>> meanMagHistoryUpdates = new ArrayList<>();
@@ -50,6 +51,8 @@ public class HistogramIterationListener implements IterationListener {
     public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
         target = client.target(connection.getFirstPart()).path(connection.getSecondPart(subPath)).path("update").queryParam("sid", connection.getSessionId());
         this.connectionInfo = connection;
+
+        this.iterations = iterations;
 
         System.out.println("UI Histogram URL: " + connection.getFullAddress());
     }
@@ -98,7 +101,7 @@ public class HistogramIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(iteration % iterations == 0) {
+        if(curIteration % iterations == 0) {
             Map<String, Map> newGrad = new LinkedHashMap<>();
             try {
                 Map<String, INDArray> grad = model.gradient().gradientForVariable();
@@ -213,6 +216,8 @@ public class HistogramIterationListener implements IterationListener {
                 firstIteration = false;
             }
         }
+
+        curIteration += 1;
     }
 
     private int indexFromString(String str) {
