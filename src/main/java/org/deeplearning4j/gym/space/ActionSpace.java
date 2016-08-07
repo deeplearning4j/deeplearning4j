@@ -17,4 +17,6 @@ public interface ActionSpace<A> {
 
     Object encode(A action);
 
+    int getSize();
+
 }
