@@ -7,7 +7,7 @@ layout: ja-default
 
 Deeplearning4jのexamplesに使用する標準データセットは抽象化されているため、データパイプラインに全く障害が生じません。しかし、実際のユーザーが最初に手を付けるのは生の乱雑なデータであるため、前処理やベクトル化を行い、ニューラルネットワークがクラスタリングや分類を行うための訓練をする必要があります。 
 
-*DataVec*は、弊社の機械学習ベクトル化ライブラリで、ニューラルネットワークが学習できるデータを準備するための方法をカスタマイズするのに役に立ちます。([DataVecのJavadocはこちらをご参照ください。](http://deeplearning4j.org/canovadoc/).)
+*DataVec*は、弊社の機械学習ベクトル化ライブラリで、ニューラルネットワークが学習できるデータを準備するための方法をカスタマイズするのに役に立ちます。([DataVecのJavadocはこちらをご参照ください。](http://deeplearning4j.org/datavecdoc/).)
 
 こちらのチュートリアルでは、画像のデータセットの読み込み方法、変換の実行についてご説明します。ここでは簡単に*Oxford flower dataset（オックスフォードの花のデータセット）*の3クラスの画像10個のみを使用します。下記のコードは参照用のみとしてご利用いただき、コピー・ペーストはご遠慮願います。 
 [こちらから全exampleのコードをご利用ください。](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
@@ -77,11 +77,11 @@ InputSplit testData = filesInDirSplit[1];
 ~~~java
 ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
 ~~~
-*データセットの画像は同じサイズである必要はありません。* Canovaがこの作業を代行してくれます。この例にもあるように、画像のサイズはすべて異なり、以下に指定された高さと幅に変更されています。
+*データセットの画像は同じサイズである必要はありません。* DataVecがこの作業を代行してくれます。この例にもあるように、画像のサイズはすべて異なり、以下に指定された高さと幅に変更されています。
 
 * サイズ変更の指定を行います。
 
-ニューラルネットワークの利点は、手動で機能のエンジニアリングをする必要がないというところです。しかし、人為的にサイズを大きくするために画像変換させると役に立つことがあります。例えば、Kaggleのコンテスト参加で勝利を狙う場合などです <http://benanne.github.io/2014/04/05/galaxy-zoo.html>。また、画像内の必要な部分以外のみを残してその他の部分をトリミングしたいこともあります。例えば、顔面部分を検知し、その他の部分をトリミングしてサイズ調整するなどです。Canovaには、OpenCVから導入された機能/強力な特徴がすべて備えられています。以下は、画像を反転させ、表示するために使用する基本的なexampleです。
+ニューラルネットワークの利点は、手動で機能のエンジニアリングをする必要がないというところです。しかし、人為的にサイズを大きくするために画像変換させると役に立つことがあります。例えば、Kaggleのコンテスト参加で勝利を狙う場合などです <http://benanne.github.io/2014/04/05/galaxy-zoo.html>。また、画像内の必要な部分以外のみを残してその他の部分をトリミングしたいこともあります。例えば、顔面部分を検知し、その他の部分をトリミングしてサイズ調整するなどです。DataVecには、OpenCVから導入された機能/強力な特徴がすべて備えられています。以下は、画像を反転させ、表示するために使用する基本的なexampleです。
 
 ~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen,new FlipImageTransform(), new ShowImageTransform("After transform"));
