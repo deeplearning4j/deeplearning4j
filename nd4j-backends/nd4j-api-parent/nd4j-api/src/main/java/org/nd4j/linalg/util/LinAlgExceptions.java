@@ -36,7 +36,7 @@ public class LinAlgExceptions {
      */
     public static void assertSameLength(INDArray n, INDArray n2) {
         if (n.length() != n2.length())
-            throw new IllegalStateException("Mis matched lengths");
+            throw new IllegalStateException("Mis matched lengths: ["+n.length()+"] != ["+n2.length()+"]");
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {

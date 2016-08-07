@@ -1,4 +1,7 @@
 #! /bin/bash
 set -eu
-mvn -Dscala.binary.version=2.10 "$@"
-mvn -Dscala.binary.version=2.11 -pl "nd4j-serde/nd4j-kryo" "$@"
+./change-scala-versions.sh 2.10
+mvn "$@"
+./change-scala-versions.sh 2.11
+mvn "$@"
+./change-scala-versions.sh 2.10

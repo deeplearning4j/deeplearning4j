@@ -2,12 +2,15 @@ package org.nd4j.jita.concurrency;
 
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +47,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (!affinityMap.containsKey(threadId)) {
             Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
+
+            if (threadId == Thread.currentThread().getId())
+                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+
             return deviceId;
         }
         return affinityMap.get(threadId);

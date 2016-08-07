@@ -124,10 +124,11 @@ public class  ScalarSet extends BaseScalarOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        if (num != null)
+        if (num != null) {
             this.extraArgs = new Object[]{num};
-        else
+        } else {
             this.extraArgs = new Object[]{complexNumber};
+        }
 
     }
 }

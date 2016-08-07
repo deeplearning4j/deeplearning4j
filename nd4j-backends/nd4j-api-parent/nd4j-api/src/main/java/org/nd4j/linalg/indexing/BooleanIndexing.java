@@ -20,12 +20,19 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
+import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -79,17 +86,82 @@ public class BooleanIndexing {
      * condition false otherwise
      */
     public static boolean and(final INDArray n, final Condition cond) {
-        boolean ret = true;
-        final AtomicBoolean a = new AtomicBoolean(ret);
-        Shape.iterate(n, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if (a.get())
-                    a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
-            }
-        });
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
 
-        return a.get();
+            if (val == n.lengthLong())
+                return true;
+            else
+                return false;
+
+        } else {
+            boolean ret = true;
+            final AtomicBoolean a = new AtomicBoolean(ret);
+            Shape.iterate(n, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (a.get())
+                        a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
+                }
+            });
+
+            return a.get();
+        }
+    }
+
+    /**
+     * And over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] and(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition);
+        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        boolean[] result = new boolean[arr.length()];
+
+        long tadLength = Shape.getTADLength(n.shape(), dimension);
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) == tadLength)
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Or over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] or(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition);
+        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        boolean[] result = new boolean[arr.length()];
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) > 0 )
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
     }
 
     /**
@@ -100,17 +172,27 @@ public class BooleanIndexing {
      * @return
      */
     public static boolean or(final INDArray n, final Condition cond) {
-        boolean ret = false;
-        final AtomicBoolean a = new AtomicBoolean(ret);
-        Shape.iterate(n, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if (!a.get())
-                    a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
-            }
-        });
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
 
-        return a.get();
+            if (val > 0)
+                return true;
+            else
+                return false;
+
+        } else {
+            boolean ret = false;
+            final AtomicBoolean a = new AtomicBoolean(ret);
+            Shape.iterate(n, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (!a.get())
+                        a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
+                }
+            });
+
+            return a.get();
+        }
     }
 
     /**
@@ -122,14 +204,60 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-        Shape.iterate(to, new CoordinateFunction() {
-            @Override
-            public void process(int[]... coord) {
-                if(condition.apply(to.getDouble(coord[0])))
-                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+        if (condition instanceof BaseCondition) {
+            // for all static conditions we go native
 
-            }
-        });
+            double number = function.apply(new Double(0.0)).doubleValue();
+
+            Nd4j.getExecutioner().exec(new CompareAndSet(to, number, condition));
+
+        } else {
+            // keep original java implementation for dynamic
+
+            Shape.iterate(to, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (condition.apply(to.getDouble(coord[0])))
+                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+
+                }
+            });
+        }
+    }
+
+    /**
+     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     *
+     * @param to
+     * @param from
+     * @param condition
+     */
+    public static void assignIf(@NonNull INDArray to, @NonNull INDArray from, @NonNull Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        if (to.lengthLong() != from.lengthLong())
+            throw new IllegalStateException("Mis matched length for to and from");
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(to, from, condition));
+    }
+
+
+    /**
+     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     *
+     * @param to
+     * @param from
+     * @param condition
+     */
+    public static void replaceWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        if (to.lengthLong() != from.lengthLong())
+            throw new IllegalStateException("Mis matched length for to and from");
+
+        Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
     }
 
     /**

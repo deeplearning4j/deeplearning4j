@@ -44,6 +44,7 @@ import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -53,9 +54,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Jcublas ndarray factory. Handles creation of
@@ -846,5 +845,177 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray average(INDArray target, Collection<INDArray> arrays) {
         return average(target, arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     *
+     * @param array     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(INDArray array, Random rnd, int... dimension) {
+        shuffle(Collections.singletonList(array), rnd, dimension);
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. Each array in list should have it's own dimension at the same index of dimensions array
+     *
+     * @param arrays      the ndarrays to shuffle
+     * @param dimensions the dimensions to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
+        // no dimension - no shuffle
+        if (dimensions == null || dimensions.size() == 0)
+            throw new RuntimeException("Dimension can't be null or 0-length");
+
+        if (arrays == null || arrays.size() ==0)
+            throw new RuntimeException("No input arrays provided");
+
+        if (dimensions.size() > 1 && arrays.size() != dimensions.size())
+            throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
+
+
+        // first we build TAD for input array and dimensions
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        CudaContext context =  allocator.getFlowController().prepareAction(arrays.get(0));
+
+        for (int x = 1; x < arrays.size(); x++ ){
+            allocator.getFlowController().prepareAction(arrays.get(x));
+        }
+
+        int tadLength = 1;
+        for (int i = 0; i < dimensions.get(0).length; i++) {
+            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
+        }
+
+        int numTads = arrays.get(0).length() / tadLength;
+
+        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
+
+        CudaIntDataBuffer shuffle = new CudaIntDataBuffer(map);
+
+        Pointer shuffleMap = allocator.getPointer(shuffle, context);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used
+                context.getOldStream(),
+                allocator.getDeviceIdPointer()
+        );
+
+
+        long[] xPointers = new long[arrays.size()];
+        long[] xShapes = new long[arrays.size()];
+        long[] tadShapes = new long[arrays.size()];
+        long[] tadOffsets = new long[arrays.size()];
+
+        for (int i = 0; i < arrays.size(); i++) {
+            INDArray array = arrays.get(i);
+
+            Pointer x = AtomicAllocator.getInstance().getPointer(array, context);
+            Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
+
+
+            TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+
+            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
+
+            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+
+            Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+
+            DataBuffer offsets = tadBuffers.getSecond();
+            Pointer tadOffset = AtomicAllocator.getInstance().getPointer(offsets, context);
+
+            xPointers[i] = x.address();
+            xShapes[i] = xShapeInfo.address();
+            tadShapes[i] = tadShapeInfo.address();
+            tadOffsets[i] = tadOffset.address();
+        }
+
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.size());
+        CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(arrays.size());
+        CudaDoubleDataBuffer tempTAD = new CudaDoubleDataBuffer(arrays.size());
+        CudaDoubleDataBuffer tempOffsets = new CudaDoubleDataBuffer(arrays.size());
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(xShapes), xPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadShapes), xPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(tadOffsets), xPointers.length * 8, 0);
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.shuffleDouble(
+                    extras,
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    arrays.size(),
+                    shuffleMap,
+                    allocator.getPointer(tempTAD, context),
+                    allocator.getPointer(tempOffsets, context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.shuffleFloat(
+                    extras,
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    arrays.size(),
+                    shuffleMap,
+                    allocator.getPointer(tempTAD, context),
+                    allocator.getPointer(tempOffsets, context)
+            );
+        } else {
+            // HALFs
+            nativeOps.shuffleHalf(
+                    extras,
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    allocator.getPointer(tempX, context),
+                    allocator.getPointer(tempShapes, context),
+                    arrays.size(),
+                    shuffleMap,
+                    allocator.getPointer(tempTAD, context),
+                    allocator.getPointer(tempOffsets, context)
+            );
+        }
+
+
+        for (int f = 0; f < arrays.size(); f++ ){
+            allocator.getFlowController().registerAction(context, arrays.get(f));
+        }
+
+
+        // just to keep reference
+        shuffle.address();
+
+        tempX.dataType();
+        tempShapes.dataType();
+        tempOffsets.dataType();
+        tempTAD.dataType();
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions. All arrays
+     *
+     * @param sourceArrays     the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    @Override
+    public void shuffle(Collection<INDArray> sourceArrays, Random rnd, int... dimension) {
+        shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
     }
 }

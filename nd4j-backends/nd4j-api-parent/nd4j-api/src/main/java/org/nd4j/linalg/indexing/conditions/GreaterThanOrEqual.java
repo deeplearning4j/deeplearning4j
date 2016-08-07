@@ -33,6 +33,16 @@ public class GreaterThanOrEqual extends BaseCondition {
         super(complexNumber);
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 5;
+    }
+
     @Override
     public Boolean apply(Number input) {
         return input.floatValue() >= value.floatValue();

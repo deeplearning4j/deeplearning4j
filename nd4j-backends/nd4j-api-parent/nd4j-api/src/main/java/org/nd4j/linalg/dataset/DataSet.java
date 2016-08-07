@@ -540,6 +540,36 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     public void shuffle(long seed) {
         //note here we use the same seed with different random objects guaranteeing same order
+/*
+        if (getFeatures().rank() == 2 && getLabels().rank() == 2) {
+            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), 1);
+        } else {
+            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), ArrayUtil.range(1,getFeatures().rank()));
+        }
+*/
+
+        List<INDArray> arrays = new ArrayList<>();
+        List<int[]> dimensions = new ArrayList<>();
+
+        arrays.add(getFeatures());
+        dimensions.add(ArrayUtil.range(1,getFeatures().rank()));
+
+        arrays.add(getLabels());
+        dimensions.add(ArrayUtil.range(1,getLabels().rank()));
+
+        if (featuresMask != null) {
+            arrays.add(getFeaturesMaskArray());
+            dimensions.add(ArrayUtil.range(1,getFeaturesMaskArray().rank()));
+        }
+
+        if (featuresMask != null) {
+            arrays.add(getLabelsMaskArray());
+            dimensions.add(ArrayUtil.range(1,getLabelsMaskArray().rank()));
+        }
+
+        Nd4j.shuffle(arrays, new Random(seed), dimensions);
+
+        /*
         int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
         int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
@@ -550,6 +580,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(getLabelsMaskArray() != null) {
             Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
         }
+        */
     }
 
 
@@ -865,30 +896,42 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         List<DataSet> list = new ArrayList<>(numExamples());
         INDArray featuresHere, labelsHere, featureMaskHere, labelMaskHere;
         int rank = getFeatures().rank();
+        int labelsRank = getLabels().rank();
 
         // Preserving the dimension of the dataset - essentially a minibatch size of 1
         for (int i = 0; i < numExamples(); i++) {
             switch (rank){
                 case 2:
                     featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all());
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all());
                     featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
-                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
                     break;
                 case 3:
                     featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all());
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all());
                     featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
-                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
                     break;
                 case 4:
                     featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all());
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all());
                     featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    break;
+                default:
+                    throw new IllegalStateException("Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(getFeatures().shape()));
+            }
+            switch (labelsRank) {
+                case 2:
+                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all());
+                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    break;
+                case 3:
+                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all());
+                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    break;
+                case 4:
+                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all());
                     labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
                     break;
                 default:
                     throw new IllegalStateException("Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(getFeatures().shape()));
+
             }
 
             list.add(new DataSet(featuresHere,labelsHere,featureMaskHere,labelMaskHere));
@@ -1221,6 +1264,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @return
      */
+    @Deprecated
     @Override
     public List<String> getColumnNames() {
         return columnNames;
@@ -1232,6 +1276,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @param columnNames
      */
+    @Deprecated
     @Override
     public void setColumnNames(List<String> columnNames) {
         this.columnNames = columnNames;

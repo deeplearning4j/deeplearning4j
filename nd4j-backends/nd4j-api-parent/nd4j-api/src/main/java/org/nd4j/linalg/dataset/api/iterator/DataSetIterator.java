@@ -83,6 +83,15 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
      */
     int totalOutcomes();
 
+
+    /**
+     * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
+     * but some don't
+     *
+     * @return true if reset method is supported; false otherwise
+     */
+    boolean resetSupported();
+
     /**
      * Resets the iterator back to the beginning
      */
@@ -126,7 +135,6 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
 
     /**
      * Get dataset iterator record reader labels
-     *
      */
     List<String> getLabels();
 

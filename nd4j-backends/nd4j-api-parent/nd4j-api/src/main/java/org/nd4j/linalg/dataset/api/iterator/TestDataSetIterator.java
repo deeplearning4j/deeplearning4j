@@ -84,6 +84,11 @@ public class TestDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
+	public boolean resetSupported(){
+		return true;
+	}
+
+	@Override
 	public synchronized void reset() {
 		curr = 0;
 	}

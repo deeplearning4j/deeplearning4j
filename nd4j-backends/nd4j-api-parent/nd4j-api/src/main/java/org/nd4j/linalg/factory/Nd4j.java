@@ -379,7 +379,7 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,Random random,int...dimension) {
-        List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
+        /*List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
         Collections.rotate(vectorsAlongDimension, 3);
         Collections.shuffle(vectorsAlongDimension, random);
         for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
@@ -391,7 +391,8 @@ public class Nd4j {
             INDArray temp = curr.dup();
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);
-        }
+        }*/
+        shuffle(toShuffle, random, dimension);
     }
 
     /**
@@ -402,8 +403,49 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,int...dimension) {
-        shuffle(toShuffle, new Random(), dimension);
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
+
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(Collection<INDArray> toShuffle, int...dimension) {
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, new Random(), dimension);
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(Collection<INDArray> toShuffle, Random rnd,int...dimension) {
+        //shuffle(toShuffle, new Random(), dimension);
+        INSTANCE.shuffle(toShuffle, rnd, dimension);
+    }
+
+    /**
+     * Symmetric in place shuffle of an ndarray
+     * along a variable dimensions
+     *
+     * @param toShuffle the ndarray to shuffle
+     * @param dimensions the dimension to do the shuffle. Please note - order matters here.
+     * @return
+     */
+    public static void shuffle(List<INDArray> toShuffle,Random rnd, List<int[]> dimensions) {
+
+        INSTANCE.shuffle(toShuffle, rnd, dimensions);
+    }
+
+
 
     /**
      * The reference queue used for cleaning up
@@ -1877,27 +1919,9 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(OutputStream writer,INDArray write) throws IOException {
-        DataOutputStream dos = new DataOutputStream(writer);
-        dos.writeChar(write instanceof IComplexNDArray ? 'c' : 'r');
-        dos.writeInt(write.rank());
-        dos.writeChar(write.ordering());
-        for(int i = 0; i < write.rank(); i++)
-            dos.writeInt(write.size(i));
-        for(int i = 0; i < write.rank(); i++)
-            dos.writeInt(write.stride(i));
-        dos.writeInt(write.offset());
-        if(write instanceof IComplexNDArray) {
-            for(int i = 0; i < write.data().length() / 2; i++) {
-                dos.writeUTF(String.valueOf(write.data().getComplex(i)));
-                dos.writeUTF("\n");
-            }
-        }
-        else {
-            for(int i = 0; i < write.data().length(); i++) {
-                dos.writeUTF(String.valueOf(write.data().getDouble(i)));
-                dos.writeUTF("\n");
-            }
-        }
+        DataOutputStream stream = new DataOutputStream(writer);
+        write(write, stream);
+        stream.close();
     }
 
 

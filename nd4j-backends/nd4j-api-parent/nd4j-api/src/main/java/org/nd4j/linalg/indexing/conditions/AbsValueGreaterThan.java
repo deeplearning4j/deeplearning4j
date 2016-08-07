@@ -10,6 +10,16 @@ public class AbsValueGreaterThan extends BaseCondition {
         super(value);
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 7;
+    }
+
     @Override
     public Boolean apply(Number input) {
         return FastMath.abs(input.doubleValue()) > value.doubleValue();

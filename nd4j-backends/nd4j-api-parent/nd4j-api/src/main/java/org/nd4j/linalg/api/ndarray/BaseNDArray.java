@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -1990,12 +1989,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.scalar(getDouble(i));
     }
 
-    protected void assertColumnVector(INDArray column) {
-        assert column.isColumnVector() || column.columns() == columns() && column.rows() == 1 : "Must only add a column vector";
-        assert column.length() == rows() || column.columns() == columns() && column.rows() == 1 : "Illegal column vector must have the same length as the number of rows in this ndarray";
-
-    }
-
     /**
      * Do a row wise op (a,s,m,d)
      * a : add
@@ -2010,6 +2003,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
+        //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
+        if(!columnVector.isColumnVector() || this.size(0) != columnVector.size(0)){
+            throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(columnVector.shape()) + ")");
+        }
+
         if(columnVector.data().sameUnderlyingData(data()))
             return doColumnWise(columnVector.dup(),operation);
         if(isVector()) {
@@ -2040,7 +2038,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             applyScalarOp(columnVector, operation);
         }
         else {
-            assertColumnVector(columnVector);
             applyBroadcastOp(columnVector, operation);
 
         }
@@ -2061,11 +2058,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         cleanedUp = true;
     }
 
-    protected void assertRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Must only add a row vector";
-        assert rowVector.length() == columns() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Illegal row vector must have the same length as the number of rows in this ndarray";
-    }
-
 
 
     /**
@@ -2082,6 +2074,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
+        //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
+        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)){
+            throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(rowVector.shape()) + ")");
+        }
+
         if(rowVector.data().sameUnderlyingData(data()))
             return doRowWise(rowVector.dup(),operation);
 
@@ -2116,7 +2113,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
         else {
-            assertRowVector(rowVector);
             applyBroadcastOp(rowVector, operation);
         }
 
@@ -2946,6 +2942,32 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    /**
+     * Assign all elements from given ndarray that are matching given condition,
+     * ndarray to this ndarray
+     *
+     * @param arr       the elements to assign
+     * @param condition
+     * @return this
+     */
+    @Override
+    public INDArray assignIf(INDArray arr, Condition condition) {
+        BooleanIndexing.assignIf(this, arr, condition);
+        return this;
+    }
+
+    /**
+     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
+     *
+     * @param arr
+     * @param condition
+     * @return
+     */
+    @Override
+    public INDArray replaceWhere(INDArray arr, Condition condition) {
+        BooleanIndexing.replaceWhere(this, arr, condition);
+        return this;
+    }
 
     @Override
     public int linearIndex(int i) {
@@ -3244,7 +3266,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-        if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape())) {
+        if(isRowVector() && toPut.isVector()) {
             return assign(toPut);
         }
         return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
@@ -3261,8 +3283,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        if(isColumnVector() && Shape.shapeEquals(shape(), toPut.shape()))
+        if(isColumnVector() && toPut.isVector()) {
             return assign(toPut);
+        }
         return put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
 
     }

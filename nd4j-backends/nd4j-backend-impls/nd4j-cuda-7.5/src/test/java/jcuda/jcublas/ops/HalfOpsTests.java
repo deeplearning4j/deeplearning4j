@@ -32,6 +32,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author raver119@gmail.com
  */
+@Ignore
 public class HalfOpsTests {
     private static Logger log = LoggerFactory.getLogger(HalfOpsTests.class);
 
