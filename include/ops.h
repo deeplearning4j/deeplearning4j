@@ -9,6 +9,9 @@
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
 #define MIN_CUTFOFF -3.79297773665f
+#define FLOAT_MIN_NORMAL 1.17549435e-38
+#define FLOAT_MAX_VALUE 3.4028235E38
+#define EPS 1e-5
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
@@ -1222,11 +1225,17 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2, T *extraParamsRef) {
-            if (isnan(d1) != isnan(d2))
-                return 1.0;
+            T abs1 = nd4j::math::nd4j_abs<T>(d1);
+            T abs2 = nd4j::math::nd4j_abs<T>(d2);
+            T diff = nd4j::math::nd4j_abs<T>(d1 - d2);
 
-            if (nd4j::math::nd4j_abs<T>(d1 - d2) < 1e-5 ) return 0.0;
-            else return 1.0;
+            if (d1 == d2) {
+                return 0.0;
+            } else if (d1 == 0 || d2 == 0 || diff < FLOAT_MIN_NORMAL) {
+                return diff < (EPS * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+            } else {
+                return (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE)) < EPS ? 0.0f : 1.0f;
+            }
         }
 
 
@@ -1530,18 +1539,181 @@ template<typename T>
 		}
 	};
 
+
+    template<typename T>
+    class MatchCondition {
+    public:
+
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        // this op return 1.0 if condition met, 0.0 otherwise
+        op_def static T op(T d1, T *extraParams) {
+            T compare = extraParams[0];
+            T eps = extraParams[1];
+
+            int mode = (int) extraParams[2];
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0 : 0.0;
+            else if (mode == 2) // less_than
+                return d1 < compare? 1.0 : 0.0;
+            else if (mode ==3) // greater_than
+                return d1 > compare? 1.0 : 0.0;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? 1.0 : 0.0;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? 1.0 : 0.0;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? 1.0 : 0.0;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? 1.0 : 0.0;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? 1.0 : 0.0;
+            else if (mode == 10)
+                return (d1 == compare) ? 1.0 : 0.0;
+            else if (mode == 11)
+                return (d1 != compare) ? 1.0 : 0.0;
+            else
+                printf("Undefined match condition: [%i]\n", mode);
+            return d1;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
+
+    // this op is used for conditional pairwise transforms only
+    template<typename T>
+    class CompareAndReplace{
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        // op definition for PairWise Transform
+        op_def static T op(T d1, T d2, T *params) {
+            T compare = params[0];
+            T eps = params[2];
+            int mode = (int) params[3];
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
+            else if (mode == 1) // not equals eps
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
+            else if (mode == 2) // less_than eps
+                return d1 < compare? d2 : d1;
+            else if (mode ==3) // greater_than
+                return d1 > compare? d2 : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? d2 : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? d2 : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? d2 : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? d2 : d1;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? d2 : d1;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? d2 : d1;
+            else if (mode == 10)
+                return (d1 == compare) ? d2 : d1;
+            else if (mode == 11)
+                return (d1 != compare) ? d2 : d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
+        }
+    };
+
 	template<typename T>
 	class CompareAndSet {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+        // op definition for Transform
 		op_def static T op(T d1, T *params) {
 			T compare = params[0];
 			T set = params[1];
 			T eps = params[2];
-			return d1 <= compare + eps && d1 >= compare - eps ? set : d1;
+
+            // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
+            int mode = (int) params[3];
+            if (mode == 0) // equals
+			    return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
+            else if (mode == 2) // less_than
+                return d1 < compare? set : d1;
+            else if (mode ==3) // greater_than
+                return d1 > compare? set : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? set : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? set : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? set : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? set : d1;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? set : d1;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? set : d1;
+            else if (mode == 10)
+                return (d1 == compare) ? set : d1;
+            else if (mode == 11)
+                return (d1 != compare) ? set : d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
 		}
+
+        // op definition for PairWise Transform
+        op_def static T op(T d1, T d2, T *params) {
+            T compare = params[0];
+            T eps = params[2];
+            int mode = (int) params[3];
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d2 - compare) <= eps ? d2 : d1;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d2 - compare) > eps ? d2 : d1;
+            else if (mode == 2) // less_than
+                return d2 < compare? d2 : d1;
+            else if (mode ==3) // greater_than
+                return d2 > compare? d2 : d1;
+            else if (mode == 4) // less_or_equals_than
+                return d2 <= compare? d2 : d1;
+            else if (mode == 5) // greater_or_equals_than
+                return d2 >= compare? d2 : d1;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d2) < compare? d2 : d1;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d2) > compare? d2 : d1;
+            else if (mode == 8) // is inf
+                return isinf(d2) ? d2 : d1;
+            else if (mode == 9) // is nan
+                return isnan(d2) ? d2 : d1;
+            else if (mode == 10)
+                return (d2 == compare) ? d2 : d1;
+            else if (mode == 11)
+                return (d2 != compare) ? d2 : d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
+        }
 	};
 }
 

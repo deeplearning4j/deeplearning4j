@@ -2918,7 +2918,6 @@ float NativeOps::execReduceScalarHalf(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
