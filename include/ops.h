@@ -9,6 +9,9 @@
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
 #define MIN_CUTFOFF -3.79297773665f
+#define FLOAT_MIN_NORMAL 1.17549435e-38
+#define FLOAT_MAX_VALUE 3.4028235E38
+#define EPS 1e-5
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
@@ -1222,11 +1225,17 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2, T *extraParamsRef) {
-            if (isnan(d1) != isnan(d2))
-                return 1.0;
+            T abs1 = nd4j::math::nd4j_abs<T>(d1);
+            T abs2 = nd4j::math::nd4j_abs<T>(d2);
+            T diff = nd4j::math::nd4j_abs<T>(d1 - d2);
 
-            if (nd4j::math::nd4j_abs<T>(d1 - d2) < 1e-5 ) return 0.0;
-            else return 1.0;
+            if (d1 == d2) {
+                return 0.0;
+            } else if (d1 == 0 || d2 == 0 || diff < FLOAT_MIN_NORMAL) {
+                return diff < (EPS * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+            } else {
+                return (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE)) < EPS ? 0.0f : 1.0f;
+            }
         }
 
 
