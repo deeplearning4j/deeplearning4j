@@ -1184,6 +1184,10 @@ public class NativeOps extends Pointer {
 
     public native void enableP2P(boolean reallyEnable);
 
+    public native void checkP2P();
+
+    public native boolean isP2PAvailable();
+
     //
 
     public native void shuffleDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);

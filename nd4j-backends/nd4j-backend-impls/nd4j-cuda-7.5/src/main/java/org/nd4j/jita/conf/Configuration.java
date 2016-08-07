@@ -246,6 +246,17 @@ public class Configuration implements Serializable {
     }
 
     /**
+     * This method checks, if GPU subsystem supports cross-device P2P access over PCIe.
+     *
+     * PLEASE NOTE: This method also returns TRUE if system has only one device. This is done to guarantee reallocation avoidance within same device.
+     *
+     * @return
+     */
+    public boolean isP2PSupported() {
+        return nativeOps.isP2PAvailable();
+    }
+
+    /**
      * This method allows you to ban specific device.
      *
      * PLEASE NOTE: This method
