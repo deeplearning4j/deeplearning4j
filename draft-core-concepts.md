@@ -3,8 +3,6 @@ title: Introduction to the Core DL4J Concepts
 layout: default
 ---
 
-# WORK IN PROGRESS
-
 # Introduction to the Core DL4J Concepts
 
 > Before diving deeper into DL4J please make sure you have finished the 
@@ -12,8 +10,8 @@ layout: default
 > that you have everything set up correctly and DL4J working smoothly.
 
 > This guide assumes that you are using the newest release of DL4J. If you are
-> not sure which version is the newest, clone the examples as shown in the 
-> quickstart guide and take a look at the `pom.xml` file.
+> not sure which version is the newest, clone the [examples](https://github.com/deeplearning4j/dl4j-examples)
+> as shown in the quickstart guide and take a look at the `pom.xml` file.
 
 
 ## Overview
@@ -21,7 +19,7 @@ layout: default
 Every machine learning application consists of two parts. The first 
 part is loading your data and preparing it to be used for learning. We
 refer to this part as the ETL (extract, transform, load) process. 
-[Canova](http://deeplearning4j.org/simple-image-load-transform) is the library 
+[DataVec](http://deeplearning4j.org/simple-image-load-transform) is the library 
 we built to make this process easier. The second part is the actual learning system itself
 - this is the core of DL4J.
 
@@ -37,18 +35,18 @@ quickly and reliably.
 ## Preparing your data for learning and prediction
 
 Unlike other machine learning or deep learning frameworks, DL4J keeps loading data and training as separate processes. You don't simply point the model at data somewhere on the disk - instead you load 
-it using Canova. This offers a lot more flexiblity, and retains the convenience of simple data loading.
+it using DataVec. This offers a lot more flexiblity, and retains the convenience of simple data loading.
 
-Before you can start learning, you have to prepare your data, even if you already have a trained model. Preparing data means loading it and bring it into the right shape and value
-range. Implementing this on your own is very error prone, so use Canova whereever possible.
+Before you can start learning, you have to prepare your data, even if you already have a trained model. Preparing data means loading it and bringing it into the right shape and value
+range. Implementing this on your own is very error prone, so use DataVec whereever possible.
 
 Deep learning works with a lot of different data types, such as images, csv, arff, 
 plain text and due to the upcoming [Apache Camel](https://camel.apache.org/) 
 integration, pretty much any other data type you can think of.
 
-In order to use Canova you will need one of the implementations of the
-[RecordReader](http://deeplearning4j.org/canovadoc/org/canova/api/records/reader/RecordReader.html)
-interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.html)
+In order to use DataVec you will need one of the implementations of the
+[RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html)
+interface along with the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.java)
 (see [Simple Image Load Transform](http://deeplearning4j.org/simple-image-load-transform) 
 for a detailed explanation).
 
@@ -57,7 +55,7 @@ you can use it to retrieve your data in a format that is more suited for
 training your model.
 
 
-## Normalizing your Data
+### Normalizing your Data
 
 Neural networks work best when the data they are using is constrained to a
 range between -1 and 1. The reason for this is that they are trained using
@@ -66,7 +64,22 @@ activation functions usually having an active range somewhere between -1 and 1.
 But even when using an activation function that doesn't saturate quickly, it is 
 still good practice to constrain your values to this range; even then it typically improves performance.
 
-TBC: Using Canova and Preprocessors for Normalization.
+Normalizing your data is pretty straight forward in DL4J. All you have to do is
+to decide how you want to normalize your data, and set the coresponding 
+[DataNormalization](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.java) up as a preprocessor for your DataSetIterator. Currently you
+can choose from [ImagePreProcessingScaler](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.java), [NormalizerMinMaxScaler](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.java) and [NormalizerStandardize](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.java). 
+The ImagePreProcessingScaler is obviously a good choice for image data, for
+other data you the NormalizerMinMaxScaler is a good choice if you have a uniform
+range along all dimensions of your input data and NormalizerStandardize is 
+what you would usually use in other cases.
+
+If you have other normalization needs, you are also free to implement the
+DataNormalization interface.
+
+If you end up using NormalizerStandardize, you should also notice that this is a
+normalizer that depends on statistics that it extracts from the data. So will
+have to save those statistics along with the model in order to restore them when
+you restore your model.
 
 
 ## DataSet, INDArray and Mini-Batches
@@ -109,14 +122,97 @@ should be distributed in approximately the same way as they are in your overall 
 
 ## Building a Model
 
-TBD: Builder Pattern for Declarative Model Building. Updater/Optimization duality. Layer types. CNN Setup Helper. Iterations vs Epochs.
+DL4J allows you to build a deep learning model on a very high level. It uses a
+builder pattern in order to declaratively build up the model, as you can see in
+this (simplified) example:
+
+~~~ java
+MultiLayerConfiguration conf = 
+	new NeuralNetConfiguration.Builder()
+		.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+		.updater(Updater.NESTEROVS).momentum(0.9)
+		.learningRate(learningRate)
+		.list(
+			new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes).activation("relu").build(),
+			new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).activation("softmax").nIn(numHiddenNodes).nOut(numOutputs).build()
+		).backprop(true).build();
+~~~
+
+If you are familiar with other deep learning frameworks, you will notice that
+this looks a bit like the python based Keras.
+
+Unlike many other frameworks, DL4J has decided to split the optimization
+algorithm from the updater algorithm. This allows you to be flexible while 
+trying to find a combination that works best for your data and problem.
+
+Besides the [DenseLayer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/DenseLayer.java)
+and [OutputLayer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/OutputLayer.java)
+that you have seen in the example above, there are several [other layer types](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers),
+like GravesLSTM, ConvolutionLayer, RBM, EmbeddingLayer, etc. . Using those 
+layers you can define not only simple neural networks, but also [recurrent](http://deeplearning4j.org/usingrnns) 
+and [convolutional](http://deeplearning4j.org/convolutionalnets) networks. 
 
 
 ## Training a Model
 
-TBD: Listeners. Early Stopping.
+After defining your model, you will have to train it. The simplest case is to
+simply call the `.fit()` method on the model configuration with your
+DataSetIterator as an argument. This will train the model on all of your data
+once. Such a single pass over the data is called an Epoch. DL4J has several
+different methods of how you can pass over your data more than just once.
+
+The simplest way, is to reset your DataSetIterator and loop over the fit call
+as many times as you want. This way you can train your model for as many epochs
+as you think is a good fit.
+
+Another one of them is the `.iterations(N)` configuration parameter. It decides
+how ofter the network should iterate (i.e. train) over a a single mini-batch in
+a row. So, if you had 3 mini-batches A, B and C, setting `.iterations(3)` would
+result in your network learning with the data as `AAABBBCCC`, in contrast using
+3 epochs with `.iterations(1)` would feed the data to the network as `ABCABCABC`.
+
+Yet another way would be to use an [EarlyStoppingTrainer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/trainer/EarlyStoppingTrainer.java). 
+You can configure this trainer to run for as many epochs as you like and
+additionally for as long as you like. It will evaluate the performance of your
+network after each epoch (or what ever you have configured) and save the best
+performing version for later use. 
+
+Also note that DL4J does not only support training just MultiLayerNetworks, but
+it also supports a more flexible [ComputationGraph](http://deeplearning4j.org/compgraph).
+
+### Evaluating model performance
+
+As you train your model, you will want how well it currently performs. For this
+you should have set aside dedicated data set that will not be used for training
+but instead will only be used for evaluating your model. This data should have
+the same distribution as the real life data will have when you wan to actually
+use your model. The reason why you can't simply use your training data for
+evaluation is because machine learning methods are prone to overfitting if they
+are large enough.
+
+Evaluating your model is done using the [Evaluation](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/eval/Evaluation.java)
+class. Depending on if you want to evaluate a normal feed forward network or
+a recurrent network you will have to use slightly different methods. For more
+details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
+
 
 ## Troubleshooting your Model
 
-TBD: Visualization UI
+Using neural networks to solve problems is a very empirical process. So you will
+have to try different settings and architectures in order to find something that
+performs best for you.
+
+DL4J assists you in this endevor by providing a listener facility on your
+network. You can set up listeners for your model, that will be called after each
+mini-batch. The two most often used listeners that DL4J ships out of the box,
+are [ScoreIterationListener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/listeners/ScoreIterationListener.java)
+and [HistogramIterationListener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-ui-parent/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java). While ScoreIterationListener will simply print
+the current error score for your network, HistogramIterationListener will start
+up a web ui that will provide you with a host of different information that you
+can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](http://deeplearning4j.org/visualization) 
+on how to interpret that data.
+
+See also [Troubleshooting neural nets](http://deeplearning4j.org/troubleshootingneuralnets) 
+for more information on how to improve your results.
+
 
