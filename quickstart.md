@@ -124,7 +124,7 @@ Right-click the file to run.
 To run DL4J in your own projects, we highly recommend using Maven for Java users, or a tool such as SBT for Scala. The basic set of dependencies and their versions are shown below. This includes:
 
 - `deeplearning4j-core`, which contains the neural network implementations
-- `nd4j-native`, the CPU version of the ND4J library that powers DL4J
+- `nd4j-native-platform`, the CPU version of the ND4J library that powers DL4J
 - `datavec-api` - Datavec is our library vectorizing and loading data
 
 Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml) when you run your examples.
@@ -166,7 +166,3 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 ```
 -Djava.library.path=""
 ```
-
-**Q:** I'm getting this error: `Intel MKL FATAL ERROR: Cannot load mkl_intel_thread.dll`. It shuts down the JVM (i.e. doesn't crash it, but simply halts it...).
-
-**A:** As of `rc3.10` and above (we're now on 0.4.0), the library `libnd4j` doesn't load Intel's MKL correctly even when it is found on the path. This can be solved by adding `System.loadLibrary("mkl_rt")`.
