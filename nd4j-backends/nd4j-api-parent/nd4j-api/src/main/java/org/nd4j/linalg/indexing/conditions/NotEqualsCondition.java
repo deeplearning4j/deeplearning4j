@@ -19,18 +19,19 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class LessThan extends BaseCondition {
-
-    public LessThan(Number value) {
+public class NotEqualsCondition extends BaseCondition {
+    public NotEqualsCondition(Number value) {
         super(value);
     }
 
-    public LessThan(IComplexNumber complexNumber) {
+    public NotEqualsCondition(IComplexNumber complexNumber) {
         super(complexNumber);
     }
 
@@ -41,16 +42,19 @@ public class LessThan extends BaseCondition {
      */
     @Override
     public int condtionNum() {
-        return 2;
+        return 11;
     }
 
     @Override
     public Boolean apply(Number input) {
-        return input.doubleValue() < value.doubleValue();
+        if (Nd4j.dtype == DataBuffer.Type.DOUBLE)
+            return input.doubleValue() == value.doubleValue();
+        else
+            return input.floatValue() == value.floatValue();
     }
 
     @Override
     public Boolean apply(IComplexNumber input) {
-        return input.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue();
+        return complexNumber.equals(input);
     }
 }

@@ -34,6 +34,16 @@ public class LessThanOrEqual extends BaseCondition {
         super(complexNumber);
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 4;
+    }
+
     @Override
     public Boolean apply(Number input) {
         return input.floatValue() <= value.doubleValue();

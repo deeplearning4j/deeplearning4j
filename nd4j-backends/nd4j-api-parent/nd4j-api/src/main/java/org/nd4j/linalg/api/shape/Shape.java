@@ -787,6 +787,16 @@ public class Shape {
     }
 
 
+    public static long getTADLength(int[] shape, int... dimensions) {
+        int tadLength = 1;
+        for (int i = 0; i < dimensions.length; i++) {
+            tadLength *= shape[dimensions[i]];
+        }
+
+        return tadLength;
+    }
+
+
     /**
      *
      * @param shape

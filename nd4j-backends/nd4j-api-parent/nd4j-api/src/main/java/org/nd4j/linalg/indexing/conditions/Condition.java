@@ -27,8 +27,17 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  */
 public interface Condition extends Function<Number, Boolean> {
 
-    @Override
-    public Boolean apply(Number input);
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    int condtionNum();
 
-    public Boolean apply(IComplexNumber input);
+    double getValue();
+
+    @Override
+    Boolean apply(Number input);
+
+    Boolean apply(IComplexNumber input);
 }

@@ -19,10 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
  * Element-wise Compare-and-set implementation as Op
@@ -34,24 +37,62 @@ public class CompareAndSet extends BaseTransformOp {
     private double compare;
     private double set;
     private double eps;
+    private int mode;
+
 
     public CompareAndSet() {
 
     }
 
     public CompareAndSet(INDArray x, double compare, double set, double eps) {
+        this(x, compare, set, eps, null);
+    }
+
+    public CompareAndSet(INDArray x, double compare, double set, double eps, Condition condition) {
         super(x);
         this.compare = compare;
         this.set = set;
         this.eps = eps;
+        if (condition == null)
+            this.mode = 0;
+        else
+            this.mode = condition.condtionNum();
+
         init(x, null, x, x.length());
     }
+
+
+    public CompareAndSet(INDArray x, double set, Condition condition) {
+        this(x, x, set, condition);
+    }
+
+    public CompareAndSet(INDArray x, INDArray z, double set, Condition condition) {
+        super(x, null, z, x.lengthLong());
+        this.compare = condition.getValue();
+        this.set = set;
+        this.mode = condition.condtionNum();
+        init(x, null, z, x.lengthLong());
+    }
+
+    public CompareAndSet(INDArray x, INDArray y, Condition condition) {
+        this(x, y, x, condition);
+    }
+
+    public CompareAndSet(INDArray x, INDArray y, INDArray z, Condition condition) {
+        super(x, y, z, x.lengthLong());
+        this.compare = condition.getValue();
+        this.set = 0;
+        this.mode = condition.condtionNum();
+        init(x, y, z, x.lengthLong());
+    }
+
 
     public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps) {
         super(x,z);
         this.compare = compare;
         this.set = set;
         this.eps = eps;
+        this.mode = 0;
         init(x, null, z, x.length());
     }
 
@@ -60,6 +101,7 @@ public class CompareAndSet extends BaseTransformOp {
         this.compare = compare;
         this.set = set;
         this.eps = eps;
+        this.mode = 0;
         init(x, null, x, n);
     }
 
@@ -138,7 +180,7 @@ public class CompareAndSet extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x,y,z,n);
-        this.extraArgs = new Object[]{compare, set, eps, (double) n};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 }
 

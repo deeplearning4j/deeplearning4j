@@ -32,6 +32,21 @@ public class And implements Condition {
         this.conditions = conditions;
     }
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return -1;
+    }
+
+    @Override
+    public double getValue() {
+        return -1;
+    }
+
     @Override
     public Boolean apply(Number input) {
         boolean ret = conditions[0].apply(input);

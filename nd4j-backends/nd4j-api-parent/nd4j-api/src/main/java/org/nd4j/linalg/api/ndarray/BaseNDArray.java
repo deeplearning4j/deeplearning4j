@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -2943,6 +2942,32 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    /**
+     * Assign all elements from given ndarray that are matching given condition,
+     * ndarray to this ndarray
+     *
+     * @param arr       the elements to assign
+     * @param condition
+     * @return this
+     */
+    @Override
+    public INDArray assignIf(INDArray arr, Condition condition) {
+        BooleanIndexing.assignIf(this, arr, condition);
+        return this;
+    }
+
+    /**
+     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
+     *
+     * @param arr
+     * @param condition
+     * @return
+     */
+    @Override
+    public INDArray replaceWhere(INDArray arr, Condition condition) {
+        BooleanIndexing.replaceWhere(this, arr, condition);
+        return this;
+    }
 
     @Override
     public int linearIndex(int i) {
