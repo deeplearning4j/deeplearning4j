@@ -184,55 +184,55 @@ public class Evaluation implements Serializable {
 
         // For each row get the most probable label (column) from prediction and assign as guessMax
         // For each row get the column of the true label and assign as currMax
+
         int nCols = realOutcomes.columns();
-        for (int i = 0; i < realOutcomes.rows(); i++) {
-            INDArray currRow = realOutcomes.getRow(i);
-            INDArray guessRow = guesses.getRow(i);
+        int nRows = realOutcomes.rows();
 
+        if (nCols == 1) {
+            INDArray binaryGuesses = guesses.gt(0.5);
+            int tp = binaryGuesses.mul(realOutcomes).sumNumber().intValue();
+            int fp = binaryGuesses.mul(-1.0).addi(1.0).muli(realOutcomes).sumNumber().intValue();
+            int fn = binaryGuesses.mul(realOutcomes.mul(-1.0).addi(1.0)).sumNumber().intValue();
+            int tn = nRows - tp - fp - fn;
 
-            int currMax;
-            int guessMax;
-            if( nCols == 1){
-                //Binary (single variable) case
-                if(currRow.getDouble(i) == 0.0) currMax = 0;
-                else currMax = 1;
+            confusion.add(1, 1, tp);
+            confusion.add(1, 0, fn);
+            confusion.add(0, 1, fp);
+            confusion.add(0, 0, tn);
 
-                if(guessRow.getDouble(i) <= 0.5 ) guessMax = 0;
-                else guessMax = 1;
+            truePositives.incrementCount(1, tp);
+            falsePositives.incrementCount(1, fp);
+            falseNegatives.incrementCount(1, fp);
+            trueNegatives.incrementCount(1, tp);
 
-            } else {
-                //Normal case
-                currMax = (int)Nd4j.argMax(currRow,1).getDouble(0);
-                guessMax = (int)Nd4j.argMax(guessRow,1).getDouble(0);
+            truePositives.incrementCount(0, tn);
+            falsePositives.incrementCount(0, fn);
+            falseNegatives.incrementCount(0, fn);
+            trueNegatives.incrementCount(0, tn);
+        } else {
+            INDArray guessIndex = Nd4j.argMax(guesses, 1);
+            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+
+            for (int colReal = 0; colReal < nCols; colReal++) {
+                for (int colGuess = 0; colGuess < nCols; colGuess++) {
+                    int matchCount = guessIndex.eps(colGuess).muli(realOutcomeIndex.eps(colReal)).sumNumber().intValue();
+                    confusion.add(colReal, colGuess, matchCount);
+                }
             }
 
-            // Add to the confusion matrix the real class of the row and
-            // the predicted class of the row
-            addToConfusion(currMax, guessMax);
+            for (int col = 0; col < nCols; col++) {
+                INDArray colBinaryGuesses = guessIndex.eps(col);
+                INDArray colRealOutcomes = realOutcomes.getColumn(col);
 
-            // If they are equal
-            if (currMax == guessMax) {
-                // Then add 1 to True Positive
-                // (For a particular label)
-                incrementTruePositives(guessMax);
+                int colTp = colBinaryGuesses.mul(colRealOutcomes).sumNumber().intValue();
+                int colFp = colBinaryGuesses.mul(colRealOutcomes.mul(-1.0).addi(1.0)).sumNumber().intValue();
+                int colFn = colBinaryGuesses.mul(-1.0).addi(1.0).muli(colRealOutcomes).sumNumber().intValue();
+                int colTn = nRows - colTp - colFp - colFn;
 
-                // And add 1 for each negative class that is accurately predicted (True Negative)
-                //(For a particular label)
-                for (Integer clazz : confusion.getClasses()) {
-                    if (clazz != guessMax)
-                        trueNegatives.incrementCount(clazz, 1.0);
-                }
-            } else {
-                // Otherwise the real label is predicted as negative (False Negative)
-                incrementFalseNegatives(currMax);
-                // Otherwise the prediction is predicted as falsely positive (False Positive)
-                incrementFalsePositives(guessMax);
-                // Otherwise true negatives
-                for (Integer clazz : confusion.getClasses()) {
-                    if (clazz != guessMax && clazz != currMax)
-                        trueNegatives.incrementCount(clazz, 1.0);
-
-                }
+                truePositives.incrementCount(col, colTp);
+                falsePositives.incrementCount(col, colFp);
+                falseNegatives.incrementCount(col, colFn);
+                trueNegatives.incrementCount(col, colTn);
             }
         }
     }
