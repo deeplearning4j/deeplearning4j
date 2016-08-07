@@ -77,11 +77,11 @@ InputSplit testData = filesInDirSplit[1];
 ~~~java
 ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
 ~~~
-Please *note that the images in your dataset donot have to be the same size*. Canova can do this for you. As you can see in this example images are all of different size and they are all resized to the height and width specified below
+Please *note that the images in your dataset do not have to be the same size*. DataVec can do this for you. As you can see in this example images are all of different size and they are all resized to the height and width specified below
 
 * Specify transformations
 
-The advantage of neural nets is that they do not require you to manually feature engineer. However, there can be an advantage to transforming images to artificially increase the size of the dataset like in this winning kaggle entry <http://benanne.github.io/2014/04/05/galaxy-zoo.html>. Or you might want to crop an image down to only the relevant parts. An example would be detect a face and crop it down to size. Canova has all the built in functionality/powerful features from OpenCV. A bare bones example that flips an image and then displays it is shown below:
+The advantage of neural nets is that they do not require you to manually feature engineer. However, there can be an advantage to transforming images to artificially increase the size of the dataset like in this winning kaggle entry <http://benanne.github.io/2014/04/05/galaxy-zoo.html>. Or you might want to crop an image down to only the relevant parts. An example would be detect a face and crop it down to size. DataVec has all the built in functionality/powerful features from OpenCV. A bare bones example that flips an image and then displays it is shown below:
 
 ~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen,new FlipImageTransform(), new ShowImageTransform("After transform"));
