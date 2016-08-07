@@ -114,7 +114,6 @@ public class DefaultGradient implements Gradient {
     @Override
     public INDArray setGradientFor(String variable, INDArray newGradient) {
         INDArray last = gradients.put(variable, newGradient);
-        flattenGradient();
         return last;
     }
 
@@ -126,7 +125,6 @@ public class DefaultGradient implements Gradient {
             if(flatteningOrders == null) flatteningOrders = new LinkedHashMap<>();
             flatteningOrders.put(variable,flatteningOrder);
         }
-        flattenGradient();
         return last;
     }
 
