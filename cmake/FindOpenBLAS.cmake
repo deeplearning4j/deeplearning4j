@@ -31,6 +31,7 @@ else()
             /usr/local/include
             /usr/local/include/openblas
             /usr/local/include/openblas-base
+            /usr/local/opt/openblas/include
             /opt/OpenBLAS/include
             )
 
@@ -43,6 +44,7 @@ else()
             /usr/lib64
             /usr/local/lib
             /usr/local/lib64
+            /usr/local/opt/openblas/lib
             /opt/OpenBLAS/lib
             )
 
