@@ -33,6 +33,7 @@ int maxThreads = 512;
 bool debug = false;
 bool verbose = true;
 bool allowedP2P = false;
+bool supportedP2P = false;
 
 __constant__ char deviceConstantMemory[49152];
 
@@ -4836,6 +4837,45 @@ void NativeOps::flattenDouble(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+void NativeOps::checkP2P() {
+	int curDevice = 0;
+
+	cudaGetDevice(&curDevice);
+
+	int devCnt = 0;
+	cudaGetDeviceCount(&devCnt);
+
+	if (curDevice < 0 && curDevice > devCnt)
+		curDevice = 0;
+
+	bool tempSupport = true;
+
+	if (devCnt > 1) {
+		for (int x = 0; x < devCnt; x++) {
+
+			for (int y = 0; y < devCnt; y++) {
+				if (x == y)
+					continue;
+
+				int canAccess = 0;
+				cudaSetDevice(x);
+
+				cudaDeviceCanAccessPeer(&canAccess, x , y);
+
+				if (!canAccess)
+					tempSupport = false;
+			}
+		}
+
+		supportedP2P = tempSupport;
+
+		cudaSetDevice(curDevice);
+	} else {
+		// if we have only 1 device - we say that we support P2P, since all data will be on 1 device
+		supportedP2P = true;
+	}
+}
+
 void NativeOps::enableP2P(bool enable) {
     if (enable == allowedP2P)
         return;
@@ -4846,6 +4886,9 @@ void NativeOps::enableP2P(bool enable) {
 
     int devCnt = 0;
     cudaGetDeviceCount(&devCnt);
+
+	if (curDevice < 0 && curDevice > devCnt)
+		curDevice = 0;
 
     if (devCnt > 1) {
         for (int x = 0; x < devCnt; x++) {
@@ -4865,18 +4908,25 @@ void NativeOps::enableP2P(bool enable) {
                     } else {
                         cudaDeviceDisablePeerAccess(y);
                     }
-                } else
-                    printf("Peer access [%i] -> [%i] isn't possible\n", x, y);
+                } else {
+					if (verbose) printf("Peer access [%i] -> [%i] isn't possible\n", x, y);
+				}
             }
         }
 
-        cudaSetDevice(0);
+        cudaSetDevice(curDevice);
     }
 
     allowedP2P = enable;
 
     cudaSetDevice(curDevice);
 }
+
+bool NativeOps::isP2PAvailable() {
+	// always TRUE for cpu backend
+	return supportedP2P;
+}
+
 
 void NativeOps::initializeDevicesAndFunctions() {
 	int devCnt = 0;
@@ -4891,7 +4941,10 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaSetDevice(0);
 
-    enableP2P(allowedP2P);
+	checkP2P();
+
+	if (supportedP2P && devCnt > 1)
+    	enableP2P(allowedP2P);
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 

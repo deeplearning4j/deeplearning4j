@@ -2617,6 +2617,15 @@ void NativeOps::enableP2P(bool enable) {
     // no-op
 }
 
+bool NativeOps::isP2PAvailable() {
+    // always TRUE for cpu backend
+    return true;
+}
+
+void NativeOps::checkP2P() {
+    // no-op
+}
+
 template<typename T>
 void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
 
@@ -2708,3 +2717,4 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer x
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     // no-op
 }
+

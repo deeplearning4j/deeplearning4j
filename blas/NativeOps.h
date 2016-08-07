@@ -1189,6 +1189,10 @@ public:
      */
     void enableP2P(bool enable);
 
+    void checkP2P();
+
+    bool isP2PAvailable();
+
     /**
      * Shuffle methods
      */
