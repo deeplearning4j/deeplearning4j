@@ -13,7 +13,7 @@ Native operations for nd4j. Build using cmake
 
 ### OSX
 
-Run ./setuposx.sh (ensure you have brew installed)
+Run ./setuposx.sh (Please ensure you have brew installed)
 
 ### Linux
 
