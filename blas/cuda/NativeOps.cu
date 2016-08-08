@@ -1139,7 +1139,7 @@ double   NativeOps::execReduce3ScalarDouble(
 					nullptr,
 					nullptr,
 					1,
-					1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3010,7 +3010,7 @@ void   NativeOps::execReduce3Float(
 			resultShapeInfoPointer,
 			nullptr,
 			1,
-			1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3067,7 +3067,7 @@ void   NativeOps::execReduce3Half(
 					resultShapeInfoPointer,
 					nullptr,
 					1,
-					1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3131,7 +3131,7 @@ float   NativeOps::execReduce3ScalarFloat(
 			nullptr,
 			nullptr,
 			1,
-			1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3184,7 +3184,7 @@ float   NativeOps::execReduce3ScalarHalf(
 					nullptr,
 					nullptr,
 					1,
-					1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3261,7 +3261,7 @@ void   NativeOps::execReduce3Float(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduce3Float << < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
@@ -3336,7 +3336,7 @@ void   NativeOps::execReduce3Half(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						1, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduce3Half<< < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
