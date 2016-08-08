@@ -98,7 +98,7 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         // scale by dataset range
         theFeatures.diviRowVector(maxMinusMin);
         // scale by given or default feature range
-        theFeatures.divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+        theFeatures.muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
         // offset by given min feature value
         theFeatures.addi(minRange);
     }
