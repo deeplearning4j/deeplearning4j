@@ -23,6 +23,8 @@ import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
+import org.junit.Ignore;
+
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Cos;
@@ -43,7 +45,7 @@ import java.util.Map;
 import static org.junit.Assert.assertTrue;
 
 public class TestOptimizers {
-
+    @Ignore
     //For debugging.
     private static final boolean PRINT_OPT_RESULTS = true;
 
