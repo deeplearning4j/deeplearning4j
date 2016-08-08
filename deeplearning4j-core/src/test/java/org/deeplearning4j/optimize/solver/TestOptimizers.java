@@ -492,6 +492,16 @@ public class TestOptimizers {
             //If any parameters are outside range [-5.12,5.12]: score = infinity
             INDArray paramExceeds512 = parameters.cond(new Condition(){
                 @Override
+                public int condtionNum() {
+                    return 0;
+                }
+
+                @Override
+                public double getValue() {
+                    return 0;
+                }
+
+                @Override
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.12;
                 }
@@ -662,6 +672,16 @@ public class TestOptimizers {
             this.gradient = g;
 
             INDArray paramExceeds5 = parameters.cond(new Condition(){
+                @Override
+                public int condtionNum() {
+                    return 0;
+                }
+
+                @Override
+                public double getValue() {
+                    return 0;
+                }
+
                 @Override
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.0;
