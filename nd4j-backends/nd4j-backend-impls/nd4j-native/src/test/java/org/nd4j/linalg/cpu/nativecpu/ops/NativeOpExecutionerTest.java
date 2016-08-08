@@ -6,6 +6,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
@@ -192,5 +194,27 @@ public class NativeOpExecutionerTest {
 
     /* print the first row dup -- it should be different now! */
         System.out.println("C: " + testNDArray.getRow(0).dup());
+    }
+
+    @Test
+    public void testPinnedManhattanDistance2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000);
+        INDArray array2 = Nd4j.linspace(1, 900, 1000);
+
+        double result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().doubleValue();
+
+        assertEquals(50000.0, result, 0.001f);
+    }
+
+    @Test
+    public void testPinnedCosineSimilarity2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000);
+        INDArray array2 = Nd4j.linspace(100, 200, 1000);
+
+        double result = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(array1, array2)).getFinalResult().doubleValue();
+
+        assertEquals(0.945f, result, 0.001f);
     }
 }
