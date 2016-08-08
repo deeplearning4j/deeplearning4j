@@ -120,7 +120,7 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
 
         toPreProcess.getFeatures().subi(minRange);
-        toPreProcess.getFeatures().muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+        toPreProcess.getFeatures().divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
         toPreProcess.getFeatures().muliRowVector(maxMinusMin);
         toPreProcess.getFeatures().addiRowVector(min);
     }
