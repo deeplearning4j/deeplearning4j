@@ -34,7 +34,7 @@ public class LossMCXENT implements ILossFunction {
     public double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
-        double score = scoreArr.sumNumber().doubleValue();
+        double score = -scoreArr.sumNumber().doubleValue();
 
         if(average){
             score /= scoreArr.size(0);
@@ -64,5 +64,11 @@ public class LossMCXENT implements ILossFunction {
         return new Pair<>(
                 computeScore(labels, preOutput, activationFn, mask, average),
                 computeGradient(labels, preOutput, activationFn, mask));
+    }
+
+
+    @Override
+    public String toString(){
+        return "LossMCXENT()";
     }
 }

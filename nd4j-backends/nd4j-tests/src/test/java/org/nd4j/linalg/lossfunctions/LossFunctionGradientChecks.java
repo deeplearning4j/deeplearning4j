@@ -12,6 +12,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.fail;
 
 /**
@@ -69,6 +71,8 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
             INDArray p = preOut[i];
             String afn = activationFns[i];
 
+            log.info("Starting test: {}, {}, input shape = {}", lf, afn, Arrays.toString(p.shape()));
+
             INDArray grad = lf.computeGradient(l,p,afn,null);
 
             NdIndexIterator iter = new NdIndexIterator(l.shape());
@@ -80,11 +84,12 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 double scorePlus = lf.computeScore(l,p,afn,null,true);
                 p.putScalar(next, before-epsilon);
                 double scoreMinus = lf.computeScore(l,p,afn,null,true);
+                p.putScalar(next, before);
 
                 double scoreDelta = scorePlus - scoreMinus;
 
                 double numericalGradient = scoreDelta / (2 * epsilon);
-                double analyticGradient = grad.getDouble(next);
+                double analyticGradient = grad.getDouble(next) / l.size(0);     //Analytic gradient method is before dividing by minibatch
 
                 double relError = Math.abs(analyticGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(analyticGradient));
                 if( analyticGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
@@ -95,9 +100,8 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                     totalNFailures++;
                 } else {
                     log.info("Param " + i + " passed: grad= " + analyticGradient + ", numericalGrad= " + numericalGradient
-                            + ", relError= " + relError );
+                            + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus );
                 }
-
             }
 
             if(totalNFailures > 0) fail("Gradient check failed for loss function " + lf + "; total num failures = " + totalNFailures);

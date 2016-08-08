@@ -27,4 +27,9 @@ public class LossMSE implements ILossFunction {
     public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
         return null;
     }
+
+    @Override
+    public String toString(){
+        return "LossMCXENT()";
+    }
 }
