@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * This IterationListener is suited for general model performance/architecture overview
  *
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT USE IT UNLESS YOU HAVE TO
+ *
  * @author raver119@gmail.com
  */
 public class FlowIterationListener implements IterationListener {
