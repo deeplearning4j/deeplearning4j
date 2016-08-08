@@ -46,7 +46,7 @@ integration, pretty much any other data type you can think of.
 
 In order to use DataVec you will need one of the implementations of the
 [RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html)
-interface along with the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.java)
+interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html)
 (see [Simple Image Load Transform](http://deeplearning4j.org/simple-image-load-transform) 
 for a detailed explanation).
 
@@ -66,8 +66,8 @@ still good practice to constrain your values to this range; even then it typical
 
 Normalizing your data is pretty straight forward in DL4J. All you have to do is
 to decide how you want to normalize your data, and set the coresponding 
-[DataNormalization](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.java) up as a preprocessor for your DataSetIterator. Currently you
-can choose from [ImagePreProcessingScaler](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.java), [NormalizerMinMaxScaler](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.java) and [NormalizerStandardize](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.java). 
+[DataNormalization](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html) up as a preprocessor for your DataSetIterator. Currently you
+can choose from [ImagePreProcessingScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.html), [NormalizerMinMaxScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.html) and [NormalizerStandardize](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.html). 
 The ImagePreProcessingScaler is obviously a good choice for image data, for
 other data you the NormalizerMinMaxScaler is a good choice if you have a uniform
 range along all dimensions of your input data and NormalizerStandardize is 
@@ -145,9 +145,9 @@ Unlike many other frameworks, DL4J has decided to split the optimization
 algorithm from the updater algorithm. This allows you to be flexible while 
 trying to find a combination that works best for your data and problem.
 
-Besides the [DenseLayer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/DenseLayer.java)
-and [OutputLayer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/OutputLayer.java)
-that you have seen in the example above, there are several [other layer types](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers),
+Besides the [DenseLayer](http://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/DenseLayer.html)
+and [OutputLayer](http://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/OutputLayer.html)
+that you have seen in the example above, there are several [other layer types](http://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/package-summary.html),
 like GravesLSTM, ConvolutionLayer, RBM, EmbeddingLayer, etc. . Using those 
 layers you can define not only simple neural networks, but also [recurrent](http://deeplearning4j.org/usingrnns) 
 and [convolutional](http://deeplearning4j.org/convolutionalnets) networks. 
@@ -171,7 +171,7 @@ a row. So, if you had 3 mini-batches A, B and C, setting `.iterations(3)` would
 result in your network learning with the data as `AAABBBCCC`, in contrast using
 3 epochs with `.iterations(1)` would feed the data to the network as `ABCABCABC`.
 
-Yet another way would be to use an [EarlyStoppingTrainer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/trainer/EarlyStoppingTrainer.java). 
+Yet another way would be to use an [EarlyStoppingTrainer](http://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/trainer/EarlyStoppingTrainer.html). 
 You can configure this trainer to run for as many epochs as you like and
 additionally for as long as you like. It will evaluate the performance of your
 network after each epoch (or what ever you have configured) and save the best
@@ -190,7 +190,7 @@ use your model. The reason why you can't simply use your training data for
 evaluation is because machine learning methods are prone to overfitting if they
 are large enough.
 
-Evaluating your model is done using the [Evaluation](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/eval/Evaluation.java)
+Evaluating your model is done using the [Evaluation](http://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
 class. Depending on if you want to evaluate a normal feed forward network or
 a recurrent network you will have to use slightly different methods. For more
 details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
@@ -205,8 +205,8 @@ performs best for you.
 DL4J assists you in this endevor by providing a listener facility on your
 network. You can set up listeners for your model, that will be called after each
 mini-batch. The two most often used listeners that DL4J ships out of the box,
-are [ScoreIterationListener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/listeners/ScoreIterationListener.java)
-and [HistogramIterationListener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-ui-parent/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java). While ScoreIterationListener will simply print
+are [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
+and [HistogramIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/ui/weights/HistogramIterationListener.html). While ScoreIterationListener will simply print
 the current error score for your network, HistogramIterationListener will start
 up a web ui that will provide you with a host of different information that you
 can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](http://deeplearning4j.org/visualization) 
@@ -214,5 +214,3 @@ on how to interpret that data.
 
 See also [Troubleshooting neural nets](http://deeplearning4j.org/troubleshootingneuralnets) 
 for more information on how to improve your results.
-
-
