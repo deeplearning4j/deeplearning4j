@@ -1427,7 +1427,7 @@ public class ComputationGraph implements Serializable, Model {
             String layerName = key.substring(0, idx);
             String paramType = key.split("_")[1];
             // Update graph gradient
-            this.gradient.setGradientFor(key, val);
+            this.gradient.gradientForVariable().put(key, val);
             // Update layer params
             getLayer(layerName).update(val, paramType);
         }
