@@ -19,4 +19,6 @@ public interface ActionSpace<A> {
 
     int getSize();
 
+    A noOp();
+
 }

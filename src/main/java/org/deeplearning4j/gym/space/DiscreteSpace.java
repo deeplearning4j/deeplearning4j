@@ -33,4 +33,8 @@ public class DiscreteSpace implements ActionSpace<Integer> {
         return a;
     }
 
+    public Integer noOp(){
+        return 0;
+    }
+
 }
