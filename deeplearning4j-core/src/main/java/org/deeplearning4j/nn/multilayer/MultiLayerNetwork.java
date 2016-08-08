@@ -2126,7 +2126,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Integer layerId = Integer.parseInt(key.substring(0, idx));
             String paramType = key.substring(idx+1);
             // Update MLN gradient
-            this.gradient.setGradientFor(key, val);
+            this.gradient.gradientForVariable().put(key, val);
             // Update layer params
             layers[layerId].update(val, paramType);
         }
