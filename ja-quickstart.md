@@ -3,123 +3,171 @@ title: "Deeplearning 4 j のクイックスタートガイド"
 layout: ja-default
 ---
 
-# クイック・スタート・ガイド
+<!-- Begin Inspectlet Embed Code -->
+<script type="text/javascript" id="inspectletjs">
+window.__insp = window.__insp || [];
+__insp.push(['wid', 1755897264]);
+(function() {
+function ldinsp(){if(typeof window.__inspld != "undefined") return; window.__inspld = 1; var insp = document.createElement('script'); insp.type = 'text/javascript'; insp.async = true; insp.id = "inspsync"; insp.src = ('https:'== document.location.protocol ?'https' :'http') + '://cdn.inspectlet.com/inspectlet.js'; var x = document.getElementsByTagName('script')[0]; x.parentNode.insertBefore(insp, x); };
+setTimeout(ldinsp, 500); document.readyState != "complete" ?(window.attachEvent ? window.attachEvent('onload', ldinsp) : window.addEventListener('load', ldinsp, false)) : ldinsp();
+})();
+</script>
+<!-- End Inspectlet Embed Code -->
+
+クイックスタートガイド
+=================
+
+このページでは、DL4Jのexampleを動作させるために必要な事柄すべてをご説明します。
+
+弊社の[Gitter Live Chat（Gitterライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)に参加されることをおすすめします。Gitterでは、ヘルプが必要な方へのサポートの提供やフィードバックの受付を行っております。なお、質問のある方は、以下のガイドにいくつかの質問に対する回答をご紹介しておりますので、こちらを先にお読みいただければ幸いです。ディープラーニングの初心者の方には[a road map for beginners（ディープラーニングの初心者ガイド）](./deeplearningforbeginners.html)、ディープラーニングに関するコースのサイト、読み物、その他のリソースもご紹介しています。 
+
+#### コードについて
+
+Deeplearning4jはディープ・ニューラル・ネットワークを構成するドメイン固有の言語で、複数層で構成されています。すべては、これらの層やそれらのハイパーパラメータを組織化する`MultiLayerConfiguration`で開始します。
+
+ハイパーパラメータとはニューラルネットワークがどのように学習するかを決定する変数です。ハイパーパラメータには、モデルの重みの更新回数、それらの重みの初期化方法、ノードに付与する活性化関数、使用すべき最適化アルゴリズム、モデルの学習速度に関する情報などが含まれています。以下は、設定の一例です。 
+
+``` java
+    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        .iterations(1)
+        .weightInit(WeightInit.XAVIER)
+        .activation("relu")
+        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        .learningRate(0.05)
+        // ... その他のハイパーパラメータ
+        .backprop(true)
+        .build();
+```
+
+Deeplearning4jでは、層を追加するには`NeuralNetConfiguration.Builder()`に`layer`を呼び、層の順序（下図のインデックスがゼロの層は入力層）におけるその位置、入力`nIn`と出力`nOut`それぞれのノード数、タイプを指定します。`DenseLayer`.
+
+``` java
+        .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
+                .build())
+```
+
+いったんネットワークの設定が終わると、モデルを`model.fit`で訓練します。
 
 ## 必要なもの
 
-このクイックスタートガイドには、次のものがすでにインストールされていることを前提としています。
+* [Java （開発者バージョン）](#Java) 17、それ以降（**64ビットバージョンのみに対応しています。**）
+* [Apache Maven](#Maven) 
+* [IntelliJ IDEA]（#IntelliJ）またはEclipse
+* [Git](#Git)
 
-1. Java 7、またはそれ以降
-2. IntelliJ （または別の種類のIDE）
-3. Maven （自動ビルドツール）
-4. Github
- 
-上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/ja-getstarted)をご参照ください。（ND4Jは、ディープラーニングを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
+この『クイックスタートガイド』の手順を踏むには、まず最初に上記のものがインストールされていなければなりません。DL4Jは、製品展開、自動構築ツールに精通したプロのJava開発者を対象としています。これらの分野で経験のある方ならDL4Jを使った作業は非常に簡単にできるでしょう。
 
+Javaやこれらのツールの初心者の方々は、以下の詳細情報をお読みください。インスト―ルやセットアップについての情報を提供しております。そうでない方々は、**<a href="#examples">DL4Jのexamples</a>**にお進みください。
 
-質問やコメントなどございましたら、弊社の[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)に是非お問合せください。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、「ディープラーニング初心者ガイド」も[こちら](./deeplearningforbeginners.html)にご用意いたしました。 
+#### <a name="Java">Java</a>
 
-Deeplearning4jは、プロのJava開発者向けのオープンソースプロジェクトで、製品展開、Intellijなどの統合開発環境（IDE）、Mavenのような自動ビルドツールなどに精通した方々を対象としています。既にこれらのツールをお持ちの方には、弊社のツールは、非常に役に立ちます。
+Java 1.7、またはそれ以降のバージョンがない場合、現在の[Java Development Kit （JDK）をこちらから](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)ダウンロードしてください。互換性のあるJavaのバージョンを持っているかを調べるには、以下のコマンドを使用してください。
 
-## DL4Jの簡単な使い方ステップ
+``` shell
+java -version
+```
 
-上記をインストールした後、以下のステップを踏んでいただくと、すぐにお使いいただけます。（Windowsのユーザーの方は、このページ下方の[ステップごとの手順](#walk)をお読みください。）
+64ビットのJavaがインストールされているかどうかを確認してください。32ビットのバージョンを使用した場合、エラーメッセージの`no jnind4j in java.library.path`が表示されます。
 
-* コマンドラインに`git clone https://github.com/deeplearning4j/dl4j-examples.git`と入力します。（現在使用中のexampleバージョンは0.0.4です。）
-* IntelliJを開き、Mavenを使ってメニューツリーの`File/New/Project from Existing Sources`へ行き、新しいプロジェクトを作成します。上記のexampleのルートディレクトリを指定すると、統合開発環境でexampleが開きます。
-![Alt text](./img/IntelliJ_New_Project.png) 
-* 以下のコードをPOM.xmlにコピー＆ペーストし、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようにします。 
-* 追加の[Windowsユーザー向け手引きは、こちらをお読みください](./ja-gettingstarted.html#windows)。 
-* 左側のファイルツリーから`DBNIrisExample.java`を選びます。
-* runを押すと、完了です！（ソースファイルを右クリックしたときに表示される緑色のボタンです。)
+#### <a name="Maven">Apache Maven</a>
 
-### 管理された環境
+Mavenは、Javaのプロジェクトの依存関係を管理する自動化されたビルドツールです。IntelliJなどの統合開発環境（IDE）と連携しており、DL4Jのプロジェクトのライブラリを簡単にインストールすることができます。[Mavenの最新版のインストール、またはアップデート](https://maven.apache.org/download.cgi)を[指示](https://maven.apache.org/install.html)に従って行ってください。Mavenの最新版がインストールされているかどうかを調べるには、以下のコマンドを入力します。
 
-Databricks、Domino、 Sense.ioなどの管理された環境で作業している場合、もう1つすべきことがあります。 上述のローカルセットアップに従った後、exampleのディレクトリ内から以下のコマンドを実行してください。 
+``` shell
+mvn --version
+```
 
-		mvn clean package
+Macをお使いの方は、以下のコマンドを入力してください。
 
-その後、ご使用の環境にJARファイルをアップロードします。 
+``` shell
+brew install maven
+```
 
-### 注意事項
+MavenはJavaの開発者には広く使用されており、 DL4Jには必要不可欠です。これまでMavenを使う機会がなかった方は、[ApacheのMavenに関する概要](http://maven.apache.org/what-is-maven.html)、及びトラブルシューティングのヒントを載せた弊社の[Introduction to Maven for non-Java programmers（Javaのプログラマーでない方々のためのMaven初心者ガイド）](./maven)をお読みください。IvyやGradleなど[その他のビルドツール](../buildtools)も使用できますが、Mavenが最も使いやすいでしょう。
 
-* 他のレポジトリをローカルにクローンしないようにしてください。メインのdeeplearning4jレポジトリは、改善し続けているため、最新のものは様々なexampleを使って完全に検証し終えていない恐れがあります。
-* exampleのすべての依存関係は、ローカルでなくMavenからダウンロードするようにしてください。`(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
-* dl4j-0.4-exampleのディレクトリで`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`を実行し、正常にインストールされているか確認してください。
-* TSNEについては、`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`と実行し、TSNE、または他のexampleを実行します。実行に失敗し、 Mavenのデーモンスレッドが終了時に停止しない場合には、最後に引数が必要になる場合があります。
-* 1000回のイテレーションは、`dl4j-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
+#### <a name="IntelliJ">IntelliJ IDEA</a>
 
-F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。
+統合開発環境（[IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)）を使うとAPI（アプリケーションプログラムインタフェース)を使ってニューラルネットワークをいくつかのステップを踏むだけで設定することができます。是非、[IntelliJ](https://www.jetbrains.com/idea/download/)を使用することをおすすめします。Mavenと連携して依存関係を処理することができるからです。[IntelliJのコミュニティ版](https://www.jetbrains.com/idea/download/)は無料です。 
 
-何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようになっているか、確認してください。 
+IDEといえば、他にも[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html)や[Netbeans](http://wiki.netbeans.org/MavenBestPractices)などが知られていますが、IntelliJの方がおすすめです。[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)で分からないことなどを聞きたい場合も、IntelliJの方がより簡単に回答が得られます。
 
-## 依存関係およびバックエンド
+#### <a name="Git">Git</a>
 
-バックエンドとは、DL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはチップによって異なります。CPUは`native`で、GPUは`cuda-7.5`で最も高速に動作します。すべてのバックエンドを[Maven Central](https://search.maven.org)で見つけることができます。 「Latest Version」にある最新バージョン番号をクリックし、次の画面の左側にあるdependencyコードをコピーし、プロジェクトルートのpom.xmlにペーストします。 
+[Gitの最新バージョン](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)をインストールしてください。すでにGitを使用している場合は、Gitを使って最新バージョンにアップデートすることができます。
 
-`nd4j-native`のバックエンドは、以下のようになります。
+``` shell
+$ git clone git://git.kernel.org/pub/scm/git/git.git
+```
 
-     <dependency>
-       <groupId>org.nd4j</groupId>
-       <artifactId>nd4j-native</artifactId>
-       <version>${nd4j.version}</version>
-     </dependency>
+## <a name="examples">DL4Jのexamplesの簡単な作成手順</a>
 
-`nd4j-native`はすべてのexampleで動作します。さらに依存関係をインストールするには、OpenBlas、Windows、Linuxのユーザーは[Deepelearining4jをはじめましょう](./gettingstarted.html#open)をお読みください。
+1.コマンドラインを使用して、次のように入力します。
 
-## GPUs & CUDA
+        $ git clone https://github.com/deeplearning4j/dl4j-examples.git
+        $ cd dl4j-examples/
+        $ mvn clean install
 
-`nd4j-cuda-7.5`のバックエンドは、以下のようになります。
+2.IntelliJを開き、「Import Project（プロジェクトをインポート）」を選んでください。次に、メインディレクトリの'dl4j-examples'を選んでください。 
 
-     <dependency>
-       <groupId>org.nd4j</groupId>
-       <artifactId>nd4j-cuda-7.5</artifactId>
-       <version>${nd4j.version}</version>
-     </dependency>
+![select directory](./img/Install_IntJ_1.png)
 
-## 上級レベル： AWSでのコマンドラインの使用
+3.'Import project from external model（外部モデルからプロジェクトをインポート）'を選び、Mavenが選択されているようにしてください。 
+![import project](./img/Install_IntJ_2.png)
 
-AWSサーバーでLinux OSにDeeplearningをインストールし、最初のexampleを実行させるためにIDEに頼らず、コマンドラインを使用したい場合は、 上述の指示に従って、*git clone*、*mvn clean install*を実行してください。インストールが完了すると、実際のexampleをコマンドラインに1行のコードで実行できます。コマンドラインは、レポジトリバージョンや特定のexmpleによって異なります。 
+4.ウィザードのオプションを続けます。`jdk`で始まるSDK（ソフトウェア開発キット）を選びます。（オプションを見えない場合は、プラス記号をクリックすると見れます。）そして、「Finish（完了）」をクリックします。IntelliJがすべての依存関係をダウンロードするのを待ちます。右下にある横線のバーが使えるようになっているのが見えます。
 
-以下はテンプレートです。
+5.左側のファイルツリーから例をピックアップします。
+![run IntelliJ example](./img/Install_IntJ_3.png)
+ファイルを右クリックして作動させます。 
 
-    java -cp target/nameofjar.jar fully.qualified.class.name
+## Using DL4J In Your Own Projects:POM.xmlファイルの設定
 
-そして具体的にはコマンドは大体以下のようになります。
+自分のプロジェクトでDL4Jを使用するには、Javaユーザは是非Maven、またはScala向けのツールのSBTなどを使用することをお勧めします。依存関係とそのバージョンの基本セットは以下の通りです。
 
-    java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+- `deeplearning4j-core`：ニューラルネットワークの実装が含まれています。
+- `nd4j-native`：DL4Jにパワーを提供するND4JのライブラリのCPUバージョン
+- `canova-api` - Canovaは、弊社がベクトル化、ローディングを行うのに使っているライブラリです。
 
-つまり、更新すると変更するワイルドカードが2つあり、以下のようなexampleになります。
+Mavenの各プロジェクトにはPOMファイルがあります。exampleを作動させると、POMファイルは、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようになります。
 
-    java -cp target/*.jar org.deeplearning4j.*
+IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があります。`MLPLinearClassifier`がおすすめです。ネットワークがすぐに弊社のユーザー・インターフェースにある2つのデータグループを分類するのを確認できるからです。Githubにあるファイルは[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)からアクセスできます。 
 
-コマンドラインのexampleを変更して、変更したファイルを実行するには、例えば、*src/main/java/org/deeplearning4j/multilayer*の*MLPBackpropIrisExample*を調整し、examplesを再びMavenで構築します。 
+このexampleを実行するには、右クリックして、ドロップダウンメニューにある緑色のボタンを選択します。すると、IntelliJの下部のウインドウにスコアの連続が見えます。右端にある数字はネットワークの分類のためのエラースコアです。ネットワークが学習している場合は、時間の経過とともに各バッチが処理されていくにしたがってその数字は減少していきます。最後に、このウィンドウは、ニューラルネットワークのモデルがどのくらい正確になったかを報告します。
 
-## Scala 
+![run IntelliJ example](./img/mlp_classifier_results.png)
 
-[Scalaバージョンでの例はこちら](https://github.com/kogecoo/dl4j-examples-scala)。
+別のウィンドウでは、グラフによって、多層パーセプトロン（MLP）exampleのデータをどのように分類したかが表示されます。以下はその例です。
+
+![run IntelliJ example](./img/mlp_classifier_viz.png)
+
+お疲れ様でした！たった今、Deeplearning4jでの初めてのニューラルネットワークの訓練が完了しました。ほっと一息着いたところで、次のチュートリアルに進んでみませんか?[**MNIST for Beginners（初心者のためのMNIST）**](./mnist-for-beginners)では、画像の分類方法が学習できます。 
 
 ## 次のステップ
 
-exampleを実行し終えた後は、 [フルインストール・ページ](./gettingstarted.html)をお読みいただくと詳細を知ることができます。 
+1.Gitterに参加しましょう。Gitterには3つの大きなコミュニティチャンネルがあります。
+  * [DL4J Live Chat（ライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)は、DL4Jのすべてのことについてを扱うメインチャンネルです。ほとんどの人々はこのチャットを使っています。
+  * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)は、ニューラルネットワークを始めた人々のために設けられています。初心者の方々は是非ご参加ください!
+  * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)は、弊社の次のリリースのチェックや改善のお手伝いをしてくださっている方々向けです。注意：このコミュニティーは経験者向けです。 
+2.[Introduction to deep neural networks（ディープニューラルネットワークについて）](./neuralnet-overview)または[弊社の詳細チュートリアルの一つ](./tutorials)をお読みください。 
+3.より詳細の[Comprehensive Setup Guide（セットアップ全ガイド）](./gettingstarted)をお読みください。
+4.[DL4Jのガイド集](./documentation)をご覧ください。
 
-## <a name="walk">ステップごとの手順</a>
+### その他のリンク
 
-* gitが既にインストールされている場合は、以下のコマンドを入力します。
+- [Deeplearning4j artifacts on Maven Central（Maven CentralにあるDeeplearning4jのアーチファクト）](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+- [ND4J artifacts on Maven Central（Maven CentralにあるND4Jのアーチファクト）](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
+- [Canova artifacts on Maven Central（Maven CentralにあるCanovaのアーチファクト）](http://search.maven.org/#search%7Cga%7C1%7Ccanova)
 
-		git --version 
+### トラブルシューティング
 
-* gitがまだインストールされていない場合は、[git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git)をインストールします。 
-* また、[Githubのアカウント]( https://github.com/join)を作成し、GitHubの[Mac版](https://mac.github.com/)、または[Windows版](https://windows.github.com/)をダウンロードします。 
-* Windowsをご使用の場合、スタートアップメニューで「Git Bash」を探して開きます。Git Bashターミナルは、cmd.exeのようなものです。
-* DL4Jのexampleを配置したいディレクトリに`cd`コマンドを実行します。新しいものを`mkdir dl4j-examples`で作成し、`cd`コマンドをそこに入力します。そして以下を実行します。
+**質問：**ウインドウズで64ビットのJavaを使用しているのですが、いまだにエラーメッセージの`no jnind4j in java.library.path`が表示されます。
 
-    `git clone https://github.com/deeplearning4j/dl4j-examples`
-* `ls`コマンドを実行して必ずファイルをダウンロードするようにしてください。 
-* 次にIntelliJを開きます。 
-* 「File（ファイル）」メニューをクリックし、「Import Project（プロジェクトをインポート）」または「New Project from Existing Sources（既存のソースからの新規プロジェクト）」を選びます。これにより、ローカルのファイルメニューが提供されます。 
-* DL4Jのexampleが含まれているディレクトリを選択します。 
-* ビルドツールの選択画面が表示されます。Mavenを選択します。 
-* 「Search for projects recursively（再帰的にプロジェクトを検索）」と「Import Maven projects automatically（自動的にMavenのプロジェクトをインポート）」にあるチェックボックスにチェックを入れ、「Next（次へ）」をクリックします。 
-* JDK/SDKが設定されていることを確認します。これらが設定されていない場合、SDKウィンドウの下方にあるプラス記号（＋）をクリックします。 
-* それから、プロジェクト名を指定するよう指示があるまでクリックし続けます。デフォルトのプロジェクト名はそのままで問題ないはずなので、「Finish（終了）」ボタンを押すだけで完了です。
+**回答：**パスに互換性のないDLLがある可能性があります。これらを無視させるには、以下をVMパラメーターとして追加してください。（Run -> Edit Configurations -> IntelliJのVMオプション）
+
+```
+-Djava.library.path=""
+```
+
+**質問：**次のようなエラーが発生します。`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`.そしてJVMがシャットダウンしてしまいます。（クラッシュはしませんが、ストップしてしまいます ... ）
+
+**回答：**`rc3.10`やそれ以降（弊社では0.4.0）は、ライブラリ`libnd4j`がパスにあってもIntelのマス カーネル ライブラリー（MKL）を正常に読み込みません。しかし、この問題は、`System.loadLibrary("mkl_rt")`を追加すると解消されます。
