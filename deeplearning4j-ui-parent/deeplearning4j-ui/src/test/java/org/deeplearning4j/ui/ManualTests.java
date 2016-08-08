@@ -319,110 +319,81 @@ public class ManualTests {
 
     @Test
     public void testFlowActivationsMLN1() throws Exception {
-        final int numRows = 40;
-        final int numColumns = 40;
-        int nChannels = 3;
-        int outputNum = LFWLoader.NUM_LABELS;
-        int numSamples = LFWLoader.NUM_IMAGES;
-        boolean useSubset = false;
-        int batchSize = 200;// numSamples/10;
-        int iterations = 5;
-        int splitTrainNum = (int) (batchSize*.8);
+        int nChannels = 1;
+        int outputNum = 10;
+        int batchSize = 64;
+        int nEpochs = 10;
+        int iterations = 1;
         int seed = 123;
-        int listenerFreq = iterations/5;
-        DataSet lfwNext;
-        SplitTestAndTrain trainTest;
-        DataSet trainInput;
-        List<INDArray> testInput = new ArrayList<>();
-        List<INDArray> testLabels = new ArrayList<>();
 
         log.info("Load data....");
-        DataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows, numColumns, nChannels}, outputNum, useSubset, true, 1.0, new Random(seed));
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
+        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations)
-                .activation("relu")
+                .regularization(true).l2(0.0005)
+                .learningRate(0.01)//.biasLearningRate(0.02)
+                //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
                 .weightInit(WeightInit.XAVIER)
-                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.01)
-                .momentum(0.9)
-                .regularization(true)
-                .updater(Updater.ADAGRAD)
-                .useDropConnect(true)
+                .updater(Updater.NESTEROVS).momentum(0.9)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(4, 4)
-                        .name("cnn1")
+                .layer(0, new ConvolutionLayer.Builder(5, 5)
+                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                         .nIn(nChannels)
                         .stride(1, 1)
                         .nOut(20)
+                        .activation("identity")
                         .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
-                        .name("pool1")
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
                         .build())
-                .layer(2, new ConvolutionLayer.Builder(3, 3)
-                        .name("cnn2")
-                        .stride(1,1)
-                        .nOut(40)
+                .layer(2, new ConvolutionLayer.Builder(5, 5)
+                        //Note that nIn needed be specified in later layers
+                        .stride(1, 1)
+                        .nOut(50)
+                        .activation("identity")
                         .build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
-                        .name("pool2")
+                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
                         .build())
-                .layer(4, new ConvolutionLayer.Builder(3, 3)
-                        .name("cnn3")
-                        .stride(1,1)
-                        .nOut(60)
-                        .build())
-                .layer(5, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
-                        .name("pool3")
-                        .build())
-                .layer(6, new ConvolutionLayer.Builder(2, 2)
-                        .name("cnn3")
-                        .stride(1,1)
-                        .nOut(80)
-                        .build())
-                .layer(7, new DenseLayer.Builder()
-                        .name("ffn1")
-                        .nOut(160)
-                        .dropOut(0.5)
-                        .build())
-                .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                .layer(4, new DenseLayer.Builder().activation("relu")
+                        .nOut(500).build())
+                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .activation("softmax")
                         .build())
                 .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder,numRows,numColumns,nChannels);
+        // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
+        new ConvolutionLayerSetup(builder,28,28,1);
 
-        MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
+
         log.info("Train model....");
+        model.setListeners(new FlowIterationListener(1));
+        for( int i=0; i<nEpochs; i++ ) {
+            model.fit(mnistTrain);
+            log.info("*** Completed epoch {} ***", i);
 
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new FlowIterationListener(listenerFreq)));
-
-        while(lfw.hasNext()) {
-            lfwNext = lfw.next();
-            lfwNext.scale();
-            trainTest = lfwNext.splitTestAndTrain(splitTrainNum, new Random(seed)); // train set that is the result
-            trainInput = trainTest.getTrain(); // get feature matrix and labels for training
-            testInput.add(trainTest.getTest().getFeatureMatrix());
-            testLabels.add(trainTest.getTest().getLabels());
-            model.fit(trainInput);
+            log.info("Evaluate model....");
+            Evaluation eval = new Evaluation(outputNum);
+            while(mnistTest.hasNext()){
+                DataSet ds = mnistTest.next();
+                INDArray output = model.output(ds.getFeatureMatrix(), false);
+                eval.eval(ds.getLabels(), output);
+            }
+            log.info(eval.stats());
+            mnistTest.reset();
         }
-
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(lfw.getLabels());
-        for(int i = 0; i < testInput.size(); i++) {
-            INDArray output = model.output(testInput.get(i));
-            eval.eval(testLabels.get(i), output);
-        }
-        INDArray output = model.output(testInput.get(0));
-        eval.eval(testLabels.get(0), output);
-        log.info(eval.stats());
         log.info("****************Example finished********************");
-
     }
 
     @Test
