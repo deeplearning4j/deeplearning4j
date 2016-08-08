@@ -350,6 +350,17 @@ public class ModelSerializer {
      *
      * @throws IOException
      */
+    public static ComputationGraph restoreComputationGraph(@NonNull File file) throws IOException {
+        return restoreComputationGraph(file, true);
+    }
+
+    /**
+     * Load a computation graph from a file
+     * @param file the file to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
     public static ComputationGraph restoreComputationGraph(@NonNull File file, boolean loadUpdater) throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
