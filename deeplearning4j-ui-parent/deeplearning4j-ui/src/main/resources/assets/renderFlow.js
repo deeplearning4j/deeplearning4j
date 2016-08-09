@@ -198,11 +198,14 @@ function renderLayers(container, layers) {
 
     // define grid parameters
     var canvasHeight = (nodeHeight * (layers.maximumY + 3)) + (offsetVertical * layers.maximumY) ;
+    var canvasWidth = 900;
 
-    $("#" + container).html("<canvas id='flowCanvas' width=900 height="+ canvasHeight +" >Canvas isn't supported on your browser</canvas>");
+    $("#" + container).html("<canvas id='flowCanvas' width="+900+" height="+ canvasHeight +" >Canvas isn't supported on your browser</canvas>");
 
     var c=document.getElementById("flowCanvas");
     var ctx=c.getContext("2d");
+
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     canvasLeft = c.offsetLeft,
     canvasTop = c.offsetTop,
@@ -232,7 +235,7 @@ function renderLayers(container, layers) {
             if (y > element.y && y < element.y + element.height && x > element.x && x < element.x + element.width) {
                 // mouse is over element.id element
                 got_something = true;
-                $('#tooltip').css({left: event.pageX - 100, top: event.pageY + 10, opacity: 1});
+                $('#tooltip').css({left: event.pageX + 15, top: event.pageY + 15, opacity: 1});
 
                 if (lastNode != element.id) {
                     var layer = layers.getLayerForID(element.id);
@@ -308,5 +311,6 @@ function timedFunction() {
 
 }
 
-//$(window).load(setTimeout(timedFunction,2000));
+
 setTimeout(timedFunction,2000)
+$(window).resize(timedFunction);
