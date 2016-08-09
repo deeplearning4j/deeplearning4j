@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
@@ -338,6 +339,7 @@ public class FlowIterationListener implements IterationListener {
             info.addConnection(0, 1);
             modelInfo.addLayer(info);
 
+
             // entry 0 is reserved for inputs
             int y = 1;
 
@@ -412,6 +414,7 @@ public class FlowIterationListener implements IterationListener {
 
         StringBuilder mainLine = new StringBuilder();
         StringBuilder subLine = new StringBuilder();
+        StringBuilder fullLine = new StringBuilder();
 
     //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
@@ -419,21 +422,37 @@ public class FlowIterationListener implements IterationListener {
             org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
             mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
             subLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
+            fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
+            fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
+            fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
+            fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
+            fullLine.append("Outputs number: ").append(layer1.getNOut()).append("<br/>");
+        } else if (layer.conf().getLayer() instanceof SubsamplingLayer) {
+            SubsamplingLayer layer1 = (SubsamplingLayer) layer.conf().getLayer();
+            fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
+            fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
+            fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
+            fullLine.append("Pooling type: ").append(layer1.getPoolingType().toString()).append("<br/>");
         } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
             mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             subLine.append(info.getLayerType());
+            fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
+            fullLine.append("Outputs number: ").append(layer1.getNOut()).append("<br/>");
         } else {
                 // TODO: Introduce Layer.Type.OUTPUT
                 if (layer instanceof BaseOutputLayer) {
                     mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                    fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
                 }
         }
 
         subLine.append(" A: [").append(layer.conf().getLayer().getActivationFunction()).append("]");
+        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFunction()).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());
+        description.setText(fullLine.toString());
 
         return info;
     }
