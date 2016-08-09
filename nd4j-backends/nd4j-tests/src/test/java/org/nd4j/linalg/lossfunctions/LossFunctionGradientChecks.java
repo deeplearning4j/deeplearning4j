@@ -63,8 +63,8 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 new LossMCXENT(),new LossMSE(), new LossMSE()};
 
         String[] activationFns = new String[]{
-                "softmax","softmax","softmax",
-                "softmax"};
+                "softmax","softmax","tanh",
+                "tanh"};
 
 
         for(int i=2; i<labels.length; i++ ){
