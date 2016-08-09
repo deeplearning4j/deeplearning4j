@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.DropOut;
 import org.nd4j.linalg.api.ops.impl.transforms.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -21,7 +22,9 @@ public class Dropout {
      * @return the post applied drop connect
      */
     public static INDArray applyDropConnect(Layer layer,String variable) {
-        return layer.getParam(variable).mul(Nd4j.getDistributions().createBinomial(1,layer.conf().getLayer().getDropOut()).sample(layer.getParam(variable).shape()));
+        INDArray result = layer.getParam(variable).dup();
+        Nd4j.getExecutioner().exec(new DropOut(result, result, layer.conf().getLayer().getDropOut()));
+        return result;
     }
 
     /**
