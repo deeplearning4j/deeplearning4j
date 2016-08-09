@@ -119,10 +119,5 @@
             <artifactId>nd4j-context</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>dsiutils</artifactId>
-            <version>2.3.3</version>
-        </dependency>
     </dependencies>
 </project>
