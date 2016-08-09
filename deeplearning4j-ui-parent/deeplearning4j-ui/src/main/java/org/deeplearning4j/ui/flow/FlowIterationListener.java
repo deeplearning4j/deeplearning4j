@@ -18,6 +18,9 @@ import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -312,6 +315,17 @@ public class FlowIterationListener implements IterationListener {
             MultiLayerNetwork network = (MultiLayerNetwork) model;
 
             // manually adding input layer
+
+            INDArray input = model.input();
+            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+
+            long numSamples = input.lengthLong() / tadLength;
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("Model input").append("<br/>");
+            builder.append("Input size: ").append(tadLength).append("<br/>");
+            builder.append("Batch size: ").append(numSamples).append("<br/>");
+
             LayerInfo info = new LayerInfo();
             info.setId(0);
             info.setName("Input");
@@ -320,6 +334,7 @@ public class FlowIterationListener implements IterationListener {
             info.setLayerType(INPUT);
             info.setDescription(new Description());
             info.getDescription().setMainLine("Model input");
+            info.getDescription().setText(builder.toString());
             info.addConnection(0, 1);
             modelInfo.addLayer(info);
 

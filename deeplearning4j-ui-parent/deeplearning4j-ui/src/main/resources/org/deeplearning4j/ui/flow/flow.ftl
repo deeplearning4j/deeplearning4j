@@ -63,6 +63,23 @@
             font-size: 10px;
             font-color: #000000;
             }
+            .tooltip {
+                position: absolute;
+                top: 140px;
+                left: 0px;
+                right: 0;
+                width: 220px;
+                padding: 2px 0;
+                background-color: #000;
+                background-color: rgba(0, 0, 0, 0.65);
+                color: #fff;
+                opacity: 0;
+                transition: opacity .5s ease-in-out;
+                text-align: center;
+                font-family: Arial;
+                font-size: 14px;
+                z-index: 100;
+            }
         </style>
     </head>
     <body>
@@ -87,6 +104,9 @@
             <div id="display" style="display: inline-block; width: 900px;">
                 <!-- NN rendering pane -->
             </div>
+        </div>
+        <div id="tooltip" class="tooltip">
+            &nbsp;
         </div>
     </body>
 </html>

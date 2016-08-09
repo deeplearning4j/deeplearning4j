@@ -11,6 +11,11 @@ var offsetHorizontal = 10;
 // canvas width
 var width = 900;
 
+var canvasLeft = 0;
+var canvasTop = 0;
+var canvasElements = [];
+var lastNode = -1;
+
 var arrow = [
     [ 2, 0 ],
     [ -10, -4 ],
@@ -159,6 +164,13 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
     var cx = getNodeX(x, y, totalOnLayer);
     var cy = getNodeY(x, y);
 
+    canvasElements.push({
+        x: cx,
+        y: cy,
+        width: nodeWidth,
+        height: nodeHeight,
+        id: layer.id
+    });
 
     // draw node rect
     ctx.beginPath();
@@ -191,6 +203,54 @@ function renderLayers(container, layers) {
 
     var c=document.getElementById("flowCanvas");
     var ctx=c.getContext("2d");
+
+    canvasLeft = c.offsetLeft,
+    canvasTop = c.offsetTop,
+
+
+    // to process clicks
+    c.addEventListener('click', function(event) {
+        var x = event.pageX - canvasLeft;
+        var y = event.pageY - canvasTop;
+
+        canvasElements.forEach(function(element) {
+            if (y > element.y && y < element.y + element.height && x > element.x && x < element.x + element.width) {
+
+                // here we go for element.id as active node
+            }
+        })
+    }, false);
+
+    // to process mouseovers
+    c.addEventListener('mousemove', function(event) {
+        var x = event.pageX - canvasLeft;
+        var y = event.pageY - canvasTop;
+
+        var got_something = false;
+
+        canvasElements.forEach(function(element) {
+            if (y > element.y && y < element.y + element.height && x > element.x && x < element.x + element.width) {
+                // mouse is over element.id element
+                got_something = true;
+                $('#tooltip').css({left: event.pageX - 100, top: event.pageY + 10, opacity: 1});
+
+                if (lastNode != element.id) {
+                    var layer = layers.getLayerForID(element.id);
+                    $('#tooltip').html(layer.description);
+                }
+
+                lastNode = element.id;
+            }
+        })
+
+        if (got_something == false) {
+            // hide tooltip
+            lastNode = -1;
+            $('#tooltip').css({opacity: 0});
+        }
+
+    }, false);
+
 
     for (var y = 0; y <= layers.maximumY; y++) {
 
