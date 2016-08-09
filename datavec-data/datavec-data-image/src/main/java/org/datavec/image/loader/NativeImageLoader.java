@@ -16,6 +16,7 @@
 package org.datavec.image.loader;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
@@ -190,16 +191,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public INDArray asMatrix(File f) throws IOException {
-        Mat image = imread(f.getAbsolutePath(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-        if (image == null || image.empty()) {
-            PIX pix = pixRead(f.getAbsolutePath());
-            if (pix == null) {
-                throw new IOException("Could not read image from file: " + f);
-            }
-            image = convert(pix);
-            pixDestroy(pix);
-        }
-        return asMatrix(image);
+        return asMatrix(new FileInputStream(f));
     }
 
     @Override
