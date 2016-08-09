@@ -79,7 +79,7 @@ public class PerformanceListener implements IterationListener {
             if (reportTime)
                 builder.append("iteration time: ").append(timeSpent).append(" ms; ");
 
-            if (reportScore)
+            if (reportSample)
                 builder.append("samples/sec: ").append(String.format("%.3f", samplesPerSec)).append("; ");
 
             if (reportBatch)
