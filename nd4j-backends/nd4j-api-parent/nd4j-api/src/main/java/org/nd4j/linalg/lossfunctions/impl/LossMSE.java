@@ -40,7 +40,7 @@ public class LossMSE implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,postOutput.dup()).derivative());
-        return postOutput.sub(labels).mul(postOutDer).divi(labels.size(1));
+        return postOutput.sub(labels).mul(postOutDer);
     }
 
     @Override

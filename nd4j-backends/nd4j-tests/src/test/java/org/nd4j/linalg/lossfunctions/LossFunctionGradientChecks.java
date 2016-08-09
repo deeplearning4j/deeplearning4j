@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 public class LossFunctionGradientChecks extends BaseNd4jTest {
 
     public static final double epsilon = 1e-6;
-    private static final double maxRelError = 5.0;
+    private static final double maxRelError = 5.0; //5% relative error
 
     public LossFunctionGradientChecks(Nd4jBackend backend) {
         super(backend);
@@ -51,10 +51,10 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         };
 
         INDArray[] preOut = new INDArray[]{
-                Nd4j.rand(1,3).muli(0.0001),
-                Nd4j.rand(3,3).muli(0.0001),
-                Nd4j.rand(1,3).muli(0.0001),
-                Nd4j.rand(3,3).muli(0.0001)};
+                Nd4j.rand(1,3).muli(10),
+                Nd4j.rand(3,3).muli(10),
+                Nd4j.rand(1,3).muli(10),
+                Nd4j.rand(3,3).muli(10)};
 
         ILossFunction[] lossFn = new ILossFunction[]{
                 new LossMCXENT(),
