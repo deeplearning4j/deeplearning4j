@@ -25,7 +25,7 @@ import static org.junit.Assert.fail;
 @Slf4j
 public class LossFunctionGradientChecks extends BaseNd4jTest {
 
-    public static final double epsilon = 1e-9;
+    public static final double epsilon = 1e-6;
     private static final double maxRelError = 5.0; //5% relative error
 
     public LossFunctionGradientChecks(Nd4jBackend backend) {
@@ -67,7 +67,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 "softmax"};
 
 
-        for(int i=3; i<labels.length; i++ ){
+        for(int i=2; i<labels.length; i++ ){
             int totalNFailures = 0;
 
             ILossFunction lf = lossFn[i];
@@ -100,7 +100,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
                 if(relError > maxRelError || Double.isNaN(relError)) {
                     log.info("Param " + i + " FAILED: grad= " + analyticGradient + ", numericalGrad= "+numericalGradient
-                                + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);
+                                + ", relErrorPerc= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);
                     totalNFailures++;
                 } else {
                     log.info("Param " + i + " passed: grad= " + analyticGradient + ", numericalGrad= " + numericalGradient
