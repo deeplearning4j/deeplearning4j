@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.Arrays;
 
@@ -45,25 +46,26 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         INDArray[] labels = new INDArray[]{
                 Nd4j.create(new double[]{1,0,0}),
                 Nd4j.create(new double[][]{{1,0,0},{0,1,0},{0,0,1}}),
+                Nd4j.create(new double[]{1,0,0}),
+                Nd4j.create(new double[][]{{1,0,0},{0,1,0},{0,0,1}}),
         };
 
         INDArray[] preOut = new INDArray[]{
                 Nd4j.rand(1,3),
-                Nd4j.rand(3,3)
-        };
+                Nd4j.rand(3,3),
+                Nd4j.rand(1,3),
+                Nd4j.rand(3,3)};
 
         ILossFunction[] lossFn = new ILossFunction[]{
                 new LossMCXENT(),
-                new LossMCXENT()
-        };
+                new LossMCXENT(),new LossMSE(), new LossMSE()};
 
         String[] activationFns = new String[]{
-                "softmax",
-                "softmax"
-        };
+                "softmax","softmax","softmax",
+                "softmax"};
 
 
-        for(int i=0; i<labels.length; i++ ){
+        for(int i=2; i<labels.length; i++ ){
             int totalNFailures = 0;
 
             ILossFunction lf = lossFn[i];
