@@ -17,15 +17,15 @@ Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使
 * 语音搜索
 * 文本到语音（转录）
 * 垃圾邮件筛选（异常情况探测）
-* 欺诈探测 
+* 欺诈探测
 * 推荐系统（客户关系管理、广告技术、避免用户流失）
 * [回归分析](./linear-regression)
 
-### 为何选择Deeplearning4j？ 
+### 为何选择Deeplearning4j？
 
 * 功能多样的[N维数组](http://nd4j.org/zh-getstarted)类，为Java和Scala设计
 * 与[GPU](http://nd4j.org/gpu_native_backends.html)集合
-* 可在[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)、[Spark](./gpu_aws.html)上实现扩缩
+* 可在[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)、[Spark](./spark.html)上实现扩缩
 * [Canova](./canova.html)：机器学习库的通用向量化工具
 * [ND4J：线性代数库，较Numpy快一倍](http://nd4j.org/benchmarking)
 
@@ -68,8 +68,8 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### 用户反馈
 
-      “我感觉自己像是弗兰肯斯坦，玛丽·雪莱小说里的那个弗兰肯斯坦博士……”――史蒂夫・D． 
-      
+      “我感觉自己像是弗兰肯斯坦，玛丽·雪莱小说里的那个弗兰肯斯坦博士……”――史蒂夫・D．
+
       “我对在生产中使用Deeplearning4j非常感兴趣。这里蕴藏着价值百亿英镑的巨大商机。”――约翰・M．
 
 ### 为Deeplearning4j做出贡献
@@ -77,7 +77,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 想要为Deeplearning4j作出贡献的开发人员可先阅读[开发人员指南](./devguide)。
 
 ### DL4J功能强大但非常复杂，如何能轻松驾驭？
- 
+
 世界领先的零代码机器学习架构RapidMiner，结合其 DL4J扩展，可无需编程地运用 DL4J的力量和灵活性。RapidMiner DL4J 扩展由RapidMiner China基于Skymind的深度学习库即Deeplearning4j（DL4J）开发，它开源且对所有RapidMiner社区开放。[点击查看详情](https://www.rapidminerchina.com/products/shop/product/deeplearning4j/)。
 
 ### 用Deeplearning4j进行研究

@@ -28,7 +28,7 @@ RBM의 구조는 상대적으로 단순한 편입니다. RBM은 자체적으로�
 
 위 그림에서 원은 *노드*를 나타냅니다. 좌측의 파란 노드가 입력층의 노드이고, 우측의 붉은 노드가 은닉층의 노드에 해당하며 그림에는 연결이 생략되어 있지만 모든 은닉층의 노드는 입력층의 노드와 연결되어 있고, 모든 입력층의 노드도 은닉층의 노드와 연결되어 있습니다. 그러나 같은 레이어에 있는 노드끼리는 전혀 연결되어있지 않습니다.
 
-다시말해, RBM에서는 같은 층 내부의 연결이 전혀 없으며, 이 구조때문에 '제한된' 볼츠만 머신이라는 이름을 붙인 것입니다. 입력층의 노드는 데이터를 입력으며 입력받은 데이터를 은닉층에 얼마나 전달할 것인지를 [확률에 따라 결정(stochastic decision)](./glossary.html#stochasticgradientdescent)합니다. 즉 확률에 따라 입력을 전달할지(1) 혹은 전달하지 않을지(0)를 결정합니다. 
+다시말해, RBM에서는 같은 층 내부의 연결이 전혀 없으며, 이 구조때문에 '제한된' 볼츠만 머신이라는 이름을 붙인 것입니다. 입력층의 노드는 데이터를 입력으며 입력받은 데이터를 은닉층에 얼마나 전달할 것인지를 [확률에 따라 결정(stochastic decision)](./glossary.html#stochasticgradientdescent)합니다. 즉 확률에 따라 입력을 전달할지(1) 혹은 전달하지 않을지(0)를 결정합니다.
 
 각 입력 노드는 데이터의 저수준 특징값 혹은 속성을 받아옵니다. 예를 들어 흑백 이미지가 입력 데이터라면 각 입력 노드는 이미지의 픽셀 값에 해당합니다. 만일 MNIST 데이터 셋을 사용한다면 입력 노드의 개수는 데이터 셋의 이미지의 픽셀 수(784)와 같게 설정됩니다.
 
@@ -40,17 +40,17 @@ RBM의 구조는 상대적으로 단순한 편입니다. RBM은 자체적으로�
 
 ![Alt text](./img/input_path_RBM.png)
 
-위의 식은 은닉 노드 하나에 들어오는 여러 개의 입력 중 하나만 고려한 식입니다. 아래 그림처럼 실제로는 여러 입력 노드의 값을 받아서 각자 다른 가중치 `w`와 곱해집니다. 그리고 그 총합에 바이어스를 더한 뒤 활성함수에 들어갑니다. 즉 `f(x_1*w_1 + x_2*w_2 + x_3*w_3 + x_4*w_4 + b)`가 은닉 노드의 출력입니다. 
+위의 식은 은닉 노드 하나에 들어오는 여러 개의 입력 중 하나만 고려한 식입니다. 아래 그림처럼 실제로는 여러 입력 노드의 값을 받아서 각자 다른 가중치 `w`와 곱해집니다. 그리고 그 총합에 바이어스를 더한 뒤 활성함수에 들어갑니다. 즉 `f(x_1*w_1 + x_2*w_2 + x_3*w_3 + x_4*w_4 + b)`가 은닉 노드의 출력입니다.
 
 ![Alt text](./img/weighted_input_RBM.png)
 
 이렇게 모든 가시층의 노드가 모든 은닉 노드로 전달되는 것 특징 때문에 RBM은 대칭 이분 그래프(symmetrical bipartite graph)라고 부릅니다.
 
-즉, '두' 층이 '대칭'적으로 모두 연결되어 있어 있는 그래프입니다. 
+즉, '두' 층이 '대칭'적으로 모두 연결되어 있어 있는 그래프입니다.
 
 그림에는 생략되어있지만 4개의 입력 노드는 3개의 은닉 노드에 모두 연결되어있습니다. 그리고 각 연결마다 각자 다른 가중치 값이 있습니다. 따라서 총 12개(4*3)의 가중치가 있습니다. 이런 경우에 일반적으로 이 가중치를 4x3 행렬로 나타냅니다.
 
-위에서 설명한 계산은 모든 은닉 노드에서 일어납니다. 즉 각 은닉 노드마다 4개의 입력 값에 적당한 가중치를 곱해 그 값을 더합니다. 그리고 거기에 바이어스를 더한 뒤 이를 활성 함수에 통과시킵니다. 
+위에서 설명한 계산은 모든 은닉 노드에서 일어납니다. 즉 각 은닉 노드마다 4개의 입력 값에 적당한 가중치를 곱해 그 값을 더합니다. 그리고 거기에 바이어스를 더한 뒤 이를 활성 함수에 통과시킵니다.
 
 ![Alt text](./img/multiple_inputs_RBM.png)
 
@@ -76,23 +76,23 @@ Backprop은 [여기](./kr-neuralnet-overview.html#forward)에 자세히 설명�
 
 결과적으로 두 추정치는 입력과 은닉층의 결합확률분포 `p(x, a)`의 추정입니다.
 
-재구성은 회귀나 분류와 다릅니다. 
+재구성은 회귀나 분류와 다릅니다.
 
-재구성은 입력 데이터의 확률 분포를 추정하는 과정, 즉 [생성 모델을 학습(generative learning)](http://cs229.stanford.edu/notes/cs229-notes2.pdf)하는 과정으로 입력-출력의 관계를 찾는 분류 모델(discriminative learning)과 다릅니다. 
+재구성은 입력 데이터의 확률 분포를 추정하는 과정, 즉 [생성 모델을 학습(generative learning)](http://cs229.stanford.edu/notes/cs229-notes2.pdf)하는 과정으로 입력-출력의 관계를 찾는 분류 모델(discriminative learning)과 다릅니다.
 
 입력 데이터와 재구성한 추정치의 분포가 아래 그림의 `p(x)`와 `q(x)`처럼 겹치는 구간이 있지만 완벽하게 일치하지는 않는 경우라고 가정해봅시다.
 
 RBM에서는 이렇게 두 분포가 얼마나 유사한지 측정하는 방법으로 [KLD(Kullback Leibler Divergence, 쿨백-라이블러 발산)](https://ko.wikipedia.org/wiki/쿨백-라이블러_발산)을 사용합니다.
 
-아래 그림을 보면 두 확률 분포가 겹치지 않는 부분이 있습니다. 이를 발산(divergence)이라고 하는데 RBM의 최적화는 이 발산이 최소화되도록 하는 알고리즘입니다. 따라서 최적화는 두 분포를 유사하게 만들어주는 과정입니다. 
+아래 그림을 보면 두 확률 분포가 겹치지 않는 부분이 있습니다. 이를 발산(divergence)이라고 하는데 RBM의 최적화는 이 발산이 최소화되도록 하는 알고리즘입니다. 따라서 최적화는 두 분포를 유사하게 만들어주는 과정입니다.
 
 ![Alt text](./img/KL_divergence_RBM.png)
 
-이 최적화 과정은 가중치 *w*를 맞춰주는 과정입니다. 이렇게 가중치가 조절되면 가중치와 입력을 곱한 값인 은닉층의 값도 서서히 변해갑니다. 결과적으로 은닉층은 입력층을 나타내는 특징값(feature)이 되고, 학습이 잘 된 특징값과 가중치를 이용해 입력층을 근사하면 실제 입력과 유사한 확률 분포가 됩니다. 
+이 최적화 과정은 가중치 *w*를 맞춰주는 과정입니다. 이렇게 가중치가 조절되면 가중치와 입력을 곱한 값인 은닉층의 값도 서서히 변해갑니다. 결과적으로 은닉층은 입력층을 나타내는 특징값(feature)이 되고, 학습이 잘 된 특징값과 가중치를 이용해 입력층을 근사하면 실제 입력과 유사한 확률 분포가 됩니다.
 
 ![Alt text](./img/KLD_update_RBM.png)
 
-### <a name="probability">확률 분포</a> 
+### <a name="probability">확률 분포</a>
 
 여기에선 확률 분포에 대해 다룹니다. 쉬운 예로 두 개의 주사위(검은색과 하얀색) 숫자의 합의 확률 분포는 아래 그림처럼 나타낼 수 있습니다.
 
@@ -118,21 +118,21 @@ RBM에 코끼리 사진과 개 사진을 입력했다고 가정하겠습니다. 
 
 위의 숫자와 얼굴 사진은 DL4J에서 구현한 RBM이 재구성한 이미지입니다. 이 재구성한 이미지를 통해 우리는 RBM이 숫자나 얼굴을 어떻게 "생각"하는지 알 수 있습니다. Geoff Hinton은 이것을 기계가 "꿈을 꾸는 것"이라고 표현했습니다. 이런 시각화로 우리는 RBM의 학습이 잘 이루어지는지 확인할 수 있습니다.
 
-마지막으로, RBM은 입력층과 은닉층에 다른 바이어스를 갖고 있으며 이것이 다른 오토인코더와 RBM의 차이입니다. 
+마지막으로, RBM은 입력층과 은닉층에 다른 바이어스를 갖고 있으며 이것이 다른 오토인코더와 RBM의 차이입니다.
 
 ### 심층 구조
 
-이렇게 RBM의 은닉층의 학습이 끝나고 나면 이 데이터는 다시 다음 층으로 연결됩니다. 이 두번째 연결에서는 은닉층이 가시층의 역할을 하고, 새로운 추가한 층이 은닉층이 됩니다. 즉, 첫번째 연결에서 은닉층이 학습한 내용을 가지고 다시 새로운 RBM을 학습하는 것입니다. 
+이렇게 RBM의 은닉층의 학습이 끝나고 나면 이 데이터는 다시 다음 층으로 연결됩니다. 이 두번째 연결에서는 은닉층이 가시층의 역할을 하고, 새로운 추가한 층이 은닉층이 됩니다. 즉, 첫번째 연결에서 은닉층이 학습한 내용을 가지고 다시 새로운 RBM을 학습하는 것입니다.
 
 이렇게 연달아 은닉층을 잇고 학습하는 것이 각자 다른 **층위**의 특징값(feature hierarchy)을 학습하는 과정입니다. 심층 신경망은 이런 구조로 더 추상적이고 복잡한 데이터를 이해합니다.
 
-은닉층을 새로 추가할때마다 기존 층의 데이터를 근사할 수 있도록 가중치의 학습이 이뤄집니다. 이런 과정을 층별 탐욕 비지도 선행학습(layerwise, greedy unsupervised pre-training)이라고 합니다. 각 층마다 최대한 오차를 줄이는 방향으로 학습이 이루어지기 때문에 층별 탐욕 학습이고, 이 모든 과정이 라벨의 정보가 없이 입력 데이터만을 가지고 이루어지기 때문에 비지도 학습이니다. 그리고 이 학습한 결과를 다시 다른 학습에 쓸 수 있기 때문에 선행학습이라고 부릅니다. 
+은닉층을 새로 추가할때마다 기존 층의 데이터를 근사할 수 있도록 가중치의 학습이 이뤄집니다. 이런 과정을 층별 탐욕 비지도 선행학습(layerwise, greedy unsupervised pre-training)이라고 합니다. 각 층마다 최대한 오차를 줄이는 방향으로 학습이 이루어지기 때문에 층별 탐욕 학습이고, 이 모든 과정이 라벨의 정보가 없이 입력 데이터만을 가지고 이루어지기 때문에 비지도 학습이니다. 그리고 이 학습한 결과를 다시 다른 학습에 쓸 수 있기 때문에 선행학습이라고 부릅니다.
 
 이렇게 선행학습이 된 가중치는 데이터의 분포를 이미 알고있기 때문에 이 값으로 초기화한 심층 신뢰 신경망은 더 좋은 성능을 보여줍니다.
 
-RBM의 광범위한 활용 사례중에서도 특히 이 선행학습이 아주 유용합니다. 선행학습은 가중치를 학습시킨다는 의미에서 역방향전파(backpropagation)와 유사한 역할을 합니다. 
+RBM의 광범위한 활용 사례중에서도 특히 이 선행학습이 아주 유용합니다. 선행학습은 가중치를 학습시킨다는 의미에서 역방향전파(backpropagation)와 유사한 역할을 합니다.
 
-RBM의 전체 과정은 아래 그림처럼 나타낼 수 있습니다. 
+RBM의 전체 과정은 아래 그림처럼 나타낼 수 있습니다.
 
 ![Alt text](./img/sym_bipartite_graph_RBM.png)
 
@@ -144,9 +144,9 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
 
 ``` java
 		public class RBMIrisExample {		
- 		
+
      private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
- 		
+
      public static void main(String[] args) throws IOException {		
          // Customizing params		
          Nd4j.MAX_SLICES_TO_PRINT = -1;		
@@ -160,14 +160,14 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
          int iterations = 100;		
          int seed = 123;		
          int listenerFreq = iterations/2;		
- 		
+
          log.info("Load data....");		
          DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
          // Loads data into generator and format consumable for NN		
          DataSet iris = iter.next();		
- 		
+
          iris.normalizeZeroMeanZeroUnitVariance();		
- 		
+
          log.info("Build model....");		
          NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
                  .miniBatch(true)		
@@ -191,7 +191,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
                  .build();		
          Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
          model.setListeners(new ScoreIterationListener(listenerFreq));		
- 		
+
          log.info("Evaluate weights....");		
          INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
          log.info("Weights: " + w);		
@@ -203,7 +203,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
              model.fit(iris.getFeatureMatrix());		
          }		
      }		
-     // A single layer learns features unsupervised.	
+     // A single layer learns features unsupervised.
     }
 ```
 
@@ -211,19 +211,19 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
 
 ## <a name="params">파라미터들 & k</a>
 
-RBM 학습 변수 중 k는 [contrastive divergence](./glossary.html#contrastivedivergence)를 실행하는 횟수입니다. Contrastive divergence는 학습에서 사용하는 기울기(네트워크의 가중치와 오차의 그라디언트)를 구하는 알고리즘입니다. 
+RBM 학습 변수 중 k는 [contrastive divergence](./glossary.html#contrastivedivergence)를 실행하는 횟수입니다. Contrastive divergence는 학습에서 사용하는 기울기(네트워크의 가중치와 오차의 그라디언트)를 구하는 알고리즘입니다.
 
 k는 contrastive divergence의 실행 과정에서 사용하는 마르코프 체인의 값으로 보통 1로 설정합니다.
 
 위의 예제 코드에서 RBM은 `MultiLayerConfiguration` 클래스로 생성되었습니다. 이제 각 매개변수에 대해 알아보겠습니다.
 
-**weightInit** (`weightInitialization`)은 가중치를 어떤 값으로 초기화할지 보여줍니다. 가중치를 적당한 값으로 초기화하면 학습 속도가 빨라집니다. 
+**weightInit** (`weightInitialization`)은 가중치를 어떤 값으로 초기화할지 보여줍니다. 가중치를 적당한 값으로 초기화하면 학습 속도가 빨라집니다.
 
-**activationFunction**는 노드에서 사용할 활성 함수를 지정합니다. 
+**activationFunction**는 노드에서 사용할 활성 함수를 지정합니다.
 
 **optimizationAlgo**는 신경망이 오차를 최소화하는데 사용하는 최적화 알고리즘을 의미합니다. 코드에서 사용한 LBFGS는 최적화 알고리즘의 이름입니다.
 
-**regularization**은 과적응을 막기 위해 사용하는 규제 방법을 정합니다. 기계학습에서 과적응이 일어나는 경우에 가중치의 절대값이 커지는 경우가 많ㅇ습니다. 따라서 가중치의 크기와 관련한 값을 목적함수에 넣어서 이런 과적응을 막아줍니다. 
+**regularization**은 과적응을 막기 위해 사용하는 규제 방법을 정합니다. 기계학습에서 과적응이 일어나는 경우에 가중치의 절대값이 커지는 경우가 많ㅇ습니다. 따라서 가중치의 크기와 관련한 값을 목적함수에 넣어서 이런 과적응을 막아줍니다.
 
 **VisibleUnit/HiddenUnit**은 신경망의 층을 의미합니다. `VisibleUnit`은 입력층, `HiddenUnit`은 은닉층입니다.
 
@@ -237,17 +237,17 @@ k는 contrastive divergence의 실행 과정에서 사용하는 마르코프 체
 
 잠시 심층 신경망의 구성 요소를 다시 짚고 넘어가겠습니다. 심층신경망은 입력, 계수, 바이어스, 활성함수로 구성되어있습니다.
 
-입력은 한 단계 앞에 있던 층에서 (혹은 입력 데이터에서) 받아오는 값입니다. 계수(coefficient)는 가중치(weights)라고도 하는데, 말 그대로 입력에 적용되는 가중치입니다. 바이어스는 입력의 가중치합에 더해지는 값으로 'y절편'과 비슷하며 노드의 값에 오프셋을 주어서 노드가 활성화되도록 돕습니다. 활성함수는 최종적으로 출력에 적용되는 값으로 연산에 비선형성(nonlinearity)을 더합니다. 
+입력은 한 단계 앞에 있던 층에서 (혹은 입력 데이터에서) 받아오는 값입니다. 계수(coefficient)는 가중치(weights)라고도 하는데, 말 그대로 입력에 적용되는 가중치입니다. 바이어스는 입력의 가중치합에 더해지는 값으로 'y절편'과 비슷하며 노드의 값에 오프셋을 주어서 노드가 활성화되도록 돕습니다. 활성함수는 최종적으로 출력에 적용되는 값으로 연산에 비선형성(nonlinearity)을 더합니다.
 
 이 네 가지 구성요소는 층마다 다르게 설정되기도 합니다.
 
-연속값을 취하는 RBM은 가시층엔 가우시안 함수(Gaussian transformations)를, 은닉층엔 ReLU(rectified linear unit)를 활성함수로 씁니다. 특히 이 설정은 [얼굴 이미지 재구성](./facial-reconstruction-tutorial.html)에서 좋은 결과를 보여주었습니다. 이진값(binary data)를 다루는 경우라면 두 층의 활성 함수도 두 종류의 값만 출력하게 됩니다.
+연속값을 취하는 RBM은 가시층엔 가우시안 함수(Gaussian transformations)를, 은닉층엔 ReLU(rectified linear unit)를 활성함수로 씁니다. 특히 이 설정은 얼굴 이미지 재구성에서 좋은 결과를 보여주었습니다. 이진값(binary data)를 다루는 경우라면 두 층의 활성 함수도 두 종류의 값만 출력하게 됩니다.
 
 은닉층에서는 가우시안 활성함수를 잘 쓰지 않습니다. 이진값을 가우시안 함수에 넣는 것보다 ReLU함수를 쓰는 경우가 더 좋은 결과를 보여줍니다. [심층 신뢰망](./deepbeliefnetwork.html)도 이렇게 구성되어있습니다.
 
 ### <a name="next">결론 및 다음 단계</a>
 
-학습 과정에서는 RBM의 출력 값을 얼마나 학습이 이루어졌나를 나타내는 지표로 사용할 수 있습니다. 재구성의 결과가 0이 아니라면 RBM이 잘 학습하고 있다는 의미입니다. RBM에 대한 더 자세한 이해는 [이 문서](./understandingRBMs.html)를 참고하십시오. 
+학습 과정에서는 RBM의 출력 값을 얼마나 학습이 이루어졌나를 나타내는 지표로 사용할 수 있습니다. 재구성의 결과가 0이 아니라면 RBM이 잘 학습하고 있다는 의미입니다. RBM에 대한 더 자세한 이해는 [이 문서](./understandingRBMs.html)를 참고하십시오.
 
 이제 RBM을 이용한 [심층 신뢰망(deep-belief network)](./deepbeliefnetwork.html)을 구현하는 방법을 참고하시기 바랍니다.
 
@@ -263,4 +263,4 @@ k는 contrastive divergence의 실행 과정에서 사용하는 마르코프 체
 * [Neural Networks](./kr-neuralnet-overview.html)
 * [Eigenvectors, PCA and Entropy](./kr-eigenvector.html)
 * [Neural Networks & Regression](./linear-regression.html)
-* [Convolutional Networks](./kr-convolutionalnets.html)
+* [Convolutional Networks](./kr-convolutionnets.html)
