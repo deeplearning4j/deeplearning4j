@@ -9,7 +9,7 @@ An example agent is provided at [gym-java-client-example](https://github.com/dee
 To create a new Client, use the ClientFactory. If the url is not localhost:5000, provide it as a second argument
 
 ```java
-        Client<Box, Integer, BoxSpace, DiscreteSpace> client = ClientFactory.build("CartPole-v0");
+Client<Box, Integer, DiscreteSpace> client = ClientFactory.build("CartPole-v0");
 ```
 
 "CartPole-v0" is the name of the gym environment.
