@@ -65,6 +65,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                     .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
+            log.debug("CudnnLocalResponseNormalizationHelper successfully loaded");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not load CudnnLocalResponseNormalizationHelper", t);
