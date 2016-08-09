@@ -17,15 +17,15 @@ DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定�
 * 音声検索
 * 音声の文字化
 * スパムフィルタ
-* 不正検出 
+* 不正検出
 * レコメンダーシステム（CRM、adtech、解約防止）
 * [回帰](./linear-regression.html)
 
-### なぜDeeplearning4jなのか? 
+### なぜDeeplearning4jなのか?
 
 * JavaとScalaにとって汎用的な[n次元配列](http://nd4j.org/ja-index)クラス
 * [GPU](http://nd4j.org/gpu_native_backends.html)と連携
-* [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)や[Spark](./gpu_aws.html)で動作する[スケーラビリティ](./spark.html) 
+* [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)や[Spark](./spark.html)で動作するスケーラビリティ
 * [Canova](./canova.html): 機械学習に使用する一般的なベクトル化ツール
 * [ND4J: Numpyの2倍ほども迅速な線形代数ライブラリ](http://nd4j.org/benchmarking)
 
@@ -43,7 +43,7 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 * [Stacked Denoising Autoencoders (sdA)](./stackeddenoisingautoencoder.html)
 * 詳細については、[「How to Choose a Neural Net（ニューラルネットワークの選び方）」](./neuralnetworktable.html)をお読みください。
 
-ディープ・ニューラル・ネットワークは、[驚異的な精確さ](./accuracy)を実現します。ニューラルネットワークの概要を簡単に知りたい方は、[こちら](./ja-neuralnet-overview)をお読みください。手短に言うと、Deeplearning4jにより、様々な浅いネットワークを使って「レイヤー（層）」と呼ばれるものを形成し、ディープ・ニューラル・ネットワークを構成することができます。このように柔軟性が高いため、分散型のCPU、GPU、そしてSparkやHadhoopと連携した分散型フレームワークが必要に応じて、制限付きボルツマン・マシン、その他のオートエンコーダー、畳込みネットワーク、または再帰ネットワークを組み合わせることができます。 
+ディープ・ニューラル・ネットワークは、[驚異的な精確さ](./accuracy)を実現します。ニューラルネットワークの概要を簡単に知りたい方は、[こちら](./ja-neuralnet-overview)をお読みください。手短に言うと、Deeplearning4jにより、様々な浅いネットワークを使って「レイヤー（層）」と呼ばれるものを形成し、ディープ・ニューラル・ネットワークを構成することができます。このように柔軟性が高いため、分散型のCPU、GPU、そしてSparkやHadhoopと連携した分散型フレームワークが必要に応じて、制限付きボルツマン・マシン、その他のオートエンコーダー、畳込みネットワーク、または再帰ネットワークを組み合わせることができます。
 
 以下は、弊社が構築した様々なライブラリ、そして、それらのライブラリがそれらを取り巻くシステムのどこに位置するのかを図式化したものです。
 
@@ -63,14 +63,13 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 * [LSTMと回帰ネットワークのチュートリアル](./ja-lstm.html)
 * [回帰ネットワークをDL4Jに使用しましょう](./usingrnns.html)
 * [ディープ・ビリーフ・ネットワークとMNIST](./deepbeliefnetwork)
-* [Labeled Faces in the Wildを使った顔再構成](./facial-reconstruction-tutorial.html)
 * [Customizing Data Pipelines With Canovaを使った Data Pipelineのカスタマイズ](./image-data-pipeline.html)
 * [ディープラーニング用語集](./glossary.html)
 
 ### ユーザーの方々の声
 
-      「まるでフランケンシュタイン、あの医者になったような気分だ...」 - Steve D. 
-      
+      「まるでフランケンシュタイン、あの医者になったような気分だ...」 - Steve D.
+
       「deeplearning4jを使うことについて、こちら製造部門ではかなりの熱意を持っている。何十億ポンドの市場価値が期待できるからだ。」 -John M.
 
 ### Deeplearning4jに貢献したい方々へ

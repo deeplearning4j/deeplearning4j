@@ -95,7 +95,7 @@ Kullback Leiblerダイバージェンスは、2つの曲線について、重な
 
 ![Alt text](./img/KLD_update_RBM.png)
 
-## <a name="probability">確率分布</a> 
+## <a name="probability">確率分布</a>
 
 ここで少し、確率分布についてお話ししましょう。2つのサイコロを振って出た目の合計について確率分布を作成すると、次のようになります。
 
@@ -155,14 +155,14 @@ RBMには多くの利用方法がありますが、後の学習と分類を容�
         int iterations = 100;
         int seed = 123;
         int listenerFreq = iterations/5;
-     
+
         log.info("Load data....");
         DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
         // Loads data into generator and format consumable for NN
-        DataSet iris = iter.next(); 
-     
+        DataSet iris = iter.next();
+
         iris.normalizeZeroMeanZeroUnitVariance();
-     
+
         log.info("Build model....");
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
         // Gaussian for visible; Rectified for hidden
@@ -174,14 +174,14 @@ RBMには多くの利用方法がありますが、後の学習と分類を容�
             .build())
         .seed(seed) // Locks in weight initialization for tuning
         .weightInit(WeightInit.DISTRIBUTION) // Weight initialization
-        .dist(new UniformDistribution(0, 1)) 
+        .dist(new UniformDistribution(0, 1))
         // ^^ Weight distribution curve mean and st. deviation
-        .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS) 
+        .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
         .learningRate(1e-1f) // Backprop step size
         .momentum(0.9) // Speed of modifying learning rate
         .regularization(true) // Prevents overfitting
         .l2(2e-4) // Regularization type L2
-        .optimizationAlgo(OptimizationAlgorithm.LBFGS) 
+        .optimizationAlgo(OptimizationAlgorithm.LBFGS)
         // ^^ Calculates gradients
         .constrainGradientToUnitNorm(true)
         .build();
@@ -225,7 +225,7 @@ RBMには多くの利用方法がありますが、後の学習と分類を容�
 
 追加アルゴリズムとその組み合わせは層によって異なる可能性があります。
 
-効果的な連続的な制限付きボルツマンマシンは、可視層（または入力層）でガウス変換を採用し、隠れ層で修正線形ユニット変換を採用しています。この方法は[顔の復元](./facial-reconstruction-tutorial)の際に、特に役立ちます。RBMでバイナリデータを処理するには、単に両方の変換をバイナリ変換にするのです。
+効果的な連続的な制限付きボルツマンマシンは、可視層（または入力層）でガウス変換を採用し、隠れ層で修正線形ユニット変換を採用しています。この方法は顔の復元の際に、特に役立ちます。RBMでバイナリデータを処理するには、単に両方の変換をバイナリ変換にするのです。
 
 ガウス変換はRBMの隠れ層にはあまり効果的ではありません。その代わりに使用される修正線形ユニット変換は、バイナリ変換よりも多くの特徴を表すことができます。バイナリ変換は[ディープビリーフネット](./deepbeliefnetwork)で採用しているものです。
 
