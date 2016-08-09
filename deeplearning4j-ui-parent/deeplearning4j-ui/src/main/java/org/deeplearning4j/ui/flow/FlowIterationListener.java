@@ -388,7 +388,7 @@ public class FlowIterationListener implements IterationListener {
 
         // set layer type
         try {
-            info.setLayerType(layer.getClass().getSimpleName());
+            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$",""));
         } catch (Exception e) {
             info.setLayerType("n/a");
             return info;

@@ -2,10 +2,10 @@
     Here we receive simplified model description, and render it on page.
 */
 
-var nodeWidth = 150;
-var nodeHeight = 100;
+var nodeWidth = 130;
+var nodeHeight = 40;
 
-var offsetVertical = 100;
+var offsetVertical = 80;
 var offsetHorizontal = 10;
 
 // canvas width
@@ -173,12 +173,12 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
     ctx.fillStyle = "#000000";
     ctx.font = "15px Roboto";
     ctx.textAlign="center";
-    ctx.fillText(layer.name, cx + (nodeWidth / 2), cy + 20, nodeWidth - 10);
+    ctx.fillText(layer.layerType, cx + (nodeWidth / 2), cy + 25, nodeWidth - 10);
 
-    ctx.font = "12px Roboto";
-    ctx.fillText(layer.mainLine, cx + (nodeWidth / 2), cy + 45, (nodeWidth - 10));
-    ctx.font = "11px Roboto";
-    ctx.fillText(layer.subLine, cx + (nodeWidth / 2), cy + 70, (nodeWidth - 10));
+//    ctx.font = "12px Roboto";
+//    ctx.fillText(layer.mainLine, cx + (nodeWidth / 2), cy + 45, (nodeWidth - 10));
+//    ctx.font = "11px Roboto";
+//    ctx.fillText(layer.subLine, cx + (nodeWidth / 2), cy + 70, (nodeWidth - 10));
 }
 
 function renderLayers(container, layers) {
