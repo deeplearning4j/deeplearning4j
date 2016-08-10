@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -90,5 +91,16 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     @Override
     public CnnToRnnPreProcessor clone() {
         return new CnnToRnnPreProcessor(inputHeight,inputWidth,numChannels);
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+        }
+
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        int outSize = c.getDepth() * c.getHeight() * c.getWidth();
+        return InputType.recurrent(outSize);
     }
 }
