@@ -58,6 +58,11 @@ public class SubsamplingLayer extends Layer {
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, ((InputType.InputTypeConvolutional) inputType).getDepth(), getLayerName());
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        //No op: subsampling layer doesn't have nIn value
+    }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         private PoolingType poolingType = PoolingType.MAX;
