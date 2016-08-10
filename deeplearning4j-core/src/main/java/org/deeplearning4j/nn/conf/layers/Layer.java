@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 import java.io.Serializable;
@@ -119,6 +120,14 @@ public abstract class Layer implements Serializable, Cloneable {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * For a given type of input to this layer, what is the type of the output?
+     *
+     * @param inputType    Type of input for the layer
+     * @return             Type of output from the layer
+     */
+    public abstract InputType getOutputType(InputType inputType);
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
