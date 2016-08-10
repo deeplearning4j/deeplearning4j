@@ -27,7 +27,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
          */
-        double tolerancePerc = 0.01; // 0.01% of correct value
+        double tolerancePerc = 5;
         int nSamples = 5120;
         int x = 1,y = 2, z = 3;
 
@@ -35,29 +35,36 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         INDArray featureSet = Nd4j.concat(1,featureX,featureY,featureZ);
-        INDArray labelSet = featureSet.dup();
+        INDArray labelSet = featureSet.dup().getColumns(new int[] {0,1});
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         double meanNaturalNums = (nSamples + 1)/2.0;
         INDArray theoreticalMean = Nd4j.create(new double[] {meanNaturalNums*x,meanNaturalNums*y,meanNaturalNums*z});
-        theoreticalMean = Nd4j.vstack(theoreticalMean,theoreticalMean);
+        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {0,1});
         double stdNaturalNums = Math.sqrt((nSamples*nSamples - 1)/12.0);
         INDArray theoreticalStd = Nd4j.create(new double[] {stdNaturalNums*x,stdNaturalNums*y,stdNaturalNums*z});
-        theoreticalStd = Nd4j.vstack(theoreticalStd,theoreticalStd);
+        INDArray theoreticallabelStd =theoreticalStd.dup().getColumns(new int[]{0,1});
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fitLabel(true);
         myNormalizer.fit(sampleDataSet);
 
         INDArray meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
+        INDArray labelDelta = Transforms.abs(theoreticallabelMean.sub(myNormalizer.getLabelMean()));
         INDArray meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
+        INDArray labelDeltaPerc = labelDelta.div(theoreticallabelMean).mul(100);
         double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
+        assertTrue(labelDeltaPerc.max(1).getDouble(0,0) < tolerancePerc);
 
-        INDArray stdDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
+        INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0,0);
+        INDArray stdlabelDeltaPerc = Transforms.abs(theoreticallabelStd.sub(myNormalizer.getLabelStd())).div(theoreticallabelStd);
+        double maxStdDeltaPerc = stdDeltaPerc.max(1).mul(100).getDouble(0,0);
+        double maxlabelStdDeltaPerc = stdlabelDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
+        assertTrue(maxlabelStdDeltaPerc < tolerancePerc);
+
 
         // SAME TEST WITH THE ITERATOR
         int bSize = 10;
