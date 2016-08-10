@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -38,8 +39,8 @@ import java.util.Map;
 /**
  * A neural network layer.
  */
-@JsonTypeInfo(use=Id.NAME, include=As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
+@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
@@ -54,7 +55,7 @@ import java.util.Map;
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation")
-        })
+})
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
@@ -66,10 +67,10 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double learningRate;
     protected double biasLearningRate;
     //learning rate after n iterations
-    protected Map<Integer,Double> learningRateSchedule;
+    protected Map<Integer, Double> learningRateSchedule;
     protected double momentum;
     //momentum after n iterations
-    protected Map<Integer,Double> momentumSchedule;
+    protected Map<Integer, Double> momentumSchedule;
     protected double l1;
     protected double l2;
     protected double biasL1;
@@ -87,10 +88,10 @@ public abstract class Layer implements Serializable, Cloneable {
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
-    	this.activationFunction = builder.activationFunction;
-    	this.weightInit = builder.weightInit;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
-    	this.dist = builder.dist;
+        this.dist = builder.dist;
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
         this.learningRateSchedule = builder.learningRateSchedule;
@@ -112,9 +113,10 @@ public abstract class Layer implements Serializable, Cloneable {
     public Layer clone() {
         try {
             Layer clone = (Layer) super.clone();
-            if(clone.dist != null) clone.dist = clone.dist.clone();
-            if(clone.learningRateSchedule != null) clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
-            if(clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
+            if (clone.dist != null) clone.dist = clone.dist.clone();
+            if (clone.learningRateSchedule != null)
+                clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
+            if (clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -124,19 +126,33 @@ public abstract class Layer implements Serializable, Cloneable {
     /**
      * For a given type of input to this layer, what is the type of the output?
      *
-     * @param inputType    Type of input for the layer
-     * @return             Type of output from the layer
+     * @param inputType Type of input for the layer
+     * @return Type of output from the layer
+     * @throws IllegalStateException if input type is invalid for this layer
      */
     public abstract InputType getOutputType(InputType inputType);
 
     /**
      * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
      *
-     * @param inputType    Input type for this layer
-     * @param override     If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's
-     *                     already set or not.
+     * @param inputType Input type for this layer
+     * @param override  If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's
+     *                  already set or not.
+     * @throws IllegalStateException if input type is invalid for this layer
      */
     public abstract void setNIn(InputType inputType, boolean override);
+
+
+    /**
+     * For the given type of input to this layer, what preprocessor (if any) is required?<br>
+     * Returns null if no preprocessor is required, otherwise returns an appropriate {@link InputPreProcessor}
+     * for this layer, such as a {@link org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor}
+     *
+     * @param inputType InputType to this layer
+     * @return Null if no preprocessor is required, otherwise the type of preprocessor necessary for this layer/input combination
+     * @throws IllegalStateException if input type is invalid for this layer
+     */
+    public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
@@ -147,9 +163,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
         protected double biasLearningRate = Double.NaN;
-        protected Map<Integer,Double> learningRateSchedule = null;
+        protected Map<Integer, Double> learningRateSchedule = null;
         protected double momentum = Double.NaN;
-        protected Map<Integer,Double> momentumAfter = null;
+        protected Map<Integer, Double> momentumAfter = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double dropOut = Double.NaN;
@@ -163,7 +179,8 @@ public abstract class Layer implements Serializable, Cloneable {
         protected LearningRatePolicy learningRatePolicy = null;
 
 
-        /**Layer name assigns layer string name.
+        /**
+         * Layer name assigns layer string name.
          * Allows easier differentiation between layers.
          */
         public T name(String layerName) {
@@ -172,7 +189,8 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
 
-        /**Layer activation function.
+        /**
+         * Layer activation function.
          * Typical values include:<br>
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
@@ -182,7 +200,9 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-        /** Weight initialization scheme.
+        /**
+         * Weight initialization scheme.
+         *
          * @see org.deeplearning4j.nn.weights.WeightInit
          */
         public T weightInit(WeightInit weightInit) {
@@ -195,42 +215,53 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-        /** Distribution to sample initial weights from. Used in conjunction with
+        /**
+         * Distribution to sample initial weights from. Used in conjunction with
          * .weightInit(WeightInit.DISTRIBUTION).
          */
-        public T dist(Distribution dist){
-        	this.dist = dist;
-        	return (T) this;
+        public T dist(Distribution dist) {
+            this.dist = dist;
+            return (T) this;
         }
 
-        /** Learning rate. Defaults to 1e-1*/
-        public T learningRate(double learningRate){
+        /**
+         * Learning rate. Defaults to 1e-1
+         */
+        public T learningRate(double learningRate) {
             this.learningRate = learningRate;
-            return (T)this;
+            return (T) this;
         }
 
-        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
-        public T biasLearningRate(double biasLearningRate){
+        /**
+         * Bias learning rate. Set this to apply a different learning rate to the bias
+         */
+        public T biasLearningRate(double biasLearningRate) {
             this.biasLearningRate = biasLearningRate;
-            return (T)this;
+            return (T) this;
         }
 
-        /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
+        /**
+         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
+         */
         public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
             this.learningRateSchedule = learningRateSchedule;
             return (T) this;
         }
 
-        /** L1 regularization coefficient.*/
-        public T l1(double l1){
+        /**
+         * L1 regularization coefficient.
+         */
+        public T l1(double l1) {
             this.l1 = l1;
-            return (T)this;
+            return (T) this;
         }
 
-        /** L2 regularization coefficient. */
-        public T l2(double l2){
+        /**
+         * L2 regularization coefficient.
+         */
+        public T l2(double l2) {
             this.l2 = l2;
-            return (T)this;
+            return (T) this;
         }
 
         public T dropOut(double dropOut) {
@@ -238,29 +269,36 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-        /** Momentum rate. */
+        /**
+         * Momentum rate.
+         */
         public T momentum(double momentum) {
             this.momentum = momentum;
-            return (T)this;
+            return (T) this;
         }
 
-        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
+        /**
+         * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
+         */
         public T momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return (T) this;
         }
 
-        /** Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
+        /**
+         * Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
          * RSMPROP for RMSProp, etc.
+         *
          * @see org.deeplearning4j.nn.conf.Updater
          */
-        public T updater(Updater updater){
+        public T updater(Updater updater) {
             this.updater = updater;
             return (T) this;
         }
 
         /**
          * Ada delta coefficient
+         *
          * @param rho
          */
         public T rho(double rho) {
@@ -268,49 +306,59 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-        /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+        /**
+         * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
          */
         public T rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return (T) this;
         }
 
-        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /**
+         * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         */
         public T adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return (T) this;
         }
 
-        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /**
+         * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         */
         public T adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
             return (T) this;
         }
 
-        /** Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+        /**
+         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         *
          * @param gradientNormalization Type of normalization to use. Defaults to None.
          * @see org.deeplearning4j.nn.conf.GradientNormalization
          */
-        public T gradientNormalization(GradientNormalization gradientNormalization ){
+        public T gradientNormalization(GradientNormalization gradientNormalization) {
             this.gradientNormalization = gradientNormalization;
             return (T) this;
         }
 
-        /** Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+        /**
+         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
          * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
          * Not used otherwise.<br>
          * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
          */
-        public T gradientNormalizationThreshold(double threshold){
+        public T gradientNormalizationThreshold(double threshold) {
             this.gradientNormalizationThreshold = threshold;
             return (T) this;
         }
 
-        /** Learning rate decay policy. Used to adapt learning rate based on policy.
+        /**
+         * Learning rate decay policy. Used to adapt learning rate based on policy.
+         *
          * @param policy Type of policy to use. Defaults to None.
          * @see org.deeplearning4j.nn.conf.GradientNormalization
          */
-        public T learningRateDecayPolicy(LearningRatePolicy policy){
+        public T learningRateDecayPolicy(LearningRatePolicy policy) {
             this.learningRatePolicy = policy;
             return (T) this;
         }

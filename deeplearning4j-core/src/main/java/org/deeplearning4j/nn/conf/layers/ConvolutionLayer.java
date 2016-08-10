@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -65,6 +66,15 @@ public class ConvolutionLayer extends FeedForwardLayer {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
             this.nIn = c.getDepth();
         }
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if(inputType == null ){
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): input is null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
     @AllArgsConstructor

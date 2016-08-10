@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
@@ -61,6 +62,15 @@ public class SubsamplingLayer extends Layer {
     @Override
     public void setNIn(InputType inputType, boolean override){
         //No op: subsampling layer doesn't have nIn value
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if(inputType == null ){
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): input is null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
     @AllArgsConstructor

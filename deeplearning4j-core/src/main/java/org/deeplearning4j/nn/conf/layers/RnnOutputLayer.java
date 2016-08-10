@@ -4,7 +4,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 @Data
@@ -36,6 +39,29 @@ public class RnnOutputLayer extends BaseOutputLayer {
             this.nIn = r.getSize();
         }
     }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName() + "\"): input type is null");
+        }
+
+        switch (inputType.getType()) {
+            case FF:
+                //FF -> RNN
+                return new FeedForwardToRnnPreProcessor();
+            case RNN:
+                //RNN -> RNN: No preprocessor necessary
+                return null;
+            case CNN:
+                //CNN -> RNN
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+                return new CnnToRnnPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
+            default:
+                throw new RuntimeException("Unknown input type: " + inputType);
+        }
+    }
+
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
