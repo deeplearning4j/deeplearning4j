@@ -98,7 +98,6 @@ public class LayerVertex extends GraphVertex {
         }
 
         //Assume any necessary preprocessors have already been added
-
         InputType afterPreprocessor;
         if(preProcessor == null) afterPreprocessor = vertexInputs[0];
         else afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);

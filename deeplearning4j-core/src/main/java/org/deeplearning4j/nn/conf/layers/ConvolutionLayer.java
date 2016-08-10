@@ -49,10 +49,22 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @Override
     public InputType getOutputType(InputType inputType) {
         if(inputType == null || inputType.getType() != InputType.Type.CNN){
-            throw new IllegalStateException("Invalid input for Convolution layer: Expected CNN input, got " + inputType);
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, nOut, getLayerName());
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+        }
+
+        if(nIn <= 0 || override){
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+            this.nIn = c.getDepth();
+        }
     }
 
     @AllArgsConstructor
