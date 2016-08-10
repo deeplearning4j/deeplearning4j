@@ -10,9 +10,10 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 public class InputTypeUtil {
 
 
-    public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding) {
+    public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                   int outputDepth, String layerName) {
 
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional)inputType;
+        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
         int padH = padding[0];
@@ -22,20 +23,20 @@ public class InputTypeUtil {
         int sH = stride[0];
         int sW = stride[1];
 
-        if((inHeight-kH+2*padH)%sH != 0){
-            throw new IllegalStateException("Invalid input configuration for height: inHeight=" + inHeight + ", kernelH="
-                    + kH + ", strideH=" + sH + ", padH=" + padH + "; (" +inHeight + "-" + kH + "+2*" + padH + ")/" + sH
+        if ((inHeight - kH + 2 * padH) % sH != 0) {
+            throw new IllegalStateException("Invalid input configuration (layer name = \"" + layerName + "\") for height: inHeight=" + inHeight + ", kernelH="
+                    + kH + ", padH=" + padH + ", strideH=" + sH + "; (" + inHeight + "-" + kH + "+2*" + padH + ")/" + sH
                     + " is not an integer");
         }
-        if((inWidth-kW+2*padW)%sW != 0){
-            throw new IllegalStateException("Invalid input configuration for width: inWidth=" + inWidth + ", kernelW="
-                    + kW + ", strideW=" + sW + ", padW=" + padW + "; (" +inWidth + "-" + kW + "+2*" + padW + ")/" + sW
+        if ((inWidth - kW + 2 * padW) % sW != 0) {
+            throw new IllegalStateException("Invalid input configuration (layer name = \"" + layerName + "\") for width: inWidth=" + inWidth + ", kernelW="
+                    + kW + ", padW=" + padW + ", strideW=" + sW + "; (" + inWidth + "-" + kW + "+2*" + padW + ")/" + sW
                     + " is not an integer");
         }
 
-        int hOut = (inHeight-kH+2*padH)/sH+1;
-        int wOut = (inWidth-kW+2*padW)/sH+1;
-        return InputType.convolutional(hOut,wOut,((InputType.InputTypeConvolutional) inputType).getDepth());
+        int hOut = (inHeight - kH + 2 * padH) / sH + 1;
+        int wOut = (inWidth - kW + 2 * padW) / sH + 1;
+        return InputType.convolutional(hOut, wOut, outputDepth);
     }
 
 }

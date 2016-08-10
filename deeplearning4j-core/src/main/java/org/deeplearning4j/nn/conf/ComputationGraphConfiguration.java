@@ -364,9 +364,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             //CNN -> CNN: no preprocessor required
                             //UNLESS: network input -> CNN layer. Input is in 2d format, not 4d format...
                             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
-                            if(networkInputs.contains(vertexInputs.get(s).get(0))){
-                                lv.setPreProcessor(new FeedForwardToCnnPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
-                            }
                             //Also: should set the nIns: i.e., depth, for CNN layers only. Not necessary to set for subsampling layers
                             if(l instanceof ConvolutionLayer){
                                 ConvolutionLayer cl = (ConvolutionLayer)l;
