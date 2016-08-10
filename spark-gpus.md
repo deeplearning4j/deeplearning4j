@@ -28,7 +28,7 @@ a RDD of Dataset (a DL4J construct containing a feature matrix and a label matri
 
 ## CUDA
 
-Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the GPU and CUDA via a mix of custom CUDA kernels and java native interface.
+Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the GPU and CUDA via a mix of custom CUDA kernels and Java Native Interface.
 
 ## cuDNN
 cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the GPU maker NVIDIA. cuDNN is a library of primitives for standard deep learning routines: forward and backward convolution, pooling, normalization, and activation layers. 
@@ -39,7 +39,7 @@ cuDNN is one of the fastest libraries for deep convolutional networks (and more 
 
 [Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like Word2Vec and Doc2Vec, and various types of autoencoders.
 
-Deeplearning4j is part of a set of open source libraries for building deep learning applications on the java virtual machine. It is one of several open-source libraries maintained by Skymind engineers. 
+Deeplearning4j is part of a set of open source libraries for building deep learning applications on the Java Virtual Machine. It is one of several open-source libraries maintained by Skymind engineers. 
 
 * [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, is the scientific computing library that performs the linear algebra and calculus necessary to train neural nets for DL4J. 
 * [libnd4j](https://github.com/deeplearning4j/libnd4j) is the C++ library that accelerates ND4J. 
@@ -154,21 +154,18 @@ Then we configure the neural network:
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-Note that above, we also have a more complex (but versatile) [computation graph api](http://deeplearning4j.org/compgraph) for those familiar with other frameworks.
+Note that above, we also have a more complex (but versatile) [Computation Graph API](http://deeplearning4j.org/compgraph) for those familiar with other frameworks.
 
-Also of note here is the builder pattern being used. Since java doesn't have key word args, the fluent builder
-pattern is known as a best practice in java land due to the complimenting tools such as intellij for handling
+Also of note here is the builder pattern being used. Since Java doesn't have key word args, the fluent builder
+pattern is known as a best practice in Java land due to the complimenting tools such as IntelliJ for handling
 code completion. Despite its verbose nature, its also very easy to wrap in a more concise language such as 
-clojure or scala.
+Clojure or Scala.
 
-We are going to release  a scala wrapper very similar to the keras framework taking advantage
-of some of the nicer constructs of the scala language which should help usability quite a bit.
+We are going to release a Scala wrapper very similar to the Keras framework taking advantage of some of the nicer constructs of the scala language which should help usability quite a bit.
 
-These configurations can also be defined via yaml or json.
+These configurations can also be defined via YAML or JSON.
 
-
-
-##Distributed Training with spark
+## Distributed Training with Spark
 
 Then we tell Spark how to perform parameter averaging:
 
@@ -202,7 +199,7 @@ And finally, we train the network by calling `.fit()` on `sparkNetwork`.
 
 
 
-##References
+## References
 
 [1] Training with intra-block parallel optimization and blockwise model-update filtering. In 2016
 
