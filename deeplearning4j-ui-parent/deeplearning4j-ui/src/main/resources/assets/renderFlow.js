@@ -2,19 +2,28 @@
     Here we receive simplified model description, and render it on page.
 */
 
+var canvasWidth = 900;
+
 var nodeWidth = 130;
 var nodeHeight = 40;
 
 var offsetVertical = 80;
 var offsetHorizontal = 10;
 
-// canvas width
-var width = 900;
-
 var canvasLeft = 0;
 var canvasTop = 0;
 var canvasElements = [];
 var lastNode = -1;
+
+var margin = {top: 10, right: 30, bottom: 20, left: 30};
+var width = 380 - margin.left - margin.right;
+var height = 300 - margin.top - margin.bottom;
+
+var marginFocus = {top: 10, right: 20, bottom: 100, left: 40};
+var marginContext = {top: 270, right: 20, bottom: 20, left: 40};
+
+var heightFocus = 300 - marginFocus.top - marginFocus.bottom;
+var heightContext = 250 - marginContext.top - marginContext.bottom;
 
 
 var gSVG = new Array();
@@ -24,6 +33,12 @@ var gYAxis = new Array();
 var gX = new Array();
 var gY = new Array();
 var gXT = new Array();
+
+var brush;
+var focus;
+var context;
+var scoreData;
+var area2;
 
 
 var arrow = [
@@ -158,7 +173,7 @@ function getNodeX(x, y, totalOnLayer) {
     */
 
     var layerWidth = totalOnLayer * (nodeWidth + offsetHorizontal);
-    var zeroX = (width / 2) - (layerWidth / 2);
+    var zeroX = (canvasWidth / 2) - (layerWidth / 2);
 
     var cX = zeroX + ((nodeWidth + offsetHorizontal) * x);
 
@@ -276,6 +291,93 @@ function renderLayers(container, layers) {
 
 }
 
+function drawScores(values, id) {
+        if (gSVG[id] != undefined || gSVG[id] != null) {
+            var valueline = d3.svg.line()
+                    .x(function(d,i) { return gX[id](i); })
+                    .y(function(d) { return gY[id](d); });
+
+            var max = d3.max(values);
+            var min = d3.min(values);
+            gX[id].domain([0,values.length]);
+            gY[id].domain([min, max]);
+
+
+            focus.select(".line")
+                .attr("d", valueline(values));
+
+            focus.select(".x.axis")
+                .call(gXAxis[id]);
+
+            focus.select(".y.axis")
+                .call(gYAxis[id]);
+
+            return;
+        }
+
+        gX[id] = d3.scale.linear().range([0, width]);
+        gY[id] = d3.scale.linear().range([heightFocus, 0]);
+
+        gX["context"] = d3.scale.linear().range([0, width]);
+        gY["context"] = d3.scale.linear().range([heightContext, 0]);
+
+        gSVG[id] = d3.select("#scoreChart")
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g");
+
+        focus = gSVG[id].append("g")
+                    .attr("class", "focus")
+                    .attr("transform", "translate(" + marginFocus.left + "," + marginFocus.top + ")");
+
+/*
+        brush = d3.svg.brush()
+                    .x(gX["context"])
+                    .on("brush", brushed);
+*/
+
+        // Define the axes
+        gXAxis[id]= d3.svg.axis().scale(gX[id])
+        //               .innerTickSize(-heightFocus)     //used as grid line
+                       .orient("bottom");//.ticks(5);
+
+        gYAxis[id] = d3.svg.axis().scale(gY[id])
+                   //     .innerTickSize(-width)      //used as grid line
+                   .orient("left"); //.ticks(5);
+
+        // Define the line
+        var valueline = d3.svg.line()
+                .x(function(d,i) { return gX[id](i); })
+                .y(function(d) { return gY[id](d); });
+
+        // Scale the range of the data
+        var max = d3.max(values);
+        var min = d3.min(values);
+        gX[id].domain([0,values.length]);
+        gY[id].domain([min, max]);
+
+        // Add the valueline path.
+        focus.append("path")
+                        .attr("class", "line")
+                        .attr("d",  valueline(values));
+
+
+        // Add the X Axis
+        focus.append("g")
+                        .attr("class", "x axis")
+                        .attr("transform", "translate(0," + heightFocus + ")")
+                        .call(gXAxis[id]);
+
+        // Add the Y Axis
+        focus.append("g")
+                        .attr("class", "y axis")
+                        .call(gYAxis[id]);
+
+
+
+}
+
 function drawPerf(samples, batches, time) {
     var fixed_samples = parseFloat(samples).toFixed(2);
     var fixed_batches = parseFloat(batches).toFixed(2);
@@ -308,12 +410,20 @@ function stateFunction() {
         success: function( data ) {
             //
             var scores = data['scores'];
+            var lr = parseFloat(data['lr']).toFixed(5);
+            var score = parseFloat(data['score']).toFixed(5);
             var samples = data['performanceSamples'];
             var batches = data['performanceBatches'];
             var time = data['iterationTime'];
+            var timeSpent = data['trainingTime'];
 
 
             drawPerf(samples, batches, time);
+            drawScores(scores, "scores");
+
+            $("#sl").html(""+ lr);
+            $("#ss").html(""+ score);
+            $("#st").html(timeSpent);
 
             setTimeout(stateFunction, 2000);
         }

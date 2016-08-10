@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class FlowIterationListener implements IterationListener {
+    private static final String FORMAT = "%02d:%02d:%02d";
     public static final String LOCALHOST = "localhost";
     public static final String INPUT = "INPUT";
     // TODO: basic auth should be considered here as well
@@ -63,8 +65,10 @@ public class FlowIterationListener implements IterationListener {
     private AtomicLong iterationCount = new AtomicLong(0);
 
 
+
     private long lastTime = System.currentTimeMillis();
     private long currTime;
+    private long initTime = System.currentTimeMillis();
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
@@ -304,6 +308,11 @@ public class FlowIterationListener implements IterationListener {
 
         // now model score
         modelState.addScore((float) model.score());
+        modelState.setScore((float) model.score());
+
+        modelState.setLr(0.001f);
+        modelState.setTrainingTime(parseTime(System.currentTimeMillis() - initTime));
+
 
         // and now update model params/gradients
     }
@@ -511,5 +520,14 @@ public class FlowIterationListener implements IterationListener {
         description.setText(fullLine.toString());
 
         return info;
+    }
+
+    protected String parseTime(long milliseconds) {
+        return String.format(FORMAT,
+                TimeUnit.MILLISECONDS.toHours(milliseconds),
+                TimeUnit.MILLISECONDS.toMinutes(milliseconds) - TimeUnit.HOURS.toMinutes(
+                        TimeUnit.MILLISECONDS.toHours(milliseconds)),
+                TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(
+                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
     }
 }
