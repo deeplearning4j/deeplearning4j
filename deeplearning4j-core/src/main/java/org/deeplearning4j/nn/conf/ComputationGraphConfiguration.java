@@ -362,16 +362,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             break;
                         case CNN:
                             //CNN -> CNN: no preprocessor required
-                            //UNLESS: network input -> CNN layer. Input is in 2d format, not 4d format...
-                            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
-                            //Also: should set the nIns: i.e., depth, for CNN layers only. Not necessary to set for subsampling layers
-                            if(l instanceof ConvolutionLayer){
-                                ConvolutionLayer cl = (ConvolutionLayer)l;
-                                if(cl.getNIn() == 0){
-                                    //Input has not been set by user
-                                    cl.setNIn(conv.getDepth());
-                                }
-                            }
                             break;
                     }
                 } else if (l instanceof BaseRecurrentLayer || l instanceof RnnOutputLayer) {
@@ -379,19 +369,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         case FF:
                             //FF -> RNN
                             lv.setPreProcessor(new FeedForwardToRnnPreProcessor());
-                            //Also set nIn if possible:
-                            setNInIfNecessary(lv,layerInput);
                             break;
                         case RNN:
-                            //RNN -> RNN: no preprocessor required. But set nIn if possible/required
-                            setNInIfNecessary(lv,layerInput);
+                            //RNN -> RNN: no preprocessor required
                             break;
                         case CNN:
                             //CNN -> RNN
                             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
                             lv.setPreProcessor(new CnnToRnnPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
-                            int nIn = conv.getHeight() * conv.getWidth() * conv.getDepth();
-                            ((FeedForwardLayer) lv.getLayerConf().getLayer()).setNIn(nIn);
                             break;
                     }
 
@@ -399,25 +384,29 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     //Feed forward layer
                     switch (layerInput.getType()) {
                         case FF:
-                            //FF -> FF: no preprocessor required. But set nIn if possible/required
-                            setNInIfNecessary(lv,layerInput);
+                            //FF -> FF: no preprocessor required
                             break;
                         case RNN:
                             //RNN -> FF
                             lv.setPreProcessor(new RnnToFeedForwardPreProcessor());
-                            //Set nIn if possible/required
-                            setNInIfNecessary(lv,layerInput);
                             break;
                         case CNN:
                             //CNN -> FF
                             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
                             lv.setPreProcessor(new CnnToFeedForwardPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
-                            int nIn = conv.getHeight() * conv.getWidth() * conv.getDepth();
-                            ((FeedForwardLayer) lv.getLayerConf().getLayer()).setNIn(nIn);
                             break;
                     }
                 } //Other cases: LRN
                 inputTypeList.add(layerInput);
+
+                //Set nIn value for layer (if not already set)
+                InputType afterPreproc = layerInput;
+                if(lv.getPreProcessor() != null){
+                    InputPreProcessor ip = lv.getPreProcessor();
+                    afterPreproc = ip.getOutputType(layerInput);
+                }
+                l.setNIn(afterPreproc, false);
+
             } else {
                 List<String> inputs = vertexInputs.get(s);
                 if (inputs != null) {
@@ -429,20 +418,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             InputType outputFromVertex = gv.getOutputType(inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
-        }
-    }
-
-    //Set nIn for the FeedForward/RNN layer, if (a) if it is possible (size>0), and (b) if user hasn't manually set nIn in config
-    private static void setNInIfNecessary(LayerVertex lv, InputType inputType){
-        FeedForwardLayer ffl = (FeedForwardLayer) lv.getLayerConf().getLayer();
-        if(ffl.getNIn() == 0){  //non-zero: allow user override
-            int size;
-            if(inputType instanceof InputType.InputTypeFeedForward){
-                size = ((InputType.InputTypeFeedForward) inputType).getSize();
-            } else if(inputType instanceof InputType.InputTypeRecurrent) {
-                size = ((InputType.InputTypeRecurrent) inputType).getSize();
-            } else throw new UnsupportedOperationException("Invalid input type");
-            if(size > 0) ffl.setNIn(size);
         }
     }
 

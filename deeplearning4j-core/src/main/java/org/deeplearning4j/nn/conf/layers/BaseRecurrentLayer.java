@@ -15,12 +15,26 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN || ((InputType.InputTypeRecurrent) inputType).getSize() <= 0) {
-            throw new IllegalStateException("Invalid input for RNN layer: expect RNN input type with size > 0. Got: " + inputType);
+        if (inputType == null || inputType.getType() != InputType.Type.RNN ) {
+            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         return InputType.recurrent(nOut);
     }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        if (inputType == null || inputType.getType() != InputType.Type.RNN ) {
+            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: " + inputType);
+        }
+
+        if(nIn <= 0 || override){
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)inputType;
+            this.nIn = r.getSize();
+        }
+    }
+
+
 
     @AllArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<Builder<T>> {

@@ -129,6 +129,15 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public abstract InputType getOutputType(InputType inputType);
 
+    /**
+     * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
+     *
+     * @param inputType    Input type for this layer
+     * @param override     If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's
+     *                     already set or not.
+     */
+    public abstract void setNIn(InputType inputType, boolean override);
+
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
