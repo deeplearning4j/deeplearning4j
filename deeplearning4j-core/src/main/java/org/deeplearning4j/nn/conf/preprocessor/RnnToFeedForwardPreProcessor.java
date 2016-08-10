@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
@@ -59,5 +60,15 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.RNN){
+            throw new IllegalStateException("Invalid input: expected input of type RNN, got " + inputType);
+        }
+
+        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent)inputType;
+        return InputType.feedForward(rnn.getSize());
     }
 }

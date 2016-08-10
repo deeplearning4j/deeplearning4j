@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -52,5 +53,11 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
         UnitVarianceProcessor clone = (UnitVarianceProcessor) super.clone();
         if(clone.columnStds != null) clone.columnStds = clone.columnStds.dup();
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        return inputType;
     }
 }
