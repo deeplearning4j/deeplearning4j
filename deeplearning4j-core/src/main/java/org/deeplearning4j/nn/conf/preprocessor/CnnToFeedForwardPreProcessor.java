@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -112,5 +113,16 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+        }
+
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        int outSize = c.getDepth() * c.getHeight() * c.getWidth();
+        return InputType.feedForward(outSize);
     }
 }
