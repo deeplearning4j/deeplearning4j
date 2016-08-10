@@ -170,6 +170,13 @@
 
         <!-- Left view panel -->
         <div style="left: 10px; width: 400px;" class="viewpanel">
+            <center>
+                <table style="margin: 10px; width: 200px;">
+                    <tr>
+                        <td><b>Score vs iteration:</b></td>
+                    </tr>
+                </table>
+            </center>
             <div id="scoreChart" style="background-color: #FFF; height: 250px;">
                 &nbsp;
             </div>
@@ -224,8 +231,8 @@
         </div>
 
         <!-- Right view panel -->
-        <div style="right: 10px; width: 400px;" class="viewpanel">
-            &nbsp;
+        <div style="right: 10px; width: 400px; position: fixed; height: 100%;" class="viewpanel" id="viewport">
+            <div style='position: relative; top: 45%; height: 40px; margin: 0 auto;' id='hint'><b>&lt; Click on any node for detailed report</b></div>
         </div>
     </body>
 </html>

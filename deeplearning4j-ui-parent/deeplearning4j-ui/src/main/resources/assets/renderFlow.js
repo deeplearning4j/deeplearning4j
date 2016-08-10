@@ -40,6 +40,8 @@ var context;
 var scoreData;
 var area2;
 
+var init = 0;
+
 
 var arrow = [
     [ 2, 0 ],
@@ -220,6 +222,16 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
 //    ctx.fillText(layer.subLine, cx + (nodeWidth / 2), cy + 70, (nodeWidth - 10));
 }
 
+function showView(id) {
+    var layer = layers.getLayerForID(id);
+
+    for (var i = 0; i < layers.layers.length; i++) {
+        if (layers.layers[i].id != id)
+            $("#panel_"+i).hide();
+        else $("#panel_"+i).show();
+    }
+}
+
 function renderLayers(container, layers) {
     $("#" + container).html("");
 
@@ -247,6 +259,8 @@ function renderLayers(container, layers) {
             if (y > element.y && y < element.y + element.height && x > element.x && x < element.x + element.width) {
 
                 // here we go for element.id as active node
+                $("#hint").hide();
+                showView(element.id);
             }
         })
     }, false);
@@ -467,13 +481,16 @@ function timedFunction() {
                                     At this point we're going to have array of objects, with some properties tied.
                                     Rendering will be using pseudo-grid, derived from original layers connections
                                 */
+                                var html = "<div style='position: relative; top: 45%; height: 40px; margin: 0 auto;' id='hint'><b>&lt; Click on any node for detailed report</b></div>";
                                 for (var i = 0; i < data.layers.length; i++) {
                                     var layer = new Layer(data.layers[i]);
                                     layers.attach(layer);
+                                    html += "<div id='panel_"+layer.id+"' style='display: none;'>some layer "+layer.id+"</div>";
                                 }
+                                $("#viewport").html(html);
                                 renderLayers("display", layers);
 
-
+                                init = 1;
                             }
               });
 

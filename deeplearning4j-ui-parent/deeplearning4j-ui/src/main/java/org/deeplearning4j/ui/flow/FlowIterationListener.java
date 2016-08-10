@@ -313,7 +313,6 @@ public class FlowIterationListener implements IterationListener {
         modelState.setLr(0.001f);
         modelState.setTrainingTime(parseTime(System.currentTimeMillis() - initTime));
 
-
         // and now update model params/gradients
     }
 
