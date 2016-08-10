@@ -39,15 +39,14 @@ public class TestUpdaters {
                 .updater(Updater.NESTEROVS).momentum(0.9)
                 .graphBuilder()
                 .addInputs("input") // 40x40x1
-                .addLayer("l0_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(1)*/.nOut(100).build(), "input") // 40x40x100
-                .addLayer("l1_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l0_cnn") // 20x20x100
-                .addLayer("l2_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l1_max") // 10x10x100
-                .addLayer("l3_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(100)*/.nOut(832).build(), "l2_max") // 10x10x832
-                .addLayer("l4_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l3_cnn") // 5x5x832
-                .addLayer("l5_fc", new DenseLayer.Builder()/*.nIn(5*5*832)*/.nOut(1024).build(), "l4_max") // output: 1x1x1024
-                .addLayer("l6_out", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        /*.nIn(1024)*/.nOut(10).activation("softmax").build(), "l5_fc")
-                .setOutputs("l6_out")
+                .addLayer("l0_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(1)*/.nOut(100).build(), "input") // out: 40x40x100
+                .addLayer("l1_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{2,2}, new int[]{1, 1}).build(), "l0_cnn") // 21x21x100
+                .addLayer("l2_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{2, 2}, new int[]{1, 1})/*.nIn(100)*/.nOut(200).build(), "l1_max") // 11x11x200
+                .addLayer("l3_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l2_cnn") // 6x6x200
+                .addLayer("l4_fc", new DenseLayer.Builder()/*.nIn(6*6*200)*/.nOut(1024).build(), "l3_max") // output: 1x1x1024
+                .addLayer("l5_out", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        /*.nIn(1024)*/.nOut(10).activation("softmax").build(), "l4_fc")
+                .setOutputs("l5_out")
                 .backprop(true).pretrain(false)
                 .setInputTypes(InputType.convolutional(40,40,1))
                 .build();
@@ -55,14 +54,14 @@ public class TestUpdaters {
         //First: check that the nIns are set properly...
         Map<String,GraphVertex> map = conf.getVertices();
         LayerVertex l0_cnn = (LayerVertex)map.get("l0_cnn");
-        LayerVertex l3_cnn = (LayerVertex)map.get("l3_cnn");
-        LayerVertex l5_fc = (LayerVertex)map.get("l5_fc");
-        LayerVertex l6_out = (LayerVertex)map.get("l6_out");
+        LayerVertex l2_cnn = (LayerVertex)map.get("l2_cnn");
+        LayerVertex l4_fc = (LayerVertex)map.get("l4_fc");
+        LayerVertex l5_out = (LayerVertex)map.get("l5_out");
 
         assertEquals(1, ((FeedForwardLayer)l0_cnn.getLayerConf().getLayer()).getNIn());
-        assertEquals(100, ((FeedForwardLayer)l3_cnn.getLayerConf().getLayer()).getNIn());
-        assertEquals(5*5*832, ((FeedForwardLayer)l5_fc.getLayerConf().getLayer()).getNIn());
-        assertEquals(1024, ((FeedForwardLayer)l6_out.getLayerConf().getLayer()).getNIn());
+        assertEquals(100, ((FeedForwardLayer)l2_cnn.getLayerConf().getLayer()).getNIn());
+        assertEquals(6*6*200, ((FeedForwardLayer)l4_fc.getLayerConf().getLayer()).getNIn());
+        assertEquals(1024, ((FeedForwardLayer)l5_out.getLayerConf().getLayer()).getNIn());
 
 
         //Check updaters state:
@@ -130,7 +129,7 @@ public class TestUpdaters {
 
         }
 
-        INDArray in = Nd4j.create(2,40*40*1);
+        INDArray in = Nd4j.create(2,1,40,40);   //minibatch, depth, height, width
         INDArray l = Nd4j.create(2,10);
 
         DataSet ds = new DataSet(in,l);

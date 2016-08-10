@@ -52,7 +52,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             throw new IllegalStateException("Invalid input for Convolution layer: Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding);
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, nOut, getLayerName());
     }
 
     @AllArgsConstructor
