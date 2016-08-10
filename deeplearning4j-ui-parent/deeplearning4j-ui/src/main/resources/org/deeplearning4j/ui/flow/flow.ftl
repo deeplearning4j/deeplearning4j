@@ -27,6 +27,8 @@
         <!-- DateTime formatter-->
         <script src="/assets/DateTimeFormat.js"></script>
 
+        <!-- d3 -->
+        <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
         <script src="/assets/Connection.js"></script>
         <script src="/assets/Layer.js"></script>
@@ -82,8 +84,7 @@
             }
             .viewpanel {
                 position: absolute;
-                background-color: #000;
-                background-color: rgba(0, 0, 0, 0.65);
+                background-color: #FFF;
                 top: 60px;
                 bottom: 0px;
             }
@@ -94,6 +95,50 @@
                 font-family: Arial;
                 font-size: 14px;
             }
+
+               .bar rect {
+        fill: steelblue;
+        shape-rendering: crispEdges;
+    }
+
+    .bar text {
+        fill: #EFEFEF;
+    }
+
+    .area {
+        fill: steelblue;
+    }
+
+    .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        stroke-width: 1.5;
+        shape-rendering: crispEdges;
+    }
+
+    .tick line {
+        opacity: 0.2;
+        stroke-width: 1.5;
+        shape-rendering: crispEdges;
+    }
+
+    path {
+        stroke: steelblue;
+        stroke-width: 1.5;
+        fill: none;
+    }
+
+    .legend {
+        font-size: 12px;
+        text-anchor: middle;
+    }
+
+    .brush .extent {
+        stroke: #fff;
+        stroke-width: 1.5;
+        fill-opacity: .125;
+        shape-rendering: crispEdges;
+    }
         </style>
     </head>
     <body>
@@ -131,8 +176,32 @@
             <br/>
             <div style="width: 100%; background-color: #FFF; text-align:center; display: block; ">
                 <center>
-                <table style="margin: 10px;">
-                    <thead>
+                    <table style="margin: 10px; width: 200px;">
+                        <thead style="width: 200px;">
+                        <td colspan="2"><b>Model training status:</b></td>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="perftd">Current score:</td>
+                            <td class="perftd" id="ss">0.0</td>
+                        </tr>
+                        <tr>
+                            <td class="perftd">Learning rate:</td>
+                            <td class="perftd" id="sl">0.0</td>
+                        </tr>
+                        <tr>
+                            <td class="perftd">Time spent so far:</td>
+                            <td class="perftd" id="st">00:00:00</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </center>
+            </div>
+            <br/>
+            <div style="width: 100%; background-color: #FFF; text-align:center; display: block; ">
+                <center>
+                <table style="margin: 10px; width: 200px;">
+                    <thead style="width: 200px;">
                         <td colspan="2"><b>Performance status:</b></td>
                     </thead>
                     <tbody>
