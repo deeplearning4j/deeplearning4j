@@ -25,6 +25,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -117,5 +118,20 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         }
     }
 
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.FF){
+            throw new IllegalStateException("Invalid input type: Expected input of type FeedForward, got " + inputType);
+        }
+
+        InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward)inputType;
+        int expSize = inputHeight * inputWidth * numChannels;
+        if(c.getSize() != expSize){
+            throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize + " = (d=" + numChannels +
+            " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
+        }
+
+        return InputType.convolutional(inputHeight, inputWidth, numChannels);
+    }
 
 }
