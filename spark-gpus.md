@@ -22,13 +22,13 @@ In this post, we will cover the below technologies and their interactions:
 
 As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer for a cluster, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL (extract transform load) or data storage and access for the hadoop ecosystem (HDFS or hadoop file system). The goal is to leverage hadoop's data locality mechanisms while speeding up compute with native computations.
 
-Spark accomplishes this via a construct called an RDD, or Resilient Distributed DataSet. The RDD construct allows us a functional interface to data partitioned across a cluster. Below you will see us use rdds for loading data and passing
-an rdd of DataSet (a dl4j construct containing a feature matrix and a label matrix).
+Spark accomplishes this via a construct called an RDD, or Resilient Distributed Dataset. The RDD construct provides us a functional interface to data partitioned across a cluster. Below you will see us use RDDs for loading data and passing
+a RDD of Dataset (a DL4J construct containing a feature matrix and a label matrix).
 
 
 ## CUDA
 
-Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the gpu and cuda via a mix of custom cuda kernels and java native interface.
+Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the GPU and CUDA via a mix of custom CUDA kernels and java native interface.
 
 ## cuDNN
 cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the GPU maker NVIDIA. cuDNN is a library of primitives for standard deep learning routines: forward and backward convolution, pooling, normalization, and activation layers. 
