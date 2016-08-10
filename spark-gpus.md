@@ -5,7 +5,7 @@ layout: default
 
 # Running Deep Learning on Distributed GPUs With Spark
 
-Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we show the use Spark to load data and GPUs to process images with cuDNN. 
+Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we show the use of Spark to load data and GPUs to process images with cuDNN. 
 
 Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters easier much easier. 
 
