@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
  * Created by nyghtowl on 10/29/15.
@@ -27,6 +28,15 @@ public class LocalResponseNormalization extends Layer{
     public LocalResponseNormalization clone() {
         LocalResponseNormalization clone = (LocalResponseNormalization) super.clone();
         return clone;
+    }
+
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+        }
+        return inputType;
     }
 
     @AllArgsConstructor
