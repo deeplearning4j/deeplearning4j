@@ -12,7 +12,9 @@ import java.util.Map;
  */
 @Data
 public class ModelState {
-    private float imp = 0.0f;
+    private float score = 0.0f;
+    private float lr = 0.0f;
+    private String trainingTime;
     private List<Float> scores = new ArrayList<>();
     //private List<Float> performanceBatches = new ArrayList<>();
     //private List<Float> performanceSamples = new ArrayList<>();
