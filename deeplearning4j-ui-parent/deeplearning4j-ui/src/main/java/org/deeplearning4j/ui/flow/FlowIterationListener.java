@@ -18,6 +18,7 @@ import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.deeplearning4j.ui.flow.beans.ModelState;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -56,11 +57,17 @@ public class FlowIterationListener implements IterationListener {
     private boolean firstIteration = true;
     private String path;
     private UiConnectionInfo connectionInfo;
+    private ModelState modelState = new ModelState();
+
+
+    private long lastTime = System.currentTimeMillis();
+    private long currTime;
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
     private WebTarget target;
+    private WebTarget targetState;
 
     private static Logger log = LoggerFactory.getLogger(FlowIterationListener.class);
 
@@ -137,9 +144,11 @@ public class FlowIterationListener implements IterationListener {
         login = null;
         password = null;
        // client.register(new LoggingFilter(logger, true));
-        if (login == null || password == null) target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
+        if (login == null || password == null) target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
 
+        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
         this.path = connectionInfo.getFullAddress("flow");
+
 
         log.info("Flow UI address: " + this.path);
     }
@@ -169,6 +178,7 @@ public class FlowIterationListener implements IterationListener {
     @Override
     public synchronized void iterationDone(Model model, int iteration) {
         if (iteration % frequency == 0) {
+            currTime = System.currentTimeMillis();
         /*
             Basic plan:
                 1. We should detect, if that's CompGraph or MultilayerNetwork. However the actual difference will be limited to number of non-linear connections.
@@ -183,7 +193,8 @@ public class FlowIterationListener implements IterationListener {
             // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
             ModelInfo info = buildModelInfo(model);
 
-            // add info about inputs
+            // update modelState
+            buildModelState(model);
 
 
         /*
@@ -193,6 +204,9 @@ public class FlowIterationListener implements IterationListener {
             // send ModelInfo to UiServer
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
         //    log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
+            log.debug("Response: " + resp);
+
+            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
         /*
             TODO: it would be nice to send updates of nodes as well
@@ -206,6 +220,8 @@ public class FlowIterationListener implements IterationListener {
                 firstIteration = false;
             }
         }
+
+        lastTime = System.currentTimeMillis();
     }
 
     /**
@@ -266,10 +282,30 @@ public class FlowIterationListener implements IterationListener {
         return results;
     }
 
+    protected void buildModelState(Model model) {
+        // first we update performance state
+        long timeSpent = currTime - lastTime ;
+        float timeSec = timeSpent / 1000f;
+
+        INDArray input = model.input();
+        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+
+        long numSamples = input.lengthLong() / tadLength;
+
+        modelState.setPerformanceSamples(numSamples / timeSec);
+        modelState.setPerformanceBatches(1 / timeSec);
+
+        // now model score
+        modelState.addScore((float) model.score());
+
+        // and now update model params/gradients
+    }
+
     protected ModelInfo buildModelInfo(Model model) {
         ModelInfo modelInfo = new ModelInfo();
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
+
             /*
                 we assume that graph starts on input. every layer connected to input - is on y1
                 every layer connected to y1, is on y2 etc.
@@ -278,6 +314,18 @@ public class FlowIterationListener implements IterationListener {
             // now we need to add inputs as y0 nodes
             int x = 0;
             for (String input: inputs) {
+                GraphVertex vertex = graph.getVertex(input);
+                INDArray gInput = vertex.getInputs()[0];
+                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
+
+                long numSamples = gInput.lengthLong() / tadLength;
+
+                StringBuilder builder = new StringBuilder();
+                builder.append("Vertex name: ").append(input).append("<br/>");
+                builder.append("Model input").append("<br/>");
+                builder.append("Input size: ").append(tadLength).append("<br/>");
+                builder.append("Batch size: ").append(numSamples).append("<br/>");
+
                 LayerInfo info = new LayerInfo();
                 info.setId(0);
                 info.setName(input);
@@ -286,6 +334,7 @@ public class FlowIterationListener implements IterationListener {
                 info.setLayerType(INPUT);
                 info.setDescription(new Description());
                 info.getDescription().setMainLine("Model input");
+                info.getDescription().setText(builder.toString());
                 modelInfo.addLayer(info);
                 x++;
             }
