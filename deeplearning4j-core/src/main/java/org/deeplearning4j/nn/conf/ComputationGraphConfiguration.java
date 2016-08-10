@@ -342,62 +342,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 //Add preprocessor, if necessary:
                 String in = vertexInputs.get(s).get(0);
                 InputType layerInput = vertexOutputs.get(in);
+                inputTypeList.add(layerInput);
 
                 LayerVertex lv = (LayerVertex) gv;
-                if (lv.getPreProcessor() != null) continue;  //skip: preprocessor is manually defined
-
                 Layer l = lv.getLayerConf().getLayer();
-                if (l instanceof ConvolutionLayer || l instanceof SubsamplingLayer) {
-                    //To add x-to-CNN preprocessor: need to know image depth/width/height
-                    //But this can't be inferred from the FF/RNN activations directly (could be anything)
 
-                    switch (layerInput.getType()) {
-                        case FF:
-                            //FF -> CNN
-                            log.warn("Automatic addition of FF -> CNN preprocessors: not yet implemented (layer: " + s + ")");
-                            break;
-                        case RNN:
-                            //RNN -> CNN
-                            log.warn("Automatic addition of RNN -> CNN preprocessors: not yet implemented (layer: " + s + ")");
-                            break;
-                        case CNN:
-                            //CNN -> CNN: no preprocessor required
-                            break;
-                    }
-                } else if (l instanceof BaseRecurrentLayer || l instanceof RnnOutputLayer) {
-                    switch (layerInput.getType()) {
-                        case FF:
-                            //FF -> RNN
-                            lv.setPreProcessor(new FeedForwardToRnnPreProcessor());
-                            break;
-                        case RNN:
-                            //RNN -> RNN: no preprocessor required
-                            break;
-                        case CNN:
-                            //CNN -> RNN
-                            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
-                            lv.setPreProcessor(new CnnToRnnPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
-                            break;
-                    }
-
-                } else if(l instanceof FeedForwardLayer ){
-                    //Feed forward layer
-                    switch (layerInput.getType()) {
-                        case FF:
-                            //FF -> FF: no preprocessor required
-                            break;
-                        case RNN:
-                            //RNN -> FF
-                            lv.setPreProcessor(new RnnToFeedForwardPreProcessor());
-                            break;
-                        case CNN:
-                            //CNN -> FF
-                            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
-                            lv.setPreProcessor(new CnnToFeedForwardPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
-                            break;
-                    }
-                } //Other cases: LRN
-                inputTypeList.add(layerInput);
+                //Preprocessors - add if necessary
+                if (lv.getPreProcessor() == null){
+                    //But don't override preprocessors that are manually defined; if none has been defined,
+                    //add the appropriate preprocessor for this input type/layer combination
+                    InputPreProcessor preproc = l.getPreProcessorForInputType(layerInput);
+                    lv.setPreProcessor(preproc);
+                }
 
                 //Set nIn value for layer (if not already set)
                 InputType afterPreproc = layerInput;

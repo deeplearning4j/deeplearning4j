@@ -4,7 +4,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 
 /**
  * Created by jeffreytang on 7/21/15.
@@ -42,6 +45,28 @@ public abstract class FeedForwardLayer extends Layer {
         if (nIn <= 0 || override) {
             InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
             this.nIn = f.getSize();
+        }
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+        }
+
+        switch (inputType.getType()) {
+            case FF:
+                //FF -> FF: no preprocessor necessary
+                return null;
+            case RNN:
+                //RNN -> FF
+                return new RnnToFeedForwardPreProcessor();
+            case CNN:
+                //CNN -> FF
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+                return new CnnToFeedForwardPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
+            default:
+                throw new RuntimeException("Unknown input type: " + inputType);
         }
     }
 

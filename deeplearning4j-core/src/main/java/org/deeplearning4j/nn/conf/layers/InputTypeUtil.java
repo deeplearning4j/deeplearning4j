@@ -1,12 +1,17 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 
 /**
  * Utilities for calculating input types
  *
  * @author Alex Black
  */
+@Slf4j
 public class InputTypeUtil {
 
 
@@ -37,6 +42,38 @@ public class InputTypeUtil {
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
         int wOut = (inWidth - kW + 2 * padW) / sH + 1;
         return InputType.convolutional(hOut, wOut, outputDepth);
+    }
+
+    /**
+     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link ConvolutionLayer} and
+     * {@link SubsamplingLayer}
+     *
+     * @param inputType     Input type to get the preprocessor for
+     * @return              Null if no preprocessor is required; otherwise the appropriate preprocessor for the given input type
+     */
+    public static InputPreProcessor getPreProcessorForInputTypeCnnLayers(InputType inputType, String layerName){
+
+        //To add x-to-CNN preprocessor: need to know image depth/width/height after reshaping
+        //But this can't be inferred from the FF/RNN activations directly (could be anything)
+
+        switch (inputType.getType()){
+            case FF:
+                //FF -> CNN
+//                return new FeedForwardToCnnPreProcessor(inputSize[0], inputSize[1], inputDepth);
+                log.info("Automatic addition of FF -> CNN preprocessors: not yet implemented (layer name: \"" + layerName + "\")");
+                return null;
+            case RNN:
+                //RNN -> CNN
+//                return new RnnToCnnPreProcessor(inputSize[0], inputSize[1], inputDepth);
+                log.warn("Automatic addition of RNN -> CNN preprocessors: not yet implemented (layer name: \"" + layerName + "\")");
+                return null;
+            case CNN:
+                //CNN -> CNN: no preprocessor required
+                return null;
+            default:
+                throw new RuntimeException("Unknown input type: " + inputType);
+        }
+
     }
 
 }

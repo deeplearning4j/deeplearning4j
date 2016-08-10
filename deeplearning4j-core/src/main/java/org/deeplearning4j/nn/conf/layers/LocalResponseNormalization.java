@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
@@ -35,7 +36,7 @@ public class LocalResponseNormalization extends Layer {
     @Override
     public InputType getOutputType(InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+            throw new IllegalStateException("Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
         }
         return inputType;
     }
@@ -43,6 +44,15 @@ public class LocalResponseNormalization extends Layer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null ) {
+            throw new IllegalStateException("Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
     @AllArgsConstructor
