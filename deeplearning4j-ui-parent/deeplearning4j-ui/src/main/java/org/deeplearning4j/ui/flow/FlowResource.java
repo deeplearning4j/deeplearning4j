@@ -23,10 +23,17 @@ public class FlowResource {
     @GET
     @Path("/info")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getState(@QueryParam("sid") String sessionId) {
-        // TODO: to be improved with HistoryStorage
+    public Response getInfo(@QueryParam("sid") String sessionId) {
         ModelInfo model = (ModelInfo) storage.getObject(sessionId, ObjectType.FLOW);
         return Response.ok(model).build();
+    }
+
+    @GET
+    @Path("/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getState(@QueryParam("sid") String sessionId) {
+        ModelState modelState = (ModelState) storage.getObject(sessionId, ObjectType.FLOW_STATE);
+        return Response.ok(modelState).build();
     }
 
     @POST
