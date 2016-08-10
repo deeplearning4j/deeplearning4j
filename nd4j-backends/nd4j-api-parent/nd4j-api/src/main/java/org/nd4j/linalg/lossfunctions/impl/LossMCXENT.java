@@ -7,12 +7,17 @@ import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Created by Alex on 08/08/2016.
+ * Created by
+ * Alex D Black
+ * Susan Eraly
  */
 public class LossMCXENT implements ILossFunction {
 
+    private static Logger logger = LoggerFactory.getLogger(LossMCXENT.class);
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask){
         INDArray scoreArr;
@@ -22,7 +27,7 @@ public class LossMCXENT implements ILossFunction {
             scoreArr = labels.mul(logsoftmax);
 
         } else {
-            //Standard calculation
+            logger.info("API_USE_INFO: In the case of classification where the labels are a one hot vector, please use a softmax function for activation.");
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             scoreArr = labels.mul(Transforms.log(output, false));
         }
@@ -46,15 +51,24 @@ public class LossMCXENT implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(1).mul(-1);
     }
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+        INDArray grad;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray outSubLabels = output.sub(labels);
 
-        return outSubLabels;
+        if("softmax".equals(activationFn)) {
+            grad = labels.sub(output);
+        }
+        else {
+            INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            grad = labels.mul(outputder);
+            grad.divi(output).muli(-1);
+        }
+
+        return grad;
     }
 
     @Override

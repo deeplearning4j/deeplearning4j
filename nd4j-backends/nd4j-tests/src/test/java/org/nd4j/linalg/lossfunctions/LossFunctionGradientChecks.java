@@ -46,28 +46,32 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
     public void testLossFunctionGradients(){
 
         INDArray[] labels = new INDArray[]{
-                Nd4j.create(new double[]{1,0,0}),
+                Nd4j.create(new double[]{0,1,0}),
                 Nd4j.create(new double[][]{{1,0,0},{0,1,0},{0,0,1}}),
+                Nd4j.create(new double[]{1,2,1}),
+                Nd4j.create(new double[][]{{1,2,1},{0.1,1,0.5},{20,3,1}}),
                 Nd4j.create(new double[]{1,0,0}),
                 Nd4j.create(new double[][]{{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}}),
         };
 
         INDArray[] preOut = new INDArray[]{
-                Nd4j.rand(1,3).muli(0.0001),
-                Nd4j.rand(3,3).muli(0.0001),
-                Nd4j.rand(1,3).muli(0.0001),
-                Nd4j.randn(4,4).muli(0.0001)};
+                Nd4j.rand(1,3),
+                Nd4j.rand(3,3),
+                Nd4j.rand(1,3).add(5),
+                Nd4j.rand(3,3),
+                Nd4j.rand(1,3),
+                Nd4j.randn(4,4)};
 
         ILossFunction[] lossFn = new ILossFunction[]{
-                new LossMCXENT(),
+                new LossMCXENT(), new LossMCXENT(), new LossMCXENT(),
                 new LossMCXENT(),new LossMSE(), new LossMSE()};
 
         String[] activationFns = new String[]{
-                "softmax","softmax","tanh",
+                "softmax","softmax","identity","identity","tanh",
                 "tanh"};
 
 
-        for(int i=2; i<labels.length; i++ ){
+        for(int i=0; i<labels.length; i++ ){
             int totalNFailures = 0;
 
             ILossFunction lf = lossFn[i];
