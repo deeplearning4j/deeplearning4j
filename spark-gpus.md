@@ -7,7 +7,7 @@ layout: default
 
 Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we show the use of Spark to load data and GPUs to process images with cuDNN. 
 
-Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters easier much easier. 
+Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters much easier. 
 
 This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and at the end it shows with code how Deeplearning4j pulls them together in an image-processing example.
 
@@ -16,7 +16,7 @@ In this post, we will cover the below technologies and their interactions:
  1. Apache Spark
  2. CUDA
  3. cuDNN
- 4. DL4j ecosystem(deeplearning4j,nd4j,datavec,javacpp)
+ 4. DL4J Ecosystem (Deeplearning4j,ND4J,DataVec,JavaCPP)
 
 ## Apache Spark
 
