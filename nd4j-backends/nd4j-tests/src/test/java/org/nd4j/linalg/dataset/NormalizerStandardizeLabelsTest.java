@@ -35,15 +35,15 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         INDArray featureSet = Nd4j.concat(1,featureX,featureY,featureZ);
-        INDArray labelSet = featureSet.dup().getColumns(new int[] {0,1});
+        INDArray labelSet = featureSet.dup().getColumns(new int[] {0});
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         double meanNaturalNums = (nSamples + 1)/2.0;
         INDArray theoreticalMean = Nd4j.create(new double[] {meanNaturalNums*x,meanNaturalNums*y,meanNaturalNums*z});
-        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {0,1});
+        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {0});
         double stdNaturalNums = Math.sqrt((nSamples*nSamples - 1)/12.0);
         INDArray theoreticalStd = Nd4j.create(new double[] {stdNaturalNums*x,stdNaturalNums*y,stdNaturalNums*z});
-        INDArray theoreticallabelStd =theoreticalStd.dup().getColumns(new int[]{0,1});
+        INDArray theoreticallabelStd =theoreticalStd.dup().getColumns(new int[]{0});
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fitLabel(true);
@@ -173,8 +173,8 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             }
             INDArray randomLabels = randomFeatures.dup();
             this.sampleDataSet = new DataSet(randomFeatures, randomLabels);
-            this.theoreticalMean = Nd4j.vstack(bB,bB);
-            this.theoreticalStd = Nd4j.vstack(aA,aA);
+            this.theoreticalMean = bB.dup();
+            this.theoreticalStd = aA.dup();
             this.theoreticalSEM = this.theoreticalStd.div(Math.sqrt(nSamples));
         }
         public DataSetIterator getIter(int bsize) {
