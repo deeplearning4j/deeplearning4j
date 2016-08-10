@@ -87,6 +87,13 @@
                 top: 60px;
                 bottom: 0px;
             }
+
+            .perftd {
+                padding-right: 10px;
+                padding-bottom: 1px;
+                font-family: Arial;
+                font-size: 14px;
+            }
         </style>
     </head>
     <body>
@@ -118,7 +125,33 @@
 
         <!-- Left view panel -->
         <div style="left: 10px; width: 400px;" class="viewpanel">
-            &nbsp;
+            <div id="scoreChart" style="background-color: #FFF; height: 250px;">
+                &nbsp;
+            </div>
+            <br/>
+            <div style="width: 100%; background-color: #FFF; text-align:center; display: block; ">
+                <center>
+                <table style="margin: 10px;">
+                    <thead>
+                        <td colspan="2"><b>Performance status:</b></td>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="perftd">Sampes per sec:</td>
+                            <td class="perftd" id="ps">0.0/sec</td>
+                        </tr>
+                        <tr>
+                            <td class="perftd">Batches per sec:</td>
+                            <td class="perftd" id="pb">0.0/sec</td>
+                        </tr>
+                        <tr>
+                            <td class="perftd">Iteration time:</td>
+                            <td class="perftd" id="pt">0 ms</td>
+                        </tr>
+                    </tbody>
+                </table>
+                </center>
+            </div>
         </div>
 
         <!-- Right view panel -->

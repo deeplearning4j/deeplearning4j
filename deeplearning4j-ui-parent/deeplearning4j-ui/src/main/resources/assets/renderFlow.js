@@ -16,11 +16,23 @@ var canvasTop = 0;
 var canvasElements = [];
 var lastNode = -1;
 
+
+var gSVG = new Array();
+var gXAxis = new Array();
+var gYAxis = new Array();
+
+var gX = new Array();
+var gY = new Array();
+var gXT = new Array();
+
+
 var arrow = [
     [ 2, 0 ],
     [ -10, -4 ],
     [ -10, 4]
 ];
+
+var scoreChart;
 
 var layers = new Layers();
 
@@ -264,6 +276,50 @@ function renderLayers(container, layers) {
 
 }
 
+function drawPerf(samples, batches, time) {
+    var fixed_samples = parseFloat(samples).toFixed(2);
+    var fixed_batches = parseFloat(batches).toFixed(2);
+
+    $("#ps").html("" + fixed_samples + "/sec");
+    $("#pb").html("" + fixed_batches + "/sec");
+    $("#pt").html("" + time + " ms");
+}
+
+function stateFunction() {
+    var sid = getParameterByName("sid");
+    if (sid == undefined) sid = 0;
+
+    $.ajax({
+        url:"/flow" + "/state?sid=" + sid,
+        async: true,
+        error: function (query, status, error) {
+            $.notify({
+                title: '<strong>No connection!</strong>',
+                message: 'DeepLearning4j UiServer seems to be down!'
+            },{
+                type: 'danger',
+                placement: {
+                    from: "top",
+                    align: "center"
+                },
+            });
+            setTimeout(stateFunction, 10000);
+        },
+        success: function( data ) {
+            //
+            var scores = data['scores'];
+            var samples = data['performanceSamples'];
+            var batches = data['performanceBatches'];
+            var time = data['iterationTime'];
+
+
+            drawPerf(samples, batches, time);
+
+            setTimeout(stateFunction, 2000);
+        }
+    });
+}
+
 function timedFunction() {
 
      var sid = getParameterByName("sid");
@@ -306,11 +362,14 @@ function timedFunction() {
                                     layers.attach(layer);
                                 }
                                 renderLayers("display", layers);
+
+
                             }
               });
 
 }
 
 
-setTimeout(timedFunction,2000)
+setTimeout(timedFunction,2000);
+setTimeout(stateFunction,2000);
 $(window).resize(timedFunction);

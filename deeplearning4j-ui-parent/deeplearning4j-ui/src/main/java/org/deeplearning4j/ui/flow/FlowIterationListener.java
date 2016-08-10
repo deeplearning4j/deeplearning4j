@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
@@ -58,6 +59,8 @@ public class FlowIterationListener implements IterationListener {
     private String path;
     private UiConnectionInfo connectionInfo;
     private ModelState modelState = new ModelState();
+
+    private AtomicLong iterationCount = new AtomicLong(0);
 
 
     private long lastTime = System.currentTimeMillis();
@@ -144,7 +147,8 @@ public class FlowIterationListener implements IterationListener {
         login = null;
         password = null;
        // client.register(new LoggingFilter(logger, true));
-        if (login == null || password == null) target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
+        if (login == null || password == null)
+             target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
 
         targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
         this.path = connectionInfo.getFullAddress("flow");
@@ -177,7 +181,7 @@ public class FlowIterationListener implements IterationListener {
      */
     @Override
     public synchronized void iterationDone(Model model, int iteration) {
-        if (iteration % frequency == 0) {
+        if (iterationCount.incrementAndGet() % frequency == 0) {
             currTime = System.currentTimeMillis();
         /*
             Basic plan:
@@ -190,11 +194,13 @@ public class FlowIterationListener implements IterationListener {
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
          */
 
+            // update modelState
+            buildModelState(model);
+
             // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
             ModelInfo info = buildModelInfo(model);
 
-            // update modelState
-            buildModelState(model);
+
 
 
         /*
@@ -203,9 +209,9 @@ public class FlowIterationListener implements IterationListener {
 
             // send ModelInfo to UiServer
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
-        //    log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
 
+            // send ModelState to UiServer
             resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
         /*
@@ -292,8 +298,9 @@ public class FlowIterationListener implements IterationListener {
 
         long numSamples = input.lengthLong() / tadLength;
 
-        modelState.setPerformanceSamples(numSamples / timeSec);
-        modelState.setPerformanceBatches(1 / timeSec);
+        modelState.addPerformanceSamples(numSamples / timeSec);
+        modelState.addPerformanceBatches(1 / timeSec);
+        modelState.setIterationTime(timeSpent);
 
         // now model score
         modelState.addScore((float) model.score());
