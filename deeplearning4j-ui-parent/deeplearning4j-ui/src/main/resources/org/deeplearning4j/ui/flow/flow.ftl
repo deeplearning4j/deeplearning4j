@@ -80,6 +80,13 @@
                 font-size: 14px;
                 z-index: 100;
             }
+            .viewpanel {
+                position: absolute;
+                background-color: #000;
+                background-color: rgba(0, 0, 0, 0.65);
+                top: 60px;
+                bottom: 0px;
+            }
         </style>
     </head>
     <body>
@@ -106,6 +113,16 @@
             </div>
         </div>
         <div id="tooltip" class="tooltip">
+            &nbsp;
+        </div>
+
+        <!-- Left view panel -->
+        <div style="left: 10px; width: 400px;" class="viewpanel">
+            &nbsp;
+        </div>
+
+        <!-- Right view panel -->
+        <div style="right: 10px; width: 400px;" class="viewpanel">
             &nbsp;
         </div>
     </body>

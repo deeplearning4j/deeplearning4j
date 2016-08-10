@@ -270,7 +270,7 @@ function timedFunction() {
      if (sid == undefined) sid = 0;
 
      $.ajax({
-                            url:"/flow" + "/state?sid=" + sid,
+                            url:"/flow" + "/info?sid=" + sid,
                             async: true,
                             error: function (query, status, error) {
                                 $.notify({
