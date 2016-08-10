@@ -37,7 +37,7 @@ cuDNN is one of the fastest libraries for deep convolutional networks (and more 
 
 ## Deeplearning4j, ND4J, DataVec and JavaCPP
 
-[Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like word2vec and doc2vec, and various types of autoencoders.
+[Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like Word2Vec and Doc2Vec, and various types of autoencoders.
 
 Deeplearning4j is part of a set of open source libraries for building deep learning applications on the java virtual machine. It is one of several open-source libraries maintained by Skymind engineers. 
 
@@ -48,9 +48,9 @@ Deeplearning4j is part of a set of open source libraries for building deep learn
 
 
 
-## Spark and DL4j
+## Spark and DL4J
 
-Deeplearning4j also comes with built in spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use spark for data access. We do this by training on spark rdd partitions (portions of the data stored across a cluster)
+Deeplearning4j also comes with built in Spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use Spark for data access. We do this by training on Spark RDD partitions (portions of the data stored across a cluster)
 
 A distributed file system combined with an easy interface allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training without having to do a lot of
 the harder work ourselves.
@@ -72,10 +72,8 @@ Imagine training on an encyclopedia, subdividing it into batches of 10 pages, an
 
 Deeplearning4j relies on data parallelism and uses Spark for distributed host thread orchestration across a cluster.
 
-##Does Parameter Averaging work?
+## Does Parameter Averaging work?
 See references at the bottom of this post for some papers to dig in to.
-
-
 
 ## Code Example
 
