@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
@@ -52,5 +53,15 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public InputType getOutputType(InputType inputType) {
+		if(inputType == null || inputType.getType() != InputType.Type.FF){
+			throw new IllegalStateException("Invalid input: expected input of type FeedForward, got " + inputType);
+		}
+
+        InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward)inputType;
+        return InputType.recurrent(ff.getSize());
 	}
 }
