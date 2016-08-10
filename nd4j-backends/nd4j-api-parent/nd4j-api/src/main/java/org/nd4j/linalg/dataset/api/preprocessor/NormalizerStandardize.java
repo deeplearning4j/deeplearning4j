@@ -233,7 +233,7 @@ public class NormalizerStandardize implements DataNormalization {
 
     public INDArray getLabelMean() {
         if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        if (fitLabels) return labelMean;
+        return labelMean;
     }
 
     public INDArray getStd() {

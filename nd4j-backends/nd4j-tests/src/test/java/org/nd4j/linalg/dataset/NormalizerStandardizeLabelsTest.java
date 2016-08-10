@@ -40,10 +40,10 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1)/2.0;
         INDArray theoreticalMean = Nd4j.create(new double[] {meanNaturalNums*x,meanNaturalNums*y,meanNaturalNums*z});
-        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {1,2});
+        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {1});
         double stdNaturalNums = Math.sqrt((nSamples*nSamples - 1)/12.0);
         INDArray theoreticalStd = Nd4j.create(new double[] {stdNaturalNums*x,stdNaturalNums*y,stdNaturalNums*z});
-        INDArray theoreticallabelStd =theoreticalStd.dup().getColumns(new int[]{1,2});
+        INDArray theoreticallabelStd =theoreticalStd.dup().getColumns(new int[]{1});
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fitLabel(true);
