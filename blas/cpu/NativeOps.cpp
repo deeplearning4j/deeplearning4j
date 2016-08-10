@@ -7,6 +7,7 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <templatemath.h>
+#include <float8.h>
 
 typedef struct {
 unsigned short x;
