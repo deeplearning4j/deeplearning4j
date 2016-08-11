@@ -3,7 +3,6 @@ package org.deeplearning4j.plot;
 import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +34,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  * @author raver119@gmail.com
  * @author Adam Gibson
  */
+@Deprecated
 public class Tsne {
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
@@ -53,11 +53,30 @@ public class Tsne {
     protected double perplexity = 30;
     //protected INDArray gains,yIncs;
     protected INDArray Y;
-    protected transient IterationListener iterationListener;
 
     protected static final Logger logger = LoggerFactory.getLogger(Tsne.class);
 
-    protected Tsne() {
+
+    public Tsne(final int maxIter, final double realMin, final double initialMomentum,
+                final double finalMomentum, final double minGain, final double momentum,
+                final int switchMomentumIteration, final boolean normalize, final boolean usePca,
+                final int stopLyingIteration, final double tolerance, final double learningRate,
+                final boolean useAdaGrad, final double perplexity) {
+        this.maxIter = maxIter;
+        this.realMin = realMin;
+        this.initialMomentum = initialMomentum;
+        this.finalMomentum = finalMomentum;
+        this.minGain = minGain;
+        this.momentum = momentum;
+        this.switchMomentumIteration = switchMomentumIteration;
+        this.normalize = normalize;
+        this.usePca = usePca;
+        this.stopLyingIteration = stopLyingIteration;
+        this.tolerance = tolerance;
+        this.learningRate = learningRate;
+        this.useAdaGrad = useAdaGrad;
+        this.perplexity = perplexity;
+        this.init();
     }
 
     protected void init() {
@@ -102,7 +121,7 @@ public class Tsne {
                     .addi(1)
                     .rdivi(1);
 
-  //          doAlongDiagonal(qu,new Zero());
+            //          doAlongDiagonal(qu,new Zero());
 
             INDArray  Q =  qu.div(qu.sumNumber().doubleValue());
             BooleanIndexing.applyWhere(Q, Conditions.lessThan(1e-12), new Value(1e-12));
@@ -139,7 +158,7 @@ public class Tsne {
             logger.info("Iteration ["+ i +"] error is: [" + cost +"]");
 
             Y.addi(iY);
-          //  Y.addi(iY).subiRowVector(Y.mean(0));
+            //  Y.addi(iY).subiRowVector(Y.mean(0));
             INDArray tiled = Nd4j.tile(Y.mean(0), new int[]{Y.rows(), 1});
             Y.subi(tiled);
 
@@ -403,25 +422,9 @@ public class Tsne {
         }
 
         public Tsne build() {
-            Tsne tsne = new Tsne();
-            tsne.finalMomentum = this.finalMomentum;
-            tsne.initialMomentum = this.initialMomentum;
-            tsne.maxIter = this.maxIter;
-            tsne.learningRate = this.learningRate;
-            tsne.minGain = this.minGain;
-            tsne.momentum = this.momentum;
-            tsne.normalize = this.normalize;
-            tsne.perplexity = this.perplexity;
-            tsne.tolerance = this.tolerance;
-            tsne.realMin = this.realMin;
-            tsne.stopLyingIteration = this.stopLyingIteration;
-            tsne.switchMomentumIteration = this.switchMomentumIteration;
-            tsne.usePca = this.usePca;
-            tsne.useAdaGrad = this.useAdaGrad;
-
-            tsne.init();
-
-            return tsne;
+            return new Tsne( maxIter, realMin, initialMomentum, finalMomentum,
+                    minGain, momentum, switchMomentumIteration, normalize, usePca,
+                    stopLyingIteration, tolerance, learningRate,useAdaGrad, perplexity);
         }
     }
 }
