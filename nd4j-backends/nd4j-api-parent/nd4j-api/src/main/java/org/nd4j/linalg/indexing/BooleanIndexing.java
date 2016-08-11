@@ -204,21 +204,40 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-        if (condition instanceof BaseCondition) {
-            // for all static conditions we go native
-
-            double number = function.apply(new Double(0.0)).doubleValue();
-
-            Nd4j.getExecutioner().exec(new CompareAndSet(to, number, condition));
-
-        } else {
-            // keep original java implementation for dynamic
+          // keep original java implementation for dynamic
 
             Shape.iterate(to, new CoordinateFunction() {
                 @Override
                 public void process(int[]... coord) {
                     if (condition.apply(to.getDouble(coord[0])))
                         to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+
+                }
+            });
+    }
+
+    public static void applyWhere(final INDArray to, final Condition condition, final Number set) {
+        if (condition instanceof BaseCondition) {
+            // for all static conditions we go native
+
+            Nd4j.getExecutioner().exec(new CompareAndSet(to, set.doubleValue(), condition));
+
+        } else {
+            final double value = set.doubleValue();
+
+            final Function<Number,Number> dynamic = new Function<Number, Number>() {
+                @Override
+                public Number apply(Number number) {
+                    System.out.println("Number: " + number.doubleValue());
+                    return value;
+                }
+            };
+
+            Shape.iterate(to, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    if (condition.apply(to.getDouble(coord[0])))
+                        to.putScalar(coord[0], dynamic.apply(to.getDouble(coord[0])).floatValue());
 
                 }
             });
@@ -258,6 +277,21 @@ public class BooleanIndexing {
             throw new IllegalStateException("Mis matched length for to and from");
 
         Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
+    }
+
+
+    /**
+     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     *
+     * @param to
+     * @param set
+     * @param condition
+     */
+    public static void replaceWhere(@NonNull INDArray to,@NonNull Number set, @NonNull Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(to, set.doubleValue(), condition));
     }
 
     /**
