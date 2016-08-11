@@ -571,6 +571,7 @@ function stateFunction() {
             var time = data['iterationTime'];
             var timeSpent = data['trainingTime'];
             var params = data['layerParams'];
+            var lrs = data['learningRates'];
 
 
             drawPerf(samples, batches, time);
@@ -585,6 +586,10 @@ function stateFunction() {
 
                 if (paramsKeys == undefined || paramsKeys.length < 1)
                     return;
+
+                for (var i = 0; i < lrs.length; i++) {
+                    $('#lr_'+(i+1)).html(lrs[i]);
+                }
 
                 // we iterate over layers as keys
                 for (var key in params) {
@@ -679,7 +684,7 @@ function timedFunction() {
                                     var layer = new Layer(data.layers[i]);
                                     layers.attach(layer);
 
-                                    html += "<div id='panel_"+layer.id+"' style='display: none;'><p class='layerDesc'>Layer name: <b>"+ layer.name+ "</b><br/>Layer type: " + layer.layerType+ "<br/>" + layer.description+ "</p><br/><div id='holder_"+layer.id+"'><b>No parameters available for this node</b></div></div>";
+                                    html += "<div id='panel_"+layer.id+"' style='display: none;'><p class='layerDesc'>Layer name: <b>"+ layer.name+ "</b><br/>Layer type: " + layer.layerType+ "<br/>" + layer.description+ "Learning rate: <span id='lr_"+layer.id+"'>N/A</span></p><br/><div id='holder_"+layer.id+"'><b>No parameters available for this node</b></div></div>";
                                 }
                                 $("#viewport").html(html);
                                 renderLayers("display", layers);
