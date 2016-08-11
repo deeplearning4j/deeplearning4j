@@ -433,16 +433,67 @@ function drawParams(values, layer, set) {
 
     var binWidth = parseFloat(width / (binNum - 1)) - 1;
 
-    var id = "" + layer + "_" + set;
-
-    console.log("new id: " + id);
+    var id = "id_" + layer + "_" + set + set + set + set;
+    var selector = "#view_" + id;
 
     if (init == 2) {
         // update charts
+        console.log("Updating: " + id);
+
+        gX[id] = d3.scale.linear()
+                        .domain([min, max])
+                        .range([0, width]);
+
+        gXT[id] = d3.scale.linear()
+                        .domain([min, max])
+                        .range([0, width - margin.right - 5]);
+
+        gY[id] = d3.scale.linear()
+                        .domain([0, d3.max(data, function(d) { return d.y; })])
+                        .range([height, 0]);
+
+        gXAxis[id] = d3.svg.axis()
+                        .scale(gX[id])
+                        .orient("bottom")
+                        .tickValues(binTicks);
+
+
+        var bar = gSVG[id].selectAll(".bar")
+                        .data(data)
+                        .attr("transform", function(d) { return "translate(" + gXT[id](d.x) + "," + gY[id](d.y) + ")"; });
+
+        gSVG[id].selectAll("text")
+                        .data(data)
+                        .attr("y", 6)
+                        .text(function(d) { return formatCount(d.y); });
+
+        gSVG[id].selectAll("rect")
+                        .data(data)
+                        .attr("y", function(d) {
+                            return 0;
+                        })
+                        .attr("height", function(d) { return height-gY[id](d.y) });
+
+        gSVG[id].selectAll(".x.axis")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(gXAxis[id]);
+
+        return;
     }
 
     // create charts
-    var html = "<div id='view_"+id+"'></div>"
+    var description = "";
+    if (set === "w") {
+        description = "Weights:";
+    } else if (set === "rw") {
+        description = "Recurrent weights:";
+    } else if (set === "b") {
+        description = "Biases:";
+    } else if (set === "rwf") {
+        description = "Recurrent weights forward:";
+    }
+
+    var html = $("#panel_"+ layer).html() +"<b>"+ description +"</b><br/>" + "<div id='view_"+id+"'></div>"
     $("#panel_"+ layer).html(html);
 
     gX[id] = d3.scale.linear()
@@ -451,7 +502,7 @@ function drawParams(values, layer, set) {
 
     gXT[id] = d3.scale.linear()
                       .domain([min, max])
-                      .range([0, width - margin.right - 5]);
+                      .range([0, width - margin.right + 5]);
 
     gY[id] = d3.scale.linear()
                     .domain([0, d3.max(data, function(d) { return d.y; })])
@@ -459,7 +510,7 @@ function drawParams(values, layer, set) {
 
 
 
-    gSVG[id] = d3.select("#view_"+id).append("svg")
+    gSVG[id] = d3.select(selector).append("svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom)
                     .append("g")
@@ -541,6 +592,9 @@ function stateFunction() {
             if (init > 0) {
                 var paramsKeys = Object.keys(params);
 
+                if (paramsKeys == undefined || paramsKeys.length < 1)
+                    return;
+
                 // we iterate over layers as keys
                 for (var key in params) {
                     var layerParams = params[key];
@@ -554,13 +608,14 @@ function stateFunction() {
 
                         var data = layerParams[set];
 
-                        console.log("Layer: [" + key+ "], paramSet: ["+set+"]");
-                        drawParams(data, key, set);
-
-
+                        drawParams(data, parseInt(key) + 1, set);
                     }
                 }
+
+                init = 2;
             }
+
+
 
             setTimeout(stateFunction, 2000);
         }
@@ -608,7 +663,8 @@ function timedFunction() {
                                 for (var i = 0; i < data.layers.length; i++) {
                                     var layer = new Layer(data.layers[i]);
                                     layers.attach(layer);
-                                    html += "<div id='panel_"+layer.id+"' style='display: none;'>some layer "+layer.id+"</div>";
+
+                                    html += "<div id='panel_"+layer.id+"' style='display: none;'><p class='layerDesc'>Layer name: <b>"+ layer.name+ "</b><br/>Layer type: " + layer.layerType+ "<br/>" + layer.description+ "</p><br/></div>";
                                 }
                                 $("#viewport").html(html);
                                 renderLayers("display", layers);

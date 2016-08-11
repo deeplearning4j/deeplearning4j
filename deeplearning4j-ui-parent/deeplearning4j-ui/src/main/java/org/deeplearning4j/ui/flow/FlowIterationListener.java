@@ -341,7 +341,7 @@ public class FlowIterationListener implements IterationListener {
                 layerParamsMap.put(layer, new LayerParams());
 
             HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                    .setBinCount(20)
+                    .setBinCount(14)
                     .setRounding(6)
                     .build();
 
