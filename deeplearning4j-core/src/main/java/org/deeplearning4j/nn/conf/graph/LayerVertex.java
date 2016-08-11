@@ -114,6 +114,10 @@ public class LayerVertex extends GraphVertex {
                     afterPreProcessor = (InputType.InputTypeConvolutional) vertexInputs[0];
                 }
             } else {
+                if(!(vertexInputs[0] instanceof InputType.InputTypeConvolutional)){
+                    String layerName = layerConf.getLayer().getLayerName();
+                    throw new IllegalStateException("Layer \"" + layerName + "\" of type " + layer.getClass() + " receiving input of type " + Arrays.toString(vertexInputs) + " with no preprocessor");
+                }
                 afterPreProcessor = (InputType.InputTypeConvolutional) vertexInputs[0];
             }
 

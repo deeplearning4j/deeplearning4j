@@ -115,6 +115,9 @@ public class ModelSerializer {
                 Nd4j.write(updaterState, dos);
                 dos.flush();
                 dos.close();
+
+                inputStream = new ByteArrayInputStream(bos.toByteArray());
+                writeEntry(inputStream, zipfile);
             }
         }
 
@@ -132,13 +135,24 @@ public class ModelSerializer {
     }
 
     /**
-     * Load a multi layer network
-     * from a file
+     * Load a multi layer network from a file
+     *
      * @param file the file to load from
      * @return the loaded multi layer network
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file) throws IOException {
+        return restoreMultiLayerNetwork(file, true);
+    }
+
+    /**
+     * Load a multi layer network from a file
+     *
+     * @param file the file to load from
+     * @return the loaded multi layer network
+     * @throws IOException
+     */
+    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file, boolean loadUpdater) throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
         boolean gotConfig = false;
@@ -183,29 +197,31 @@ public class ModelSerializer {
             gotCoefficients = true;
         }
 
-        //This can be removed a few releases after 0.4.1...
-        ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-        if (oldUpdaters != null) {
-            InputStream stream = zipFile.getInputStream(oldUpdaters);
-            ObjectInputStream ois = new ObjectInputStream(stream);
+        if (loadUpdater) {
+            //This can be removed a few releases after 0.4.1...
+            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
+            if (oldUpdaters != null) {
+                InputStream stream = zipFile.getInputStream(oldUpdaters);
+                ObjectInputStream ois = new ObjectInputStream(stream);
 
-            try {
-                updater = (Updater) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                try {
+                    updater = (Updater) ois.readObject();
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+
+                gotOldUpdater = true;
             }
 
-            gotOldUpdater = true;
-        }
+            ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
+            if (updaterStateEntry != null) {
+                InputStream stream = zipFile.getInputStream(updaterStateEntry);
+                DataInputStream dis = new DataInputStream(stream);
+                updaterState = Nd4j.read(dis);
 
-        ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
-        if(updaterStateEntry != null){
-            InputStream stream = zipFile.getInputStream(updaterStateEntry);
-            DataInputStream dis = new DataInputStream(stream);
-            updaterState = Nd4j.read(dis);
-
-            dis.close();
-            gotUpdaterState = true;
+                dis.close();
+                gotUpdaterState = true;
+            }
         }
 
         ZipEntry prep = zipFile.getEntry("preprocessor.bin");
@@ -241,50 +257,90 @@ public class ModelSerializer {
 
 
     /**
-     * Load a multi layer network
-     * from a file
+     * Load a MultiLayerNetwork from InputStream from a file
+     *
      * @param is the inputstream to load from
      * @return the loaded multi layer network
      * @throws IOException
      */
-    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
+    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "multiLayer");
         Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-        return restoreMultiLayerNetwork(tmpFile);
+        return restoreMultiLayerNetwork(tmpFile, loadUpdater);
+    }
+
+    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
+        return restoreMultiLayerNetwork(is, true);
     }
 
     /**
+     * Load a MultilayerNetwork model from a file
      *
-     * @param path
-     * @return
+     * @param path path to the model file, to get the computation graph from
+     * @return the loaded computation graph
+     *
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path) throws IOException {
-        return restoreMultiLayerNetwork(new File(path));
+        return restoreMultiLayerNetwork(new File(path), true);
     }
 
     /**
+     * Load a MultilayerNetwork model from a file
+     * @param path path to the model file, to get the computation graph from
+     * @return the loaded computation graph
      *
-     * @param path
-     * @return
      * @throws IOException
      */
-    public static ComputationGraph restoreComputationGraph(@NonNull String path) throws IOException {
-        return restoreComputationGraph(new File(path));
+    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path, boolean loadUpdater) throws IOException {
+        return restoreMultiLayerNetwork(new File(path), loadUpdater);
     }
-
 
     /**
      * Load a computation graph from a file
+     * @param path path to the model file, to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
+    public static ComputationGraph restoreComputationGraph(@NonNull String path) throws IOException {
+        return restoreComputationGraph(new File(path), true);
+    }
+
+    /**
+     * Load a computation graph from a file
+     * @param path path to the model file, to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
+    public static ComputationGraph restoreComputationGraph(@NonNull String path, boolean loadUpdater) throws IOException {
+        return restoreComputationGraph(new File(path), loadUpdater);
+    }
+
+
+    /**
+     * Load a computation graph from a InputStream
+     * @param is the inputstream to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
+    public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater) throws IOException {
+        File tmpFile = File.createTempFile("restore", "compGraph");
+        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return restoreComputationGraph(tmpFile, loadUpdater);
+    }
+
+    /**
+     * Load a computation graph from a InputStream
      * @param is the inputstream to get the computation graph from
      * @return the loaded computation graph
      *
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is) throws IOException {
-        File tmpFile = File.createTempFile("restore", "compGraph");
-        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-        return restoreComputationGraph(tmpFile);
+        return restoreComputationGraph(is, true);
     }
 
     /**
@@ -295,6 +351,17 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull File file) throws IOException {
+        return restoreComputationGraph(file, true);
+    }
+
+    /**
+     * Load a computation graph from a file
+     * @param file the file to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
+    public static ComputationGraph restoreComputationGraph(@NonNull File file, boolean loadUpdater) throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
         boolean gotConfig = false;
@@ -340,28 +407,30 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-        if (oldUpdaters != null) {
-            InputStream stream = zipFile.getInputStream(oldUpdaters);
-            ObjectInputStream ois = new ObjectInputStream(stream);
+        if (loadUpdater) {
+            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
+            if (oldUpdaters != null) {
+                InputStream stream = zipFile.getInputStream(oldUpdaters);
+                ObjectInputStream ois = new ObjectInputStream(stream);
 
-            try {
-                updater = (ComputationGraphUpdater) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                try {
+                    updater = (ComputationGraphUpdater) ois.readObject();
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+
+                gotOldUpdater = true;
             }
 
-            gotOldUpdater = true;
-        }
+            ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
+            if (updaterStateEntry != null) {
+                InputStream stream = zipFile.getInputStream(updaterStateEntry);
+                DataInputStream dis = new DataInputStream(stream);
+                updaterState = Nd4j.read(dis);
 
-        ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
-        if(updaterStateEntry != null){
-            InputStream stream = zipFile.getInputStream(updaterStateEntry);
-            DataInputStream dis = new DataInputStream(stream);
-            updaterState = Nd4j.read(dis);
-
-            dis.close();
-            gotUpdaterState = true;
+                dis.close();
+                gotUpdaterState = true;
+            }
         }
 
         ZipEntry prep = zipFile.getEntry("preprocessor.bin");
