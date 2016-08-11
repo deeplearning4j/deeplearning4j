@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -43,6 +44,18 @@ public class BatchNormalization extends FeedForwardLayer {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
         }
         return inputType;
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        //No op
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType){
+        //No preprocessor necessory?
+
+        return null;
     }
 
     @AllArgsConstructor
