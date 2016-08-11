@@ -18,6 +18,10 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -574,8 +578,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public String toString() {
         return getClass().getName() + "{" +
                 "conf=" + conf +
-                ", input=" + input +
-                ", params=" + params +
                 ", dropoutMask=" + dropoutMask +
                 ", score=" + score +
                 ", optimizer=" + optimizer +

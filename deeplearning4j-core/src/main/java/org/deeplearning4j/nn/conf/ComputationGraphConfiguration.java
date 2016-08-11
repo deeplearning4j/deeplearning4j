@@ -363,9 +363,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         case CNN:
                             //CNN -> CNN: no preprocessor required
                             //UNLESS: network input -> CNN layer. Input is in 2d format, not 4d format...
+                            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
                             if(networkInputs.contains(vertexInputs.get(s).get(0))){
-                                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
                                 lv.setPreProcessor(new FeedForwardToCnnPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
+                            }
+                            //Also: should set the nIns: i.e., depth, for CNN layers only. Not necessary to set for subsampling layers
+                            if(l instanceof ConvolutionLayer){
+                                ConvolutionLayer cl = (ConvolutionLayer)l;
+                                if(cl.getNIn() == 0){
+                                    //Input has not been set by user
+                                    cl.setNIn(conv.getDepth());
+                                }
                             }
                             break;
                     }
@@ -390,7 +398,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             break;
                     }
 
-                } else {
+                } else if(l instanceof FeedForwardLayer ){
                     //Feed forward layer
                     switch (layerInput.getType()) {
                         case FF:
@@ -411,7 +419,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             ((FeedForwardLayer) lv.getLayerConf().getLayer()).setNIn(nIn);
                             break;
                     }
-                }
+                } //Other cases: LRN
                 inputTypeList.add(layerInput);
             } else {
                 List<String> inputs = vertexInputs.get(s);
@@ -427,14 +435,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
     }
 
-    //Set nIn for the FeedForward or RNN layer, if (a) if it is possible (size>0), and (b) if user hasn't manually set nIn in config
+    //Set nIn for the FeedForward/RNN layer, if (a) if it is possible (size>0), and (b) if user hasn't manually set nIn in config
     private static void setNInIfNecessary(LayerVertex lv, InputType inputType){
         FeedForwardLayer ffl = (FeedForwardLayer) lv.getLayerConf().getLayer();
         if(ffl.getNIn() == 0){  //non-zero: allow user override
             int size;
             if(inputType instanceof InputType.InputTypeFeedForward){
                 size = ((InputType.InputTypeFeedForward) inputType).getSize();
-            } else if(inputType instanceof InputType.InputTypeRecurrent){
+            } else if(inputType instanceof InputType.InputTypeRecurrent) {
                 size = ((InputType.InputTypeRecurrent) inputType).getSize();
             } else throw new UnsupportedOperationException("Invalid input type");
             if(size > 0) ffl.setNIn(size);

@@ -195,8 +195,8 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
 	 * displaying at most maxKeysToPrint elements and optionally printing
 	 * one element per line.
 	 *
-	 * @param maxKeysToPrint
-	 * @param multiline TODO
+	 * @param maxKeysToPrint maximum number of keys to print
+	 * @param multiline if is set to true, prints each element on new line. Prints elements in one line otherwise.
 	 */
 	public String toString(int maxKeysToPrint, boolean multiline) {
 		PriorityQueue<E> pq = clone();

@@ -6,12 +6,12 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-streaming_2.10</artifactId>
     <packaging>jar</packaging>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
