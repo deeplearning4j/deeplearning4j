@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
  * Subsampling layer also referred to as pooling in convolution neural nets
@@ -46,6 +48,29 @@ public class SubsamplingLayer extends Layer {
         if(clone.stride != null) clone.stride = clone.stride.clone();
         if(clone.padding != null) clone.padding = clone.padding.clone();
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+        }
+
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, ((InputType.InputTypeConvolutional) inputType).getDepth(), getLayerName());
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        //No op: subsampling layer doesn't have nIn value
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if(inputType == null ){
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): input is null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
     @AllArgsConstructor
@@ -98,17 +123,35 @@ public class SubsamplingLayer extends Layer {
             return this;
         }
 
+        /**
+         * Kernel size
+         *
+         * @param kernelSize    kernel size in height and width dimensions
+         */
         public Builder kernelSize(int... kernelSize){
+            if(kernelSize.length != 2) throw new IllegalArgumentException("Invalid input: must be length 2");
             this.kernelSize = kernelSize;
             return this;
         }
 
+        /**
+         * Stride
+         *
+         * @param stride    stride in height and width dimensions
+         */
         public Builder stride(int... stride){
+            if(stride.length != 2) throw new IllegalArgumentException("Invalid input: must be length 2");
             this.stride = stride;
             return this;
         }
 
+        /**
+         * Padding
+         *
+         * @param padding    padding in the height and width dimensions
+         */
         public Builder padding(int... padding){
+            if(padding.length != 2) throw new IllegalArgumentException("Invalid input: must be length 2");
             this.padding = padding;
             return this;
         }

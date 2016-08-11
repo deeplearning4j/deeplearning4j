@@ -354,11 +354,8 @@ public class TestComputationGraphNetwork {
                 .build();
             //Check preprocessors:
         lv1 = (LayerVertex) conf3.getVertices().get("cnn");
-        assertNotNull(lv1.getPreProcessor());
-        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputHeight());
-        assertEquals(28, ffcnn.getInputWidth());
+        assertNull(lv1.getPreProcessor());      //Shouldn't be adding preprocessor here
+
         lv2 = (LayerVertex) conf3.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         LayerVertex lv3 = (LayerVertex) conf3.getVertices().get("dense");
@@ -388,11 +385,8 @@ public class TestComputationGraphNetwork {
 
         //Check preprocessors:
         lv1 = (LayerVertex) conf4.getVertices().get("cnn");
-        assertNotNull(lv1.getPreProcessor());
-        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputHeight());
-        assertEquals(28, ffcnn.getInputWidth());
+        assertNull(lv1.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
+
         lv2 = (LayerVertex) conf4.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         lv3 = (LayerVertex) conf4.getVertices().get("dense");
@@ -426,18 +420,10 @@ public class TestComputationGraphNetwork {
                 .pretrain(false).backprop(true)
                 .build();
         lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
-        assertTrue(lv1.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputWidth());
-        assertEquals(28, ffcnn.getInputHeight());
+        assertNull(lv1.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
 
         lv2 = (LayerVertex) conf5.getVertices().get("cnn_2");
-        assertTrue(lv2.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        FeedForwardToCnnPreProcessor ffcnn2 = (FeedForwardToCnnPreProcessor)lv2.getPreProcessor();
-        assertEquals(1, ffcnn2.getNumChannels());
-        assertEquals(28, ffcnn2.getInputWidth());
-        assertEquals(28, ffcnn2.getInputHeight());
+        assertNull(lv2.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
 
         assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getPreProcessor());
 
