@@ -137,6 +137,11 @@
         text-anchor: middle;
     }
 
+    .layerDesc {
+        font-family: Arial;
+        font-size: 12px;
+    }
+
     .brush .extent {
         stroke: #fff;
         stroke-width: 1.5;
