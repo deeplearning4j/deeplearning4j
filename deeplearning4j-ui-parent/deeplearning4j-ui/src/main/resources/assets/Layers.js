@@ -4,6 +4,14 @@ function Layers() {
     this.maximumX = 0;
     this.maximumY = 0;
 
+    this.getLayerForID = function(id) {
+        for (var i = 0; i < this.layers.length; i++) {
+            if (this.layers[i].id == id) {
+                return this.layers[i];
+            }
+        };
+        return null;
+    }
 
     this.attach = function( layer) {
         this.layers.push(layer);
