@@ -2,10 +2,7 @@ package org.deeplearning4j.ui.flow.beans;
 
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author raver119@gmail.com
@@ -13,16 +10,20 @@ import java.util.Map;
 @Data
 public class ModelState {
     private float score = 0.0f;
-    private float lr = 0.0f;
     private String trainingTime;
     private List<Float> scores = new ArrayList<>();
-    //private List<Float> performanceBatches = new ArrayList<>();
-    //private List<Float> performanceSamples = new ArrayList<>();
     private float performanceBatches;
     private float performanceSamples;
     private long iterationTime;
+
     private Map<String,Map> parameters = new HashMap<>();
     private Map<String,Map> gradients = new HashMap<>();
+    private List<Double> learningRates = new ArrayList<>();
+
+    private Map<Integer, LayerParams> layerParams = new LinkedHashMap<>();
+
+    //private List<Float> performanceBatches = new ArrayList<>();
+    //private List<Float> performanceSamples = new ArrayList<>();
 
     public ModelState() {
 

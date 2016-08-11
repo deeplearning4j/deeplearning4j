@@ -96,10 +96,10 @@
                 font-size: 14px;
             }
 
-               .bar rect {
-        fill: steelblue;
-        shape-rendering: crispEdges;
-    }
+            .bar rect {
+                fill: steelblue;
+                shape-rendering: crispEdges;
+            }
 
     .bar text {
         fill: #EFEFEF;
@@ -120,6 +120,10 @@
         opacity: 0.2;
         stroke-width: 1.5;
         shape-rendering: crispEdges;
+    }
+
+    .tick {
+        font-size: 9px;
     }
 
     path {
@@ -191,10 +195,6 @@
                         <tr>
                             <td class="perftd">Current score:</td>
                             <td class="perftd" id="ss">0.0</td>
-                        </tr>
-                        <tr>
-                            <td class="perftd">Learning rate:</td>
-                            <td class="perftd" id="sl">0.0</td>
                         </tr>
                         <tr>
                             <td class="perftd">Time spent so far:</td>
