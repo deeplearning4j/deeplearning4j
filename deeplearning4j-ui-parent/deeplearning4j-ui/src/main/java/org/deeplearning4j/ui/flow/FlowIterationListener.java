@@ -15,11 +15,9 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
-import org.deeplearning4j.ui.flow.beans.Description;
-import org.deeplearning4j.ui.flow.beans.LayerInfo;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
-import org.deeplearning4j.ui.flow.beans.ModelState;
+import org.deeplearning4j.ui.flow.beans.*;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.weights.HistogramBin;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -32,10 +30,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -310,10 +305,58 @@ public class FlowIterationListener implements IterationListener {
         modelState.addScore((float) model.score());
         modelState.setScore((float) model.score());
 
-        modelState.setLr(0.001f);
         modelState.setTrainingTime(parseTime(System.currentTimeMillis() - initTime));
 
         // and now update model params/gradients
+        Map<String, Map> newGrad = new LinkedHashMap<>();
+
+        Map<String,Map> newParams = new LinkedHashMap<>();
+        Map<String,INDArray> params = model.paramTable();
+
+        Layer[] layers = null;
+        if (model instanceof MultiLayerNetwork) {
+            layers = ((MultiLayerNetwork) model).getLayers();
+        } else if (model instanceof ComputationGraph) {
+            layers = ((ComputationGraph) model).getLayers();
+        }
+
+        List<Double> lrs = new ArrayList<>();
+        if (layers != null) {
+            for (Layer layer: layers) {
+                lrs.add(layer.conf().getLayer().getLearningRate());
+            }
+            modelState.setLearningRates(lrs);
+        }
+        Map<Integer, LayerParams> layerParamsMap = new LinkedHashMap<>();
+
+        for(Map.Entry<String,INDArray> entry : params.entrySet()) {
+            String param = entry.getKey();
+            if (!Character.isDigit(param.charAt(0)))
+                continue;
+
+            int layer = Integer.parseInt(param.replaceAll("\\_.*$",""));
+            String key = param.replaceAll("^.*?_","").toLowerCase();
+
+            if (!layerParamsMap.containsKey(layer))
+                layerParamsMap.put(layer, new LayerParams());
+
+            HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                    .setBinCount(20)
+                    .setRounding(6)
+                    .build();
+
+            // TODO: something better would be nice to have here
+            if (key.equalsIgnoreCase("w")) {
+                layerParamsMap.get(layer).setW(histogram.getData());
+            } else if (key.equalsIgnoreCase("rw")) {
+                layerParamsMap.get(layer).setRW(histogram.getData());
+            } else if (key.equalsIgnoreCase("rwf")) {
+                layerParamsMap.get(layer).setRWF(histogram.getData());
+            } else if (key.equalsIgnoreCase("b")) {
+                layerParamsMap.get(layer).setB(histogram.getData());
+            }
+        }
+        modelState.setLayerParams(layerParamsMap);
     }
 
     protected ModelInfo buildModelInfo(Model model) {

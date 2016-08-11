@@ -401,6 +401,105 @@ function drawPerf(samples, batches, time) {
     $("#pt").html("" + time + " ms");
 }
 
+function drawParams(values, layer, set) {
+    if (init < 1)
+        return;
+
+    var formatCount = d3.format(",.0f");
+    var data = [];
+    var binNum = 0;
+    var binTicks = [];
+    var min = null;
+    var max = null;
+
+    // convert json to d3 data structure
+    var keys = Object.keys(values);
+    for (var k = 0; k < keys.length; k++) {
+        var key = keys[k];
+        var fkey = parseFloat(key);
+        var value = parseInt(values[key]);
+
+        if (min == null) min = fkey;
+        if (max == null) max = fkey;
+
+        if (min > fkey) min = fkey;
+        if (max < fkey) max = fkey;
+
+
+        data.push({"x": parseFloat(key), "y": value});
+        binTicks.push(key);
+        binNum++;
+    }
+
+    var binWidth = parseFloat(width / (binNum - 1)) - 1;
+
+    var id = "" + layer + "_" + set;
+
+    console.log("new id: " + id);
+
+    if (init == 2) {
+        // update charts
+    }
+
+    // create charts
+    var html = "<div id='view_"+id+"'></div>"
+    $("#panel_"+ layer).html(html);
+
+    gX[id] = d3.scale.linear()
+                     .domain([min, max])
+                     .range([0, width]);
+
+    gXT[id] = d3.scale.linear()
+                      .domain([min, max])
+                      .range([0, width - margin.right - 5]);
+
+    gY[id] = d3.scale.linear()
+                    .domain([0, d3.max(data, function(d) { return d.y; })])
+                    .range([height, 0]);
+
+
+
+    gSVG[id] = d3.select("#view_"+id).append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    gXAxis[id] = d3.svg.axis()
+                    .scale(gX[id])
+                    .orient("bottom")
+                    .tickValues(binTicks);
+
+    var bar = gSVG[id].selectAll(".bar")
+                    .data(data)
+                    .enter()
+                    .append("g")
+                    .attr("class", "bar")
+                    .attr("transform", function(d) { return "translate(" + gXT[id](d.x) + "," + gY[id](d.y) + ")"; });
+
+    bar.append("rect")
+                    .attr("x", 1)
+                    .attr("y", 0)
+                    .attr("width", binWidth - 3)
+                    .attr("height", function(d) {
+                            return height - gY[id](d.y);
+                            });
+
+    bar.append("text")
+                    .attr("dy", ".75em")
+                    .attr("y", 6)
+                    .attr("x", binWidth - (binWidth / 2))
+                    .attr("text-anchor", "middle")
+                    .attr("color","#000000")
+                    .attr("font-size","9px")
+                    .text(function(d) { return formatCount(d.y); });
+
+    gSVG[id].append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(gXAxis[id]);
+}
+
 function stateFunction() {
     var sid = getParameterByName("sid");
     if (sid == undefined) sid = 0;
@@ -424,20 +523,44 @@ function stateFunction() {
         success: function( data ) {
             //
             var scores = data['scores'];
-            var lr = parseFloat(data['lr']).toFixed(5);
             var score = parseFloat(data['score']).toFixed(5);
             var samples = data['performanceSamples'];
             var batches = data['performanceBatches'];
             var time = data['iterationTime'];
             var timeSpent = data['trainingTime'];
+            var params = data['layerParams'];
 
 
             drawPerf(samples, batches, time);
             drawScores(scores, "scores");
 
-            $("#sl").html(""+ lr);
+
             $("#ss").html(""+ score);
             $("#st").html(timeSpent);
+
+            if (init > 0) {
+                var paramsKeys = Object.keys(params);
+
+                // we iterate over layers as keys
+                for (var key in params) {
+                    var layerParams = params[key];
+
+                    // each layer may have multiple param sets: W, RW, RWF, B
+                    for (var set in layerParams) {
+
+                        // if some specifc set, ie RWF is null - just skip it
+                        if (layerParams[set] == null || layerParams[set] == undefined)
+                            continue;
+
+                        var data = layerParams[set];
+
+                        console.log("Layer: [" + key+ "], paramSet: ["+set+"]");
+                        drawParams(data, key, set);
+
+
+                    }
+                }
+            }
 
             setTimeout(stateFunction, 2000);
         }
