@@ -200,12 +200,15 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         try {
             final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
             final INDArray reducedData = tsne.getData();
-            File file = File.createTempFile("tsne", "temp");
-            file.deleteOnExit();
-
-            plotVocab(tsne, numWords, file);
-
-            List<String> list = FileUtils.readLines(file);
+            List<String> list = new ArrayList<>();
+            for (int i = 0; i < reducedData.rows() && i < numWords; i++) {
+                String word = labels.get(i);
+                INDArray wordVector = reducedData.getRow(i);
+                for (int j = 0; j < wordVector.length(); j++) {
+                    list.add(wordVector.getDouble(j)+"");
+                }
+                list.add(word);
+            }
 
             Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
@@ -688,8 +691,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            InMemoryLookupTable<T> table = new InMemoryLookupTable<>(vocabCache, vectorLength,
-                    useAdaGrad, lr, gen, negative);
+            InMemoryLookupTable table = new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
             table.seed = seed;
 
             return table;
@@ -699,10 +701,15 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     public String toString() {
         return "InMemoryLookupTable{" +
-                "vectorLength=" + vectorLength +
+                "syn0=" + syn0 +
+                ", syn1=" + syn1 +
+                ", vectorLength=" + vectorLength +
                 ", rng=" + rng +
                 ", lr=" + lr +
+                ", expTable=" + Arrays.toString(expTable) +
                 ", seed=" + seed +
+                ", table=" + table +
+                ", syn1Neg=" + syn1Neg +
                 ", useAdaGrad=" + useAdaGrad +
                 ", negative=" + negative +
                 ", vocab=" + vocab +
@@ -734,5 +741,4 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             this.syn1.putRow(x, srcTable.syn1.getRow(x).dup());
         }
     }
-
 }
