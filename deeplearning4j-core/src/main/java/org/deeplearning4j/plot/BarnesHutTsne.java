@@ -509,6 +509,7 @@ public class BarnesHutTsne implements Model {
     public void saveAsFile(List<String> labels, String path) throws IOException {
         BufferedWriter write = null;
         try {
+            write = new BufferedWriter(new FileWriter(new File(path)));
             for(int i = 0; i < Y.rows(); i++) {
                 if(i >= labels.size())
                     break;
