@@ -216,14 +216,21 @@ public class BooleanIndexing {
             });
     }
 
-    public static void applyWhere(final INDArray to, final Condition condition, final Number set) {
+    /**
+     * This method sets provided number to all elements which match specified condition
+     *
+     * @param to
+     * @param condition
+     * @param number
+     */
+    public static void applyWhere(final INDArray to, final Condition condition, final Number number) {
         if (condition instanceof BaseCondition) {
             // for all static conditions we go native
 
-            Nd4j.getExecutioner().exec(new CompareAndSet(to, set.doubleValue(), condition));
+            Nd4j.getExecutioner().exec(new CompareAndSet(to, number.doubleValue(), condition));
 
         } else {
-            final double value = set.doubleValue();
+            final double value = number.doubleValue();
 
             final Function<Number,Number> dynamic = new Function<Number, Number>() {
                 @Override
