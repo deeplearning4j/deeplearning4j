@@ -40,6 +40,11 @@ public interface Model {
     void fit();
 
     /**
+     * Update layer weights and biases with gradient change
+     */
+    void update(Gradient gradient);
+
+    /**
      * Perform one update  applying the gradient
      * @param gradient the gradient to apply
      */

@@ -118,20 +118,12 @@ public class RegressionEvaluation {
         sumSquaredLabels.addi(labels.mul(labels).sum(0));
         sumSquaredPredicted.addi(predictions.mul(predictions).sum(0));
 
-
         int nRows = labels.size(0);
-        for( int i=0; i<nRows; i++ ){
-            exampleCount++;
 
-            INDArray lRow = labels.getRow(i);
-            INDArray pRow = predictions.getRow(i);
+        currentMean.muli(exampleCount).addi(labels.sum(0)).divi(exampleCount + nRows);
+        currentPredictionMean.muli(exampleCount).addi(predictions.sum(0)).divi(exampleCount + nRows);
 
-            INDArray deltaPredicted = pRow.sub(currentPredictionMean);
-            INDArray deltaActual = lRow.sub(currentMean);
-            currentMean.addi(deltaActual.div(exampleCount));
-            currentPredictionMean.addi(deltaPredicted.div(exampleCount));
-            m2Actual.addi(deltaActual.muli(lRow.sub(currentMean)));
-        }
+        exampleCount += nRows;
     }
 
 
@@ -275,9 +267,16 @@ public class RegressionEvaluation {
     }
 
     public double relativeSquaredError(int column){
-        //RSE: sum(predicted-actual)^2 / sum(actual-labelsMean)^2
-        double m2a = m2Actual.getDouble(column);
-        return sumSquaredErrorsPerColumn.getDouble(column) / m2a;
+        // RSE: sum(predicted-actual)^2 / sum(actual-labelsMean)^2
+        // (sum(predicted^2) - 2 * sum(predicted * actual) + sum(actual ^ 2)) / (sum(actual ^ 2) - n * actualMean)
+        double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column) + sumSquaredLabels.getDouble(column);
+        double denominator = sumSquaredLabels.getDouble(column) - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
+
+        if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
+            return numerator / denominator;
+        } else {
+            return Double.POSITIVE_INFINITY;
+        }
     }
 
 }

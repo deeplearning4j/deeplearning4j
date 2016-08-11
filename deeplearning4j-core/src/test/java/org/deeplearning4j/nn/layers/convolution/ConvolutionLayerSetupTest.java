@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -20,7 +21,6 @@ import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -128,7 +128,7 @@ public class ConvolutionLayerSetupTest {
     public void testMultiChannel() throws Exception {
         //ensure LFW data set is present
         List<String> labels = new ArrayList<>(Arrays.asList("Zico", "Ziwang_Xu"));
-        String rootDir = new ClassPathResource("lfwtest").getTempFileFromArchive().getAbsolutePath();
+        String rootDir = new ClassPathResource("lfwtest").getFile().getAbsolutePath();
 
         RecordReader reader = new ImageRecordReader(28,28,3);
         reader.initialize(new FileSplit(new File(rootDir)));

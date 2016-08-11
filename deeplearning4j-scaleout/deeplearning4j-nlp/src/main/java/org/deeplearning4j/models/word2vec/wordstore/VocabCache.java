@@ -33,7 +33,6 @@ import java.util.Collection;
 public interface VocabCache<T extends SequenceElement> extends Serializable {
 
 
-
 	/**
 	 * Load vocab
 	 */
@@ -51,7 +50,6 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      */
 	void saveVocab();
 	
-
 
     /**
      * Returns all of the words in the vocab

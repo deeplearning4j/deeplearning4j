@@ -50,7 +50,10 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         i = 0;
         for (Layer layer : graph.getLayers()) {
             int thisSize = layerUpdaters[i].stateSizeForLayer(layer);
-            if (thisSize == 0) continue;
+            if (thisSize == 0){
+                i++;
+                continue;
+            }
             INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
             layerUpdaters[i++].setStateViewArray(layer, view, true);
             soFar += thisSize;
