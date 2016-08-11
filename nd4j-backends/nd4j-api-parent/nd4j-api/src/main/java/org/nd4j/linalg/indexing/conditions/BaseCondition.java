@@ -34,6 +34,11 @@ public abstract class  BaseCondition implements Condition {
         this.complexNumber = Nd4j.createComplexNumber(value, 0);
     }
 
+    @Override
+    public double getValue() {
+        return value.doubleValue();
+    }
+
     public BaseCondition(IComplexNumber complexNumber) {
         this.complexNumber = complexNumber;
         this.value = complexNumber.absoluteValue();

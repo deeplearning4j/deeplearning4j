@@ -66,6 +66,7 @@ public class CachingDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
+        sourceIterator.reset();
         currentIndex = 0;
     }
 
@@ -124,13 +125,14 @@ public class CachingDataSetIterator implements DataSetIterator {
             ds = cache.get(key);
         } else {
             ds = sourceIterator.next();
-            if (preProcessor != null) {
-                preProcessor.preProcess(ds);
-            }
             cache.put(key, ds);
         }
 
         currentIndex += 1;
+
+        if (preProcessor != null) {
+            preProcessor.preProcess(ds);
+        }
 
         return ds;
     }

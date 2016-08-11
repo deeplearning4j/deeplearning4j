@@ -1587,6 +1587,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        if (extraArgs != null)
+            extraArgs.address();
+
         return null;
     }
 }

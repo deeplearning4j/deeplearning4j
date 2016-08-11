@@ -448,6 +448,7 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray ds_labels = Nd4j.linspace(1, labels, labels).reshape(nSamples, nLabels);
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
+
         for (int dim = 1; dim < 4; dim++) {
             //get tensor along dimension - the order in every dimension but zero should be preserved
             for (int tensorNum = 0; tensorNum < entries / shape[dim]; tensorNum++) {

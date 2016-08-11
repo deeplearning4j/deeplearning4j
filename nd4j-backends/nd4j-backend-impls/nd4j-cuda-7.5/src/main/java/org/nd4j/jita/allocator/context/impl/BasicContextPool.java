@@ -29,7 +29,6 @@ import java.util.concurrent.Semaphore;
  *
  * @author raver119@gmail.com
  */
-@Deprecated
 public class BasicContextPool implements ContextPool {
     // TODO: number of max threads should be device-dependant
     protected static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
@@ -164,7 +163,11 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected cublasHandle_t createNewCublasHandle() {
-        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
+        Pointer pointer = nativeOps.createBlasHandle();
+        if (pointer == null)
+            throw new IllegalStateException("Can't create new cuBLAS handle!");
+
+        cublasHandle_t handle = new cublasHandle_t(pointer);
 
         return handle;
     }

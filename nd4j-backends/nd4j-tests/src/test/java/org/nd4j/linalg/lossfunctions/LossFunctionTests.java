@@ -53,37 +53,6 @@ public  class LossFunctionTests extends BaseNd4jTest {
         assertEquals(l.getClass(),TestLossFunction.class);
     }
 
-    @Test
-    public void testRMseXent() {
-        INDArray in = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
-        INDArray out = Nd4j.create(new double[][]{{5, 6}, {7, 8}});
-        double diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT, out, 0, false);
-        assertEquals(getFailureMessage(),8, diff, 1e-1);
-    }
-
-    @Test
-    public void testMcXent() {
-        INDArray in = Nd4j.create(new float[][]{{1, 2}, {3, 4}});
-        INDArray out = Nd4j.create(new float[][]{{5, 6}, {7, 8}});
-        LossFunctions.score(in, LossFunctions.LossFunction.MCXENT, out, 0, false);
-    }
-
-    @Test
-    public void testNegativeLogLikelihood() {
-        Nd4j.dtype = Type.DOUBLE;
-        INDArray softmax = Nd4j.create(new double[][]{{0.6, 0.4}, {0.7, 0.3}});
-        INDArray trueLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
-        double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax, 0, false);
-        assertEquals(getFailureMessage(),0.8573992252349854, score, 1e-1);
-
-
-        INDArray softmax2 = Nd4j.create(new double[][]{{0.33, 0.33, 0.33}, {0.33, 0.33, 0.33}});
-        INDArray trueLabels2 = Nd4j.create(new double[][]{{1, 0, 0}, {1, 0, 0}});
-        double score2 = LossFunctions.score(trueLabels2, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax2, 0, false);
-        assertEquals(getFailureMessage(),1.1086626052856445, score2, 1e-1);
-
-    }
-
     @Override
     public char ordering() {
         return 'f';

@@ -141,7 +141,7 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testSoftmax1D_1() throws Exception {
-        INDArray input1T = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).transpose();
+        INDArray input1T = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04});
         INDArray input1 = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04});
         INDArray input2 = Nd4j.zerosLike(input1);
         Nd4j.copy(input1, input2);

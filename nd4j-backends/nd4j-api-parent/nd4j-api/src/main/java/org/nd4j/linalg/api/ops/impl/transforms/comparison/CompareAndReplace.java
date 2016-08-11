@@ -17,118 +17,127 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.scalar;
+package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
- * Scalar max operation.
- * Returns the max of an element
- * in the ndarray of the specified number.
+ * Element-wise Compare-and-Replace implementation as Op
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
-public class  ScalarSet extends BaseScalarOp {
-    public ScalarSet() {
+public class CompareAndReplace extends BaseTransformOp {
+
+    private double compare;
+    private double set;
+    private double eps;
+    private int mode;
+
+
+    public CompareAndReplace() {
+
     }
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+
+
+
+    public CompareAndReplace(INDArray x, INDArray y, Condition condition) {
+        this(x, y, x, condition);
     }
 
-    public ScalarSet(INDArray x, Number num) {
-        super(x, num);
+    public CompareAndReplace(INDArray x, INDArray y, INDArray z, Condition condition) {
+        super(x, y, z, x.lengthLong());
+        this.compare = condition.getValue();
+        this.set = 0;
+        this.mode = condition.condtionNum();
+        init(x, y, z, x.lengthLong());
     }
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
-        super(x, y, z, n, num);
-    }
 
-    public ScalarSet(INDArray x, IComplexNumber num) {
-        super(x, num);
-    }
 
     @Override
     public int opNum() {
-        return 13;
+        return 46;
     }
 
     @Override
     public String name() {
-        return "set_scalar";
+        return "car";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return complexNumber;
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return complexNumber;
-
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return complexNumber;
-
+        return null;
     }
 
     @Override
     public float op(float origin, float other) {
-        return num.floatValue();
+        return 0;
     }
 
     @Override
     public double op(double origin, double other) {
-        return num.doubleValue();
+        return 0;
     }
 
     @Override
     public double op(double origin) {
-        return num.doubleValue();
-
+        return 0;
     }
 
     @Override
     public float op(float origin) {
-        return num.floatValue();
-
+        return 0;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return complexNumber;
+        return null;
+
     }
 
+    /**
+     * A copy of this operation for a particular dimension of the input
+     *
+     * @param index     the index of the op to iterate over
+     * @param dimension the dimension to ge the input for
+     * @return the operation for that dimension
+     */
     @Override
     public Op opForDimension(int index, int dimension) {
-        if (num != null)
-            return new ScalarSet(x.vectorAlongDimension(index, dimension), num);
-        else
-            return new ScalarSet(x.vectorAlongDimension(index, dimension), complexNumber);
+        return null;
     }
 
+    /**
+     * A copy of this operation for a particular dimension of the input
+     *
+     * @param index     the index of the op to iterate over
+     * @param dimension the dimension to ge the input for
+     * @return the operation for that dimension
+     */
     @Override
     public Op opForDimension(int index, int... dimension) {
-        if (num != null)
-            return new ScalarSet(x.tensorAlongDimension(index, dimension), num);
-        else
-            return new ScalarSet(x.tensorAlongDimension(index, dimension), complexNumber);
+        return null;
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (num != null) {
-            this.extraArgs = new Object[]{num};
-        } else {
-            this.extraArgs = new Object[]{complexNumber};
-        }
-
+        super.init(x,y,z,n);
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 }
+

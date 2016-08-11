@@ -88,16 +88,6 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     /**
-     * Transform the datasets with this iterator
-     *
-     * @param toPreProcessIter
-     */
-    @Override
-    public void transform(DataSetIterator toPreProcessIter) {
-
-    }
-
-    /**
      * Load the statistics
      * for the data normalizer
      *

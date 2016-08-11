@@ -28,6 +28,21 @@ public class Not implements Condition {
 
     private Condition opposite;
 
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return -1;
+    }
+
+    @Override
+    public double getValue() {
+        return -1;
+    }
+
     public Not(Condition condition) {
         this.opposite = condition;
     }

@@ -5,8 +5,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 
@@ -137,7 +141,9 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         BooleanIndexing.applyWhere(array,Conditions.isNan(),new Value(1e-16f));
 
-        //System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
+        System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
+
+        assertFalse(BooleanIndexing.or(array, Conditions.isNan()));
 
         assertTrue(BooleanIndexing.or(array, Conditions.equals(1e-12f)));
 
@@ -161,7 +167,12 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         array.slice(4).putScalar(2, 1e-5f);
 
+
+        System.out.println(array);
+
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
+
+
     }
 
     @Test
@@ -227,6 +238,168 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
     }
+
+    @Test
+    public void testConditionalAssign1() throws Exception {
+        INDArray array1 = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7});
+        INDArray array2 = Nd4j.create(new double[]{7, 6, 5, 4, 3, 2, 1});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 3, 2, 1});
+
+        BooleanIndexing.replaceWhere(array1, array2, Conditions.greaterThan(4));
+
+        assertEquals(comp, array1);
+    }
+
+    @Test
+    public void testCaSTransform1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3, Conditions.equals(0)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSTransform2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{3, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3.0, Conditions.lessThan(2)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, comp, Conditions.lessThan(5)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaRPairwiseTransform1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndReplace(array, comp, Conditions.lessThan(1)));
+
+        assertEquals(comp, array);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 0, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(x, y, Conditions.epsNotEquals(0.0)));
+
+        assertEquals(comp, x);
+    }
+
+    @Test
+    public void testCaRPairwiseTransform2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 4, 0, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.epsNotEquals(0.0)));
+
+        assertEquals(comp, x);
+    }
+
+    @Test
+    public void testCaSPairwiseTransform3() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.lessThan(4)));
+
+        assertEquals(comp, x);
+    }
+
+    @Test
+    public void testCaRPairwiseTransform3() throws Exception {
+        INDArray x = Nd4j.create(new double[]{1, 2, 0, 4, 5});
+        INDArray y = Nd4j.create(new double[]{2, 4, 3, 4, 5});
+        INDArray comp = Nd4j.create(new double[]{2, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.lessThan(2)));
+
+        assertEquals(comp, x);
+    }
+
+
+    @Test
+    public void testMatchConditionAllDimensions1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(5, val);
+    }
+
+    @Test
+    public void testMatchConditionAllDimensions2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(1, val);
+    }
+
+    @Test
+    public void testMatchConditionAllDimensions3() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
+
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isInfinite()), Integer.MAX_VALUE).getDouble(0);
+
+        assertEquals(1, val);
+    }
+
+    @Test
+    public void testMatchConditionAlongDimension1() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0);
+
+        boolean result[] = BooleanIndexing.and(array, Conditions.equals(0.0), 1);
+        boolean comp[] = new boolean[]{false, false, true};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
+    @Test
+    public void testMatchConditionAlongDimension2() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0).putScalar(0, 1.0);
+
+        System.out.println("Array: " + array);
+
+        boolean result[] = BooleanIndexing.or(array, Conditions.lessThan(0.9), 1);
+        boolean comp[] = new boolean[]{false, false, true};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
+    @Test
+    public void testMatchConditionAlongDimension3() throws Exception {
+        INDArray array = Nd4j.ones(3, 10);
+        array.getRow(2).assign(0.0).putScalar(0, 1.0);
+
+        boolean result[] = BooleanIndexing.and(array, Conditions.lessThan(0.0), 1);
+        boolean comp[] = new boolean[]{false, false, false};
+
+        System.out.println("Result: " + Arrays.toString(result));
+        assertArrayEquals(comp, result);
+    }
+
 
     @Override
     public char ordering() {

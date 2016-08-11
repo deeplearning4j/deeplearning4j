@@ -236,6 +236,26 @@ public interface INDArray extends Serializable  {
      */
     INDArray assign(INDArray arr);
 
+     /**
+     * Assign all elements from given ndarray that are matching given condition,
+     * ndarray to this ndarray
+     *
+     * @param arr the elements to assign
+     * @return this
+     */
+     INDArray assignIf(INDArray arr, Condition condition);
+
+
+     /**
+     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
+      *
+     * @param arr
+     * @param condition
+     * @return
+     */
+     INDArray replaceWhere(INDArray arr, Condition condition);
+
+
     /**
      * Insert the number linearly in to the ndarray
      *

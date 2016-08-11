@@ -39,12 +39,6 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
     void transform(DataSet toPreProcess);
 
     /**
-     * Transform the datasets with this iterator
-     * @param toPreProcessIter
-     */
-    void transform(DataSetIterator toPreProcessIter);
-
-    /**
      * Load the statistics
      * for the data normalizer
      * @param statistics the files to persist

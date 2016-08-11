@@ -24,7 +24,22 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class IsInfinite implements Condition {
+public class IsInfinite extends BaseCondition{
+
+
+    public IsInfinite() {
+        super(-1);
+    }
+
+    /**
+     * Returns condition ID for native side
+     *
+     * @return
+     */
+    @Override
+    public int condtionNum() {
+        return 8;
+    }
 
     @Override
     public Boolean apply(Number input) {
