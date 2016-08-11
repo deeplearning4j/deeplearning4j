@@ -35,11 +35,14 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class CSVRecordReader extends LineRecordReader {
+    /** A regex delimiter that can parse quotes (string literals) that may have commas in them: http://stackoverflow.com/a/1757107/523744
+     * Note: This adds considerable overhead compared to the default "," delimiter, and should only be used when necessary.
+     * */
+    public final static String QUOTE_HANDLING_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
     private boolean skippedLines = false;
     private int skipNumLines = 0;
-    // a regex delimiter that can parse quotes: http://stackoverflow.com/a/1757107/523744
     private String delimiter = DEFAULT_DELIMITER;
-    public final static String DEFAULT_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
+    public final static String DEFAULT_DELIMITER = ",";
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
 
