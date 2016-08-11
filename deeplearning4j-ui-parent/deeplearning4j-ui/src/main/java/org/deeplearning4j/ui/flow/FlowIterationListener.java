@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
@@ -14,10 +15,12 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
-import org.deeplearning4j.ui.flow.beans.Description;
-import org.deeplearning4j.ui.flow.beans.LayerInfo;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.deeplearning4j.ui.flow.beans.*;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.weights.HistogramBin;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,19 +30,20 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
  *
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT USE IT UNLESS YOU HAVE TO
+ *
  * @author raver119@gmail.com
  */
 public class FlowIterationListener implements IterationListener {
+    private static final String FORMAT = "%02d:%02d:%02d";
     public static final String LOCALHOST = "localhost";
     public static final String INPUT = "INPUT";
     // TODO: basic auth should be considered here as well
@@ -51,11 +55,21 @@ public class FlowIterationListener implements IterationListener {
     private boolean firstIteration = true;
     private String path;
     private UiConnectionInfo connectionInfo;
+    private ModelState modelState = new ModelState();
+
+    private AtomicLong iterationCount = new AtomicLong(0);
+
+
+
+    private long lastTime = System.currentTimeMillis();
+    private long currTime;
+    private long initTime = System.currentTimeMillis();
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
     private WebTarget target;
+    private WebTarget targetState;
 
     private static Logger log = LoggerFactory.getLogger(FlowIterationListener.class);
 
@@ -132,9 +146,12 @@ public class FlowIterationListener implements IterationListener {
         login = null;
         password = null;
        // client.register(new LoggingFilter(logger, true));
-        if (login == null || password == null) target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
+        if (login == null || password == null)
+             target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
 
+        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
         this.path = connectionInfo.getFullAddress("flow");
+
 
         log.info("Flow UI address: " + this.path);
     }
@@ -163,7 +180,8 @@ public class FlowIterationListener implements IterationListener {
      */
     @Override
     public synchronized void iterationDone(Model model, int iteration) {
-        if (iteration % frequency == 0) {
+        if (iterationCount.incrementAndGet() % frequency == 0) {
+            currTime = System.currentTimeMillis();
         /*
             Basic plan:
                 1. We should detect, if that's CompGraph or MultilayerNetwork. However the actual difference will be limited to number of non-linear connections.
@@ -175,10 +193,13 @@ public class FlowIterationListener implements IterationListener {
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
          */
 
+            // update modelState
+            buildModelState(model);
+
             // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
             ModelInfo info = buildModelInfo(model);
 
-            // add info about inputs
+
 
 
         /*
@@ -187,7 +208,10 @@ public class FlowIterationListener implements IterationListener {
 
             // send ModelInfo to UiServer
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
-        //    log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
+            log.debug("Response: " + resp);
+
+            // send ModelState to UiServer
+            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
         /*
             TODO: it would be nice to send updates of nodes as well
@@ -201,6 +225,8 @@ public class FlowIterationListener implements IterationListener {
                 firstIteration = false;
             }
         }
+
+        lastTime = System.currentTimeMillis();
     }
 
     /**
@@ -261,10 +287,83 @@ public class FlowIterationListener implements IterationListener {
         return results;
     }
 
+    protected void buildModelState(Model model) {
+        // first we update performance state
+        long timeSpent = currTime - lastTime ;
+        float timeSec = timeSpent / 1000f;
+
+        INDArray input = model.input();
+        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+
+        long numSamples = input.lengthLong() / tadLength;
+
+        modelState.addPerformanceSamples(numSamples / timeSec);
+        modelState.addPerformanceBatches(1 / timeSec);
+        modelState.setIterationTime(timeSpent);
+
+        // now model score
+        modelState.addScore((float) model.score());
+        modelState.setScore((float) model.score());
+
+        modelState.setTrainingTime(parseTime(System.currentTimeMillis() - initTime));
+
+        // and now update model params/gradients
+        Map<String, Map> newGrad = new LinkedHashMap<>();
+
+        Map<String,Map> newParams = new LinkedHashMap<>();
+        Map<String,INDArray> params = model.paramTable();
+
+        Layer[] layers = null;
+        if (model instanceof MultiLayerNetwork) {
+            layers = ((MultiLayerNetwork) model).getLayers();
+        } else if (model instanceof ComputationGraph) {
+            layers = ((ComputationGraph) model).getLayers();
+        }
+
+        List<Double> lrs = new ArrayList<>();
+        if (layers != null) {
+            for (Layer layer: layers) {
+                lrs.add(layer.conf().getLayer().getLearningRate());
+            }
+            modelState.setLearningRates(lrs);
+        }
+        Map<Integer, LayerParams> layerParamsMap = new LinkedHashMap<>();
+
+        for(Map.Entry<String,INDArray> entry : params.entrySet()) {
+            String param = entry.getKey();
+            if (!Character.isDigit(param.charAt(0)))
+                continue;
+
+            int layer = Integer.parseInt(param.replaceAll("\\_.*$",""));
+            String key = param.replaceAll("^.*?_","").toLowerCase();
+
+            if (!layerParamsMap.containsKey(layer))
+                layerParamsMap.put(layer, new LayerParams());
+
+            HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                    .setBinCount(14)
+                    .setRounding(6)
+                    .build();
+
+            // TODO: something better would be nice to have here
+            if (key.equalsIgnoreCase("w")) {
+                layerParamsMap.get(layer).setW(histogram.getData());
+            } else if (key.equalsIgnoreCase("rw")) {
+                layerParamsMap.get(layer).setRW(histogram.getData());
+            } else if (key.equalsIgnoreCase("rwf")) {
+                layerParamsMap.get(layer).setRWF(histogram.getData());
+            } else if (key.equalsIgnoreCase("b")) {
+                layerParamsMap.get(layer).setB(histogram.getData());
+            }
+        }
+        modelState.setLayerParams(layerParamsMap);
+    }
+
     protected ModelInfo buildModelInfo(Model model) {
         ModelInfo modelInfo = new ModelInfo();
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
+
             /*
                 we assume that graph starts on input. every layer connected to input - is on y1
                 every layer connected to y1, is on y2 etc.
@@ -273,6 +372,18 @@ public class FlowIterationListener implements IterationListener {
             // now we need to add inputs as y0 nodes
             int x = 0;
             for (String input: inputs) {
+                GraphVertex vertex = graph.getVertex(input);
+                INDArray gInput = vertex.getInputs()[0];
+                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
+
+                long numSamples = gInput.lengthLong() / tadLength;
+
+                StringBuilder builder = new StringBuilder();
+                builder.append("Vertex name: ").append(input).append("<br/>");
+                builder.append("Model input").append("<br/>");
+                builder.append("Input size: ").append(tadLength).append("<br/>");
+                builder.append("Batch size: ").append(numSamples).append("<br/>");
+
                 LayerInfo info = new LayerInfo();
                 info.setId(0);
                 info.setName(input);
@@ -281,6 +392,7 @@ public class FlowIterationListener implements IterationListener {
                 info.setLayerType(INPUT);
                 info.setDescription(new Description());
                 info.getDescription().setMainLine("Model input");
+                info.getDescription().setText(builder.toString());
                 modelInfo.addLayer(info);
                 x++;
             }
@@ -311,6 +423,17 @@ public class FlowIterationListener implements IterationListener {
             MultiLayerNetwork network = (MultiLayerNetwork) model;
 
             // manually adding input layer
+
+            INDArray input = model.input();
+            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+
+            long numSamples = input.lengthLong() / tadLength;
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("Model input").append("<br/>");
+            builder.append("Input size: ").append(tadLength).append("<br/>");
+            builder.append("Batch size: ").append(numSamples).append("<br/>");
+
             LayerInfo info = new LayerInfo();
             info.setId(0);
             info.setName("Input");
@@ -319,8 +442,10 @@ public class FlowIterationListener implements IterationListener {
             info.setLayerType(INPUT);
             info.setDescription(new Description());
             info.getDescription().setMainLine("Model input");
+            info.getDescription().setText(builder.toString());
             info.addConnection(0, 1);
             modelInfo.addLayer(info);
+
 
             // entry 0 is reserved for inputs
             int y = 1;
@@ -387,7 +512,7 @@ public class FlowIterationListener implements IterationListener {
 
         // set layer type
         try {
-            info.setLayerType(layer.getClass().getSimpleName());
+            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$",""));
         } catch (Exception e) {
             info.setLayerType("n/a");
             return info;
@@ -396,6 +521,7 @@ public class FlowIterationListener implements IterationListener {
 
         StringBuilder mainLine = new StringBuilder();
         StringBuilder subLine = new StringBuilder();
+        StringBuilder fullLine = new StringBuilder();
 
     //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
@@ -403,22 +529,47 @@ public class FlowIterationListener implements IterationListener {
             org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
             mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
             subLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
+            fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
+            fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
+            fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
+            fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
+            fullLine.append("Outputs number: ").append(layer1.getNOut()).append("<br/>");
+        } else if (layer.conf().getLayer() instanceof SubsamplingLayer) {
+            SubsamplingLayer layer1 = (SubsamplingLayer) layer.conf().getLayer();
+            fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
+            fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
+            fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
+            fullLine.append("Pooling type: ").append(layer1.getPoolingType().toString()).append("<br/>");
         } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
             mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             subLine.append(info.getLayerType());
+            fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
+            fullLine.append("Outputs number: ").append(layer1.getNOut()).append("<br/>");
         } else {
                 // TODO: Introduce Layer.Type.OUTPUT
                 if (layer instanceof BaseOutputLayer) {
                     mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                    fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
                 }
         }
 
         subLine.append(" A: [").append(layer.conf().getLayer().getActivationFunction()).append("]");
+        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFunction()).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());
+        description.setText(fullLine.toString());
 
         return info;
+    }
+
+    protected String parseTime(long milliseconds) {
+        return String.format(FORMAT,
+                TimeUnit.MILLISECONDS.toHours(milliseconds),
+                TimeUnit.MILLISECONDS.toMinutes(milliseconds) - TimeUnit.HOURS.toMinutes(
+                        TimeUnit.MILLISECONDS.toHours(milliseconds)),
+                TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(
+                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
     }
 }
