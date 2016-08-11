@@ -14,6 +14,7 @@ function Layer(object) {
 
     this.mainLine = object.description.mainLine;
     this.subLine = object.description.subLine;
+    this.description = object.description.text;
 
     // now we parse connections
     this.connections = [];

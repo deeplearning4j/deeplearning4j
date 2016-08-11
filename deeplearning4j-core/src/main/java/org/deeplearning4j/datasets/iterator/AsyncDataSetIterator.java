@@ -308,6 +308,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     exception = new RuntimeException("Runnable interrupted unexpectedly", e); //Something else interrupted
             } catch (RuntimeException e) {
                 exception = e;
+                if (lock.writeLock().isHeldByCurrentThread()) {
+                    lock.writeLock().unlock();
+                }
             } finally {
                 isAlive.set(false);
                 runCompletedSemaphore.release();
