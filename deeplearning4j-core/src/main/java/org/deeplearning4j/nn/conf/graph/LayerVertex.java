@@ -98,63 +98,10 @@ public class LayerVertex extends GraphVertex {
         }
 
         //Assume any necessary preprocessors have already been added
-        Layer layer = layerConf.getLayer();
-        if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer) {
-            InputType.InputTypeConvolutional afterPreProcessor;
-            if (preProcessor != null) {
-                if (preProcessor instanceof FeedForwardToCnnPreProcessor) {
-                    FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) preProcessor;
-                    afterPreProcessor = (InputType.InputTypeConvolutional) InputType.convolutional(ffcnn.getInputHeight(), ffcnn.getInputWidth(), ffcnn.getNumChannels());
-                } else if (preProcessor instanceof RnnToCnnPreProcessor) {
-                    RnnToCnnPreProcessor rnncnn = (RnnToCnnPreProcessor) preProcessor;
-                    afterPreProcessor = (InputType.InputTypeConvolutional) InputType.convolutional(rnncnn.getInputHeight(), rnncnn.getInputWidth(), rnncnn.getNumChannels());
-                } else {
-                    //Assume no change to type of input...
-                    //TODO checks for non convolutional input...
-                    afterPreProcessor = (InputType.InputTypeConvolutional) vertexInputs[0];
-                }
-            } else {
-                if(!(vertexInputs[0] instanceof InputType.InputTypeConvolutional)){
-                    String layerName = layerConf.getLayer().getLayerName();
-                    throw new IllegalStateException("Layer \"" + layerName + "\" of type " + layer.getClass() + " receiving input of type " + Arrays.toString(vertexInputs) + " with no preprocessor");
-                }
-                afterPreProcessor = (InputType.InputTypeConvolutional) vertexInputs[0];
-            }
+        InputType afterPreprocessor;
+        if(preProcessor == null) afterPreprocessor = vertexInputs[0];
+        else afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
-            int channelsOut;
-            int[] kernel;
-            int[] stride;
-            int[] padding;
-            if (layer instanceof ConvolutionLayer) {
-                channelsOut = ((ConvolutionLayer) layer).getNOut();
-                kernel = ((ConvolutionLayer) layer).getKernelSize();
-                stride = ((ConvolutionLayer) layer).getStride();
-                padding = ((ConvolutionLayer) layer).getPadding();
-            } else {
-                channelsOut = afterPreProcessor.getDepth();
-                kernel = ((SubsamplingLayer) layer).getKernelSize();
-                stride = ((SubsamplingLayer) layer).getStride();
-                padding = ((SubsamplingLayer) layer).getPadding();
-            }
-
-            //First: check that the kernel size/stride/padding is valid
-            int inHeight = afterPreProcessor.getHeight();
-            int inWidth = afterPreProcessor.getWidth();
-            KernelValidationUtil.validateShapes(inHeight, inWidth,
-                    kernel[0], kernel[1], stride[0], stride[1],padding[0], padding[1]);
-
-            int outWidth = (inWidth - kernel[1] + 2 * padding[1]) / stride[1] + 1;
-            int outHeight = (inHeight - kernel[0] + 2 * padding[0]) / stride[0] + 1;
-
-            return InputType.convolutional(outHeight,outWidth,channelsOut);
-        } else if (layer instanceof BaseRecurrentLayer) {
-            return InputType.recurrent(((BaseRecurrentLayer) layer).getNOut());
-        } else if (layer instanceof FeedForwardLayer) {
-            //Dense, autoencoder, etc
-            return InputType.feedForward(((FeedForwardLayer) layer).getNOut());
-        } else {
-            //Unknown... probably same as input??
-            return vertexInputs[0];
-        }
+        return layerConf.getLayer().getOutputType(afterPreprocessor);
     }
 }

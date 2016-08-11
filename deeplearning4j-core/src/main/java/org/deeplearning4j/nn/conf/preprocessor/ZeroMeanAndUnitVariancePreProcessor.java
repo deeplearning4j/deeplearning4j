@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -48,5 +49,10 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
         return output;	//no-op
     }
 
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        return inputType;
+    }
 
 }
