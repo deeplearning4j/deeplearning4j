@@ -39,6 +39,7 @@ var focus;
 var context;
 var scoreData;
 var area2;
+var layerInit = new Array();
 
 var init = 0;
 
@@ -345,11 +346,6 @@ function drawScores(values, id) {
                     .attr("class", "focus")
                     .attr("transform", "translate(" + marginFocus.left + "," + marginFocus.top + ")");
 
-/*
-        brush = d3.svg.brush()
-                    .x(gX["context"])
-                    .on("brush", brushed);
-*/
 
         // Define the axes
         gXAxis[id]= d3.svg.axis().scale(gX[id])
@@ -433,11 +429,17 @@ function drawParams(values, layer, set) {
 
     var binWidth = parseFloat(width / (binNum - 1)) - 1;
 
-    var id = "id_" + layer + "_" + set + set + set + set;
+    var id = "id_" + layer + "_" + set;
     var selector = "#view_" + id;
 
     if (init == 2) {
         // update charts
+        if (gSVG[id] == undefined || gSVG[id] == null) {
+            console.log("skipping id: " + id);
+            return;
+        }
+
+
         console.log("Updating: " + id);
 
         gX[id] = d3.scale.linear()
@@ -482,19 +484,8 @@ function drawParams(values, layer, set) {
     }
 
     // create charts
-    var description = "";
-    if (set === "w") {
-        description = "Weights:";
-    } else if (set === "rw") {
-        description = "Recurrent weights:";
-    } else if (set === "b") {
-        description = "Biases:";
-    } else if (set === "rwf") {
-        description = "Recurrent weights forward:";
-    }
+    $("#holder_" + layer).html("");
 
-    var html = $("#panel_"+ layer).html() +"<b>"+ description +"</b><br/>" + "<div id='view_"+id+"'></div>"
-    $("#panel_"+ layer).html(html);
 
     gX[id] = d3.scale.linear()
                      .domain([min, max])
@@ -599,6 +590,30 @@ function stateFunction() {
                 for (var key in params) {
                     var layerParams = params[key];
 
+                    // we have to create holders for histograms PRIOR to svg initialization
+                    if (init < 2) {
+                        for (var set in layerParams) {
+                            if (layerParams[set] == null || layerParams[set] == undefined)
+                                continue;
+
+                            var description = "";
+                            if (set === "w") {
+                                description = "Weights:";
+                            } else if (set === "rw") {
+                                description = "Recurrent weights:";
+                            } else if (set === "b") {
+                                description = "Biases:";
+                            } else if (set === "rwf") {
+                                description = "Recurrent weights forward:";
+                            }
+
+                            var layer = parseInt(key) + 1;
+                            var id = "id_" + layer + "_" + set;
+                            var html = $("#panel_"+ layer).html() +"<b>"+ description +"</b><br/>" + "<div id='view_"+id+"'></div>"
+                            $("#panel_"+ layer).html(html);
+                        }
+                    }
+
                     // each layer may have multiple param sets: W, RW, RWF, B
                     for (var set in layerParams) {
 
@@ -664,7 +679,7 @@ function timedFunction() {
                                     var layer = new Layer(data.layers[i]);
                                     layers.attach(layer);
 
-                                    html += "<div id='panel_"+layer.id+"' style='display: none;'><p class='layerDesc'>Layer name: <b>"+ layer.name+ "</b><br/>Layer type: " + layer.layerType+ "<br/>" + layer.description+ "</p><br/></div>";
+                                    html += "<div id='panel_"+layer.id+"' style='display: none;'><p class='layerDesc'>Layer name: <b>"+ layer.name+ "</b><br/>Layer type: " + layer.layerType+ "<br/>" + layer.description+ "</p><br/><div id='holder_"+layer.id+"'><b>No parameters available for this node</b></div></div>";
                                 }
                                 $("#viewport").html(html);
                                 renderLayers("display", layers);
