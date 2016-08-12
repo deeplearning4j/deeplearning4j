@@ -1,5 +1,9 @@
-package org.nd4j.linalg.api.buffer;
+package org.nd4j.linalg.compression;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 
@@ -7,6 +11,8 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
  * @author raver119@gmail.com
  */
 public class CompressedDataBuffer extends BaseDataBuffer {
+    @Getter @Setter protected CompressionDescriptor compressionDescriptor;
+
     /**
      * Initialize the type of this buffer
      */

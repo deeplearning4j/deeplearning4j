@@ -28,6 +28,8 @@ public class CompressionTests extends BaseNd4jTest  {
 
         DataCompressor.getInstance().setDefaultCompression("FP16");
 
+        DataCompressor.getInstance().printAvailableCompressors();
+
         INDArray compr = DataCompressor.getInstance().compress(array);
 
         assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
