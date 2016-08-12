@@ -59,7 +59,12 @@ public class Uint8 extends AbstractCompressor {
         UByteIndexer indexer = UByteIndexer.create(pointer);
 
         for (int x = 0; x < buffer.length(); x ++) {
-            indexer.put(x, (int) buffer.getDouble(x));
+            int t = (int) buffer.getDouble(x);
+
+            if (t > 254) t = 255;
+            if (t < 0) t = 0;
+
+            indexer.put(x, t);
         }
 
         CompressionDescriptor descriptor = new CompressionDescriptor();

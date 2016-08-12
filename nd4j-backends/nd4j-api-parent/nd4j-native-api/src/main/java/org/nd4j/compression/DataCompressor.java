@@ -49,6 +49,10 @@ public class DataCompressor {
         }
     }
 
+    public Set<String> getAvailableCompressors() {
+        return codecs.keySet();
+    }
+
     public void printAvailableCompressors() {
         StringBuilder builder = new StringBuilder();
         builder.append("Available compressors: ");
