@@ -1721,4 +1721,20 @@ public interface NDArrayFactory {
      * @return
      */
     IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering);
+
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     * @param buffer
+     * @return
+     */
+    DataBuffer restoreFromHalfs(DataBuffer buffer);
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     * @param buffer
+     * @return
+     */
+    DataBuffer convertToHalfs(DataBuffer buffer);
+
 }

@@ -38,12 +38,21 @@ public class CompressionTests extends BaseNd4jTest  {
     @Test
     public void testFP16Compression2() {
         DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
+        DataBuffer exp = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
 
         DataCompressor.getInstance().setDefaultCompression("FP16");
 
         DataBuffer compr = DataCompressor.getInstance().compress(buffer);
 
         assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+
+        DataBuffer decomp = DataCompressor.getInstance().decompress(compr);
+
+        assertEquals(1.0f, decomp.getFloat(0), 0.01f);
+        assertEquals(2.0f, decomp.getFloat(1), 0.01f);
+        assertEquals(3.0f, decomp.getFloat(2), 0.01f);
+        assertEquals(4.0f, decomp.getFloat(3), 0.01f);
+        assertEquals(5.0f, decomp.getFloat(4), 0.01f);
     }
 
     @Override

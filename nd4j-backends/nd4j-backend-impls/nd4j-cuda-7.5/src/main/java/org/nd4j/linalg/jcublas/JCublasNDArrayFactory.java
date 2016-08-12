@@ -41,10 +41,7 @@ import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
-import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -53,6 +50,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -64,7 +63,7 @@ import java.util.*;
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-
+    private static Logger log = LoggerFactory.getLogger(JCublasNDArrayFactory.class);
 
     public JCublasNDArrayFactory() {
     }
@@ -1017,5 +1016,88 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void shuffle(Collection<INDArray> sourceArrays, Random rnd, int... dimension) {
         shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
+    }
+
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        DataBuffer halfsBuffer = new CudaHalfDataBuffer(buffer.length());
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(halfsBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(halfsBuffer, context);
+
+        if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertDoublesToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        } else {
+            throw new UnsupportedOperationException("Conversion INT->HALF isn't supported yet.");
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return halfsBuffer;
+    }
+
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.HALF)
+            throw new IllegalStateException("Input DataBuffer should contain Halfs");
+
+        DataBuffer outputBuffer = null;
+
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            outputBuffer = new CudaFloatDataBuffer(buffer.length());
+
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            outputBuffer = new CudaDoubleDataBuffer(buffer.length());
+
+        } else throw new UnsupportedOperationException("DataType ["+Nd4j.dataType()+"] isn't supported yet");
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(outputBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(outputBuffer, context);
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToFloats(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToDoubles(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return outputBuffer;
     }
 }

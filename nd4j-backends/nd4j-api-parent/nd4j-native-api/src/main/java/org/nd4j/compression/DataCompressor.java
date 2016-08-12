@@ -3,6 +3,8 @@ package org.nd4j.compression;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.reflections.Reflections;
 
@@ -99,5 +101,18 @@ public class DataCompressor {
             throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
 
         return codecs.get(algorithm).compress(array);
+    }
+
+    public DataBuffer decompress(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+            throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + buffer.dataType());
+
+        CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
+        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+
+        if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
+            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+
+        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
     }
 }

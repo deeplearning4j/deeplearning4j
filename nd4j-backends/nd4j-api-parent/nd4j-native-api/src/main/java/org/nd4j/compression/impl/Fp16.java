@@ -29,13 +29,13 @@ public class Fp16 extends AbstractCompressor  {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        return Nd4j.getDataBufferFactory().restoreFromHalfs(buffer);
+        return Nd4j.getNDArrayFactory().restoreFromHalfs(buffer);
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
         if (buffer.dataType() == DataBuffer.Type.DOUBLE || buffer.dataType() == DataBuffer.Type.FLOAT) {
-            return Nd4j.getDataBufferFactory().convertToHalfs(buffer);
+            return Nd4j.getNDArrayFactory().convertToHalfs(buffer);
         } else return buffer;
     }
 }

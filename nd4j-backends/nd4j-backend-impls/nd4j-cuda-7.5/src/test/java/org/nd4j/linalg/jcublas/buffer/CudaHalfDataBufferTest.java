@@ -37,9 +37,9 @@ public class CudaHalfDataBufferTest {
     public void testConversion1() throws Exception {
         DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
-        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
+        DataBuffer bufferHalfs = Nd4j.getNDArrayFactory().convertToHalfs(bufferOriginal);
 
-        DataBuffer bufferRestored = Nd4j.getDataBufferFactory().restoreFromHalfs(bufferHalfs);
+        DataBuffer bufferRestored = Nd4j.getNDArrayFactory().restoreFromHalfs(bufferHalfs);
 
 
         logger.info("Buffer original: {}", Arrays.toString(bufferOriginal.asFloat()));
@@ -52,7 +52,7 @@ public class CudaHalfDataBufferTest {
     public void testSerialization1() throws Exception {
         DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
-        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
+        DataBuffer bufferHalfs = Nd4j.getNDArrayFactory().convertToHalfs(bufferOriginal);
 
         File tempFile = File.createTempFile("alpha", "11");
         tempFile.deleteOnExit();
@@ -75,7 +75,7 @@ public class CudaHalfDataBufferTest {
     public void testSerialization2() throws Exception {
         DataBuffer bufferOriginal = new CudaFloatDataBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
-        DataBuffer bufferHalfs = Nd4j.getDataBufferFactory().convertToHalfs(bufferOriginal);
+        DataBuffer bufferHalfs = Nd4j.getNDArrayFactory().convertToHalfs(bufferOriginal);
 
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
 
@@ -97,7 +97,7 @@ public class CudaHalfDataBufferTest {
 
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
 
-        DataBuffer bufferConverted = Nd4j.getDataBufferFactory().restoreFromHalfs(bufferRestored);
+        DataBuffer bufferConverted = Nd4j.getNDArrayFactory().restoreFromHalfs(bufferRestored);
 
         assertArrayEquals(bufferOriginal.asFloat(), bufferConverted.asFloat(), 0.01f);
     }

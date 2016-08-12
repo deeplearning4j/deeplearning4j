@@ -5288,4 +5288,8 @@ public class Nd4j {
     public static AffinityManager getAffinityManager() {
         return affinityManager;
     }
+
+    public static NDArrayFactory getNDArrayFactory() {
+        return INSTANCE;
+    }
 }

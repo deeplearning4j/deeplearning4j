@@ -21,10 +21,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
+import org.nd4j.compression.DataCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -33,6 +31,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLapack;
 import org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
@@ -879,5 +880,82 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         shapePointers.address();
         tadPointers.address();
         offsetPointers.address();
+    }
+
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+            throw new IllegalStateException("DataBuffer contains wrong data: " + buffer.dataType());
+
+        CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
+        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+
+        DataBuffer targetBuffer = Nd4j.createBuffer(descriptor.getCompressedLength() / 2);
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.convertHalfsToDoubles(
+                    null,
+                    comp.getPointer(),
+                    (int) descriptor.getCompressedLength() / 2,
+                    targetBuffer.addressPointer()
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.convertHalfsToFloats(
+                    null,
+                    comp.getPointer(),
+                    (int) descriptor.getCompressedLength() / 2,
+                    targetBuffer.addressPointer()
+            );
+        } else {
+            throw new UnsupportedOperationException("Target dtype isn't supported: " + Nd4j.dataType());
+        }
+
+        return targetBuffer;
+    }
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        // we allocate pointer
+        ShortPointer pointer = new ShortPointer(buffer.length());
+
+        if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.convertDoublesToHalfs(
+                    null,
+                    buffer.addressPointer(),
+                    (int) buffer.length(),
+                    pointer
+            );
+        } else if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.convertFloatsToHalfs(
+                    null,
+                    buffer.addressPointer(),
+                    (int) buffer.length(),
+                    pointer
+            );
+        } else {
+            throw new UnsupportedOperationException("Source dtype isn't supported: " + buffer.dataType());
+        }
+
+        CompressionDescriptor descriptor = new CompressionDescriptor();
+        descriptor.setCompressionAlgorithm("FP16");
+        descriptor.setOriginalLength(buffer.length() * buffer.getElementSize());
+        descriptor.setCompressedLength(buffer.length() * 2);
+        descriptor.setCompressionType(CompressionType.LOSSY);
+
+        CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
+        return result;
     }
 }

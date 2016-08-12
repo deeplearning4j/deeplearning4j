@@ -1,7 +1,9 @@
 package org.nd4j.linalg.compression;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -12,6 +14,14 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
  */
 public class CompressedDataBuffer extends BaseDataBuffer {
     @Getter @Setter protected CompressionDescriptor compressionDescriptor;
+    @Getter @Setter protected Pointer pointer;
+
+    public CompressedDataBuffer(Pointer pointer, @NonNull CompressionDescriptor descriptor) {
+        this.compressionDescriptor = descriptor;
+        this.pointer = pointer;
+
+        initTypeAndSize();
+    }
 
     /**
      * Initialize the type of this buffer
