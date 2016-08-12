@@ -6,6 +6,23 @@
     <groupId>org.deeplearning4j.rl4j</groupId>
     <artifactId>gym-java-client</artifactId>
     <version>0.5.0-SNAPSHOT</version>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>rubenfiszel</id>
+            <name>Ruben Fiszel</name>
+            <email>ruben.fiszel@epfl.ch</email>
+        </developer>
+    </developers>
+
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j.rl4j</groupId>
