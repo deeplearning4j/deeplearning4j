@@ -6,11 +6,11 @@ import java.util.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
- *
- * A discrete space of action. A discrete space is always isomorphic
- * to a space of integer so we can parametrize directly by Integer.
- * Benefit of using Integers directly is that you can use it as the
- * id of the node assigned to that action in the outpout of a DQN.
+ *         <p>
+ *         A discrete space of action. A discrete space is always isomorphic
+ *         to a space of integer so we can parametrize directly by Integer.
+ *         Benefit of using Integers directly is that you can use it as the
+ *         id of the node assigned to that action in the outpout of a DQN.
  */
 public class DiscreteSpace implements ActionSpace<Integer> {
 
@@ -28,11 +28,11 @@ public class DiscreteSpace implements ActionSpace<Integer> {
         return rd.nextInt(size);
     }
 
-    public Object encode(Integer a){
+    public Object encode(Integer a) {
         return a;
     }
 
-    public Integer noOp(){
+    public Integer noOp() {
         return 0;
     }
 

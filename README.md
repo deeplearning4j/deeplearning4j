@@ -1,32 +1,50 @@
-# reinforcementlearning4j
+# RL4J
 
-Reinforcement learning framework integrated with deeplearning4j
+Reinforcement learning framework integrated with deeplearning4j.
+
+GIFS are coming
+
+[temporary example repo](https://github.com/rubenfiszel/rl4j-examples)
+
+# Disclaimer
+
+This is a tech preview and distributed as is.
+Comments are welcome on our gitter channel:
+[gitter](https://gitter.im/deeplearning4j/deeplearning4j)
+
 
 # Quickstart
 
-* Install [ViZDoom](https://github.com/Marqt/ViZDoom/)
-* Install [gym-java-client](https://github.com/deeplearning4j/gym-java-client):
-    mvn install
-* move the files ../ViZDoom/bin/java/libvizdoom.so and ../ViZDoom/bin/java/vizdoom to ../rl4j/vizdoom/
-* make the vizdoom native folder accessible to maven:
+* mvn install -pl rl4j-api
+* [if you want rl4j-gym too] Download and mvn install: [gym-java-client](https://github.com/deeplearning4j/gym-java-client)
+* mvn install
 
-On Linux:
-    export MAVEN_OPTS=-Djava.library.path=vizdoom
 
-To execute (Currently doom current prediction):
-    mvn compile exec:java
+# Quicktry cartpole:
 
+* Install [gym-http-api](https://github.com/openai/gym-http-api).
+* launch http api server.
+* run with this [gist](https://gist.github.com/rubenfiszel/5d16aa2fc2c1e8cc9bdbf4ead5b3ab43)
+
+# Doom
+
+Doom is not ready yet but you can make it work if you feel adventurous with some additional steps:
+
+* You will need vizdoom, compile the native lib and move it into the root of your project in a folder
+* export MAVEN_OPTS=-Djava.library.path=THEFOLDEROFTHELIB
+* mvn compile exec:java -Dexec.mainClass="YOURMAINCLASS"
 
 # WIP
 
-* Dense DQN (current environment tested: gym CartPole-v0)
-* Conv DQN (ViZDoom predict_position)
-
-# TODO
-
-* have working example for each mdp if solvable
+* Documentation
 * Serialization/Deserialization (load save)
-* adapt visualisation to async (in external webapp)
-* check if actor critic work
-* finish boltzmannQ
+* Compression of pixels in order to store 1M state in a reasonnable amount of memory
+* Async learning: A3C and nstep learning (requires some missing features from dl4j (calc and apply gradients)).
+
+# Author
+
+[Ruben Fiszel](http://rubenfiszel.github.io/)
+
+# Proposed contribution area:
+
 * Continuous control

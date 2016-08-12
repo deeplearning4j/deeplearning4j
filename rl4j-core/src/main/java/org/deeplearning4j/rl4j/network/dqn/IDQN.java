@@ -8,6 +8,9 @@ import java.io.OutputStream;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
+ *
+ * This neural net quantify the value of each action given a state
+ *
  */
 public interface IDQN extends NeuralNet {
 

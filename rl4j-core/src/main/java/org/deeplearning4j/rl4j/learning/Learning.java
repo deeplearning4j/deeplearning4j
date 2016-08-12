@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import org.deeplearning4j.rl4j.StepReply;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,6 +18,8 @@ import java.util.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
+ *
+ * Useful factorisations for class inhetiring ILearning.
  */
 public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>> implements ILearning<O, A, AS> {
 
@@ -52,14 +54,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
             return arr;
         else
             return arr.reshape(shape);
-    }
-
-    @AllArgsConstructor
-    @Value
-    public static class InitMdp<O>{
-        int steps;
-        O lastObs;
-        double reward;
     }
 
     public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
@@ -131,6 +125,14 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
     public InitMdp<O> initMdp() {
         return initMdp(getMdp(), getHistoryProcessor());
+    }
+
+    @AllArgsConstructor
+    @Value
+    public static class InitMdp<O> {
+        int steps;
+        O lastObs;
+        double reward;
     }
 
 }

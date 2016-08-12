@@ -17,6 +17,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
+ *
+ * Standard factory for Conv net Actor Critic
  */
 @Value
 public class ActorCriticFactoryStdConv implements ActorCriticFactory {
@@ -29,7 +31,6 @@ public class ActorCriticFactoryStdConv implements ActorCriticFactory {
         if (shapeInputs.length == 1)
             throw new AssertionError("Impossible to apply convolutional layer on a shape == 1");
 
-        System.out.println(conf.getLearningRate());
         ComputationGraphConfiguration.GraphBuilder confB = new NeuralNetConfiguration.Builder()
                 .seed(Constants.NEURAL_NET_SEED)
                 .iterations(1)

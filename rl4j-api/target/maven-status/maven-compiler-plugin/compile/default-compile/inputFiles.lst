@@ -1,7 +1,0 @@
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/StepReply.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/space/Encodable.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/mdp/MDP.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/space/ArrayObservationSpace.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/space/ObservationSpace.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/space/DiscreteSpace.java
-/home/atoll/rl4j/rl4j-api/src/main/java/org/deeplearning4j/rl4j/space/ActionSpace.java

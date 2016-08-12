@@ -1,8 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
 import lombok.Getter;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncLearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThread;
@@ -11,6 +9,8 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
@@ -19,9 +19,9 @@ import org.deeplearning4j.rl4j.util.DataManager;
 public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace> {
 
     @Getter
-    final protected MDP<O, Integer, DiscreteSpace> mdp;
-    @Getter
     final public AsyncConfiguration configuration;
+    @Getter
+    final protected MDP<O, Integer, DiscreteSpace> mdp;
     final private IActorCritic IActorCritic;
     @Getter
     final private AsyncGlobal asyncGlobal;

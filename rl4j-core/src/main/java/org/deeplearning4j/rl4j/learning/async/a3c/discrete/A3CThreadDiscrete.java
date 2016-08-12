@@ -1,8 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
 import lombok.Getter;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
@@ -13,6 +11,8 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,7 +57,6 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
         int size = rewards.size();
 
-        //System.out.println(size + " " + minTrans.getObs().shapeInfoToString());
         int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape() : getHistoryProcessor().getConf().getShape();
         int[] nshape = Learning.makeShape(size, shape);
 
@@ -74,7 +73,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
             targets.putScalar(i, r);
 
             INDArray row = Nd4j.create(1, mdp.getActionSpace().getSize());
-            row = row.putScalar(minTrans.getAction(), r-minTrans.getOutput()[0].getDouble(0));
+            row = row.putScalar(minTrans.getAction(), r - minTrans.getOutput()[0].getDouble(0));
             logSoftmax.putRow(i, row);
         }
 

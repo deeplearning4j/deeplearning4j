@@ -1,11 +1,11 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticFactory;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticFactoryStdDense;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
@@ -21,7 +21,7 @@ public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
         this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf, dataManager);
     }
 
-    public A3CDiscreteDense (MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryStdDense.Configuration netConf, AsyncConfiguration conf, DataManager dataManager){
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryStdDense.Configuration netConf, AsyncConfiguration conf, DataManager dataManager) {
         this(mdp, new ActorCriticFactoryStdDense(netConf), conf, dataManager);
     }
 

@@ -4,8 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.rl4j.StepReply;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
@@ -13,6 +11,8 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,11 +33,11 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
+    final private IDQN currentDQN;
+    @Getter
     private DQNPolicy<O> policy;
     @Getter
     private EpsGreedy<O, Integer, DiscreteSpace> egPolicy;
-    @Getter
-    final private IDQN currentDQN;
     @Getter
     @Setter
     private IDQN targetDQN;
@@ -88,7 +88,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
         int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
-        int updateStart = getConfiguration().getUpdateStart()+((getConfiguration().getBatchSize()+historyLength)*skipFrame);
+        int updateStart = getConfiguration().getUpdateStart() + ((getConfiguration().getBatchSize() + historyLength) * skipFrame);
 
         Double maxQ = Double.NaN; //ignore if Nan for stats
 
@@ -104,8 +104,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             }
             INDArray qs = getCurrentDQN().output(history);
             int maxAction = Learning.getMaxAction(qs);
-
-           // System.out.println("MAX ACTION: " +maxAction + " " + qs + " " + qs.shapeInfoToString());
 
             maxQ = qs.getDouble(maxAction);
             action = getEgPolicy().nextAction(history);
@@ -158,7 +156,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);
-        //System.out.println("OLD" + dqnOutputAr);
+
         INDArray dqnOutputNext = dqnOutput(nextObs);
         INDArray targetDqnOutputNext = null;
 
@@ -172,14 +170,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
 
 
-        //System.out.println("BEFORE  II: " +obs.getDouble(0, 0) + " " + dqnOutput.getDouble(0, 0) + " " + dqnOutput.getDouble(0, 1));
-        //INDArray test = Nd4j.create(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}).reshape(10, 1);
-        //System.out.println("TEST:" + dqnOutput(test));
-
 
         for (int i = 0; i < size; i++) {
             double yTar = transitions.get(i).getReward();
-            // if (i==0)  System.out.println(yTar);
+
             if (!areTerminal[i]) {
                 double q = 0;
                 if (getConfiguration().isDoubleDQN()) {
@@ -187,22 +181,16 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     q += tempQ.getDouble(i);
                 yTar += getConfiguration().getGamma() * q;
-                //  if (i==0) System.out.println("AFTER: " +yTar);
-                //if (i == 0)
-                //System.out.println(yErr + " " + q + " " + transitions.get(i).getReward() + " " );
+
             }
-            //System.out.println(i + " " + maxAction);
+
             double previousV = dqnOutputAr.getDouble(i, actions[i]);
             double lowB = previousV - getConfiguration().getErrorClamp();
             double highB = previousV + getConfiguration().getErrorClamp();
             double clamped = Math.min(highB, Math.max(yTar, lowB));
-            //System.out.println("CLAMP: " + previousV + " " + clamped);
+
             dqnOutputAr.putScalar(i, actions[i], clamped);
         }
-        //for (int i = 0; i < size; i++) {
-        //System.out.println(i + " II: " +obs.getDouble(i) + " " + dqnOutput.getDouble(i));
-        //}
-        //System.out.println("AFTER  II: " +obs.getDouble(0, 0) + " " + dqnOutput.getDouble(0, 0) + " " + dqnOutput.getDouble(0, 1) + " " +dqnOutput.getDouble(1));
 
         return new Pair(obs, dqnOutputAr);
     }

@@ -7,6 +7,7 @@ import org.deeplearning4j.rl4j.space.ObservationSpace;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
+ *         An interface that ensure an environment is expressible as a Markov Decsision Process
  */
 public interface MDP<O, A, AS extends ActionSpace<A>> {
 

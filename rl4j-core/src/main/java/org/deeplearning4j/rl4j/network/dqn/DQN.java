@@ -22,13 +22,21 @@ public class DQN implements IDQN {
         this.mln = mln;
     }
 
+    public static DQN load(String path) {
+        DQN dqn = null;
+        try {
+            dqn = new DQN(ModelSerializer.restoreMultiLayerNetwork(path));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return dqn;
+    }
 
     public void fit(INDArray input, INDArray labels) {
         mln.fit(input, labels);
     }
 
     public void fit(INDArray input, INDArray[] labels) {
-        System.out.println("CALLED ?");
         fit(input, labels[0]);
     }
 
@@ -52,7 +60,6 @@ public class DQN implements IDQN {
         return gradient(input, labels[0]);
     }
 
-
     public void applyGradient(Gradient gradient) {
         throw new NotImplementedException("apply gradient");
     }
@@ -60,7 +67,6 @@ public class DQN implements IDQN {
     public double getLatestScore() {
         return mln.score();
     }
-
 
     public void save(OutputStream stream) {
         try {
@@ -76,15 +82,5 @@ public class DQN implements IDQN {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public static DQN load(String path) {
-        DQN dqn = null;
-        try {
-            dqn = new DQN(ModelSerializer.restoreMultiLayerNetwork(path));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return dqn;
     }
 }

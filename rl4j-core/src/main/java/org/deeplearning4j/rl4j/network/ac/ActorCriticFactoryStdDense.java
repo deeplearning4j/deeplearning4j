@@ -16,6 +16,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
+ *
+ *
  */
 @Value
 public class ActorCriticFactoryStdDense implements ActorCriticFactory {
@@ -46,23 +48,23 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB
-                    .addLayer(i+"", new DenseLayer.Builder()
+                    .addLayer(i + "", new DenseLayer.Builder()
                             .nIn(Constants.NUM_HIDDEN_NODES)
                             .nOut(Constants.NUM_HIDDEN_NODES)
                             .activation("relu")
-                            .build(), (i-1)+"");
+                            .build(), (i - 1) + "");
         }
 
 
         confB
                 .addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .activation("identity")
-                        .nOut(1).build(), getConf().getNumLayer()+"");
+                        .nOut(1).build(), getConf().getNumLayer() + "");
 
         confB
                 .addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax") //fixthat
-                        .nOut(numOutputs).build(), getConf().getNumLayer()+"");
+                        .nOut(numOutputs).build(), getConf().getNumLayer() + "");
 
         confB.setOutputs("value", "softmax");
 

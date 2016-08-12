@@ -7,6 +7,9 @@ import java.io.OutputStream;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
+ *
+ * Factorisation between ActorCritic and DQN.
+ * Useful for AsyncLearning and Thread code.
  */
 public interface NeuralNet {
 

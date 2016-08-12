@@ -3,9 +3,9 @@ package org.deeplearning4j.rl4j.learning.async;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.learning.Learning;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
@@ -13,12 +13,12 @@ import org.deeplearning4j.rl4j.learning.Learning;
 public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends Learning<O, A, AS> {
 
 
-
     public AsyncLearning(AsyncConfiguration conf) {
         super(conf);
     }
 
     public abstract AsyncConfiguration getConfiguration();
+
     protected abstract AsyncThread newThread(int i);
 
     protected abstract AsyncGlobal getAsyncGlobal();

@@ -1,8 +1,8 @@
 package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Random;
@@ -24,7 +24,7 @@ public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
         INDArray exp = exp(output);
 
         double sum = exp.sum(1).getDouble(0);
-        double picked = rd.nextDouble()*sum;
+        double picked = rd.nextDouble() * sum;
         for (int i = 0; i < exp.columns(); i++) {
             if (picked < exp.getDouble(i))
                 return i;

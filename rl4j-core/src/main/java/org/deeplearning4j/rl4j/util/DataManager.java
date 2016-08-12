@@ -22,6 +22,8 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/1/16.
+ *
+ * This class handle the recording of one training
  */
 public class DataManager {
 
@@ -129,7 +131,6 @@ public class DataManager {
 
             reader.close();
             stream.close();
-            System.out.println(json);
 
             conf = new ObjectMapper().readValue(json, cClass);
 

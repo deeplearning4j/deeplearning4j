@@ -7,12 +7,12 @@ import org.deeplearning4j.rl4j.space.Encodable;
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
  */
 @Value
-public class HardToyState implements Encodable{
+public class HardToyState implements Encodable {
 
     double[] values;
     int step;
 
-    public double[] toArray(){
+    public double[] toArray() {
         return values;
     }
 }

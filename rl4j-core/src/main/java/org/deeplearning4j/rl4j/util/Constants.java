@@ -6,7 +6,6 @@ package org.deeplearning4j.rl4j.util;
 public class Constants {
 
 
-
     final public static int NUM_HIDDEN_NODES = 16;
     final public static String DATA_DIR = "rl4j-data";
     final public static String STATISTIC_FILENAME = "stat";

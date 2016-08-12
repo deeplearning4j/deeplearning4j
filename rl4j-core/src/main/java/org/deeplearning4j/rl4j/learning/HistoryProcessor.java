@@ -18,6 +18,8 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
+ *
+ * An IHistoryProcessor implementation using JavaCV
  */
 public class HistoryProcessor implements IHistoryProcessor {
 

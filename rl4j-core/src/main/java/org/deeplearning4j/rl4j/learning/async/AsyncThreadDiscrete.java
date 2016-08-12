@@ -1,12 +1,12 @@
 package org.deeplearning4j.rl4j.learning.async;
 
-import org.deeplearning4j.rl4j.StepReply;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -16,7 +16,6 @@ import java.util.Stack;
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  */
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet> extends AsyncThread<O, Integer, DiscreteSpace, NN> {
-
 
 
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {

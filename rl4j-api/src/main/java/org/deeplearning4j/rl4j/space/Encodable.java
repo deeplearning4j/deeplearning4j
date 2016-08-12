@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.space;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/19/16.
+ *         Encodable is an interface that ensure that the state is convertible to a double array
  */
 public interface Encodable {
 

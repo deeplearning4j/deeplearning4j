@@ -30,7 +30,6 @@ public class DQNFactoryStdConv implements DQNFactory {
             throw new AssertionError("Impossible to apply convolutional layer on a shape == 1");
 
 
-        System.out.println(conf.getLearningRate());
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder()
                 .seed(Constants.NEURAL_NET_SEED)
                 .iterations(1)

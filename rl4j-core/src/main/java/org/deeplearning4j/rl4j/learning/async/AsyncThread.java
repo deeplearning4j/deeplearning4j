@@ -3,8 +3,6 @@ package org.deeplearning4j.rl4j.learning.async;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -12,6 +10,8 @@ import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,10 +69,23 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         }
     }
 
+    protected abstract int getThreadNumber();
+
+    protected abstract AsyncGlobal<NN> getAsyncGlobal();
+
+    protected abstract MDP<O, A, AS> getMdp();
+
+    protected abstract AsyncLearning.AsyncConfiguration getConf();
+
+    protected abstract DataManager getDataManager();
+
+    protected abstract Policy<O, A> getPolicy(NN net);
+
+    protected abstract SubEpochReturn<O> trainSubEpoch(O obs, int nstep);
 
     @AllArgsConstructor
     @Value
-    public static class SubEpochReturn<O>{
+    public static class SubEpochReturn<O> {
         int steps;
         O lastObs;
         double reward;
@@ -86,15 +99,5 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         double reward;
         int episodeLength;
     }
-
-
-    protected abstract int getThreadNumber();
-    protected abstract AsyncGlobal<NN> getAsyncGlobal();
-    protected abstract MDP<O, A, AS> getMdp();
-    protected abstract AsyncLearning.AsyncConfiguration getConf();
-    protected abstract DataManager getDataManager();
-    protected abstract Policy<O, A> getPolicy(NN net);
-
-    protected abstract SubEpochReturn<O> trainSubEpoch(O obs, int nstep);
 
 }

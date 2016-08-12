@@ -11,7 +11,8 @@ import java.io.OutputStream;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- * Actor Critic class
+ *
+ * Standard implementation of ActorCritic
  */
 public class ActorCritic implements IActorCritic {
 
