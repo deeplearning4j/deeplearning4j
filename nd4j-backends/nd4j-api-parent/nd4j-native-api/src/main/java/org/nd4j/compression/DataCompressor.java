@@ -119,4 +119,17 @@ public class DataCompressor {
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
     }
+
+    public INDArray decompress(INDArray array) {
+        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+            throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + array.data().dataType());
+
+        CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
+        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+
+        if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
+            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+
+        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(array);
+    }
 }

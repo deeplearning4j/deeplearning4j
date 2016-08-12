@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Compressor implementation based on uint8 as storage for integral values.
+ * So, all data will be stored in 0..255 space, so this compressor might be useful for images only
  *
  * @author raver119@gmail.com
  */
