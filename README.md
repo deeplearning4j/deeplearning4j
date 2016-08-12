@@ -4,6 +4,8 @@ Reinforcement learning framework integrated with deeplearning4j.
 
 GIFS are coming
 
+![DOOM](doom.gif)
+
 [temporary example repo](https://github.com/rubenfiszel/rl4j-examples)
 
 # Disclaimer
