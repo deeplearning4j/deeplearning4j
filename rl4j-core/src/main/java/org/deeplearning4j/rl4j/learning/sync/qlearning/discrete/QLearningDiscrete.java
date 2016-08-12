@@ -42,7 +42,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Setter
     private IDQN targetDQN;
     private int lastAction;
-    private INDArray history = null;
+    private INDArray history[] = null;
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
 
@@ -100,13 +100,14 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                     getHistoryProcessor().add(input);
                     history = getHistoryProcessor().getHistory();
                 } else
-                    history = input;
+                    history = new INDArray[]{input};
             }
-            INDArray qs = getCurrentDQN().output(history);
+            INDArray hstack = Nd4j.hstack(history);
+            INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
 
             maxQ = qs.getDouble(maxAction);
-            action = getEgPolicy().nextAction(history);
+            action = getEgPolicy().nextAction(hstack);
         }
         lastAction = action;
 
@@ -115,7 +116,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         if (isHistoryProcessor)
             getHistoryProcessor().add(getInput(stepReply.getObservation()));
 
-        INDArray nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : getInput(stepReply.getObservation());
+        INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{getInput(stepReply.getObservation())};
 
         if (getStepCounter() % skipFrame == 0) {
 
@@ -151,8 +152,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             Transition<Integer> trans = transitions.get(i);
             areTerminal[i] = trans.isTerminal();
             actions[i] = trans.getAction();
-            obs.putRow(i, trans.getObservation());
-            nextObs.putRow(i, trans.getNextObservation());
+            obs.putRow(i, Nd4j.hstack(trans.getObservation()));
+            nextObs.putRow(i, Nd4j.hstack(trans.getNextObservation()));
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);

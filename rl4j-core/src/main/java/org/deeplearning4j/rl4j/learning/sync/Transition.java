@@ -9,10 +9,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Value
 public class Transition<A> {
 
-    INDArray observation;
+    INDArray[] observation;
     A action;
     double reward;
     boolean isTerminal;
-    INDArray nextObservation;
+    INDArray[] nextObservation;
 
 }

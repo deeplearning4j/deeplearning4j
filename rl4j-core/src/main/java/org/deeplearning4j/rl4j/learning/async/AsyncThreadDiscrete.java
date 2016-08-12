@@ -28,7 +28,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
         Integer action;
         Integer lastAction = null;
-        INDArray history = null;
+        INDArray history[] = null;
         boolean isHistoryProcessor = getHistoryProcessor() != null;
         NN target = getAsyncGlobal().getTarget();
 
@@ -49,9 +49,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                         getHistoryProcessor().add(input);
                         history = getHistoryProcessor().getHistory();
                     } else
-                        history = input;
+                        history = new INDArray[]{input};
                 }
-                action = policy.nextAction(history);
+                action = policy.nextAction(Nd4j.hstack(history));
             }
             lastAction = action;
 
@@ -59,13 +59,13 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             obs = stepReply.getObservation();
 
             INDArray[] output = target.outputAll(input);
-            rewards.add(new MiniTrans(history, action, output, stepReply.getReward()));
+            rewards.add(new MiniTrans(Nd4j.hstack(history), action, output, stepReply.getReward()));
             reward += stepReply.getReward();
 
             if (isHistoryProcessor)
                 getHistoryProcessor().add(Learning.getInput(getMdp(), stepReply.getObservation()));
 
-            history = isHistoryProcessor ? getHistoryProcessor().getHistory() : Learning.getInput(getMdp(), stepReply.getObservation());
+            history = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{Learning.getInput(getMdp(), stepReply.getObservation())};
 
             i++;
         }

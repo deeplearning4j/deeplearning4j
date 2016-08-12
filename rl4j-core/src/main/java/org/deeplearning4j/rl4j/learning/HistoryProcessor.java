@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning;
 
 import lombok.Getter;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,21 +28,21 @@ public class HistoryProcessor implements IHistoryProcessor {
     @Getter
     final private Configuration conf;
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
-    private INDArray history;
+    private CircularFifoQueue<INDArray> history;
     private int size = 0;
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
 
 
     public HistoryProcessor(Configuration conf) {
         this.conf = conf;
-        history = Nd4j.create(conf.getShape());
+        history = new CircularFifoQueue<>(conf.getHistoryLength());
     }
 
 
     public void add(INDArray obs) {
         size++;
         INDArray processed = transform(obs);
-        history = Nd4j.concat(0, processed, history).get(NDArrayIndex.interval(0, getConf().getHistoryLength()), NDArrayIndex.all(), NDArrayIndex.all());
+        history.add(processed);
     }
 
     public void startMonitor(String filename) {
@@ -90,8 +91,12 @@ public class HistoryProcessor implements IHistoryProcessor {
         }
     }
 
-    public INDArray getHistory() {
-        return history.dup().reshape(Learning.makeShape(1, getConf().getShape()));
+    public INDArray[] getHistory() {
+        INDArray[] array = new INDArray[getConf().getHistoryLength()];
+        for (int i = 0; i < conf.getHistoryLength(); i++) {
+            array[i] = history.get(i);
+        }
+        return array;
     }
 
 
@@ -114,6 +119,7 @@ public class HistoryProcessor implements IHistoryProcessor {
         out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth());
         return out.mul(1 / 128f).add(-1f);
     }
+
 
     public void waitKP() {
         try {

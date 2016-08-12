@@ -14,19 +14,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface IHistoryProcessor {
 
-    public Configuration getConf();
+    Configuration getConf();
 
-    public INDArray getHistory();
+    INDArray[] getHistory();
 
-    public void record(INDArray image);
+    void record(INDArray image);
 
-    public void add(INDArray image);
+    void add(INDArray image);
 
-    public void startMonitor(String filename);
+    void startMonitor(String filename);
 
-    public void stopMonitor();
+    void stopMonitor();
 
-    public boolean isMonitoring();
+    boolean isMonitoring();
 
 
     @AllArgsConstructor

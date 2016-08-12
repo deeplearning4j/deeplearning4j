@@ -7,6 +7,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
@@ -31,7 +32,7 @@ public abstract class Policy<O extends Encodable, A> {
         A lastAction = mdp.getActionSpace().noOp();
         A action;
         int step = initMdp.getSteps();
-        INDArray history = null;
+        INDArray[] history = null;
 
         while (!mdp.isDone()) {
 
@@ -53,10 +54,10 @@ public abstract class Policy<O extends Encodable, A> {
                         hp.add(input);
                         history = hp.getHistory();
                     } else
-                        history = input;
+                        history = new INDArray[]{input};
                 }
 
-                action = nextAction(history);
+                action = nextAction(Nd4j.hstack(history));
             }
             lastAction = action;
 
@@ -66,7 +67,7 @@ public abstract class Policy<O extends Encodable, A> {
             if (isHistoryProcessor)
                 hp.add(Learning.getInput(mdp, stepReply.getObservation()));
 
-            history = isHistoryProcessor ? hp.getHistory() : Learning.getInput(mdp, stepReply.getObservation());
+            history = isHistoryProcessor ? hp.getHistory() : new INDArray[]{Learning.getInput(mdp, stepReply.getObservation())};
             step++;
         }
 
