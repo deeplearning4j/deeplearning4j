@@ -1,18 +1,22 @@
 package org.nd4j.compression.impl;
 
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressionType;
 
 /**
- * Compressor implementation based on 8 bitfloats, aka FP8 or Quarter
+ * Compressor implementation based on uint8 as storage for integral values.
  *
  * @author raver119@gmail.com
  */
-public class Fp8 extends AbstractCompressor {
+public class Uint8 extends AbstractCompressor {
+    /**
+     * This method returns compression descriptor. It should be unique for any compressor implementation
+     *
+     * @return
+     */
     @Override
     public String getDescriptor() {
-        return "FP8";
+        return "UINT8";
     }
 
     /**
@@ -27,7 +31,6 @@ public class Fp8 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        HalfIndexer indexer;
         return null;
     }
 

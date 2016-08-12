@@ -41,7 +41,8 @@ public interface DataBuffer extends Serializable {
         DOUBLE,
         FLOAT,
         INT,
-        HALF
+        HALF,
+        COMPRESSED
     }
 
 
