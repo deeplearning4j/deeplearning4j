@@ -1,9 +1,8 @@
-package org.deeplearning4j.gym;
+package org.deeplearning4j.rl4j;
 
-import org.deeplearning4j.gym.space.ActionSpace;
-import org.deeplearning4j.gym.space.DiscreteSpace;
-import org.deeplearning4j.gym.space.HighLowDiscrete;
-import org.deeplearning4j.gym.space.ObservationSpace;
+import org.deeplearning4j.rl4j.gym.space.GymObservationSpace;
+import org.deeplearning4j.rl4j.gym.space.HighLowDiscrete;
+import org.deeplearning4j.rl4j.space.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,7 +30,7 @@ public class ClientFactory {
             throw new RuntimeException("Environment id not found");
         }
 
-        ObservationSpace<O> observationSpace = fetchObservationSpace(url, instanceId);
+        GymObservationSpace<O> observationSpace = fetchObservationSpace(url, instanceId);
         AS actionSpace = fetchActionSpace(url, instanceId);
 
         return new Client(url, envId, instanceId, observationSpace, actionSpace, render);
@@ -66,9 +65,9 @@ public class ClientFactory {
         }
     }
 
-    public static <O> ObservationSpace<O> fetchObservationSpace(String url, String instanceId) {
+    public static <O> GymObservationSpace<O> fetchObservationSpace(String url, String instanceId) {
         JSONObject reply = ClientUtils.get(url + Client.ENVS_ROOT + instanceId + Client.OBSERVATION_SPACE);
         JSONObject info = reply.getJSONObject("info");
-        return new ObservationSpace<O>(info);
+        return new GymObservationSpace<O>(info);
     }
 }

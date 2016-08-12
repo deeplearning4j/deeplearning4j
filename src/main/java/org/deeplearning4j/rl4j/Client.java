@@ -1,10 +1,11 @@
-package org.deeplearning4j.gym;
+package org.deeplearning4j.rl4j;
 
 
 import com.mashape.unirest.http.JsonNode;
 import lombok.Value;
-import org.deeplearning4j.gym.space.ActionSpace;
-import org.deeplearning4j.gym.space.ObservationSpace;
+import org.deeplearning4j.rl4j.gym.space.GymObservationSpace;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.json.JSONObject;
 
 import java.util.Set;
@@ -14,7 +15,7 @@ import java.util.logging.Logger;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
  *
- * A client represent an active connection to a specific instance of an environment on a gym-http-api server.
+ * A client represent an active connection to a specific instance of an environment on a rl4j-http-api server.
  * for API specification
  *
  * @param <O>  Observation type
@@ -43,7 +44,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
     String url;
     String envId;
     String instanceId;
-    ObservationSpace<O> observationSpace;
+    GymObservationSpace<O> observationSpace;
     AS actionSpace;
     boolean render;
 
