@@ -2,6 +2,9 @@
 
 Reinforcement learning framework integrated with deeplearning4j.
 
+* DQN (Deep Q Learning with double DQN)
+* Async RL (A3C, Async NStepQlearning) (WIP)
+
 GIFS are coming
 
 ![DOOM](doom.gif)
