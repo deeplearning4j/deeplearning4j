@@ -1,0 +1,10 @@
+/target/
+.idea/
+*.iml
+*.log
+*.mov
+*.mp4
+_vizdoom.ini
+/vizdoom/
+model/
+score

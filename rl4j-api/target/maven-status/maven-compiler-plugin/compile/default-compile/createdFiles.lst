@@ -1,0 +1,7 @@
+org/deeplearning4j/rl4j/space/ObservationSpace.class
+org/deeplearning4j/rl4j/space/ArrayObservationSpace.class
+org/deeplearning4j/rl4j/space/DiscreteSpace.class
+org/deeplearning4j/rl4j/mdp/MDP.class
+org/deeplearning4j/rl4j/space/Encodable.class
+org/deeplearning4j/rl4j/space/ActionSpace.class
+org/deeplearning4j/rl4j/StepReply.class

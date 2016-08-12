@@ -1,0 +1,6 @@
+org/deeplearning4j/rl4j/mdp/vizdoom/VizDoom.class
+org/deeplearning4j/rl4j/mdp/vizdoom/TakeCover.class
+org/deeplearning4j/rl4j/mdp/vizdoom/DeadlyCorridor.class
+org/deeplearning4j/rl4j/mdp/vizdoom/VizDoom$Configuration.class
+org/deeplearning4j/rl4j/mdp/vizdoom/Basic.class
+org/deeplearning4j/rl4j/mdp/vizdoom/VizDoom$GameScreen.class
