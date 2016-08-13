@@ -21,7 +21,6 @@
     <orderEntry type="library" name="Maven: org.json:json:20160212" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-api:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.10" level="project" />
-    <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.16.4" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-buffer:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-common:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.reflections:reflections:0.9.10" level="project" />
@@ -34,5 +33,6 @@
     <orderEntry type="library" name="Maven: org.bytedeco:javacpp:1.2.3" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-context:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.16.10" level="project" />
   </component>
 </module>
