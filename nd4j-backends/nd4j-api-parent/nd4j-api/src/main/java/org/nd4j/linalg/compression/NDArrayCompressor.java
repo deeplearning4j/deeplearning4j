@@ -20,11 +20,37 @@ public interface NDArrayCompressor {
      */
     CompressionType getCompressionType();
 
+    /**
+     * This method returns compressed copy of referenced array
+     *
+     * @param array
+     * @return
+     */
     INDArray compress(INDArray array);
+
+    /**
+     * Inplace compression of INDArray
+     *
+     * @param array
+     */
+    void compressi(INDArray array);
 
     DataBuffer compress(DataBuffer buffer);
 
+    /**
+     * This method returns decompressed copy of referenced array
+     *
+     * @param array
+     * @return
+     */
     INDArray decompress(INDArray array);
+
+    /**
+     * Inplace decompression of INDArray
+     *
+     * @param array
+     */
+    void decompressi(INDArray array);
 
     DataBuffer decompress(DataBuffer buffer);
 

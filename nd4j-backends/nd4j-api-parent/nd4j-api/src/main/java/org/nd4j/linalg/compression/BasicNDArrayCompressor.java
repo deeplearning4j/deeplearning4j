@@ -93,12 +93,25 @@ public class BasicNDArrayCompressor {
         return compress(array, getDefaultCompression());
     }
 
+    public void compressi(INDArray array) {
+        compressi(array, getDefaultCompression());
+    }
+
+
     public INDArray compress(INDArray array, String algorithm) {
         algorithm = algorithm.toUpperCase();
         if (!codecs.containsKey(algorithm))
             throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
 
         return codecs.get(algorithm).compress(array);
+    }
+
+    public void compressi(INDArray array, String algorithm) {
+        algorithm = algorithm.toUpperCase();
+        if (!codecs.containsKey(algorithm))
+            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
+
+        codecs.get(algorithm).compressi(array);
     }
 
     public DataBuffer decompress(DataBuffer buffer) {
@@ -125,5 +138,18 @@ public class BasicNDArrayCompressor {
             throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(array);
+    }
+
+    public void decompressi (INDArray array) {
+        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+            return;
+
+        CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
+        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+
+        if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
+            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+
+         codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
     }
 }

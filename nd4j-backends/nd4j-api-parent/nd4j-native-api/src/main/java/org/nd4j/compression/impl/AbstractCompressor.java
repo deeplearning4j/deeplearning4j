@@ -15,13 +15,36 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
 
     @Override
     public INDArray compress(INDArray array) {
-        INDArray dup = array.dup();
+        INDArray dup = array.dup(array.ordering());
         dup.setData(compress(dup.data()));
+        dup.markAsCompressed(true);
 
         return dup;
     }
 
+    /**
+     * Inplace compression of INDArray
+     *
+     * @param array
+     */
+    @Override
+    public void compressi(INDArray array) {
+        // TODO: lift this restriction
+        if (array.isView())
+            throw new UnsupportedOperationException("Impossible to apply inplace compression on View");
 
+        array.setData(compress(array.data()));
+        array.markAsCompressed(true);
+    }
+
+    @Override
+    public void decompressi(INDArray array) {
+        if (!array.isCompressed())
+            return;
+
+        array.markAsCompressed(false);
+        array.setData(decompress(array.data()));
+    }
 
     @Override
     public INDArray decompress(INDArray array) {

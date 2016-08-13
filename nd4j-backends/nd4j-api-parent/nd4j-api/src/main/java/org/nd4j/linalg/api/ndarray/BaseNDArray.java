@@ -104,6 +104,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean attemptedToFindElementWiseStride = false;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
+    protected transient boolean compressed = false;
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
@@ -120,6 +121,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray() {
     }
 
+    /**
+     * Returns true if this array is compressed, and false otherwise
+     * @return
+     */
+    @Override
+    public boolean isCompressed() {
+        return compressed;
+    }
+
+    /**
+     * This method marks INDArray instance as compressed
+     * PLEASE NOTE: Do not use this method unless you 100% have to
+     *
+     * @param reallyCompressed
+     */
+    @Override
+    public void markAsCompressed(boolean reallyCompressed) {
+        this.compressed = reallyCompressed;
+    }
 
     /**
      *
