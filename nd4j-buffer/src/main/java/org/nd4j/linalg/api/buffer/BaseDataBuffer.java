@@ -1265,7 +1265,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
             Type currentType = Type.valueOf(s.readUTF());
-            type = globalType;
+            if (currentType != Type.COMPRESSED)
+                type = globalType;
+            else type = currentType;
+
             if(currentType == Type.DOUBLE)
                 elementSize = 8;
             else if(currentType == Type.FLOAT || currentType == Type.INT)
@@ -1275,6 +1278,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
 			    if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 			}
             pointerIndexerByGlobalType(currentType);
+
+            if (currentType != Type.COMPRESSED)
+                readContent(s, currentType);
+
+            wrappedBuffer = pointer.asByteBuffer();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void readContent(DataInputStream s, Type currentType) {
+        try {
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readDouble());
@@ -1299,16 +1315,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             } else {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i,s.readInt());
+                    putByGlobalType(i, s.readInt());
                 }
             }
-            wrappedBuffer = pointer.asByteBuffer();
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     @Override

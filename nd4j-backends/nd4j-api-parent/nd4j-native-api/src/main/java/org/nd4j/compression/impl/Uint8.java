@@ -41,6 +41,8 @@ public class Uint8 extends AbstractCompressor {
         if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
             throw new RuntimeException("Unsupported source dataType: " + buffer.dataType());
 
+        logger.info("Trying to decompress buffer...");
+
         CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 

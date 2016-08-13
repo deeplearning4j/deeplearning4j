@@ -5,11 +5,13 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.ByteRawIndexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,13 +54,52 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());
         out.writeLong(compressionDescriptor.getNumberOfElements());
-        out.write(((BytePointer) pointer).getStringBytes());
+        for (int x = 0; x < pointer.capacity() * pointer.sizeof(); x++) {
+            out.writeByte(pointer.asByteBuffer().get(x));
+        }
+
+
 
     }
 
-    @Override
-    public void read(DataInputStream s) {
-        logger.info("Reading CompressedDataBuffer from DataInputStream");
+    /**
+     * Drop-in replacement wrapper for BaseDataBuffer.read() method, aware of CompressedDataBuffer
+     * @param s
+     * @return
+     */
+    public static DataBuffer readUnknown(DataInputStream s, long length) {
+        DataBuffer buffer = Nd4j.createBuffer(length);
+        buffer.read(s);
+        // if buffer is uncompressed, it'll be valid buffer, so we'll just return it
+        if (buffer.dataType() != Type.COMPRESSED)
+            return buffer;
+        else {
+            try {
+                // if buffer is compressed one, we''ll restore and decompress it here
+                String compressionAlgorithm = s.readUTF();
+                long compressedLength = s.readLong();
+                long originalLength = s.readLong();
+                long numberOfElements = s.readLong();
+
+                byte[] temp = new byte[(int) compressedLength];
+                for (int i = 0; i < compressedLength; i++) {
+                    temp[i] = s.readByte();
+                }
+
+                Pointer pointer = new BytePointer(temp);
+                CompressionDescriptor descriptor = new CompressionDescriptor();
+                descriptor.setCompressedLength(compressedLength);
+                descriptor.setCompressionAlgorithm(compressionAlgorithm);
+                descriptor.setOriginalLength(originalLength);
+                descriptor.setNumberOfElements(numberOfElements);
+
+                CompressedDataBuffer compressedBuffer = new CompressedDataBuffer(pointer, descriptor);
+                return Nd4j.getCompressor().decompress(compressedBuffer);
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override

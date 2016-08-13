@@ -57,6 +57,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
@@ -2245,8 +2246,7 @@ public class Nd4j {
         DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
         shapeInformation.read(dis);
         int length = Shape.length(shapeInformation);
-        DataBuffer data = Nd4j.createBuffer(length);
-        data.read(dis);
+        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
         return createArrayFromShapeBuffer(data,shapeInformation);
     }
 

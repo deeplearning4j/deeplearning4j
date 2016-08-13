@@ -47,7 +47,25 @@ public class CompressionSerDeTests extends BaseNd4jTest {
     public void testManualDecompression1() throws Exception {
         INDArray array = Nd4j.linspace(1, 250, 250);
 
-        INDArray compressed = Nd4j.getCompressor().compress(array, "UINT8");
+        INDArray compressed = Nd4j.getCompressor().compress(array, "FP16");
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, compressed);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+
+        INDArray result = Nd4j.read(bis);
+
+        INDArray decomp = Nd4j.getCompressor().decompress(result);
+
+        assertEquals(array, decomp);
+    }
+
+    @Test
+    public void testAutoDecompression2() throws Exception {
+        INDArray array = Nd4j.linspace(1, 100, 2500);
+
+        INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Nd4j.write(bos, compressed);
