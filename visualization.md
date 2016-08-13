@@ -108,4 +108,4 @@ We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionalit
 
 Deeplearning4j will include with the next release (post 5.0) a new IterationListener for visualization called `FlowIterationListener`, which renders network structure dynamically. (Those are the colored boxes at center of the page.) Users can inspect the and node layer parameters by clicking on the various elements of the GUI to see general information about layers/nodes, overall network information such as performance. 
 
-![Alt text](./img/DL4J_UI.png)
+![Alt text](./img/data-ui-viz.png)
