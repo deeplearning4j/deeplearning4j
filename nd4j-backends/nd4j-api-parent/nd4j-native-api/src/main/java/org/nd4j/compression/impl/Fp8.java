@@ -6,10 +6,11 @@ import org.nd4j.linalg.compression.CompressionType;
 
 /**
  * Compressor implementation based on 8 bitfloats, aka FP8 or Quarter
- *
+ * PLEASE NOTE: NOT IMPLEMENTED YET
  * @author raver119@gmail.com
  */
-public class Fp8 extends AbstractCompressor {
+@Deprecated
+public abstract class Fp8 extends AbstractCompressor {
     @Override
     public String getDescriptor() {
         return "FP8";
@@ -27,7 +28,6 @@ public class Fp8 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        HalfIndexer indexer;
         return null;
     }
 

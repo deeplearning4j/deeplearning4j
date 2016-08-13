@@ -34,9 +34,6 @@ public class BasicNDArrayCompressor {
             try {
                 NDArrayCompressor compressor = impl.newInstance();
 
-
-                System.out.println("Adding compressor: " + compressor.getDescriptor().toUpperCase());
-
                 codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
             } catch (InstantiationException i) {
                 ; // we need catch there, to avoid exceptions at abstract classes
@@ -119,7 +116,7 @@ public class BasicNDArrayCompressor {
 
     public INDArray decompress(INDArray array) {
         if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
-            throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + array.data().dataType());
+            return array;
 
         CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();

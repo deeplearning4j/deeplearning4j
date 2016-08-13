@@ -22,6 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
+import org.nd4j.compression.impl.Fp16;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -948,11 +949,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             throw new UnsupportedOperationException("Source dtype isn't supported: " + buffer.dataType());
         }
 
-        CompressionDescriptor descriptor = new CompressionDescriptor();
-        descriptor.setCompressionAlgorithm("FP16");
-        descriptor.setOriginalLength(buffer.length() * buffer.getElementSize());
+        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, new Fp16());
         descriptor.setCompressedLength(buffer.length() * 2);
-        descriptor.setCompressionType(CompressionType.LOSSY);
+
 
         CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
         return result;

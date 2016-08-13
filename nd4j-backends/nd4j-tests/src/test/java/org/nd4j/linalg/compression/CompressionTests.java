@@ -1,8 +1,9 @@
-package org.nd4j.linalg;
+package org.nd4j.linalg.compression;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -10,12 +11,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
  */
 @RunWith(Parameterized.class)
-public class CompressionTests extends BaseNd4jTest  {
+public class CompressionTests extends BaseNd4jTest {
 
     public CompressionTests(Nd4jBackend backend) {
             super(backend);
@@ -104,6 +106,27 @@ public class CompressionTests extends BaseNd4jTest  {
     }
 
     @Test
+    public void testInt8Compression1() {
+        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 1005f, -3.7f});
+
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
+
+        DataBuffer compr = BasicNDArrayCompressor.getInstance().compress(buffer);
+
+        assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+
+        DataBuffer decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
+
+        assertEquals(1.0f, decomp.getFloat(0), 0.01f);
+        assertEquals(2.0f, decomp.getFloat(1), 0.01f);
+        assertEquals(3.0f, decomp.getFloat(2), 0.01f);
+        assertEquals(4.0f, decomp.getFloat(3), 0.01f);
+        assertEquals(127.0f, decomp.getFloat(4), 0.01f);
+        assertEquals(-3.0f, decomp.getFloat(5), 0.01f);
+    }
+
+
+    @Test
     public void testGzipCompression1() {
         INDArray array = Nd4j.linspace(1, 10000, 20000);
         INDArray exp = array.dup();
@@ -113,6 +136,23 @@ public class CompressionTests extends BaseNd4jTest  {
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
         assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+
+        INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
+
+        assertEquals(exp, array);
+        assertEquals(exp, decomp);
+    }
+
+    @Test
+    public void testNoOpCompression1() {
+        INDArray array = Nd4j.linspace(1, 10000, 20000);
+        INDArray exp = array.dup();
+
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
+
+        INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
+
+        assertNotEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 

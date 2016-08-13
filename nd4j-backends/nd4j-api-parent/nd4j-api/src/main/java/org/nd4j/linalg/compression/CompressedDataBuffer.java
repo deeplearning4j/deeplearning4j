@@ -8,6 +8,10 @@ import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 
 /**
  * @author raver119@gmail.com
@@ -15,6 +19,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 public class CompressedDataBuffer extends BaseDataBuffer {
     @Getter @Setter protected CompressionDescriptor compressionDescriptor;
     @Getter @Setter protected Pointer pointer;
+    private static Logger logger = LoggerFactory.getLogger(CompressedDataBuffer.class);
 
     public CompressedDataBuffer(Pointer pointer, @NonNull CompressionDescriptor descriptor) {
         this.compressionDescriptor = descriptor;
@@ -30,6 +35,38 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     protected void initTypeAndSize() {
         elementSize = -1;
         type = Type.COMPRESSED;
+    }
+
+    @Override
+    public void write(DataOutputStream out) throws IOException {
+        logger.info("Writing out CompressedDataBuffer");
+    }
+
+    @Override
+    public void read(DataInputStream s) {
+        logger.info("Reading CompressedDataBuffer from DataInputStream");
+    }
+
+    @Override
+    public void read(InputStream is) {
+        logger.info("Reading CompressedDataBuffer from InputStream");
+    }
+
+    private void readObject(ObjectInputStream s) {
+        logger.info("Reading CompressedDataBuffer readObject");
+        doReadObject(s);
+    }
+
+    protected void doReadObject(ObjectInputStream s) {
+        logger.info("Reading CompressedDataBuffer from doReadObject");
+        try {
+            s.defaultReadObject();
+            read(s);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
     /**

@@ -73,10 +73,7 @@ public class Gzip extends AbstractCompressor {
 
             byte[] bytes = stream.toByteArray();
             BytePointer pointer = new BytePointer(bytes);
-            CompressionDescriptor descriptor = new CompressionDescriptor();
-            descriptor.setCompressionType(getCompressionType());
-            descriptor.setCompressionAlgorithm(getDescriptor());
-            descriptor.setOriginalLength(buffer.length() * buffer.getElementSize());
+            CompressionDescriptor descriptor = new CompressionDescriptor(buffer, this);
             descriptor.setCompressedLength(bytes.length);
 
             CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
