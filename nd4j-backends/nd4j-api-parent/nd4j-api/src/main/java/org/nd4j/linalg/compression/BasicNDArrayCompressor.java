@@ -61,7 +61,7 @@ public class BasicNDArrayCompressor {
         return INSTANCE;
     }
 
-    public void setDefaultCompression(@NonNull String algorithm) {
+    public BasicNDArrayCompressor setDefaultCompression(@NonNull String algorithm) {
         algorithm = algorithm.toUpperCase();
  //       if (!codecs.containsKey(algorithm))
 //            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
@@ -69,6 +69,8 @@ public class BasicNDArrayCompressor {
         synchronized (this) {
             defaultCompression = algorithm;
         }
+
+        return this;
     }
 
     public String getDefaultCompression() {
