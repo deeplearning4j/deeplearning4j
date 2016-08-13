@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning.async;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
@@ -51,15 +52,17 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                     } else
                         history = new INDArray[]{input};
                 }
-                action = policy.nextAction(Nd4j.hstack(history));
+                INDArray hstack = Transition.concat(history);
+                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                action = policy.nextAction(hstack);
             }
             lastAction = action;
 
             StepReply<O> stepReply = getMdp().step(action);
             obs = stepReply.getObservation();
 
-            INDArray[] output = target.outputAll(input);
-            rewards.add(new MiniTrans(Nd4j.hstack(history), action, output, stepReply.getReward()));
+            INDArray[] output = target.outputAll(input.reshape(Learning.makeShape(1, input.shape())));
+            rewards.add(new MiniTrans(Transition.concat(history), action, output, stepReply.getReward()));
             reward += stepReply.getReward();
 
             if (isHistoryProcessor)

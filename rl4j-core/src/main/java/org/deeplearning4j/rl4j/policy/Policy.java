@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.policy;
 import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -56,8 +57,9 @@ public abstract class Policy<O extends Encodable, A> {
                     } else
                         history = new INDArray[]{input};
                 }
-
-                action = nextAction(Nd4j.hstack(history));
+                INDArray hstack = Transition.concat(history);
+                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                action = nextAction(hstack);
             }
             lastAction = action;
 

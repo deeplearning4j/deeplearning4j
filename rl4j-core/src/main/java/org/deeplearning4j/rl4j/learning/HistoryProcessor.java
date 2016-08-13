@@ -5,6 +5,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ public class HistoryProcessor implements IHistoryProcessor {
     private CircularFifoQueue<INDArray> history;
     private int size = 0;
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
+    public static BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
 
 
     public HistoryProcessor(Configuration conf) {
@@ -117,7 +119,8 @@ public class HistoryProcessor implements IHistoryProcessor {
             e.printStackTrace();
         }
         out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth());
-        return out.mul(1 / 128f).add(-1f);
+        INDArray compressed = compressor.compress(out);
+        return compressed;
     }
 
 

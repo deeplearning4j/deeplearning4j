@@ -102,7 +102,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     history = new INDArray[]{input};
             }
-            INDArray hstack = Nd4j.hstack(history);
+            INDArray hstack = Transition.concat(history);
+            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
             INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
 
@@ -152,8 +153,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             Transition<Integer> trans = transitions.get(i);
             areTerminal[i] = trans.isTerminal();
             actions[i] = trans.getAction();
-            obs.putRow(i, Nd4j.hstack(trans.getObservation()));
-            nextObs.putRow(i, Nd4j.hstack(trans.getNextObservation()));
+            obs.putRow(i, Transition.concat(trans.getObservation()));
+            nextObs.putRow(i, Transition.concat(trans.getNextObservation()));
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);
