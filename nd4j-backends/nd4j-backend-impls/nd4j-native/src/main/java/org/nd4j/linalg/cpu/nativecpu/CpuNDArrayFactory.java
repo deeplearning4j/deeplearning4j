@@ -578,6 +578,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
 
         for(int i = 0; i < toConcat.length; i++) {
+            if (toConcat[i].isCompressed())
+                Nd4j.getCompressor().decompressi(toConcat[i]);
+
             shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
             dataPointers.put(i, toConcat[i].data().addressPointer());
             sumAlongDim += toConcat[i].size(dimension);

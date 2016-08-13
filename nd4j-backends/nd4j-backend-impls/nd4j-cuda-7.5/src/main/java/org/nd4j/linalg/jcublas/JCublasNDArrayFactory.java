@@ -548,6 +548,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         int sumAlongDim = 0;
         for (int i = 0; i < toConcat.length; i++) {
+            if (toConcat[i].isCompressed())
+                Nd4j.getCompressor().decompressi(toConcat[i]);
+
             sumAlongDim += toConcat[i].size(dimension);
         }
 
