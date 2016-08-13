@@ -40,6 +40,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
+        checkForCompression(op);
+
         if(op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s);
@@ -67,6 +69,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -148,6 +152,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
 
         for(int i = 0; i < dimension.length; i++) {
@@ -341,6 +347,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
+        checkForCompression(op);
+
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
@@ -405,6 +413,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
+            checkForCompression(op);
+
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
@@ -516,6 +526,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
@@ -553,6 +565,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(IndexAccumulation op) {
+        checkForCompression(op);
+
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
@@ -580,6 +594,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(Accumulation op) {
+        checkForCompression(op);
+
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
