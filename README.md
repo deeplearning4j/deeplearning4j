@@ -55,3 +55,5 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 # Proposed contribution area:
 
 * Continuous control
+* Policy Gradient
+* Update gym-java-client when gym-http-api gets compatible with pixels environments to play with Pong, Doom, etc ..
