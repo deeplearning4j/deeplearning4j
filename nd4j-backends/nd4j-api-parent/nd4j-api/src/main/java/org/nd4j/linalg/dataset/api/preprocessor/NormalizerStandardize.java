@@ -228,14 +228,22 @@ public class NormalizerStandardize implements DataNormalization {
 
     public INDArray getMean() {
         if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        if (fitLabels) return Nd4j.vstack(featureMean,labelMean);
         return featureMean;
+    }
+
+    public INDArray getLabelMean() {
+        if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return labelMean;
     }
 
     public INDArray getStd() {
         if (featureStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        if (fitLabels) return Nd4j.vstack(featureStd,labelStd);
         return featureStd;
+    }
+
+    public INDArray getLabelStd() {
+        if (featureStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return labelStd;
     }
 
     /**

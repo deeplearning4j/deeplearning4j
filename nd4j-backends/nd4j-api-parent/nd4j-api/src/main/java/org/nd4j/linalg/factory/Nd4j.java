@@ -2125,7 +2125,7 @@ public class Nd4j {
                 // parse ordering
                 if (lineNum == 3) {
                     String[] lineArr = line.split(":");
-                    theOrder = lineArr[1].replace("\\W", "").charAt(0);
+                    theOrder = lineArr[1].replaceAll("\\W", "").charAt(0);
                     continue;
                 }
                 // parse shape
