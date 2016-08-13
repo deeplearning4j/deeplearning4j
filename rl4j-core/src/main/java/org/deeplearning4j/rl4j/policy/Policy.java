@@ -58,7 +58,8 @@ public abstract class Policy<O extends Encodable, A> {
                         history = new INDArray[]{input};
                 }
                 INDArray hstack = Transition.concat(history);
-                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                if (hstack.shape().length > 2)
+                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
                 action = nextAction(hstack);
             }
             lastAction = action;

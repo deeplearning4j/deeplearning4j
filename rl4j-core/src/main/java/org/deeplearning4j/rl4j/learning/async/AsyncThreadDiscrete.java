@@ -53,7 +53,8 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                         history = new INDArray[]{input};
                 }
                 INDArray hstack = Transition.concat(history);
-                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                if (hstack.shape().length > 2)
+                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
                 action = policy.nextAction(hstack);
             }
             lastAction = action;
