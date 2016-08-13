@@ -103,7 +103,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                     history = new INDArray[]{input};
             }
             INDArray hstack = Transition.concat(history);
-            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+            if (hstack.shape().length > 2)
+                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
             INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
 
