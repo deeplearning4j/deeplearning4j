@@ -1,11 +1,8 @@
-package org.nd4j.compression;
+package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.compression.CompressedDataBuffer;
-import org.nd4j.linalg.compression.CompressionDescriptor;
-import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.reflections.Reflections;
 
 import java.util.Map;
@@ -15,14 +12,14 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author raver119@gmail.com
  */
-public class DataCompressor {
-    private static final DataCompressor INSTANCE = new DataCompressor();
+public class BasicNDArrayCompressor {
+    private static final BasicNDArrayCompressor INSTANCE = new BasicNDArrayCompressor();
 
     protected Map<String, NDArrayCompressor> codecs;
 
     protected String defaultCompression = "FP16";
 
-    private DataCompressor() {
+    private BasicNDArrayCompressor() {
         loadCompressors();
     }
 
@@ -63,7 +60,7 @@ public class DataCompressor {
         System.out.println(builder.toString());
     }
 
-    public static DataCompressor getInstance() {
+    public static BasicNDArrayCompressor getInstance() {
         return INSTANCE;
     }
 

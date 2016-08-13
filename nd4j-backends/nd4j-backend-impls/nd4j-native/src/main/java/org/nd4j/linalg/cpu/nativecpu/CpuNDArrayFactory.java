@@ -22,7 +22,6 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
-import org.nd4j.compression.DataCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
