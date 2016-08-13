@@ -45,7 +45,7 @@ public class Uint8 extends AbstractCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         DataBuffer result = Nd4j.createBuffer(descriptor.getCompressedLength());
-        UByteIndexer indexer = UByteIndexer.create((BytePointer) comp.getPointer());
+        UByteIndexer indexer = UByteIndexer.create((BytePointer) comp.addressPointer());
 
         for (int i = 0; i < result.length(); i++) {
             result.put(i, indexer.get(i));

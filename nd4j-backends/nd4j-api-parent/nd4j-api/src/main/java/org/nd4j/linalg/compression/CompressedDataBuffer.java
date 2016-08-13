@@ -3,7 +3,9 @@ package org.nd4j.linalg.compression;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.ByteRawIndexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -18,7 +20,6 @@ import java.io.*;
  */
 public class CompressedDataBuffer extends BaseDataBuffer {
     @Getter @Setter protected CompressionDescriptor compressionDescriptor;
-    @Getter @Setter protected Pointer pointer;
     private static Logger logger = LoggerFactory.getLogger(CompressedDataBuffer.class);
 
     public CompressedDataBuffer(Pointer pointer, @NonNull CompressionDescriptor descriptor) {
@@ -35,11 +36,24 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     protected void initTypeAndSize() {
         elementSize = -1;
         type = Type.COMPRESSED;
+        allocationMode = AllocationMode.JAVACPP;
     }
 
     @Override
     public void write(DataOutputStream out) throws IOException {
         logger.info("Writing out CompressedDataBuffer");
+        // here we should mimic to usual DataBuffer array
+        out.writeUTF(allocationMode.name());
+        out.writeInt((int)compressionDescriptor.getCompressedLength());
+        out.writeUTF(Type.COMPRESSED.name());
+        // at this moment we don't care about mimics anymore
+        //ByteRawIndexer indexer = new ByteRawIndexer((BytePointer) pointer);
+        out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
+        out.writeLong(compressionDescriptor.getCompressedLength());
+        out.writeLong(compressionDescriptor.getOriginalLength());
+        out.writeLong(compressionDescriptor.getNumberOfElements());
+        out.write(((BytePointer) pointer).getStringBytes());
+
     }
 
     @Override
@@ -52,21 +66,9 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         logger.info("Reading CompressedDataBuffer from InputStream");
     }
 
-    private void readObject(ObjectInputStream s) {
-        logger.info("Reading CompressedDataBuffer readObject");
-        doReadObject(s);
-    }
-
-    protected void doReadObject(ObjectInputStream s) {
-        logger.info("Reading CompressedDataBuffer from doReadObject");
-        try {
-            s.defaultReadObject();
-            read(s);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
+    @Override
+    public long length() {
+        return compressionDescriptor.getNumberOfElements();
     }
 
     /**

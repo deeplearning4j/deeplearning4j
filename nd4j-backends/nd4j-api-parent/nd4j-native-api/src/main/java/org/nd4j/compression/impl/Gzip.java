@@ -46,7 +46,7 @@ public class Gzip extends AbstractCompressor {
             CompressedDataBuffer compressed = (CompressedDataBuffer) buffer;
             CompressionDescriptor descriptor = compressed.getCompressionDescriptor();
 
-            BytePointer pointer = (BytePointer) compressed.getPointer();
+            BytePointer pointer = (BytePointer) compressed.addressPointer();
             ByteArrayInputStream bis = new ByteArrayInputStream(pointer.getStringBytes());
             GZIPInputStream gzip = new GZIPInputStream(bis);
             DataInputStream dis = new DataInputStream(gzip);

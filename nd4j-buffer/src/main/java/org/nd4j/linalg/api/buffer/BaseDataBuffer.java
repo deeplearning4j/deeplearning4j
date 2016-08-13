@@ -19,10 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -1286,6 +1283,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readFloat());
                 }
+            } else if (currentType == Type.COMPRESSED) {
+                String compressionAlgorithm = s.readUTF();
+                long compressedLength = s.readLong();
+                long originalLength = s.readLong();
+                long numberOfElements = s.readLong();
+
+                // special case here. We should collect bytes, wrap them into pointer, and then decompress
+                byte[] temp = new byte[(int) compressedLength];
+                for (int i = 0; i < compressedLength; i++) {
+                    temp[i] = s.readByte();
+                }
+                pointer = new BytePointer(temp);
+                type = Type.COMPRESSED;
+
             } else {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i,s.readInt());

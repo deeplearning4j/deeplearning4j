@@ -13,6 +13,7 @@ public class CompressionDescriptor {
     private long originalLength;
     private long compressedLength;
     private long numberOfElements;
+    private long originalElementSize;
 
     public CompressionDescriptor() {
 
@@ -21,6 +22,7 @@ public class CompressionDescriptor {
     public CompressionDescriptor(DataBuffer buffer) {
         this.originalLength = buffer.length() * buffer.getElementSize();
         this.numberOfElements = buffer.length();
+        this.originalElementSize = buffer.getElementSize();
     }
 
     public CompressionDescriptor(DataBuffer buffer, String algorithm) {
@@ -29,8 +31,7 @@ public class CompressionDescriptor {
     }
 
     public CompressionDescriptor(DataBuffer buffer, NDArrayCompressor compressor) {
-        this(buffer);
-        this.compressionAlgorithm = compressor.getDescriptor();
+        this(buffer, compressor.getDescriptor());
         this.compressionType = compressor.getCompressionType();
     }
 }

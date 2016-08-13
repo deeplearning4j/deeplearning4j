@@ -902,14 +902,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.convertHalfsToDoubles(
                     null,
-                    comp.getPointer(),
+                    comp.addressPointer(),
                     (int) descriptor.getCompressedLength() / 2,
                     targetBuffer.addressPointer()
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.convertHalfsToFloats(
                     null,
-                    comp.getPointer(),
+                    comp.addressPointer(),
                     (int) descriptor.getCompressedLength() / 2,
                     targetBuffer.addressPointer()
             );
