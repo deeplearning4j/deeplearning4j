@@ -4,20 +4,25 @@
 
 #ifndef LIBND4J_FLOAT8_H
 #define LIBND4J_FLOAT8_H
+
+#ifdef __CUDACC__
+#define op_def inline __host__ __device__
+#elif _MSC_VER
+#define op_def inline
+#elif __clang__
+#define op_def inline
+#elif __GNUC__
+#define op_def inline
+#endif
+
+
 typedef struct {
     unsigned char x;
 } __quarter;
 
 typedef __quarter quarter;
 
-namespace nd4j {
-
-    struct float8 {
-
-    };
-}
-
-float cpu_quarter2float(quarter b) {
+op_def float cpu_quarter2float(quarter b) {
     unsigned sign = ((b.x >> 7) & 1);
     unsigned exponent = ((b.x >> 4) & 0x7);
     unsigned mantissa = ((b.x & 0xf) << 19);
@@ -47,7 +52,7 @@ float cpu_quarter2float(quarter b) {
 
 
 
-quarter cpu_float2quarter_rn(float f)
+op_def quarter cpu_float2quarter_rn(float f)
 {
     quarter ret;
 
@@ -102,6 +107,36 @@ quarter cpu_float2quarter_rn(float f)
     ret.x = (sign | (exponent << 4) | mantissa);
 
     return ret;
+}
+
+namespace nd4j {
+
+    struct float8 {
+        quarter data;
+
+        op_def float8() { data = cpu_float2quarter_rn(0.0f); }
+
+        template <class T>
+        op_def float8(const T& rhs) {
+            assign(rhs);
+        }
+
+        template <class T>
+        op_def float8& operator=(const T& rhs) { assign(rhs); return *this; }
+
+
+        op_def operator float() const {
+            return cpu_quarter2float(data);
+        }
+
+        op_def void assign(double rhs) {
+            assign((float)rhs);
+        }
+
+        op_def void assign(float rhs) {
+            data = cpu_float2quarter_rn(rhs);
+        }
+    };
 }
 
 #endif //LIBND4J_FLOAT8_H

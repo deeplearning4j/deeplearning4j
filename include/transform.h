@@ -22,7 +22,7 @@
 #include <ops.h>
 #include <special_ops.h>
 #include <op_boilerplate.h>
-#include <float8.h>
+#include "types/float8.h"
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>

@@ -7,7 +7,7 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <templatemath.h>
-#include <float8.h>
+#include <types/float8.h>
 #include <type_conversions.h>
 
 typedef struct {
