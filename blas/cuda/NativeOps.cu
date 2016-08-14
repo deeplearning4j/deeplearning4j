@@ -347,35 +347,6 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 	return launchDims;
 }
 
-
-float cpu_half2float(half h) {
-	unsigned sign = ((h.x >> 15) & 1);
-	unsigned exponent = ((h.x >> 10) & 0x1f);
-	unsigned mantissa = ((h.x & 0x3ff) << 13);
-
-	if (exponent == 0x1f) {  /* NaN or Inf */
-		mantissa = (mantissa ? (sign = 0, 0x7fffff) : 0);
-		exponent = 0xff;
-	} else if (!exponent) {  /* Denorm or Zero */
-		if (mantissa) {
-			unsigned int msb;
-			exponent = 0x71;
-			do {
-				msb = (mantissa & 0x400000);
-				mantissa <<= 1;  /* normalize */
-				--exponent;
-			} while (!msb);
-			mantissa &= 0x7fffff;  /* 1.mantissa is implicit */
-		}
-	} else {
-		exponent += 0x70;
-	}
-
-	int temp = ((sign << 31) | (exponent << 23) | mantissa);
-
-	return *((float*)((void*)&temp));
-}
-
 nd4j::buffer::Buffer<int> * createScalarBuffer(cudaStream_t stream) {
 	int *scalarShapeInfo = shape::createScalarShapeInfo();
 	nd4j::buffer::Buffer<int> *buff = nd4j::buffer::createBuffer(scalarShapeInfo,shape::shapeInfoLength(2), stream);
@@ -5744,55 +5715,6 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 
 
 	pullRowsKernelDouble<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	half *x = reinterpret_cast<half *>(dx);
-	float *z = reinterpret_cast<float *>(dz);
-
-	kernelHalfsToFloats<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	half *x = reinterpret_cast<half *>(dx);
-	double *z = reinterpret_cast<double *>(dz);
-
-
-	kernelHalfsToDoubles<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	double *x = reinterpret_cast<double *>(dx);
-	half *z = reinterpret_cast<half *>(dz);
-
-	kernelDoublesToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	float *x = reinterpret_cast<float *>(dx);
-	half *z = reinterpret_cast<half *>(dz);
-
-	kernelFloatsToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));

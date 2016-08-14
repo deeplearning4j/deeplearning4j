@@ -12,7 +12,7 @@
 #include <dll.h>
 
 #ifdef __CUDACC__
-#include <float16.hpp>
+#include <types/float16.h>
 
 typedef union {
 		struct {
