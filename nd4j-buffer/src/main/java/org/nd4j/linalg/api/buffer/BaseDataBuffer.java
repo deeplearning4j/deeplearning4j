@@ -1327,6 +1327,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void write(DataOutputStream out) throws IOException {
         if(length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
+//        log.info("Saving dType: {}", dataType().name());
         out.writeUTF(allocationMode.name());
         out.writeInt((int)length());
         out.writeUTF(dataType().name());
@@ -1343,8 +1344,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            for(int i = 0; i < length(); i++)
+            for(int i = 0; i < length(); i++) {
                 out.writeFloat(getFloat(i));
+            }
         }
     }
 

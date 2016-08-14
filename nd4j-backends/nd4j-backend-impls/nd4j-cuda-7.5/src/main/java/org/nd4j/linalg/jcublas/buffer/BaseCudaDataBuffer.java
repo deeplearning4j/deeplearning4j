@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -672,12 +673,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void read(DataInputStream s) {
         try {
+//            log.info("Restoring CUDA databuffer");
             // skip allocationMode
             s.readUTF();
             allocationMode = AllocationMode.JAVACPP;
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
-            //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
+  //                  log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if (globalType == null && Nd4j.dataType() != null) {
                 globalType = Nd4j.dataType();
             }
@@ -685,7 +687,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
 				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 		   	}
-            if(t == Type.INT || globalType == Type.INT) {
+            if (t == Type.COMPRESSED) {
+                /*out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
+                out.writeLong(compressionDescriptor.getCompressedLength());
+                out.writeLong(compressionDescriptor.getOriginalLength());
+                out.writeLong(compressionDescriptor.getNumberOfElements());*/
+
+                type = t;
+                return;
+            } if(t == Type.INT || globalType == Type.INT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, t), false);
                 this.trackingPoint = allocationPoint.getObjectId();
@@ -728,6 +738,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     else if (t == Type.HALF)
                         array[i] = (double) toFloat((int) s.readShort());
                 }
+
                 setData(array);
 
             } else if(globalType == Type.FLOAT) {
@@ -751,6 +762,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = toFloat((int) s.readShort());
                     }
                 }
+    //            log.info("Array type: {}, Restored array: {}", t, Arrays.toString(array));
                 setData(array);
             } else if (globalType == Type.HALF) {
                 this.elementSize = 2;

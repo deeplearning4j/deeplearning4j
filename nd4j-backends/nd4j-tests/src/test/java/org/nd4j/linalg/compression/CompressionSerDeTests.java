@@ -63,7 +63,7 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
     @Test
     public void testAutoDecompression2() throws Exception {
-        INDArray array = Nd4j.linspace(1, 100, 2500);
+        INDArray array = Nd4j.linspace(1, 10, 11);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
 
@@ -72,7 +72,11 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
 
+        System.out.println("Restoring -------------------------");
+
         INDArray result = Nd4j.read(bis);
+
+        System.out.println("Decomp -------------------------");
 
         INDArray decomp = Nd4j.getCompressor().decompress(result);
 

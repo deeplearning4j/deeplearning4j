@@ -43,7 +43,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
 
     @Override
     public void write(DataOutputStream out) throws IOException {
-        logger.info("Writing out CompressedDataBuffer");
+//        logger.info("Writing out CompressedDataBuffer");
         // here we should mimic to usual DataBuffer array
         out.writeUTF(allocationMode.name());
         out.writeInt((int)compressionDescriptor.getCompressedLength());
@@ -100,11 +100,6 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    @Override
-    public void read(InputStream is) {
-        logger.info("Reading CompressedDataBuffer from InputStream");
     }
 
     @Override

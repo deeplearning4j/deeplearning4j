@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -51,7 +52,7 @@ public class Gzip extends AbstractCompressor {
             GZIPInputStream gzip = new GZIPInputStream(bis);
             DataInputStream dis = new DataInputStream(gzip);
 
-            DataBuffer bufferRestored = Nd4j.createBuffer(descriptor.getOriginalLength());
+            DataBuffer bufferRestored = Nd4j.createBuffer(descriptor.getNumberOfElements());
             bufferRestored.read(dis);
 
             return bufferRestored;
@@ -72,6 +73,7 @@ public class Gzip extends AbstractCompressor {
             dos.close();
 
             byte[] bytes = stream.toByteArray();
+//            logger.info("Bytes: {}", Arrays.toString(bytes));
             BytePointer pointer = new BytePointer(bytes);
             CompressionDescriptor descriptor = new CompressionDescriptor(buffer, this);
             descriptor.setCompressedLength(bytes.length);
