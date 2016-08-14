@@ -72,7 +72,6 @@ public class Uint8 extends AbstractCompressor {
         descriptor.setCompressedLength(buffer.length());
 
 
-
         CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
 
         return result;

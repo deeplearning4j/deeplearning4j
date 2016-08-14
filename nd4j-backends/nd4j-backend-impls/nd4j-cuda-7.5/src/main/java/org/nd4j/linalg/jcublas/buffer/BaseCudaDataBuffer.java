@@ -805,7 +805,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
                 Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
 
-                NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
+                //FIXME: get this back
+                //Nd4j.getNDArrayFactory().convertDataEx(TypeEx.FLOAT)
+                //NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
 
                 allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
                 pointDst.tickDeviceWrite();

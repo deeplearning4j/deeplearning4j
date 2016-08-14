@@ -29,16 +29,18 @@ public class Fp16 extends AbstractCompressor  {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        if (buffer.dataType() == DataBuffer.Type.COMPRESSED || buffer.dataType() == DataBuffer.Type.HALF)
-            return Nd4j.getNDArrayFactory().restoreFromHalfs(buffer);
+        //if (buffer.dataType() == DataBuffer.Type.COMPRESSED || buffer.dataType() == DataBuffer.Type.HALF)
+          //  return Nd4j.getNDArrayFactory().restoreFromHalfs(buffer);
 
-        throw new RuntimeException("Wrong source dataType: " + buffer.dataType());
+        //throw new RuntimeException("Wrong source dataType: " + buffer.dataType());
+        return null;
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        if (buffer.dataType() == DataBuffer.Type.DOUBLE || buffer.dataType() == DataBuffer.Type.FLOAT) {
-            return Nd4j.getNDArrayFactory().convertToHalfs(buffer);
-        } else return buffer;
+        //if (buffer.dataType() == DataBuffer.Type.DOUBLE || buffer.dataType() == DataBuffer.Type.FLOAT) {
+//            return Nd4j.getNDArrayFactory().convertToHalfs(buffer);
+//        } else return buffer;
+        return null;
     }
 }

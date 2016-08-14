@@ -45,6 +45,17 @@ public interface DataBuffer extends Serializable {
         COMPRESSED
     }
 
+    enum TypeEx {
+        FLOAT8,
+        INT8,
+        UINT8,
+        FLOAT16,
+        INT16,
+        UINT16,
+        FLOAT,
+        DOUBLE
+    }
+
 
     /**
      * Direct (off heap) and heap allocation

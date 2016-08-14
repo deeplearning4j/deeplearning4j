@@ -1021,6 +1021,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
     }
 
+    /*
     public DataBuffer convertToHalfs(DataBuffer buffer) {
         DataBuffer halfsBuffer = new CudaHalfDataBuffer(buffer.length());
 
@@ -1102,5 +1103,18 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         allocator.getFlowController().registerAction(context, pointDst, pointSrc);
 
         return outputBuffer;
+    }
+    */
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst @return
+     */
+    @Override
+    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        return null;
     }
 }

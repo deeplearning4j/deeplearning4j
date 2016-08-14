@@ -5303,4 +5303,8 @@ public class Nd4j {
     public static BasicNDArrayCompressor getCompressor() {
         return BasicNDArrayCompressor.getInstance();
     }
+
+    public static INDArray typeConversion(INDArray array, DataBuffer.TypeEx targetType) {
+        return null;
+    }
 }

@@ -892,6 +892,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @param buffer
      * @return
      */
+    /*
     @Override
     public DataBuffer restoreFromHalfs(DataBuffer buffer) {
         if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
@@ -922,6 +923,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         return targetBuffer;
     }
+    */
 
     /**
      * This method converts Single/Double precision databuffer to Half-precision databuffer
@@ -929,7 +931,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      * @param buffer
      * @return
      */
-    @Override
+    /*@Override
     public DataBuffer convertToHalfs(DataBuffer buffer) {
         // we allocate pointer
         ShortPointer pointer = new ShortPointer(buffer.length());
@@ -958,5 +960,45 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
         return result;
+    }
+    */
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst @return
+     */
+    @Override
+    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        int elementSize = 0;
+        if (typeDst.ordinal() <= 2)
+            elementSize = 1;
+        else if (typeDst.ordinal() <= 5)
+            elementSize = 2;
+        else if (typeDst.ordinal() == 6)
+            elementSize = 4;
+        else if (typeDst.ordinal() == 7)
+            elementSize = 8;
+        else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+
+        BytePointer pointer = new BytePointer(source.length() * elementSize);
+
+        CompressionDescriptor descriptor = new CompressionDescriptor(source.data(), typeDst.name());
+        CompressedDataBuffer buffer = new CompressedDataBuffer(pointer, descriptor);
+
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                source.data().addressPointer(),
+                source.length(),
+                typeDst.ordinal(),
+                pointer
+        );
+
+        INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+
+        return converted;
     }
 }

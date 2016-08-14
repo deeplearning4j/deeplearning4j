@@ -1728,13 +1728,15 @@ public interface NDArrayFactory {
      * @param buffer
      * @return
      */
-    DataBuffer restoreFromHalfs(DataBuffer buffer);
+//    DataBuffer restoreFromHalfs(DataBuffer buffer);
 
     /**
      * This method converts Single/Double precision databuffer to Half-precision databuffer
      * @param buffer
      * @return
      */
-    DataBuffer convertToHalfs(DataBuffer buffer);
+//    DataBuffer convertToHalfs(DataBuffer buffer);
 
+
+    INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
 }
