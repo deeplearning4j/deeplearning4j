@@ -11,9 +11,9 @@
 #define ND4J_FLOAT16 3
 #define ND4J_INT16 4
 #define ND4J_UINT16 5
-#define ND4J_FLOAT24 6
-#define ND4J_FLOAT32 7
-#define ND4J_DOUBLE 8
+#define ND4J_FLOAT32 6
+#define ND4J_DOUBLE 7
+#define ND4J_FLOAT24 119
 
 #include <types/float16.h>
 #include <types/float8.h>
