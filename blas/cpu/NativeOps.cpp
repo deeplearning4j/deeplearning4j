@@ -8,6 +8,7 @@
 #include <pairwise_util.h>
 #include <templatemath.h>
 #include <float8.h>
+#include <type_conversions.h>
 
 typedef struct {
 unsigned short x;

@@ -10,6 +10,13 @@ typedef struct {
 
 typedef __quarter quarter;
 
+namespace nd4j {
+
+    struct float8 {
+
+    };
+}
+
 float cpu_quarter2float(quarter b) {
     unsigned sign = ((b.x >> 7) & 1);
     unsigned exponent = ((b.x >> 4) & 0x7);
