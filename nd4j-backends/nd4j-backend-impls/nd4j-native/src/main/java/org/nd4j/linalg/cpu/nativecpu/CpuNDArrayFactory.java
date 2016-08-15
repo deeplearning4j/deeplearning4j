@@ -503,6 +503,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         int linearIndex = 0;
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
         for(INDArray m : matrices) {
+            Nd4j.getCompressor().autoDecompress(m);
+
             if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
                     && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
                 //Can do array copy
@@ -640,6 +642,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
 
+        Nd4j.getCompressor().autoDecompress(source);
+
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
         TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
@@ -716,6 +720,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         PointerPointer dataPointers = new PointerPointer(arrays.length);
 
         for (int i = 0; i < arrays.length; i++) {
+            Nd4j.getCompressor().autoDecompress(arrays[i]);
+
             if (arrays[i].lengthLong() != len)
                 throw new RuntimeException("All arrays should have equal length for averaging");
 
@@ -831,6 +837,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
+
+            Nd4j.getCompressor().autoDecompress(array);
 
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);

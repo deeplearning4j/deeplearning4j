@@ -154,4 +154,15 @@ public class BasicNDArrayCompressor {
 
          codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
     }
+
+    public void autoDecompress(INDArray... arrays) {
+        for (INDArray array: arrays) {
+            autoDecompress(array);
+        }
+    }
+
+    public void autoDecompress(INDArray array) {
+        if (array.isCompressed())
+            decompressi(array);
+    }
 }
