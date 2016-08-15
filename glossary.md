@@ -215,7 +215,8 @@ GloVe is a generalization of Tomas Mikolov's word2vec algorithms, a technique fo
 * [GloVe: Global Vectors for Word Representation](http://nlp.stanford.edu/pubs/glove.pdf)
 
 ### <a name="gradient">Gradient Descent</a>
-Gradient is another word for the rate of change of a neural net as it learns how to reconstruct a dataset. The process of minimizing error is called [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent). Gradient is synonymous with the idea of a derivative in [differential calculus](https://en.wikipedia.org/wiki/Differential_calculus).
+
+The gradient is a derivative, which you will know from [differential calculus](https://en.wikipedia.org/wiki/Differential_calculus). That is, it's the ratio of the rate of change of a neural net's parameters and the error it produces, as it learns how to reconstruct a dataset or make guesses about labels. The process of minimizing error is called [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent). Descending a gradient has two aspects: choosing the direction to step in (momentum) and choosing the size of the step (learning rate). 
 
         Since MLPs are, by construction, differentiable operators, they can be trained to minimise any differentiable objective function using gradient descent. The basic idea of gradient descent is to find the derivative of the objective function with respect to each of the network weights, then adjust the weights in the direction of the negative slope. -Graves
 
@@ -306,7 +307,7 @@ The way you talk about those fields and methods is with the dot operator `.`, an
 You can learn more about DataSetIterator and other classes in Deeplearning4j in our [Javadoc](./doc/).
 
 ### <a name="objectivefunction">Objective Function</a> 
-Also called a loss function or a cost function, an objective function is a heuristic function for reducing prediction error in a machine-learning algorithm. That is, an objective function allows you to measure how wrong your neural net it when it makes a guess, by comparing that guess to the ground-truth value of the training set. Measuring that error is a precondition to updating the neural net in such a way that its guesses generate less error. The error resulting from the loss function is fed into backpropagation in order to update the weights and biases that process input in the neural network. 
+Also called a loss function or a cost function, an objective function defines what success looks like when an algorithm learns. It is a measure of the difference between a neural net's guess and the ground truth; that is, the error. Measuring that error is a precondition to updating the neural net in such a way that its guesses generate less error. The error resulting from the loss function is fed into backpropagation in order to update the weights and biases that process input in the neural network. 
 
 ### <a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
