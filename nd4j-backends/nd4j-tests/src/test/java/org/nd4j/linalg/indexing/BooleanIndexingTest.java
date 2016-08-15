@@ -1,5 +1,6 @@
 package org.nd4j.linalg.indexing;
 
+import com.google.common.base.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
@@ -360,6 +362,42 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isInfinite()), Integer.MAX_VALUE).getDouble(0);
 
         assertEquals(1, val);
+    }
+
+    @Test
+    public void testAbsValueGreaterThan(){
+        final double threshold = 2;
+
+        Condition absValueCondition = new AbsValueGreaterThan(threshold);
+        Function<Number,Number> clipFn = new Function<Number, Number>() {
+            @Override
+            public Number apply(Number number) {
+                System.out.println("Number: " + number.doubleValue());
+                return (number.doubleValue() > threshold ? threshold : -threshold);
+            }
+        };
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray orig = Nd4j.rand(1,20).muli(6).subi(3);    //Random numbers: -3 to 3
+        INDArray exp = orig.dup();
+        INDArray after = orig.dup();
+
+        for( int i=0; i<exp.length(); i++ ){
+            double d = exp.getDouble(i);
+            if(d > threshold){
+                exp.putScalar(i,threshold);
+            } else if( d < -threshold){
+                exp.putScalar(i,-threshold);
+            }
+        }
+
+        BooleanIndexing.applyWhere(after, absValueCondition, clipFn);
+
+        System.out.println(orig);
+        System.out.println(exp);
+        System.out.println(after);
+
+        assertEquals(exp, after);
     }
 
     @Test

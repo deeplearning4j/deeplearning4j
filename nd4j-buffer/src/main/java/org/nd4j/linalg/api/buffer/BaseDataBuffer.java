@@ -19,10 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -1268,7 +1265,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
             Type currentType = Type.valueOf(s.readUTF());
-            type = globalType;
+            if (currentType != Type.COMPRESSED)
+                type = globalType;
+            else type = currentType;
+
             if(currentType == Type.DOUBLE)
                 elementSize = 8;
             else if(currentType == Type.FLOAT || currentType == Type.INT)
@@ -1278,6 +1278,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
 			    if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 			}
             pointerIndexerByGlobalType(currentType);
+
+            if (currentType != Type.COMPRESSED)
+                readContent(s, currentType);
+
+            wrappedBuffer = pointer.asByteBuffer();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void readContent(DataInputStream s, Type currentType) {
+        try {
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readDouble());
@@ -1286,24 +1299,35 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readFloat());
                 }
+            } else if (currentType == Type.COMPRESSED) {
+                String compressionAlgorithm = s.readUTF();
+                long compressedLength = s.readLong();
+                long originalLength = s.readLong();
+                long numberOfElements = s.readLong();
+
+                // special case here. We should collect bytes, wrap them into pointer, and then decompress
+                byte[] temp = new byte[(int) compressedLength];
+                for (int i = 0; i < compressedLength; i++) {
+                    temp[i] = s.readByte();
+                }
+                pointer = new BytePointer(temp);
+                type = Type.COMPRESSED;
+
             } else {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i,s.readInt());
+                    putByGlobalType(i, s.readInt());
                 }
             }
-            wrappedBuffer = pointer.asByteBuffer();
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     @Override
     public void write(DataOutputStream out) throws IOException {
         if(length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
+//        log.info("Saving dType: {}", dataType().name());
         out.writeUTF(allocationMode.name());
         out.writeInt((int)length());
         out.writeUTF(dataType().name());
@@ -1320,8 +1344,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            for(int i = 0; i < length(); i++)
+            for(int i = 0; i < length(); i++) {
                 out.writeFloat(getFloat(i));
+            }
         }
     }
 

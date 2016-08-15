@@ -80,6 +80,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
     //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
 
@@ -166,6 +168,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -511,6 +515,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
 
         //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -636,6 +642,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
         return super.exec(op, dimension);
     }
@@ -643,6 +651,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
+        checkForCompression(op);
+
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA  || op instanceof CopyOp) {
                 // we dont' care about op.Z sync state, since it'll be overwritten
@@ -682,6 +692,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op) {
+        checkForCompression(op);
+
         invoke(op);
         return op.z();
     }
@@ -693,8 +705,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+        checkForCompression(op);
+
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
             OpDashboard.getInstance().processOpCall(op);
+//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+//            OpDashboard.getInstance().processOpCall(op);
 
      //   log.info("B1 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
@@ -784,6 +800,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
             OpDashboard.getInstance().processOpCall(op);
@@ -910,6 +927,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
+        checkForCompression(op);
 
       //  log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
@@ -1224,6 +1242,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
+        checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
             OpDashboard.getInstance().processOpCall(op);
@@ -1295,6 +1314,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
+        checkForCompression(op);
+
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
             OpDashboard.getInstance().processOpCall(op);
 

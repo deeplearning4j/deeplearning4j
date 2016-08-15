@@ -56,6 +56,9 @@ import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
+import org.nd4j.linalg.compression.BasicNDArrayCompressor;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
@@ -2122,7 +2125,7 @@ public class Nd4j {
                 // parse ordering
                 if (lineNum == 3) {
                     String[] lineArr = line.split(":");
-                    theOrder = lineArr[1].replace("\\W", "").charAt(0);
+                    theOrder = lineArr[1].replaceAll("\\W", "").charAt(0);
                     continue;
                 }
                 // parse shape
@@ -2243,8 +2246,7 @@ public class Nd4j {
         DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
         shapeInformation.read(dis);
         int length = Shape.length(shapeInformation);
-        DataBuffer data = Nd4j.createBuffer(length);
-        data.read(dis);
+        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
         return createArrayFromShapeBuffer(data,shapeInformation);
     }
 
@@ -5287,5 +5289,22 @@ public class Nd4j {
 
     public static AffinityManager getAffinityManager() {
         return affinityManager;
+    }
+
+    public static NDArrayFactory getNDArrayFactory() {
+        return INSTANCE;
+    }
+
+    /**
+     * This method returns BasicNDArrayCompressor instance, suitable for NDArray compression/decompression in runtime
+     *
+     * @return
+     */
+    public static BasicNDArrayCompressor getCompressor() {
+        return BasicNDArrayCompressor.getInstance();
+    }
+
+    public static INDArray typeConversion(INDArray array, DataBuffer.TypeEx targetType) {
+        return null;
     }
 }

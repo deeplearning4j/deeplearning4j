@@ -104,6 +104,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean attemptedToFindElementWiseStride = false;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
+    protected transient boolean compressed = false;
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
@@ -120,6 +121,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray() {
     }
 
+    /**
+     * Returns true if this array is compressed, and false otherwise
+     * @return
+     */
+    @Override
+    public boolean isCompressed() {
+        return compressed;
+    }
+
+    /**
+     * This method marks INDArray instance as compressed
+     * PLEASE NOTE: Do not use this method unless you 100% have to
+     *
+     * @param reallyCompressed
+     */
+    @Override
+    public void markAsCompressed(boolean reallyCompressed) {
+        this.compressed = reallyCompressed;
+    }
 
     /**
      *
@@ -1469,12 +1489,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
+        Nd4j.getCompressor().autoDecompress(this);
         INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
     }
 
     @Override
     public INDArray dup(char order){
+        Nd4j.getCompressor().autoDecompress(this);
         return Shape.toOffsetZeroCopy(this, order);
     }
 
@@ -1498,6 +1520,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double getDouble(int... indices) {
+        Nd4j.getCompressor().autoDecompress(this);
+
         for(int i = 0; i < indices.length; i++) {
             if(indices[i] < 0)
                 indices[i] += rank();
@@ -3296,6 +3320,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(i >= length()) {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
+
+        Nd4j.getCompressor().autoDecompress(this);
 
 
         if(i == 0)

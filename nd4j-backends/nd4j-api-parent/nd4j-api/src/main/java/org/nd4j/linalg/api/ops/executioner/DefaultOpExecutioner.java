@@ -43,6 +43,16 @@ public  class DefaultOpExecutioner implements OpExecutioner {
     public DefaultOpExecutioner() {
     }
 
+    protected void checkForCompression(Op op) {
+        if (op.x().isCompressed())
+            Nd4j.getCompressor().decompressi(op.x());
+
+        if (op.y() != null && op.y().isCompressed())
+            Nd4j.getCompressor().decompressi(op.y());
+
+        if (op.z() != null && op.z().isCompressed())
+            Nd4j.getCompressor().decompressi(op.z());
+    }
 
     @Override
     public Op exec(Op op) {

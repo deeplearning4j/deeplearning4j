@@ -1,8 +1,9 @@
-package org.nd4j.linalg.cpu.nativecpu.ops;
+package jcuda.jcublas.ops;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,16 +13,16 @@ import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
  */
 @Ignore
-public class NativeOpExecutionerTest {
+public class CudaExecutionerTest {
     @Before
     public void setUp() throws Exception {
 
@@ -37,17 +38,21 @@ public class NativeOpExecutionerTest {
         array.addiRowVector(arrayRow);
 
         long time1 = System.nanoTime();
-        for (int x = 0; x < 100000; x++) {
+        for (int x = 0; x < 100; x++) {
             array.addiRowVector(arrayRow);
         }
         long time2 = System.nanoTime();
 /*
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        context.syncOldStream();
+
         time1 = System.nanoTime();
         array.addiRowVector(arrayRow);
         time2 = System.nanoTime();
-*/
-        System.out.println("Execution time: " + ((time2 - time1) / 100000) );
 
+
+        System.out.println("Execution time: " + ((time2 - time1)));
+*/
         assertEquals(1002, array.getFloat(0), 0.1f);
         assertEquals(2003, array.getFloat(1), 0.1f);
     }

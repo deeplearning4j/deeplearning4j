@@ -520,20 +520,6 @@ public interface DataBufferFactory {
     DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
 
     /**
-     * This method converts Half-precision databuffer to current dType buffer.
-     * @param buffer
-     * @return
-     */
-    DataBuffer restoreFromHalfs(DataBuffer buffer);
-
-    /**
-     * This method converts Single/Double precision databuffer to Half-precision databuffer
-     * @param buffer
-     * @return
-     */
-    DataBuffer convertToHalfs(DataBuffer buffer);
-
-    /**
      * Creates half-precision data buffer
      *
      * @param length length of new data buffer

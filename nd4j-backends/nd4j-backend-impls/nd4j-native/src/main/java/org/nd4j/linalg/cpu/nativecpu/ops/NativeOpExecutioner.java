@@ -40,6 +40,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
+        checkForCompression(op);
+
         if(op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s);
@@ -67,6 +69,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        checkForCompression(op);
+
         Arrays.sort(dimension);
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -148,6 +152,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+
         Arrays.sort(dimension);
 
         for(int i = 0; i < dimension.length; i++) {
