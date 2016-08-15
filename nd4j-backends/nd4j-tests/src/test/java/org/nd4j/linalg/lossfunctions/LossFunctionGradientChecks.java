@@ -11,10 +11,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.impl.LossKLD;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.string.NDArrayStrings;
 
 import java.util.Arrays;
 
@@ -55,6 +54,8 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 Nd4j.create(new double[][]{{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}}),
                 Nd4j.create(new double[]{1,2,1}),
                 Nd4j.create(new double[][]{{101,21,110},{10.1,1,0.5},{200,30,0.001}}),
+                Nd4j.create(new double[]{1,2,1}),
+                Nd4j.create(new double[][]{{101,21,110},{10.1,1,0.5},{200,30,0.001}}),
         };
 
         INDArray[] preOut = new INDArray[]{
@@ -65,15 +66,17 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 Nd4j.rand(1,3).add(5),
                 Nd4j.rand(4,4),
                 Nd4j.rand(1,3),
-                Nd4j.randn(3,3).add(10)};
+                Nd4j.randn(3,3).add(10),
+                Nd4j.rand(1,3),
+                Nd4j.randn(3,3).add(10),};
 
         ILossFunction[] lossFn = new ILossFunction[]{
                 new LossMCXENT(), new LossMCXENT(), new LossMCXENT(),
-                new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD()};
+                new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD(), new LossMAE(), new LossMAE(),};
 
         String[] activationFns = new String[]{
                 "softmax","softmax","tanh","identity","tanh",
-                "tanh","identity","identity"};
+                "tanh","identity","identity","identity","identity"};
 
 
         for(int i=0; i<labels.length; i++ ){
