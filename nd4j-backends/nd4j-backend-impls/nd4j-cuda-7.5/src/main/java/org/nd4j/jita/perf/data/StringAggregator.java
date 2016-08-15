@@ -1,9 +1,6 @@
 package org.nd4j.jita.perf.data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,6 +21,13 @@ public class StringAggregator {
             times.put(key, new ArrayList<Long>());
 
         times.get(key).add(currTime - startTime);
+    }
+
+    protected long getMedian(String key) {
+        List<Long> values = times.get(key);
+        Collections.sort(values);
+
+        return values.get(values.size() / 2);
     }
 
     protected long getAverage(String key) {
@@ -65,11 +69,15 @@ public class StringAggregator {
             long currentMax = getMaximum(key);
             long currentMin = getMinimum(key);
             long currentAvg = getAverage(key);
+            long currentMed = getMedian(key);
 
             builder.append(key).append("  >>> ")
-                    .append("Min: ").append(currentMin).append(" ns;")
-                    .append("Max: ").append(currentMax).append(" ns;")
-                    .append("Avg: ").append(currentAvg).append(" ns;");
+                    .append("Min: ").append(currentMin).append(" ns; ")
+                    .append("Max: ").append(currentMax).append(" ns; ")
+                    .append("Avg: ").append(currentAvg).append(" ns; ")
+                    .append("Med: ").append(currentMed).append(" ns; ");
+
+            builder.append("\n");
         }
 
         return builder.toString();
