@@ -892,4 +892,8 @@ public class AtomicAllocator implements Allocator {
         Nd4j.getConstantHandler().moveToConstantSpace(dataBuffer);
         return dataBuffer;
     }
+
+    public long getMemoryUsed(int deviceId){
+        return 0L;
+    }
 }

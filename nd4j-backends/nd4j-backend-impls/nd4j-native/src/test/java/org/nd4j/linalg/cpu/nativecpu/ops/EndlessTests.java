@@ -1,14 +1,10 @@
-package jcuda.jcublas.ops;
+package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
@@ -28,15 +24,6 @@ public class EndlessTests {
 
     @Before
     public void setUp() {
-        CudaEnvironment.getInstance().getConfiguration()
-                .setFirstMemory(AllocationStatus.DEVICE)
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
-                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
-                .enableDebug(true)
-                .setVerbose(false);
-
-
-        System.out.println("Init called");
     }
 
     @Test
@@ -224,8 +211,9 @@ public class EndlessTests {
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             INDArray actual = Nd4j.vstack(arr);
             assertEquals("Failed on [" + i + "] iteration",expected, actual);
-            if (i % 500 == 0)
-                System.out.println("Iteration " + i + " passed");
+            if (i % 500 == 0) {
+                System.out.println("Iteration " + i + " passed, Mem: " + (Pointer.maxBytes() / 1024 / 1024));
+            }
         }
     }
 
@@ -255,16 +243,14 @@ public class EndlessTests {
         for (int i = 0; i < RUN_LIMIT; i++) {
             INDArray arrays[] = new INDArray[4];
             for (int x = 0; x< 4; x++) {
-                arrays[x] = Nd4j.create(new int[]{1, 100, 100});
-//                Nd4j.getCompressor().compressi(arrays[x], "UINT8");
+                arrays[x] = Nd4j.rand(new int[]{1, 100, 100});
             }
 
             INDArray result = Nd4j.concat(0, arrays);
             result.muli(1/256f);
 
-
-            if (i % 100 == 0) {
-                System.out.println("Iteration " + i + " passed, Mem: " + (AtomicAllocator.getInstance().getMemoryUsed(0) / 1024 / 1024));
+            if (i % 500 == 0) {
+                System.out.println("Iteration " + i + " passed, Mem: " + (Pointer.totalBytes() / 1024 / 1024));
             }
         }
     }

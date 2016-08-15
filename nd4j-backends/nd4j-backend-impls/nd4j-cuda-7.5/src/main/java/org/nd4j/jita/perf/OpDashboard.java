@@ -119,7 +119,7 @@ public class OpDashboard {
     }
 
     public void timeOpCall(Op op, long startTime) {
-        classAggergator.putTime(getOpClass(op), startTime);
+        classAggergator.putTime(getOpClass(op), op, startTime);
     }
 
     /**

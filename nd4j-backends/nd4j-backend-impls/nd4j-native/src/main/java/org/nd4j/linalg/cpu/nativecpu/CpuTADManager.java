@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author raver119@gmail.com
@@ -25,6 +26,8 @@ public class CpuTADManager implements TADManager {
     private NativeOps nativeOps;
     private ConstantHandler constantHandler;
     private static Logger logger = LoggerFactory.getLogger(CpuTADManager.class);
+    private AtomicInteger counter = new AtomicInteger(0);
+    private static final int MAX_ENTRIES = 100;
 
     public CpuTADManager() {
         //
@@ -67,7 +70,10 @@ public class CpuTADManager implements TADManager {
                 nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimension.length, targetPointer, offsetsPointer);
 
                 Pair<DataBuffer, DataBuffer> pair = new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
-                cache.put(descriptor, pair);
+                if (counter.get() < MAX_ENTRIES) {
+                    counter.incrementAndGet();
+                    cache.put(descriptor, pair);
+                }
                 return pair;
             }
 

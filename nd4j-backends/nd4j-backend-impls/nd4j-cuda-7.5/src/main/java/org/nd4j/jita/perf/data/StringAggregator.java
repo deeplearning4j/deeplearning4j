@@ -1,5 +1,7 @@
 package org.nd4j.jita.perf.data;
 
+import org.nd4j.linalg.api.ops.Op;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -10,17 +12,30 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StringAggregator {
 
     private Map<String, List<Long>> times = new HashMap<>();
+    private Map<String, AtomicLong> longCalls = new HashMap<>();
+
+    private static final long THRESHOLD = 100000;
 
     public StringAggregator() {
 
     }
 
-    public void putTime(String key, long startTime) {
+    public void putTime(String key, Op op, long startTime) {
         long currTime = System.nanoTime();
         if (!times.containsKey(key))
             times.put(key, new ArrayList<Long>());
 
-        times.get(key).add(currTime - startTime);
+        long timeSpent = currTime - startTime;
+
+        times.get(key).add(timeSpent);
+
+        if (timeSpent > THRESHOLD) {
+            String keyExt = key + " " + op.name() + " (" + op.opNum() + ")";
+            if (!longCalls.containsKey(keyExt))
+                longCalls.put(keyExt, new AtomicLong(0));
+
+            longCalls.get(keyExt).incrementAndGet();
+        }
     }
 
     protected long getMedian(String key) {
@@ -74,11 +89,22 @@ public class StringAggregator {
             builder.append(key).append("  >>> ")
                     .append("Min: ").append(currentMin).append(" ns; ")
                     .append("Max: ").append(currentMax).append(" ns; ")
-                    .append("Avg: ").append(currentAvg).append(" ns; ")
-                    .append("Med: ").append(currentMed).append(" ns; ");
+                    .append("Average: ").append(currentAvg).append(" ns; ")
+                    .append("Median: ").append(currentMed).append(" ns; ");
 
             builder.append("\n");
         }
+
+        builder.append("\n");
+
+        for (String key: longCalls.keySet()) {
+            long numCalls = longCalls.get(key).get();
+            builder.append(key).append("  >>> ")
+                    .append(numCalls);
+
+            builder.append("\n");
+        }
+        builder.append("\n");
 
         return builder.toString();
     }
