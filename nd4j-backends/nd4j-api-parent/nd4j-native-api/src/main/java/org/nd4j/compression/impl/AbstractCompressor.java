@@ -57,4 +57,25 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
 
     public abstract DataBuffer decompress(DataBuffer buffer);
     public abstract DataBuffer compress(DataBuffer buffer);
+
+    protected DataBuffer.TypeEx convertType(DataBuffer.Type type) {
+        if (type == DataBuffer.Type.FLOAT) {
+            return DataBuffer.TypeEx.FLOAT;
+        } else if (type == DataBuffer.Type.DOUBLE) {
+            return DataBuffer.TypeEx.DOUBLE;
+        } else
+            throw new IllegalStateException("Unknown dataType: [" + type + "]");
+    }
+
+    protected DataBuffer.TypeEx getGlobalTypeEx() {
+        DataBuffer.Type type = Nd4j.dataType();
+
+        return convertType(type);
+    }
+
+    protected DataBuffer.TypeEx getLocalTypeEx(DataBuffer buffer) {
+        DataBuffer.Type type = buffer.dataType();
+
+        return convertType(type);
+    }
 }

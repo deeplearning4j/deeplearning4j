@@ -1117,4 +1117,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
         return null;
     }
+
+    @Override
+    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+        return null;
+    }
 }

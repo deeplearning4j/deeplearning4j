@@ -1,19 +1,20 @@
 package org.nd4j.compression.impl;
 
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
- * Compressor implementation based on 8 bitfloats, aka FP8 or Quarter
- * PLEASE NOTE: NOT IMPLEMENTED YET
- * @author raver119@gmail.com
+ * Compressor implementation based on half-precision floats, aka FP16
+ *
+ * @author raver119@
  */
-@Deprecated
-public abstract class Fp8 extends AbstractCompressor {
+public class Float16 extends AbstractCompressor  {
+
     @Override
     public String getDescriptor() {
-        return "FP8";
+        return "FLOAT16";
     }
 
     /**
@@ -28,11 +29,14 @@ public abstract class Fp8 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        return null;
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.FLOAT16, buffer, getGlobalTypeEx());
+
+        return result;
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        return null;
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getLocalTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT16);
+        return result;
     }
 }

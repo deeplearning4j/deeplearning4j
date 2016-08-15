@@ -38,42 +38,14 @@ public class Uint8 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
-            throw new RuntimeException("Unsupported source dataType: " + buffer.dataType());
-
-        CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
-        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
-
-        DataBuffer result = Nd4j.createBuffer(descriptor.getCompressedLength());
-        UByteIndexer indexer = UByteIndexer.create((BytePointer) comp.addressPointer());
-
-        for (int i = 0; i < result.length(); i++) {
-            result.put(i, indexer.get(i));
-        }
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.UINT8, buffer, getGlobalTypeEx());
 
         return result;
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        BytePointer pointer = new BytePointer(buffer.length());
-        UByteIndexer indexer = UByteIndexer.create(pointer);
-
-        for (int x = 0; x < buffer.length(); x ++) {
-            int t = (int) buffer.getDouble(x);
-
-            if (t > 254) t = 255;
-            if (t < 0) t = 0;
-
-            indexer.put(x, t);
-        }
-
-        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, this);
-        descriptor.setCompressedLength(buffer.length());
-
-
-        CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
-
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getLocalTypeEx(buffer), buffer, DataBuffer.TypeEx.UINT8);
         return result;
     }
 }

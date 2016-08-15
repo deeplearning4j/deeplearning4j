@@ -7,6 +7,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.ByteRawIndexer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -16,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * @author raver119@gmail.com
@@ -54,9 +57,12 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());
         out.writeLong(compressionDescriptor.getNumberOfElements());
+//        out.write(((BytePointer) pointer).getStringBytes());
         for (int x = 0; x < pointer.capacity() * pointer.sizeof(); x++) {
-            out.writeByte(pointer.asByteBuffer().get(x));
+            byte b = pointer.asByteBuffer().get(x);
+            out.writeByte(b);
         }
+
 
 
 
@@ -75,6 +81,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
             return buffer;
         else {
             try {
+
                 // if buffer is compressed one, we''ll restore and decompress it here
                 String compressionAlgorithm = s.readUTF();
                 long compressedLength = s.readLong();

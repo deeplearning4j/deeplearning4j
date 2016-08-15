@@ -22,8 +22,9 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
-import org.nd4j.compression.impl.Fp16;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -954,7 +955,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             throw new UnsupportedOperationException("Source dtype isn't supported: " + buffer.dataType());
         }
 
-        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, new Fp16());
+        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, new Float16());
         descriptor.setCompressedLength(buffer.length() * 2);
 
 
@@ -972,6 +973,21 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        if (source.isView())
+            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
+
+        DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
+        source.setData(buffer);
+
+        if (buffer instanceof CompressedDataBuffer)
+            source.markAsCompressed(true);
+        else source.markAsCompressed(false);
+
+        return source;
+    }
+
+    @Override
+    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
         int elementSize = 0;
         if (typeDst.ordinal() <= 2)
             elementSize = 1;
@@ -983,22 +999,32 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             elementSize = 8;
         else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
 
-        BytePointer pointer = new BytePointer(source.length() * elementSize);
+        DataBuffer buffer = null;
 
-        CompressionDescriptor descriptor = new CompressionDescriptor(source.data(), typeDst.name());
-        CompressedDataBuffer buffer = new CompressedDataBuffer(pointer, descriptor);
+
+        if (typeDst.ordinal() < 6) {
+            // all types below 6 are compression modes
+            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
+            descriptor.setCompressionType(CompressionType.LOSSY);
+            descriptor.setCompressedLength(source.length() * elementSize);
+            buffer = new CompressedDataBuffer(pointer, descriptor);
+        } else {
+            // decompression mode
+            buffer = Nd4j.createBuffer(source.length(), false);
+        }
 
         nativeOps.convertTypes(
                 null,
                 typeSrc.ordinal(),
-                source.data().addressPointer(),
+                source.addressPointer(),
                 source.length(),
                 typeDst.ordinal(),
-                pointer
+                buffer.addressPointer()
         );
 
-        INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+   //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
 
-        return converted;
+        return buffer;
     }
 }

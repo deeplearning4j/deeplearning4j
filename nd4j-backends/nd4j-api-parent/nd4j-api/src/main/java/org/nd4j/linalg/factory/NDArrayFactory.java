@@ -1739,4 +1739,6 @@ public interface NDArrayFactory {
 
 
     INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
+
+    DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
 }

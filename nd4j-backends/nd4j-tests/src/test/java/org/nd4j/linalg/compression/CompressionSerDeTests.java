@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.ByteArrayInputStream;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -45,9 +46,13 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
     @Test
     public void testManualDecompression1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 250, 250);
+        INDArray array = Nd4j.linspace(1, 5, 10);
 
-        INDArray compressed = Nd4j.getCompressor().compress(array, "FP16");
+        INDArray compressed = Nd4j.getCompressor().compress(array, "FLOAT16");
+
+        assertEquals(true, compressed.isCompressed());
+
+        assertEquals(true, compressed.data() instanceof CompressedDataBuffer);
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Nd4j.write(bos, compressed);
@@ -56,9 +61,9 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
         INDArray result = Nd4j.read(bis);
 
-        INDArray decomp = Nd4j.getCompressor().decompress(result);
+       // INDArray decomp = Nd4j.getCompressor().decompress(result);
 
-        assertEquals(array, decomp);
+        assertArrayEquals(array.data().asFloat(), result.data().asFloat(), 0.1f);
     }
 
     @Test
