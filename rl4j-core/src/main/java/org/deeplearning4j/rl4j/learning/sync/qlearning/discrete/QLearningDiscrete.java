@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -63,7 +64,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     public void postEpoch() {
 
 
-        if (getHistoryProcessor() != null && getHistoryProcessor().isMonitoring())
+        if (getHistoryProcessor() != null)
             getHistoryProcessor().stopMonitor();
 
     }
@@ -71,7 +72,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     public void preEpoch() {
         history = null;
 
-        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null) {
+        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null && getHistoryProcessor().isMonitoring()) {
             lastMonitor = getStepCounter();
             getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + getEpochCounter() + "-" + getStepCounter() + ".mp4");
         }
@@ -102,6 +103,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     history = new INDArray[]{input};
             }
+
             INDArray hstack = Transition.concat(history);
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
@@ -110,6 +112,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             maxQ = qs.getDouble(maxAction);
             action = getEgPolicy().nextAction(hstack);
+
+            //action = 0;
         }
         lastAction = action;
 
@@ -124,6 +128,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             Transition<Integer> trans = new Transition(history, action, stepReply.getReward(), stepReply.isDone(), nhistory);
             getExpReplay().store(trans);
+
             if (getStepCounter() > updateStart) {
                 Pair<INDArray, INDArray> targets = setTarget(getExpReplay().getBatch());
                 getCurrentDQN().fit(targets.getFirst(), targets.getSecond());
@@ -131,6 +136,9 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
 
         history = nhistory;
+
+        System.gc();
+        System.out.println(getStepCounter() + ": " + (Pointer.totalBytes() / (1024*1024)));
 
         return new QLStepReturn<O>(maxQ, getCurrentDQN().getLatestScore(), stepReply);
 
