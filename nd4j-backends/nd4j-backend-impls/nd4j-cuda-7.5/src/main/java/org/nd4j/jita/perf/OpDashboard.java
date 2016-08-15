@@ -1,5 +1,6 @@
 package org.nd4j.jita.perf;
 
+import org.nd4j.jita.perf.data.StringAggregator;
 import org.nd4j.jita.perf.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
 import org.slf4j.Logger;
@@ -17,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OpDashboard {
     private static AtomicLong invocationsCount = new AtomicLong(0);
     private static OpDashboard ourInstance = new OpDashboard();
+
+    private static StringAggregator classAggergator = new StringAggregator();
 
     private static StringCounter classCounter = new StringCounter();
     private static StringCounter opCounter = new StringCounter();
@@ -115,8 +118,8 @@ public class OpDashboard {
         prevOpClass = opClass;
     }
 
-    public void timeOpCall(Op op) {
-
+    public void timeOpCall(Op op, long startTime) {
+        classAggergator.putTime(getOpClass(op), startTime);
     }
 
     /**
@@ -159,6 +162,9 @@ public class OpDashboard {
         System.out.println();
         logger.info("--- Matching Op calls statistics: ---");
         System.out.println(matchingCounter.asString());
+        System.out.println();
+        logger.info("--- Time for OpClass calls statistics: ---");
+        System.out.println(classAggergator.asString());
         System.out.println();
     }
 

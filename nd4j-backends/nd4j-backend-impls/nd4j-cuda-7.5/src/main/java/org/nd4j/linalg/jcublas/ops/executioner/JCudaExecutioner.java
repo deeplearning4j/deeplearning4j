@@ -80,6 +80,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         Arrays.sort(dimension);
@@ -163,11 +165,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return op.z();
     }
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         Arrays.sort(dimension);
@@ -509,12 +515,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return ret;
     }
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         Arrays.sort(dimension);
@@ -636,6 +645,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return op.z();
     }
 
@@ -705,6 +716,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -794,12 +807,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return null;
     }
 
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -807,7 +824,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
-        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
@@ -921,12 +938,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return null;
 
     }
 
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
       //  log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -1237,11 +1258,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 //&& !op.z().isScalar()
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return context;
     }
 
 
     private CudaContext invoke(ScalarOp op) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -1310,10 +1335,14 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
+
         return  null;
     }
 
     private CudaContext invoke(TransformOp op) {
+        long initialTime = System.nanoTime();
+
         checkForCompression(op);
 
         if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -1610,6 +1639,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         if (extraArgs != null)
             extraArgs.address();
+
+        OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return null;
     }
