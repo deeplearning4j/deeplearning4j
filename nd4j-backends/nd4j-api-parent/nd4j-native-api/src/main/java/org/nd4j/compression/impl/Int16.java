@@ -18,7 +18,7 @@ public class Int16 extends AbstractCompressor {
      */
     @Override
     public String getDescriptor() {
-        return "INT8";
+        return "INT16";
     }
 
     /**
