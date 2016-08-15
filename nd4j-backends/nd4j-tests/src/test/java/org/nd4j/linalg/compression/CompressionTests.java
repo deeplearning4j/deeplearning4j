@@ -28,7 +28,7 @@ public class CompressionTests extends BaseNd4jTest {
     public void testFP16Compression1() {
         INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
-        BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT16");
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
 
         BasicNDArrayCompressor.getInstance().printAvailableCompressors();
 

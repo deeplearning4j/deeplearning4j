@@ -3,7 +3,6 @@ package org.nd4j.compression.impl;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * Compressor implementation based on half-precision floats, aka FP16
@@ -36,7 +35,7 @@ public class Float16 extends AbstractCompressor  {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getLocalTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT16);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT16);
         return result;
     }
 }

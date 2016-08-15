@@ -1,6 +1,5 @@
 package org.nd4j.compression.impl;
 
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,7 +34,7 @@ public class Float8 extends AbstractCompressor {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getLocalTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT8);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT8);
         return result;
     }
 }

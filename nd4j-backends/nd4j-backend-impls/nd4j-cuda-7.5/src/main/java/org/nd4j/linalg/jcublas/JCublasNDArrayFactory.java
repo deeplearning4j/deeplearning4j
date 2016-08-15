@@ -20,10 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -35,6 +32,9 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
@@ -1115,11 +1115,64 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
-        return null;
+        if (source.isView())
+            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
+
+        DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
+        source.setData(buffer);
+
+        if (buffer instanceof CompressedDataBuffer)
+            source.markAsCompressed(true);
+        else source.markAsCompressed(false);
+
+        return source;
     }
 
     @Override
     public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
-        return null;
+        int elementSize = 0;
+        if (typeDst.ordinal() <= 2)
+            elementSize = 1;
+        else if (typeDst.ordinal() <= 5)
+            elementSize = 2;
+        else if (typeDst.ordinal() == 6)
+            elementSize = 4;
+        else if (typeDst.ordinal() == 7)
+            elementSize = 8;
+        else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+
+        DataBuffer buffer = null;
+
+        if (!(source instanceof CompressedDataBuffer))
+            AtomicAllocator.getInstance().synchronizeHostData(source);
+
+        if (typeDst.ordinal() < 6) {
+            // all types below 6 are compression modes
+            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
+            descriptor.setCompressionType(CompressionType.LOSSY);
+            descriptor.setCompressedLength(source.length() * elementSize);
+            buffer = new CompressedDataBuffer(pointer, descriptor);
+        } else {
+            // decompression mode
+            buffer = Nd4j.createBuffer(source.length(), false);
+            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            point.tickHostWrite();
+        }
+
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                source.addressPointer(),
+                source.length(),
+                typeDst.ordinal(),
+                buffer.addressPointer()
+        );
+
+
+
+        //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+
+        return buffer;
     }
 }
