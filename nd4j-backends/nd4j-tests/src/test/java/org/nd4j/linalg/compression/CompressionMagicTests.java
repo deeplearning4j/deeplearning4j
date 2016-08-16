@@ -8,8 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -66,6 +65,56 @@ public class CompressionMagicTests extends BaseNd4jTest {
             assertEquals(a, c, 0.01f);
         }
 
+    }
+
+    @Test
+    public void testDupSkipDecompression1() {
+        INDArray array = Nd4j.linspace(1, 100, 2500);
+
+        INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
+
+        INDArray newArray = compressed.dup();
+        assertTrue(newArray.isCompressed());
+
+        Nd4j.getCompressor().decompressi(compressed);
+        Nd4j.getCompressor().decompressi(newArray);
+
+        assertEquals(array, compressed);
+        assertEquals(array, newArray);
+    }
+
+    @Test
+    public void testDupSkipDecompression2() {
+        INDArray array = Nd4j.linspace(1, 100, 2500);
+
+        INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
+
+        INDArray newArray = compressed.dup('c');
+        assertTrue(newArray.isCompressed());
+
+        Nd4j.getCompressor().decompressi(compressed);
+        Nd4j.getCompressor().decompressi(newArray);
+
+        assertEquals(array, compressed);
+        assertEquals(array, newArray);
+    }
+
+    @Test
+    public void testDupSkipDecompression3() {
+        INDArray array = Nd4j.linspace(1, 100, 2500);
+
+        INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
+
+        INDArray newArray = compressed.dup('f');
+        assertFalse(newArray.isCompressed());
+
+        Nd4j.getCompressor().decompressi(compressed);
+//        Nd4j.getCompressor().decompressi(newArray);
+
+        assertEquals(array, compressed);
+        assertEquals(array, newArray);
+        assertEquals('f', newArray.ordering());
+        assertEquals('c', compressed.ordering());
     }
 
     @Override

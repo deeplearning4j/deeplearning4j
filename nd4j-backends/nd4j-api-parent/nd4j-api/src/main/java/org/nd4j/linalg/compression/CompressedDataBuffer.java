@@ -110,6 +110,16 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     }
 
     @Override
+    public DataBuffer dup() {
+        Pointer nPtr = new BytePointer(compressionDescriptor.getCompressedLength());
+        Pointer.memcpy(nPtr, pointer, compressionDescriptor.getCompressedLength());
+        CompressionDescriptor nDesc = compressionDescriptor.clone();
+
+        CompressedDataBuffer nBuf = new CompressedDataBuffer(nPtr, nDesc);
+        return nBuf;
+    }
+
+    @Override
     public long length() {
         return compressionDescriptor.getNumberOfElements();
     }

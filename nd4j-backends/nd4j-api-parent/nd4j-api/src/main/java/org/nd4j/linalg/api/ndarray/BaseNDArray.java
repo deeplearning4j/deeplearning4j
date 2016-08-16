@@ -1489,6 +1489,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
+        if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
+            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
+            ret.markAsCompressed(true);
+            return ret;
+        }
+        log.info("Skipping");
         Nd4j.getCompressor().autoDecompress(this);
         INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
@@ -1496,6 +1502,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup(char order){
+        if (this.isCompressed() && this.ordering() == order) {
+            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
+            ret.markAsCompressed(true);
+            return ret;
+        }
         Nd4j.getCompressor().autoDecompress(this);
         return Shape.toOffsetZeroCopy(this, order);
     }
