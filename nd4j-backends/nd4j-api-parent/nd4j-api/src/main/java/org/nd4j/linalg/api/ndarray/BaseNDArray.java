@@ -1494,7 +1494,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret.markAsCompressed(true);
             return ret;
         }
-        log.info("Skipping");
         Nd4j.getCompressor().autoDecompress(this);
         INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
