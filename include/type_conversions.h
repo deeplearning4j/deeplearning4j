@@ -38,7 +38,7 @@ __device__ inline void convertKernelGeneric(void *dx, long N, void *dz) {
 #endif
 
 template<typename S, typename T>
-void convertGeneric(void *dx, long N, void *dz) {
+void convertGeneric(void *dx,const long N, void *dz) {
     S *x = reinterpret_cast<S *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
