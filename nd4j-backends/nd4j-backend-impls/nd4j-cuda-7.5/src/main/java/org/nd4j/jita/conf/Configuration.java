@@ -160,7 +160,7 @@ public class Configuration implements Serializable {
      * @param reallyEnable
      * @return
      */
-    public Configuration enableStatisticsGathering(boolean reallyEnable) {
+    public Configuration enableDashboard(boolean reallyEnable) {
         fillDashboard = reallyEnable;
         return this;
     }
