@@ -31,7 +31,7 @@ public class ApiTest extends BaseUiServerTest {
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
-                .theta(0.5).learningRate(500).useAdaGrad(false)
+                .theta(0.5).learningRate(500).useAdaGrad(false).numDimension(2)
                 .build();
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
@@ -42,7 +42,8 @@ public class ApiTest extends BaseUiServerTest {
 
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
-        b.plot(data, 2, labelsList, "coords.csv");
+        b.fit(data);
+        b.saveAsFile(labelsList, "coords.csv");
         String coords =  client.target("http://localhost:8080").path("api").path("update")
                 .request().accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(new UrlResource("http://localhost:8080/api/coords.csv"), MediaType.APPLICATION_JSON))

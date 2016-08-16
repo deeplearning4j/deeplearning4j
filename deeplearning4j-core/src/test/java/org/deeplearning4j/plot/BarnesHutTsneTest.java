@@ -68,7 +68,6 @@ public class BarnesHutTsneTest {
         final double momentum = 4.0;
         final int switchMomentumIteration = 1;
         final boolean normalize = false;
-        final boolean usePca = true;
         final int stopLyingIteration = 100;
         final double tolerance = 1e-1;
         final double learningRate = 100;
@@ -79,7 +78,7 @@ public class BarnesHutTsneTest {
         BarnesHutTsne b = new BarnesHutTsne.Builder().theta(theta).invertDistanceMetric(invert).similarityFunction(similarityFunctions)
                 .setMaxIter(maxIter).setRealMin(realMin).setInitialMomentum(initialMomentum).setFinalMomentum(finalMomentum)
                 .setMomentum(momentum).setSwitchMomentumIteration(switchMomentumIteration).normalize(normalize)
-                .usePca(usePca).stopLyingIteration(stopLyingIteration).tolerance(tolerance).learningRate(learningRate)
+                .stopLyingIteration(stopLyingIteration).tolerance(tolerance).learningRate(learningRate)
                 .perplexity(perplexity).minGain(minGain).build();
 
         final double DELTA = 1e-15;
@@ -94,8 +93,7 @@ public class BarnesHutTsneTest {
         assertEquals(momentum,b.momentum,DELTA);
         assertEquals("switchMomentumnIteration", switchMomentumIteration, b.switchMomentumIteration);
         assertEquals("normalize", normalize,b.normalize);
-        assertEquals("usePca", usePca,b.usePca);
-        assertEquals("stopLyingIteration", stopLyingIteration,b.stopLyingIteration);
+        assertEquals("stopLyingInMemoryLookupTable.javaIteration", stopLyingIteration,b.stopLyingIteration);
         assertEquals(tolerance,b.tolerance,DELTA);
         assertEquals(learningRate,b.learningRate,DELTA);
         assertEquals("useAdaGrad", useAdaGrad, b.useAdaGrad);
