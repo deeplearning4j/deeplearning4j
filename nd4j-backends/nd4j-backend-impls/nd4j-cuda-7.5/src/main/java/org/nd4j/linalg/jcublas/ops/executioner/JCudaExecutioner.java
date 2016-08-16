@@ -165,7 +165,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return op.z();
     }
@@ -515,7 +516,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return ret;
     }
@@ -645,7 +647,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return op.z();
     }
@@ -807,7 +810,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return null;
     }
@@ -938,7 +942,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return null;
 
@@ -1258,7 +1263,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 //&& !op.z().isScalar()
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return context;
     }
@@ -1335,7 +1341,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return  null;
     }
@@ -1639,8 +1646,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         if (extraArgs != null)
             extraArgs.address();
-
-        OpDashboard.getInstance().timeOpCall(op, initialTime);
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
+            OpDashboard.getInstance().timeOpCall(op, initialTime);
 
         return null;
     }

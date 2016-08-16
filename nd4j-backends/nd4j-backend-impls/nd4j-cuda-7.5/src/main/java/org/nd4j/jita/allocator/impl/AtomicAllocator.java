@@ -600,7 +600,7 @@ public class AtomicAllocator implements Allocator {
                         if (threadId == 0) {
                          //   if (lastGc < System.currentTimeMillis() - (1000)) {
                                 System.gc();
-                                lastGc = System.currentTimeMillis();
+                                //lastGc = System.currentTimeMillis();
                            // }
                             Thread.sleep(100);
                         } else Thread.sleep(50);

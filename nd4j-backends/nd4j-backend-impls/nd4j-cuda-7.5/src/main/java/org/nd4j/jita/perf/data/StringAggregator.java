@@ -81,6 +81,39 @@ public class StringAggregator {
         return cnt.get();
     }
 
+    protected long getSum(String key) {
+        AtomicLong sum = new AtomicLong(0);
+        for (Long time: times.get(key)) {
+            sum.addAndGet(time);
+        }
+        return sum.get();
+    }
+
+    public String asPercentageString() {
+        StringBuilder builder = new StringBuilder();
+
+        AtomicLong sum = new AtomicLong(0);
+        for (String key: times.keySet()) {
+            sum.addAndGet(getSum(key));
+        }
+        builder.append("Total time spent: ").append(sum.get() / 1000000).append(" ms.").append("\n");
+
+        for (String key: times.keySet()) {
+            long currentSum = getSum(key);
+            float perc = currentSum * 100 / sum.get();
+
+            long sumMs = currentSum / 1000000;
+
+            builder.append(key).append("  >>> ")
+                    .append(" perc: ").append(perc).append(" ")
+                    .append("Time spent: ").append(sumMs).append(" ms");
+
+            builder.append("\n");
+        }
+
+        return builder.toString();
+    }
+
     public String asString() {
         StringBuilder builder = new StringBuilder();
 
@@ -90,8 +123,12 @@ public class StringAggregator {
             long currentAvg = getAverage(key);
             long currentMed = getMedian(key);
 
-            builder.append(key).append("  >>> ")
-                    .append("Min: ").append(currentMin).append(" ns; ")
+            builder.append(key).append("  >>> ");
+
+            if (longCalls.size() == 0)
+                builder.append(" ").append(times.get(key).size()).append(" calls; ");
+
+            builder.append("Min: ").append(currentMin).append(" ns; ")
                     .append("Max: ").append(currentMax).append(" ns; ")
                     .append("Average: ").append(currentAvg).append(" ns; ")
                     .append("Median: ").append(currentMed).append(" ns; ");

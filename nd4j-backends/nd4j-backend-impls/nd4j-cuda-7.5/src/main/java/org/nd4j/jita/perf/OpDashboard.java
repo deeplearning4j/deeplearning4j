@@ -174,10 +174,17 @@ public class OpDashboard {
         logger.info("--- Time for OpClass calls statistics: ---");
         System.out.println(classAggergator.asString());
         System.out.println();
-        logger.info("--- Time for long OpClass calls statistics: ---");
+        logger.info("--- Time for long Op calls statistics: ---");
         System.out.println(longAggergator.asString());
         System.out.println();
+        logger.info("--- Time spent for Op calls statistics: ---");
+        System.out.println(classAggergator.asPercentageString());
+        System.out.println();
+        logger.info("--- Time spent for long Op calls statistics: ---");
+        System.out.println(longAggergator.asPercentageString());
+        System.out.println();
     }
+
 
 
     public long getInvocationsCount() {
