@@ -196,12 +196,17 @@ And finally, we train the network by calling `.fit()` on `sparkNetwork`.
             System.out.println(evaluation.stats());
         }
 
-## Getting Started with Distributed GPUs on Spark
+## Getting Started with Data Parallel GPUs on Spark
+
+Finally if you want to go further:
 
 To begin training deep neural networks on distributed GPUs on Spark, you will need to do two things.
 
 1. Set up DL4J using our [quickstart guide](http://deeplearning4j.org/quickstart).
 2. Configure Spark and view code examples using [these instructions](http://deeplearning4j.org/spark).
+
+Join us on gitter as well if you'd like to speak to any of us live:
+https://gitter.im/deeplearning4j/deeplearning4j
 
 
 ## References
