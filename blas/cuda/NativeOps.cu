@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_conversions.h>
+#include <sys/time.h>
 
 
 
@@ -1747,9 +1748,11 @@ void   NativeOps::execTransformDouble(
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxDouble<<<768, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
+						fillDimensionalIsMaxDouble<<<128, 64, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+                            checkCudaErrors(cudaStreamSynchronize(*stream));
+
 
 					}
 					break;
@@ -2079,6 +2082,11 @@ void   NativeOps::execBroadcastFloat(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension, int dimensionLength){
+
+//    timespec tsX;
+//    timespec tsY;
+//    clock_gettime(CLOCK_REALTIME, &tsX);
+
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *yPointer = reinterpret_cast<float *>(y);
@@ -2106,6 +2114,11 @@ void   NativeOps::execBroadcastFloat(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
 
+
+    timespec ts1;
+    timespec ts2;
+    clock_gettime(CLOCK_REALTIME, &ts1);
+
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2117,8 +2130,16 @@ void   NativeOps::execBroadcastFloat(
 			dimensionPointer,
 			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
 
+//    clock_gettime(CLOCK_REALTIME, &ts2);
+
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+//    clock_gettime(CLOCK_REALTIME, &tsY);
+
+//    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
+//    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
+//    printf("-------------------------------------\n");
 }
 
 
@@ -4186,9 +4207,10 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<768, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+						    checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
@@ -4421,7 +4443,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxHalf<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+                            checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
