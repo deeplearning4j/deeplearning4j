@@ -50,7 +50,7 @@ void convertGeneric(void *dx, long N, void *dz) {
         }
     } else {
 
-#pragma omp parallel for simd schedule(guided)
+#pragma omp simd
         for (int i = 0; i < N; i++) {
             z[i] = (T) ((float) x[i]);
         }
