@@ -110,6 +110,8 @@ public class HistoryProcessor implements IHistoryProcessor {
         cvtColor(cvmat, cvmat, COLOR_RGB2GRAY);
         Mat resized = new Mat(conf.getRescaledHeight(), conf.getRescaledWidth(), CV_8UC(1));
         resize(cvmat, resized, new Size(conf.getRescaledHeight(), conf.getRescaledWidth()));
+        //   show(resized);
+        //   waitKP();
         //Crop by croppingHeight, crorpingHeight
         Mat cropped = resized.apply(new Rect(conf.getOffsetX(), conf.getOffsetY(), conf.getCroppingWidth(), conf.getCroppingHeight()));
         INDArray out = null;
@@ -135,7 +137,6 @@ public class HistoryProcessor implements IHistoryProcessor {
     public void show(Mat m) {
         OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
         CanvasFrame canvas = new CanvasFrame("LOL", 1);
-        canvas.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         canvas.showImage(converter.convert(m));
     }
 

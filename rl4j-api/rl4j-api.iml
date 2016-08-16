@@ -33,6 +33,6 @@
     <orderEntry type="library" name="Maven: org.bytedeco:javacpp:1.2.3" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-context:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
-    <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.16.10" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.16.10" level="project" />
   </component>
 </module>

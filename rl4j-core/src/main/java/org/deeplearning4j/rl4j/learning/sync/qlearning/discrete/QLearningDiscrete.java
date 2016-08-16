@@ -72,7 +72,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     public void preEpoch() {
         history = null;
 
-        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null && getHistoryProcessor().isMonitoring()) {
+        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null && getDataManager().isSaveData()) {
             lastMonitor = getStepCounter();
             getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + getEpochCounter() + "-" + getStepCounter() + ".mp4");
         }
