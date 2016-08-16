@@ -3,6 +3,7 @@ DataVec
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.datavec/datavec-api/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.datavec/datavec-api)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.datavec/datavec-api/badge.svg)](http://deeplearning4j.org/datavecdoc)
 
 DataVec is an Apache2 Licensed open-sourced tool for machine learning ETL (Extract, Transform, Load) operations. The goal of DataVec is to transform raw data into usable vector formats across machine learning tools.
 
