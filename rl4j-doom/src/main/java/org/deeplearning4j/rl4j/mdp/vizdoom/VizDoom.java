@@ -173,7 +173,10 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
         double[] array;
 
         public GameScreen(int[] screen) {
-            array = Doubles.toArray(Ints.asList(screen));
+            array = new double[screen.length];
+            for (int i = 0; i < screen.length; i++) {
+                array[i] = screen[i];
+            }
         }
 
         public double[] toArray() {

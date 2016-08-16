@@ -51,6 +51,8 @@
     <orderEntry type="library" name="Maven: commons-io:commons-io:2.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-compress:1.8" level="project" />
     <orderEntry type="library" name="Maven: org.tukaani:xz:1.5" level="project" />
+    <orderEntry type="library" name="Maven: com.google.guava:guava:11.0" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.findbugs:jsr305:1.3.9" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.3.1" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20131018" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.5.1" level="project" />
@@ -82,7 +84,6 @@
     <orderEntry type="library" name="Maven: org.bytedeco.javacpp-presets:leptonica:macosx-x86_64:1.73-1.2" level="project" />
     <orderEntry type="library" name="Maven: org.bytedeco.javacpp-presets:leptonica:windows-x86_64:1.73-1.2" level="project" />
     <orderEntry type="library" name="Maven: org.bytedeco.javacpp-presets:leptonica:linux-ppc64le:1.73-1.2" level="project" />
-    <orderEntry type="library" name="Maven: com.google.guava:guava:19.0" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-native:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-native:linux-x86_64:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-native-api:0.5.1-SNAPSHOT" level="project" />
