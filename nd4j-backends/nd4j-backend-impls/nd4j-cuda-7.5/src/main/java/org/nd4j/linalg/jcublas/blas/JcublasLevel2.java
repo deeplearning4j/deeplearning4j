@@ -16,7 +16,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT gemv called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("sgemv");
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);

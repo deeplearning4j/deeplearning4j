@@ -29,12 +29,10 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                         DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
                         shapeCache.put(descriptor, buffer);
 
-                        System.out.println("Creating new entry: " + counter.get());
                         return buffer;
                     } else return shapeCache.get(descriptor);
                 }
             } else {
-                System.out.println("Too many entries");
                 return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             }
         }

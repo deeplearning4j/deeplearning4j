@@ -87,7 +87,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         Arrays.sort(dimension);
     //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
@@ -178,7 +178,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         Arrays.sort(dimension);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
   //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -530,7 +530,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
         for(int i = 0; i < dimension.length; i++) {
@@ -720,9 +720,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
-//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+//        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
 //            OpDashboard.getInstance().processOpCall(op);
 
      //   log.info("B1 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -819,7 +819,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
@@ -955,7 +955,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
         Arrays.sort(dimension);
@@ -1269,7 +1269,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
       //  log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -1345,7 +1345,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processOpCall(op);
 
 //        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");

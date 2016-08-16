@@ -20,6 +20,7 @@ public class OpDashboard {
     private static OpDashboard ourInstance = new OpDashboard();
 
     private static StringAggregator classAggergator = new StringAggregator();
+    private static StringAggregator longAggergator = new StringAggregator();
 
     private static StringCounter classCounter = new StringCounter();
     private static StringCounter opCounter = new StringCounter();
@@ -31,6 +32,7 @@ public class OpDashboard {
 
     private static Logger logger = LoggerFactory.getLogger(OpDashboard.class);
 
+    private static final long THRESHOLD = 100000;
 
     private String prevOpClass = "";
     private String prevOpName = "";
@@ -119,7 +121,13 @@ public class OpDashboard {
     }
 
     public void timeOpCall(Op op, long startTime) {
-        classAggergator.putTime(getOpClass(op), op, startTime);
+        long currentTime = System.nanoTime() - startTime;
+        classAggergator.putTime(getOpClass(op), op, currentTime);
+
+        if (currentTime > THRESHOLD) {
+            String keyExt = getOpClass(op) + " " + op.name() + " (" + op.opNum() + ")";
+            longAggergator.putTime(keyExt, currentTime);
+        }
     }
 
     /**
@@ -165,6 +173,9 @@ public class OpDashboard {
         System.out.println();
         logger.info("--- Time for OpClass calls statistics: ---");
         System.out.println(classAggergator.asString());
+        System.out.println();
+        logger.info("--- Time for long OpClass calls statistics: ---");
+        System.out.println(longAggergator.asString());
         System.out.println();
     }
 

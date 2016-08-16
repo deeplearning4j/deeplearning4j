@@ -19,7 +19,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.*;
@@ -87,7 +86,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT dot called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("sdot");
 
         DataTypeValidation.assertSameDataType(X, Y);
@@ -188,7 +187,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT nrm2 called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("snrm2");
 
 
@@ -392,7 +391,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT iamax called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("isamax");
 
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
@@ -467,7 +466,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT swap called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("sswap");
 
 
@@ -495,7 +494,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT copy called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("scopy");
 
 
@@ -767,7 +766,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT scal called");
 
-        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        if (CudaEnvironment.getInstance().getConfiguration().isFillDashboard())
             OpDashboard.getInstance().processBlasCall("sscal");
 
         CudaContext ctx = allocator.getFlowController().prepareAction(X);

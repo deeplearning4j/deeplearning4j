@@ -20,12 +20,9 @@ public class StringAggregator {
 
     }
 
-    public void putTime(String key, Op op, long startTime) {
-        long currTime = System.nanoTime();
+    public void putTime(String key, Op op, long timeSpent) {
         if (!times.containsKey(key))
             times.put(key, new ArrayList<Long>());
-
-        long timeSpent = currTime - startTime;
 
         times.get(key).add(timeSpent);
 
@@ -36,6 +33,13 @@ public class StringAggregator {
 
             longCalls.get(keyExt).incrementAndGet();
         }
+    }
+
+    public void putTime(String key, long timeSpent) {
+        if (!times.containsKey(key))
+            times.put(key, new ArrayList<Long>());
+
+        times.get(key).add(timeSpent);
     }
 
     protected long getMedian(String key) {

@@ -570,6 +570,7 @@ public class AtomicAllocator implements Allocator {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
         private int deviceId;
+        private long lastGc = System.currentTimeMillis();
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -597,7 +598,10 @@ public class AtomicAllocator implements Allocator {
                 } else {
                     try {
                         if (threadId == 0) {
-                            System.gc();
+                         //   if (lastGc < System.currentTimeMillis() - (1000)) {
+                                System.gc();
+                                lastGc = System.currentTimeMillis();
+                           // }
                             Thread.sleep(100);
                         } else Thread.sleep(50);
                     } catch (Exception e) {

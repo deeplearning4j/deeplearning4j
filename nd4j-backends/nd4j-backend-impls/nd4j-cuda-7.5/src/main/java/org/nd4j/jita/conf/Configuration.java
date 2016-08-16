@@ -2,7 +2,6 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
@@ -50,7 +49,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
-    @Getter private boolean gatherStatistics = false;
+    @Getter private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
 
@@ -162,7 +161,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration enableStatisticsGathering(boolean reallyEnable) {
-        gatherStatistics = reallyEnable;
+        fillDashboard = reallyEnable;
         return this;
     }
 
