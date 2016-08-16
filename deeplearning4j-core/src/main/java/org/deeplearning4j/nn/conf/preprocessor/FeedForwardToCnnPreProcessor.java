@@ -120,18 +120,29 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.FF){
-            throw new IllegalStateException("Invalid input type: Expected input of type FeedForward, got " + inputType);
+        if(inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.CNN)){
+            throw new IllegalStateException("Invalid input type: got " + inputType);
         }
 
-        InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward)inputType;
-        int expSize = inputHeight * inputWidth * numChannels;
-        if(c.getSize() != expSize){
-            throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize + " = (d=" + numChannels +
-            " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
-        }
+        if(inputType.getType() == InputType.Type.FF){
+            InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward)inputType;
+            int expSize = inputHeight * inputWidth * numChannels;
+            if(c.getSize() != expSize){
+                throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize + " = (d=" + numChannels +
+                        " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
+            }
+            return InputType.convolutional(inputHeight, inputWidth, numChannels);
+        } else {
+            //Must be CNN input type...
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
 
-        return InputType.convolutional(inputHeight, inputWidth, numChannels);
+            if(c.getDepth() != numChannels || c.getHeight() != inputHeight || c.getWidth() != inputWidth){
+                throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c.getDepth() + ","
+                        + c.getWidth() + "," + c.getHeight() + ") but expected (" + numChannels + "," + inputHeight + ","
+                        + inputWidth + ")");
+            }
+            return c;
+        }
     }
 
 }
