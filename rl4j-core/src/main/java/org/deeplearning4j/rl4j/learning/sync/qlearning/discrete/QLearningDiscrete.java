@@ -103,7 +103,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     history = new INDArray[]{input};
             }
-
             INDArray hstack = Transition.concat(history);
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
@@ -112,8 +111,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             maxQ = qs.getDouble(maxAction);
             action = getEgPolicy().nextAction(hstack);
-
-            //action = 0;
         }
         lastAction = action;
 
@@ -136,10 +133,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
 
         history = nhistory;
-
-        System.gc();
-        System.out.println(getStepCounter() + ": " + (Pointer.totalBytes() / (1024*1024)));
-
+        
         return new QLStepReturn<O>(maxQ, getCurrentDQN().getLatestScore(), stepReply);
 
     }

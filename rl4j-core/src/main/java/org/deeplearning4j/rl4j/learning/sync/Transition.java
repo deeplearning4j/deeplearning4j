@@ -17,7 +17,11 @@ public class Transition<A> {
     INDArray[] nextObservation;
 
     public static INDArray concat(INDArray[] history){
-        INDArray arr = Nd4j.concat(0, history);
+        INDArray[] decompressed = new INDArray[history.length];
+        for (int i = 0; i < history.length; i++) {
+            decompressed[i] = history[i].dup();
+        }
+        INDArray arr = Nd4j.concat(0, decompressed);
         if (arr.shape().length > 2)
             arr.muli(1/256f);
         return arr;
