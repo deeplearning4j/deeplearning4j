@@ -30,12 +30,15 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -54,9 +57,29 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  * Barnes hut algorithm for TSNE, uses a dual tree approximation approach.
  * Work based on:
  * http://lvdmaaten.github.io/tsne/
+ * For hight dimensions, it's recommanded to reduce the dimension up to 50 using another method (PCA or other)
  * @author Adam Gibson
  */
-public class BarnesHutTsne extends Tsne implements Model {
+public class BarnesHutTsne implements Model {
+    protected static final Logger logger = LoggerFactory.getLogger(BarnesHutTsne.class);
+
+    protected int maxIter = 1000;
+    protected double realMin = Nd4j.EPS_THRESHOLD;
+    protected double initialMomentum = 0.5;
+    protected double finalMomentum = 0.8;
+    protected double minGain = 1e-2;
+    protected double momentum = initialMomentum;
+    protected int switchMomentumIteration = 100;
+    protected boolean normalize = true;
+    protected boolean usePca = false;
+    protected int stopLyingIteration = 250;
+    protected double tolerance = 1e-5;
+    protected double learningRate = 500;
+    protected AdaGrad adaGrad;
+    protected boolean useAdaGrad = true;
+    protected double perplexity = 30;
+    //protected INDArray gains,yIncs;
+    protected INDArray Y;
     private int N;
     private double theta;
     private INDArray rows;
@@ -70,54 +93,14 @@ public class BarnesHutTsne extends Tsne implements Model {
     private SpTree tree;
     private INDArray gains;
     private INDArray yIncs;
+    protected transient IterationListener iterationListener;
 
-    public BarnesHutTsne(INDArray x,
-                         INDArray y,
-                         int numDimensions,
-                         double perplexity,
-                         double theta,
-                         int maxIter,
-                         int stopLyingIteration,
-                         int momentumSwitchIteration,
-                         double momentum,
-                         double finalMomentum,
-                         double learningRate) {
-
-        this.Y = y;
-        this. x = x;
-        this.numDimensions = numDimensions;
-        this.perplexity = perplexity;
-        this.theta = theta;
-        this.maxIter = maxIter;
-        this.stopLyingIteration = stopLyingIteration;
-        this.momentum = momentum;
-        this.finalMomentum = finalMomentum;
-        this.learningRate = learningRate;
-        this.switchMomentumIteration = momentumSwitchIteration;
-    }
-
-    public BarnesHutTsne(INDArray x,
-                         INDArray y,
-                         int numDimensions,
-                         String simiarlityFunction,
-                         double theta,
-                         boolean invert,
-                         int maxIter,
-                         double realMin,
-                         double initialMomentum,
-                         double finalMomentum,
-                         double momentum,
-                         int switchMomentumIteration,
-                         boolean normalize,
-                         boolean usePca,
-                         int stopLyingIteration,
-                         double tolerance,
-                         double learningRate,
-                         boolean useAdaGrad,
-                         double perplexity,
-                         double minGain) {
-        super();
-        // maxIter, realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize, usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain
+    public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta,
+                         boolean invert, int maxIter, double realMin, double initialMomentum,
+                         double finalMomentum, double momentum, int switchMomentumIteration,
+                         boolean normalize, int stopLyingIteration, double tolerance,
+                         double learningRate, boolean useAdaGrad, double perplexity,
+                         IterationListener iterationListener, double minGain) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -125,19 +108,16 @@ public class BarnesHutTsne extends Tsne implements Model {
         this.momentum = momentum;
         this.normalize = normalize;
         this.useAdaGrad = useAdaGrad;
-        this.usePca = usePca;
         this.stopLyingIteration = stopLyingIteration;
         this.learningRate = learningRate;
         this.switchMomentumIteration = switchMomentumIteration;
         this.tolerance = tolerance;
         this.perplexity = perplexity;
         this.minGain = minGain;
-
-        this.Y = y;
-        this.x = x;
         this.numDimensions = numDimensions;
         this.simiarlityFunction = simiarlityFunction;
         this.theta = theta;
+        this.iterationListener = iterationListener;
         this.invert = invert;
     }
 
@@ -164,6 +144,14 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     public double getPerplexity(){
         return perplexity;
+    }
+
+    public int getNumDimensions() {
+        return numDimensions;
+    }
+
+    public void setNumDimensions(int numDimensions) {
+        this.numDimensions = numDimensions;
     }
 
     /**
@@ -430,14 +418,17 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public void fit() {
-        boolean exact = theta == 0.0;
-        if(exact)
-            Y = super.calculate(x,numDimensions,perplexity);
-
-        else {
+        if (theta == 0.0) {
+            logger.debug("theta == 0, using decomposed version, might be slow");
+            Tsne decomposedTsne = new Tsne(maxIter, realMin, initialMomentum, finalMomentum,
+                    minGain, momentum, switchMomentumIteration, normalize, usePca,
+                    stopLyingIteration, tolerance, learningRate, useAdaGrad, perplexity);
+            Y = decomposedTsne.calculate(x, numDimensions, perplexity);
+        } else {
             //output
-            if(Y == null)
-                Y = randn(x.rows(),numDimensions,Nd4j.getRandom()).muli(1e-3f);
+            if (Y == null) {
+                Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+            }
 
 
             computeGaussianPerplexity(x,perplexity);
@@ -453,8 +444,9 @@ public class BarnesHutTsne extends Tsne implements Model {
                     vals.divi(12);
 
 
-                if(iterationListener != null)
-                    iterationListener.iterationDone(this,i);
+                if (iterationListener != null) {
+                    iterationListener.iterationDone(this, i);
+                }
                 logger.info("Error at iteration " + i + " is " + score());
             }
         }
@@ -464,7 +456,6 @@ public class BarnesHutTsne extends Tsne implements Model {
     public void update(Gradient gradient) {
 
     }
-
 
     /**
      * An individual iteration
@@ -510,44 +501,58 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
     /**
-     * Plot tsne
-     * @param matrix the matrix to plot
-     * @param nDims the number
+     * Save the model as a file with a csv format, adding the label as the last column.
      * @param labels
      * @param path the path to write
      * @throws IOException
      */
-    public void plot(INDArray matrix,int nDims,List<String> labels,String path) throws IOException {
+    public void saveAsFile(List<String> labels, String path) throws IOException {
+        BufferedWriter write = null;
+        try {
+            write = new BufferedWriter(new FileWriter(new File(path)));
+            for(int i = 0; i < Y.rows(); i++) {
+                if(i >= labels.size())
+                    break;
+                String word = labels.get(i);
+                if(word == null)
+                    continue;
+                StringBuilder sb = new StringBuilder();
+                INDArray wordVector = Y.getRow(i);
+                for(int j = 0; j < wordVector.length(); j++) {
+                    sb.append(wordVector.getDouble(j));
+                    if(j < wordVector.length() - 1)
+                        sb.append(",");
+                }
 
-        fit(matrix, nDims);
+                sb.append(",");
+                sb.append(word);
+                sb.append(" ");
 
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)));
+                sb.append("\n");
+                write.write(sb.toString());
 
-        for(int i = 0; i < Y.rows(); i++) {
-            if(i >= labels.size())
-                break;
-            String word = labels.get(i);
-            if(word == null)
-                continue;
-            StringBuilder sb = new StringBuilder();
-            INDArray wordVector = Y.getRow(i);
-            for(int j = 0; j < wordVector.length(); j++) {
-                sb.append(wordVector.getDouble(j));
-                if(j < wordVector.length() - 1)
-                    sb.append(",");
             }
-
-            sb.append(",");
-            sb.append(word);
-            sb.append(" ");
-
-            sb.append("\n");
-            write.write(sb.toString());
-
+            write.flush();
+            write.close();
+        } finally {
+            if (write != null) write.close();
         }
+    }
 
-        write.flush();
-        write.close();
+    /**
+     * Plot tsne
+     *
+     * @param matrix the matrix to plot
+     * @param nDims  the number
+     * @param labels
+     * @param path   the path to write
+     * @throws IOException
+     * @deprecated use {@link #fit(INDArray)} and {@link #saveAsFile(List, String)} instead.
+     */
+    @Deprecated
+    public void plot(INDArray matrix, int nDims, List<String> labels, String path) throws IOException {
+        fit(matrix, nDims);
+        saveAsFile(labels, path);
     }
 
 
@@ -627,10 +632,14 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public void fit(INDArray data) {
-        this.x  = data;
+        this.x = data;
         fit();
     }
-    
+
+    /**
+     * Change the dimensions with
+     */
+    @Deprecated
     public void fit(INDArray data, int nDims) {
         this.x = data;
         this.numDimensions = nDims;
@@ -688,12 +697,101 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     }
 
+    /**
+     * Return the matrix reduce to the NDim.
+     */
+    public INDArray getData() {
+        return Y;
+    }
 
-    public static class Builder extends  Tsne.Builder {
-        private double theta = 0.0;
+    public void setData(INDArray data) {
+        this.Y = data;
+    }
+
+    public static class Builder {
+        private int maxIter = 1000;
+        private double realMin = 1e-12f;
+        private double initialMomentum = 5e-1f;
+        private double finalMomentum = 8e-1f;
+        private double momentum = 5e-1f;
+        private int switchMomentumIteration = 100;
+        private boolean normalize = true;
+        private int stopLyingIteration = 100;
+        private double tolerance = 1e-5f;
+        private double learningRate = 1e-1f;
+        private boolean useAdaGrad = false;
+        private double perplexity = 30;
+        private double minGain = 1e-1f;
+        private double theta = 0.5;
         private boolean invert = true;
+        private int numDim = 2;
         private String similarityFunction = "cosinesimilarity";
 
+        public Builder minGain(double minGain) {
+            this.minGain  = minGain;
+            return this;
+        }
+
+        public Builder perplexity(double perplexity) {
+            this.perplexity = perplexity;
+            return this;
+        }
+
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            this.useAdaGrad = useAdaGrad;
+            return this;
+        }
+
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+
+        public Builder tolerance(double tolerance) {
+            this.tolerance = tolerance;
+            return this;
+        }
+
+        public Builder stopLyingIteration(int stopLyingIteration) {
+            this.stopLyingIteration = stopLyingIteration;
+            return this;
+        }
+
+        public Builder normalize(boolean normalize) {
+            this.normalize = normalize;
+            return this;
+        }
+
+        public Builder setMaxIter(int maxIter) {
+            this.maxIter = maxIter;
+            return this;
+        }
+
+        public Builder setRealMin(double realMin) {
+            this.realMin = realMin;
+            return this;
+        }
+
+        public Builder setInitialMomentum(double initialMomentum) {
+            this.initialMomentum = initialMomentum;
+            return this;
+        }
+
+        public Builder setFinalMomentum(double finalMomentum) {
+            this.finalMomentum = finalMomentum;
+            return this;
+        }
+
+        public Builder setMomentum(double momentum) {
+            this.momentum = momentum;
+            return this;
+        }
+
+        public Builder setSwitchMomentumIteration(int switchMomentumIteration) {
+            this.switchMomentumIteration = switchMomentumIteration;
+            return this;
+        }
 
 
         public Builder similarityFunction(String similarityFunction) {
@@ -701,7 +799,7 @@ public class BarnesHutTsne extends Tsne implements Model {
             return this;
         }
 
-        public Builder invertDistanceMetric(boolean invert){
+        public Builder invertDistanceMetric(boolean invert) {
             this.invert = invert;
             return this;
         }
@@ -711,97 +809,16 @@ public class BarnesHutTsne extends Tsne implements Model {
             return this;
         }
 
-        @Override
-        public Builder minGain(double minGain) {
-            super.minGain(minGain);
+        public Builder numDimension(int numDim) {
+            this.numDim = numDim;
             return this;
         }
 
-        @Override
-        public Builder perplexity(double perplexity) {
-            super.perplexity(perplexity);
-            return this;
-        }
-
-        @Override
-        public Builder useAdaGrad(boolean useAdaGrad) {
-            super.useAdaGrad(useAdaGrad);
-            return this;
-        }
-
-        @Override
-        public Builder learningRate(double learningRate) {
-            super.learningRate(learningRate);
-            return this;
-        }
-
-        @Override
-        public Builder tolerance(double tolerance) {
-            super.tolerance(tolerance);
-            return this;
-        }
-
-        @Override
-        public Builder stopLyingIteration(int stopLyingIteration) {
-            super.stopLyingIteration(stopLyingIteration);
-            return this;
-        }
-
-        @Override
-        public Builder usePca(boolean usePca) {
-            super.usePca(usePca);
-            return this;
-        }
-
-        @Override
-        public Builder normalize(boolean normalize) {
-            super.normalize(normalize);
-            return this;
-        }
-
-        @Override
-        public Builder setMaxIter(int maxIter) {
-            super.setMaxIter(maxIter);
-            return this;
-        }
-
-        @Override
-        public Builder setRealMin(double realMin) {
-            super.setRealMin(realMin);
-            return this;
-        }
-
-        @Override
-        public Builder setInitialMomentum(double initialMomentum) {
-            super.setInitialMomentum(initialMomentum);
-            return this;
-        }
-
-        @Override
-        public Builder setFinalMomentum(double finalMomentum) {
-            super.setFinalMomentum(finalMomentum);
-            return this;
-        }
-
-        @Override
-        public Builder setMomentum(double momentum) {
-            super.setMomentum(momentum);
-            return this;
-        }
-
-        @Override
-        public Builder setSwitchMomentumIteration(int switchMomentumIteration) {
-            super.setSwitchMomentumIteration(switchMomentumIteration);
-            return this;
-        }
-
-        @Override
         public BarnesHutTsne build() {
-            return new BarnesHutTsne(null, null, 2, similarityFunction,theta,invert,
-                    maxIter,realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
-                    usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
+            return new BarnesHutTsne(numDim, similarityFunction, theta, invert,
+                    maxIter, realMin, initialMomentum, finalMomentum, momentum, switchMomentumIteration, normalize,
+                    stopLyingIteration, tolerance, learningRate, useAdaGrad, perplexity, null, minGain);
         }
-
 
     }
 
