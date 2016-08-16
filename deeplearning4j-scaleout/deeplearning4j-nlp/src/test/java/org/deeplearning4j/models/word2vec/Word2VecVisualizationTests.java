@@ -35,7 +35,6 @@ public class Word2VecVisualizationTests {
                 .theta(0.5)
                 .setMomentum(0.5)
                 .normalize(true)
-                .usePca(false)
                 .build();
 
         //vectors.lookupTable().plotVocab(tsne);
