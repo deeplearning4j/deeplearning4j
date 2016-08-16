@@ -258,10 +258,12 @@ namespace nd4j
   op_def float16 /* constexpr */ operator+(const float16& h) { return h; }
   
   op_def float16 operator - (const float16& h) { return float16(hneg(h.data)); }
-  
+
+#ifdef __CUDACC__
   op_def int isnan(const float16& h)  { return ishnan(h.data); }
   
   op_def int isinf(const float16& h) { return ishinf(h.data); }
+#endif
 
   std::ostream& operator << (std::ostream& s, const float16&);
 

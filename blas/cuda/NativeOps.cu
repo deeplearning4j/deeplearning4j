@@ -37,6 +37,8 @@ bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
 
+int minThreads = 128;
+
 __constant__ char deviceConstantMemory[49152];
 
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
@@ -116,6 +118,7 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 	int num_threads = problemLength / (countMP * blockThreshold);
     num_threads = nd4j::math::nd4j_min<int>(num_threads, maxThreads);
     num_threads = nd4j::math::nd4j_max<int>(num_threads, 64);
+    num_threads = nd4j::math::nd4j_max<int>(num_threads, minThreads);
 
 	int num_blocks = nd4j::math::nd4j_max<int>(problemLength / num_threads, 1);
     num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
@@ -141,7 +144,7 @@ int getDeviceSharedThreshold(int deviceId) {
 	if (ccMajor == 6 && ccMinor == 0)
 		shmemThreshold = 65536;
 	else if (ccMajor == 6 && ccMinor == 1)
-		shmemThreshold = 98304;
+		shmemThreshold = 98304 / 0.3;
 	else if (ccMajor == 5 && ccMinor == 2)
 		shmemThreshold = 98304;
 	else if (ccMajor == 5)
@@ -194,7 +197,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 				memory_limit += reduction_per_block;
 				found = true;
 			} else {
-				if (num_threads > 128) {
+				if (num_threads > minThreads) {
 					num_threads -= 32;
 				} else {
 					memory_limit += reduction_per_block;
@@ -224,7 +227,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
 	if (targetBlocksPerMP * num_threads > 2048) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= 96)
+			if (num_threads <= minThreads)
 				break;
 
 			num_threads -= 32;
@@ -262,8 +265,8 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 
 	// for flat calls we just want as much concurrent blocks, as possible, and we're not tied to TAD here
 	int num_threads = xLength / effective_block_limit;
-	if (num_threads < 64)
-		num_threads = 64;
+	if (num_threads < minThreads)
+		num_threads = minThreads;
 
 	num_threads = num_threads - (num_threads % 32);
 
@@ -277,9 +280,9 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 	int targetBlocksPerMP = num_blocks / countMP;
 
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
-	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 64) {
+	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 128) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= 32)
+			if (num_threads <= minThreads)
 				break;
 			num_threads -= 32;
 		}
@@ -4222,6 +4225,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
+//        if (opNum == 37)
+//            printf("Im2Col params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+
 		transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				xPointer,
