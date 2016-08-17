@@ -996,10 +996,10 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                    convertTranspose(TransB),
                    M, N, K,
                    &alpha,
-                   aPointer, CUDA_R_16F, lda,
-                   bPointer, CUDA_R_16F, ldb,
+                   aPointer, CUBLAS_DATA_HALF, lda,
+                   bPointer, CUBLAS_DATA_HALF, ldb,
                    &beta,
-                   cPointer, CUDA_R_16F, ldc);
+                   cPointer, CUBLAS_DATA_HALF, ldc);
 
 }
 
