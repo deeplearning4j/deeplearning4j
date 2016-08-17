@@ -2118,9 +2118,9 @@ void   NativeOps::execBroadcastFloat(
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
 
 
-    timespec ts1;
-    timespec ts2;
-    clock_gettime(CLOCK_REALTIME, &ts1);
+//    timespec ts1;
+//    timespec ts2;
+//    clock_gettime(CLOCK_REALTIME, &ts1);
 
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
