@@ -36,9 +36,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
 
         double reward = 0;
-
+        double accuReward = 0;
         int i = 0;
-        while (!getMdp().isDone() && i < nstep) {
+        while (!getMdp().isDone() && i < nstep*skipFrame) {
 
             INDArray input = Learning.getInput(getMdp(), obs);
 
@@ -60,17 +60,21 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             lastAction = action;
 
             StepReply<O> stepReply = getMdp().step(action);
-            obs = stepReply.getObservation();
+            accuReward += stepReply.getReward();
 
-            INDArray[] output = target.outputAll(input.reshape(Learning.makeShape(1, input.shape())));
-            rewards.add(new MiniTrans(Transition.concat(history), action, output, stepReply.getReward()));
-            reward += stepReply.getReward();
+            if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
+                obs = stepReply.getObservation();
 
-            if (isHistoryProcessor)
-                getHistoryProcessor().add(Learning.getInput(getMdp(), stepReply.getObservation()));
+                INDArray[] output = target.outputAll(input.reshape(Learning.makeShape(1, input.shape())));
+                rewards.add(new MiniTrans(Transition.concat(history), action, output, stepReply.getReward()));
+                reward += stepReply.getReward();
 
-            history = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{Learning.getInput(getMdp(), stepReply.getObservation())};
+                if (isHistoryProcessor)
+                    getHistoryProcessor().add(Learning.getInput(getMdp(), stepReply.getObservation()));
 
+                history = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{Learning.getInput(getMdp(), stepReply.getObservation())};
+                accuReward = 0;
+            }
             i++;
         }
 

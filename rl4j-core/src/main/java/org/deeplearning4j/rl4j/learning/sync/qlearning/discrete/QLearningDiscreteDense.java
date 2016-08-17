@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
+import lombok.Getter;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactory;
@@ -14,8 +15,12 @@ import org.deeplearning4j.rl4j.util.DataManager;
  */
 public class QLearningDiscreteDense<O extends Encodable> extends QLearningDiscrete<O> {
 
+    @Getter
+    final private float epsilonDecreaseRate;
+
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearning.QLConfiguration conf, DataManager dataManager) {
         super(mdp, dqn, conf, dataManager);
+        epsilonDecreaseRate = conf.getEpsilonDecreaseRate();
     }
 
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, QLearning.QLConfiguration conf, DataManager dataManager) {

@@ -56,11 +56,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         currentDQN = dqn;
         targetDQN = dqn.clone();
         policy = new DQNPolicy(getCurrentDQN());
-        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), conf.getEpsilonDecreaseRate(), getRandom(), conf.getMinEpsilon(), this);
-
-
+        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), getEpsilonDecreaseRate(), getRandom(), conf.getMinEpsilon(), this);
     }
 
+    public abstract float getEpsilonDecreaseRate();
 
     public void postEpoch() {
 
@@ -121,7 +120,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         accuReward += stepReply.getReward();
 
-        if (getStepCounter() % skipFrame == 0) {
+        if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
             if (isHistoryProcessor)
                 getHistoryProcessor().add(getInput(stepReply.getObservation()));
