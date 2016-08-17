@@ -772,28 +772,40 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) this.pointer);
 
-                float[] array = new float[(int) length];
+                short[] array = new short[(int) length];
 
                 for (int i = 0; i < length; i++) {
+
                     if (t == Type.INT)
-                        array[i] = (float) s.readInt();
+                    ((HalfIndexer) indexer).put(i, (float) s.readInt());
                     else if (t == Type.DOUBLE)
-                        array[i] = (float) s.readDouble();
+                    ((HalfIndexer) indexer).put(i, (float) s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = s.readFloat();
+                        ((HalfIndexer) indexer).put(i, s.readFloat());
                     else if (t == Type.HALF) {
-                        array[i] = toFloat((int) s.readShort());
+                        ((HalfIndexer) indexer).put(i, toFloat((int) s.readShort()));
                     }
                 }
 
+                AllocationPoint pointDst = allocationPoint;
+
                 // now, easiest approach is conversion from float buffer to halfs buffer
                 // FIXME: this worth reimplementing as direct Half-allocation, instead of temporary array creation
+/*
+                ((HalfIndexer) indexer).pu
+
+                log.info("Restored array: {}", Arrays.toString(array));
                 CudaFloatDataBuffer tempBuffer = new CudaFloatDataBuffer(array);
 
+
+
+                log.info("Restored buffer: {}", tempBuffer);
+                */
+/*
                 AtomicAllocator allocator = AtomicAllocator.getInstance();
 
                 AllocationPoint pointSrc = allocator.getAllocationPoint(tempBuffer);
-                AllocationPoint pointDst = allocationPoint;
+
 
                 CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
 
@@ -801,16 +813,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         null, // not used for conversion
                         context.getOldStream(),
                         AtomicAllocator.getInstance().getDeviceIdPointer());
-
-                Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
-                Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+*/
+                //Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
+                //Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+/*
+                log.info("temp length: {}", tempBuffer.length);
+                log.info("this length: {}", length);
 
                 //FIXME: get this back
-                //Nd4j.getNDArrayFactory().convertDataEx(TypeEx.FLOAT)
+                Nd4j.getNDArrayFactory().convertDataEx(TypeEx.FLOAT, tempBuffer, TypeEx.FLOAT16, this);
                 //NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
 
-                allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
-                pointDst.tickDeviceWrite();
+              //  allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
+  */
+                pointDst.tickHostWrite();
             }
             else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
