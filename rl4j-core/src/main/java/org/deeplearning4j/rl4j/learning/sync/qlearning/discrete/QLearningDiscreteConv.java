@@ -15,13 +15,11 @@ import org.deeplearning4j.rl4j.util.DataManager;
  */
 public class QLearningDiscreteConv<O extends Encodable> extends QLearningDiscrete<O> {
 
-    @Getter
-    final private float epsilonDecreaseRate;
+
 
     public QLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf, QLConfiguration conf, DataManager dataManager) {
-        super(mdp, dqn, conf, dataManager);
+        super(mdp, dqn, conf, dataManager, conf.getEpsilonDecreaseRate()/hpconf.getSkipFrame());
         setHistoryProcessor(hpconf);
-        epsilonDecreaseRate = conf.getEpsilonDecreaseRate()/hpconf.getSkipFrame();
     }
 
     public QLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, HistoryProcessor.Configuration hpconf, QLConfiguration conf, DataManager dataManager) {
