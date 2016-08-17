@@ -128,7 +128,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{ninput};
 
-            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), ninput);
+            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), nhistory[0]);
             getExpReplay().store(trans);
 
             if (getStepCounter() > updateStart) {
