@@ -24,15 +24,18 @@ public class Transition<A> {
     }
 
     public Transition<A> dup(){
-        INDArray[] dupObservation = new INDArray[observation.length];
-
-        for (int i = 0; i < observation.length; i++) {
-            dupObservation[i] = observation[i].dup();
-        }
-
+        INDArray[] dupObservation = dup(observation);
         INDArray nextObs = nextObservation.dup();
 
         return new Transition<>(dupObservation, action, reward, isTerminal, nextObs);
+    }
+
+    public static INDArray[] dup(INDArray[] history){
+        INDArray[] dupHistory = new INDArray[history.length];
+        for (int i = 0; i < history.length; i++) {
+            dupHistory[i] = history[i].dup();
+        }
+        return dupHistory;
     }
 
     public static INDArray[] append(INDArray[] history, INDArray append){

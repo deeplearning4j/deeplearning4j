@@ -51,7 +51,7 @@ public class ExpReplay<A> implements IExpReplay<A> {
     }
 
     public void store(Transition<A> transition) {
-        storage.add(transition.dup());
+        storage.add(transition);
         log.info("size: "+storage.size());
     }
 
