@@ -1,9 +1,9 @@
 if(WIN32)
     # Which compilers to use for C and C++, and location of target
     # environment.
-    execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCH)
+    execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
     message("ARCH IS ${ARCH} and PROCESSOR ${CMAKE_SYSTEM_PROCESSOR}")
-    if( ${ARCH} EQUAL "x86_64")
+    if( ${ARCH} STREQUAL "x86_64")
         # First look in standard location as used by Debian/Ubuntu/etc.
         set(MINGW_ROOT /mingw64)
         message("64 bit!")
@@ -16,6 +16,7 @@ if(WIN32)
 
     SET(Open_BLAS_INCLUDE_SEARCH_PATHS
             ${MINGW_ROOT}/include
+            ${MINGW_ROOT}/include/OpenBLAS
             )
 
     SET(Open_BLAS_LIB_SEARCH_PATHS
@@ -56,10 +57,10 @@ FIND_LIBRARY(OpenBLAS_LIB NAMES openblas PATHS ${Open_BLAS_LIB_SEARCH_PATHS})
 SET(OpenBLAS_FOUND ON)
 
 #    Check include files
-IF(NOT OpenBLAS_INCLUDE_DIR)
-    SET(OpenBLAS_FOUND OFF)
-    MESSAGE(STATUS "Could not find OpenBLAS include. Turning OpenBLAS_FOUND off")
-ENDIF()
+#IF(NOT OpenBLAS_INCLUDE_DIR)
+#    SET(OpenBLAS_FOUND OFF)
+#    MESSAGE(STATUS "Could not find OpenBLAS include. Turning OpenBLAS_FOUND off")
+#ENDIF()
 
 #    Check libraries
 IF(NOT OpenBLAS_LIB)
