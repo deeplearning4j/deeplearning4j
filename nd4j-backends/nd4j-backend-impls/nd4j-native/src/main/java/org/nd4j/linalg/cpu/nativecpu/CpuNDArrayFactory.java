@@ -1031,8 +1031,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                 buffer.addressPointer()
         );
 
-   //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
-
         return buffer;
+    }
+
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+        // no-op
     }
 }
