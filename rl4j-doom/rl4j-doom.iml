@@ -11,6 +11,10 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
+    <orderEntry type="library" name="Maven: com.github.dblock:oshi-core:3.1.1" level="project" />
+    <orderEntry type="library" name="Maven: net.java.dev.jna:jna-platform:4.2.2" level="project" />
+    <orderEntry type="library" name="Maven: net.java.dev.jna:jna:4.2.2" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.21" level="project" />
     <orderEntry type="library" name="Maven: com.doom:vizdoom:1.0" level="project" />
     <orderEntry type="module" module-name="rl4j-api" />
     <orderEntry type="library" name="Maven: com.mashape.unirest:unirest-java:1.4.9" level="project" />
@@ -23,7 +27,6 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20160212" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-api:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.10" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-buffer:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:nd4j-common:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.reflections:reflections:0.9.10" level="project" />

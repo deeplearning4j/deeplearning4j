@@ -1,20 +1,26 @@
 package org.deeplearning4j.rl4j.mdp.vizdoom;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import oshi.SystemInfo;
+import oshi.hardware.GlobalMemory;
+import oshi.util.FormatUtil;
 import vizdoom.*;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/28/16.
@@ -24,7 +30,9 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
     final public static String DOOM_ROOT = "vizdoom";
     
-    final protected DoomGame game;
+    protected DoomGame game;
+    final protected Logger log = LoggerFactory.getLogger("Vizdoom");
+    final protected GlobalMemory memory = new SystemInfo().getHardware().getMemory();
     final protected List<int[]> actions;
     final protected DiscreteSpace discreteSpace;
     final protected ObservationSpace<GameScreen> observationSpace;
@@ -128,6 +136,9 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
 
     public GameScreen reset() {
+        log.info("Memory: " + FormatUtil.formatBytes(memory.getAvailable()) + "/"
+                + FormatUtil.formatBytes(memory.getTotal()));
+
         game.newEpisode();
         game.getGameScreen();
         return new GameScreen(game.getGameScreen());
@@ -140,8 +151,20 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
 
     public StepReply<GameScreen> step(Integer action) {
-        double r = game.makeAction(actions.get(action)) * scaleFactor;
+
+        double r = 0;
+        log.info("action: " + action + " episode:" + game.getEpisodeTime() + " javacpp:" + FormatUtil.formatBytes(Pointer.totalBytes()));
+        //try {
+            r = game.makeAction(actions.get(action)) * scaleFactor;
+            /*
+        } catch (ViZDoomErrorException e) {
+            r = -2000;
+            game = new DoomGame();
+            setupGame();
+            return new StepReply<>(new GameScreen(game.getGameScreen()), r, true, null);
+        }
         //System.out.println(r + " " + scaleFactor);
+        */
         return new StepReply(new GameScreen(game.getGameScreen()), r, game.isEpisodeFinished(), null);
     }
 
