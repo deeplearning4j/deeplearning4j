@@ -1,6 +1,8 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -10,6 +12,7 @@ import java.util.*;
 public class ExpReplay<A> implements IExpReplay<A> {
 
 
+    final private Logger log = LoggerFactory.getLogger("Exp Replay");
     private int minSize;
     private int maxSize;
     private int batchSize;
@@ -49,6 +52,7 @@ public class ExpReplay<A> implements IExpReplay<A> {
 
     public void store(Transition<A> transition) {
         storage.add(transition);
+        log.info("size: "+storage.size());
     }
 
 

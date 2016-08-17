@@ -136,7 +136,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
 
     public GameScreen reset() {
-        log.info("Memory: " + FormatUtil.formatBytes(memory.getAvailable()) + "/"
+        log.info("free Memory: " + FormatUtil.formatBytes(memory.getAvailable()) + "/"
                 + FormatUtil.formatBytes(memory.getTotal()));
 
         game.newEpisode();

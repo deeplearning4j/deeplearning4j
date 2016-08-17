@@ -30,7 +30,6 @@ public class HistoryProcessor implements IHistoryProcessor {
     final private Configuration conf;
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private CircularFifoQueue<INDArray> history;
-    private int size = 0;
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
     public static BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
 
@@ -42,7 +41,6 @@ public class HistoryProcessor implements IHistoryProcessor {
 
 
     public void add(INDArray obs) {
-        size++;
         INDArray processed = transform(obs);
         history.add(processed);
     }

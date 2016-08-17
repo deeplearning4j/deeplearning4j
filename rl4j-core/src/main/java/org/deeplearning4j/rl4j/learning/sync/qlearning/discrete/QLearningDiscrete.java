@@ -44,6 +44,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private IDQN targetDQN;
     private int lastAction;
     private INDArray history[] = null;
+    private double accuReward = 0;
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
 
@@ -103,6 +104,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     history = new INDArray[]{input};
             }
+
             INDArray hstack = Transition.concat(history);
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
@@ -112,27 +114,32 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             maxQ = qs.getDouble(maxAction);
             action = getEgPolicy().nextAction(hstack);
         }
+
         lastAction = action;
 
         StepReply<O> stepReply = getMdp().step(action);
 
-        if (isHistoryProcessor)
-            getHistoryProcessor().add(getInput(stepReply.getObservation()));
-
-        INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{getInput(stepReply.getObservation())};
+        accuReward += stepReply.getReward();
 
         if (getStepCounter() % skipFrame == 0) {
 
-            Transition<Integer> trans = new Transition(history, action, stepReply.getReward(), stepReply.isDone(), nhistory);
+            if (isHistoryProcessor)
+                getHistoryProcessor().add(getInput(stepReply.getObservation()));
+
+            INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{getInput(stepReply.getObservation())};
+
+            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), nhistory);
             getExpReplay().store(trans);
 
             if (getStepCounter() > updateStart) {
                 Pair<INDArray, INDArray> targets = setTarget(getExpReplay().getBatch());
                 getCurrentDQN().fit(targets.getFirst(), targets.getSecond());
             }
+
+            history = nhistory;
+            accuReward = 0;
         }
 
-        history = nhistory;
         
         return new QLStepReturn<O>(maxQ, getCurrentDQN().getLatestScore(), stepReply);
 
