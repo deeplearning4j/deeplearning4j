@@ -40,8 +40,6 @@ public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extend
     }
 
     public float getEpsilon() {
-        System.out.println(1f/1000000/4);
-        System.out.println(Math.min(1f, Math.max(minEpsilon, 1f - (100000) * epsilonDecreaseRate)));
         return Math.min(1f, Math.max(minEpsilon, 1f - (learning.getStepCounter() - updateStart) * epsilonDecreaseRate));
     }
 }
