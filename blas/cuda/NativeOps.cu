@@ -23,6 +23,8 @@
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <type_conversions.h>
+#include <sys/time.h>
 
 
 
@@ -33,6 +35,9 @@ int maxThreads = 512;
 bool debug = false;
 bool verbose = true;
 bool allowedP2P = false;
+bool supportedP2P = false;
+
+int minThreads = 128;
 
 __constant__ char deviceConstantMemory[49152];
 
@@ -113,6 +118,7 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 	int num_threads = problemLength / (countMP * blockThreshold);
     num_threads = nd4j::math::nd4j_min<int>(num_threads, maxThreads);
     num_threads = nd4j::math::nd4j_max<int>(num_threads, 64);
+    num_threads = nd4j::math::nd4j_max<int>(num_threads, minThreads);
 
 	int num_blocks = nd4j::math::nd4j_max<int>(problemLength / num_threads, 1);
     num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
@@ -138,7 +144,7 @@ int getDeviceSharedThreshold(int deviceId) {
 	if (ccMajor == 6 && ccMinor == 0)
 		shmemThreshold = 65536;
 	else if (ccMajor == 6 && ccMinor == 1)
-		shmemThreshold = 98304;
+		shmemThreshold = 98304 / 0.3;
 	else if (ccMajor == 5 && ccMinor == 2)
 		shmemThreshold = 98304;
 	else if (ccMajor == 5)
@@ -191,7 +197,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 				memory_limit += reduction_per_block;
 				found = true;
 			} else {
-				if (num_threads > 128) {
+				if (num_threads > minThreads) {
 					num_threads -= 32;
 				} else {
 					memory_limit += reduction_per_block;
@@ -221,7 +227,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
 	if (targetBlocksPerMP * num_threads > 2048) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= 96)
+			if (num_threads <= minThreads)
 				break;
 
 			num_threads -= 32;
@@ -259,8 +265,8 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 
 	// for flat calls we just want as much concurrent blocks, as possible, and we're not tied to TAD here
 	int num_threads = xLength / effective_block_limit;
-	if (num_threads < 64)
-		num_threads = 64;
+	if (num_threads < minThreads)
+		num_threads = minThreads;
 
 	num_threads = num_threads - (num_threads % 32);
 
@@ -274,9 +280,9 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 	int targetBlocksPerMP = num_blocks / countMP;
 
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
-	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 64) {
+	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 128) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= 32)
+			if (num_threads <= minThreads)
 				break;
 			num_threads -= 32;
 		}
@@ -343,35 +349,6 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
-}
-
-
-float cpu_half2float(half h) {
-	unsigned sign = ((h.x >> 15) & 1);
-	unsigned exponent = ((h.x >> 10) & 0x1f);
-	unsigned mantissa = ((h.x & 0x3ff) << 13);
-
-	if (exponent == 0x1f) {  /* NaN or Inf */
-		mantissa = (mantissa ? (sign = 0, 0x7fffff) : 0);
-		exponent = 0xff;
-	} else if (!exponent) {  /* Denorm or Zero */
-		if (mantissa) {
-			unsigned int msb;
-			exponent = 0x71;
-			do {
-				msb = (mantissa & 0x400000);
-				mantissa <<= 1;  /* normalize */
-				--exponent;
-			} while (!msb);
-			mantissa &= 0x7fffff;  /* 1.mantissa is implicit */
-		}
-	} else {
-		exponent += 0x70;
-	}
-
-	int temp = ((sign << 31) | (exponent << 23) | mantissa);
-
-	return *((float*)((void*)&temp));
 }
 
 nd4j::buffer::Buffer<int> * createScalarBuffer(cudaStream_t stream) {
@@ -1123,9 +1100,11 @@ double   NativeOps::execReduce3ScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
+    double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
+
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
-	reduce3ScalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 					xPointer,
 					xShapeInfoPointer,
@@ -1136,7 +1115,7 @@ double   NativeOps::execReduce3ScalarDouble(
 					nullptr,
 					nullptr,
 					1,
-					1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1772,9 +1751,11 @@ void   NativeOps::execTransformDouble(
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxDouble<<<768, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
+						fillDimensionalIsMaxDouble<<<128, 64, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+                            checkCudaErrors(cudaStreamSynchronize(*stream));
+
 
 					}
 					break;
@@ -2104,6 +2085,11 @@ void   NativeOps::execBroadcastFloat(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension, int dimensionLength){
+
+//    timespec tsX;
+//    timespec tsY;
+//    clock_gettime(CLOCK_REALTIME, &tsX);
+
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *yPointer = reinterpret_cast<float *>(y);
@@ -2131,6 +2117,11 @@ void   NativeOps::execBroadcastFloat(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
 
+
+    timespec ts1;
+    timespec ts2;
+    clock_gettime(CLOCK_REALTIME, &ts1);
+
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2142,8 +2133,16 @@ void   NativeOps::execBroadcastFloat(
 			dimensionPointer,
 			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
 
+//    clock_gettime(CLOCK_REALTIME, &ts2);
+
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+//    clock_gettime(CLOCK_REALTIME, &tsY);
+
+//    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
+//    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
+//    printf("-------------------------------------\n");
 }
 
 
@@ -2987,6 +2986,7 @@ void   NativeOps::execReduce3Float(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
@@ -2995,7 +2995,7 @@ void   NativeOps::execReduce3Float(
 	if (verbose && launchDims.x == 1)
 		printf("AF10 opNum:[%i]\n", opNum);
 
-	reduce3ScalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -3006,7 +3006,7 @@ void   NativeOps::execReduce3Float(
 			resultShapeInfoPointer,
 			nullptr,
 			1,
-			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3043,6 +3043,7 @@ void   NativeOps::execReduce3Half(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
@@ -3051,7 +3052,7 @@ void   NativeOps::execReduce3Half(
 	if (verbose && launchDims.x == 1)
 		printf("AH10 opNum:[%i]\n", opNum);
 
-	reduce3ScalarHalf<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 					xPointer,
 					xShapeInfoPointer,
@@ -3062,7 +3063,7 @@ void   NativeOps::execReduce3Half(
 					resultShapeInfoPointer,
 					nullptr,
 					1,
-					1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3105,6 +3106,7 @@ float   NativeOps::execReduce3ScalarFloat(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
+    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(float), 2);
@@ -3114,7 +3116,7 @@ float   NativeOps::execReduce3ScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF11 opNum:[%i]\n", opNum);
 
-	reduce3ScalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -3125,7 +3127,7 @@ float   NativeOps::execReduce3ScalarFloat(
 			nullptr,
 			nullptr,
 			1,
-			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3159,6 +3161,7 @@ float   NativeOps::execReduce3ScalarHalf(
 		printf("H11 opNum:[%i]\n", opNum);
 
 	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
+    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[7]);
@@ -3166,7 +3169,7 @@ float   NativeOps::execReduce3ScalarHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH11 opNum:[%i]\n", opNum);
 
-	reduce3ScalarHalf<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 					xPointer,
 					xShapeInfoPointer,
@@ -3177,7 +3180,7 @@ float   NativeOps::execReduce3ScalarHalf(
 					nullptr,
 					nullptr,
 					1,
-					1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3234,6 +3237,7 @@ void   NativeOps::execReduce3Float(
 		printf("F12 opNum:[%i]\n", opNum);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
@@ -3242,7 +3246,7 @@ void   NativeOps::execReduce3Float(
 	if (verbose && launchDims.x == 1)
 		printf("AF12 opNum:[%i]\n", opNum);
 	if (shape::isScalar(hostZShapeInfo) || dimensionPointer == nullptr) {
-		reduce3ScalarFloat << < 1, launchDims.y, launchDims.z, *stream >> > (
+		reduce3ScalarFloat << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
 						xPointer,
 						xShapeInfoPointer,
@@ -3253,7 +3257,7 @@ void   NativeOps::execReduce3Float(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduce3Float << < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
@@ -3309,6 +3313,7 @@ void   NativeOps::execReduce3Half(
 		printf("H12 opNum:[%i]\n", opNum);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 8, funcAttributes[7]);
 
@@ -3316,7 +3321,7 @@ void   NativeOps::execReduce3Half(
 		printf("AH12 opNum:[%i]\n", opNum);
 
 	if (shape::isScalar(hostZShapeInfo) || dimensionPointer == nullptr) {
-		reduce3ScalarHalf<< < 1, launchDims.y, launchDims.z, *stream >> > (
+		reduce3ScalarHalf<< < launchDims.x, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
 						xPointer,
 						xShapeInfoPointer,
@@ -3327,7 +3332,7 @@ void   NativeOps::execReduce3Half(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduce3Half<< < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
@@ -4205,9 +4210,10 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<768, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+						    checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
@@ -4219,6 +4225,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
+//        if (opNum == 37)
+//            printf("Im2Col params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+
 		transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				xPointer,
@@ -4440,7 +4449,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxHalf<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+                        if (debug)
+                            checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
@@ -4836,6 +4846,45 @@ void NativeOps::flattenDouble(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+void NativeOps::checkP2P() {
+	int curDevice = 0;
+
+	cudaGetDevice(&curDevice);
+
+	int devCnt = 0;
+	cudaGetDeviceCount(&devCnt);
+
+	if (curDevice < 0 && curDevice > devCnt)
+		curDevice = 0;
+
+	bool tempSupport = true;
+
+	if (devCnt > 1) {
+		for (int x = 0; x < devCnt; x++) {
+
+			for (int y = 0; y < devCnt; y++) {
+				if (x == y)
+					continue;
+
+				int canAccess = 0;
+				cudaSetDevice(x);
+
+				cudaDeviceCanAccessPeer(&canAccess, x , y);
+
+				if (!canAccess)
+					tempSupport = false;
+			}
+		}
+
+		supportedP2P = tempSupport;
+
+		cudaSetDevice(curDevice);
+	} else {
+		// if we have only 1 device - we say that we support P2P, since all data will be on 1 device
+		supportedP2P = true;
+	}
+}
+
 void NativeOps::enableP2P(bool enable) {
     if (enable == allowedP2P)
         return;
@@ -4846,6 +4895,9 @@ void NativeOps::enableP2P(bool enable) {
 
     int devCnt = 0;
     cudaGetDeviceCount(&devCnt);
+
+	if (curDevice < 0 && curDevice > devCnt)
+		curDevice = 0;
 
     if (devCnt > 1) {
         for (int x = 0; x < devCnt; x++) {
@@ -4865,18 +4917,25 @@ void NativeOps::enableP2P(bool enable) {
                     } else {
                         cudaDeviceDisablePeerAccess(y);
                     }
-                } else
-                    printf("Peer access [%i] -> [%i] isn't possible\n", x, y);
+                } else {
+					if (verbose) printf("Peer access [%i] -> [%i] isn't possible\n", x, y);
+				}
             }
         }
 
-        cudaSetDevice(0);
+        cudaSetDevice(curDevice);
     }
 
     allowedP2P = enable;
 
     cudaSetDevice(curDevice);
 }
+
+bool NativeOps::isP2PAvailable() {
+	// always TRUE for cpu backend
+	return supportedP2P;
+}
+
 
 void NativeOps::initializeDevicesAndFunctions() {
 	int devCnt = 0;
@@ -4891,7 +4950,10 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaSetDevice(0);
 
-    enableP2P(allowedP2P);
+	checkP2P();
+
+	if (supportedP2P && devCnt > 1)
+    	enableP2P(allowedP2P);
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
@@ -5682,55 +5744,6 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 
 
 	pullRowsKernelDouble<<<32, 32, 1024, *stream>>>(xBuffer, xShape, zBuffer, zShape, n, index, tadOnlyShapeInfo, tadOffset);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertHalfsToFloats(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	half *x = reinterpret_cast<half *>(dx);
-	float *z = reinterpret_cast<float *>(dz);
-
-	kernelHalfsToFloats<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertHalfsToDoubles(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	half *x = reinterpret_cast<half *>(dx);
-	double *z = reinterpret_cast<double *>(dz);
-
-
-	kernelHalfsToDoubles<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertDoublesToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	double *x = reinterpret_cast<double *>(dx);
-	half *z = reinterpret_cast<half *>(dz);
-
-	kernelDoublesToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
-
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-void NativeOps::convertFloatsToHalfs(Nd4jPointer *extraPointers, Nd4jPointer dx, int n, Nd4jPointer dz) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	float *x = reinterpret_cast<float *>(dx);
-	half *z = reinterpret_cast<half *>(dz);
-
-	kernelFloatsToHalfs<<<32, 32, 1024, *stream>>>(x, n, z);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));

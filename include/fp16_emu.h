@@ -52,8 +52,10 @@
 #if !defined(_FP16_EMU_H_)
 #define _FP16_EMU_H_
 
+#ifdef __CUDACC__
 #include <driver_types.h>
 #include <cuda_fp16.h>
+#endif
 
 // Internally, in CUDNN we use half1 struct as the FP16 type.
 typedef __half half1;
@@ -66,37 +68,37 @@ half1 cpu_float2half_rn(float f);
 
 float cpu_half2float(half1 h);
 
-static __inline__ __device__ __host__ half1 habs(half1 h)
+static op_def half1 habs(half1 h)
 {
     h.x &= 0x7fffU;
     return h;
 }
 
-static __inline__ __device__ __host__ half1 hneg(half1 h)
+static op_def half1 hneg(half1 h)
 {
     h.x ^= 0x8000U;
     return h;
 }
 
-static __inline__ __device__ __host__ int ishnan(half1 h)
+static op_def int ishnan(half1 h)
 {
     // When input is NaN, exponent is all ones and mantissa is non-zero.
     return (h.x & 0x7c00U) == 0x7c00U && (h.x & 0x03ffU) != 0;
 }
 
-static __inline__ __device__ __host__ int ishinf(half1 h)
+static op_def int ishinf(half1 h)
 {
     // When input is +/- inf, exponent is all ones and mantissa is zero.
     return (h.x & 0x7c00U) == 0x7c00U && (h.x & 0x03ffU) == 0;
 }
 
-static __inline__ __device__ __host__ int ishequ(half1 x, half1 y)
+static op_def int ishequ(half1 x, half1 y)
 {
     return ishnan(x) == 0 && ishnan(y) == 0 && x.x == y.x;
 }
 
 // Returns 0.0000 in FP16 binary form
-static __inline__ __device__ __host__ half1 hzero()
+static op_def half1 hzero()
 {
     half1 ret;
     ret.x = 0x0000U;
@@ -104,7 +106,7 @@ static __inline__ __device__ __host__ half1 hzero()
 }
 
 // Returns 1.0000 in FP16 binary form
-static __inline__ __device__ __host__ half1 hone()
+static op_def half1 hone()
 {
     half1 ret;
     ret.x = 0x3c00U;
@@ -112,7 +114,7 @@ static __inline__ __device__ __host__ half1 hone()
 }
 
 // Returns quiet NaN, the most significant fraction bit #9 is set
-static __inline__ __device__ __host__ half1 hnan()
+static op_def half1 hnan()
 {
     half1 ret;
     ret.x = 0x7e00U;
@@ -120,7 +122,7 @@ static __inline__ __device__ __host__ half1 hnan()
 }
 
 // Largest positive FP16 value, corresponds to 6.5504e+04
-static __inline__ __device__ __host__ half1 hmax()
+static op_def half1 hmax()
 {
     half1 ret;
     // Exponent all ones except LSB (0x1e), mantissa is all ones (0x3ff)
@@ -129,7 +131,7 @@ static __inline__ __device__ __host__ half1 hmax()
 }
 
 // Smallest positive (normalized) FP16 value, corresponds to 6.1035e-05
-static __inline__ __device__ __host__ half1 hmin()
+static op_def half1 hmin()
 {
     half1 ret;
     // Exponent is 0x01 (5 bits), mantissa is all zeros (10 bits)

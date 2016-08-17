@@ -1162,18 +1162,6 @@ public:
 
     void pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPointer xShapeInfo, Nd4jPointer z, Nd4jPointer zShapeInfo, int n, Nd4jPointer indexes, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets);
 
-    /*
-         Four methods below are supposed to be used for runtime conversions between Single/Double precision and Half precision
-     */
-
-    void convertDoublesToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
-
-    void convertFloatsToHalfs(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
-
-    void convertHalfsToDoubles(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
-
-    void convertHalfsToFloats(Nd4jPointer *extras, Nd4jPointer dx, int n, Nd4jPointer dz);
-
     /**
      * Array averaging op
      */
@@ -1189,6 +1177,10 @@ public:
      */
     void enableP2P(bool enable);
 
+    void checkP2P();
+
+    bool isP2PAvailable();
+
     /**
      * Shuffle methods
      */
@@ -1198,6 +1190,12 @@ public:
     void shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets);
 
     void shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets);
+
+    /**
+     * Type Conversions
+     */
+
+    void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
 };
 
 

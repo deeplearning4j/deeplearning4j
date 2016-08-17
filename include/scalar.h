@@ -19,7 +19,7 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <float16.hpp>
+#include <types/float16.h>
 #endif
 
 #define SCALAR_OPS \
