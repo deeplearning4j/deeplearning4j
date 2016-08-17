@@ -155,4 +155,16 @@ public interface OpExecutioner {
      */
     void setExecutionMode(ExecutionMode executionMode);
 
+    /**
+     * Execute MetaOp
+     *
+     * @param op
+     */
+    void exec(MetaOp op);
+
+    /**
+     * Execute GridOp
+     * @param op
+     */
+    void exec(GridOp op);
 }
