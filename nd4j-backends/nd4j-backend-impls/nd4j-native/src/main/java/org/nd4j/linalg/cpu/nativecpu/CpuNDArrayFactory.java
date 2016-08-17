@@ -21,11 +21,10 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -33,6 +32,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLapack;
 import org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
@@ -501,6 +503,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         int linearIndex = 0;
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
         for(INDArray m : matrices) {
+            Nd4j.getCompressor().autoDecompress(m);
+
             if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
                     && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
                 //Can do array copy
@@ -577,6 +581,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
 
         for(int i = 0; i < toConcat.length; i++) {
+            if (toConcat[i].isCompressed())
+                Nd4j.getCompressor().decompressi(toConcat[i]);
+
             shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
             dataPointers.put(i, toConcat[i].data().addressPointer());
             sumAlongDim += toConcat[i].size(dimension);
@@ -634,6 +641,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
+
+        Nd4j.getCompressor().autoDecompress(source);
 
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
@@ -711,6 +720,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         PointerPointer dataPointers = new PointerPointer(arrays.length);
 
         for (int i = 0; i < arrays.length; i++) {
+            Nd4j.getCompressor().autoDecompress(arrays[i]);
+
             if (arrays[i].lengthLong() != len)
                 throw new RuntimeException("All arrays should have equal length for averaging");
 
@@ -827,6 +838,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
 
+            Nd4j.getCompressor().autoDecompress(array);
+
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
@@ -879,5 +892,147 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         shapePointers.address();
         tadPointers.address();
         offsetPointers.address();
+    }
+
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     *
+     * @param buffer
+     * @return
+     */
+    /*
+    @Override
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+            throw new IllegalStateException("DataBuffer contains wrong data: " + buffer.dataType());
+
+        CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
+        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+
+        DataBuffer targetBuffer = Nd4j.createBuffer(descriptor.getCompressedLength() / 2);
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.convertHalfsToDoubles(
+                    null,
+                    comp.addressPointer(),
+                    (int) descriptor.getCompressedLength() / 2,
+                    targetBuffer.addressPointer()
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.convertHalfsToFloats(
+                    null,
+                    comp.addressPointer(),
+                    (int) descriptor.getCompressedLength() / 2,
+                    targetBuffer.addressPointer()
+            );
+        } else {
+            throw new UnsupportedOperationException("Target dtype isn't supported: " + Nd4j.dataType());
+        }
+
+        return targetBuffer;
+    }
+    */
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param buffer
+     * @return
+     */
+    /*@Override
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        // we allocate pointer
+        ShortPointer pointer = new ShortPointer(buffer.length());
+
+        if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.convertDoublesToHalfs(
+                    null,
+                    buffer.addressPointer(),
+                    (int) buffer.length(),
+                    pointer
+            );
+        } else if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.convertFloatsToHalfs(
+                    null,
+                    buffer.addressPointer(),
+                    (int) buffer.length(),
+                    pointer
+            );
+        } else {
+            throw new UnsupportedOperationException("Source dtype isn't supported: " + buffer.dataType());
+        }
+
+        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, new Float16());
+        descriptor.setCompressedLength(buffer.length() * 2);
+
+
+        CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
+        return result;
+    }
+    */
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst @return
+     */
+    @Override
+    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        if (source.isView())
+            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
+
+        DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
+        source.setData(buffer);
+
+        if (buffer instanceof CompressedDataBuffer)
+            source.markAsCompressed(true);
+        else source.markAsCompressed(false);
+
+        return source;
+    }
+
+    @Override
+    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+        int elementSize = 0;
+        if (typeDst.ordinal() <= 2)
+            elementSize = 1;
+        else if (typeDst.ordinal() <= 5)
+            elementSize = 2;
+        else if (typeDst.ordinal() == 6)
+            elementSize = 4;
+        else if (typeDst.ordinal() == 7)
+            elementSize = 8;
+        else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+
+        DataBuffer buffer = null;
+
+
+        if (typeDst.ordinal() < 6) {
+            // all types below 6 are compression modes
+            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
+            descriptor.setCompressionType(CompressionType.LOSSY);
+            descriptor.setCompressedLength(source.length() * elementSize);
+            buffer = new CompressedDataBuffer(pointer, descriptor);
+        } else {
+            // decompression mode
+            buffer = Nd4j.createBuffer(source.length(), false);
+        }
+
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                source.addressPointer(),
+                source.length(),
+                typeDst.ordinal(),
+                buffer.addressPointer()
+        );
+
+   //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+
+        return buffer;
     }
 }

@@ -204,7 +204,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public Type dataType() {
-        return Type.FLOAT;
+        return type;
     }
 
 

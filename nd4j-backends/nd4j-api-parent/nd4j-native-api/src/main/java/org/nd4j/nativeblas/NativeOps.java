@@ -1162,15 +1162,6 @@ public class NativeOps extends Pointer {
 
     public native void pullRowsHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
 
-    //////////////
-
-    public native void convertDoublesToHalfs(PointerPointer extraPointers, Pointer x, int n, Pointer z);
-
-    public native void convertFloatsToHalfs(PointerPointer extraPointers, Pointer x, int n, Pointer z);
-
-    public native void convertHalfsToDoubles(PointerPointer extraPointers, Pointer x, int n, Pointer z);
-
-    public native void convertHalfsToFloats(PointerPointer extraPointers, Pointer x, int n, Pointer z);
 
     ///////////////////////
 
@@ -1184,6 +1175,10 @@ public class NativeOps extends Pointer {
 
     public native void enableP2P(boolean reallyEnable);
 
+    public native void checkP2P();
+
+    public native boolean isP2PAvailable();
+
     //
 
     public native void shuffleDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
@@ -1191,4 +1186,8 @@ public class NativeOps extends Pointer {
     public native void shuffleFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
 
     public native void shuffleHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+
+    // type conversion
+
+    public native void convertTypes(PointerPointer extras, int srcType, Pointer x, long N, int dstType, Pointer z);
 }

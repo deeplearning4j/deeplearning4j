@@ -89,6 +89,7 @@ public class SynchronousFlowController implements FlowController {
 
 
         if (result != null) {
+            Nd4j.getCompressor().autoDecompress(result);
             prepareDelayedMemory(result);
             AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
@@ -122,6 +123,8 @@ public class SynchronousFlowController implements FlowController {
 
         for (INDArray operand: operands) {
             if (operand == null) continue;
+
+            Nd4j.getCompressor().autoDecompress(operand);
 
             AllocationPoint pointData = allocator.getAllocationPoint(operand);
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());

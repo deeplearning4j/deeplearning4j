@@ -58,6 +58,20 @@ public interface INDArray extends Serializable  {
      */
     boolean isView();
 
+ /**
+  * Returns true if this array is compressed, and false otherwise
+  * @return
+  */
+ boolean isCompressed();
+
+ /**
+  * This method marks INDArray instance as compressed
+  * PLEASE NOTE: Do not use this method unless you 100% have to
+  *
+  * @param reallyCompressed
+  */
+ void markAsCompressed(boolean reallyCompressed);
+
     /**
      * Set the ndarray to wrap around
      * @param wrapAround thewrap around
