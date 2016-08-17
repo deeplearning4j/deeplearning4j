@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.util.List;
@@ -10,6 +11,14 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class FreeGridOp extends BaseGridOp {
+
+    public FreeGridOp() {
+
+    }
+
+    public FreeGridOp(INDArray x, INDArray y) {
+        super(x, y);
+    }
 
     public FreeGridOp(Op... ops) {
         super(ops);

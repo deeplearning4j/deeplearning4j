@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 
 /**
@@ -8,6 +9,18 @@ import org.nd4j.linalg.api.ops.*;
  * @author raver119@gmail.com
  */
 public class LinearMetaOp extends BaseMetaOp {
+
+    public LinearMetaOp() {
+
+    }
+
+    public LinearMetaOp(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
+    public LinearMetaOp(Op opA, Op opB) {
+        super(opA, opB);
+    }
 
     public LinearMetaOp(ScalarOp opA, TransformOp opB) {
         super(opA, opB);

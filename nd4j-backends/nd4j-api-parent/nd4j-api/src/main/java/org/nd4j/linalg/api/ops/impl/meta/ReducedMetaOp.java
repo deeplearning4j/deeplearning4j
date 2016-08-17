@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
@@ -8,6 +9,14 @@ import org.nd4j.linalg.api.ops.TransformOp;
  * @author raver119@gmail.com
  */
 public class ReducedMetaOp extends BaseMetaOp {
+
+    public ReducedMetaOp() {
+
+    }
+
+    public ReducedMetaOp(INDArray x, INDArray y) {
+        super(x, y);
+    }
 
     public ReducedMetaOp(ScalarOp opA, Accumulation opB) {
         super(opA, opB);

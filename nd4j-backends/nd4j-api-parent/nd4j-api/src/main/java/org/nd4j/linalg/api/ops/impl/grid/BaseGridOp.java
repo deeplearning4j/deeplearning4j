@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.GridOp;
 import org.nd4j.linalg.api.ops.MetaOp;
@@ -17,8 +18,12 @@ import java.util.List;
 public abstract class BaseGridOp extends BaseOp implements GridOp {
     private List<Op> queuedOps = new ArrayList<>();
 
-    protected BaseGridOp() {
+    public BaseGridOp() {
 
+    }
+
+    public BaseGridOp(INDArray x, INDArray y) {
+        // no-op
     }
 
     protected BaseGridOp(Op... ops) {
