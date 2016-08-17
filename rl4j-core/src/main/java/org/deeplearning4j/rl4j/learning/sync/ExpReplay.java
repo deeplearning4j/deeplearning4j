@@ -40,7 +40,7 @@ public class ExpReplay<A> implements IExpReplay<A> {
         Iterator<Integer> iter = intSet.iterator();
         for (int i = 0; iter.hasNext(); ++i) {
             Transition<A> trans = storage.get(iter.next());
-            batch.add(trans);
+            batch.add(trans.dup());
         }
 
         return batch;
@@ -51,9 +51,10 @@ public class ExpReplay<A> implements IExpReplay<A> {
     }
 
     public void store(Transition<A> transition) {
-        storage.add(transition);
+        storage.add(transition.dup());
         log.info("size: "+storage.size());
     }
+
 
 
 }

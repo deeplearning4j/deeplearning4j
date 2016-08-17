@@ -122,12 +122,13 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
+            INDArray ninput = getInput(stepReply.getObservation());
             if (isHistoryProcessor)
-                getHistoryProcessor().add(getInput(stepReply.getObservation()));
+                getHistoryProcessor().add(ninput);
 
-            INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{getInput(stepReply.getObservation())};
+            INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{ninput};
 
-            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), nhistory);
+            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), ninput);
             getExpReplay().store(trans);
 
             if (getStepCounter() > updateStart) {
@@ -163,7 +164,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             areTerminal[i] = trans.isTerminal();
             actions[i] = trans.getAction();
             obs.putRow(i, Transition.concat(trans.getObservation()));
-            nextObs.putRow(i, Transition.concat(trans.getNextObservation()));
+            nextObs.putRow(i, Transition.concat(Transition.append(trans.getObservation(), trans.getNextObservation())));
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);
