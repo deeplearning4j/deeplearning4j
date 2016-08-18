@@ -33,8 +33,12 @@ import java.io.Serializable;
  */
 public abstract class InputType implements Serializable {
 
-    /** The type of activations in/out of a given GraphVertex. */
-    public enum Type {FF, RNN, CNN}
+    /** The type of activations in/out of a given GraphVertex<br>
+     * FF: Standard feed-foward (2d minibatch, 1d per example) data<br>
+     * RNN: Recurrent neural network (3d minibatch) time series data<br>
+     * CNN: Convolutional neural n
+     */
+    public enum Type {FF, RNN, CNN, CNNFlat}
 
 
     public abstract Type getType();
@@ -57,7 +61,8 @@ public abstract class InputType implements Serializable {
         return new InputTypeRecurrent(size);
     }
 
-    /**Input type for convolutional (CNN) data
+    /**Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, depth, height, width].
+     * For CNN data that has been flattened, use {@link #convolationalFlat(int, int, int)}
      * @param height height of the input
      * @param width Width of the input
      * @param depth Depth, or number of channels
@@ -65,6 +70,19 @@ public abstract class InputType implements Serializable {
      */
     public static InputType convolutional(int height, int width, int depth){
         return new InputTypeConvolutional(height,width,depth);
+    }
+
+    /**
+     * Input type for convolutional (CNN) data, where the data is in flattened (row vector) format.
+     * Expect data with shape [miniBatchSize, height * width * depth]. For CNN data in 4d format, use {@link #convolutional(int, int, int)}
+     *
+     * @param height    Height of the (unflattened) data represented by this input type
+     * @param width     Width of the (unflattened) data represented by this input type
+     * @param depth     Depth of the (unflattened) data represented by this input type
+     * @return
+     */
+    public static InputType convolationalFlat(int height, int width, int depth){
+        return new InputTypeConvolutionalFlat(height, width, depth);
     }
 
 
@@ -112,6 +130,27 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString(){
             return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
+        }
+    }
+
+    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)
+    public static class InputTypeConvolutionalFlat extends InputType {
+        private int height;
+        private int width;
+        private int depth;
+
+        @Override
+        public Type getType() {
+            return Type.CNN;
+        }
+
+        public int getFlattenedSize(){
+            return height * width * depth;
+        }
+
+        @Override
+        public String toString(){
+            return "InputTypeConvolutionalFlat(h=" + height + ",w=" + width + ",d=" + depth + ")";
         }
     }
 
