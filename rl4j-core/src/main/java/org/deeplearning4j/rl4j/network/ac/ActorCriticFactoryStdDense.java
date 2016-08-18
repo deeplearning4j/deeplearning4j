@@ -41,7 +41,7 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
                 .addInputs("input")
                 .addLayer("0", new DenseLayer.Builder()
                         .nIn(numInputs[0])
-                        .nOut(Constants.NUM_HIDDEN_NODES)
+                        .nOut(conf.getNumHiddenNodes())
                         .activation("relu")
                         .build(), "input");
 
@@ -49,8 +49,8 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB
                     .addLayer(i + "", new DenseLayer.Builder()
-                            .nIn(Constants.NUM_HIDDEN_NODES)
-                            .nOut(Constants.NUM_HIDDEN_NODES)
+                            .nIn(conf.getNumHiddenNodes())
+                            .nOut(conf.getNumHiddenNodes())
                             .activation("relu")
                             .build(), (i - 1) + "");
         }
@@ -81,6 +81,7 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
     public static class Configuration {
 
         int numLayer;
+        int numHiddenNodes;
         double learningRate;
         double l2;
         double rmsDecay;
