@@ -34,7 +34,7 @@ Comments are welcome on our gitter channel:
 
 * Install [gym-http-api](https://github.com/openai/gym-http-api).
 * launch http api server.
-* run with this [gist](https://gist.github.com/rubenfiszel/5d16aa2fc2c1e8cc9bdbf4ead5b3ab43)
+* run with this [main](https://github.com/rubenfiszel/rl4j-examples/blob/master/src/main/java/org/deeplearning4j/rl4j/Cartpole.java)
 
 # Doom
 
