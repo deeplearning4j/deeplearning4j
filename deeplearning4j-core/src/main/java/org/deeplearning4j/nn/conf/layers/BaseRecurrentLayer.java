@@ -45,7 +45,9 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
         switch (inputType.getType()) {
             case FF:
-                //FF -> RNN
+            case CNNFlat:
+                //FF -> RNN or CNNFlat -> RNN
+                //In either case, input data format is a row vector per example
                 return new FeedForwardToRnnPreProcessor();
             case RNN:
                 //RNN -> RNN: No preprocessor necessary
