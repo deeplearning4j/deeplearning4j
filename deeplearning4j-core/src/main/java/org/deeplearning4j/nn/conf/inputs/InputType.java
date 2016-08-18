@@ -141,7 +141,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public Type getType() {
-            return Type.CNN;
+            return Type.CNNFlat;
         }
 
         public int getFlattenedSize(){
@@ -149,7 +149,7 @@ public abstract class InputType implements Serializable {
         }
 
         public InputType getUnflattenedType(){
-            return InputType.convolutional(height, depth, width);
+            return InputType.convolutional(height, width, depth);
         }
 
         @Override
