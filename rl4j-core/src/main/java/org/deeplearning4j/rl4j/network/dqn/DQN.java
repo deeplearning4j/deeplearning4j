@@ -53,7 +53,10 @@ public class DQN implements IDQN {
     }
 
     public Gradient gradient(INDArray input, INDArray labels) {
-        throw new NotImplementedException("calculate gradient");
+        mln.setInput(input);
+        mln.setLabels(labels);
+        mln.computeGradientAndScore();
+        return mln.gradient();
     }
 
     public Gradient gradient(INDArray input, INDArray[] labels) {
@@ -61,7 +64,8 @@ public class DQN implements IDQN {
     }
 
     public void applyGradient(Gradient gradient) {
-        throw new NotImplementedException("apply gradient");
+        mln.getUpdater().update(mln, gradient, 1, 32);
+        mln.params().subi(gradient.gradient());
     }
 
     public double getLatestScore() {

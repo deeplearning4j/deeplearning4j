@@ -38,6 +38,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal, AsyncLearning.AsyncConfiguration a3cc, int threadNumber, DataManager dataManager) {
+        super(asyncGlobal);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
@@ -61,7 +62,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         int[] nshape = Learning.makeShape(size, shape);
 
         INDArray input = Nd4j.create(nshape);
-        INDArray targets = Nd4j.create(size, mdp.getActionSpace().getSize());
+        INDArray targets = Nd4j.create(size, 1);
         INDArray logSoftmax = Nd4j.create(size, mdp.getActionSpace().getSize());
 
         double r = minTrans.getReward();

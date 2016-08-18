@@ -5,6 +5,7 @@ import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -18,6 +19,9 @@ import java.util.Stack;
  */
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet> extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
+    public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal){
+        super(asyncGlobal);
+    }
 
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {
 
@@ -65,7 +69,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
                 obs = stepReply.getObservation();
 
-                INDArray[] output = target.outputAll(input.reshape(Learning.makeShape(1, input.shape())));
+                if (input.shape().length > 2)
+                    input = input.reshape(Learning.makeShape(1, input.shape()));
+                INDArray[] output = target.outputAll(input);
                 rewards.add(new MiniTrans(Transition.concat(history), action, output, stepReply.getReward()));
                 reward += stepReply.getReward();
 

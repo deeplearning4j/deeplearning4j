@@ -37,7 +37,7 @@ public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncL
 
 
     public AsyncThread newThread(int i) {
-        return new NStepQLearningThreadDiscrete(mdp, asyncGlobal, configuration, i, dataManager);
+        return new NStepQLearningThreadDiscrete(mdp.newInstance(), asyncGlobal, configuration, i, dataManager);
     }
 
     public IDQN getNeuralNet() {

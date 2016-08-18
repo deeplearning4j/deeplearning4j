@@ -39,6 +39,10 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         getLogger().info("Threads launched.");
     }
 
+    @Override
+    public int getStepCounter() {
+        return getAsyncGlobal().getT().get();
+    }
 
     public void train() {
 
@@ -46,9 +50,11 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         launchThreads();
 
         //this is simply for stat purpose
+        getDataManager().writeInfo(this);
         synchronized (this) {
             while (!isTrainingComplete()) {
                 getPolicy().play(getMdp(), getHistoryProcessor());
+                getDataManager().writeInfo(this);
                 try {
                     wait(20000);
                 } catch (InterruptedException e) {
@@ -66,11 +72,10 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         int seed;
         int maxEpochStep;
         int maxStep;
-        int updateStart;
         int numThread;
         int nstep;
         double gamma;
-        double learningRate;
+        int updateStart;
         int targetDqnUpdateFreq;
         double errorClamp;
         float minEpsilon;
@@ -78,14 +83,11 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
         public AsyncConfiguration() {
 
-            updateStart = 1000;
             numThread = 5;
             maxStep = 1000;
             maxEpochStep = 1000;
-            learningRate = 0.01;
             targetDqnUpdateFreq = 10;
             nstep = 10;
-
             errorClamp = 2.0;
             minEpsilon = 0.1f;
             epsilonDecreaseRate = 1f / 20000f;

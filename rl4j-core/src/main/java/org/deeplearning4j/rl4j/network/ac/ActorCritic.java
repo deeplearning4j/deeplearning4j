@@ -37,12 +37,16 @@ public class ActorCritic implements IActorCritic {
     }
 
     public Gradient gradient(INDArray input, INDArray[] labels) {
-        throw new NotImplementedException("calculate gradient");
+        cg.setInput(0, input);
+        cg.setLabels(labels);
+        cg.computeGradientAndScore();
+        return cg.gradient();
     }
 
 
     public void applyGradient(Gradient gradient) {
-        throw new NotImplementedException("apply gradient");
+        cg.getUpdater().update(cg, gradient, 1, 32);
+        cg.params().subi(gradient.gradient());
     }
 
     public double getLatestScore() {

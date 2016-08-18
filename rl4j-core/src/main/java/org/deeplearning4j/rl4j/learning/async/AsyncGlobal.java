@@ -20,6 +20,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     final private NN current;
     final private ConcurrentLinkedQueue<Pair<Gradient, Integer>> queue;
     final private AsyncLearning.AsyncConfiguration a3cc;
+    @Getter
     private AtomicInteger T = new AtomicInteger(0);
     @Getter
     private NN target;
@@ -61,14 +62,11 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     public void run() {
         synchronized (this) {
             while (!isTrainingComplete()) {
-                log.info("loop");
                 if (!queue.isEmpty()) {
-                    log.info("in");
                     Pair<Gradient, Integer> pair = queue.poll();
                     T.addAndGet(pair.getSecond());
                     Gradient gradient = pair.getFirst();
                     current.applyGradient(gradient);
-                    log.info("applied gradient");
                     if (T.get() % a3cc.getTargetDqnUpdateFreq() == 0)
                         target = (NN) current.clone();
                 } else

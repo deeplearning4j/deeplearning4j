@@ -9,6 +9,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -29,12 +30,11 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private int epochCounter = 0;
     @Getter
     private IHistoryProcessor historyProcessor;
-    private DataManager dataManager;
 
-    public AsyncThread() {
+    public AsyncThread(AsyncGlobal<NN> asyncGlobal) {
 
         log = LoggerFactory.getLogger("Thread-" + getThreadNumber());
-        nn = getAsyncGlobal().cloneCurrent();
+        nn = asyncGlobal.cloneCurrent();
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
@@ -58,12 +58,13 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
             rewards += subEpochReturn.getReward();
             if (getMdp().isDone()) {
 
+                if (getThreadNumber() == 1)
+                    getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length));
+
                 initMdp = Learning.initMdp(getMdp(), historyProcessor);
                 obs = initMdp.getLastObs();
                 rewards = initMdp.getReward();
                 length = initMdp.getSteps();
-
-                dataManager.appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length));
                 epochCounter++;
             }
         }

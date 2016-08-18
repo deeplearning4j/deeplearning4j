@@ -41,7 +41,7 @@ public class DQNFactoryStdDense implements DQNFactory {
                 .list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(numInputs[0])
-                        .nOut(Constants.NUM_HIDDEN_NODES)
+                        .nOut(conf.getNumHiddenNodes())
                         .activation("relu")
                         .build());
 
@@ -49,8 +49,8 @@ public class DQNFactoryStdDense implements DQNFactory {
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB
                     .layer(i, new DenseLayer.Builder()
-                            .nIn(Constants.NUM_HIDDEN_NODES)
-                            .nOut(Constants.NUM_HIDDEN_NODES)
+                            .nIn(conf.getNumHiddenNodes())
+                            .nOut(conf.getNumHiddenNodes())
                             .activation("relu")
                             .build());
         }
@@ -58,7 +58,7 @@ public class DQNFactoryStdDense implements DQNFactory {
         confB
                 .layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .activation("identity")
-                        .nIn(Constants.NUM_HIDDEN_NODES)
+                        .nIn(conf.getNumHiddenNodes())
                         .nOut(numOutputs)
                         .build());
 
@@ -74,6 +74,7 @@ public class DQNFactoryStdDense implements DQNFactory {
     public static class Configuration {
 
         int numLayer;
+        int numHiddenNodes;
         double learningRate;
         double l2;
         double rmsDecay;

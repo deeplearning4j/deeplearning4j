@@ -105,13 +105,15 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
             game.addAvailableGameVariable(gameVar[i]);
         }
 
-        // Causes episodes to finish after 200 tics (actions)
+
+        // Causes episodes to finish after timeout tics
         game.setEpisodeTimeout(conf.getTimeout());
 
         game.setEpisodeStartTime(conf.getStartTime());
+
         game.setWindowVisible(render);
         game.setSoundEnabled(false);
-        game.setMode(Mode.PLAYER);
+        game.setMode(Mode.SPECTATOR);
 
         game.setLivingReward(conf.getLivingReward());
 
