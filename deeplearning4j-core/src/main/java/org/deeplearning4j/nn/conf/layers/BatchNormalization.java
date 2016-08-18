@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -40,8 +41,9 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.CNN){
-            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+        if(inputType == null || (inputType.getType() != InputType.Type.CNN && inputType.getType() != InputType.Type.CNNFlat)){
+            //Can handle CNN or flat CNN input formats only
+            throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, got " + inputType);
         }
         return inputType;
     }
@@ -53,7 +55,10 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType){
-        //No preprocessor necessory?
+        if(inputType.getType() == InputType.Type.CNNFlat){
+            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat)inputType;
+            return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
+        }
 
         return null;
     }
