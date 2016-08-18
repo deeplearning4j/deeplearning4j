@@ -66,6 +66,8 @@ public class MergeVertex extends GraphVertex {
         if(vertexInputs.length == 1) return vertexInputs[0];
         InputType first = vertexInputs[0];
         if(first.getType() == InputType.Type.CNNFlat){
+            //TODO
+            //Merging flattened CNN format data could be messy?
             throw new InvalidInputTypeException("Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: " + vertexInputs);
         } else if(first.getType() != InputType.Type.CNN){
             //FF or RNN data inputs
