@@ -27,6 +27,7 @@ public class DeadlyCorridor extends VizDoom {
                 "deadly_corridor",
                 0.0,
                 2100,
+                0,
                 buttons
         );
     }

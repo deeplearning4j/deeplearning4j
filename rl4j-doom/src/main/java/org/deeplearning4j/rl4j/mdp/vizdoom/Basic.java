@@ -25,6 +25,7 @@ public class Basic extends VizDoom {
                 "basic",
                 -0.01,
                 700,
+                0,
                 buttons
         );
     }

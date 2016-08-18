@@ -70,6 +70,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     public void preEpoch() {
         history = null;
+        lastAction = 0;
+        accuReward = 0;
 
         if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null && getDataManager().isSaveData()) {
             lastMonitor = getStepCounter();

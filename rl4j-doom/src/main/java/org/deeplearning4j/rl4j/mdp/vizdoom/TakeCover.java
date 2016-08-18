@@ -21,6 +21,7 @@ public class TakeCover extends VizDoom {
                 "take_cover",
                 1,
                 2100,
+                0,
                 buttons
         );
     }
