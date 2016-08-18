@@ -3,7 +3,9 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 
 /**
@@ -70,10 +72,36 @@ public class InputTypeUtil {
             case CNN:
                 //CNN -> CNN: no preprocessor required
                 return null;
+            case CNNFlat:
+                //CNN (flat) -> CNN
+                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat)inputType;
+                return new FeedForwardToCnnPreProcessor(f.getHeight(), f.getWidth(), f.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }
+    }
 
+    public static InputPreProcessor getPreprocessorForInputTypeRnnLayers(InputType inputType, String layerName){
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + layerName + "\"): input type is null");
+        }
+
+        switch (inputType.getType()) {
+            case FF:
+            case CNNFlat:
+                //FF -> RNN or CNNFlat -> RNN
+                //In either case, input data format is a row vector per example
+                return new FeedForwardToRnnPreProcessor();
+            case RNN:
+                //RNN -> RNN: No preprocessor necessary
+                return null;
+            case CNN:
+                //CNN -> RNN
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+                return new CnnToRnnPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
+            default:
+                throw new RuntimeException("Unknown input type: " + inputType);
+        }
     }
 
 }

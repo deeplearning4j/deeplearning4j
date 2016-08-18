@@ -28,15 +28,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
-/** SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
+/**
+ * SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
  * For example, a subset of the activations out of a layer.<br>
  * Note that this subset is specifying by means of an interval of the original activations.
  * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
  * new SubsetVertex(0,9).<br>
  * In the case of convolutional (4d) activations, this is done along depth.
+ *
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
 public class SubsetVertex extends GraphVertex {
 
     private int from;
@@ -44,7 +46,7 @@ public class SubsetVertex extends GraphVertex {
 
     /**
      * @param from The first column index, inclusive
-     * @param to The last column index, inclusive
+     * @param to   The last column index, inclusive
      */
     public SubsetVertex(@JsonProperty("from") int from, @JsonProperty("to") int to) {
         this.from = from;
@@ -53,51 +55,54 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public SubsetVertex clone() {
-        return new SubsetVertex(from,to);
+        return new SubsetVertex(from, to);
     }
 
     @Override
-    public boolean equals(Object o){
-        if(!(o instanceof SubsetVertex)) return false;
-        SubsetVertex s = (SubsetVertex)o;
+    public boolean equals(Object o) {
+        if (!(o instanceof SubsetVertex)) return false;
+        SubsetVertex s = (SubsetVertex) o;
         return s.from == from && s.to == to;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return new Integer(from).hashCode() ^ new Integer(to).hashCode();
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph,name,idx,from,to);
+        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, from, to);
     }
 
     @Override
     public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length != 1){
+        if (vertexInputs.length != 1) {
             throw new InvalidInputTypeException("SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }
 
-        switch(vertexInputs[0].getType()){
+        switch (vertexInputs[0].getType()) {
             case FF:
-                return InputType.feedForward(to-from+1);
+                return InputType.feedForward(to - from + 1);
             case RNN:
-                return InputType.recurrent(to-from+1);
+                return InputType.recurrent(to - from + 1);
             case CNN:
-                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)vertexInputs[0];
+                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
                 int depth = conv.getDepth();
-                if(to >= depth){
+                if (to >= depth) {
                     throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to + "] inclusive from CNN activations with "
-                            + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]" );
+                            + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
-                return InputType.convolutional(from-to+1,conv.getWidth(),conv.getHeight());
+                return InputType.convolutional(from - to + 1, conv.getWidth(), conv.getHeight());
+            case CNNFlat:
+                //TODO work out how to do this - could be difficult...
+                throw new UnsupportedOperationException("Subsetting data in flattened convolutional format not yet supported");
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }

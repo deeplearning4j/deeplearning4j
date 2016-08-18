@@ -42,24 +42,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName() + "\"): input type is null");
-        }
-
-        switch (inputType.getType()) {
-            case FF:
-                //FF -> RNN
-                return new FeedForwardToRnnPreProcessor();
-            case RNN:
-                //RNN -> RNN: No preprocessor necessary
-                return null;
-            case CNN:
-                //CNN -> RNN
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
-                return new CnnToRnnPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
-            default:
-                throw new RuntimeException("Unknown input type: " + inputType);
-        }
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
 
 
