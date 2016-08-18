@@ -44,6 +44,19 @@ import java.nio.Buffer;
  * @author Adam Gibson
  */
 public interface Op {
+    enum Type {
+        SCALAR,
+        TRANSFORM,
+        PAIRWISE,
+        SPECIAL,
+        BROADCAST,
+        REDUCE,
+        INDEXREDUCE,
+        VARIANCE,
+        REDUCE3,
+        GRID,
+        META
+    }
 
     /**
      * Whether the executioner

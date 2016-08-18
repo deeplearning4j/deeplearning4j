@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.LinearMetaOp;
@@ -111,6 +112,12 @@ public class GridExecutioner extends JCudaExecutioner {
                 return true;
 
         return false;
+    }
+
+    protected GridPointers pointerizeOp(Op op, int... dimensions) {
+        GridPointers pointers = new GridPointers(op, dimensions);
+
+        return pointers;
     }
 
     @Override
