@@ -67,7 +67,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 //    private static final Allocator allocator = AtomicAllocator.getInstance();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
 
-    @Getter private static TADManager tadManager = new DeviceTADManager();
+    @Getter protected static TADManager tadManager = new DeviceTADManager();
 
     public JCudaExecutioner() {
 
