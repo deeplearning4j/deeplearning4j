@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ops.GridOp;
 import org.nd4j.linalg.api.ops.MetaOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridDescriptor;
+import org.nd4j.linalg.api.ops.grid.GridPointers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,7 +17,8 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public abstract class BaseGridOp extends BaseOp implements GridOp {
-    private List<Op> queuedOps = new ArrayList<>();
+    protected List<Op> queuedOps = new ArrayList<>();
+    protected List<GridPointers> grid = new ArrayList<>();
 
     public BaseGridOp() {
 
@@ -27,8 +29,16 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
     }
 
     protected BaseGridOp(Op... ops) {
+        grid = new ArrayList<>(ops.length);
         for (Op op: ops) {
             queuedOps.add(op);
+            grid.add(null);
+        }
+    }
+
+    protected BaseGridOp(GridPointers... pointers) {
+        for (GridPointers ptr: pointers) {
+            grid.add(ptr);
         }
     }
 
@@ -38,11 +48,14 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
 
 
     @Override
-    public GridDescriptor getGridReference() {
+    public GridDescriptor getGridDescriptor() {
         GridDescriptor descriptor = new GridDescriptor();
-        descriptor.setGridDepth(queuedOps.size());
+        descriptor.setGridDepth(grid.size());
+        descriptor.setGridPointers(grid);
         return descriptor;
     }
+
+
 
     /**
      * Pairwise op (applicable with an individual element in y)

@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 
 /**
+ * You're NOT supposed to directly call this op. Do it on your own risk, only if you're absolutely have to.
+ *
  * @author raver119@gmail.com
  */
 public class ReducedMetaOp extends BaseMetaOp {

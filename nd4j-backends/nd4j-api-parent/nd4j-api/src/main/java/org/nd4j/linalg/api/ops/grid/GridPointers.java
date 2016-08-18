@@ -27,6 +27,10 @@ public class GridPointers {
     private int yStride = -1;
     private int zStride = -1;
 
+    private int xLength = 0;
+    private int yLength = 0;
+    private int zLength = 0;
+
     // shapeInfo pointers
     private Pointer xShapeInfo;
     private Pointer yShapeInfo;
@@ -48,10 +52,15 @@ public class GridPointers {
 
         this.opNum = op.opNum();
 
+        this.xLength = op.x().length();
+        this.zLength = op.z().length();
+
         this.xStride = op.x().elementWiseStride();
         this.zStride = op.z().elementWiseStride();
-        if (op.y() != null)
-            this.yStride = op.x().elementWiseStride();
+        if (op.y() != null) {
+            this.yStride = op.y().elementWiseStride();
+            this.yLength = op.y().length();
+        }
 
         if (dimensions != null)
             this.dimensionsLength = dimensions.length;

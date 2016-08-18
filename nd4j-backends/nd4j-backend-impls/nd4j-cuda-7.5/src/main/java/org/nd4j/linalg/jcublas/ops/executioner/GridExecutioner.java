@@ -146,6 +146,7 @@ public class GridExecutioner extends JCudaExecutioner {
         pointers.setXShapeInfo(allocator.getPointer(op.x().shapeInfoDataBuffer(), context));
         pointers.setZ(allocator.getPointer(op.z(), context));
         pointers.setZShapeInfo(allocator.getPointer(op.z().shapeInfoDataBuffer(), context));
+        pointers.setZLength(op.z().length());
 
         if (op.y() != null) {
             pointers.setY(allocator.getPointer(op.y(), context));
@@ -309,9 +310,17 @@ public class GridExecutioner extends JCudaExecutioner {
         return super.exec(broadcast, dimension);
     }
 
+    protected void prepareGrid(MetaOp op) {
+        GridPointers ptrA = pointerizeOp(op.getFirstOp());
+        GridPointers ptrB = pointerizeOp(op.getSecondOp());
+
+        op.setFirstPointers(ptrA);
+        op.setSecondPointers(ptrB);
+    }
+
     @Override
     public void exec(MetaOp op) {
-        // TODO: to be implemented
+        prepareGrid(op);
     }
 
     @Override

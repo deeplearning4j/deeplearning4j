@@ -9,5 +9,5 @@ import org.nd4j.linalg.api.ops.grid.GridDescriptor;
  */
 public interface GridOp extends Op {
 
-    GridDescriptor getGridReference();
+    GridDescriptor getGridDescriptor();
 }

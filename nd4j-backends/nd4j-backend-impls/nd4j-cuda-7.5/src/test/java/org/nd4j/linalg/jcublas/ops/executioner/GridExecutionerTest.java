@@ -26,10 +26,13 @@ public class GridExecutionerTest {
     public void setUp() throws Exception {
 
     }
+///////////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////////
 
-/*
     MatchMeta tests are checking, how ops are matching for MetaOp requirements
-*/
+
+*//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 
     @Test
     public void isMatchingMetaOp1() throws Exception {
@@ -74,9 +77,13 @@ public class GridExecutionerTest {
         assertFalse(executioner.isMatchingMetaOp(opB));
     }
 
-/*
+///////////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////////
+
     GridFlow tests are checking how ops are getting queued upon exec() calls
- */
+
+*//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 
     @Test
     public void testGridFlow1() throws Exception {
@@ -90,23 +97,41 @@ public class GridExecutionerTest {
 
         executioner.exec(opA);
 
+        long time1 = System.nanoTime();
+
         Max opB = new Max(array);
 
         executioner.exec(opB);
 
         assertEquals(1, executioner.getQueueLength());
 
+        long time2 = System.nanoTime();
 
         opB = new Max(array);
 
         executioner.exec(opB);
 
+        long time3 = System.nanoTime();
+
         assertEquals(2, executioner.getQueueLength());
+
+
+
+        long firstExec = time2 - time1;
+        long secondExec = time3 - time2;
+
+        System.out.println("First exec time: " + firstExec);
+        System.out.println("Second exec time: " + secondExec);
+
     }
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 /*
     Pointerize tests are checking how Ops are converted into GridPointers
 */
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
     @Test
     public void testOpPointerizeScalar1() throws Exception {
@@ -185,6 +210,7 @@ public class GridExecutionerTest {
         assertEquals(z, pointers.getZ());
 
         assertEquals(10, opA.z().length());
+        assertEquals(10, pointers.getZLength());
 
 /*      // We dont really care about EWS here, since we're testing TAD-based operation
 
@@ -244,6 +270,8 @@ public class GridExecutionerTest {
         assertEquals(z, pointers.getZ());
 
         assertEquals(1, opA.z().length());
+        assertEquals(1, pointers.getZLength());
+
 
 /*      // We dont really care about EWS here, since we're testing TAD-based operation
 
@@ -264,4 +292,20 @@ public class GridExecutionerTest {
         assertEquals(null, pointers.getExtraArgs());
     }
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/*
+    MetaOp concatenation tests
+*/
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+    /**
+     * This test checks
+     * @throws Exception
+     */
+    @Test
+    public void testMetaOpScalarTransform1() throws Exception {
+
+    }
 }
