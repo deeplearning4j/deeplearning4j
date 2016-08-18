@@ -29,7 +29,7 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
@@ -38,13 +38,18 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
-            this.nIn = f.getSize();
+            if(inputType.getType() == InputType.Type.FF){
+                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+                this.nIn = f.getSize();
+            } else {
+                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
+                this.nIn = f.getFlattenedSize();
+            }
         }
     }
 
@@ -56,7 +61,8 @@ public abstract class FeedForwardLayer extends Layer {
 
         switch (inputType.getType()) {
             case FF:
-                //FF -> FF: no preprocessor necessary
+            case CNNFlat:
+                //FF -> FF and CNN (flattened format) -> FF: no preprocessor necessary
                 return null;
             case RNN:
                 //RNN -> FF
