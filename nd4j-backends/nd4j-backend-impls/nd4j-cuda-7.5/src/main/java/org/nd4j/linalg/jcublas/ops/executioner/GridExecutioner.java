@@ -2,8 +2,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.LinearMetaOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,32 +17,71 @@ import java.util.List;
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT EVER USE THIS EXECUTIONER IN PRODUCTION
  * @author raver119@gmail.com
  */
-public class GridExecutioner extends DefaultOpExecutioner {
+public class GridExecutioner extends JCudaExecutioner {
 
     // general queues
-    private List<Deque<Op>> deviceQueues = new ArrayList<>();
+    private List<Deque<OpDescriptor>> deviceQueues = new ArrayList<>();
 
     // last op
     private ThreadLocal<Op> lastOp = new ThreadLocal<>();
 
     @Override
     public Op exec(Op op) {
+        /*
+            We pass this op to GridProcessor through check for possible MetaOp concatenation
+         */
+        return validateAsMetaOp(op, null);
+    }
+
+    /**
+     * This method adds op into GridOp queue
+     *
+     * @param op
+     * @param dimension
+     * @return
+     */
+    protected Op pushToGrid(Op op, int... dimension) {
         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
-        if (!isMatchingMetaOp(op))
+        deviceQueues.get(deviceId).add(new OpDescriptor(op, dimension));
+
+        return op;
+    }
+
+    protected Op validateAsMetaOp(Op op, int... dimension) {
+        /*
+            We have multiple options here:
+                1) Op has no relation to lastOp
+                2) Op has SOME relation to lastOp
+
+                So we either should append this op to future GridOp, or form MetaOp
+         */
+
+
+        Op last = lastOp.get();
+        if (!isMatchingMetaOp(op)) {
+            /*
+                If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
+             */
+
             lastOp.set(op);
-        else {
-            Op last = lastOp.get();
+
+            if (last != null)
+                pushToGrid(last, dimension);
+        } else {
+            /*
+                If we can form new MetaOp, we should do that right now.
+             */
             lastOp.remove();
 
             MetaOp metaOp = new LinearMetaOp(last, op);
-            exec(metaOp);
+            pushToGrid(metaOp, null);
         }
 
         return op;
     }
 
-    protected boolean isMatchingMetaOp(Op op) {
+    protected boolean isMatchingMetaOp(Op op, int... dimension) {
         Op last = lastOp.get();
         if (last == null) {
             return false;
