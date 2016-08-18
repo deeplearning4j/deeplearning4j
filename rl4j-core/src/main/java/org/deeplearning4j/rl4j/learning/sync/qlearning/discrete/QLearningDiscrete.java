@@ -183,7 +183,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
 
 
-
         for (int i = 0; i < size; i++) {
             double yTar = transitions.get(i).getReward();
 
