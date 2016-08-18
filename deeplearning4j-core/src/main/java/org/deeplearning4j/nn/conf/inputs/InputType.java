@@ -26,7 +26,7 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /** The InputType class is used to track and define the types of activations etc used in a ComputationGraph.
- * This is most useful for automatically adding preprocessors between layers.
+ * This is most useful for automatically adding preprocessors between layers, and automatically setting nIn values.
  * See: {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder#setInputTypes(InputType...)} and
  * {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration#addPreProcessors(InputType...)}
  * @author Alex Black
@@ -146,6 +146,10 @@ public abstract class InputType implements Serializable {
 
         public int getFlattenedSize(){
             return height * width * depth;
+        }
+
+        public InputType getUnflattenedType(){
+            return InputType.convolutional(height, depth, width);
         }
 
         @Override
