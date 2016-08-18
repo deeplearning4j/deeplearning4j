@@ -59,12 +59,12 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
         confB
                 .addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .activation("identity")
-                        .nOut(1).build(), getConf().getNumLayer() + "");
+                        .nOut(1).build(), (getConf().getNumLayer() - 1) + "");
 
         confB
                 .addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax") //fixthat
-                        .nOut(numOutputs).build(), getConf().getNumLayer() + "");
+                        .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
 
         confB.setOutputs("value", "softmax");
 
