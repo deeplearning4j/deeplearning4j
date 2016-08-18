@@ -31,9 +31,9 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Getter
     private IHistoryProcessor historyProcessor;
 
-    public AsyncThread(AsyncGlobal<NN> asyncGlobal) {
+    public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
 
-        log = LoggerFactory.getLogger("Thread-" + getThreadNumber());
+        log = LoggerFactory.getLogger("Thread-" + threadNumber);
         nn = asyncGlobal.cloneCurrent();
     }
 

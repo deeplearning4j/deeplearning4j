@@ -19,8 +19,8 @@ import java.util.Stack;
  */
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet> extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
-    public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal){
-        super(asyncGlobal);
+    public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal, int threadNumber){
+        super(asyncGlobal, threadNumber);
     }
 
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {
