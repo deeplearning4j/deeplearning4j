@@ -2562,3 +2562,7 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     // no-op
 }
 
+void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, int gridDepth, Nd4jPointer x) {
+    // no-op
+}
+

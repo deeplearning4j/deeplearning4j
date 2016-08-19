@@ -1196,6 +1196,12 @@ public:
      */
 
     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
+
+    /**
+     * Grid operations
+     */
+
+    void execMetaStridedFloat(Nd4jPointer *extras, int gridDepth, Nd4jPointer x);
 };
 
 

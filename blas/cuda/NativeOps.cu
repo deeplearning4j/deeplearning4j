@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_conversions.h>
+#include <grid.h>
 //#include <sys/time.h>
 
 
@@ -5838,4 +5839,12 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+}
+
+void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, int gridDepth, Nd4jPointer x) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    void *grid = reinterpret_cast<void *> (x);
+
+//    metaStridedFloat<<<32, 32, 1024, *stream>>>(gridDepth, grid);
 }

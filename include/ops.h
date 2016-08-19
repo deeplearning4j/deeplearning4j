@@ -62,6 +62,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 + params[0];
+		}
 	};
 
 	template<typename T>
@@ -77,6 +82,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 - params[0];
 		}
 	};
 
@@ -94,6 +104,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0] - d1;
+		}
 	};
 
 	template<typename T>
@@ -109,6 +124,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 * params[0];
 		}
 	};
 
@@ -126,6 +146,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 / params[0];
+		}
 	};
 
 	template<typename T>
@@ -142,6 +167,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0] / d1;
+		}
 	};
 
 	template<typename T>
@@ -157,6 +187,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0];
 		}
 	};
 
@@ -203,6 +238,11 @@ namespace simdOps {
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}
+
+		// op for MetaOp
+		op_def static T op(T d1, T *params) {
+			return (int)d1 % (int)params[0];
+		}
 	};
 
 	template<typename T>
@@ -210,6 +250,11 @@ namespace simdOps {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d2 % (int)d1;
+		}
+
+		// op for MetaOp
+		op_def static T op(T d1, T *params) {
+			return (int)params[0] % (int)d1;
 		}
 	};
 
@@ -269,6 +314,7 @@ namespace simdOps {
 			return d1 >= d2;
 		}
 
+		// FIXME: this signature clashes with MetaOp stuff
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -282,6 +328,7 @@ namespace simdOps {
 			return d1 > d2;
 		}
 
+		// FIXME: this signature clashes with MetaOp stuff
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -917,6 +964,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_max<T>(d1, d2);
 		}
 
+		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
@@ -946,6 +994,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_min(d1, d2);
 		}
 
+		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
