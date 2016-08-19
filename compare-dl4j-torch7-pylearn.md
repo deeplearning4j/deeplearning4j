@@ -61,7 +61,7 @@ Pros and Cons:
 * (+) Easy to write your own layer types and run on GPU
 * (+) Lua. ;) (Most of the library code is in Lua, easy to read)
 * (+) Lots of pretrained models!
-* (-) Who deploys Lua?
+* (-) Let's deploy in Lua, said nobody ever.
 * (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
 * (-) No commercial support
