@@ -24,6 +24,8 @@ public class Basic extends VizDoom {
         return new Configuration(
                 "basic",
                 -0.01,
+                1,
+                0,
                 700,
                 0,
                 buttons

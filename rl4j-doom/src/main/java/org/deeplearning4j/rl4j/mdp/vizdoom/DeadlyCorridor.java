@@ -23,9 +23,14 @@ public class DeadlyCorridor extends VizDoom {
                 Button.MOVE_FORWARD,
                 Button.TURN_LEFT,
                 Button.TURN_RIGHT);
+
+
+
         return new Configuration(
                 "deadly_corridor",
                 0.0,
+                5,
+                100,
                 2100,
                 0,
                 buttons

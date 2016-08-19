@@ -113,7 +113,8 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
         game.setWindowVisible(render);
         game.setSoundEnabled(false);
-        game.setMode(Mode.PLAYER);
+        game.setMode(Mode.SPECTATOR);
+
 
         game.setLivingReward(conf.getLivingReward());
 
@@ -129,6 +130,8 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
             actions.add(action);
         }
 
+        game.setDeathPenalty(conf.getDeathPenalty());
+        game.setDoomSkill(conf.getDoomSkill());
 
         game.init();
     }
@@ -189,6 +192,8 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
     public static class Configuration {
         String scenario;
         double livingReward;
+        double deathPenalty;
+        int doomSkill;
         int timeout;
         int startTime;
         List<Button> buttons;

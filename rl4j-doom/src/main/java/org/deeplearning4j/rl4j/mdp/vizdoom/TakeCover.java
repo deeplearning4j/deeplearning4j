@@ -20,6 +20,8 @@ public class TakeCover extends VizDoom {
         return new Configuration(
                 "take_cover",
                 1,
+                1,
+                0,
                 2100,
                 0,
                 buttons

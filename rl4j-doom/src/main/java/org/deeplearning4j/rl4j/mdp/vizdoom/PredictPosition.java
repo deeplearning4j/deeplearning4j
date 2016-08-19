@@ -20,6 +20,8 @@ public class PredictPosition extends VizDoom {
         return new Configuration(
                 "predict_position",
                 -0.0001,
+                1,
+                0,
                 2100,
                 35,
                 buttons
