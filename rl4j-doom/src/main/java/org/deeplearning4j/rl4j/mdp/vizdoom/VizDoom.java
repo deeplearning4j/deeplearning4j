@@ -113,7 +113,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
         game.setWindowVisible(render);
         game.setSoundEnabled(false);
-        game.setMode(Mode.SPECTATOR);
+        game.setMode(Mode.PLAYER);
 
         game.setLivingReward(conf.getLivingReward());
 

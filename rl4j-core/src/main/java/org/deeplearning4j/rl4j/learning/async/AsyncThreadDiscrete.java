@@ -72,7 +72,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                 if (input.shape().length > 2)
                     input = input.reshape(Learning.makeShape(1, input.shape()));
                 INDArray[] output = target.outputAll(input);
-                rewards.add(new MiniTrans(Transition.concat(history), action, output, stepReply.getReward()));
+                rewards.add(new MiniTrans(Transition.concat(history), action, output, accuReward));
                 reward += stepReply.getReward();
 
                 if (isHistoryProcessor)
