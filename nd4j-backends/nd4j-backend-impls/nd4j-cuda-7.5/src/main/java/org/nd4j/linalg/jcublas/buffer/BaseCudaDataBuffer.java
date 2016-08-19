@@ -213,7 +213,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.HALF) {
             // FIXME: proper pointer and indexer required here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
