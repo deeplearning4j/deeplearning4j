@@ -151,7 +151,7 @@ Let's say you have a very large image dataset of 1,000,000 faces. Those faces ca
 
 ### <a name="datascience">Data Science</a>
 
-Data science is the discipline of drawing conclusions from data using computation.
+[Data science](http://www.inferentialthinking.com/chapter1/intro.html) is the discipline of drawing conclusions from data using computation. There are three core aspects of effective data analysis: exploration, prediction, and inference. 
 
 ### <a name="dbn">Deep-Belief Network (DBN)</a>
 
