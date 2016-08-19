@@ -77,5 +77,29 @@ public class CudaHalfsTest {
         assertEquals(DataBuffer.Type.FLOAT, exp.data().dataType());
     }
 
+    @Test
+    public void test2D1() throws Exception {
+        float[][] array = new float[5][5];
+
+        for (int i = 0; i < array.length; i++) {
+            for (int j = 0; j < array[0].length; j++) {
+                array[i][j] = i;
+            }
+        }
+
+        // crate INDArray
+        INDArray data = Nd4j.create(array);
+
+        assertEquals(25, data.length());
+
+        for (int i = 0; i < array.length; i++) {
+            INDArray row = data.getRow(i);
+            for (int x = 0; x < row.length(); x++) {
+                assertEquals((float) i, row.getFloat(x), 0.1f);
+            }
+        }
+
+        System.out.println(data);
+    }
 
 }
