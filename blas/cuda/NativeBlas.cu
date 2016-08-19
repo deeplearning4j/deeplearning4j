@@ -988,7 +988,7 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                 cPointer, ldc);
 */
 
-
+#ifdef CUDA_8
     // CUDA_R_16F for CUDA 8
     // CUBLAS_DATA_HALF for CUDA 7.5
     cublasSgemmEx(*handle,
@@ -1000,7 +1000,17 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                    bPointer, CUDA_R_16F, ldb,
                    &beta,
                    cPointer, CUDA_R_16F, ldc);
-
+#else
+    cublasSgemmEx(*handle,
+                  convertTranspose(TransA),
+                  convertTranspose(TransB),
+                  M, N, K,
+                  &alpha,
+                  aPointer, CUBLAS_DATA_HALF, lda,
+                  bPointer, CUBLAS_DATA_HALF, ldb,
+                  &beta,
+                  cPointer, CUBLAS_DATA_HALF, ldc);
+#endif
 }
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
