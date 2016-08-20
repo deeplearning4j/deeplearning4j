@@ -17,7 +17,6 @@ namespace functions {
             template<typename OpTypeA, typename OpTypeB>
             static inline __device__ void transformCuda(
                     Nd4jIndex n,
-                    T dx,
                     T *dy,
                     int incy,
                     T *paramsA,
@@ -44,15 +43,17 @@ namespace functions {
 
             static inline __device__ void processMetaLinear(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
                                                             Nd4jIndex n,
-                                                            T dx,
                                                             T *dy,
                                                             int incy,
                                                             T *paramsA,
                                                             T *paramsB,
                                                             T *result,
                                                             int resultStride) {
-
-                transformCuda<simdOps::Add<T>, simdOps::Abs<T>>(n, dx, dy, incy, paramsA, paramsB, result, resultStride);
+                if (opTypeA == 0) {
+                    transformCuda<simdOps::Add <T>, simdOps::Abs <T>> (n, dy, incy, paramsA, paramsB, result, resultStride);
+                } else if (opTypeA == 1) {
+                    transformCuda<simdOps::Abs <T>, simdOps::Add <T>> (n, dy, incy, paramsB, paramsA, result, resultStride);
+                }
             }
         };
     }
@@ -64,17 +65,17 @@ __device__ inline void metaStridedGeneric(const int opTypeA, const int opNumA, c
                                           T dx,
                                           T *dy,
                                           int incy,
-                                          T *paramsB,
+                                          T *params,
                                           T *result,
                                           int resultStride) {
-    // TODO: right now we suppose gridDepth=2
-    //Nd4jPointer (*gridMatrix)[GRID_WIDTH] = (Nd4jPointer (*)[GRID_WIDTH]) grid;
-    __shared__ T paramsA[2];
+
+    /*
+    __shared__ T paramsA[1];
     if (threadIdx.x == 0)
         paramsA[0] = dx;
     __syncthreads();
-
-    functions::meta::MetaTransform<T>::processMetaLinear(opTypeA, opNumA, opTypeB, opNumB, n, dx, dy, incy, paramsA, paramsB, result, resultStride);
+*/
+    functions::meta::MetaTransform<T>::processMetaLinear(opTypeA, opNumA, opTypeB, opNumB, n, dy, incy, &dx, params, result, resultStride);
 }
 
 
