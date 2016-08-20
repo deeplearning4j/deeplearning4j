@@ -1816,6 +1816,53 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		}
 
 	};
+
+    /**
+     * InvertedMetaOp shares the same idea as MetaOp, but op being applied to op.Y in pairwise/broadcast ops
+     */
+    template<typename T, typename OpTypeA, typename OpTypeB>
+    class InvertedMetaOp {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        /*
+         * PREDICATE
+         */
+
+        // scalar, transform, reduce, indexreduce entry
+        op_def static T op(T d1, T *params) {
+            /*
+             * We assume, that this method won't be EVER called
+             */
+            printf("You should NEVER see this message in output\n");
+            return 0.0f;
+        }
+
+        // PWT, broadcast entry. Predicate can be only scalar, transform
+        op_def static T op(T d1, T d2, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (&wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (&wrap[1]);
+
+            return OpTypeB::op(d1, OpTypeA::op(d2, paramsA), paramsB);
+        }
+
+        /*
+         * POSTULATE
+         */
+
+        // will be called for reduce, reduce3
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+            /*
+             * We assume, that this method won't be EVER called
+             */
+            printf("You should NEVER EVER see this message in output\n");
+
+            return 0.0f;
+        }
+
+    };
 }
 
 #endif
