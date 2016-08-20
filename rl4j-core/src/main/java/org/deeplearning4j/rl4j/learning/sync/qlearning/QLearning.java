@@ -25,6 +25,8 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     @Getter
     final private IExpReplay<A> expReplay;
 
+    private int lastUpdate = 0;
+
 
     public QLearning(QLConfiguration conf) {
         super(conf);
@@ -50,12 +52,13 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     protected void updateTargetNetwork() {
-        setTargetDQN(getTargetDQN().clone());
+        System.out.println("UPDATE");
+        setTargetDQN(getCurrentDQN().clone());
     }
 
 
     public IDQN getNeuralNet() {
-        return getTargetDQN();
+        return getCurrentDQN();
     }
 
     public abstract QLConfiguration getConfiguration();
@@ -83,6 +86,10 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         List<Double> scores = new ArrayList<>();
         while (step < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
 
+            if (getStepCounter()% getConfiguration().getTargetDqnUpdateFreq() == 0) {
+                updateTargetNetwork();
+            }
+
             QLStepReturn<O> stepR = trainStep(obs);
 
             if (!stepR.getMaxQ().isNaN()) {
@@ -103,8 +110,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
         meanQ /= (numQ + 0.001); //avoid div zero
 
-        if (getStepCounter() % getConfiguration().getTargetDqnUpdateFreq() == 0)
-            updateTargetNetwork();
 
         StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, step, scores, getEgPolicy().getEpsilon(), startQ, meanQ);
 
