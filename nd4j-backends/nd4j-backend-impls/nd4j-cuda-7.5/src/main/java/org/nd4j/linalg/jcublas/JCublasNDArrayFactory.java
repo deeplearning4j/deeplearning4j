@@ -20,10 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -35,16 +32,16 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
-import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -53,6 +50,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -64,7 +63,7 @@ import java.util.*;
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-
+    private static Logger log = LoggerFactory.getLogger(JCublasNDArrayFactory.class);
 
     public JCublasNDArrayFactory() {
     }
@@ -549,6 +548,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         int sumAlongDim = 0;
         for (int i = 0; i < toConcat.length; i++) {
+            if (toConcat[i].isCompressed())
+                Nd4j.getCompressor().decompressi(toConcat[i]);
+
             sumAlongDim += toConcat[i].size(dimension);
         }
 
@@ -1017,5 +1019,172 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void shuffle(Collection<INDArray> sourceArrays, Random rnd, int... dimension) {
         shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
+    }
+
+    /*
+    public DataBuffer convertToHalfs(DataBuffer buffer) {
+        DataBuffer halfsBuffer = new CudaHalfDataBuffer(buffer.length());
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(halfsBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(halfsBuffer, context);
+
+        if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertDoublesToHalfs(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (buffer.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        } else {
+            throw new UnsupportedOperationException("Conversion INT->HALF isn't supported yet.");
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return halfsBuffer;
+    }
+
+    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
+        if (buffer.dataType() != DataBuffer.Type.HALF)
+            throw new IllegalStateException("Input DataBuffer should contain Halfs");
+
+        DataBuffer outputBuffer = null;
+
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            outputBuffer = new CudaFloatDataBuffer(buffer.length());
+
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            outputBuffer = new CudaDoubleDataBuffer(buffer.length());
+
+        } else throw new UnsupportedOperationException("DataType ["+Nd4j.dataType()+"] isn't supported yet");
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        AllocationPoint pointSrc = allocator.getAllocationPoint(buffer);
+        AllocationPoint pointDst = allocator.getAllocationPoint(outputBuffer);
+
+        CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
+
+        PointerPointer extras = new PointerPointer(
+                null, // not used for conversion
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(buffer, context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(outputBuffer, context);
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToFloats(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().convertHalfsToDoubles(extras, x, (int) buffer.length(), z);
+            pointDst.tickDeviceWrite();
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            log.info("Buffer is already HALF-precision");
+            return buffer;
+        }
+
+        allocator.getFlowController().registerAction(context, pointDst, pointSrc);
+
+        return outputBuffer;
+    }
+    */
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst @return
+     */
+    @Override
+    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        if (source.isView())
+            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
+
+        DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
+        source.setData(buffer);
+
+        if (buffer instanceof CompressedDataBuffer)
+            source.markAsCompressed(true);
+        else source.markAsCompressed(false);
+
+        return source;
+    }
+
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                AtomicAllocator.getInstance().getHostPointer(source),
+                source.length(),
+                typeDst.ordinal(),
+                target.addressPointer()
+        );
+    }
+
+    @Override
+    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+        int elementSize = 0;
+        if (typeDst.ordinal() <= 2)
+            elementSize = 1;
+        else if (typeDst.ordinal() <= 5)
+            elementSize = 2;
+        else if (typeDst.ordinal() == 6)
+            elementSize = 4;
+        else if (typeDst.ordinal() == 7)
+            elementSize = 8;
+        else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+
+        DataBuffer buffer = null;
+
+        if (!(source instanceof CompressedDataBuffer))
+            AtomicAllocator.getInstance().synchronizeHostData(source);
+
+        if (typeDst.ordinal() < 6) {
+            // all types below 6 are compression modes
+            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
+            descriptor.setCompressionType(CompressionType.LOSSY);
+            descriptor.setCompressedLength(source.length() * elementSize);
+            buffer = new CompressedDataBuffer(pointer, descriptor);
+        } else {
+            // decompression mode
+            buffer = Nd4j.createBuffer(source.length(), false);
+            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            point.tickHostWrite();
+        }
+
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                source.addressPointer(),
+                source.length(),
+                typeDst.ordinal(),
+                buffer.addressPointer()
+        );
+
+
+
+        //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+
+        return buffer;
     }
 }

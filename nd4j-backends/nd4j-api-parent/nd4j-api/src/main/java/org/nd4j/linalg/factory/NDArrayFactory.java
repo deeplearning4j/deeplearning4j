@@ -1721,4 +1721,26 @@ public interface NDArrayFactory {
      * @return
      */
     IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering);
+
+
+    /**
+     * This method converts Half-precision databuffer to current dType buffer.
+     * @param buffer
+     * @return
+     */
+//    DataBuffer restoreFromHalfs(DataBuffer buffer);
+
+    /**
+     * This method converts Single/Double precision databuffer to Half-precision databuffer
+     * @param buffer
+     * @return
+     */
+//    DataBuffer convertToHalfs(DataBuffer buffer);
+
+
+    INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
+
+    DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
 }

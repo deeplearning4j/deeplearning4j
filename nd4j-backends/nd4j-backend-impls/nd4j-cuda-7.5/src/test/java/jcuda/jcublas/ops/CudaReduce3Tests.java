@@ -7,12 +7,14 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
@@ -25,7 +27,7 @@ public class CudaReduce3Tests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setAllocationModel(Configuration.AllocationModel.DIRECT)
-                .setMaximumBlockSize(64)
+                .setMaximumBlockSize(32)
                 .enableDebug(true)
                 .setVerbose(true);
 
@@ -106,6 +108,17 @@ public class CudaReduce3Tests {
     }
 
     @Test
+    public void testPinnedCosineSimilarity2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000);
+        INDArray array2 = Nd4j.linspace(100, 200, 1000);
+
+        double result = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(array1, array2)).getFinalResult().doubleValue();
+
+        assertEquals(0.945f, result, 0.001f);
+    }
+
+    @Test
     public void testPinnedEuclideanDistance3() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 10000, 130);
         INDArray array2 = Nd4j.linspace(1, 9000, 130);
@@ -124,5 +137,21 @@ public class CudaReduce3Tests {
         float result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().floatValue();
 
         assertEquals(49000.004f, result, 0.01f);
+    }
+
+    @Test
+    public void testEqualityOp1() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 10000, 2048);
+        INDArray array2 = Nd4j.linspace(1, 9000, 2048);
+
+        assertNotEquals(array1, array2);
+    }
+
+    @Test
+    public void testEqualityOp2() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 10000, 2048);
+        INDArray array2 = Nd4j.linspace(1, 10000, 2048);
+
+        assertEquals(array1, array2);
     }
 }

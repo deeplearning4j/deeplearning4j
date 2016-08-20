@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -212,7 +213,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.HALF) {
             // FIXME: proper pointer and indexer required here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length,0).asShortPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
@@ -672,12 +673,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void read(DataInputStream s) {
         try {
+//            log.info("Restoring CUDA databuffer");
             // skip allocationMode
             s.readUTF();
             allocationMode = AllocationMode.JAVACPP;
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
-            //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
+  //                  log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if (globalType == null && Nd4j.dataType() != null) {
                 globalType = Nd4j.dataType();
             }
@@ -685,7 +687,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
 				if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 		   	}
-            if(t == Type.INT || globalType == Type.INT) {
+            if (t == Type.COMPRESSED) {
+                /*out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
+                out.writeLong(compressionDescriptor.getCompressedLength());
+                out.writeLong(compressionDescriptor.getOriginalLength());
+                out.writeLong(compressionDescriptor.getNumberOfElements());*/
+
+                type = t;
+                return;
+            } if(t == Type.INT || globalType == Type.INT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, t), false);
                 this.trackingPoint = allocationPoint.getObjectId();
@@ -728,6 +738,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     else if (t == Type.HALF)
                         array[i] = (double) toFloat((int) s.readShort());
                 }
+
                 setData(array);
 
             } else if(globalType == Type.FLOAT) {
@@ -751,6 +762,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         array[i] = toFloat((int) s.readShort());
                     }
                 }
+    //            log.info("Array type: {}, Restored array: {}", t, Arrays.toString(array));
                 setData(array);
             } else if (globalType == Type.HALF) {
                 this.elementSize = 2;
@@ -760,28 +772,40 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) this.pointer);
 
-                float[] array = new float[(int) length];
+                short[] array = new short[(int) length];
 
                 for (int i = 0; i < length; i++) {
+
                     if (t == Type.INT)
-                        array[i] = (float) s.readInt();
+                    ((HalfIndexer) indexer).put(i, (float) s.readInt());
                     else if (t == Type.DOUBLE)
-                        array[i] = (float) s.readDouble();
+                    ((HalfIndexer) indexer).put(i, (float) s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = s.readFloat();
+                        ((HalfIndexer) indexer).put(i, s.readFloat());
                     else if (t == Type.HALF) {
-                        array[i] = toFloat((int) s.readShort());
+                        ((HalfIndexer) indexer).put(i, toFloat((int) s.readShort()));
                     }
                 }
 
+                AllocationPoint pointDst = allocationPoint;
+
                 // now, easiest approach is conversion from float buffer to halfs buffer
                 // FIXME: this worth reimplementing as direct Half-allocation, instead of temporary array creation
+/*
+                ((HalfIndexer) indexer).pu
+
+                log.info("Restored array: {}", Arrays.toString(array));
                 CudaFloatDataBuffer tempBuffer = new CudaFloatDataBuffer(array);
 
+
+
+                log.info("Restored buffer: {}", tempBuffer);
+                */
+/*
                 AtomicAllocator allocator = AtomicAllocator.getInstance();
 
                 AllocationPoint pointSrc = allocator.getAllocationPoint(tempBuffer);
-                AllocationPoint pointDst = allocationPoint;
+
 
                 CudaContext context =  allocator.getFlowController().prepareAction(pointDst, pointSrc);
 
@@ -789,14 +813,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         null, // not used for conversion
                         context.getOldStream(),
                         AtomicAllocator.getInstance().getDeviceIdPointer());
+*/
+                //Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
+                //Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+/*
+                log.info("temp length: {}", tempBuffer.length);
+                log.info("this length: {}", length);
 
-                Pointer x = AtomicAllocator.getInstance().getPointer(tempBuffer, context);
-                Pointer z = AtomicAllocator.getInstance().getPointer(this, context);
+                //FIXME: get this back
+                Nd4j.getNDArrayFactory().convertDataEx(TypeEx.FLOAT, tempBuffer, TypeEx.FLOAT16, this);
+                //NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
 
-                NativeOpsHolder.getInstance().getDeviceNativeOps().convertFloatsToHalfs(extras, x, (int) length, z);
-
-                allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
-                pointDst.tickDeviceWrite();
+              //  allocator.getFlowController().registerAction(context, pointDst, pointSrc);;
+  */
+                pointDst.tickHostWrite();
             }
             else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 

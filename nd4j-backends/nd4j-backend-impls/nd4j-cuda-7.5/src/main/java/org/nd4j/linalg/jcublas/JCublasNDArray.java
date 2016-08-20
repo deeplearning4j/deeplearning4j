@@ -363,6 +363,12 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup() {
+        if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
+            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
+            ret.markAsCompressed(true);
+            return ret;
+        }
+        Nd4j.getCompressor().autoDecompress(this);
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
@@ -402,6 +408,13 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup(char order) {
+        if (this.isCompressed() && this.ordering() == order) {
+            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
+            ret.markAsCompressed(true);
+            return ret;
+        }
+        Nd4j.getCompressor().autoDecompress(this);
+
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), order);
