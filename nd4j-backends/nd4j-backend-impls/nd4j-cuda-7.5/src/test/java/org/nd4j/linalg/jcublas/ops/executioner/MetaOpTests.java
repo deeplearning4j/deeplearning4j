@@ -8,7 +8,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.impl.meta.LinearMetaOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
@@ -107,6 +109,56 @@ public class MetaOpTests {
     }
 
     @Test
+    public void testPredicateScalarPairwise1() throws Exception {
+        GridExecutioner executioner = new GridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[]{0f, 0f, 0f, 0f, 0f, 0f});
+        INDArray arrayY = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f});
+        INDArray exp = Nd4j.create(new float[]{3f, 3f, 3f, 3f, 3f, 3f});
+
+        ScalarAdd opA = new ScalarAdd(arrayX, 1.0f);
+
+        AddOp opB = new AddOp(arrayX, arrayY, arrayX);
+
+        LinearMetaOp metaOp = new LinearMetaOp(opA, opB);
+
+        executioner.prepareGrid(metaOp);
+
+        long time1 = System.nanoTime();
+        executioner.exec(metaOp);
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 1));
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
+    public void testPredicateScalarPairwise2() throws Exception {
+        GridExecutioner executioner = new GridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[]{0f, 0f, 0f, 0f, 0f, 0f});
+        INDArray arrayY = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f});
+        INDArray exp = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f});
+
+        ScalarSubtraction opA = new ScalarSubtraction(arrayX, 1.0f);
+
+        AddOp opB = new AddOp(arrayX, arrayY, arrayX);
+
+        LinearMetaOp metaOp = new LinearMetaOp(opA, opB);
+
+        executioner.prepareGrid(metaOp);
+
+        long time1 = System.nanoTime();
+        executioner.exec(metaOp);
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 1));
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
     public void testPerformance1() throws Exception {
         GridExecutioner executioner = new GridExecutioner();
 
@@ -155,5 +207,39 @@ public class MetaOpTests {
 
       //  assertEquals(exp2, array);
 
+    }
+
+    @Test
+    public void testPerformance2() throws Exception {
+        GridExecutioner executioner = new GridExecutioner();
+
+        INDArray arrayX = Nd4j.create(1024);
+        INDArray arrayY = Nd4j.create(1024);
+        INDArray exp = Nd4j.create(1024);
+
+        ScalarAdd opA = new ScalarAdd(arrayX, 1.0f);
+
+        AddOp opB = new AddOp(arrayX, arrayY, arrayX);
+
+        LinearMetaOp metaOp = new LinearMetaOp(opA, opB);
+
+        executioner.prepareGrid(metaOp);
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 100000; x++) {
+            executioner.exec(metaOp);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
+
+        time1 = System.nanoTime();
+        for (int x = 0; x < 100000; x++) {
+            Nd4j.getExecutioner().exec(opA);
+            Nd4j.getExecutioner().exec(opB);
+        }
+        time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
     }
 }

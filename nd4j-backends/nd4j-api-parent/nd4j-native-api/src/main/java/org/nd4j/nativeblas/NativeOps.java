@@ -1201,4 +1201,17 @@ public class NativeOps extends Pointer {
                          Pointer paramsB,
                          Pointer result,
                          int resultStride);
+
+    public native void execMetaPredicateElementwiseFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                         long N,
+                                                         Pointer dx,
+                                                         int xStride,
+                                                         Pointer dy,
+                                                         int yStride,
+                                                         Pointer dz,
+                                                         int zStride,
+                                                         Pointer extraA,
+                                                         Pointer extraB,
+                                                         float scalarA,
+                                                         float scalarB);
 }

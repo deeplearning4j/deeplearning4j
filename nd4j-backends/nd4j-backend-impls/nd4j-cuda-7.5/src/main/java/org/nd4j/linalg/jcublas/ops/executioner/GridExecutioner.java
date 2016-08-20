@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
@@ -339,14 +340,44 @@ public class GridExecutioner extends JCudaExecutioner {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
         PointerPointer extras = extraz.get().put(1, context.getOldStream());
-        //exxtrazz.put(1, context.getOldStream());
-        //PointerPointer extras = exxtrazz;
+
+        double scalarA = 0.0;
+        double scalarB = 0.0;
+
+        if (op.getFirstOp() instanceof ScalarOp)
+            scalarA = ((ScalarOp) op.getFirstOp()).scalar().doubleValue();
+
+        if (op.getSecondOp() instanceof ScalarOp)
+            scalarB = ((ScalarOp) op.getSecondOp()).scalar().doubleValue();
+
+        GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
+        GridPointers second = op.getGridDescriptor().getGridPointers().get(1);
+
+
+        nativeOps.execMetaPredicateElementwiseFloat(extras,
+                    first.getType().ordinal(),
+                    first.getOpNum(),
+                    second.getType().ordinal(),
+                    second.getOpNum(),
+                    first.getXLength(),
+                    first.getX(),
+                    first.getXStride(),
+                    second.getY(),
+                    second.getYStride(),
+                    second.getZ(),
+                    second.getZStride(),
+                    first.getExtraArgs(),
+                    second.getExtraArgs(),
+                    (float) scalarA,
+                    (float) scalarB
+                );
+
 /*
-        PointerPointer extras = new PointerPointer(
-                null,
-                context.getOldStream()
-        );
-*/
+
+         //
+         //   Initial draft for MetaOps
+         //
+
         if (op.getGridDescriptor().getGridPointers().get(0).getType() == Op.Type.SCALAR) {
 
             nativeOps.execMetaStridedFloat(extras,
@@ -378,7 +409,7 @@ public class GridExecutioner extends JCudaExecutioner {
                     op.getGridDescriptor().getGridPointers().get(1).getZStride()
             );
         }
-
+*/
     }
 
     @Override
