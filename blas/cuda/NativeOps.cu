@@ -5869,3 +5869,20 @@ void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, const int opTypeA, con
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+
+void NativeOps::execMetaPredicateElementwiseFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *> (dx);
+    float *y = reinterpret_cast<float *> (dy);
+    float *z = reinterpret_cast<float *> (dz);
+
+    float *extrasA = reinterpret_cast<float *> (extraA);
+    float *extrasB = reinterpret_cast<float *> (extraB);
+
+    metaPredicateElementwiseFloat<<<64, 64, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}

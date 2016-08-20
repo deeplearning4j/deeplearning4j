@@ -1787,8 +1787,8 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 			 * We assume, that params for MetaOp is a set of pointers to actual op A & B extraArgs
 			 */
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-			T *paramsA = reinterpret_cast<T *> (&wrap[0]);
-			T *paramsB = reinterpret_cast<T *> (&wrap[1]);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
 			return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
 		}
@@ -1796,8 +1796,8 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		// PWT, broadcast entry. Predicate can be only scalar, transform
 		op_def static T op(T d1, T d2, T *params) {
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-			T *paramsA = reinterpret_cast<T *> (&wrap[0]);
-			T *paramsB = reinterpret_cast<T *> (&wrap[1]);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
 			return OpTypeB::op(OpTypeA::op(d1, paramsA), d2, paramsB);
 		}
@@ -1809,8 +1809,8 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		// will be called for reduce, reduce3
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-			T *paramsA = reinterpret_cast<T *> (&wrap[0]);
-			T *paramsB = reinterpret_cast<T *> (&wrap[1]);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
 			return OpTypeB::op(OpTypeA::postProcess(reduction, n, paramsA), paramsB);
 		}
@@ -1820,7 +1820,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
     /**
      * InvertedMetaOp shares the same idea as MetaOp, but op being applied to op.Y in pairwise/broadcast ops
      */
-    template<typename T, typename OpTypeA, typename OpTypeB>
+template<typename T, typename OpTypeA, typename OpTypeB>
     class InvertedMetaOp {
     public:
         no_op_exec_special
@@ -1842,8 +1842,8 @@ template<typename T, typename OpTypeA, typename OpTypeB>
         // PWT, broadcast entry. Predicate can be only scalar, transform
         op_def static T op(T d1, T d2, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (&wrap[0]);
-            T *paramsB = reinterpret_cast<T *> (&wrap[1]);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::op(d1, OpTypeA::op(d2, paramsA), paramsB);
         }
