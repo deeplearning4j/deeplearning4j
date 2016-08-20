@@ -69,6 +69,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        if (dimension == null || dimension.length == 0)
+            dimension = new int[]{Integer.MAX_VALUE};
+
         checkForCompression(op);
 
         Arrays.sort(dimension);
@@ -83,8 +86,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
-        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-            return op.x();
+
+        // This is obviously wrong for IndexReduce, op.x has no real value as return
+        // if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        //     return op.x();
 
 
         //ensure vector is proper shape
@@ -122,27 +127,50 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer z = op.z().data().addressPointer();
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            loop.execIndexReduceDouble(
-                    dummy,
-                    op.opNum(),
-                    x,
-                    op.x().shapeInfoDataBuffer().addressPointer(),
-                    getPointerForExtraArgs(op),
-                    z,
-                    op.z().shapeInfoDataBuffer().addressPointer(),
-                    dimensionAddress, dimension.length);
+            if (op.z().isScalar()) {
+                int res = (int) loop.execIndexReduceScalarDouble(
+                        dummy,
+                        op.opNum(),
+                        op.x().data().addressPointer()
+                        ,op.x().shapeInfoDataBuffer().addressPointer(), getPointerForExtraArgs(op));
+
+
+                op.setFinalResult(res);
+                op.z().putScalar(0, (float) res);
+            } else {
+                loop.execIndexReduceDouble(
+                        dummy,
+                        op.opNum(),
+                        x,
+                        op.x().shapeInfoDataBuffer().addressPointer(),
+                        getPointerForExtraArgs(op),
+                        z,
+                        op.z().shapeInfoDataBuffer().addressPointer(),
+                        dimensionAddress, dimension.length);
+            }
 
         }
         else {
-            loop.execIndexReduceFloat(
-                    dummy,
-                    op.opNum(),
-                    op.x().data().addressPointer(),
-                    op.x().shapeInfoDataBuffer().addressPointer(),
-                    getPointerForExtraArgs(op),
-                    op.z().data().addressPointer(),
-                    op.z().shapeInfoDataBuffer().addressPointer(),
-                    dimensionAddress, dimension.length);
+            if (op.z().isScalar()) {
+                int res = (int) loop.execIndexReduceScalarFloat(
+                        dummy,
+                        op.opNum(),
+                        op.x().data().addressPointer()
+                        ,op.x().shapeInfoDataBuffer().addressPointer(), getPointerForExtraArgs(op));
+
+                op.setFinalResult(res);
+                op.z().putScalar(0, (float) res);
+            } else {
+                loop.execIndexReduceFloat(
+                        dummy,
+                        op.opNum(),
+                        op.x().data().addressPointer(),
+                        op.x().shapeInfoDataBuffer().addressPointer(),
+                        getPointerForExtraArgs(op),
+                        op.z().data().addressPointer(),
+                        op.z().shapeInfoDataBuffer().addressPointer(),
+                        dimensionAddress, dimension.length);
+            }
 
         }
         return op.z();

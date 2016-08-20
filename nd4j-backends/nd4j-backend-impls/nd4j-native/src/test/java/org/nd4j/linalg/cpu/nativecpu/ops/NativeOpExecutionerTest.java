@@ -221,4 +221,22 @@ public class NativeOpExecutionerTest {
 
         assertEquals(0.945f, result, 0.001f);
     }
+
+    @Test
+    public void testArgMax1() {
+        INDArray array1 = Nd4j.create(new float[]{-1.0f, 2.0f});
+        INDArray array2 = Nd4j.create(new float[]{2.0f});
+
+        INDArray res = Nd4j.argMax(array1);
+        System.out.println("Res length: " + res.length());
+        assertEquals(1.0f, res.getFloat(0), 0.01f);
+
+        System.out.println("--------------------");
+
+        res = Nd4j.argMax(array2);
+        System.out.println("Res length: " + res.length());
+        assertEquals(0.0f, res.getFloat(0), 0.01f);
+
+
+    }
 }
