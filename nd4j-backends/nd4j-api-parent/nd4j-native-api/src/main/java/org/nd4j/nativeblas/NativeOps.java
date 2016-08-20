@@ -1190,4 +1190,15 @@ public class NativeOps extends Pointer {
     // type conversion
 
     public native void convertTypes(PointerPointer extras, int srcType, Pointer x, long N, int dstType, Pointer z);
+
+    // GridOps
+
+    public native void execMetaStridedFloat(PointerPointer extraPointers, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                         long n,
+                         float dx,
+                         Pointer dy,
+                         int incy,
+                         Pointer paramsB,
+                         Pointer result,
+                         int resultStride);
 }

@@ -62,7 +62,7 @@ import java.util.Arrays;
  */
 public class JCudaExecutioner extends DefaultOpExecutioner {
 
-    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 //    private static final Allocator allocator = AtomicAllocator.getInstance();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);

@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,8 +14,11 @@ import org.nd4j.linalg.api.ops.impl.meta.LinearMetaOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +39,14 @@ public class GridExecutioner extends JCudaExecutioner {
 
     // last op
     private ThreadLocal<Op> lastOp = new ThreadLocal<>();
+    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+    private PointerPointer exxtrazz = new PointerPointer(4);
+
+    private static Logger logger = LoggerFactory.getLogger(GridExecutioner.class);
+
+    public GridExecutioner() {
+        extraz.set(new PointerPointer(4));
+    }
 
     @Override
     public Op exec(Op op) {
@@ -321,6 +333,37 @@ public class GridExecutioner extends JCudaExecutioner {
     @Override
     public void exec(MetaOp op) {
         prepareGrid(op);
+
+        //CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z());
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+        //exxtrazz.put(1, context.getOldStream());
+        //PointerPointer extras = exxtrazz;
+/*
+        PointerPointer extras = new PointerPointer(
+                null,
+                context.getOldStream()
+        );
+*/
+
+
+        nativeOps.execMetaStridedFloat(extras,
+                op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
+                op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
+                op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
+                op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
+                op.getGridDescriptor().getGridPointers().get(0).getXLength(),
+                ((ScalarOp) op.getFirstOp()).scalar().floatValue(),
+                op.getGridDescriptor().getGridPointers().get(0).getX(),
+                op.getGridDescriptor().getGridPointers().get(0).getXStride(),
+                op.getGridDescriptor().getGridPointers().get(1).getExtraArgs(),
+                op.getGridDescriptor().getGridPointers().get(1).getZ(),
+                op.getGridDescriptor().getGridPointers().get(1).getZStride()
+                );
+
+
     }
 
     @Override
