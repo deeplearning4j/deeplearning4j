@@ -347,22 +347,37 @@ public class GridExecutioner extends JCudaExecutioner {
                 context.getOldStream()
         );
 */
+        if (op.getGridDescriptor().getGridPointers().get(0).getType() == Op.Type.SCALAR) {
 
+            nativeOps.execMetaStridedFloat(extras,
+                    op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
+                    op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
+                    op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
+                    op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
+                    op.getGridDescriptor().getGridPointers().get(0).getXLength(),
+                    ((ScalarOp) op.getFirstOp()).scalar().floatValue(),
+                    op.getGridDescriptor().getGridPointers().get(0).getX(),
+                    op.getGridDescriptor().getGridPointers().get(0).getXStride(),
+                    op.getGridDescriptor().getGridPointers().get(1).getExtraArgs(),
+                    op.getGridDescriptor().getGridPointers().get(1).getZ(),
+                    op.getGridDescriptor().getGridPointers().get(1).getZStride()
+            );
 
-        nativeOps.execMetaStridedFloat(extras,
-                op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
-                op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
-                op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
-                op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
-                op.getGridDescriptor().getGridPointers().get(0).getXLength(),
-                ((ScalarOp) op.getFirstOp()).scalar().floatValue(),
-                op.getGridDescriptor().getGridPointers().get(0).getX(),
-                op.getGridDescriptor().getGridPointers().get(0).getXStride(),
-                op.getGridDescriptor().getGridPointers().get(1).getExtraArgs(),
-                op.getGridDescriptor().getGridPointers().get(1).getZ(),
-                op.getGridDescriptor().getGridPointers().get(1).getZStride()
-                );
-
+        } else if (op.getGridDescriptor().getGridPointers().get(1).getType() == Op.Type.SCALAR) {
+            nativeOps.execMetaStridedFloat(extras,
+                    op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
+                    op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
+                    op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
+                    op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
+                    op.getGridDescriptor().getGridPointers().get(0).getXLength(),
+                    ((ScalarOp) op.getSecondOp()).scalar().floatValue(),
+                    op.getGridDescriptor().getGridPointers().get(0).getX(),
+                    op.getGridDescriptor().getGridPointers().get(0).getXStride(),
+                    op.getGridDescriptor().getGridPointers().get(0).getExtraArgs(),
+                    op.getGridDescriptor().getGridPointers().get(1).getZ(),
+                    op.getGridDescriptor().getGridPointers().get(1).getZStride()
+            );
+        }
 
     }
 
