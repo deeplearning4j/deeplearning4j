@@ -87,8 +87,8 @@ public class Adam implements Serializable, GradientUpdater {
         INDArray oneMinusBeta2GradSquared = gradient.mul(gradient).muli(1 - beta2);
         v.muli(beta2).addi(oneMinusBeta2GradSquared);
 
-        double beta1t = FastMath.pow(beta1, iteration);
-        double beta2t = FastMath.pow(beta2, iteration);
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+        double beta2t = FastMath.pow(beta2, iteration + 1);
 
         double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
