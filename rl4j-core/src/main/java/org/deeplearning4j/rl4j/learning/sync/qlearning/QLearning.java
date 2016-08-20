@@ -6,6 +6,7 @@ import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -19,7 +20,7 @@ import java.util.List;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
  */
-public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends SyncLearning<O, A, AS> {
+public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends SyncLearning<O, A, AS, IDQN> {
 
     @Getter
     final private IExpReplay<A> expReplay;

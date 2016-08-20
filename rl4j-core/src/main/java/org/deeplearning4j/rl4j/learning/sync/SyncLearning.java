@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
@@ -9,7 +10,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
  */
-public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends Learning<O, A, AS> {
+public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
 
     private int lastSave = -Constants.MODEL_SAVE_FREQ;
 

@@ -15,7 +15,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  */
-public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace> {
+public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IDQN> {
 
     @Getter
     final public AsyncConfiguration configuration;

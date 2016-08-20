@@ -4,13 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
-public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends Learning<O, A, AS> {
+public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
 
 
     public AsyncLearning(AsyncConfiguration conf) {
@@ -21,7 +22,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     protected abstract AsyncThread newThread(int i);
 
-    protected abstract AsyncGlobal getAsyncGlobal();
+    protected abstract AsyncGlobal<NN> getAsyncGlobal();
 
     protected void startGlobalThread() {
         getAsyncGlobal().start();

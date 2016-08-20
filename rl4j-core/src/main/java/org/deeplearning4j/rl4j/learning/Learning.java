@@ -21,7 +21,7 @@ import java.util.Random;
  *
  * Useful factorisations for class inhetiring ILearning.
  */
-public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>> implements ILearning<O, A, AS> {
+public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> implements ILearning<O, A, AS>, NeuralNetFetchable<NN>{
 
     @Getter
     final private Logger logger;
@@ -101,7 +101,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
     protected abstract DataManager getDataManager();
 
-    public abstract NeuralNet getNeuralNet();
+    public abstract NN getNeuralNet();
 
     public void saveLearning() {
         getDataManager().save(this);
