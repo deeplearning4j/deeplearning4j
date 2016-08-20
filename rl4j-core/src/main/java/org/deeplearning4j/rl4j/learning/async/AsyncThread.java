@@ -33,7 +33,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
 
-        log = LoggerFactory.getLogger("Thread-" + threadNumber);
+        log = LoggerFactory.getLogger("ThreadNum-" + threadNumber);
         nn = asyncGlobal.cloneCurrent();
     }
 
@@ -44,29 +44,36 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Override
     public void run() {
 
-        log.info("Started!");
-        Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
-        O obs = initMdp.getLastObs();
-        double rewards = initMdp.getReward();
-        int length = initMdp.getSteps();
 
-        while (!getAsyncGlobal().isTrainingComplete()) {
-            SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, getConf().getNstep());
-            obs = subEpochReturn.getLastObs();
-            stepCounter += subEpochReturn.getSteps();
-            length += subEpochReturn.getSteps();
-            rewards += subEpochReturn.getReward();
-            if (getMdp().isDone()) {
+        try {
+            log.info("Started!");
+            Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
+            O obs = initMdp.getLastObs();
+            double rewards = initMdp.getReward();
+            int length = initMdp.getSteps();
 
-                if (getThreadNumber() == 1)
-                    getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length));
+            while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
+                SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, getConf().getNstep());
+                obs = subEpochReturn.getLastObs();
+                stepCounter += subEpochReturn.getSteps();
+                length += subEpochReturn.getSteps();
+                rewards += subEpochReturn.getReward();
+                if (getMdp().isDone()) {
 
-                initMdp = Learning.initMdp(getMdp(), historyProcessor);
-                obs = initMdp.getLastObs();
-                rewards = initMdp.getReward();
-                length = initMdp.getSteps();
-                epochCounter++;
+                    if (getThreadNumber() == 1)
+                        getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length));
+
+                    initMdp = Learning.initMdp(getMdp(), historyProcessor);
+                    obs = initMdp.getLastObs();
+                    rewards = initMdp.getReward();
+                    length = initMdp.getSteps();
+                    epochCounter++;
+                }
             }
+        } catch (Exception e) {
+            log.error("Thread crashed");
+            getAsyncGlobal().setRunning(false);
+            e.printStackTrace();
         }
     }
 

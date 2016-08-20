@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -22,8 +23,9 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     final private AsyncLearning.AsyncConfiguration a3cc;
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
-    @Getter
     private NN target;
+    @Getter @Setter
+    private boolean running = true;
 
 
     public AsyncGlobal(NN initial, AsyncLearning.AsyncConfiguration a3cc) {
@@ -49,6 +51,9 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
             return (NN) current.clone();
         }
     }
+    public NN cloneTarget() {
+            return (NN) target.clone();
+    }
 
 
     public void enqueue(Gradient gradient, Integer nstep) {
@@ -61,20 +66,28 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     @Override
     public void run() {
         synchronized (this) {
-            while (!isTrainingComplete()) {
-                if (!queue.isEmpty()) {
-                    Pair<Gradient, Integer> pair = queue.poll();
-                    T.addAndGet(pair.getSecond());
-                    Gradient gradient = pair.getFirst();
-                    current.applyGradient(gradient);
-                    if (T.get() % a3cc.getTargetDqnUpdateFreq() == 0)
-                        target = (NN) current.clone();
-                } else
-                    try {
-                        wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
+            try {
+                while (!isTrainingComplete() && running) {
+                    if (!queue.isEmpty()) {
+                        Pair<Gradient, Integer> pair = queue.poll();
+                        T.addAndGet(pair.getSecond());
+                        Gradient gradient = pair.getFirst();
+                        current.applyGradient(gradient);
+                        if (T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
+                            log.info("Update target network");
+                            target = (NN) current.clone();
+                        }
+                    } else
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                }
+            } catch (Exception e) {
+                setRunning(false);
+                e.printStackTrace();
             }
         }
 

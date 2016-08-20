@@ -29,9 +29,9 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     final private int maxStep;
     //TODO 10 steps toy (always +1 reward2 actions), toylong (1000 steps), toyhard (7 actions, +1 only if actiion = (step/100+step)%7, and toyStoch (like last but reward has 0.10 odd to be somewhere else).
     @Getter
-    private DiscreteSpace actionSpace = new DiscreteSpace(2);
+    private DiscreteSpace actionSpace = new DiscreteSpace(1);
     @Getter
-    private ObservationSpace<SimpleToyState> observationSpace = new ArrayObservationSpace(new int[]{2});
+    private ObservationSpace<SimpleToyState> observationSpace = new ArrayObservationSpace(new int[]{1});
     private SimpleToyState simpleToyState;
     @Setter
     private NeuralNetFetchable<IDQN> fetchable;
@@ -41,7 +41,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     }
 
     public void printTest(int maxStep) {
-        INDArray input = Nd4j.create(maxStep, 2);
+        INDArray input = Nd4j.create(maxStep, 1);
         for (int i = 0; i < maxStep; i++) {
             input.putRow(i, Nd4j.create(new SimpleToyState(i, i).toArray()));
         }
@@ -58,7 +58,6 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     }
 
     public SimpleToyState reset() {
-        log.info("reset");
         if (fetchable != null)
             printTest(maxStep);
 

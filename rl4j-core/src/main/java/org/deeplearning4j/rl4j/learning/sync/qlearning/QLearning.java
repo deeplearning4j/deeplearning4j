@@ -52,7 +52,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     protected void updateTargetNetwork() {
-        System.out.println("UPDATE");
+        getLogger().info("Update target network");
         setTargetDQN(getCurrentDQN().clone());
     }
 

@@ -71,6 +71,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
             input.putRow(i, minTrans.getObs());
             INDArray row = minTrans.getOutput()[0];
             row = row.putScalar(minTrans.getAction(), r);
+            //log.error(i + " " + targets.shapeInfoToString() + " " + row.shapeInfoToString() + " " + input.shapeInfoToString());
             targets.putRow(i, row);
         }
 
