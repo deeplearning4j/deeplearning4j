@@ -30,6 +30,7 @@ public class OpDashboard {
 
     private static StringCounter matchingCounter = new StringCounter();
     private static StringCounter matchingCounterDetailed = new StringCounter();
+    private static StringCounter matchingCounterInverted = new StringCounter();
 
     private static Logger logger = LoggerFactory.getLogger(OpDashboard.class);
 
@@ -40,6 +41,7 @@ public class OpDashboard {
 
     private String prevOpMatching = "";
     private String prevOpMatchingDetailed = "";
+    private String prevOpMatchingInverted = "";
     private long lastZ = 0;
 
 
@@ -96,19 +98,24 @@ public class OpDashboard {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
-        if (op.x().data().address() == lastZ) {
+        if (op.x().data().address() == lastZ && op.y() == null) {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
             matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.name());
         } else {
+            matchingCounter.totalsIncrement();
+            matchingCounterDetailed.totalsIncrement();
             if (op.y() != null && op.y().data().address() == lastZ) {
-                matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
-                matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.name());
-            } else matchingCounter.totalsIncrement();
+                matchingCounterInverted.incrementCount(prevOpMatchingInverted + " -> " + opClass + " " + op.name());
+            } else {
+                matchingCounterInverted.totalsIncrement();
+            }
+
         }
         lastZ = op.z().data().address();
         prevOpMatching = opClass;
         prevOpMatchingDetailed = opClass + " " + op.name();
+        prevOpMatchingInverted = opClass + " " + op.name();
 
         updatePairs(op.name(), opClass);
     }
@@ -178,6 +185,9 @@ public class OpDashboard {
         System.out.println();
         logger.info("--- Matching detailed Op calls statistics: ---");
         System.out.println(matchingCounterDetailed.asString());
+        System.out.println();
+        logger.info("--- Matching inverts Op calls statistics: ---");
+        System.out.println(matchingCounterInverted.asString());
         System.out.println();
         logger.info("--- Time for OpClass calls statistics: ---");
         System.out.println(classAggergator.asString());
