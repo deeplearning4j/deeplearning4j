@@ -1201,7 +1201,14 @@ public:
      * Grid operations
      */
 
-    void execMetaStridedFloat(Nd4jPointer *extras, int gridDepth, Nd4jPointer x);
+    void execMetaStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
+                              Nd4jIndex n,
+                              float dx,
+                              Nd4jPointer dy,
+                              int incy,
+                              Nd4jPointer paramsB,
+                              Nd4jPointer result,
+                              int resultStride);
 };
 
 

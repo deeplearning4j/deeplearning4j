@@ -64,12 +64,15 @@ __device__ inline void metaStridedGeneric(const int opTypeA, const int opNumA, c
                                           T dx,
                                           T *dy,
                                           int incy,
-                                          T *paramsA,
                                           T *paramsB,
                                           T *result,
                                           int resultStride) {
     // TODO: right now we suppose gridDepth=2
     //Nd4jPointer (*gridMatrix)[GRID_WIDTH] = (Nd4jPointer (*)[GRID_WIDTH]) grid;
+    __shared__ T paramsA[2];
+    if (threadIdx.x == 0)
+        paramsA[0] = dx;
+    __syncthreads();
 
     functions::meta::MetaTransform<T>::processMetaLinear(opTypeA, opNumA, opTypeB, opNumB, n, dx, dy, incy, paramsA, paramsB, result, resultStride);
 }
@@ -80,11 +83,12 @@ __global__ void metaStridedFloat(const int opTypeA, const int opNumA, const int 
                                  float dx,
                                  float *dy,
                                  int incy,
-                                 float *paramsA,
                                  float *paramsB,
                                  float *result,
                                  int resultStride) {
-    metaStridedGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, n, dx, dy, incy, paramsA, paramsB, result, resultStride);
+
+
+    metaStridedGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, n, dx, dy, incy, paramsB, result, resultStride);
 }
 
 #endif //LIBND4J_GRID_H

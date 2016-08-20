@@ -5811,6 +5811,9 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer x
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelDouble<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap,   Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -5825,6 +5828,9 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xS
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelFloat<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -5839,12 +5845,27 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, int gridDepth, Nd4jPointer x) {
+void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
+                                     Nd4jIndex n,
+                                     float dx,
+                                     Nd4jPointer dy,
+                                     int incy,
+                                     Nd4jPointer paramsB,
+                                     Nd4jPointer result,
+                                     int resultStride) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
-    void *grid = reinterpret_cast<void *> (x);
+    float *x = reinterpret_cast<float *> (dy);
+    float *params = reinterpret_cast<float *> (paramsB);
+    float *z = reinterpret_cast<float *> (result);
 
-//    metaStridedFloat<<<32, 32, 1024, *stream>>>(gridDepth, grid);
+    metaStridedFloat<<<64, 32, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, n, dx, x, incy, params, z, resultStride);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
