@@ -80,7 +80,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         int targetDqnUpdateFreq;
         double errorClamp;
         float minEpsilon;
-        float epsilonDecreaseRate;
+        int epsilonNbStep;
 
         public AsyncConfiguration() {
 
@@ -91,7 +91,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             nstep = 10;
             errorClamp = 2.0;
             minEpsilon = 0.1f;
-            epsilonDecreaseRate = 1f / 20000f;
+            epsilonNbStep = 20000;
 
         }
     }

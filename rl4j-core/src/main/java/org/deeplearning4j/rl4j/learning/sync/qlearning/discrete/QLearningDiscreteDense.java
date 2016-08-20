@@ -18,7 +18,7 @@ public class QLearningDiscreteDense<O extends Encodable> extends QLearningDiscre
 
 
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearning.QLConfiguration conf, DataManager dataManager) {
-        super(mdp, dqn, conf, dataManager, conf.getEpsilonDecreaseRate());
+        super(mdp, dqn, conf, dataManager, conf.getEpsilonNbStep());
     }
 
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, QLearning.QLConfiguration conf, DataManager dataManager) {

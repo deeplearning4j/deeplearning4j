@@ -21,7 +21,7 @@ public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extend
     final private Policy<O, A> policy;
     final private MDP<O, A, AS> mdp;
     final private int updateStart;
-    final private float epsilonDecreaseRate;
+    final private int epsilonNbStep;
     final private Random rd;
     final private float minEpsilon;
     final private StepCountable learning;
@@ -40,6 +40,6 @@ public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extend
     }
 
     public float getEpsilon() {
-        return Math.min(1f, Math.max(minEpsilon, 1f - (learning.getStepCounter() - updateStart) * epsilonDecreaseRate));
+        return Math.min(1f, Math.max(minEpsilon, 1f - (learning.getStepCounter() - updateStart) * 1f/epsilonNbStep));
     }
 }

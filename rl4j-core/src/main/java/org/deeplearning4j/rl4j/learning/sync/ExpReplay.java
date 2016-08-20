@@ -13,16 +13,13 @@ public class ExpReplay<A> implements IExpReplay<A> {
 
 
     final private Logger log = LoggerFactory.getLogger("Exp Replay");
-    private int minSize;
-    private int maxSize;
-    private int batchSize;
+    final private int batchSize;
 
     //Implementing this as a circular buffer queue
 
     private CircularFifoQueue<Transition<A>> storage;
 
     public ExpReplay(int maxSize, int batchSize) {
-        this.maxSize = maxSize;
         this.batchSize = batchSize;
         storage = new CircularFifoQueue<>(maxSize);
     }
@@ -33,12 +30,13 @@ public class ExpReplay<A> implements IExpReplay<A> {
         Set<Integer> intSet = new HashSet<>();
         int storageSize = storage.size();
         while (intSet.size() < size) {
-            intSet.add(random.nextInt(storageSize));
+            int rd = random.nextInt(storageSize);
+            intSet.add(rd);
         }
 
         ArrayList<Transition<A>> batch = new ArrayList<>(size);
         Iterator<Integer> iter = intSet.iterator();
-        for (int i = 0; iter.hasNext(); ++i) {
+        while (iter.hasNext()) {
             Transition<A> trans = storage.get(iter.next());
             batch.add(trans.dup());
         }

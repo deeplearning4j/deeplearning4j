@@ -48,7 +48,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {
-        return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonDecreaseRate(), new Random(conf.getSeed()), conf.getMinEpsilon(), this);
+        return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonNbStep(), new Random(conf.getSeed()), conf.getMinEpsilon(), this);
     }
 
 

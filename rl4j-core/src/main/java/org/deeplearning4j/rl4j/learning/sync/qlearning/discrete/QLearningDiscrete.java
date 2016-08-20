@@ -48,7 +48,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
 
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf, DataManager dataManager, Float epsilonDecreaseRate) {
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf, DataManager dataManager, int epsilonNbStep) {
         super(conf);
         this.configuration = conf;
         this.mdp = mdp;
@@ -56,7 +56,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         currentDQN = dqn;
         targetDQN = dqn.clone();
         policy = new DQNPolicy(getCurrentDQN());
-        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonDecreaseRate, getRandom(), conf.getMinEpsilon(), this);
+        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, getRandom(), conf.getMinEpsilon(), this);
     }
 
 
@@ -192,6 +192,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                     q += targetDqnOutputNext.getDouble(i, getMaxAction.getInt(i));
                 } else
                     q += tempQ.getDouble(i);
+
                 yTar += getConfiguration().getGamma() * q;
 
             }

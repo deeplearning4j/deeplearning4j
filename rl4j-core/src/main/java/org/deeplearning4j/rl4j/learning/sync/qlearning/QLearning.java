@@ -155,7 +155,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         double gamma;
         double errorClamp;
         float minEpsilon;
-        float epsilonDecreaseRate;
+        int epsilonNbStep;
         boolean doubleDQN;
 
         public QLConfiguration() {
@@ -166,7 +166,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
             updateStart = 1000;
             errorClamp = 2.0;
             minEpsilon = 0.1f;
-            epsilonDecreaseRate = 1f / 20000f;
+            epsilonNbStep = 20000;
             doubleDQN = true;
 
         }

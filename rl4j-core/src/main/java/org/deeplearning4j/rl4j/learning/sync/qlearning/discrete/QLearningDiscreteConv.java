@@ -18,7 +18,7 @@ public class QLearningDiscreteConv<O extends Encodable> extends QLearningDiscret
 
 
     public QLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf, QLConfiguration conf, DataManager dataManager) {
-        super(mdp, dqn, conf, dataManager, conf.getEpsilonDecreaseRate()/hpconf.getSkipFrame());
+        super(mdp, dqn, conf, dataManager, conf.getEpsilonNbStep()*hpconf.getSkipFrame());
         setHistoryProcessor(hpconf);
     }
 
