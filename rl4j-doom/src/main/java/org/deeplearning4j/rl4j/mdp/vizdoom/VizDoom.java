@@ -158,24 +158,10 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
     public StepReply<GameScreen> step(Integer action) {
 
-        double r = 0;
-        //log.info("action: " + action + " episode:" + game.getEpisodeTime() + " javacpp:" + FormatUtil.formatBytes(Pointer.totalBytes()));
-        //try {
-            r = game.makeAction(actions.get(action)) * scaleFactor;
-            /*
-        } catch (ViZDoomErrorException e) {
-            r = -2000;
-            game = new DoomGame();
-            setupGame();
-            return new StepReply<>(new GameScreen(game.getGameScreen()), r, true, null);
-        }
-        //System.out.println(r + " " + scaleFactor);
-        */
-        if (game.isEpisodeFinished())
-            log.info("NEw EPISODE");
-        else
-            log.info(game.getEpisodeTimeout() + " " + game.getEpisodeStartTime() + " " + game.getEpisodeTime());
+        double r = game.makeAction(actions.get(action)) * scaleFactor;
+
         return new StepReply(new GameScreen(game.getGameScreen()), r, game.isEpisodeFinished(), null);
+
     }
 
 
