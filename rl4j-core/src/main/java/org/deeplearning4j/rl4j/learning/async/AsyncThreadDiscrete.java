@@ -64,7 +64,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             lastAction = action;
 
             StepReply<O> stepReply = getMdp().step(action);
-            accuReward += stepReply.getReward();
+            accuReward += stepReply.getReward()*getConf().getRewardFactor();
 
             if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
                 obs = stepReply.getObservation();

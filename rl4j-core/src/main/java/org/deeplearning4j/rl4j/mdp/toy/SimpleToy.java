@@ -29,7 +29,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     final private int maxStep;
     //TODO 10 steps toy (always +1 reward2 actions), toylong (1000 steps), toyhard (7 actions, +1 only if actiion = (step/100+step)%7, and toyStoch (like last but reward has 0.10 odd to be somewhere else).
     @Getter
-    private DiscreteSpace actionSpace = new DiscreteSpace(1);
+    private DiscreteSpace actionSpace = new DiscreteSpace(2);
     @Getter
     private ObservationSpace<SimpleToyState> observationSpace = new ArrayObservationSpace(new int[]{1});
     private SimpleToyState simpleToyState;
@@ -65,8 +65,9 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     }
 
     public StepReply<SimpleToyState> step(Integer a) {
+        double reward = (simpleToyState.getStep() %  2 == 0) ? 1 - a: a;
         simpleToyState = new SimpleToyState(simpleToyState.getI()+1, simpleToyState.getStep() + 1);
-        return new StepReply<SimpleToyState>(simpleToyState, 1, isDone(), new JSONObject("{}"));
+        return new StepReply<SimpleToyState>(simpleToyState, reward, isDone(), new JSONObject("{}"));
     }
 
     public SimpleToy newInstance() {

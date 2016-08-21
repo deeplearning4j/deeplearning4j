@@ -62,7 +62,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     public void postEpoch() {
 
-
         if (getHistoryProcessor() != null)
             getHistoryProcessor().stopMonitor();
 
@@ -106,8 +105,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             }
 
             INDArray hstack = Transition.concat(Transition.dup(history));
+
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+
             INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
 
@@ -119,7 +120,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         StepReply<O> stepReply = getMdp().step(action);
 
-        accuReward += stepReply.getReward();
+        accuReward += stepReply.getReward()*configuration.getRewardFactor();
 
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
@@ -185,7 +186,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         for (int i = 0; i < size; i++) {
             double yTar = transitions.get(i).getReward();
-
             if (!areTerminal[i]) {
                 double q = 0;
                 if (getConfiguration().isDoubleDQN()) {
@@ -196,6 +196,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 yTar += getConfiguration().getGamma() * q;
 
             }
+
+
 
             double previousV = dqnOutputAr.getDouble(i, actions[i]);
             double lowB = previousV - getConfiguration().getErrorClamp();

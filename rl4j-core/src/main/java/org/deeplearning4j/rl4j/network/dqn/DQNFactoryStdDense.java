@@ -33,8 +33,8 @@ public class DQNFactoryStdDense implements DQNFactory {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(conf.getLearningRate())
                 //.updater(Updater.NESTEROVS).momentum(0.9)
-                //.updater(Updater.ADAM)
-                .updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                .updater(Updater.ADAM)
+                //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
                 .weightInit(WeightInit.XAVIER)
                 //.regularization(true)
                 //.l2(conf.getL2())
@@ -77,7 +77,6 @@ public class DQNFactoryStdDense implements DQNFactory {
         int numHiddenNodes;
         double learningRate;
         double l2;
-        double rmsDecay;
 
     }
 

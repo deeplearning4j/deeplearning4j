@@ -77,6 +77,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         int nstep;
         double gamma;
         int updateStart;
+        double rewardFactor;
         int targetDqnUpdateFreq;
         double errorClamp;
         float minEpsilon;

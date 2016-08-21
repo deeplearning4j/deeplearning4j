@@ -32,7 +32,8 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(conf.getLearningRate())
                 //.updater(Updater.NESTEROVS).momentum(0.9)
-                .updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                .updater(Updater.ADAM)
                 .weightInit(WeightInit.XAVIER)
                 .regularization(true)
                 .l2(conf.getL2())
@@ -84,7 +85,6 @@ public class ActorCriticFactoryStdDense implements ActorCriticFactory {
         int numHiddenNodes;
         double learningRate;
         double l2;
-        double rmsDecay;
 
     }
 

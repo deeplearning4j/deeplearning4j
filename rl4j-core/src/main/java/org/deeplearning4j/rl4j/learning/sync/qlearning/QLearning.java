@@ -25,9 +25,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     @Getter
     final private IExpReplay<A> expReplay;
 
-    private int lastUpdate = 0;
-
-
     public QLearning(QLConfiguration conf) {
         super(conf);
         expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize());
@@ -151,7 +148,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         int batchSize;
         int targetDqnUpdateFreq;
         int updateStart;
-
+        double rewardFactor;
         double gamma;
         double errorClamp;
         float minEpsilon;
