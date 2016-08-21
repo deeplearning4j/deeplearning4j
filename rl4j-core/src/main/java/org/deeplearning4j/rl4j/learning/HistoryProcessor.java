@@ -120,7 +120,7 @@ public class HistoryProcessor implements IHistoryProcessor {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(out.shapeInfoToString());
+        //System.out.println(out.shapeInfoToString());
         out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth());
         INDArray compressed = compressor.compress(out);
         return compressed;

@@ -159,7 +159,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
     public StepReply<GameScreen> step(Integer action) {
 
         double r = 0;
-        log.info("action: " + action + " episode:" + game.getEpisodeTime() + " javacpp:" + FormatUtil.formatBytes(Pointer.totalBytes()));
+        //log.info("action: " + action + " episode:" + game.getEpisodeTime() + " javacpp:" + FormatUtil.formatBytes(Pointer.totalBytes()));
         //try {
             r = game.makeAction(actions.get(action)) * scaleFactor;
             /*
