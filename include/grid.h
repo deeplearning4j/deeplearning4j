@@ -8,9 +8,12 @@
 // number of pointers within single grid row
 #define GRID_WIDTH 19
 
-#include <scalar.h>
-#include <transform.h>
-#include <pairwise_transform.h>
+
+//#include <scalar.h>
+//#include <transform.h>
+//#include <pairwise_transform.h>
+
+
 
 namespace functions {
     namespace meta {
@@ -97,7 +100,7 @@ __global__ void metaStridedFloat(const int opTypeA, const int opNumA, const int 
 }
 
 template <typename T>
-__device__ inline void metaPredicateElementwiseGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
+__device__ inline static void metaPredicateElementwiseGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
                                                        T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
     ) {
     /*
@@ -128,7 +131,12 @@ Nd4jIndex n,
             }
             __syncthreads();
 
+            // functions::pairwise_transforms::PairWiseTransform<T>::template
+            // PAIRWISE_TRANSFORM_OPS
+            DISPATCH_METAOP(transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS));
 
+
+/*
             if (opNumA == 0 && opNumB ==0) functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::MetaOp<T, simdOps::Add<T>, simdOps::Add<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr );
             else if (opNumA == 0 && opNumB ==1) functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::MetaOp<T, simdOps::Add<T>, simdOps::Copy<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr );
             else if (opNumA == 0 && opNumB ==2) functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::MetaOp<T, simdOps::Add<T>, simdOps::Divide<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr );
@@ -171,7 +179,7 @@ Nd4jIndex n,
             else if (opNumA == 1 && opNumB ==45) functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::MetaOp<T, simdOps::Subtract<T>, simdOps::CompareAndSet<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr );
             else if (opNumA == 1 && opNumB ==46) functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::MetaOp<T, simdOps::Subtract<T>, simdOps::CompareAndReplace<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr );
             else if (opNumA == 1) printf("Unknown MetaOp opB id: [%i]\n", opNumB);
-
+*/
 
         } else if (opTypeA == 1) { // TRANSFORM
 
