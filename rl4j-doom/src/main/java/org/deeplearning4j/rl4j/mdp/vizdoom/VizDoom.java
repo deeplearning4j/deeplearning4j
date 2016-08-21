@@ -113,7 +113,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
         game.setWindowVisible(render);
         game.setSoundEnabled(false);
-        game.setMode(Mode.PLAYER);
+        game.setMode(Mode.SPECTATOR);
 
 
         game.setLivingReward(conf.getLivingReward());
@@ -171,6 +171,10 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
         }
         //System.out.println(r + " " + scaleFactor);
         */
+        if (game.isEpisodeFinished())
+            log.info("NEw EPISODE");
+        else
+            log.info(game.getEpisodeTimeout() + " " + game.getEpisodeStartTime() + " " + game.getEpisodeTime());
         return new StepReply(new GameScreen(game.getGameScreen()), r, game.isEpisodeFinished(), null);
     }
 

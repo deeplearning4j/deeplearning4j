@@ -59,6 +59,8 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
 
         O obs = mdp.reset();
+
+        System.out.println("RESET");
         O nextO = obs;
 
         int step = 0;
@@ -86,6 +88,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
             step++;
 
         }
+
         return new InitMdp(step, nextO, reward);
 
     }
