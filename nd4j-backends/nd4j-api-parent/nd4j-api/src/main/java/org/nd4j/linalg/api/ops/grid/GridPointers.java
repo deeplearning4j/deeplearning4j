@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.*;
 
 /**
@@ -16,6 +17,7 @@ import org.nd4j.linalg.api.ops.*;
 public class GridPointers {
     private Op.Type type;
     private int opNum;
+    private DataBuffer.Type dtype;
 
     // data buffers
     private Pointer x;
@@ -49,7 +51,7 @@ public class GridPointers {
 
     public GridPointers(Op op, int... dimensions) {
         this.type = BaseOp.getOpType(op);
-
+        this.dtype = op.x().data().dataType();
         this.opNum = op.opNum();
 
         this.xLength = op.x().length();

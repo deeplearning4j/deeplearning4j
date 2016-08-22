@@ -10,7 +10,6 @@ import org.nd4j.linalg.api.ops.grid.GridPointers;
  * @author raver119@gmail.com
  */
 public interface MetaOp extends GridOp {
-
     Op getFirstOp();
 
     Op getSecondOp();

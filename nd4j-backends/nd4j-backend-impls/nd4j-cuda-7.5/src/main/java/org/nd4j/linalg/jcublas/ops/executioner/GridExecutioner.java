@@ -7,15 +7,14 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.meta.LinearMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
@@ -34,12 +33,18 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * @author raver119@gmail.com
  */
 public class GridExecutioner extends JCudaExecutioner {
+    protected enum MetaType {
+        NOT_APPLICABLE,
+        PREDICATE,
+        INVERTED_PREDICATE,
+        POSTULATE,
+    }
 
     // general queues
     private List<Deque<OpDescriptor>> deviceQueues = new ArrayList<>();
 
     // last op
-    private ThreadLocal<Op> lastOp = new ThreadLocal<>();
+    private ThreadLocal<OpDescriptor> lastOp = new ThreadLocal<>();
     private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     private PointerPointer exxtrazz = new PointerPointer(4);
 
@@ -49,6 +54,14 @@ public class GridExecutioner extends JCudaExecutioner {
         extraz.set(new PointerPointer(4));
     }
 
+    /**
+     * This is one of the main entry points for ops that are executed without respect to dimension.
+     *
+     * Developers note: For GridExecutioner that's also the MetaOp/GridOp creation point.
+     *
+     * @param op
+     * @return
+     */
     @Override
     public Op exec(Op op) {
         /*
@@ -57,9 +70,19 @@ public class GridExecutioner extends JCudaExecutioner {
         if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             exec(acc, new int[]{Integer.MAX_VALUE});
+        } else if (op instanceof IndexAccumulation) {
+            IndexAccumulation acc = (IndexAccumulation) op;
+            exec(acc, new int[]{Integer.MAX_VALUE});
+        } else if (op instanceof TransformOp) {
+                invoke((TransformOp) op);
+        } else if (op instanceof ScalarOp) {
+            invoke((ScalarOp) op);
         }
 
-        return validateAsMetaOp(op, null);
+        // FIXME: remove this one
+        validateAsMetaOp(op, null);
+
+        return op;
     }
 
     /**
@@ -69,12 +92,12 @@ public class GridExecutioner extends JCudaExecutioner {
      * @param dimension
      * @return
      */
-    protected Op pushToGrid(Op op, int... dimension) {
+    protected void pushToGrid(OpDescriptor descriptor) {
         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
-        deviceQueues.get(deviceId).add(new OpDescriptor(op, dimension));
+        deviceQueues.get(deviceId).add(descriptor);
 
-        return op;
+
     }
 
     protected Op validateAsMetaOp(Op op, int... dimension) {
@@ -86,57 +109,104 @@ public class GridExecutioner extends JCudaExecutioner {
                 So we either should append this op to future GridOp, or form MetaOp
          */
 
+        OpDescriptor last = lastOp.get();
+        MetaType type = isMatchingMetaOp(op, dimension);
+        switch (type) {
+            case NOT_APPLICABLE:{
+                    /*
+                        If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
+                    */
+                    lastOp.set(new OpDescriptor(op, dimension));
 
-        Op last = lastOp.get();
-        if (!isMatchingMetaOp(op)) {
-            /*
-                If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
-             */
-            lastOp.set(op);
+                    if (last != null)
+                        pushToGrid(last);
+                }
+                break;
+            case PREDICATE: {
+                    lastOp.remove();
 
-            if (last != null)
-                pushToGrid(last, dimension);
-        } else {
-            /*
-                If we can form new MetaOp, we should do that right now.
-             */
-            lastOp.remove();
+                    MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
+                    pushToGrid(new OpDescriptor(metaOp));
+                }
+                break;
+            case INVERTED_PREDICATE: {
+                    lastOp.remove();
 
-            MetaOp metaOp = new LinearMetaOp(last, op);
-            pushToGrid(metaOp, null);
+                    MetaOp metaOp = new InvertedPredicateMetaOp(last, new OpDescriptor(op, dimension));
+                    pushToGrid(new OpDescriptor(metaOp));
+                }
+                break;
+            case POSTULATE: {
+                    lastOp.remove();
+
+                    MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
+                    pushToGrid(new OpDescriptor(metaOp));
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
         }
 
         return op;
     }
 
-    protected boolean isMatchingMetaOp(Op op, int... dimension) {
-        Op last = lastOp.get();
+    protected MetaType isMatchingMetaOp(Op op, int... dimension) {
+        OpDescriptor last = lastOp.get();
         if (last == null) {
-            return false;
+            return MetaType.NOT_APPLICABLE;
         } else {
-            // check for linear access ops
+            // TODO: it's still possible to use InvertedPredicates on op.Y, but it requires investigation
+
             if (last instanceof ScalarOp || last instanceof TransformOp) {
-                if (op instanceof ScalarOp || op instanceof  TransformOp) {
-                    return isMatchingZX(last, op);
-                }
+                /*
+                    Predicate logic is simple:
+                        1) LastOp is one of following op types: Scalar, Transform, PairwiseTransform
+                        2) LastOp isn't specialOp
+                        3) LastOp op.x() == op.z()
+                        4) currentOp op.x() == op.z(), and matches lastOp op.z()
+                */
+                return isMatchingZX(last.getOp(), op) ? MetaType.PREDICATE: MetaType.NOT_APPLICABLE;
+            } else if (last instanceof Accumulation) {
+                /*
+                    InvertedMetaOp, aka Postulate logic
+
+                    Postulate logic is simple too:
+                        1) LastOp is type of Reduce or Reduce3
+                        2) LastOp op.z() isn't scalar
+                        3) currentOp is one of the following op types: Scalar, Transform
+                 */
+                if ((op instanceof ScalarOp || op instanceof TransformOp) && op.y() == null)
+                    return isMatchingZX(last.getOp(), op) ? MetaType.POSTULATE : MetaType.NOT_APPLICABLE;
             }
         }
 
-        return false;
+        return MetaType.NOT_APPLICABLE;
     }
 
+    /**
+     * This method checks, if opA and opB are sharing the same operands
+     *
+     * @param opA
+     * @param opB
+     * @return
+     */
     protected boolean isMatchingZX(Op opA, Op opB) {
-        if (opA.y() == null && opB.y() == null)
-            if (opA.z() == opB.x())
-                return true;
+        if (opA.z() == opB.x() && opA.x() == opB.z())
+            return true;
 
         return false;
     }
 
+    /**
+     * This method is additional check, basically it qualifies possibility of InvertedPredicate MetaOp
+     *
+     * @param opA
+     * @param opB
+     * @return
+     */
     protected boolean isMatchingZXY(Op opA, Op opB) {
-        if (opA.y() == null)
-            if (opA.z() == opB.x() || opA.z() == opB.y())
-                return true;
+        if (opA.z() == opB.x() || opA.z() == opB.y())
+            return true;
 
         return false;
     }
@@ -242,13 +312,9 @@ public class GridExecutioner extends JCudaExecutioner {
             retShape = new int[]{1, 1};
         }
 
-/*
-        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-            return op.noOp();
-*/
 
         INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+        if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
             ret= Nd4j.zeros(retShape);
         } else {
             ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
@@ -286,7 +352,7 @@ public class GridExecutioner extends JCudaExecutioner {
 */
 
         INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+        if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
             ret= Nd4j.zeros(retShape);
         } else {
             ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
@@ -296,6 +362,8 @@ public class GridExecutioner extends JCudaExecutioner {
 
     @Override
     public Op exec(Op op, int... dimension) {
+        // FIXME: make sure we're not going this route
+        if (1>0) throw new UnsupportedOperationException("Bad execution route");
         return super.exec(op, dimension);
     }
 
@@ -304,6 +372,25 @@ public class GridExecutioner extends JCudaExecutioner {
         buildZ(op, dimension);
 
         return op.z();
+    }
+
+    // FIXME: remove CudaContext return type. We just don't need it
+    @Override
+    protected CudaContext invoke(ScalarOp op) {
+        validateAsMetaOp(op, null);
+
+        return null;
+    }
+
+    // FIXME: remove CudaContext return type. We just don't need it
+    @Override
+    protected CudaContext invoke(TransformOp op) {
+        if (op.isExecSpecial()) {
+            super.invoke(op);
+        } else {
+            validateAsMetaOp(op, null);
+        }
+        return null;
     }
 
     @Override
@@ -353,8 +440,13 @@ public class GridExecutioner extends JCudaExecutioner {
         GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
         GridPointers second = op.getGridDescriptor().getGridPointers().get(1);
 
+        /*
+            TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.
+         */
 
-        nativeOps.execMetaPredicateElementwiseFloat(extras,
+        if (first.getDtype() == DataBuffer.Type.FLOAT) {
+
+            nativeOps.execMetaPredicateElementwiseFloat(extras,
                     first.getType().ordinal(),
                     first.getOpNum(),
                     second.getType().ordinal(),
@@ -362,15 +454,52 @@ public class GridExecutioner extends JCudaExecutioner {
                     first.getXLength(),
                     first.getX(),
                     first.getXStride(),
-                    second.getY(),
-                    second.getYStride(),
+                    second.getY(), // can be null
+                    second.getYStride(), // cane be -1
                     second.getZ(),
                     second.getZStride(),
                     first.getExtraArgs(),
                     second.getExtraArgs(),
                     (float) scalarA,
                     (float) scalarB
-                );
+            );
+        } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execMetaPredicateElementwiseFloat(extras,
+                    first.getType().ordinal(),
+                    first.getOpNum(),
+                    second.getType().ordinal(),
+                    second.getOpNum(),
+                    first.getXLength(),
+                    first.getX(),
+                    first.getXStride(),
+                    second.getY(), // can be null
+                    second.getYStride(), // cane be -1
+                    second.getZ(),
+                    second.getZStride(),
+                    first.getExtraArgs(),
+                    second.getExtraArgs(),
+                    (float) scalarA,
+                    (float) scalarB
+            );
+        } else if (first.getDtype() == DataBuffer.Type.HALF) {
+            nativeOps.execMetaPredicateElementwiseFloat(extras,
+                    first.getType().ordinal(),
+                    first.getOpNum(),
+                    second.getType().ordinal(),
+                    second.getOpNum(),
+                    first.getXLength(),
+                    first.getX(),
+                    first.getXStride(),
+                    second.getY(), // can be null
+                    second.getYStride(), // cane be -1
+                    second.getZ(),
+                    second.getZStride(),
+                    first.getExtraArgs(),
+                    second.getExtraArgs(),
+                    (float) scalarA,
+                    (float) scalarB
+            );
+        }
 
 /*
 

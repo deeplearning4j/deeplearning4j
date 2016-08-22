@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ops.MetaOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
+import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +18,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public abstract class BaseGridOp extends BaseOp implements GridOp {
-    protected List<Op> queuedOps = new ArrayList<>();
+    protected List<OpDescriptor> queuedOps = new ArrayList<>();
     protected List<GridPointers> grid = new ArrayList<>();
 
     public BaseGridOp() {
@@ -31,6 +32,13 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
     protected BaseGridOp(Op... ops) {
         grid = new ArrayList<>(ops.length);
         for (Op op: ops) {
+            queuedOps.add(new OpDescriptor(op, null));
+            grid.add(null);
+        }
+    }
+
+    protected BaseGridOp(OpDescriptor... descriptors) {
+        for (OpDescriptor op: descriptors) {
             queuedOps.add(op);
             grid.add(null);
         }
@@ -43,7 +51,7 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
     }
 
     protected BaseGridOp(List<Op> ops) {
-        queuedOps.addAll(ops);
+       this(ops.toArray(new Op[0]));
     }
 
 

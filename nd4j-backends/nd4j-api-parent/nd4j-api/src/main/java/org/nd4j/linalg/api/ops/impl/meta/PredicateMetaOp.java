@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.meta;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 /**
  * This MetaOp covers case, when Op A and Op B are both using linear memory access
@@ -10,33 +11,37 @@ import org.nd4j.linalg.api.ops.*;
  *
  * @author raver119@gmail.com
  */
-public class LinearMetaOp extends BaseMetaOp {
+public class PredicateMetaOp extends BaseMetaOp {
 
-    public LinearMetaOp() {
+    public PredicateMetaOp() {
 
     }
 
-    public LinearMetaOp(INDArray x, INDArray y) {
+    public PredicateMetaOp(INDArray x, INDArray y) {
         super(x, y);
     }
 
-    public LinearMetaOp(Op opA, Op opB) {
+    public PredicateMetaOp(Op opA, Op opB) {
         super(opA, opB);
     }
 
-    public LinearMetaOp(ScalarOp opA, TransformOp opB) {
+    public PredicateMetaOp(OpDescriptor opA, OpDescriptor opB) {
         super(opA, opB);
     }
 
-    public LinearMetaOp(TransformOp opA, TransformOp opB) {
+    public PredicateMetaOp(ScalarOp opA, TransformOp opB) {
         super(opA, opB);
     }
 
-    public LinearMetaOp(TransformOp opA, ScalarOp opB) {
+    public PredicateMetaOp(TransformOp opA, TransformOp opB) {
         super(opA, opB);
     }
 
-    public LinearMetaOp(ScalarOp opA, ScalarOp opB) {
+    public PredicateMetaOp(TransformOp opA, ScalarOp opB) {
+        super(opA, opB);
+    }
+
+    public PredicateMetaOp(ScalarOp opA, ScalarOp opB) {
         super(opA, opB);
     }
 
@@ -47,6 +52,6 @@ public class LinearMetaOp extends BaseMetaOp {
 
     @Override
     public String name() {
-        return "meta_linear";
+        return "meta_predicate";
     }
 }

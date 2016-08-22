@@ -38,6 +38,11 @@ public class SynchronousFlowController implements FlowController {
         this.allocator = allocator;
     }
 
+    /**
+     * This method makes sure HOST memory contains latest data from GPU
+     *
+     * @param point
+     */
     @Override
     public void synchronizeToHost(AllocationPoint point) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();

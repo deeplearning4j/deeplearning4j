@@ -14,4 +14,8 @@ import org.nd4j.linalg.api.ops.Op;
 public class OpDescriptor {
     private Op op;
     private int[] dimensions;
+
+    public OpDescriptor(Op op) {
+        this(op, null);
+    }
 }

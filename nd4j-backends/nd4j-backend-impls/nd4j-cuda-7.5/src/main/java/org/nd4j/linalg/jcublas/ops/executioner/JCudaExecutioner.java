@@ -1238,7 +1238,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private CudaContext invoke(ScalarOp op) {
+    protected CudaContext invoke(ScalarOp op) {
         checkForCompression(op);
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -1310,7 +1310,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return  null;
     }
 
-    private CudaContext invoke(TransformOp op) {
+    protected CudaContext invoke(TransformOp op) {
         checkForCompression(op);
 
         //if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())

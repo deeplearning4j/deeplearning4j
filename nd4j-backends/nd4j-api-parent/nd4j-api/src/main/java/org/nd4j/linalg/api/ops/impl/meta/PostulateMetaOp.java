@@ -4,27 +4,32 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 /**
  * You're NOT supposed to directly call this op. Do it on your own risk, only if you're absolutely have to.
  *
  * @author raver119@gmail.com
  */
-public class ReducedMetaOp extends BaseMetaOp {
+public class PostulateMetaOp extends BaseMetaOp {
 
-    public ReducedMetaOp() {
+    public PostulateMetaOp() {
 
     }
 
-    public ReducedMetaOp(INDArray x, INDArray y) {
+    public PostulateMetaOp(INDArray x, INDArray y) {
         super(x, y);
     }
 
-    public ReducedMetaOp(ScalarOp opA, Accumulation opB) {
+    public PostulateMetaOp(ScalarOp opA, Accumulation opB) {
         super(opA, opB);
     }
 
-    public ReducedMetaOp(TransformOp opA, Accumulation opB) {
+    public PostulateMetaOp(TransformOp opA, Accumulation opB) {
+        super(opA, opB);
+    }
+
+    public PostulateMetaOp(OpDescriptor opA, OpDescriptor opB) {
         super(opA, opB);
     }
 
@@ -35,6 +40,6 @@ public class ReducedMetaOp extends BaseMetaOp {
 
     @Override
     public String name() {
-        return "meta_reduce";
+        return "meta_postulate";
     }
 }
