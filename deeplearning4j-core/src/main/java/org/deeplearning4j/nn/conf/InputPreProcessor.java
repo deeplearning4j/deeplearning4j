@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -68,4 +69,12 @@ public interface InputPreProcessor extends Serializable, Cloneable {
     INDArray backprop(INDArray output, int miniBatchSize);
 
     InputPreProcessor clone();
+
+    /**
+     * For a given type of input to this preprocessor, what is the type of the output?
+     *
+     * @param inputType    Type of input for the preprocessor
+     * @return             Type of input after applying the preprocessor
+     */
+    InputType getOutputType(InputType inputType);
 }

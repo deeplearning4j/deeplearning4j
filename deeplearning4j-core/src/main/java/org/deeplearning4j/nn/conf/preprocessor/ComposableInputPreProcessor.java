@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -66,5 +67,13 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
             clone.inputPreProcessors = processors;
         }
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        for(InputPreProcessor p : inputPreProcessors){
+            inputType = p.getOutputType(inputType);
+        }
+        return inputType;
     }
 }

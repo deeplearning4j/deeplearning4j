@@ -20,7 +20,7 @@ package org.deeplearning4j.models.embeddings;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.plot.Tsne;
+import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -76,13 +76,13 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * Render the words via TSNE
      * @param tsne the tsne to use
      */
-    void plotVocab(Tsne tsne, int numWords, UiConnectionInfo connectionInfo);
+    void plotVocab(BarnesHutTsne tsne, int numWords, UiConnectionInfo connectionInfo);
 
     /**
      * Render the words via TSNE
      * @param tsne the tsne to use
      */
-    void plotVocab(Tsne tsne, int numWords, File file);
+    void plotVocab(BarnesHutTsne tsne, int numWords, File file);
 
     /**
      * Render the words via tsne

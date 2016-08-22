@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 @NoArgsConstructor
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
@@ -48,7 +48,9 @@ public class PreprocessorVertex extends GraphVertex {
      * @param preProcessor The input preprocessor
      * @param outputType Override for the type of output used in {@link #getOutputType(InputType...)}. This may be necessary
      *                   for the automatic addition of other processors in the network, given a custom/non-standard InputPreProcessor
+     * @deprecated This constructor (and the "InputType override" functionality previously used is no longer necessary.
      */
+    @Deprecated
     public PreprocessorVertex(InputPreProcessor preProcessor, InputType outputType) {
         this.preProcessor = preProcessor;
         this.outputType = outputType;
@@ -87,44 +89,6 @@ public class PreprocessorVertex extends GraphVertex {
                 + "exactly one input");
         if (outputType != null) return outputType;   //Allows user to override for custom preprocessors
 
-        //Otherwise, try to infer:
-        switch (vertexInputs[0].getType()) {
-            case FF:
-                if (preProcessor instanceof FeedForwardToCnnPreProcessor) {
-                    FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) preProcessor;
-                    return InputType.convolutional(ffcnn.getNumChannels(), ffcnn.getInputWidth(), ffcnn.getInputHeight());
-                } else if (preProcessor instanceof FeedForwardToRnnPreProcessor) {
-                    return InputType.recurrent(((InputType.InputTypeFeedForward)vertexInputs[0]).getSize());
-                } else {
-                    //Assume preprocessor doesn't change the type of activations
-                    return InputType.feedForward(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize());
-                }
-            case RNN:
-                if (preProcessor instanceof RnnToCnnPreProcessor) {
-                    RnnToCnnPreProcessor ffcnn = (RnnToCnnPreProcessor) preProcessor;
-                    return InputType.convolutional(ffcnn.getNumChannels(), ffcnn.getInputWidth(), ffcnn.getInputHeight());
-                } else if (preProcessor instanceof RnnToFeedForwardPreProcessor) {
-                    return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
-                } else {
-                    //Assume preprocessor doesn't change the type of activations
-                    return InputType.recurrent(((InputType.InputTypeRecurrent)vertexInputs[0]).getSize());
-                }
-            case CNN:
-                if (preProcessor instanceof CnnToFeedForwardPreProcessor) {
-                    CnnToFeedForwardPreProcessor p = (CnnToFeedForwardPreProcessor)preProcessor;
-                    int outSize = p.getInputHeight()*p.getInputWidth()*p.getNumChannels();
-                    return InputType.feedForward(outSize);
-                } else if (preProcessor instanceof CnnToRnnPreProcessor) {
-                    CnnToRnnPreProcessor p = (CnnToRnnPreProcessor)preProcessor;
-                    int outSize = p.getInputHeight()*p.getInputWidth()*p.getNumChannels();
-                    return InputType.recurrent(outSize);
-                } else {
-                    //Assume preprocessor doesn't change the type of activations
-                    return vertexInputs[0];
-                }
-            default:
-                throw new RuntimeException("Unknown InputType: " + vertexInputs[0]);
-        }
-
+        return preProcessor.getOutputType(vertexInputs[0]);
     }
 }

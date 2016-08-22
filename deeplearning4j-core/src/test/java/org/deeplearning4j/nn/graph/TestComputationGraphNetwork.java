@@ -7,11 +7,9 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -354,11 +352,8 @@ public class TestComputationGraphNetwork {
                 .build();
             //Check preprocessors:
         lv1 = (LayerVertex) conf3.getVertices().get("cnn");
-        assertNotNull(lv1.getPreProcessor());
-        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputHeight());
-        assertEquals(28, ffcnn.getInputWidth());
+        assertNull(lv1.getPreProcessor());      //Shouldn't be adding preprocessor here
+
         lv2 = (LayerVertex) conf3.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         LayerVertex lv3 = (LayerVertex) conf3.getVertices().get("dense");
@@ -388,11 +383,8 @@ public class TestComputationGraphNetwork {
 
         //Check preprocessors:
         lv1 = (LayerVertex) conf4.getVertices().get("cnn");
-        assertNotNull(lv1.getPreProcessor());
-        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputHeight());
-        assertEquals(28, ffcnn.getInputWidth());
+        assertNull(lv1.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
+
         lv2 = (LayerVertex) conf4.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         lv3 = (LayerVertex) conf4.getVertices().get("dense");
@@ -426,18 +418,10 @@ public class TestComputationGraphNetwork {
                 .pretrain(false).backprop(true)
                 .build();
         lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
-        assertTrue(lv1.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
-        assertEquals(1, ffcnn.getNumChannels());
-        assertEquals(28, ffcnn.getInputWidth());
-        assertEquals(28, ffcnn.getInputHeight());
+        assertNull(lv1.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
 
         lv2 = (LayerVertex) conf5.getVertices().get("cnn_2");
-        assertTrue(lv2.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        FeedForwardToCnnPreProcessor ffcnn2 = (FeedForwardToCnnPreProcessor)lv2.getPreProcessor();
-        assertEquals(1, ffcnn2.getNumChannels());
-        assertEquals(28, ffcnn2.getInputWidth());
-        assertEquals(28, ffcnn2.getInputHeight());
+        assertNull(lv2.getPreProcessor());  //Expect no preprocessor: cnn data -> cnn layer
 
         assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getPreProcessor());
 
@@ -681,6 +665,81 @@ public class TestComputationGraphNetwork {
         net.update(expectedGradient);
         actualParams = net.params();
         assertEquals(Nd4j.ones(1,43).addi(1), actualParams);
+    }
+
+
+    @Test
+    public void testCnnFlatInputType1(){
+
+        //First: check conv input type. Expect: no preprocessor, nIn set appropriately
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .setInputTypes(InputType.convolutional(10,8,3))
+                .addLayer("layer",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(1,1).build(), "in")
+                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer")
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .build();
+
+        LayerVertex lv = (LayerVertex)conf.getVertices().get("layer");
+        FeedForwardLayer l = ((FeedForwardLayer)(lv).getLayerConf().getLayer());
+        assertEquals(3, l.getNIn());
+        assertNull( lv.getPreProcessor() );
+
+        //Check the equivalent config, but with flat conv data input instead
+        //In this case, the only difference should be the addition of a preprocessor
+        //First: check conv input type. Expect: no preprocessor, nIn set appropriately
+        conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .setInputTypes(InputType.convolationalFlat(10,8,3))
+                .addLayer("layer",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(1,1).build(), "in")
+                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer")
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .build();
+
+        lv = (LayerVertex)conf.getVertices().get("layer");
+        l = ((FeedForwardLayer)(lv).getLayerConf().getLayer());
+        assertEquals(3, l.getNIn());
+        assertNotNull( lv.getPreProcessor() );
+        InputPreProcessor preProcessor = lv.getPreProcessor();
+        assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
+        FeedForwardToCnnPreProcessor preproc = (FeedForwardToCnnPreProcessor)preProcessor;
+        assertEquals(10,preproc.getInputHeight());
+        assertEquals(8,preproc.getInputWidth());
+        assertEquals(3,preproc.getNumChannels());
+
+
+        //Finally, check configuration with a subsampling layer
+        conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .setInputTypes(InputType.convolationalFlat(10,8,3))
+                .addLayer("l0", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).padding(0,0).build(), "in")
+                .addLayer("layer",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(1,1).build(), "l0")
+                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer")
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .build();
+
+            //Check subsampling layer:
+        lv = (LayerVertex)conf.getVertices().get("l0");
+        SubsamplingLayer sl = ((SubsamplingLayer) (lv).getLayerConf().getLayer());
+        assertNotNull( lv.getPreProcessor() );
+        preProcessor = lv.getPreProcessor();
+        assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
+        preproc = (FeedForwardToCnnPreProcessor)preProcessor;
+        assertEquals(10,preproc.getInputHeight());
+        assertEquals(8,preproc.getInputWidth());
+        assertEquals(3,preproc.getNumChannels());
+            //Check dense layer
+        lv = (LayerVertex)conf.getVertices().get("layer");
+        l = ((FeedForwardLayer)(lv).getLayerConf().getLayer());
+        assertEquals(3, l.getNIn());
+        assertNull( lv.getPreProcessor() );
+
 
     }
 
