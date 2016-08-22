@@ -5,7 +5,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 
 /**
  *
- * FlowController implementation suitable for GridExecutioner
+ * FlowController implementation suitable for CudaGridExecutioner
  *
  * Main difference here, is delayed execution support and forced execution trigger in special cases
  *

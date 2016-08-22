@@ -17,9 +17,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner;
 import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -548,7 +547,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
 //        cublasHandle_t handle = ctx.getHandle();
 
-        ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
+        ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
 
 /*        synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());

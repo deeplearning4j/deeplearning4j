@@ -27,8 +27,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
-import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.jita.perf.OpDashboard;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -60,16 +58,16 @@ import java.util.Arrays;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public class JCudaExecutioner extends DefaultOpExecutioner {
+public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 //    private static final Allocator allocator = AtomicAllocator.getInstance();
-    private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
+    private static Logger log = LoggerFactory.getLogger(CudaExecutioner.class);
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
 
-    public JCudaExecutioner() {
+    public CudaExecutioner() {
 
     }
 
@@ -704,7 +702,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(BroadcastOp op) {
+    protected CudaContext invoke(BroadcastOp op) {
         checkForCompression(op);
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
@@ -796,7 +794,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+    protected CudaContext invoke(IndexAccumulation op,int[] dimension)  {
         checkForCompression(op);
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -923,7 +921,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private CudaContext invoke(Accumulation op, int[] dimension) {
+    protected CudaContext invoke(Accumulation op, int[] dimension) {
         checkForCompression(op);
 
       //  log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");

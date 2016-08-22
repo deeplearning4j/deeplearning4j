@@ -234,7 +234,7 @@ public class BasicContextPool implements ContextPool {
      * @param deviceId
      */
     protected void getDeviceBuffers(CudaContext context, int deviceId) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((CudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;

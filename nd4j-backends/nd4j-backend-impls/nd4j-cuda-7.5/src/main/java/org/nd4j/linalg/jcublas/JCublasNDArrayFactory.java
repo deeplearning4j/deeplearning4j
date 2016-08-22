@@ -46,7 +46,7 @@ import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -570,7 +570,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long[] offsetsPointers = new long[toConcat.length];
         long[] hostShapeInfoPointers = new long[toConcat.length];
 
-        TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
         for(int i = 0; i < toConcat.length; i++) {
             shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
@@ -708,7 +708,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         Pointer pIndex = AtomicAllocator.getInstance().getPointer(tempIndexes, context);
 
-        TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[]{sourceDimension});
 
@@ -925,7 +925,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
 
 
-            TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+            TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 

@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT EVER USE THIS EXECUTIONER IN PRODUCTION
  * @author raver119@gmail.com
  */
-public class GridExecutioner extends JCudaExecutioner {
+public class CudaGridExecutioner extends CudaExecutioner implements GridExecutioner {
     protected enum MetaType {
         NOT_APPLICABLE,
         PREDICATE,
@@ -41,23 +42,24 @@ public class GridExecutioner extends JCudaExecutioner {
     }
 
     // general queues
-    private List<Deque<OpDescriptor>> deviceQueues = new ArrayList<>();
+    //private List<Deque<OpDescriptor>> deviceQueues = new ArrayList<>();
 
     // last op
     private ThreadLocal<OpDescriptor> lastOp = new ThreadLocal<>();
     private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+    private ThreadLocal<Deque<OpDescriptor>> deviceQueues = new ThreadLocal<>();
     private PointerPointer exxtrazz = new PointerPointer(4);
 
-    private static Logger logger = LoggerFactory.getLogger(GridExecutioner.class);
+    private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
-    public GridExecutioner() {
+    public CudaGridExecutioner() {
         extraz.set(new PointerPointer(4));
     }
 
     /**
      * This is one of the main entry points for ops that are executed without respect to dimension.
      *
-     * Developers note: For GridExecutioner that's also the MetaOp/GridOp creation point.
+     * Developers note: For CudaGridExecutioner that's also the MetaOp/GridOp creation point.
      *
      * @param op
      * @return
@@ -93,11 +95,10 @@ public class GridExecutioner extends JCudaExecutioner {
      * @return
      */
     protected void pushToGrid(OpDescriptor descriptor) {
-        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+//        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+//        deviceQueues.get(deviceId).add(descriptor);
 
-        deviceQueues.get(deviceId).add(descriptor);
-
-
+        deviceQueues.get().add(descriptor);
     }
 
     protected Op validateAsMetaOp(Op op, int... dimension) {
@@ -261,10 +262,12 @@ public class GridExecutioner extends JCudaExecutioner {
     /**
      * This method returns Op queue lengths for current device
      *
+     * PLEASE NOTE: This value do NOT includes variative lastOp
+     *
      * @return
      */
     protected int getQueueLength() {
-        return getQueueLength(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        return deviceQueues.get().size();
     }
 
     /**
@@ -273,11 +276,9 @@ public class GridExecutioner extends JCudaExecutioner {
      * @param deviceId
      * @return
      */
+    @Deprecated
     protected int getQueueLength(int deviceId) {
-        if (deviceId >= deviceQueues.size() || deviceQueues.get(deviceId) == null)
-            deviceQueues.add(deviceId, new ConcurrentLinkedDeque<OpDescriptor>());
-
-        return deviceQueues.get(deviceId).size();
+        return -1;
     }
 
     /**
@@ -442,6 +443,9 @@ public class GridExecutioner extends JCudaExecutioner {
 
         /*
             TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.
+            We just need to pass all pointers.
+
+            TODO: obviously, execMetaPredicateElementwiseFloat should be renamed to execMetaPredicateStridedFloat
          */
 
         if (first.getDtype() == DataBuffer.Type.FLOAT) {
@@ -544,5 +548,56 @@ public class GridExecutioner extends JCudaExecutioner {
     @Override
     public void exec(GridOp op) {
         // TODO: to be implemented
+    }
+
+    /**
+     * This method forces all currently enqueued ops to be executed immediately
+     *
+     * PLEASE NOTE: This call IS non-blocking
+     */
+    public void flushQueue() {
+        /*
+            Basically we just want to form GridOp and pass it to native executioner
+            But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
+         */
+        // TODO: proper implementation for GridOp creation required here
+        Deque<OpDescriptor> currentQueue = deviceQueues.get();
+
+        OpDescriptor op = currentQueue.pollFirst();
+        while (op != null) {
+            if (op.getDimensions() == null) {
+                super.exec(op.getOp());
+            } else {
+                if (op.getOp() instanceof IndexAccumulation) {
+                    super.exec((IndexAccumulation) op.getOp(), op.getDimensions());
+                } else if (op.getOp() instanceof Accumulation) {
+                    super.exec((Accumulation) op.getOp(), op.getDimensions());
+                } else if (op.getOp() instanceof BroadcastOp) {
+                    super.exec((BroadcastOp) op.getOp(), op.getDimensions());
+                }
+            }
+
+            op = currentQueue.pollFirst();
+
+            // if no more ops in queue - we force lastOp to be executed here as well
+            if (op == null) {
+                op = lastOp.get();
+                if (op != null)
+                    lastOp.remove();
+            }
+        }
+
+    }
+
+    /**
+     * This method forces all currently enqueued ops to be executed immediately
+     *
+     * PLEASE NOTE: This call is always blocking, until all queued operations are finished
+     */
+    @Override
+    public void flushQueueBlocking() {
+        flushQueue();
+
+        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
 }
