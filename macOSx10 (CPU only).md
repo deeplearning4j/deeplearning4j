@@ -17,7 +17,7 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 6b. run `export` in terminal and make sure your path variable contains the path to `clang-omp` (`/usr/local/Cellar/clang-omp/2015-04-01/bin`)
 6c. make sure there are no exports for variables like LIBRARY_PATH, or LD_LIBRARY_PATH or DYLD_LIBRARY_PATH, but if they are, and are pointing to anything inside clang-omp remove the clang-omp bits (or if you have trouble, remove the paths entirely)
 
-7. `cd $LIBND4j_HOME` 
+7. `cd $LIBND4J_HOME` 
 8. `./buildnativeoperations.sh` (This will give a LOT of warnings, dont fret, if the last line is something like `[100%] Built target nd4j`)
 
 9. Now download the latest JavaCPP (https://github.com/bytedeco/javacpp) and build it using `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true`
