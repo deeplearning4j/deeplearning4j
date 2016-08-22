@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.flow;
 
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.deeplearning4j.ui.flow.beans.ModelState;
 import org.deeplearning4j.ui.flow.beans.NodeReport;
 import org.deeplearning4j.ui.storage.SessionStorage;
 import org.deeplearning4j.ui.storage.def.ObjectType;
@@ -20,20 +21,37 @@ public class FlowResource {
     private SessionStorage storage = SessionStorage.getInstance();
 
     @GET
+    @Path("/info")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getInfo(@QueryParam("sid") String sessionId) {
+        ModelInfo model = (ModelInfo) storage.getObject(sessionId, ObjectType.FLOW);
+        return Response.ok(model).build();
+    }
+
+    @GET
     @Path("/state")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getState(@QueryParam("sid") String sessionId) {
-        // TODO: to be improved with HistoryStorage
-        ModelInfo model = (ModelInfo) storage.getObject(sessionId, ObjectType.FLOW);
-        return Response.ok(model).build();
+        ModelState modelState = (ModelState) storage.getObject(sessionId, ObjectType.FLOW_STATE);
+        return Response.ok(modelState).build();
+    }
+
+    @POST
+    @Path("/info")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response postInfo(ModelInfo info, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.FLOW, info);
+
+        return Response.ok(Collections.singletonMap("status","ok")).build();
     }
 
     @POST
     @Path("/state")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response postState(ModelInfo info, @QueryParam("sid") String sessionId) {
-        storage.putObject(sessionId, ObjectType.FLOW, info);
+    public Response postState(ModelState state, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.FLOW_STATE, state);
 
         return Response.ok(Collections.singletonMap("status","ok")).build();
     }

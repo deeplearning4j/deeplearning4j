@@ -9,5 +9,6 @@ public enum  ObjectType {
     ACTIVATIONS,
     FLOW,
     WORD2VEC,
-    RL
+    RL,
+    FLOW_STATE
 }

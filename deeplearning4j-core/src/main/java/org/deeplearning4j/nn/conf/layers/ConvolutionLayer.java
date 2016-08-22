@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.convolution.Convolution;
 
 /**
@@ -43,6 +45,36 @@ public class ConvolutionLayer extends FeedForwardLayer {
         if(clone.stride != null) clone.stride = clone.stride.clone();
         if(clone.padding != null) clone.padding = clone.padding.clone();
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+        }
+
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, nOut, getLayerName());
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override){
+        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+        }
+
+        if(nIn <= 0 || override){
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+            this.nIn = c.getDepth();
+        }
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if(inputType == null ){
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): input is null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
     @AllArgsConstructor

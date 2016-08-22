@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -33,6 +34,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 @Data @EqualsAndHashCode(callSuper=false)
+@Deprecated
 public class ReshapePreProcessor extends BaseInputPreProcessor {
     private int[] fromShape;	//Epsilons: To this shape in backward pass
     private int[] toShape;		//Activations: To this shape in forward pass
@@ -83,5 +85,18 @@ public class ReshapePreProcessor extends BaseInputPreProcessor {
         if(clone.fromShape != null) clone.fromShape = clone.fromShape.clone();
         if(clone.toShape != null) clone.toShape = clone.toShape.clone();
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        switch (toShape.length){
+            case 2:
+            case 3:
+                return InputType.feedForward(toShape[1]);
+            case 4:
+                return InputType.convolutional(toShape[3],toShape[2],toShape[1]);
+            default:
+                throw new IllegalStateException();
+        }
     }
 }

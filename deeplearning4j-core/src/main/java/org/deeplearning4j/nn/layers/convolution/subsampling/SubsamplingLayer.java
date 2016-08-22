@@ -48,7 +48,6 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected static final Logger log = LoggerFactory.getLogger(SubsamplingLayer.class);
 
     SubsamplingHelper helper = null;
-    private INDArray maxIndexes;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -113,7 +112,6 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray reshapeEpsilon, retE;
         Gradient retGradient = new DefaultGradient();
 
         //Epsilons in shape: [miniBatch, depth, outH, outW]

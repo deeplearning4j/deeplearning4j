@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.api;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -261,4 +262,5 @@ public interface Layer extends Serializable,Cloneable,Model {
     int getInputMiniBatchSize();
 
     void setMaskArray(INDArray maskArray);
+
 }

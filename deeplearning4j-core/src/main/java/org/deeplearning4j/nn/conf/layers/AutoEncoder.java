@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
  *  Autoencoder.

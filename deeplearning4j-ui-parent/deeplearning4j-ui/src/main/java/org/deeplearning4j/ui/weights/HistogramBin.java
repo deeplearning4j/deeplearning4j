@@ -49,6 +49,19 @@ public class HistogramBin implements Serializable {
         max = sourceArray.maxNumber().doubleValue();
         min = sourceArray.minNumber().doubleValue();
 
+        // TODO: there's probably better way to get around of possible NaNs in max/min
+        if (Double.isInfinite(max))
+            max = Float.MAX_VALUE;
+
+        if (Double.isNaN(max))
+            max = Float.MIN_VALUE;
+
+        if (Double.isInfinite(min))
+            min = Float.MAX_VALUE;
+
+        if (Double.isNaN(min))
+            min = Float.MIN_VALUE;
+
         bins = Nd4j.create(numberOfBins);
         final double binSize = (max - min) / (numberOfBins - 1);
 
