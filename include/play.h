@@ -26,11 +26,7 @@
         (16,SCALAR::GreaterThanOrEqual)
 
 
-//        _EXPAND_META_CALL(transformCuda, PARAMS(N, dx, dy, xStride), 10, 15, simdOps::Divide, simdOps::FunnyStuff)
-
-//        FOR_EACH(WHAT, function, (10,20,30), (SCALAR_OPS))
-        //FOR_EACH_META(call, LOL, SCALAR_OPS, PAIRWISE_TRANSFORM_OPS)
-
     DISPATCH_METAOP(transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS))
+
 
 #endif //LIBND4J_PLAY_H
