@@ -25,13 +25,15 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
-/**A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
+/**
+ * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
  * For example, DenseLayer -> CNN<br>
  * This does two things:<br>
  * (a) Reshapes activations out of FeedFoward layer (which is 2D or 3D with shape
@@ -41,9 +43,9 @@ import java.util.Arrays;
  * [numExamples, numChannels, inputHeight, inputWidth]) into 2d epsilons (with shape
  * [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer
  * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ *
  * @author Adam Gibson
  * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
-
  */
 @Data
 public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
@@ -57,8 +59,9 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     /**
      * Reshape to a channels x rows x columns tensor
+     *
      * @param inputHeight the columns
-     * @param inputWidth the rows
+     * @param inputWidth  the rows
      * @param numChannels the channels
      */
     @JsonCreator
@@ -78,44 +81,76 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if(input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
+        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
 
         this.shape = input.shape();
-        if(input.shape().length == 4)
+        if (input.shape().length == 4)
             return input;
-        if(input.columns() != inputWidth * inputHeight * numChannels)
+        if (input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
                     + " x columns " + inputWidth + " x channels " + numChannels + " but was instead " + Arrays.toString(input.shape()));
 
-        return input.reshape('c',input.size(0),numChannels,inputHeight,inputWidth);
+        return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
     }
 
     @Override
     // return 4 dimensions
-    public INDArray backprop(INDArray epsilons, int miniBatchSize){
-        if(epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
+    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
 
-        if(shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
-            if(epsilons.rank() == 2) return epsilons;   //should never happen
+        if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
+            if (epsilons.rank() == 2) return epsilons;   //should never happen
 
-            return epsilons.reshape('c',epsilons.size(0), numChannels, inputHeight, inputWidth);
+            return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
 
-        return epsilons.reshape('c',shape);
+        return epsilons.reshape('c', shape);
     }
-
 
 
     @Override
     public FeedForwardToCnnPreProcessor clone() {
         try {
             FeedForwardToCnnPreProcessor clone = (FeedForwardToCnnPreProcessor) super.clone();
-            if(clone.shape != null) clone.shape = clone.shape.clone();
+            if (clone.shape != null) clone.shape = clone.shape.clone();
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Override
+    public InputType getOutputType(InputType inputType) {
+
+        switch (inputType.getType()) {
+            case FF:
+                InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
+                int expSize = inputHeight * inputWidth * numChannels;
+                if (c.getSize() != expSize) {
+                    throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize + " = (d=" + numChannels +
+                            " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
+                }
+                return InputType.convolutional(inputHeight, inputWidth, numChannels);
+            case CNN:
+                InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
+
+                if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth() + ","
+                            + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels + "," + inputHeight + ","
+                            + inputWidth + ")");
+                }
+                return c2;
+            case CNNFlat:
+                InputType.InputTypeConvolutionalFlat c3 = (InputType.InputTypeConvolutionalFlat) inputType;
+                if (c3.getDepth() != numChannels || c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c3.getDepth() + ","
+                            + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels + "," + inputHeight + ","
+                            + inputWidth + ")");
+                }
+                return c3.getUnflattenedType();
+            default:
+                throw new IllegalStateException("Invalid input type: got " + inputType);
+        }
+    }
 
 }

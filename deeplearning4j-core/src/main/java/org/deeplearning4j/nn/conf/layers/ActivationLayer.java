@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 
 /**
  */
@@ -18,6 +19,12 @@ public class ActivationLayer extends FeedForwardLayer {
     public ActivationLayer clone() {
         ActivationLayer clone = (ActivationLayer) super.clone();
         return clone;
+    }
+
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if(inputType == null) throw new IllegalStateException("Invalid input type: null");
+        return inputType;
     }
 
     @AllArgsConstructor

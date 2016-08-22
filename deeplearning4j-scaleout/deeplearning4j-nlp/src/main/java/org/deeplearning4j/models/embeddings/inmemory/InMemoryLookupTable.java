@@ -29,6 +29,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.plot.Tsne;
 import org.deeplearning4j.plot.dropwizard.ObjectMapperProvider;
 import org.deeplearning4j.ui.UiConnectionInfo;
@@ -143,19 +144,23 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     }
 
+    private List<String> fitTnseAndGetLabels(final BarnesHutTsne tsne, final int numWords) {
+        INDArray array = Nd4j.create(numWords, vectorLength);
+        List<String> labels = new ArrayList<>();
+        for (int i = 0; i < numWords && i <vocab.numWords(); i++) {
+            labels.add(vocab.wordAtIndex(i));
+            array.putRow(i, syn0.slice(i));
+        }
+        tsne.fit(array);
+        return labels;
+    }
+
 
     @Override
-    public void plotVocab(Tsne tsne, int numWords, File file) {
-        INDArray array = Nd4j.create(numWords, vectorLength);
-
+    public void plotVocab(BarnesHutTsne tsne, int numWords, File file) {
+        final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
         try {
-            List<String> plot = new ArrayList<>();
-            for (int i = 0; i < numWords && i <vocab.numWords(); i++) {
-                plot.add(vocab.wordAtIndex(i));
-                array.putRow(i, syn0.slice(i));
-            }
-
-            tsne.plot(array, 2, plot, file.getAbsolutePath());
+            tsne.saveAsFile(labels, file.getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -166,10 +171,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void plotVocab(int numWords, File file) {
-        Tsne tsne = new Tsne.Builder()
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .normalize(false).setFinalMomentum(0.8f)
-                .setMaxIter(1000).build();
-
+                .numDimension(2).setMaxIter(1000).build();
         plotVocab(tsne, numWords, file);
     }
 
@@ -178,10 +182,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void plotVocab(int numWords, UiConnectionInfo connectionInfo) {
-        Tsne tsne = new Tsne.Builder()
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .normalize(false).setFinalMomentum(0.8f)
-                .setMaxIter(1000).build();
-
+                .numDimension(2).setMaxIter(1000).build();
         plotVocab(tsne, numWords, connectionInfo);
     }
 
@@ -193,14 +196,19 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      * @param connectionInfo
      */
     @Override
-    public void plotVocab(Tsne tsne, int numWords, UiConnectionInfo connectionInfo) {
+    public void plotVocab(BarnesHutTsne tsne, int numWords, UiConnectionInfo connectionInfo) {
         try {
-            File file = File.createTempFile("tsne", "temp");
-            file.deleteOnExit();
-
-            plotVocab(tsne, numWords, file);
-
-            List<String> list = FileUtils.readLines(file);
+            final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
+            final INDArray reducedData = tsne.getData();
+            List<String> list = new ArrayList<>();
+            for (int i = 0; i < reducedData.rows() && i < numWords; i++) {
+                String word = labels.get(i);
+                INDArray wordVector = reducedData.getRow(i);
+                for (int j = 0; j < wordVector.length(); j++) {
+                    list.add(wordVector.getDouble(j)+"");
+                }
+                list.add(word);
+            }
 
             Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
@@ -266,8 +274,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Deprecated
     public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
         if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
-           return;
-            //current word vector
+            return;
+        //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
 
@@ -683,8 +691,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            InMemoryLookupTable<T> table = new InMemoryLookupTable<>(vocabCache, vectorLength,
-                    useAdaGrad, lr, gen, negative);
+            InMemoryLookupTable table = new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
             table.seed = seed;
 
             return table;
@@ -694,10 +701,15 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     public String toString() {
         return "InMemoryLookupTable{" +
-                "vectorLength=" + vectorLength +
+                "syn0=" + syn0 +
+                ", syn1=" + syn1 +
+                ", vectorLength=" + vectorLength +
                 ", rng=" + rng +
                 ", lr=" + lr +
+                ", expTable=" + Arrays.toString(expTable) +
                 ", seed=" + seed +
+                ", table=" + table +
+                ", syn1Neg=" + syn1Neg +
                 ", useAdaGrad=" + useAdaGrad +
                 ", negative=" + negative +
                 ", vocab=" + vocab +

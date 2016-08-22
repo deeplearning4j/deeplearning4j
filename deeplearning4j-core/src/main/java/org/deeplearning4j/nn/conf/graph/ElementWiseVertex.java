@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
 public class ElementWiseVertex extends GraphVertex {
 
     public ElementWiseVertex(@JsonProperty("op") Op op) {
@@ -88,8 +88,7 @@ public class ElementWiseVertex extends GraphVertex {
         if(vertexInputs.length == 1) return vertexInputs[0];
         InputType first = vertexInputs[0];
         if(first.getType() != InputType.Type.CNN){
-            //FF or RNN data inputs
-            int size = 0;
+            //FF, RNN or flat CNN data inputs
             for( int i=1; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
                     throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"

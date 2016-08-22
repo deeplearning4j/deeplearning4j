@@ -27,7 +27,8 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
+/**
+ * DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
  * duplication. That is, given a 2d input with shape [numExamples,nIn] duplicate each row to give output of
  * [numExamples,nIn,timeSeriesLength], where the activations are the same for all time steps.<br>
  * This method is used for example in sequence to sequence models.<br>
@@ -35,9 +36,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * inputs in the ComputationGraph. That is: Because the length of the time series may differ at runtime, we generally want the number
  * of time steps to match some other input; here, we are specifying the length of the output time series to be the same as
  * one of the input time series<br>
+ *
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
 public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     private String inputName;
@@ -46,7 +48,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
      * @param inputName Name of the input in the ComputationGraph network to use, to determine how long the output time
      *                  series should be. This input should (a) exist, and (b) be a time series input
      */
-    public DuplicateToTimeSeriesVertex(@JsonProperty("inputName") String inputName){
+    public DuplicateToTimeSeriesVertex(@JsonProperty("inputName") String inputName) {
         this.inputName = inputName;
     }
 
@@ -57,9 +59,9 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if(!(o instanceof DuplicateToTimeSeriesVertex)) return false;
-        DuplicateToTimeSeriesVertex d = (DuplicateToTimeSeriesVertex)o;
-        if(inputName == null && d.inputName != null || inputName != null && d.inputName == null) return false;
+        if (!(o instanceof DuplicateToTimeSeriesVertex)) return false;
+        DuplicateToTimeSeriesVertex d = (DuplicateToTimeSeriesVertex) o;
+        if (inputName == null && d.inputName != null || inputName != null && d.inputName == null) return false;
         return inputName == null || inputName.equals(d.inputName);
     }
 
@@ -69,23 +71,29 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph,name,idx,inputName);
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph, name, idx, inputName);
     }
 
     @Override
     public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input type: cannot duplicate more than 1 input");
-        if(vertexInputs[0].getType() != InputType.Type.FF){
-            throw new InvalidInputTypeException("Invalid input type: cannot duplicate to time series non feed forward input (got: " + vertexInputs[0] + ")");
+        if (vertexInputs.length != 1)
+            throw new InvalidInputTypeException("Invalid input type: cannot duplicate more than 1 input");
+
+        if (vertexInputs[0].getType() == InputType.Type.FF) {
+            return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize());
+        } else if(vertexInputs[0].getType() != InputType.Type.CNNFlat){
+            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize());
+        } else {
+            throw new InvalidInputTypeException("Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.recurrent(((InputType.InputTypeFeedForward)vertexInputs[0]).getSize());
+
     }
 }
