@@ -10,7 +10,6 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
@@ -21,14 +20,11 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * mGRID implementation for OpExecutioner interface
+ * mGRID implementation for CUDA
  *
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT EVER USE THIS EXECUTIONER IN PRODUCTION
  * @author raver119@gmail.com
@@ -68,21 +64,21 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public Op exec(Op op) {
         /*
             We pass this op to GridProcessor through check for possible MetaOp concatenation
+            Also, it's the GriOp entry point
          */
+
         if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             exec(acc, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation acc = (IndexAccumulation) op;
             exec(acc, new int[]{Integer.MAX_VALUE});
-        } else if (op instanceof TransformOp) {
-                invoke((TransformOp) op);
-        } else if (op instanceof ScalarOp) {
-            invoke((ScalarOp) op);
+        } else if (op instanceof BroadcastOp) {
+            invoke((BroadcastOp) op);
+        } else {
+            // the only entry place for TADless ops
+            processAsGridOp(op);
         }
-
-        // FIXME: remove this one
-        validateAsMetaOp(op, null);
 
         return op;
     }
@@ -95,23 +91,56 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     protected void pushToGrid(OpDescriptor descriptor) {
-//        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-//        deviceQueues.get(deviceId).add(descriptor);
 
-        deviceQueues.get().add(descriptor);
+        // we should just add op to queue here
+        //deviceQueues.get().add(descriptor);
+
+        // FIXME: following code should be removed, since it's just executing supers instead of batching
+        Op op = descriptor.getOp();
+        int[] dimensions = descriptor.getDimensions();
+
+        if (op instanceof TransformOp) {
+            TransformOp t = (TransformOp) op;
+
+            super.exec(t);
+        } else if (op instanceof Accumulation) {
+            Accumulation acc = (Accumulation) op;
+
+            super.exec(acc, dimensions);
+        } else if (op instanceof ScalarOp) {
+            ScalarOp sc = (ScalarOp) op;
+
+            super.exec(sc);
+        } else if(op instanceof BroadcastOp) {
+            BroadcastOp broadcastOp = (BroadcastOp) op;
+
+            super.exec(broadcastOp, dimensions);
+        }
+        else if(op instanceof IndexAccumulation) {
+            IndexAccumulation indexAccumulation = (IndexAccumulation) op;
+
+            super.exec(indexAccumulation, dimensions);
+        } else if (op instanceof MetaOp) {
+
+            exec((MetaOp) op);
+        } else if (op instanceof GridOp) {
+            exec((GridOp) op);
+        }
     }
 
-    protected Op validateAsMetaOp(Op op, int... dimension) {
+    protected void processAsGridOp(Op op, int... dimension) {
         /*
             We have multiple options here:
                 1) Op has no relation to lastOp
                 2) Op has SOME relation to lastOp
+                3) Op is supposed to blocking
 
-                So we either should append this op to future GridOp, or form MetaOp
-         */
+            So we either should append this op to future GridOp, form MetaOp, or immediately execute everything
+            But we don't expect this method called for blocking ops ever, so it's either
+        */
 
         OpDescriptor last = lastOp.get();
-        MetaType type = isMatchingMetaOp(op, dimension);
+        MetaType type = getMetaOpType(op, dimension);
         switch (type) {
             case NOT_APPLICABLE:{
                     /*
@@ -148,10 +177,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
         }
 
-        return op;
+        //return op;
     }
 
-    protected MetaType isMatchingMetaOp(Op op, int... dimension) {
+    protected MetaType getMetaOpType(Op op, int... dimension) {
         OpDescriptor last = lastOp.get();
         if (last == null) {
             return MetaType.NOT_APPLICABLE;
@@ -251,6 +280,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
             Pointer devTadOffsets = tadBuffers.getSecond() == null ? null :AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context);
 
+            // we don't really care, if tadOffsets will be nulls
             pointers.setTadShape(devTadShapeInfo);
             pointers.setTadOffsets(devTadOffsets);
         }
@@ -372,13 +402,52 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public INDArray exec(Accumulation op, int... dimension) {
         buildZ(op, dimension);
 
+        // we should check, if this op returns scalar or not
+        // if op.Z is scalar, we can't use GridOp here
+        if (op.z().isScalar()) {
+            // So, that's scalar. We'll have to flush queue
+        } else {
+            processAsGridOp(op, dimension);
+        }
+
+        return op.z();
+    }
+
+
+    @Override
+    public INDArray exec(IndexAccumulation op, int... dimension) {
+        buildZ(op, dimension);
+
+        if (op.z().isScalar()) {
+            // So, that's scalar. We'll have to flush queue
+        } else {
+            processAsGridOp(op, dimension);
+        }
+
+        return op.z();
+    }
+
+    @Override
+    public INDArray exec(BroadcastOp op, int... dimension) {
+        processAsGridOp(op, dimension);
+
         return op.z();
     }
 
     // FIXME: remove CudaContext return type. We just don't need it
     @Override
+    protected CudaContext invoke(BroadcastOp op) {
+        processAsGridOp(op, op.getDimension());
+
+        return null;
+    }
+
+    // FIXME: remove CudaContext return type. We just don't need it
+    @Override
     protected CudaContext invoke(ScalarOp op) {
-        validateAsMetaOp(op, null);
+        processAsGridOp(op, null);
+
+        processAsGridOp(op, null);
 
         return null;
     }
@@ -389,26 +458,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (op.isExecSpecial()) {
             super.invoke(op);
         } else {
-            validateAsMetaOp(op, null);
+            processAsGridOp(op, null);
         }
         return null;
-    }
-
-    @Override
-    public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
-        return super.exec(accumulation, biasCorrected, dimension);
-    }
-
-    @Override
-    public INDArray exec(IndexAccumulation op, int... dimension) {
-        buildZ(op, dimension);
-
-        return op.z();
-    }
-
-    @Override
-    public INDArray exec(BroadcastOp broadcast, int... dimension) {
-        return super.exec(broadcast, dimension);
     }
 
     protected void prepareGrid(MetaOp op) {
