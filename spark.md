@@ -141,6 +141,22 @@ Note that the ```_${scala.binary.version}``` should be ```_2.10``` or ```_2.11``
 
 The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) ([old examples here](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)) contains a number of Spark examples.
 
+## Using Kryo Serialization with Deeplearning4j
+
+Kryo is a serialization library commonly used with Apache Spark. It proposes to increase performance by reducing the amount of time taken to serialize objects.
+However, Kryo has difficulties working with the off-heap data structures in ND4J. To use Kryo serialization with ND4J on Apache Spark, it is necessary to set up some extra configuration for Spark.
+If Kryo is not correctly configured, it is possible to get NullPointerExceptions on some of the INDArray fields, due to incorrect serialization.
+
+To use Kryo, add the appropriate [nd4j-kryo dependency](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-kryo) and configure the Spark configuration to use the Nd4j Kryo Registrator, as follows:
+
+```
+    SparkConf conf = new SparkConf();
+    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+    conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+```
+
+Note that when using Deeplearning4j's SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
+
 ## Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j
 
 Releases of DL4J available on Maven Cental are distributed with OpenBLAS. Thus this section does not apply to users who are using using versions of Deeplearning4j on Maven Central.
@@ -163,7 +179,7 @@ Under the Create Cluster -> Advanced Options -> Edit Software Settings, add the 
                     "LD_PRELOAD": "/usr/lib64/libgomp.so.1"
                 }
             }
-        ], 
+        ],
         "Properties": {}
     }
 ]
