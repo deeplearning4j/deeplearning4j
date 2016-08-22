@@ -141,6 +141,35 @@ Note that the ```_${scala.binary.version}``` should be ```_2.10``` or ```_2.11``
 
 The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) ([old examples here](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)) contains a number of Spark examples.
 
+## Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j
+
+Releases of DL4J available on Maven Cental are distributed with OpenBLAS. Thus this section does not apply to users who are using using versions of Deeplearning4j on Maven Central.
+
+If DL4J is built from source with Intel MKL as the BLAS library, some additional configuration is required to make this work on Amazon Elastic MapReduce.
+When creating a cluster in EMR, to use Intel MKL it is necessary to provide some additional configuration.
+
+Under the Create Cluster -> Advanced Options -> Edit Software Settings, add the following:
+
+```
+[
+    {
+        "Classification": "hadoop-env", 
+        "Configurations": [
+            {
+                "Classification": "export", 
+                "Configurations": [], 
+                "Properties": {
+                    "MKL_THREADING_LAYER": "GNU",
+                    "LD_PRELOAD": "/usr/lib64/libgomp.so.1"
+                }
+            }
+        ], 
+        "Properties": {}
+    }
+]
+```
+
+
 ## Resources
 
 * [Deeplearning4j Examples Repo](https://github.com/deeplearning4j/dl4j-examples)
