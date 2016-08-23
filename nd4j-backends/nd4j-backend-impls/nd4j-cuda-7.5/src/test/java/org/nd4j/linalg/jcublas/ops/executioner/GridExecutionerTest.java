@@ -36,7 +36,7 @@ public class GridExecutionerTest {
 
     @Test
     public void isMatchingMetaOp1() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10);
 
@@ -45,12 +45,12 @@ public class GridExecutionerTest {
         ScalarAdd opB = new ScalarAdd(array, 10f);
 
         executioner.exec(opA);
-        assertTrue(executioner.isMatchingMetaOp(opB));
+        assertEquals(CudaGridExecutioner.MetaType.PREDICATE, executioner.getMetaOpType(opB));
     }
 
     @Test
     public void isMatchingMetaOp2() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10);
         INDArray array2 = Nd4j.create(10);
@@ -60,12 +60,12 @@ public class GridExecutionerTest {
         ScalarAdd opB = new ScalarAdd(array2, 10f);
 
         executioner.exec(opA);
-        assertFalse(executioner.isMatchingMetaOp(opB));
+        assertEquals(executioner.getMetaOpType(opB), CudaGridExecutioner.MetaType.NOT_APPLICABLE);
     }
 
     @Test
     public void isMatchingMetaOp3() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10);
 
@@ -74,7 +74,7 @@ public class GridExecutionerTest {
         Max opB = new Max(array);
 
         executioner.exec(opA);
-        assertFalse(executioner.isMatchingMetaOp(opB));
+        assertEquals(CudaGridExecutioner.MetaType.PREDICATE, executioner.getMetaOpType(opB));
     }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ public class GridExecutionerTest {
 
     @Test
     public void testGridFlow1() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         assertEquals(0, executioner.getQueueLength());
 
@@ -135,7 +135,7 @@ public class GridExecutionerTest {
 
     @Test
     public void testOpPointerizeScalar1() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10);
         ScalarMultiplication opA = new ScalarMultiplication(array, 10f);
@@ -178,7 +178,7 @@ public class GridExecutionerTest {
      */
     @Test
     public void testOpPointerizeReduce1() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10, 10);
 
@@ -238,7 +238,7 @@ public class GridExecutionerTest {
      */
     @Test
     public void testOpPointerizeReduce2() throws Exception {
-        GridExecutioner executioner = new GridExecutioner();
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray array = Nd4j.create(10, 10);
 

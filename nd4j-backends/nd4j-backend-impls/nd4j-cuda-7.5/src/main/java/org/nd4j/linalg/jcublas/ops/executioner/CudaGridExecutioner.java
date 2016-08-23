@@ -73,11 +73,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation acc = (IndexAccumulation) op;
             exec(acc, new int[]{Integer.MAX_VALUE});
-        } else if (op instanceof BroadcastOp) {
-            invoke((BroadcastOp) op);
-        } else {
+        } else if (op instanceof ScalarOp){
             // the only entry place for TADless ops
             processAsGridOp(op);
+        } else if (op instanceof BroadcastOp) {
+            invoke((BroadcastOp) op);
+
         }
 
         return op;
@@ -86,8 +87,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     /**
      * This method adds op into GridOp queue
      *
-     * @param op
-     * @param dimension
      * @return
      */
     protected void pushToGrid(OpDescriptor descriptor) {
@@ -140,9 +139,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         */
 
         OpDescriptor last = lastOp.get();
-        MetaType type = getMetaOpType(op, dimension);
-        switch (type) {
-            case NOT_APPLICABLE:{
+        if (last != null) {
+            MetaType type = getMetaOpType(op, dimension);
+            switch (type) {
+                case NOT_APPLICABLE: {
                     /*
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
@@ -152,29 +152,32 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         pushToGrid(last);
                 }
                 break;
-            case PREDICATE: {
+                case PREDICATE: {
                     lastOp.remove();
 
                     MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
                 break;
-            case INVERTED_PREDICATE: {
+                case INVERTED_PREDICATE: {
                     lastOp.remove();
 
                     MetaOp metaOp = new InvertedPredicateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
                 break;
-            case POSTULATE: {
+                case POSTULATE: {
                     lastOp.remove();
 
                     MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
                 break;
-            default:
-                throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
+                default:
+                    throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
+            }
+        } else {
+            lastOp.set(new OpDescriptor(op, dimension));
         }
 
         //return op;
@@ -182,12 +185,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     protected MetaType getMetaOpType(Op op, int... dimension) {
         OpDescriptor last = lastOp.get();
+
         if (last == null) {
+            logger.info("last is NULL");
             return MetaType.NOT_APPLICABLE;
         } else {
             // TODO: it's still possible to use InvertedPredicates on op.Y, but it requires investigation
 
-            if (last instanceof ScalarOp || last instanceof TransformOp) {
+            if (last.getOp() instanceof ScalarOp || last.getOp() instanceof TransformOp) {
                 /*
                     Predicate logic is simple:
                         1) LastOp is one of following op types: Scalar, Transform, PairwiseTransform
@@ -195,8 +200,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         3) LastOp op.x() == op.z()
                         4) currentOp op.x() == op.z(), and matches lastOp op.z()
                 */
+
                 return isMatchingZX(last.getOp(), op) ? MetaType.PREDICATE: MetaType.NOT_APPLICABLE;
-            } else if (last instanceof Accumulation) {
+            } else if (last.getOp() instanceof Accumulation) {
                 /*
                     InvertedMetaOp, aka Postulate logic
 
@@ -502,7 +508,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (first.getDtype() == DataBuffer.Type.FLOAT) {
 
-            nativeOps.execMetaPredicateElementwiseFloat(extras,
+            nativeOps.execMetaPredicateStridedFloat(extras,
                     first.getType().ordinal(),
                     first.getOpNum(),
                     second.getType().ordinal(),
@@ -520,7 +526,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     (float) scalarB
             );
         } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
-            nativeOps.execMetaPredicateElementwiseFloat(extras,
+            nativeOps.execMetaPredicateStridedFloat(extras,
                     first.getType().ordinal(),
                     first.getOpNum(),
                     second.getType().ordinal(),
@@ -538,7 +544,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     (float) scalarB
             );
         } else if (first.getDtype() == DataBuffer.Type.HALF) {
-            nativeOps.execMetaPredicateElementwiseFloat(extras,
+            nativeOps.execMetaPredicateStridedFloat(extras,
                     first.getType().ordinal(),
                     first.getOpNum(),
                     second.getType().ordinal(),

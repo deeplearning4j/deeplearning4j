@@ -1202,7 +1202,7 @@ public class NativeOps extends Pointer {
                          Pointer result,
                          int resultStride);
 
-    public native void execMetaPredicateElementwiseFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+    public native void execMetaPredicateStridedFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                          long N,
                                                          Pointer dx,
                                                          int xStride,
