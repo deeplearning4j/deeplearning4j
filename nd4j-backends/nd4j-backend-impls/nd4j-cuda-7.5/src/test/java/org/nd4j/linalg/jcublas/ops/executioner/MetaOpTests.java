@@ -7,15 +7,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
@@ -215,7 +216,11 @@ public class MetaOpTests {
         OpDescriptor a = new OpDescriptor(opA);
         OpDescriptor b = new OpDescriptor(opB, new int[]{1});
 
-        PredicateMetaOp metaOp = new PredicateMetaOp(a, b);
+        executioner.buildZ(opB, b.getDimensions());
+
+        ReduceMetaOp metaOp = new ReduceMetaOp(a, b);
+
+        executioner.prepareGrid(metaOp);
 
         executioner.exec(metaOp);
 

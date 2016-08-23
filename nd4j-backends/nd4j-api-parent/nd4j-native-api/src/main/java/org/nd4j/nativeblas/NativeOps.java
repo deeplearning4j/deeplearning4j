@@ -1214,4 +1214,21 @@ public class NativeOps extends Pointer {
                                                          Pointer extraB,
                                                          float scalarA,
                                                          float scalarB);
+
+    public native void execMetaPredicateReduceFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                    Pointer dx,
+                                                    Pointer xShapeInfo,
+                                                    Pointer dy,
+                                                    Pointer yShapeInfo,
+                                                    Pointer dz,
+                                                    Pointer zShapeInfo,
+                                                    Pointer dimension,
+                                                    int dimensionLength,
+                                                    Pointer tadShapeInfo,
+                                                    Pointer tadOffsets,
+                                                    Pointer extraA,
+                                                    Pointer extraB,
+                                                    float scalarA,
+                                                    float scalarB,
+                                                    boolean scalarReturned);
 }

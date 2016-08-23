@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -247,6 +248,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return false;
     }
 
+    protected GridPointers pointerizeOp(OpDescriptor descriptor) {
+        return pointerizeOp(descriptor.getOp(), descriptor.getDimensions());
+    }
+
     /**
      * This method returns Op as set of required pointers for it
      * @param op
@@ -470,8 +475,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     protected void prepareGrid(MetaOp op) {
-        GridPointers ptrA = pointerizeOp(op.getFirstOp());
-        GridPointers ptrB = pointerizeOp(op.getSecondOp());
+        GridPointers ptrA = pointerizeOp(op.getFirstOpDescriptor());
+        GridPointers ptrB = pointerizeOp(op.getSecondOpDescriptor());
+
+
 
         op.setFirstPointers(ptrA);
         op.setSecondPointers(ptrB);
@@ -516,62 +523,92 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             yGrid = second;
         }
 
+        if (op instanceof PredicateMetaOp) {
 
-        if (first.getDtype() == DataBuffer.Type.FLOAT) {
+            if (first.getDtype() == DataBuffer.Type.FLOAT) {
 
-            nativeOps.execMetaPredicateStridedFloat(extras,
-                    first.getType().ordinal(),
-                    first.getOpNum(),
-                    second.getType().ordinal(),
-                    second.getOpNum(),
-                    first.getXLength(),
-                    first.getX(),
-                    first.getXStride(),
-                    yGrid.getY(), // can be null
-                    yGrid.getYStride(), // cane be -1
-                    second.getZ(),
-                    second.getZStride(),
-                    first.getExtraArgs(),
-                    second.getExtraArgs(),
-                    (float) scalarA,
-                    (float) scalarB
-            );
-        } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
-            nativeOps.execMetaPredicateStridedFloat(extras,
-                    first.getType().ordinal(),
-                    first.getOpNum(),
-                    second.getType().ordinal(),
-                    second.getOpNum(),
-                    first.getXLength(),
-                    first.getX(),
-                    first.getXStride(),
-                    second.getY(), // can be null
-                    second.getYStride(), // cane be -1
-                    second.getZ(),
-                    second.getZStride(),
-                    first.getExtraArgs(),
-                    second.getExtraArgs(),
-                    (float) scalarA,
-                    (float) scalarB
-            );
-        } else if (first.getDtype() == DataBuffer.Type.HALF) {
-            nativeOps.execMetaPredicateStridedFloat(extras,
-                    first.getType().ordinal(),
-                    first.getOpNum(),
-                    second.getType().ordinal(),
-                    second.getOpNum(),
-                    first.getXLength(),
-                    first.getX(),
-                    first.getXStride(),
-                    second.getY(), // can be null
-                    second.getYStride(), // cane be -1
-                    second.getZ(),
-                    second.getZStride(),
-                    first.getExtraArgs(),
-                    second.getExtraArgs(),
-                    (float) scalarA,
-                    (float) scalarB
-            );
+                nativeOps.execMetaPredicateStridedFloat(extras,
+                        first.getType().ordinal(),
+                        first.getOpNum(),
+                        second.getType().ordinal(),
+                        second.getOpNum(),
+                        first.getXLength(),
+                        first.getX(),
+                        first.getXStride(),
+                        yGrid.getY(), // can be null
+                        yGrid.getYStride(), // cane be -1
+                        second.getZ(),
+                        second.getZStride(),
+                        first.getExtraArgs(),
+                        second.getExtraArgs(),
+                        (float) scalarA,
+                        (float) scalarB
+                );
+            } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
+                nativeOps.execMetaPredicateStridedFloat(extras,
+                        first.getType().ordinal(),
+                        first.getOpNum(),
+                        second.getType().ordinal(),
+                        second.getOpNum(),
+                        first.getXLength(),
+                        first.getX(),
+                        first.getXStride(),
+                        second.getY(), // can be null
+                        second.getYStride(), // cane be -1
+                        second.getZ(),
+                        second.getZStride(),
+                        first.getExtraArgs(),
+                        second.getExtraArgs(),
+                        (float) scalarA,
+                        (float) scalarB
+                );
+            } else if (first.getDtype() == DataBuffer.Type.HALF) {
+                nativeOps.execMetaPredicateStridedFloat(extras,
+                        first.getType().ordinal(),
+                        first.getOpNum(),
+                        second.getType().ordinal(),
+                        second.getOpNum(),
+                        first.getXLength(),
+                        first.getX(),
+                        first.getXStride(),
+                        second.getY(), // can be null
+                        second.getYStride(), // cane be -1
+                        second.getZ(),
+                        second.getZStride(),
+                        first.getExtraArgs(),
+                        second.getExtraArgs(),
+                        (float) scalarA,
+                        (float) scalarB
+                );
+            }
+        } else if (op instanceof ReduceMetaOp) {
+            if (first.getDtype() == DataBuffer.Type.FLOAT) {
+
+                logger.info("First pointers: {}", first);
+                logger.info("Second pointers: {}", second);
+
+                nativeOps.execMetaPredicateReduceFloat(extras,
+                        first.getType().ordinal(),
+                        first.getOpNum(),
+                        second.getType().ordinal(),
+                        second.getOpNum(),
+                        first.getX(),
+                        first.getXShapeInfo(),
+                        second.getY(),
+                        second.getYShapeInfo(),
+                        second.getZ(),
+                        second.getZShapeInfo(),
+                        second.getDimensions(),
+                        second.getDimensionsLength(),
+                        second.getTadShape(),
+                        second.getTadOffsets(),
+                        first.getExtraArgs(),
+                        second.getExtraArgs(),
+                        (float) scalarA,
+                        0.0f,
+                        false
+                        );
+            }
         }
     }
 

@@ -27,6 +27,16 @@ public abstract class BaseMetaOp extends BaseGridOp implements MetaOp {
         super(opA, opB);
     }
 
+    @Override
+    public OpDescriptor getFirstOpDescriptor() {
+        return queuedOps.get(0);
+    }
+
+    @Override
+    public OpDescriptor getSecondOpDescriptor() {
+        return queuedOps.get(1);
+    }
+
     protected BaseMetaOp(OpDescriptor opA, OpDescriptor opB) {
         super(opA, opB);
     }
@@ -36,11 +46,11 @@ public abstract class BaseMetaOp extends BaseGridOp implements MetaOp {
     }
 
     public Op getFirstOp() {
-        return queuedOps.get(0).getOp();
+        return getFirstOpDescriptor().getOp();
     }
 
     public Op getSecondOp() {
-        return queuedOps.get(1).getOp();
+        return getSecondOpDescriptor().getOp();
     }
 
     @Override
