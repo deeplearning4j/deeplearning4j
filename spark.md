@@ -9,7 +9,22 @@ Deep learning is computationally intensive, so on very large datasets, speed mat
 
 Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark for this, training models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
-## Overview
+**Contents**
+
+* [Overview](#overview)
+* [How Distributed Network Training Occurs with DL4J on Spark](#how)
+* [A Minimal Example](#minimal)
+* [Configuring the TrainingMaster](#configuring)
+* [Dependencies for Training on Spark](#dependencies)
+* [Spark Examples Repository](#examples)
+* [Configuring Memory for Spark on YARN](#memoryyarn)
+    * [How Deeplearning4j (and ND4J) Manages Memory](#memory1)
+    * [How YARN Manages Memory](#memory2)
+    * [Configuring Memory for Deeplearning4j Spark Training on YARN](#memory3)
+* [Using Kryo Serialization with Deeplearning4j](#kryo)
+* [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
+
+## <a name="overview">Overview</a>
 
 Deeplearning4j supports training neural networks on a Spark cluster, in order to accelerate network training.
 
@@ -39,7 +54,7 @@ The typical workflow for training a network on a Spark cluster (using spark-subm
 * For single CPU/GPU systems, use standard MultiLayerNetwork or ComputationGraph training
 * For multi-CPU/GPU systems, use [ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java). This is functionally equivalent to running Spark in local mode, though has lower overhead (and hence provides better training performance). 
 
-## How Distributed Network Training Occurs with DL4J on Spark
+## <a name="how">How Distributed Network Training Occurs with DL4J on Spark</a>
 
 The current version of DL4J uses a process of parameter averaging in order to train a network. Future versions may additionally include other distributed network training approaches.
 
@@ -59,7 +74,7 @@ Just as with offline training, a training data set is split up into a number of 
 
 ![Parameter Averaging](./img/parameter_averaging.png)
 
-## A Minimal Example
+## <a name="minimal">A Minimal Example</a>
 
 This section shows the minimal set of components that you need in order to train a network on Spark.
 Details on the various approaches to loading data are forthcoming.
@@ -82,7 +97,7 @@ Details on the various approaches to loading data are forthcoming.
     sparkNetwork.fit(trainingData);
 ```
 
-## Configuring the TrainingMaster
+## <a name="configuring">Configuring the TrainingMaster</a>
 
 A TrainingMaster in DL4J is an abstraction (interface) that allows for multiple different training implementations to be used with SparkDl4jMultiLayer and SparkComputationGraph. 
 
@@ -122,7 +137,7 @@ The ParameterAveragingTrainingMaster defines a number of configuration options t
 
 
 
-## Dependencies for Training on Spark
+## <a name="dependencies">Dependencies for Training on Spark</a>
 
 To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency:
 
@@ -137,11 +152,89 @@ To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency
 Note that the ```_${scala.binary.version}``` should be ```_2.10``` or ```_2.11``` and should match the version of Spark you are using. 
 
 
-## Spark Examples Repository
+## <a name="examples">Spark Examples Repository</a>
 
 The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) ([old examples here](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)) contains a number of Spark examples.
 
-## Using Kryo Serialization with Deeplearning4j
+
+## <a name="memoryyarn">Configuring Memory for Spark on YARN</a>
+
+Apache Hadoop YARN is a commonly used resource manager for Hadoop clusters ([Apache Mesos](http://mesos.apache.org/) being an alternative).
+When submitting a job to a cluster via Spark submit, it is necessary to specify a small number of configuration options, such as the number of executors, the number of cores per executor and amount of memory for each executor.
+
+To get the best performance out of DL4J when training on Spark (and to avoid exceeding memory limits), some additional memory configuration is required. This section explains why this is necessary, and how to do it in practice.
+
+### <a name="memory1">How Deeplearning4j (and ND4J) Manages Memory</a>
+
+Deeplearning4j is built upon the numerical computing library ND4J. The neural network implementations in DL4J are built using the matrix and vector operations in ND4J.
+
+One key design aspect of ND4J is the fact that it utilizes off-heap memory management. This means that the memory allocated for INDArrays by ND4J is not allocated on on the JVM heap (as a standard Java object would be); instead, it is allocated in a separate pool of memory, outside of the JVM. This memory management is implemented using [JavaCPP](https://github.com/bytedeco/javacpp).
+
+Off-heap memory management provides a number of benefits.
+Most notably, it allows for efficient use of high-performance native (c++) code for numerical operations (using BLAS libraries such as OpenBLAS and Intel MKL, as well as the C++ library [Libnd4j](https://github.com/deeplearning4j/libnd4j)). Off-heap memory management is also necessary for efficient GPU operations with CUDA. If memory was allocated on the JVM heap (as it is in some other JVM BLAS implementations), it would be necessary to first copy the data from the JVM, perform the operations, and then copy the result back - adding both a memory and time overhead to each operation. Instead, ND4J can simply pass pointers around for numerical operations - entirely avoiding the data copying issue.
+
+The important point here is that the on-heap (JVM) memory and off-heap (ND4J/JavaCPP) are two separate memory pools. It is possible to configure the size of each independently; by default, JavaCPP will allow the off-heap memory allocation to grow as large as the Runtime.maxMemory() setting (see: [code](https://github.com/bytedeco/javacpp/blob/master/src/main/java/org/bytedeco/javacpp/Pointer.java)) - this default is essentially equivalent to the size of the JVM 'Xmx' memory setting, used for configuring Java memory.
+
+To manually control the maximum amount of off-heap memory that JavaCPP can allocate, we can set the ```org.bytedeco.javacpp.maxbytes``` system property. For a single JVM run locally, we would pass ```-Dorg.bytedeco.javacpp.maxbytes=1073741824``` to limit the off-heap memory allocation to 1GB. We will see how to configure this for Spark on YARN in a later section.
+
+
+### <a name="memory2">How YARN Manages Memory</a>
+
+As noted, YARN is a cluster resource manager. When submitting a compute task (such as DL4J Spark network training) to a YARN-managed cluster, it is YARN that is responsible for managing the allocation of a limited pool of resources (memory, CPU cores) to your job (and all other jobs). For more details on YARN and resource allocation, see [this](http://blog.cloudera.com/blog/2015/09/untangling-apache-hadoop-yarn-part-1/) and [this](http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/).
+
+
+The key points for our purposes are as follows:
+
+* YARN jobs run in containers, with a fixed amount of memory for each
+* The amount of memory allocated to a YARN container is the sum of the on-heap (i.e., JVM memory size) and off-heap ("memory overhead" in YARN terms) memory requested by the user
+* If a task exceeds the amount of memory available allocated to the container, YARN may kill the container, and hence the executor running in it. The exact behaviour will depend on the YARN configuration.
+* Programs that exceed the container memory limits usually do so due to off-heap memory; the maximum amount of on-heap (JVM) memory is fixed as a launch parameter via Spark submit.
+
+
+There are two key configuration options for controlling how much memory YARN will allocate to a container.
+
+1. ```spark.executor.memory```: This is the standard JVM memory allocation. It is analogous to the Xmx setting for a single JVM.
+2. ```spark.yarn.executor.memoryOverhead```: This is  the amount of 'extra' memory allocated to the container. It is not allocated to the JVM, and hence is available for code that utilizes off-heap memory (including ND4J/JavaCPP).
+
+By default, the ```spark.yarn.executor.memoryOverhead``` setting is equal to 10% of the executor memory, with a minimum of 384 MB.
+For more details, see the [Apache Spark documentation for YARN](http://spark.apache.org/docs/latest/running-on-yarn.html).
+
+Because of the extensive use of off-heap memory by ND4J, it is generally necessary to increase the memory overhead setting when training on Spark.
+
+
+### <a name="memory3">Configuring Memory for Deeplearning4j Spark Training on YARN</a>
+
+To recap the previous sections, when running distributed neural network training on Spark via YARN, it is necessary to do the following:
+
+1. Specify the executor JVM memory amount, using ```spark.executor.memory```
+2. Specify the YARN container memory overhead, using ```spark.yarn.executor.memoryOverhead```
+3. Let ND4J/JavaCPP know how much off-heap memory it is allowed to use, using the ```org.bytedeco.javacpp.maxbytes``` system property
+
+When setting these values, there are some things to keep in mind.
+First, the sum of ```spark.executor.memory``` and ```spark.yarn.executor.memoryOverhead``` must be less than the maximum amount of memory that YARN will allocate to a single container. You can generally find this limit in the YARN configuration or YARN resource manager web UI. If you exceed this limit, YARN is likely to reject your job.
+
+Second, the value for ```org.bytedeco.javacpp.maxbytes``` should be strictly less than ```spark.yarn.executor.memoryOverhead```. Recall by default the memoryOverhead setting is 10% of the executor memory - this is because the JVM itself (and possibly other libraries) may require some off-heap memory. Consequently, we don't want JavaCPP to use up the entire non-JVM allocation of memory.  
+
+Third, because DL4J/ND4J makes use off-heap memory for data, parameters and activations, we can afford to allocate less to the JVM (i.e., executor.memory) than we might otherwise do. Of course, we still require enough JVM memory for Spark itself (and any other libraries we are using), so we don't want to reduce this too much.
+
+Here's an example. Suppose we are running Spark training, and want to configure our memory as follows:
+
+* 4 executors, 8 cores each
+* Maximum container memory allocatable by YARN: 11GB
+* JVM (executors and driver) memory: 4GB
+* ND4J/JavaCPP off-heap memory (executors and driver): 5GB
+* Extra off-heap memory: 1GB
+
+The total off-heap memory is 5+1=6GB; the total memory (JVM + off-heap/overhead) is 4+6=10GB, which is less than the YARN maximum allocation of 11GB. Note that the JavaCPP memory is specified in bytes, and 5GB is 5,368,709,120 bytes; YARN memory overhead is specified in MB, and 6GB is 6,144MB.
+
+The arguments for Spark submit would be specified as follows:
+
+```
+--class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf 'spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120' --conf 'spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120' --conf spark.yarn.executor.memoryOverhead=6144
+```
+
+
+## <a name="kryo">Using Kryo Serialization with Deeplearning4j</a>
 
 Kryo is a serialization library commonly used with Apache Spark. It proposes to increase performance by reducing the amount of time taken to serialize objects.
 However, Kryo has difficulties working with the off-heap data structures in ND4J. To use Kryo serialization with ND4J on Apache Spark, it is necessary to set up some extra configuration for Spark.
@@ -157,7 +250,7 @@ To use Kryo, add the appropriate [nd4j-kryo dependency](http://search.maven.org/
 
 Note that when using Deeplearning4j's SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
 
-## Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j
+## <a name="mklemr">Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j</a>
 
 Releases of DL4J available on Maven Cental are distributed with OpenBLAS. Thus this section does not apply to users who are using using versions of Deeplearning4j on Maven Central.
 
