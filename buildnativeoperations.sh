@@ -49,6 +49,7 @@ fi
 # note: if this is set to > 0 the /etc/hosts part is not recognized ( may be a bug )
 CHIP=
 BUILD=
+COMPUTE=
 LIBTYPE=
 PACKAGING=
 while [[ $# > 1 ]]
@@ -66,6 +67,10 @@ case $key in
     ;;
     -c|--chip)
     CHIP="$2"
+    shift # past argument
+    ;;
+    -cc|--compute)
+    COMPUTE="$2"
     shift # past argument
     ;;
      -l|--libtype)
@@ -97,6 +102,10 @@ fi
 
 if [ -z "$PACKAGING" ]; then
  PACKAGING="none"
+fi
+
+if [ -z "$COMPUTE" ]; then
+ COMPUTE="all"
 fi
 
 if [ "$CHIP" == "cpu" ]; then
@@ -134,6 +143,7 @@ if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
 
+CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
 mkbuilddir() {
 if [ "$CHIP" == "cpu" ]; then
@@ -152,10 +162,11 @@ fi
 echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
+echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo LIBRARY TYPE    = "${LIBTYPE}"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 eval $MAKE_COMMAND && cd ../../..
 
 
