@@ -119,6 +119,7 @@ namespace simdOps {
 		}
 
 		op_def static T op(T d1, T d2, T *params) {
+            printf("DoubleMul called\n");
 			return d1 * d2;
 		}
 
@@ -1845,7 +1846,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
-            return OpTypeB::op(d1, OpTypeA::op(d2, paramsA), paramsB);
+            return OpTypeB::op(OpTypeA::op(d1, d2, paramsA), paramsB);
         }
 
         /*
