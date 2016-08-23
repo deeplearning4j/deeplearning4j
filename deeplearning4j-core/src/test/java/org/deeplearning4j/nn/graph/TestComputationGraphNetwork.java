@@ -9,7 +9,6 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -693,7 +692,7 @@ public class TestComputationGraphNetwork {
         conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .setInputTypes(InputType.convolationalFlat(10,8,3))
+                .setInputTypes(InputType.convolutionalFlat(10,8,3))
                 .addLayer("layer",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(1,1).build(), "in")
                 .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer")
                 .setOutputs("out")
@@ -716,7 +715,7 @@ public class TestComputationGraphNetwork {
         conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .setInputTypes(InputType.convolationalFlat(10,8,3))
+                .setInputTypes(InputType.convolutionalFlat(10,8,3))
                 .addLayer("l0", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).padding(0,0).build(), "in")
                 .addLayer("layer",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(1,1).build(), "l0")
                 .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer")
