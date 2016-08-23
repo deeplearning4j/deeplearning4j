@@ -73,7 +73,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation acc = (IndexAccumulation) op;
             exec(acc, new int[]{Integer.MAX_VALUE});
-        } else if (op instanceof ScalarOp){
+        } else if (op instanceof ScalarOp || op instanceof TransformOp){
             // the only entry place for TADless ops
             processAsGridOp(op);
         } else if (op instanceof BroadcastOp) {
@@ -562,45 +562,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     (float) scalarB
             );
         }
-
-/*
-
-         //
-         //   Initial draft for MetaOps
-         //
-
-        if (op.getGridDescriptor().getGridPointers().get(0).getType() == Op.Type.SCALAR) {
-
-            nativeOps.execMetaStridedFloat(extras,
-                    op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
-                    op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
-                    op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
-                    op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
-                    op.getGridDescriptor().getGridPointers().get(0).getXLength(),
-                    ((ScalarOp) op.getFirstOp()).scalar().floatValue(),
-                    op.getGridDescriptor().getGridPointers().get(0).getX(),
-                    op.getGridDescriptor().getGridPointers().get(0).getXStride(),
-                    op.getGridDescriptor().getGridPointers().get(1).getExtraArgs(),
-                    op.getGridDescriptor().getGridPointers().get(1).getZ(),
-                    op.getGridDescriptor().getGridPointers().get(1).getZStride()
-            );
-
-        } else if (op.getGridDescriptor().getGridPointers().get(1).getType() == Op.Type.SCALAR) {
-            nativeOps.execMetaStridedFloat(extras,
-                    op.getGridDescriptor().getGridPointers().get(0).getType().ordinal(),
-                    op.getGridDescriptor().getGridPointers().get(0).getOpNum(),
-                    op.getGridDescriptor().getGridPointers().get(1).getType().ordinal(),
-                    op.getGridDescriptor().getGridPointers().get(1).getOpNum(),
-                    op.getGridDescriptor().getGridPointers().get(0).getXLength(),
-                    ((ScalarOp) op.getSecondOp()).scalar().floatValue(),
-                    op.getGridDescriptor().getGridPointers().get(0).getX(),
-                    op.getGridDescriptor().getGridPointers().get(0).getXStride(),
-                    op.getGridDescriptor().getGridPointers().get(0).getExtraArgs(),
-                    op.getGridDescriptor().getGridPointers().get(1).getZ(),
-                    op.getGridDescriptor().getGridPointers().get(1).getZStride()
-            );
-        }
-*/
     }
 
     @Override

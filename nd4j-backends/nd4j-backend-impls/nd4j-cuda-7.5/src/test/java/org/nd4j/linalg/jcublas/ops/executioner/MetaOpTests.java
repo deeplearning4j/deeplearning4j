@@ -6,14 +6,21 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridDescriptor;
+import org.nd4j.linalg.api.ops.grid.OpDescriptor;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
+import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -157,6 +164,92 @@ public class MetaOpTests {
 
         assertEquals(exp, arrayX);
     }
+
+    /**
+     * This is the MOST crucial test, basically it's test for dup() + following linear op
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPredicateScalarPairwise3() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[]{0f, 0f, 0f, 0f, 0f, 0f});
+        INDArray arrayY = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f});
+        INDArray exp = Nd4j.create(new float[]{4f, 4f, 4f, 4f, 4f, 4f});
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        ScalarMultiplication opB = new ScalarMultiplication(arrayX, 2.0f);
+
+        PredicateMetaOp metaOp = new PredicateMetaOp(opA, opB);
+
+        executioner.prepareGrid(metaOp);
+
+        long time1 = System.nanoTime();
+        executioner.exec(metaOp);
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 1));
+
+        assertEquals(exp, arrayX);
+    }
+
+    /**
+     * Scalar + reduce along dimension
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPredicateReduce1() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(5, 5);
+        INDArray exp = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f});
+
+        ScalarAdd opA = new ScalarAdd(arrayX, 2.0f);
+
+        Max opB = new Max(arrayX);
+
+        OpDescriptor a = new OpDescriptor(opA);
+        OpDescriptor b = new OpDescriptor(opB, new int[]{1});
+
+        PredicateMetaOp metaOp = new PredicateMetaOp(a, b);
+
+        executioner.exec(metaOp);
+
+        INDArray result = opB.z();
+        assertNotEquals(null, result);
+        assertEquals(exp, result);
+    }
+
+    /**
+     * Predicate test for scalar + reduceScalar
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPredicateReduce2() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(5, 5);
+
+        ScalarAdd opA = new ScalarAdd(arrayX, 1.0f);
+
+        Sum opB = new Sum(arrayX);
+
+        PredicateMetaOp metaOp = new PredicateMetaOp(opA, opB);
+
+        executioner.exec(metaOp);
+
+        INDArray result = opB.z();
+
+        assertNotEquals(null, result);
+
+        assertTrue(result.isScalar());
+        assertEquals(25f, result.getFloat(0));
+    }
+
 
     @Test
     public void testPerformance1() throws Exception {
