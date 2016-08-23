@@ -1782,6 +1782,10 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		 * PREDICATE
 		 */
 
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
 		// scalar, transform, reduce, indexreduce entry
 		op_def static T op(T d1, T *params) {
 			/*
@@ -1863,6 +1867,50 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return 0.0f;
         }
 
+    };
+
+
+template<typename T, typename OpTypeA, typename OpTypeB>
+    class ReduceMetaOp {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T startingValue(const T *input) {
+            return OpTypeB::startingValue(input);
+        }
+
+        op_def static T merge(T old, T opOutput, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::merge(old, opOutput, paramsB);
+        }
+
+        op_def static T update(T old, T opOutput, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::update(old, opOutput, paramsB);
+        }
+
+        op_def static T op(T d1, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::postProcess(reduction, n, paramsB);
+        }
     };
 }
 
