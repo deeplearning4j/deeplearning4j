@@ -4,7 +4,7 @@
 
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
-
+/*
 #include <op_boilerplate.h>
 
 #define PAIRWISE_TRANSFORM_OPS \
@@ -51,5 +51,5 @@
 
     DISPATCH_METAOP(transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS))
 
-
+*/
 #endif //LIBND4J_PLAY_H

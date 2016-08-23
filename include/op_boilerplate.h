@@ -1,3 +1,8 @@
+/*
+ * @author Paul Dubs (@treo)
+ * @author raver119@gmail.com
+ */
+
 #pragma once
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
@@ -287,7 +292,7 @@
 //_EXPAND_PACKED_OP_CALL
 #define DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }
 
-#define DISPATCH_METAOP(NAME, SIGNATURE, LIST_A, LIST_B) if(false){} EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), (LIST_A), LIST_B)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }
+#define DISPATCH_METAOP(NAME, SIGNATURE, LIST_A, LIST_B) if(false){} EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), (LIST_A), LIST_B)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNumA, __FILE__, __LINE__); }
 #define DISPATCH_INTERNAL(NAME, SIGNATURE, OPNUM_PAIR_B, ...) EXPAND(_EXEC_META_X(_EXPAND_PACKED_META_CALL, NAME, SIGNATURE, OPNUM_PAIR_B, __VA_ARGS__))
 
 #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
