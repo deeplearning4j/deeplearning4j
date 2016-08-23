@@ -20,7 +20,6 @@ package org.deeplearning4j.spark.impl.graph;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
-import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
