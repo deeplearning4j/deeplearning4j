@@ -28,7 +28,7 @@ trying to solve.
 Deep learning can solve almost any problem of machine perception, including classifying data , clustering it, or making predictions about
 it.
 
-* Classification: this image represents a horse; this email looks like spam; this transaction is fraudulent
+* Classification: This image represents a horse; this email looks like spam; this transaction is fraudulent
 * Clustering: These two sounds are similar. This document is probably what user X is looking for
 * Predictions: Given their web lob activity, Customer A looks like they are going to stop using your service
 
@@ -80,6 +80,6 @@ each label; that is, 25,000 instances of A, 25,000 instances of B and so forth.
 
 ## Next Steps
 
-If you’re wondering whether a deep learning solution can be built for your organization, please go through [this checklist](http
-://deeplearning4j.org/questions) or [get in touch](https://skymind.io/contact). These are the things you need to consider when deploying 
-a deep learning solution to production. 
+If you’re wondering whether a deep learning solution can be built for your organization, please go through [this 
+checklist](http://deeplearning4j.org/questions) or [get in touch](https://skymind.io/contact). These are the things you need to consider 
+when deploying a deep learning solution to production. 
