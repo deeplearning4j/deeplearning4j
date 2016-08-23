@@ -64,7 +64,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             lastAction = action;
 
             StepReply<O> stepReply = getMdp().step(action);
-            accuReward += stepReply.getReward()*getConf().getRewardFactor();
+            accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
             if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
                 obs = stepReply.getObservation();
@@ -73,7 +73,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                     input = input.reshape(Learning.makeShape(1, input.shape()));
                 INDArray[] output = target.outputAll(input);
                 rewards.add(new MiniTrans(Transition.concat(history), action, output, accuReward));
-               // log.error(output[0] + " " + input);
+                // log.error(output[0] + " " + input);
                 reward += stepReply.getReward();
 
                 if (isHistoryProcessor)

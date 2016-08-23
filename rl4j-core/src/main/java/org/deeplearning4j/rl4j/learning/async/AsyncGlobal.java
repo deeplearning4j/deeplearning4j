@@ -35,61 +35,44 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
         queue = new ConcurrentLinkedQueue<>();
     }
 
-    public INDArray[] targetOuput(INDArray batch) {
-        synchronized (target) {
-            return target.outputAll(batch);
-        }
-    }
+
 
     public boolean isTrainingComplete() {
         return T.get() >= a3cc.getMaxStep();
     }
 
 
-    public NN cloneCurrent() {
-        synchronized (current) {
-            return (NN) current.clone();
-        }
+    synchronized public NN cloneCurrent() {
+        return (NN) current.clone();
     }
-    public NN cloneTarget() {
-            return (NN) target.clone();
+    synchronized public NN cloneTarget() {
+        return (NN) target.clone();
     }
 
 
     public void enqueue(Gradient gradient, Integer nstep) {
-        synchronized (this) {
             queue.add(new Pair<>(gradient, nstep));
-            notifyAll();
-        }
     }
 
     @Override
     public void run() {
-        synchronized (this) {
 
-            try {
                 while (!isTrainingComplete() && running) {
                     if (!queue.isEmpty()) {
                         Pair<Gradient, Integer> pair = queue.poll();
                         T.addAndGet(pair.getSecond());
                         Gradient gradient = pair.getFirst();
-                        current.applyGradient(gradient);
+                        synchronized (this) {
+                            current.applyGradient(gradient);
+                        }
                         if (T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
-                            log.info("Update target network");
-                            target = (NN) current.clone();
+                            synchronized (this) {
+                                target = (NN) current.clone();
+                            }
                         }
-                    } else
-                        try {
-                            wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                    }
                 }
-            } catch (Exception e) {
-                setRunning(false);
-                e.printStackTrace();
+
             }
-        }
 
     }
-}

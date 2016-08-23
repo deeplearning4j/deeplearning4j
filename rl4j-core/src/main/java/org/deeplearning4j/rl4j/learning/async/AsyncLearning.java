@@ -75,26 +75,14 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         int maxStep;
         int numThread;
         int nstep;
-        double gamma;
+        int targetDqnUpdateFreq;
         int updateStart;
         double rewardFactor;
-        int targetDqnUpdateFreq;
+        double gamma;
         double errorClamp;
         float minEpsilon;
         int epsilonNbStep;
 
-        public AsyncConfiguration() {
-
-            numThread = 5;
-            maxStep = 1000;
-            maxEpochStep = 1000;
-            targetDqnUpdateFreq = 10;
-            nstep = 10;
-            errorClamp = 2.0;
-            minEpsilon = 0.1f;
-            epsilonNbStep = 20000;
-
-        }
     }
 
 }

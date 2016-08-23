@@ -21,12 +21,18 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
 
 
     public Integer nextAction(INDArray input) {
-        INDArray output = IActorCritic.outputAll(input)[0];
+        INDArray output = IActorCritic.outputAll(input)[1];
+        System.out.println(output);
         float rVal = rd.nextFloat();
-        for (int i = 0; i < output.rows(); i++) {
-            if (rVal < output.getFloat(i)) ;
-            return i;
+        for (int i = 0; i < output.columns(); i++) {
+            //System.out.println(i + " " + rVal + " " + output.getFloat(i));
+            if (rVal < output.getFloat(i)) {
+                return i;
+            }
+            else
+                rVal -= output.getFloat(i);
         }
+
         return -1;
     }
 

@@ -67,6 +67,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
         double r = minTrans.getReward();
         for (int i = 0; i < size; i++) {
             minTrans = rewards.pop();
+          //  System.out.println(r);
             r = minTrans.getReward() + conf.getGamma() * r;
             input.putRow(i, minTrans.getObs());
             INDArray row = minTrans.getOutput()[0];

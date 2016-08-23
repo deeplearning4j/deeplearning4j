@@ -56,6 +56,7 @@ public class DQN implements IDQN {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
+        //System.out.println("SCORE: " + mln.score());
         return mln.gradient();
     }
 
@@ -64,7 +65,7 @@ public class DQN implements IDQN {
     }
 
     public void applyGradient(Gradient gradient) {
-        mln.getUpdater().update(mln, gradient, 1, 32);
+        mln.getUpdater().update(mln, gradient, 1, 5);
         mln.params().subi(gradient.gradient());
     }
 

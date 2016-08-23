@@ -155,18 +155,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         int epsilonNbStep;
         boolean doubleDQN;
 
-        public QLConfiguration() {
-
-            batchSize = 32;
-            targetDqnUpdateFreq = 10;
-            expRepMaxSize = 11000;
-            updateStart = 1000;
-            errorClamp = 2.0;
-            minEpsilon = 0.1f;
-            epsilonNbStep = 20000;
-            doubleDQN = true;
-
-        }
     }
 
 
