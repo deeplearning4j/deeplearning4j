@@ -5,6 +5,12 @@
 #define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__) 
 #define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x) 
 #define EVAL( x ) x
+#define EVAL0(...)  EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
+#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
+#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
+#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
+#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
+#define EVAL5(...) __VA_ARGS__
 
 #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ FN<TYPE<T>>SIG; }
 #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }

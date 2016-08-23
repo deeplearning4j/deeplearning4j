@@ -9,24 +9,18 @@
 
 #define PAIRWISE_TRANSFORM_OPS \
         (0, PWT::Add),\
-        (1, PWT::Copy),\
-        (2, PWT::Divide),\
-        (3, PWT::EqualTo),\
-        (4, PWT::GreaterThan), \
-        (17,PWT::RandomOp), \
-        (18,PWT::FunnyOp), \
-        (19,PWT::AstralOp)
+        (1, PWT::Copy), \
+        (2, PWT::Divide)
 
 
 #define SCALAR_OPS \
         (12,SCALAR::Min), \
         (13,SCALAR::Copy),\
-        (14,SCALAR::Mod),\
-        (15,SCALAR::ReverseMod),\
-        (16,SCALAR::GreaterThanOrEqual)
+        (14,SCALAR::Mod)
 
 
     DISPATCH_METAOP(transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS))
+
 
 
 #endif //LIBND4J_PLAY_H
