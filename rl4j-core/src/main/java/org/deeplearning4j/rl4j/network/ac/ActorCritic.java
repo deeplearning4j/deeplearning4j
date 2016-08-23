@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.network.ac;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.util.ModelSerializer;

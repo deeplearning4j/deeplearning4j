@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
-import lombok.Getter;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactory;

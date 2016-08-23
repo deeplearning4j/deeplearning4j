@@ -1,11 +1,14 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.deeplearning4j.rl4j.learning.async.AsyncConfiguration;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncLearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.network.ac.ActorCritic;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
@@ -19,7 +22,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
 public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IActorCritic> {
 
     @Getter
-    final public AsyncConfiguration configuration;
+    final public A3CConfiguration configuration;
     @Getter
     final protected MDP<O, Integer, DiscreteSpace> mdp;
     final private IActorCritic iActorCritic;
@@ -30,7 +33,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @Getter
     final private DataManager dataManager;
 
-    public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, AsyncConfiguration conf, DataManager dataManager) {
+    public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CConfiguration conf, DataManager dataManager) {
         super(conf);
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
@@ -49,4 +52,24 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         return iActorCritic;
     }
 
+    @Data
+    @AllArgsConstructor
+    @EqualsAndHashCode(callSuper = false)
+    public static class A3CConfiguration implements AsyncConfiguration {
+
+        int seed;
+        int maxEpochStep;
+        int maxStep;
+        int numThread;
+        int nstep;
+        int updateStart;
+        double rewardFactor;
+        double gamma;
+        double errorClamp;
+
+        public int getTargetDqnUpdateFreq(){
+            return -1;
+        }
+
+    }
 }

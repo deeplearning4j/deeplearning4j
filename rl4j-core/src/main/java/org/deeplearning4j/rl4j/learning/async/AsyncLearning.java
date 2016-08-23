@@ -1,8 +1,5 @@
 package org.deeplearning4j.rl4j.learning.async;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -66,23 +63,5 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     }
 
-    @Data
-    @AllArgsConstructor
-    @EqualsAndHashCode(callSuper = false)
-    public static class AsyncConfiguration implements LConfiguration {
-        int seed;
-        int maxEpochStep;
-        int maxStep;
-        int numThread;
-        int nstep;
-        int targetDqnUpdateFreq;
-        int updateStart;
-        double rewardFactor;
-        double gamma;
-        double errorClamp;
-        float minEpsilon;
-        int epsilonNbStep;
-
-    }
 
 }

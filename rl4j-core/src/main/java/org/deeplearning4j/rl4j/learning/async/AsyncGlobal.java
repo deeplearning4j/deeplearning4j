@@ -5,7 +5,6 @@ import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +19,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     final private Logger log = LoggerFactory.getLogger("Global");
     final private NN current;
     final private ConcurrentLinkedQueue<Pair<Gradient, Integer>> queue;
-    final private AsyncLearning.AsyncConfiguration a3cc;
+    final private AsyncConfiguration a3cc;
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
     private NN target;
@@ -28,7 +27,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     private boolean running = true;
 
 
-    public AsyncGlobal(NN initial, AsyncLearning.AsyncConfiguration a3cc) {
+    public AsyncGlobal(NN initial, AsyncConfiguration a3cc) {
         this.current = initial;
         target = (NN) initial.clone();
         this.a3cc = a3cc;

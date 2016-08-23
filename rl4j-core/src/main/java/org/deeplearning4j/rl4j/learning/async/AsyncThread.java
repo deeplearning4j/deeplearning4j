@@ -9,7 +9,6 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -83,7 +82,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     protected abstract MDP<O, A, AS> getMdp();
 
-    protected abstract AsyncLearning.AsyncConfiguration getConf();
+    protected abstract AsyncConfiguration getConf();
 
     protected abstract DataManager getDataManager();
 

@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
-import org.deeplearning4j.rl4j.learning.async.AsyncLearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -27,7 +26,7 @@ import java.util.Stack;
 public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IDQN> {
 
     @Getter
-    final protected AsyncLearning.AsyncConfiguration conf;
+    final protected NStepQLearningDiscrete.AsyncNStepQLConfiguration conf;
     @Getter
     final protected MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
@@ -38,7 +37,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
     final protected DataManager dataManager;
 
 
-    public NStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal, AsyncLearning.AsyncConfiguration conf, int threadNumber, DataManager dataManager) {
+    public NStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal, NStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber, DataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;

@@ -1,6 +1,10 @@
 package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.deeplearning4j.rl4j.learning.async.AsyncConfiguration;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncLearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThread;
@@ -18,7 +22,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
 public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IDQN> {
 
     @Getter
-    final public AsyncConfiguration configuration;
+    final public AsyncNStepQLConfiguration configuration;
     @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
@@ -27,7 +31,7 @@ public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncL
     final private AsyncGlobal<IDQN> asyncGlobal;
 
 
-    public NStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncConfiguration conf, DataManager dataManager) {
+    public NStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf, DataManager dataManager) {
         super(conf);
         this.mdp = mdp;
         this.dataManager = dataManager;
@@ -46,5 +50,26 @@ public abstract class NStepQLearningDiscrete<O extends Encodable> extends AsyncL
 
     public Policy<O, Integer> getPolicy() {
         return new DQNPolicy<O>(getNeuralNet());
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    @EqualsAndHashCode(callSuper = false)
+    public static class AsyncNStepQLConfiguration implements AsyncConfiguration {
+
+        int seed;
+        int maxEpochStep;
+        int maxStep;
+        int numThread;
+        int nstep;
+        int targetDqnUpdateFreq;
+        int updateStart;
+        double rewardFactor;
+        double gamma;
+        double errorClamp;
+        float minEpsilon;
+        int epsilonNbStep;
+
     }
 }

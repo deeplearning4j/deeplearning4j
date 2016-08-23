@@ -4,7 +4,6 @@ package org.deeplearning4j.rl4j.mdp.vizdoom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
-import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.rl4j.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;

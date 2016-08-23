@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
-import org.deeplearning4j.rl4j.learning.async.AsyncLearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -26,7 +25,7 @@ import java.util.Stack;
 public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IActorCritic> {
 
     @Getter
-    final protected AsyncLearning.AsyncConfiguration conf;
+    final protected A3CDiscrete.A3CConfiguration conf;
     @Getter
     final protected MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
@@ -37,7 +36,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     final protected DataManager dataManager;
 
 
-    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal, AsyncLearning.AsyncConfiguration a3cc, int threadNumber, DataManager dataManager) {
+    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal, A3CDiscrete.A3CConfiguration a3cc, int threadNumber, DataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;

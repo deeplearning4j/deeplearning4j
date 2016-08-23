@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
@@ -65,7 +64,7 @@ public class DQN implements IDQN {
     }
 
     public void applyGradient(Gradient gradient) {
-        mln.getUpdater().update(mln, gradient, 1, 5);
+        mln.getUpdater().update(mln, gradient, 1, -1);
         mln.params().subi(gradient.gradient());
     }
 
