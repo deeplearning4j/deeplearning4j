@@ -97,4 +97,16 @@ public class LoneTest extends BaseNd4jTest {
         INDArray arr4 = Nd4j.concat(1,arr1,arr2,arr3);
         assertTrue(arr4.sumNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
     }
+
+    @Test
+    public void reshapeTensorMmul() {
+        INDArray a = Nd4j.linspace(1, 2, 12).reshape(2, 3, 2);
+        INDArray b = Nd4j.linspace(3, 4, 4).reshape(2, 2);
+        int[][] axes=new int[2][];
+        axes[0]=new int[]{0,1};
+        axes[1]=new int[]{0,2};
+
+        //this was throwing an exception
+        INDArray c = Nd4j.tensorMmul(b, a, axes);
+    }
 }
