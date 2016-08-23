@@ -230,7 +230,7 @@ The total off-heap memory is 5+1=6GB; the total memory (JVM + off-heap/overhead)
 The arguments for Spark submit would be specified as follows:
 
 ```
---class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf 'spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120' --conf 'spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120' --conf spark.yarn.executor.memoryOverhead=6144
+--class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf "spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf "spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf spark.yarn.executor.memoryOverhead=6144
 ```
 
 
