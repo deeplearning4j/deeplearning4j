@@ -15,6 +15,8 @@ Native operations for nd4j. Build using cmake
 
 Run ./setuposx.sh (Please ensure you have brew installed)
 
+See [macOSx10 (CPU only).md](macOSx10 (CPU only).md)
+
 ### Linux
 
 Depends on the distro - ask in the earlyadopters channel for specifics
