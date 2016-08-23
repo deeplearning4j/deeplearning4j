@@ -175,12 +175,13 @@ public class MetaOpTests {
         CudaGridExecutioner executioner = new CudaGridExecutioner();
 
         INDArray arrayX = Nd4j.create(new float[]{0f, 0f, 0f, 0f, 0f, 0f});
-        INDArray arrayY = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f});
-        INDArray exp = Nd4j.create(new float[]{4f, 4f, 4f, 4f, 4f, 4f});
+        INDArray arrayY = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f, 6f});
+        INDArray exp = Nd4j.create(new float[]{2f, 4f, 6f, 8f, 10f, 12f});
 
         Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
 
         ScalarMultiplication opB = new ScalarMultiplication(arrayX, 2.0f);
+        //ScalarAdd opB = new ScalarAdd(arrayX, 3.0f);
 
         PredicateMetaOp metaOp = new PredicateMetaOp(opA, opB);
 

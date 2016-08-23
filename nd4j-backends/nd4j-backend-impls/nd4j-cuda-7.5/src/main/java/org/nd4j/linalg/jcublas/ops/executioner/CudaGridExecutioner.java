@@ -506,6 +506,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             TODO: obviously, execMetaPredicateElementwiseFloat should be renamed to execMetaPredicateStridedFloat
          */
 
+        // FIXME: this is bad hack, reconsider this one
+        GridPointers yGrid = null;
+        if (op.getFirstOp().y() != null) {
+            yGrid = first;
+        }
+
+        if (op.getSecondOp().y() != null) {
+            yGrid = second;
+        }
+
+
         if (first.getDtype() == DataBuffer.Type.FLOAT) {
 
             nativeOps.execMetaPredicateStridedFloat(extras,
@@ -516,8 +527,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     first.getXLength(),
                     first.getX(),
                     first.getXStride(),
-                    second.getY(), // can be null
-                    second.getYStride(), // cane be -1
+                    yGrid.getY(), // can be null
+                    yGrid.getYStride(), // cane be -1
                     second.getZ(),
                     second.getZStride(),
                     first.getExtraArgs(),
