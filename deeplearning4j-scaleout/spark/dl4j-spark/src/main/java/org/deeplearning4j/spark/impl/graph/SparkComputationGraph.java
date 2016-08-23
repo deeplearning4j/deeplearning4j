@@ -236,14 +236,12 @@ public class SparkComputationGraph implements Serializable {
     }
 
     /**
-     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
      * Fit the network using a list of paths for serialized MultiDataSet objects.
      * Similar to {@link #fitMultiDataSet(String)} but without the PortableDataStream objects
      *
      * @param paths    List of paths
      * @return trained network
      */
-    @Experimental
     public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths){
         paths.cache();
         trainingMaster.executeTrainingPathsMDS(this, paths);
