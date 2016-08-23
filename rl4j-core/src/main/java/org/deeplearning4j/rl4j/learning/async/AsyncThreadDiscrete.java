@@ -35,7 +35,13 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         Integer lastAction = null;
         INDArray history[] = null;
         boolean isHistoryProcessor = getHistoryProcessor() != null;
-        NN target = getAsyncGlobal().cloneTarget();
+
+
+        NN evaluator = null;
+        if (getConf().getTargetDqnUpdateFreq() == -1)
+            evaluator = nn;
+        else
+            evaluator =  getAsyncGlobal().cloneTarget();
 
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
 
@@ -71,7 +77,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
                 if (input.shape().length > 2)
                     input = input.reshape(Learning.makeShape(1, input.shape()));
-                INDArray[] output = target.outputAll(input);
+                INDArray[] output = evaluator.outputAll(input);
                 rewards.add(new MiniTrans(Transition.concat(history), action, output, accuReward));
                 // log.error(output[0] + " " + input);
                 reward += stepReply.getReward();
@@ -90,7 +96,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         if (getMdp().isDone())
             rewards.add(new MiniTrans(input, null, null, 0));
         else {
-            INDArray[] output = target.outputAll(input);
+            INDArray[] output = evaluator.outputAll(input);
             double maxQ = Nd4j.max(output[0]).getDouble(0);
             rewards.add(new MiniTrans(input, null, output, maxQ));
         }

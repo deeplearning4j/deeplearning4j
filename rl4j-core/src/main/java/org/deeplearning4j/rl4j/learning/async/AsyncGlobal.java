@@ -65,7 +65,8 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
                         synchronized (this) {
                             current.applyGradient(gradient);
                         }
-                        if (T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
+                        if (a3cc.getTargetDqnUpdateFreq() != -1 && T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
+                            log.info("TARGET UPDATE at T = " + T.get());
                             synchronized (this) {
                                 target = (NN) current.clone();
                             }
