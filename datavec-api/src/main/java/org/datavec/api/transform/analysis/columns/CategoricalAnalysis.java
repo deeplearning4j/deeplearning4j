@@ -20,8 +20,7 @@ import org.datavec.api.transform.ColumnType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Analysis for categorical columns
@@ -37,7 +36,27 @@ public class CategoricalAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString() {
-        return "CategoricalAnalysis(CategoryCounts=" + mapOfCounts + ")";
+        //Returning the counts from highest to lowest here, which seems like a useful default
+        List<String> keys = new ArrayList<>(mapOfCounts.keySet());
+        Collections.sort(keys, new Comparator<String>(){
+            @Override
+            public int compare(String o1, String o2) {
+                return -Long.compare(mapOfCounts.get(o1), mapOfCounts.get(o2));     //Highest to lowest
+            }
+        });
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("CategoricalAnalysis(CategoryCounts={");
+        boolean first = true;
+        for(String s : keys){
+            if(!first) sb.append(", ");
+            first = false;
+
+            sb.append(s).append("=").append(mapOfCounts.get(s));
+        }
+        sb.append("})");
+
+        return sb.toString();
     }
 
     @Override
