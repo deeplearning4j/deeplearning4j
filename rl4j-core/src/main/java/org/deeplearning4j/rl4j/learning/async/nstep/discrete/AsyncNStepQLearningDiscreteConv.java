@@ -12,22 +12,24 @@ import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/7/16.
+ * Specialized constructors for the Conv (pixels input) case
+ * Specialized conf + provide additional type safety
  */
-public class NStepQLearningDiscreteConv<O extends Encodable> extends NStepQLearningDiscrete<O> {
+public class AsyncNStepQLearningDiscreteConv<O extends Encodable> extends AsyncNStepQLearningDiscrete<O> {
 
     final private HistoryProcessor.Configuration hpconf;
 
-    public NStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
         super(mdp, dqn, conf, dataManager);
         this.hpconf = hpconf;
         setHistoryProcessor(hpconf);
     }
 
-    public NStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
         this(mdp, factory.buildDQN(hpconf.getShape(), mdp.getActionSpace().getSize()), hpconf, conf, dataManager);
     }
 
-    public NStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, DQNFactoryStdConv.Configuration netConf, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, DQNFactoryStdConv.Configuration netConf, HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
         this(mdp, new DQNFactoryStdConv(netConf), hpconf, conf, dataManager);
     }
 

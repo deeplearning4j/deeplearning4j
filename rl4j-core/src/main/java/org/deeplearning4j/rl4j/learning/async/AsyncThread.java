@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Thread implements StepCountable {
 
     final protected Logger log;
-    protected NN nn;
     @Getter
     private int stepCounter = 0;
     @Getter
@@ -33,7 +32,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
 
         log = LoggerFactory.getLogger("ThreadNum-" + threadNumber);
-        nn = asyncGlobal.cloneCurrent();
+
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
@@ -57,10 +56,11 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 stepCounter += subEpochReturn.getSteps();
                 length += subEpochReturn.getSteps();
                 rewards += subEpochReturn.getReward();
+                double score = subEpochReturn.getScore();
                 if (getMdp().isDone()) {
 
                     if (getThreadNumber() == 1)
-                        getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length));
+                        getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score));
 
                     initMdp = Learning.initMdp(getMdp(), historyProcessor);
                     obs = initMdp.getLastObs();
@@ -96,6 +96,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         int steps;
         O lastObs;
         double reward;
+        double score;
     }
 
     @AllArgsConstructor
@@ -105,6 +106,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         int epochCounter;
         double reward;
         int episodeLength;
+        double score;
     }
 
 }

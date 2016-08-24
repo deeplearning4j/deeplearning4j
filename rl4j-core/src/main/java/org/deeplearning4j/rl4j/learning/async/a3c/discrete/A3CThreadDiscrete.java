@@ -52,7 +52,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
     //FIXME double DQN ? (Not present in the original paper tho)
     @Override
-    public Gradient calcGradient(Stack<MiniTrans<Integer>> rewards) {
+    public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
         MiniTrans<Integer> minTrans = rewards.pop();
 
         int size = rewards.size();
@@ -74,9 +74,10 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
             INDArray row = Nd4j.create(1, mdp.getActionSpace().getSize());
             row = row.putScalar(minTrans.getAction(), r - minTrans.getOutput()[0].getDouble(0));
+            System.out.println(minTrans.getOutput()[0] + " " + r + " " + minTrans.getOutput()[1]);
             logSoftmax.putRow(i, row);
         }
-
-        return nn.gradient(input, new INDArray[]{targets, logSoftmax});
+        System.out.println(logSoftmax);
+        return iac.gradient(input, new INDArray[]{targets, logSoftmax});
     }
 }

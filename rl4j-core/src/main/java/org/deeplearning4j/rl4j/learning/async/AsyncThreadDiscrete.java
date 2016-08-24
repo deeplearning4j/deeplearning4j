@@ -24,11 +24,11 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {
 
-        nn = getAsyncGlobal().cloneCurrent();
+        NN current = getAsyncGlobal().cloneCurrent();
         Stack<MiniTrans<Integer>> rewards = new Stack<>();
 
         O obs = sObs;
-        Policy<O, Integer> policy = getPolicy(nn);
+        Policy<O, Integer> policy = getPolicy(current);
 
         Integer action;
         Integer lastAction = null;
@@ -36,11 +36,6 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
 
-        NN evaluator = null;
-        if (getConf().getTargetDqnUpdateFreq() == -1)
-            evaluator = nn;
-        else
-            evaluator =  getAsyncGlobal().cloneTarget();
 
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
 
@@ -76,9 +71,10 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
                 if (input.shape().length > 2)
                     input = input.reshape(Learning.makeShape(1, input.shape()));
-                INDArray[] output = evaluator.outputAll(input);
+
+                INDArray[] output = current.outputAll(input);
                 rewards.add(new MiniTrans(Transition.concat(history), action, output, accuReward));
-                // log.error(output[0] + " " + input);
+
                 reward += stepReply.getReward();
 
                 if (isHistoryProcessor)
@@ -95,20 +91,24 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         if (getMdp().isDone())
             rewards.add(new MiniTrans(input, null, null, 0));
         else {
-            INDArray[] output = evaluator.outputAll(input);
+            INDArray[] output = null;
+            if (getConf().getTargetDqnUpdateFreq() == -1)
+                output = current.outputAll(input);
+            else
+                output = getAsyncGlobal().cloneTarget().outputAll(input);
             double maxQ = Nd4j.max(output[0]).getDouble(0);
             rewards.add(new MiniTrans(input, null, output, maxQ));
         }
         if (rewards.size() > 1)
-            getAsyncGlobal().enqueue(calcGradient(rewards), i);
+            getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
         else
             log.info("not long enough");
 
         //log.info("Sent an update");
-        return new SubEpochReturn<O>(i, obs, reward);
+        return new SubEpochReturn<O>(i, obs, reward, current.getLatestScore());
     }
 
     ;
 
-    public abstract Gradient calcGradient(Stack<MiniTrans<Integer>> rewards);
+    public abstract Gradient[] calcGradient(NN nn, Stack<MiniTrans<Integer>> rewards);
 }

@@ -6,7 +6,7 @@ package org.deeplearning4j.rl4j.network.ac;
  * A factory for Actor Critic. Extend this to implement and provide your own
  * Actor Critic!
  */
-public interface ActorCriticFactory {
+public interface ActorCriticFactoryCompGraph {
 
     IActorCritic buildActorCritic(int shapeInputs[], int numOutputs);
 

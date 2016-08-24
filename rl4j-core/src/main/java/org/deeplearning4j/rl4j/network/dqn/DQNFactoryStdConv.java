@@ -83,7 +83,6 @@ public class DQNFactoryStdConv implements DQNFactory {
 
         double learningRate;
         double l2;
-
     }
 
 }

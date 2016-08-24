@@ -9,6 +9,10 @@ import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
+ *
+ * Mother class and useful factorisations for all training methods that
+ * are not asynchronous.
+ *
  */
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
 

@@ -19,9 +19,14 @@ import java.util.Random;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
  *
- * Useful factorisations for class inhetiring ILearning.
+ * Useful factorisations and helper methods for class inheriting
+ * ILearning.
+ *
+ * Big majority of training method should inherit this
+ *
  */
 public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> implements ILearning<O, A, AS>, NeuralNetFetchable<NN>{
+
 
     @Getter
     final private Logger logger;
@@ -104,10 +109,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     protected abstract DataManager getDataManager();
 
     public abstract NN getNeuralNet();
-
-    public void saveLearning() {
-        getDataManager().save(this);
-    }
 
     public int incrementStep() {
         return stepCounter++;

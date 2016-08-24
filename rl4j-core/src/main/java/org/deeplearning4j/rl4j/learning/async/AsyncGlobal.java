@@ -18,7 +18,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 
     final private Logger log = LoggerFactory.getLogger("Global");
     final private NN current;
-    final private ConcurrentLinkedQueue<Pair<Gradient, Integer>> queue;
+    final private ConcurrentLinkedQueue<Pair<Gradient[], Integer>> queue;
     final private AsyncConfiguration a3cc;
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
@@ -49,7 +49,8 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     }
 
 
-    public void enqueue(Gradient gradient, Integer nstep) {
+
+    public void enqueue(Gradient[] gradient, Integer nstep) {
             queue.add(new Pair<>(gradient, nstep));
     }
 
@@ -58,11 +59,11 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 
                 while (!isTrainingComplete() && running) {
                     if (!queue.isEmpty()) {
-                        Pair<Gradient, Integer> pair = queue.poll();
+                        Pair<Gradient[], Integer> pair = queue.poll();
                         T.addAndGet(pair.getSecond());
-                        Gradient gradient = pair.getFirst();
+                        Gradient[] gradient = pair.getFirst();
                         synchronized (this) {
-                            current.applyGradient(gradient);
+                            current.applyGradient(gradient, pair.getSecond());
                         }
                         if (a3cc.getTargetDqnUpdateFreq() != -1 && T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
                             log.info("TARGET UPDATE at T = " + T.get());

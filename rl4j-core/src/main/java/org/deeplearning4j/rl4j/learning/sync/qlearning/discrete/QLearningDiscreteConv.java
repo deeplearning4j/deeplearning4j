@@ -11,6 +11,8 @@ import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/6/16.
+ * Specialized constructors for the Conv (pixels input) case
+ * Specialized conf + provide additional type safety
  */
 public class QLearningDiscreteConv<O extends Encodable> extends QLearningDiscrete<O> {
 

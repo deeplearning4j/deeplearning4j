@@ -27,6 +27,8 @@ Comments are welcome on our gitter channel:
 
 # Quickstart
 
+** INSTALL rl4j-api before installing all (see below)!**
+
 * mvn install -pl rl4j-api
 * [if you want rl4j-gym too] Download and mvn install: [gym-java-client](https://github.com/deeplearning4j/gym-java-client)
 * mvn install

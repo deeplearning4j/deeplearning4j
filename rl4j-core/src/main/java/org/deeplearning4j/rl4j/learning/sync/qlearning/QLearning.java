@@ -18,6 +18,9 @@ import java.util.List;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
+ *
+ * Mother class for QLearning in the Discrete domain and
+ * hopefully one day for the  Continuous domain.
  */
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends SyncLearning<O, A, AS, IDQN> {
 

@@ -11,14 +11,14 @@ import java.io.OutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
  *
- * Standard implementation of ActorCritic
+ * Standard implementation of ActorCriticCompGraph
  */
-public class ActorCritic implements IActorCritic {
+public class ActorCriticCompGraph implements IActorCritic {
 
     final protected ComputationGraph cg;
 
 
-    public ActorCritic(ComputationGraph cg) {
+    public ActorCriticCompGraph(ComputationGraph cg) {
         this.cg = cg;
     }
 
@@ -31,21 +31,21 @@ public class ActorCritic implements IActorCritic {
         return cg.output(batch);
     }
 
-    public ActorCritic clone() {
-        return new ActorCritic(cg.clone());
+    public ActorCriticCompGraph clone() {
+        return new ActorCriticCompGraph(cg.clone());
     }
 
-    public Gradient gradient(INDArray input, INDArray[] labels) {
+    public Gradient[] gradient(INDArray input, INDArray[] labels) {
         cg.setInput(0, input);
         cg.setLabels(labels);
         cg.computeGradientAndScore();
-        return cg.gradient();
+        return new Gradient[]{cg.gradient()};
     }
 
 
-    public void applyGradient(Gradient gradient) {
-        cg.getUpdater().update(cg, gradient, 1, 32);
-        cg.params().subi(gradient.gradient());
+    public void applyGradient(Gradient[] gradient, int batchSize) {
+        cg.getUpdater().update(cg, gradient[0], 1, batchSize);
+        cg.params().subi(gradient[0].gradient());
     }
 
     public double getLatestScore() {

@@ -8,6 +8,11 @@ import java.util.*;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
+ *
+ * "Standard" Exp Replay implementation that uses a CircularFifoQueue
+ *
+ * The memory is optimised by using array of INDArray in the transitions
+ * such that two same INDArrays are not allocated twice
  */
 public class ExpReplay<A> implements IExpReplay<A> {
 
@@ -16,13 +21,13 @@ public class ExpReplay<A> implements IExpReplay<A> {
     final private int batchSize;
 
     //Implementing this as a circular buffer queue
-
     private CircularFifoQueue<Transition<A>> storage;
 
     public ExpReplay(int maxSize, int batchSize) {
         this.batchSize = batchSize;
         storage = new CircularFifoQueue<>(maxSize);
     }
+
 
     public ArrayList<Transition<A>> getBatch(int size) {
 

@@ -23,9 +23,9 @@ public interface IActorCritic extends NeuralNet {
 
     IActorCritic clone();
 
-    Gradient gradient(INDArray input, INDArray[] labels);
+    Gradient[] gradient(INDArray input, INDArray[] labels);
 
-    void applyGradient(Gradient gradient);
+    void applyGradient(Gradient[] gradient, int batchSize);
 
     void save(OutputStream stream);
 

@@ -8,7 +8,7 @@ import java.io.OutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  *
- * Factorisation between ActorCritic and DQN.
+ * Factorisation between ActorCritic and DQN neural net.
  * Useful for AsyncLearning and Thread code.
  */
 public interface NeuralNet {
@@ -18,11 +18,11 @@ public interface NeuralNet {
 
     NeuralNet clone();
 
-    Gradient gradient(INDArray input, INDArray[] labels);
+    Gradient[] gradient(INDArray input, INDArray[] labels);
 
     void fit(INDArray input, INDArray[] labels);
 
-    void applyGradient(Gradient gradient);
+    void applyGradient(Gradient[] gradient, int batchSize);
 
     double getLatestScore();
 

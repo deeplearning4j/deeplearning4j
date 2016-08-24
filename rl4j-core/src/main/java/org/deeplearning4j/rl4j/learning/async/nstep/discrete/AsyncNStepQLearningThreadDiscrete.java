@@ -23,10 +23,10 @@ import java.util.Stack;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  */
-public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IDQN> {
+public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IDQN> {
 
     @Getter
-    final protected NStepQLearningDiscrete.AsyncNStepQLConfiguration conf;
+    final protected AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf;
     @Getter
     final protected MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
@@ -37,7 +37,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
     final protected DataManager dataManager;
 
 
-    public NStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal, NStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber, DataManager dataManager) {
+    public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal, AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber, DataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;
@@ -52,7 +52,7 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
 
 
     //FIXME double DQN ? (Not present in the original paper tho)
-    public Gradient calcGradient(Stack<MiniTrans<Integer>> rewards) {
+    public Gradient[] calcGradient(IDQN current, Stack<MiniTrans<Integer>> rewards) {
 
         MiniTrans<Integer> minTrans = rewards.pop();
 
@@ -75,6 +75,6 @@ public class NStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThre
             targets.putRow(i, row);
         }
 
-        return nn.gradient(input, targets);
+        return current.gradient(input, targets);
     }
 }

@@ -6,7 +6,6 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -18,18 +17,14 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
  *
- * Standard factory for Conv net Actor Critic
+ *
  */
 @Value
-public class ActorCriticFactoryStdConv implements ActorCriticFactory {
-
+public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCompGraph {
 
     Configuration conf;
 
-    public ActorCritic buildActorCritic(int shapeInputs[], int numOutputs) {
-
-        if (shapeInputs.length == 1)
-            throw new AssertionError("Impossible to apply convolutional layer on a shape == 1");
+    public ActorCriticCompGraph buildActorCritic(int[] numInputs, int numOutputs) {
 
         ComputationGraphConfiguration.GraphBuilder confB = new NeuralNetConfiguration.Builder()
                 .seed(Constants.NEURAL_NET_SEED)
@@ -43,36 +38,34 @@ public class ActorCriticFactoryStdConv implements ActorCriticFactory {
                 .regularization(true)
                 .l2(conf.getL2())
                 .graphBuilder()
-                .setInputTypes(InputType.convolutional(shapeInputs[1], shapeInputs[2], shapeInputs[0]))
+                .setInputTypes(InputType.feedForward(numInputs[0]))
                 .addInputs("input")
-                .addLayer("0", new ConvolutionLayer.Builder(8, 8)
-                        .nIn(shapeInputs[0])
-                        .nOut(16)
-                        .stride(4, 4)
+                .addLayer("0", new DenseLayer.Builder()
+                        .nIn(numInputs[0])
+                        .nOut(conf.getNumHiddenNodes())
                         .activation("relu")
                         .build(), "input");
 
-        confB
-                .addLayer("1", new ConvolutionLayer.Builder(4, 4)
-                        .nOut(32)
-                        .stride(2, 2)
-                        .activation("relu")
-                        .build(), "0");
 
-        confB
-                .addLayer("2", new DenseLayer.Builder().nOut(256)
-                        .activation("relu")
-                        .build(), "1");
+        for (int i = 1; i < conf.getNumLayer(); i++) {
+            confB
+                    .addLayer(i + "", new DenseLayer.Builder()
+                            .nIn(conf.getNumHiddenNodes())
+                            .nOut(conf.getNumHiddenNodes())
+                            .activation("relu")
+                            .build(), (i - 1) + "");
+        }
+
 
         confB
                 .addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .activation("identity")
-                        .nOut(1).build(), "2");
+                        .nOut(1).build(), (getConf().getNumLayer() - 1) + "");
 
         confB
                 .addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax") //fixthat
-                        .nOut(numOutputs).build(), "2");
+                        .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
 
         confB.setOutputs("value", "softmax");
 
@@ -82,17 +75,18 @@ public class ActorCriticFactoryStdConv implements ActorCriticFactory {
         model.init();
         model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
 
-        return new ActorCritic(model);
+        return new ActorCriticCompGraph(model);
     }
-
 
     @Value
     public static class Configuration {
 
+        int numLayer;
+        int numHiddenNodes;
         double learningRate;
         double l2;
-        double rmsDecay;
 
     }
+
 
 }

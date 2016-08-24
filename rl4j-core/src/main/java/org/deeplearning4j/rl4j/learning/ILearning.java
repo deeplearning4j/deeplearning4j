@@ -8,7 +8,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
  *
- * A common interface that any training algorithm should implement
+ * A common interface that any training method should implement
  */
 public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> extends StepCountable {
 

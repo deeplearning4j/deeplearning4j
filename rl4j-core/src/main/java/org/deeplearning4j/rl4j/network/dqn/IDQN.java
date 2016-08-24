@@ -24,11 +24,11 @@ public interface IDQN extends NeuralNet {
 
     IDQN clone();
 
-    Gradient gradient(INDArray input, INDArray label);
+    Gradient[] gradient(INDArray input, INDArray label);
 
-    Gradient gradient(INDArray input, INDArray[] label);
+    Gradient[] gradient(INDArray input, INDArray[] label);
 
-    void applyGradient(Gradient gradient);
+    void applyGradient(Gradient[] gradient, int batchSize);
 
     void save(OutputStream stream);
 

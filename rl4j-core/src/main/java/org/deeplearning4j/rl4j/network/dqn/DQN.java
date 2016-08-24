@@ -51,21 +51,21 @@ public class DQN implements IDQN {
         return new DQN(mln.clone());
     }
 
-    public Gradient gradient(INDArray input, INDArray labels) {
+    public Gradient[] gradient(INDArray input, INDArray labels) {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
         //System.out.println("SCORE: " + mln.score());
-        return mln.gradient();
+        return new Gradient[]{mln.gradient()};
     }
 
-    public Gradient gradient(INDArray input, INDArray[] labels) {
+    public Gradient[] gradient(INDArray input, INDArray[] labels) {
         return gradient(input, labels[0]);
     }
 
-    public void applyGradient(Gradient gradient) {
-        mln.getUpdater().update(mln, gradient, 1, -1);
-        mln.params().subi(gradient.gradient());
+    public void applyGradient(Gradient[] gradient, int batchSize) {
+        mln.getUpdater().update(mln, gradient[0], 1, batchSize);
+        mln.params().subi(gradient[0].gradient());
     }
 
     public double getLatestScore() {
