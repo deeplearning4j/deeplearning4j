@@ -1197,6 +1197,9 @@ public:
 
     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
 
+
+    bool isExperimentalEnabled();
+
     /**
      * Grid operations
      */

@@ -5924,3 +5924,7 @@ float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeIn
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+bool NativeOps::isExperimentalEnabled() {
+    return experimentalSupport;
+}

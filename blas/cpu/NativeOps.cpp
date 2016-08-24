@@ -10,6 +10,11 @@
 #include <types/float8.h>
 #include <type_conversions.h>
 
+#ifdef __EXPERIMENTAL__
+bool experimentalSupport = true;
+#else
+bool experimentalSupport = false;
+#endif
 
 
 /**
@@ -2579,4 +2584,8 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
 
 void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB, bool scalarReturned) {
     // no-op
+}
+
+bool NativeOps::isExperimentalEnabled() {
+    return experimentalSupport;
 }
