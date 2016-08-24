@@ -52,6 +52,7 @@ BUILD=
 COMPUTE=
 LIBTYPE=
 PACKAGING=
+EXPERIMENTAL=
 while [[ $# > 1 ]]
 do
 key="$1"
@@ -73,8 +74,12 @@ case $key in
     COMPUTE="$2"
     shift # past argument
     ;;
-     -l|--libtype)
+    -l|--libtype)
     LIBTYPE="$2"
+    shift # past argument
+    ;;
+    -x|--experimental)
+    EXPERIMENTAL="$2"
     shift # past argument
     ;;
     --default)
@@ -106,6 +111,10 @@ fi
 
 if [ -z "$COMPUTE" ]; then
  COMPUTE="all"
+fi
+
+if [ -z "$EXPERIMENTAL" ]; then
+ EXPERIMENTAL="no"
 fi
 
 if [ "$CHIP" == "cpu" ]; then
@@ -143,6 +152,12 @@ if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
 
+EXPERIMENTAL_ARG="no";
+
+if [ "$EXPERIMENTAL" == "yes" ]; then
+    EXPERIMENTAL_ARG="-DEXPERIMENTAL=yes"
+fi
+
 CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
 mkbuilddir() {
@@ -163,10 +178,11 @@ echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
 echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
+echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 eval $MAKE_COMMAND && cd ../../..
 
 

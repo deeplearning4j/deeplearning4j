@@ -37,6 +37,11 @@ bool debug = false;
 bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
+#ifdef __EXPERIMENTAL__
+bool experimentalSupport = true;
+#else
+bool experimentalSupport = false;
+#endif
 
 int minThreads = 128;
 

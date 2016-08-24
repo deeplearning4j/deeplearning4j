@@ -167,7 +167,7 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
         paramsPtr = (T *) params;
     }
     __syncthreads();
-
+#ifdef __EXPERIMENTAL__
     if (opTypeB == 0) { // SCALAR
         if (opTypeA == 0) {
             // double scalar
@@ -177,7 +177,10 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
             DISPATCH_METAOP(functions::transform::Transform<T>::template transformCuda, PARAMS(N, dx, xStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), MetaOp, OPS_A(TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         } else if (opTypeA == 2) {
             // pwt
+#endif
+            // this is the most important thing here: its Dup() + Scalar
             DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+#ifdef __EXPERIMENTAL__
         }
     } else if (opTypeB == 1) { // TRANSFORM
         if (opTypeA == 0) {
@@ -197,6 +200,7 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
         if (threadIdx.x == 0 && blockIdx.x)
             printf("Unknown opTypeB: [%i]\n", opTypeB);
     }
+#endif
 }
 
 __global__ void metaPredicateStridedFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, float *dx, int xStride, float *dy, int yStride, float *dz, int zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
