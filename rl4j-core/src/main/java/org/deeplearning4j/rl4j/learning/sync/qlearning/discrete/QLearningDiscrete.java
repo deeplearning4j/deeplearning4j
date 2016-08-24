@@ -24,7 +24,10 @@ import java.util.ArrayList;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
  *
- * DQN or Deep Q-Learning in the Discrete Domain methid
+ * DQN or Deep Q-Learning in the Discrete domain
+ *
+ * http://arxiv.org/abs/1312.5602
+ *
  */
 public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O, Integer, DiscreteSpace> {
 

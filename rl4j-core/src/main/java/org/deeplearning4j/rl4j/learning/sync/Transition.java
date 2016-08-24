@@ -6,6 +6,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
+ *
+ * A transition is a SARS tuple
+ * State, Action, Reward, (isTerminal), State
  */
 @Value
 public class Transition<A> {
@@ -16,6 +19,12 @@ public class Transition<A> {
     boolean isTerminal;
     INDArray nextObservation;
 
+    /**
+     * concat an array history into a single INDArry of as many channel
+     * as element in the history array
+     * @param history the history to concat
+     * @return the multi-channel INDArray
+     */
     public static INDArray concat(INDArray[] history){
         INDArray arr = Nd4j.concat(0, history);
         if (arr.shape().length > 2)
@@ -23,6 +32,10 @@ public class Transition<A> {
         return arr;
     }
 
+    /**
+     * Duplicate this transition
+     * @return this transition duplicated
+     */
     public Transition<A> dup(){
         INDArray[] dupObservation = dup(observation);
         INDArray nextObs = nextObservation.dup();
@@ -30,6 +43,11 @@ public class Transition<A> {
         return new Transition<>(dupObservation, action, reward, isTerminal, nextObs);
     }
 
+    /**
+     * Duplicate an history
+     * @param history the history to duplicate
+     * @return a duplicate of the history
+     */
     public static INDArray[] dup(INDArray[] history){
         INDArray[] dupHistory = new INDArray[history.length];
         for (int i = 0; i < history.length; i++) {
@@ -38,6 +56,12 @@ public class Transition<A> {
         return dupHistory;
     }
 
+    /**
+     * append a pixel frame to an history (throwing the last frame)
+     * @param history the history on which to append
+     * @param append the pixel frame to append
+     * @return the appended history
+     */
     public static INDArray[] append(INDArray[] history, INDArray append){
         INDArray[] appended = new INDArray[history.length];
         appended[0] = append;
