@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
+import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -45,7 +46,7 @@ public class GridExecutionerTest {
         ScalarAdd opB = new ScalarAdd(array, 10f);
 
         executioner.exec(opA);
-        assertEquals(CudaGridExecutioner.MetaType.PREDICATE, executioner.getMetaOpType(opB));
+        assertEquals(CudaGridExecutioner.MetaType.NOT_APPLICABLE, executioner.getMetaOpType(opB));
     }
 
     @Test
@@ -74,7 +75,23 @@ public class GridExecutionerTest {
         Max opB = new Max(array);
 
         executioner.exec(opA);
-        assertEquals(CudaGridExecutioner.MetaType.PREDICATE, executioner.getMetaOpType(opB));
+        assertEquals(CudaGridExecutioner.MetaType.NOT_APPLICABLE, executioner.getMetaOpType(opB));
+    }
+
+    @Test
+    public void isMatchingMetaOp4() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(10);
+        INDArray arrayY = Nd4j.create(10);
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        ScalarAdd opB = new ScalarAdd(arrayX, 10f);
+
+        executioner.exec(opA);
+
+        assertEquals(CudaGridExecutioner.MetaType.INVERTED_PREDICATE, executioner.getMetaOpType(opB));
     }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -103,7 +120,7 @@ public class GridExecutionerTest {
 
         executioner.exec(opB);
 
-        assertEquals(1, executioner.getQueueLength());
+        assertEquals(0, executioner.getQueueLength());
 
         long time2 = System.nanoTime();
 
@@ -113,7 +130,7 @@ public class GridExecutionerTest {
 
         long time3 = System.nanoTime();
 
-        assertEquals(2, executioner.getQueueLength());
+        assertEquals(0, executioner.getQueueLength());
 
 
 
@@ -122,6 +139,52 @@ public class GridExecutionerTest {
 
         System.out.println("First exec time: " + firstExec);
         System.out.println("Second exec time: " + secondExec);
+
+        System.out.println("Array: " + array);
+
+    }
+
+
+    @Test
+    public void testGridFlow2() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(10);
+        INDArray arrayY = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f});
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        executioner.exec(opA);
+
+        assertEquals(1, executioner.getQueueLength());
+
+        long time1 = System.nanoTime();
+
+        ScalarAdd opB = new ScalarAdd(arrayX, 2f);
+
+        executioner.exec(opB);
+
+        assertEquals(0, executioner.getQueueLength());
+
+        long time2 = System.nanoTime();
+
+
+        long time3 = System.nanoTime();
+
+        assertEquals(0, executioner.getQueueLength());
+
+
+
+        long firstExec = time2 - time1;
+        long secondExec = time3 - time2;
+
+        System.out.println("First exec time: " + firstExec);
+        System.out.println("Second exec time: " + secondExec);
+
+        assertEquals(exp, arrayX);
+        System.out.println("ArrayX: " + arrayX);
+        System.out.println("ArrayExp: " + exp);
 
     }
 

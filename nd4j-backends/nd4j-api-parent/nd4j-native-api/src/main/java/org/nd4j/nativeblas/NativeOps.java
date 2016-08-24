@@ -1191,6 +1191,8 @@ public class NativeOps extends Pointer {
 
     public native void convertTypes(PointerPointer extras, int srcType, Pointer x, long N, int dstType, Pointer z);
 
+    public native boolean isExperimentalEnabled();
+
     // GridOps
 
     public native void execMetaStridedFloat(PointerPointer extraPointers, int opTypeA, int opNumA, int opTypeB, int opNumB,
