@@ -372,6 +372,7 @@ public class JCublasNDArray extends BaseNDArray {
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
+        /*
         if (!isView() && ordering() == Nd4j.order() && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), ordering());
@@ -403,7 +404,7 @@ public class JCublasNDArray extends BaseNDArray {
 
             allocator.getFlowController().registerAction(context, array, this);
             return array;
-        } else return super.dup();
+        } else */return super.dup();
     }
 
     @Override
@@ -414,7 +415,7 @@ public class JCublasNDArray extends BaseNDArray {
             return ret;
         }
         Nd4j.getCompressor().autoDecompress(this);
-
+/*
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), order);
@@ -444,7 +445,7 @@ public class JCublasNDArray extends BaseNDArray {
             allocator.getFlowController().registerAction(context, array, this);
 
             return array;
-        } else return super.dup(order);
+        } else */return super.dup(order);
     }
 
     @Override

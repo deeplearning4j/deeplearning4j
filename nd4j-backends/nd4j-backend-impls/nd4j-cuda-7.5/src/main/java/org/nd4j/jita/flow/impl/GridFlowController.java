@@ -4,6 +4,8 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -14,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author raver119@gmail.com
  */
 public class GridFlowController extends SynchronousFlowController {
+
+    private static Logger logger = LoggerFactory.getLogger(GridFlowController.class);
 
     /**
      * This method makes sure HOST memory contains latest data from GPU
@@ -38,9 +42,10 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void waitTillFinished(AllocationPoint point) {
-//        if (!point.isConstant())
-//            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-//                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        if (!point.isConstant())
+            if (Nd4j.getExecutioner() instanceof GridExecutioner) {
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            }
 
         super.waitTillFinished(point);
     }
@@ -53,6 +58,9 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void waitTillReleased(AllocationPoint point) {
+        /**
+         * We don't really need special hook here, because if op is enqueued - it's still holding all arrays
+         */
 //        if (!point.isConstant())
 //            if (Nd4j.getExecutioner() instanceof GridExecutioner)
 //                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

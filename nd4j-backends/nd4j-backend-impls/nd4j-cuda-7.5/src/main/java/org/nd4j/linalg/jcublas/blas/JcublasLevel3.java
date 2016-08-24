@@ -120,6 +120,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT symm called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
@@ -154,6 +156,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
         logger.warn("FLOAT syrk called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
@@ -185,6 +189,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT trsm called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
@@ -220,6 +226,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE gemm called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
@@ -243,6 +252,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE symm called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
@@ -278,6 +290,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE syrk called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -307,6 +322,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE syr2k called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
@@ -342,6 +360,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE trmm called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
@@ -373,6 +394,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE trsm called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 

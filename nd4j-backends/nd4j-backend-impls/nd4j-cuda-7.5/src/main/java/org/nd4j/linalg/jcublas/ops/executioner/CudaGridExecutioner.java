@@ -56,7 +56,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
     public CudaGridExecutioner() {
-        extraz.set(new PointerPointer(4));
+        extraz.set(new PointerPointer(10));
         deviceQueues.set(new ArrayDeque<OpDescriptor>());
     }
 
@@ -93,6 +93,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof BroadcastOp) {
             invoke((BroadcastOp) op);
 
+        } else {
+            pushToGrid(new OpDescriptor(op));
         }
 
         return op;
@@ -190,13 +192,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
 
-                    if (last != null)
-                        pushToGrid(last);
+                    if (last != null) {
+        //                logger.info("Last isn't empty, releasing");
+                        pushToGrid(last, false);
+                    }
 
-                        pushToGrid(new OpDescriptor(op, dimension));
+                        //
 
                     if (op instanceof Set && op.y() != null) {
                         lastOp.set(new OpDescriptor(op, dimension));
+                    } else {
+                        pushToGrid(new OpDescriptor(op, dimension));
                     }
                 }
                 break;
@@ -365,7 +371,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     /**
      * This method returns Op queue lengths for current device
      *
-     * PLEASE NOTE: This value do NOT includes variative lastOp
+     * PLEASE NOTE: This value also includes variative lastOp
      *
      * @return
      */
@@ -693,13 +699,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             pushToGrid(op, false);
 
             op = currentQueue.pollFirst();
-
-            // if no more ops in queue - we force lastOp to be executed here as well
-            if (op == null) {
-                op = lastOp.get();
-                if (op != null)
-                    lastOp.remove();
-            }
         }
 
         // we need to check,
@@ -707,12 +706,15 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (op != null) {
             if (!nativeOps.isExperimentalEnabled()) {
                 // it might be only pairwise transform here for now
-              //  logger.info("flushing lastOp");
+      //          logger.info("Flushing existing lastOp");
                 pushToGrid(op, false);
                 lastOp.remove();
             } else {
                 throw new UnsupportedOperationException("Experimental flush isn't supported yet");
             }
+        } else {
+      //      logger.info("Queue is empty");
+
         }
     }
 
@@ -726,5 +728,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         flushQueue();
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
+    }
+
+    @Override
+    public INDArray execAndReturn(TransformOp op) {
+        flushQueue();
+        return super.execAndReturn(op);
     }
 }

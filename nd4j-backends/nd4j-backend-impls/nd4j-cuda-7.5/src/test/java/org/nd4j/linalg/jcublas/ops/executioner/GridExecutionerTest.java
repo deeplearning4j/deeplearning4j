@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.cache.TADManager;
@@ -269,11 +270,50 @@ public class GridExecutionerTest {
 
         executioner.exec(opA);
 
+        assertEquals(1, executioner.getQueueLength());
+
         Set opB = new Set(arrayX, arrayY2, arrayX, arrayY1.length());
         executioner.exec(opB);
 
         assertEquals(1, executioner.getQueueLength());
-        assertEquals(exp, arrayX);
+
+        assertEquals(1, executioner.getExecutionCounter());
+        //System.out.println("---------------------------");
+
+        executioner.flushQueueBlocking();
+        arrayX.getFloat(0);
+
+
+        // it should be 0, because getFloat() should trigger flushQueue
+        assertEquals(2, executioner.getExecutionCounter());
+        assertEquals(0, executioner.getQueueLength());
+
+        assertEquals(1f, arrayX.getFloat(0), 0.1f);
+//        assertEquals(exp, arrayX);
+    }
+
+    @Test
+    public void testGridFlow8() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[] {0f, 0f, 0f});
+        INDArray arrayY1 = Nd4j.create(new float[] {-1f, -1f, 1f});
+        INDArray arrayY2 = Nd4j.create(new float[] {1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {1f, 1f, 1f});
+
+        Set opA = new Set(arrayX, arrayY1, arrayX, arrayY1.length());
+
+        executioner.exec(opA);
+
+        assertEquals(1, executioner.getQueueLength());
+
+        ScalarSet opB = new ScalarSet(arrayX, 1f);
+        executioner.exec(opB);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertEquals(1f, arrayX.getFloat(0), 0.1f);
+        assertEquals(1f, arrayX.getFloat(1), 0.1f);
+        //assertEquals(exp, arrayX);
     }
 
     @Test
