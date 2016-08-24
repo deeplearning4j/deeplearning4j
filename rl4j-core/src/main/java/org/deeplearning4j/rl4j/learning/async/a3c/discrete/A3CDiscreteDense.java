@@ -11,6 +11,9 @@ import org.deeplearning4j.rl4j.util.DataManager;
  *
  * Training for A3C in the Discrete Domain
  *
+ * We use specifically the Separate version because
+ * the model is too small to have enough benefit by sharing layers
+ *
  */
 public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
 

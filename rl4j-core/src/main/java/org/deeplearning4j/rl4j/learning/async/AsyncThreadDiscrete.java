@@ -116,12 +116,8 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             rewards.add(new MiniTrans(input, null, output, maxQ));
         }
 
-        if (rewards.size() > 1)
-            getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
-        else
-            log.info("not long enough");
+        getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
 
-        //log.info("Sent an update");
         return new SubEpochReturn<O>(i, obs, reward, current.getLatestScore());
     }
 

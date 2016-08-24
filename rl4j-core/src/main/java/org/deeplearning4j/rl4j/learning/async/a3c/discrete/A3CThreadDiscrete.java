@@ -52,7 +52,9 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         return new ACPolicy(net, new Random(conf.getSeed()));
     }
 
-    //calc the gradients based on the n-step rewards
+    /**
+     *  calc the gradients based on the n-step rewards
+     */
     @Override
     public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
         MiniTrans<Integer> minTrans = rewards.pop();
@@ -69,17 +71,21 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         double r = minTrans.getReward();
         for (int i = 0; i < size; i++) {
             minTrans = rewards.pop();
+
+
             r = minTrans.getReward() + conf.getGamma() * r;
             input.putRow(i, minTrans.getObs());
 
+            //the critic
             targets.putScalar(i, r);
 
+            //the actor
             INDArray row = Nd4j.create(1, mdp.getActionSpace().getSize());
             row = row.putScalar(minTrans.getAction(), r - minTrans.getOutput()[0].getDouble(0));
             System.out.println(minTrans.getOutput()[0] + " " + r + " " + minTrans.getOutput()[1]);
             logSoftmax.putRow(i, row);
         }
-        System.out.println(logSoftmax);
+
         return iac.gradient(input, new INDArray[]{targets, logSoftmax});
     }
 }
