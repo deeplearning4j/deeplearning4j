@@ -8,6 +8,9 @@ import java.util.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
+ *
+ * A stochastic policy thats explore the environment based on
+ * the softmax output of the actor critic
  */
 public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
 

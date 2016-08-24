@@ -13,6 +13,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
+ *
+ * In the original paper, the authors uses Asynchronous
+ * Gradient Descent: Hogwild! It is a way to apply gradients
+ * and modify a model in a lock-free manner.
+ *
+ * As a way to implement this with dl4j, it is unfortunately
+ * necessary at the time of writing to apply the gradient
+ * (update the parameters) on a single separate global thread.
+ *
+ * This Central thread for Asynchronous Method of reinforcement learning
+ * enqueue the gradients coming from the different threads and update its
+ * model and target. Those neurals nets are then synced by the other threads.
+ *
+ * When Hogwild! is implemented, this could be replaced by a simple data
+ * structure
+ *
+ *
  */
 public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 

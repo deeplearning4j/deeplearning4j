@@ -21,6 +21,8 @@ import java.util.Stack;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
+ *
+ * Local thread as described in the https://arxiv.org/abs/1602.01783 paper.
  */
 public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IActorCritic> {
 
@@ -50,7 +52,6 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         return new ACPolicy(net, new Random(conf.getSeed()));
     }
 
-    //FIXME double DQN ? (Not present in the original paper tho)
     @Override
     public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
         MiniTrans<Integer> minTrans = rewards.pop();

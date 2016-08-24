@@ -12,7 +12,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
  *
- * A Policy choose the next action given a state
+ * Abstract class common to all policies
+ *
+ * A Policy responsability is to choose the next action given a state
  */
 public abstract class Policy<O extends Encodable, A> {
 

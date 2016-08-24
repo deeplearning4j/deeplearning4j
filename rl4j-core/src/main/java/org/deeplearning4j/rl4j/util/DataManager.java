@@ -23,7 +23,9 @@ import java.util.zip.ZipOutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/1/16.
  *
- * This class handle the recording of one training
+ * This class handle the recording of one training.
+ * It creates the directory rl4j-data if it does not exist,
+ * the folder for every training and handle every path and model savings
  */
 public class DataManager {
 

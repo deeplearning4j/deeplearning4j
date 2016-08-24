@@ -13,6 +13,13 @@ import java.util.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/24/16.
+ *
+ * An epsilon greedy policy choose the next action
+ * - randomly with epsilon probability
+ * - deleguate it to constructor argument 'policy' with (1-epsilon) probability.
+ *
+ * epislon is annealed to minEpsilon over epsilonNbStep steps
+ *
  */
 @AllArgsConstructor
 public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extends Policy<O, A> {

@@ -23,7 +23,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * At the time of leaving my intenrship, this does not seem to work correctly
  * although all methods are fully implemented as described in the
  * https://arxiv.org/abs/1602.01783 paper.
- * 
+ *
  */
 public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IActorCritic> {
 

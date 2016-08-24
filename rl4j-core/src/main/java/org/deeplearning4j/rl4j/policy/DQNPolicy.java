@@ -9,6 +9,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
+ *
+ * DQN policy returns the action with the maximum Q-value as evaluated
+ * by the dqn model
  */
 @AllArgsConstructor
 public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
