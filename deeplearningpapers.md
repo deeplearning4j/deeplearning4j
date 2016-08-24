@@ -29,6 +29,11 @@ layout: default
 * [Datatau: Hacker News for Data Science](http://www.datatau.com/)
 * [r/MachineLearning](https://www.reddit.com/r/MachineLearning/)
 * [Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)
+* [Gitter Channel for Deeplearning4j](https://gitter.im/deeplearning4j/deeplearning4j)
+
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
 
 ## Reinforcement Learning
 
