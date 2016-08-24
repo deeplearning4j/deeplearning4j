@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -462,6 +463,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         int length = 0;
         for (INDArray m : matrices)
             length += m.length();
@@ -543,6 +547,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray concat(int dimension, INDArray... toConcat) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         if (toConcat.length == 1)
             return toConcat[0];
 
@@ -686,6 +693,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         int vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
 
@@ -767,6 +777,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         if (arrays.length == 1)
             return target.assign(arrays[0]);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         long len = target.lengthLong();
 
@@ -882,6 +895,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (dimensions.size() > 1 && arrays.size() != dimensions.size())
             throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // first we build TAD for input array and dimensions
 
@@ -1152,6 +1167,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         else if (typeDst.ordinal() == 7)
             elementSize = 8;
         else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         DataBuffer buffer = null;
 

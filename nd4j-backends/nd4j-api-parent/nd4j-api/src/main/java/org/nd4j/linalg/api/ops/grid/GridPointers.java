@@ -33,6 +33,10 @@ public class GridPointers {
     private int yLength = 0;
     private int zLength = 0;
 
+    private char xOrder;
+    private char yOrder;
+    private char zOrder;
+
     // shapeInfo pointers
     private Pointer xShapeInfo;
     private Pointer yShapeInfo;
@@ -57,11 +61,15 @@ public class GridPointers {
         this.xLength = op.x().length();
         this.zLength = op.z().length();
 
+        this.xOrder = op.x().ordering();
+        this.zOrder = op.z().ordering();
+
         this.xStride = op.x().elementWiseStride();
         this.zStride = op.z().elementWiseStride();
         if (op.y() != null) {
             this.yStride = op.y().elementWiseStride();
             this.yLength = op.y().length();
+            this.yOrder = op.y().ordering();
         }
 
         if (dimensions != null)

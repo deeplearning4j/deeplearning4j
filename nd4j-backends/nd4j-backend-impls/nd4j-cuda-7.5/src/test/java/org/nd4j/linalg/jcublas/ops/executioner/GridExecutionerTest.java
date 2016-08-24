@@ -315,7 +315,31 @@ public class GridExecutionerTest {
         assertEquals(1f, arrayX.getFloat(1), 0.1f);
         //assertEquals(exp, arrayX);
     }
+/*
+    @Test
+    public void testGridFlow9() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
 
+        INDArray arrayX = Nd4j.create(new float[] {0f, 0f, 0f});
+        INDArray arrayY1 = Nd4j.create(new float[] {-1f, -1f, 1f});
+        INDArray arrayY2 = Nd4j.create(new float[] {1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {1f, 1f, 1f});
+
+        Set opA = new Set(arrayX, arrayY1, arrayX, arrayY1.length());
+
+        executioner.exec(opA);
+
+        assertEquals(1, executioner.getQueueLength());
+
+        ScalarSet opB = new ScalarSet(arrayX, 1f);
+        executioner.exec(opB);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertEquals(1f, arrayX.getFloat(0), 0.1f);
+        assertEquals(1f, arrayX.getFloat(1), 0.1f);
+        //assertEquals(exp, arrayX);
+    }
+*/
     @Test
     public void testGridFlowFlush1() throws Exception {
         CudaGridExecutioner executioner = new CudaGridExecutioner();
@@ -381,13 +405,13 @@ public class GridExecutionerTest {
         ScalarAdd opB = new ScalarAdd(arrayX, 2f);
 
         long time1 = System.nanoTime();
-        for (int x = 0; x < 100000; x++) {
+        for (int x = 0; x < 1000000; x++) {
             executioner.exec(opA);
             executioner.exec(opB);
         }
         long time2 = System.nanoTime();
 
-        System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 1000000));
     }
 
 

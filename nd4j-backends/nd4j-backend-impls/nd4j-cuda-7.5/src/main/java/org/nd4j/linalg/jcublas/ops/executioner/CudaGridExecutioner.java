@@ -69,7 +69,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     @Override
-    public Op exec(Op op) {
+    public synchronized Op exec(Op op) {
         /*
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
@@ -172,7 +172,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return execCounter.get();
     }
 
-    protected void processAsGridOp(Op op, int... dimension) {
+    protected synchronized void processAsGridOp(Op op, int... dimension) {
         /*
             We have multiple options here:
                 1) Op has no relation to lastOp
@@ -184,6 +184,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         */
 
         OpDescriptor last = lastOp.get();
+        lastOp.remove();
         if (last != null) {
             MetaType type = getMetaOpType(op, dimension);
             switch (type) {
@@ -192,12 +193,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
 
-                    if (last != null) {
-        //                logger.info("Last isn't empty, releasing");
-                        pushToGrid(last, false);
-                    }
 
-                        //
+                    pushToGrid(last, false);
+
 
                     if (op instanceof Set && op.y() != null) {
                         lastOp.set(new OpDescriptor(op, dimension));
@@ -535,6 +533,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     @Override
     protected CudaContext invoke(TransformOp op) {
         if (op.isExecSpecial()) {
+            flushQueue();
             super.invoke(op);
         } else {
             processAsGridOp(op, null);
@@ -591,60 +590,43 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (op instanceof PredicateMetaOp || op instanceof InvertedPredicateMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
-
-                nativeOps.execMetaPredicateStridedFloat(extras,
-                        first.getType().ordinal(),
-                        first.getOpNum(),
-                        second.getType().ordinal(),
-                        second.getOpNum(),
-                        first.getXLength(),
-                        first.getX(),
-                        first.getXStride(),
-                        yGrid.getY(), // can be null
-                        yGrid.getYStride(), // cane be -1
-                        second.getZ(),
-                        second.getZStride(),
-                        first.getExtraArgs(),
-                        second.getExtraArgs(),
-                        (float) scalarA,
-                        (float) scalarB
-                );
-            } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
-                nativeOps.execMetaPredicateStridedFloat(extras,
-                        first.getType().ordinal(),
-                        first.getOpNum(),
-                        second.getType().ordinal(),
-                        second.getOpNum(),
-                        first.getXLength(),
-                        first.getX(),
-                        first.getXStride(),
-                        second.getY(), // can be null
-                        second.getYStride(), // cane be -1
-                        second.getZ(),
-                        second.getZStride(),
-                        first.getExtraArgs(),
-                        second.getExtraArgs(),
-                        (float) scalarA,
-                        (float) scalarB
-                );
-            } else if (first.getDtype() == DataBuffer.Type.HALF) {
-                nativeOps.execMetaPredicateStridedFloat(extras,
-                        first.getType().ordinal(),
-                        first.getOpNum(),
-                        second.getType().ordinal(),
-                        second.getOpNum(),
-                        first.getXLength(),
-                        first.getX(),
-                        first.getXStride(),
-                        second.getY(), // can be null
-                        second.getYStride(), // cane be -1
-                        second.getZ(),
-                        second.getZStride(),
-                        first.getExtraArgs(),
-                        second.getExtraArgs(),
-                        (float) scalarA,
-                        (float) scalarB
-                );
+                /*if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
+                    nativeOps.execMetaPredicateStridedFloat(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXStride(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            second.getZ(),
+                            second.getZStride(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            (float) scalarA,
+                            (float) scalarB
+                    );
+                } else {*/
+                    nativeOps.execMetaPredicateShapeFloat(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXShapeInfo(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYShapeInfo(), // cane be -1
+                            second.getZ(),
+                            second.getZShapeInfo(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            (float) scalarA,
+                            (float) scalarB
+                    );
+//                }
             }
         } else if (op instanceof ReduceMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
@@ -684,7 +666,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      *
      * PLEASE NOTE: This call IS non-blocking
      */
-    public void flushQueue() {
+    public synchronized void flushQueue() {
         /*
             Basically we just want to form GridOp and pass it to native executioner
             But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
@@ -724,7 +706,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * PLEASE NOTE: This call is always blocking, until all queued operations are finished
      */
     @Override
-    public void flushQueueBlocking() {
+    public synchronized void flushQueueBlocking() {
         flushQueue();
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
@@ -733,6 +715,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     @Override
     public INDArray execAndReturn(TransformOp op) {
         flushQueue();
+        execCounter.incrementAndGet();
+
         return super.execAndReturn(op);
     }
 }

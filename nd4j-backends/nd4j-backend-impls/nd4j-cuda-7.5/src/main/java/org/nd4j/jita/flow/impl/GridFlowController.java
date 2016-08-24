@@ -28,11 +28,13 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void synchronizeToHost(AllocationPoint point) {
-        if (!point.isConstant())
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        if (!point.isActualOnHostSide()) {
+            if (!point.isConstant())
+                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        super.synchronizeToHost(point);
+            super.synchronizeToHost(point);
+        }
     }
 
     /**
@@ -44,7 +46,7 @@ public class GridFlowController extends SynchronousFlowController {
     public void waitTillFinished(AllocationPoint point) {
         if (!point.isConstant())
             if (Nd4j.getExecutioner() instanceof GridExecutioner) {
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
             }
 
         super.waitTillFinished(point);
@@ -61,9 +63,6 @@ public class GridFlowController extends SynchronousFlowController {
         /**
          * We don't really need special hook here, because if op is enqueued - it's still holding all arrays
          */
-//        if (!point.isConstant())
-//            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-//                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         super.waitTillReleased(point);
     }
