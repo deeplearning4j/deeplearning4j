@@ -6,8 +6,10 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/28/16.
+ *
+ * this can be used to convert the discrete domain (1 action by step)
+ * into the HighLow from Gym
  */
-//Convert DQN outputAll to HighLow
 
 public class ActionTransformer extends DiscreteSpace {
 
