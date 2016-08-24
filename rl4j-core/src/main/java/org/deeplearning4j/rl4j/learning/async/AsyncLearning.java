@@ -7,6 +7,12 @@ import org.deeplearning4j.rl4j.space.Encodable;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
+ *
+ * Async learning always follow the same pattern in RL4J
+ * -launch the Global thread
+ * -launch the "save threads"
+ * -periodically evaluate the model of the global thread for monitoring purposes
+ *
  */
 public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
 
@@ -47,7 +53,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         getLogger().info("A3CDiscrete training starting.");
         launchThreads();
 
-        //this is simply for stat purpose
+        //this is simply for stat purposes
         getDataManager().writeInfo(this);
         synchronized (this) {
             while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {

@@ -15,6 +15,9 @@ import java.util.Stack;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
+ *
+ * Async Learning specialized for the Discrete Domain
+ *
  */
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet> extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
@@ -22,6 +25,14 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         super(asyncGlobal, threadNumber);
     }
 
+    /**
+     * "Subepoch"  correspond to the t_max-step iterations
+     * that stack rewards with t_max MiniTrans
+     *
+     * @param sObs the obs to start from
+     * @param nstep the number of max nstep (step until t_max or state is terminal)
+     * @return subepoch training informations
+     */
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {
 
         NN current = getAsyncGlobal().cloneCurrent();
@@ -35,8 +46,6 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         INDArray history[] = null;
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
-
-
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
 
         double reward = 0;
@@ -46,6 +55,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
             INDArray input = Learning.getInput(getMdp(), obs);
 
+            //if step of training, just repeat lastAction
             if (getStepCounter() % skipFrame != 0) {
                 action = lastAction;
             } else {
@@ -56,16 +66,22 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                     } else
                         history = new INDArray[]{input};
                 }
+                //concat the history into a single INDArray input
                 INDArray hstack = Transition.concat(history);
+
+                //if input is not 2d, you have to append that the batch is 1 length high
                 if (hstack.shape().length > 2)
                     hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+
                 action = policy.nextAction(hstack);
             }
+
             lastAction = action;
 
             StepReply<O> stepReply = getMdp().step(action);
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
+            //if it's not a skipped frame, you can do a step of training
             if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
                 obs = stepReply.getObservation();
 
@@ -99,6 +115,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             double maxQ = Nd4j.max(output[0]).getDouble(0);
             rewards.add(new MiniTrans(input, null, output, maxQ));
         }
+
         if (rewards.size() > 1)
             getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
         else

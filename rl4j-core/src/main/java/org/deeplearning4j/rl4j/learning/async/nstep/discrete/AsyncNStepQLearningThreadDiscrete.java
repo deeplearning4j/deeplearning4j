@@ -51,7 +51,8 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     }
 
 
-    //FIXME double DQN ? (Not present in the original paper tho)
+
+    //calc the gradient based on the n-step rewards
     public Gradient[] calcGradient(IDQN current, Stack<MiniTrans<Integer>> rewards) {
 
         MiniTrans<Integer> minTrans = rewards.pop();
@@ -66,12 +67,11 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         double r = minTrans.getReward();
         for (int i = 0; i < size; i++) {
             minTrans = rewards.pop();
-          //  System.out.println(r);
+
             r = minTrans.getReward() + conf.getGamma() * r;
             input.putRow(i, minTrans.getObs());
             INDArray row = minTrans.getOutput()[0];
             row = row.putScalar(minTrans.getAction(), r);
-            //log.error(i + " " + targets.shapeInfoToString() + " " + row.shapeInfoToString() + " " + input.shapeInfoToString());
             targets.putRow(i, row);
         }
 

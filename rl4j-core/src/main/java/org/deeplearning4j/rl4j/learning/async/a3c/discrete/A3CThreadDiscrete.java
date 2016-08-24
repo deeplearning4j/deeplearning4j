@@ -52,6 +52,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         return new ACPolicy(net, new Random(conf.getSeed()));
     }
 
+    //calc the gradients based on the n-step rewards
     @Override
     public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
         MiniTrans<Integer> minTrans = rewards.pop();

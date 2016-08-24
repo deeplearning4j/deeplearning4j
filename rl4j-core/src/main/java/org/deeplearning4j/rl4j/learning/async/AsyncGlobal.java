@@ -26,6 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * enqueue the gradients coming from the different threads and update its
  * model and target. Those neurals nets are then synced by the other threads.
  *
+ * The benefits of this thread is that the updater is "shared" between all thread
+ * we have a single updater which is the single updater of the model contained here
+ *
+ * This is similar to RMSProp with shared g and momentum
+ *
  * When Hogwild! is implemented, this could be replaced by a simple data
  * structure
  *

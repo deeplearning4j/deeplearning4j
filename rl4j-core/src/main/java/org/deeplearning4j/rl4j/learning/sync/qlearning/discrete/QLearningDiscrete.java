@@ -82,11 +82,17 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         }
     }
 
+    /**
+     * Single step of training
+     * @param obs last obs
+     * @return relevant info for next step
+     */
     protected QLStepReturn<O> trainStep(O obs) {
 
         Integer action;
         INDArray input = getInput(obs);
         boolean isHistoryProcessor = getHistoryProcessor() != null;
+
 
         if (isHistoryProcessor)
             getHistoryProcessor().record(input);
@@ -97,6 +103,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         Double maxQ = Double.NaN; //ignore if Nan for stats
 
+        //if step of training, just repeat lastAction
         if (getStepCounter() % skipFrame != 0) {
             action = lastAction;
         } else {
@@ -107,9 +114,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 } else
                     history = new INDArray[]{input};
             }
-
+            //concat the history into a single INDArray input
             INDArray hstack = Transition.concat(Transition.dup(history));
 
+            //if input is not 2d, you have to append that the batch is 1 length high
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
 
@@ -126,6 +134,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         accuReward += stepReply.getReward()*configuration.getRewardFactor();
 
+        //if it's not a skipped frame, you can do a step of training
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
             INDArray ninput = getInput(stepReply.getObservation());
