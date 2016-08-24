@@ -4,14 +4,17 @@ import org.bytedeco.javacpp.Pointer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
+import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
+import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
@@ -25,7 +28,8 @@ import static org.junit.Assert.*;
 public class GridExecutionerTest {
     @Before
     public void setUp() throws Exception {
-
+        CudaEnvironment.getInstance().getConfiguration()
+                .enableDebug(true);
     }
 ///////////////////////////////////////////////////////////////////////////
 /*/////////////////////////////////////////////////////////////////////////
@@ -187,6 +191,166 @@ public class GridExecutionerTest {
         System.out.println("ArrayExp: " + exp);
 
     }
+
+    @Test
+    public void testGridFlow3() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(10);
+        INDArray arrayY = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+
+        EqualsWithEps op = new EqualsWithEps(arrayX, arrayY);
+
+        executioner.exec(op);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertNotEquals(null, op.getFinalResult());
+        assertEquals(10, op.getFinalResult().intValue());
+    }
+
+    @Test
+    public void testGridFlow4() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f});
+
+        Sum op = new Sum(arrayX);
+
+        executioner.exec(op);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertNotEquals(null, op.getFinalResult());
+        assertEquals(5, op.getFinalResult().intValue());
+    }
+
+    @Test
+    public void testGridFlow5() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(5, 5);
+
+        Sum op = new Sum(arrayX);
+
+        executioner.exec(op, 1);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertEquals(0, op.z().getFloat(0), 0.1f);
+    }
+
+    @Test
+    public void testGridFlow6() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[] {-1f, -1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {1f, 1f, 1f});
+
+        Abs op = new Abs(arrayX);
+
+        executioner.exec(op);
+
+        op = new Abs(arrayX);
+        executioner.exec(op);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertEquals(exp, arrayX);
+    }
+
+
+    @Test
+    public void testGridFlow7() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(new float[] {0f, 0f, 0f});
+        INDArray arrayY1 = Nd4j.create(new float[] {-1f, -1f, 1f});
+        INDArray arrayY2 = Nd4j.create(new float[] {1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {1f, 1f, 1f});
+
+        Set opA = new Set(arrayX, arrayY1, arrayX, arrayY1.length());
+
+        executioner.exec(opA);
+
+        Set opB = new Set(arrayX, arrayY2, arrayX, arrayY1.length());
+        executioner.exec(opB);
+
+        assertEquals(1, executioner.getQueueLength());
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
+    public void testGridFlowFlush1() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(10);
+        INDArray arrayY = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f});
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        executioner.exec(opA);
+
+        executioner.flushQueue();
+
+        assertEquals(arrayY, arrayX);
+    }
+
+
+    @Test
+    public void testGridFlowFlush2() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(10);
+        INDArray arrayX2 = Nd4j.create(10);
+        INDArray arrayY = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[] {3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f, 3f});
+        INDArray exp2 = Nd4j.create(new float[] {10f, 10f, 10f, 10f, 10f, 10f, 10f, 10f, 10f, 10f});
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        executioner.exec(opA);
+
+        assertEquals(1, executioner.getQueueLength());
+
+        ScalarAdd opB = new ScalarAdd(arrayX2, 10f);
+
+        executioner.exec(opB);
+
+        assertEquals(0, executioner.getQueueLength());
+
+        assertEquals(arrayY, arrayX);
+        assertEquals(exp2, arrayX2);
+    }
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/*
+    Performance test for combined op
+*/
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+    @Test
+    public void testGridPerformance1() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(1024);
+        INDArray arrayY = Nd4j.create(1024);
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+        ScalarAdd opB = new ScalarAdd(arrayX, 2f);
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 100000; x++) {
+            executioner.exec(opA);
+            executioner.exec(opB);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
+    }
+
+
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////

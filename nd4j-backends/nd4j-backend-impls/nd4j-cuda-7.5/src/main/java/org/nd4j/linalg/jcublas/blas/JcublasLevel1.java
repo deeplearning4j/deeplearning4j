@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
@@ -85,6 +86,10 @@ public class JcublasLevel1 extends BaseLevel1 {
             logger.warn("FLOAT dot called");
 
         DataTypeValidation.assertSameDataType(X, Y);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
@@ -512,7 +517,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT axpy called");
 
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+    //    CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
 /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -535,7 +540,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+    //    allocator.registerAction(ctx, Y, X);
     }
 
     @Override

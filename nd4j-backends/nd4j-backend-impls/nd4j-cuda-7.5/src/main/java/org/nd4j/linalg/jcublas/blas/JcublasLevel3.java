@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -37,6 +38,10 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
@@ -76,6 +81,8 @@ public class JcublasLevel3 extends BaseLevel3 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT gemm called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * mGRID implementation for CUDA
@@ -48,6 +49,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     private ThreadLocal<Deque<OpDescriptor>> deviceQueues = new ThreadLocal<>();
     private PointerPointer exxtrazz = new PointerPointer(4);
+
+    private AtomicLong metaCounter = new AtomicLong(0);
+    private AtomicLong execCounter = new AtomicLong(0);
 
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
@@ -73,13 +77,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
+
             exec(acc, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation acc = (IndexAccumulation) op;
+
             exec(acc, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof ScalarOp || op instanceof TransformOp){
             // the only entry place for TADless ops
-
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
             processAsGridOp(op);
@@ -93,47 +98,76 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return op;
     }
 
+
+    protected void pushToGrid(OpDescriptor descriptor) {
+        pushToGrid(descriptor, true);
+    }
+
+
     /**
      * This method adds op into GridOp queue
      *
      * @return
      */
-    protected void pushToGrid(OpDescriptor descriptor) {
+    protected void pushToGrid(OpDescriptor descriptor, boolean flush) {
 
         // we should just add op to queue here
         //deviceQueues.get().add(descriptor);
 
         // FIXME: following code should be removed, since it's just executing supers instead of batching
+
+        execCounter.incrementAndGet();
+
         Op op = descriptor.getOp();
         int[] dimensions = descriptor.getDimensions();
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
+            if (flush) flushQueue();
 
-            super.exec(t);
+            //logger.info("Sending TransformOp to CudaExecutioner");
+            super.invoke(t);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
+            if (flush) flushQueue();
 
+            //logger.info("Sending AccumulationOp to CudaExecutioner");
             super.exec(acc, dimensions);
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
+            if (flush) flushQueue();
 
-            super.exec(sc);
+            //logger.info("Sending ScalarOp to CudaExecutioner");
+            super.invoke(sc);
         } else if(op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
+            if (flush) flushQueue();
 
+            //logger.info("Sending BroadcastOp to CudaExecutioner");
             super.exec(broadcastOp, dimensions);
         }
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
+            if (flush) flushQueue();
 
+            //logger.info("Sending IndexAccumulationOp to CudaExecutioner");
             super.exec(indexAccumulation, dimensions);
         } else if (op instanceof MetaOp) {
-            logger.info("Executing meta");
+       //     logger.info("Executing MetaOp");
+            metaCounter.incrementAndGet();
             exec((MetaOp) op);
         } else if (op instanceof GridOp) {
+            logger.info("Executing GridOp");
             exec((GridOp) op);
         }
+    }
+
+    public long getMetaCounter() {
+        return metaCounter.get();
+    }
+
+    public long getExecutionCounter() {
+        return execCounter.get();
     }
 
     protected void processAsGridOp(Op op, int... dimension) {
@@ -155,10 +189,15 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     /*
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
-                    lastOp.set(new OpDescriptor(op, dimension));
 
                     if (last != null)
                         pushToGrid(last);
+
+                        pushToGrid(new OpDescriptor(op, dimension));
+
+                    if (op instanceof Set && op.y() != null) {
+                        lastOp.set(new OpDescriptor(op, dimension));
+                    }
                 }
                 break;
                 case PREDICATE: {
@@ -186,17 +225,23 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            lastOp.set(new OpDescriptor(op, dimension));
+            if (op instanceof Set && op.y() != null) {
+                lastOp.set(new OpDescriptor(op, dimension));
+            } else {
+                pushToGrid(new OpDescriptor(op, dimension));
+            }
         }
 
         //return op;
     }
 
     protected MetaType getMetaOpType(Op op, int... dimension) {
+
+        //if (1 > 0) return MetaType.NOT_APPLICABLE;
+
         OpDescriptor last = lastOp.get();
 
         if (last == null) {
-            logger.info("last is NULL");
             return MetaType.NOT_APPLICABLE;
         } else {
             // Experimental native compilation required for full MIMD support
@@ -224,9 +269,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         return isMatchingZX(last.getOp(), op) ? MetaType.POSTULATE : MetaType.NOT_APPLICABLE;
                 }
             } else {
-                // we enable this only for PairwisetTransforms.Set
-                if (last.getOp() instanceof Set && last.getOp().y() != null) {
-                    return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
+                // TODO: extend non-experimental support for MetaOps
+                // we enable this only for PairwisetTransforms.Set followed by scalar
+                if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
+                    if (op instanceof ScalarOp) {
+                        return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
+                    }
                 }
             }
         }
@@ -431,6 +479,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         // if op.Z is scalar, we can't use GridOp here
         if (op.z().isScalar()) {
             // So, that's scalar. We'll have to flush queue
+            processAsGridOp(op, dimension);
         } else {
             processAsGridOp(op, dimension);
         }
@@ -445,6 +494,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (op.z().isScalar()) {
             // So, that's scalar. We'll have to flush queue
+            processAsGridOp(op, dimension);
         } else {
             processAsGridOp(op, dimension);
         }
@@ -470,8 +520,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     // FIXME: remove CudaContext return type. We just don't need it
     @Override
     protected CudaContext invoke(ScalarOp op) {
-        processAsGridOp(op, null);
-
         processAsGridOp(op, null);
 
         return null;
@@ -595,9 +643,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof ReduceMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
 
-                logger.info("First pointers: {}", first);
-                logger.info("Second pointers: {}", second);
-
                 nativeOps.execMetaPredicateReduceFloat(extras,
                         first.getType().ordinal(),
                         first.getOpNum(),
@@ -640,20 +685,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
          */
         // TODO: proper implementation for GridOp creation required here
         Deque<OpDescriptor> currentQueue = deviceQueues.get();
+        if (currentQueue == null)
+            return;
 
         OpDescriptor op = currentQueue.pollFirst();
         while (op != null) {
-            if (op.getDimensions() == null) {
-                super.exec(op.getOp());
-            } else {
-                if (op.getOp() instanceof IndexAccumulation) {
-                    super.exec((IndexAccumulation) op.getOp(), op.getDimensions());
-                } else if (op.getOp() instanceof Accumulation) {
-                    super.exec((Accumulation) op.getOp(), op.getDimensions());
-                } else if (op.getOp() instanceof BroadcastOp) {
-                    super.exec((BroadcastOp) op.getOp(), op.getDimensions());
-                }
-            }
+            pushToGrid(op, false);
 
             op = currentQueue.pollFirst();
 
@@ -665,6 +702,18 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         }
 
+        // we need to check,
+        op = lastOp.get();
+        if (op != null) {
+            if (!nativeOps.isExperimentalEnabled()) {
+                // it might be only pairwise transform here for now
+              //  logger.info("flushing lastOp");
+                pushToGrid(op, false);
+                lastOp.remove();
+            } else {
+                throw new UnsupportedOperationException("Experimental flush isn't supported yet");
+            }
+        }
     }
 
     /**

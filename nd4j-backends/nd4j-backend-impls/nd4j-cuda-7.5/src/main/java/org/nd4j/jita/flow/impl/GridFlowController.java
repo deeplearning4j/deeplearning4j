@@ -2,6 +2,8 @@ package org.nd4j.jita.flow.impl;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  *
@@ -22,6 +24,10 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void synchronizeToHost(AllocationPoint point) {
+        if (!point.isConstant())
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         super.synchronizeToHost(point);
     }
 
@@ -32,6 +38,10 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void waitTillFinished(AllocationPoint point) {
+//        if (!point.isConstant())
+//            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+//                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         super.waitTillFinished(point);
     }
 
@@ -43,6 +53,10 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void waitTillReleased(AllocationPoint point) {
+//        if (!point.isConstant())
+//            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+//                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         super.waitTillReleased(point);
     }
 }

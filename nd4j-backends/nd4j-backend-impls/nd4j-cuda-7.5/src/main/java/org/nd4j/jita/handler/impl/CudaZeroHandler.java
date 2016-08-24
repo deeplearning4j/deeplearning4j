@@ -23,6 +23,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.impl.GridFlowController;
 import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
@@ -122,7 +123,7 @@ public class CudaZeroHandler implements MemoryHandler {
             }
             break;
             case SEQUENTIAL: {
-                this.flowController = new SynchronousFlowController();
+                this.flowController = new GridFlowController();
                 this.contextPool = new LimitedContextPool();
             }
             break;
