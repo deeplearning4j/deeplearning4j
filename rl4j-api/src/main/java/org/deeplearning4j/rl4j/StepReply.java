@@ -6,8 +6,8 @@ import org.json.JSONObject;
 /**
  * @param <T> type of observation
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
- *         <p>
- *         StepReply is the container for the data returned after each step(action).
+ *
+ *  StepReply is the container for the data returned after each step(action).
  */
 @Value
 public class StepReply<T> {
