@@ -24,17 +24,14 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
-/** * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
+/**
+ * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
+ *
  * @author Alex Black
  */
 @NoArgsConstructor
@@ -75,8 +72,8 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop){
-        return LayerFactories.getFactory(layerConf).initializer().numParams(layerConf,backprop);
+    public int numParams(boolean backprop) {
+        return layerConf.getLayer().initializer().numParams(layerConf, backprop);
     }
 
     @Override
@@ -85,10 +82,9 @@ public class LayerVertex extends GraphVertex {
         //Now, we need to work out if this vertex is an output vertex or not...
         boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(
-                graph, name, idx,
-                LayerFactories.getFactory(layerConf).create(layerConf, null, idx, paramsView, initializeParams),
-                preProcessor, isOutput);
+        org.deeplearning4j.nn.api.Layer layer = layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
+
+        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
     }
 
     @Override
@@ -99,7 +95,7 @@ public class LayerVertex extends GraphVertex {
 
         //Assume any necessary preprocessors have already been added
         InputType afterPreprocessor;
-        if(preProcessor == null) afterPreprocessor = vertexInputs[0];
+        if (preProcessor == null) afterPreprocessor = vertexInputs[0];
         else afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
         return layerConf.getLayer().getOutputType(afterPreprocessor);
