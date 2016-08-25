@@ -378,7 +378,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             int[] nParamsPerLayer = new int[nLayers];
             for( int i=0; i<nLayers; i++ ){
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf,true);
+                nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf,true);
                 backpropParamLength += nParamsPerLayer[i];
             }
 
