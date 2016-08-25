@@ -14,6 +14,11 @@ Both for Low-Dimensional (array of info) and high-dimensional (pixels) input.
 ![Cartpole](cartpole.gif)
 
 
+Here is a useful blog post I wrote to introduce you to reinforcement learning, DQN and Async RL:
+
+
+[Blog post](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
+
 [temporary example repo](https://github.com/rubenfiszel/rl4j-examples)
 
 [Cartpole example](https://github.com/rubenfiszel/rl4j-examples/blob/master/src/main/java/org/deeplearning4j/rl4j/Cartpole.java)
