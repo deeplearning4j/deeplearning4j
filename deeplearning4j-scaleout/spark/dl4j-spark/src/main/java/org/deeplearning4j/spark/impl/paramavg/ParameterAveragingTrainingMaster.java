@@ -59,6 +59,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private Repartition repartition;
     private RepartitionStrategy repartitionStrategy;
     private StorageLevel storageLevel;
+    private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -71,6 +72,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.repartition = builder.repartition;
         this.repartitionStrategy = builder.repartitionStrategy;
         this.storageLevel = builder.storageLevel;
+        this.storageLevelStreams = builder.storageLevelStreams;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
@@ -197,11 +199,14 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
+        if(collectTrainingStats) stats.logFitStart();
+
         int origNumPartitions = trainingData.partitions().size();
         if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
             log.info("Coalesing PortableDataStreams from {} to {} partitions", origNumPartitions, numWorkers);
             trainingData = trainingData.coalesce(numWorkers);
         }
+        if (storageLevelStreams != null) trainingData.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -225,6 +230,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
+        if(storageLevelStreams != null) trainingDataPaths.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingDataPaths.count();
@@ -294,6 +300,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
             trainingData = trainingData.coalesce(numWorkers);
         }
+        if(storageLevelStreams != null) trainingData.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -318,6 +325,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
+        if(storageLevelStreams != null) trainingData.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -346,6 +354,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
+        if(storageLevelStreams != null) trainingDataPaths.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingDataPaths.count();
@@ -370,6 +379,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
+        if(storageLevelStreams != null) trainingMultiDataPaths.persist(storageLevelStreams);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingMultiDataPaths.count();
@@ -602,6 +612,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private Repartition repartition = Repartition.Always;
         private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
+        private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
 
 
         /**
@@ -733,6 +744,21 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder storageLevel(StorageLevel storageLevel) {
             this.storageLevel = storageLevel;
+            return this;
+        }
+
+        /**
+         * Set the storage level RDDs used when fitting data from Streams: either PortableDataStreams (sc.binaryFiles via
+         * {@link SparkDl4jMultiLayer#fit(String)} and {@link SparkComputationGraph#fit(String)}) or String paths
+         * (via {@link SparkDl4jMultiLayer#fitPaths(JavaRDD)}, {@link SparkComputationGraph#fitPaths(JavaRDD)} and
+         * {@link SparkComputationGraph#fitPathsMultiDataSet(JavaRDD)}).<br>
+         * <p>
+         * Default storage level is StorageLevel.MEMORY_ONLY() which should be appropriate in most cases.
+         *
+         * @param storageLevelStreams Storage level to use
+         */
+        public Builder storageLevelStreams(StorageLevel storageLevelStreams) {
+            this.storageLevelStreams = storageLevel;
             return this;
         }
 
