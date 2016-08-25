@@ -36,6 +36,11 @@ import java.util.Map;
  */
 public class DefaultParamInitializer implements ParamInitializer {
 
+    private static final DefaultParamInitializer INSTANCE = new DefaultParamInitializer();
+    public static DefaultParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
     public final static String WEIGHT_KEY = "W";
     public final static String BIAS_KEY = "b";
 
