@@ -140,7 +140,7 @@ int *tadOnlyShapeInfo, int *tadOffsets
 
     if (opTypeA == 0) { // scalar
 
-        DISPATCH_METAOP(functions::reduce::ReduceFunction<T>::template transformCuda6D, PARAMS(dx, xShapeInfo, paramsPtr, dz, zShapeInfo,  dimension, 1, reductionBuffer, manager, tadShapeInfo, tadOffsets), ReduceMetaOp, OPS_A(SCALAR_OPS), OPS_B(REDUCE_OPS));
+        DISPATCH_METAOP(functions::reduce::ReduceFunction<T>::template transformCuda6D, PARAMS(dx, xShapeInfo, paramsPtr, dz, zShapeInfo,  dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffsets), ReduceMetaOp, OPS_A(SCALAR_OPS), OPS_B(REDUCE_OPS));
     } else if (opTypeA == 1) { // transform
 
     } else {
@@ -149,6 +149,36 @@ int *tadOnlyShapeInfo, int *tadOffsets
     }
 }
 
+template <typename T>
+__device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
+                                                          T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+    __shared__ Nd4jPointer params[2];
+    __shared__ T *paramsPtr;
+    if (threadIdx.x == 0) {
+        if (opTypeA == 0) params[0] = (Nd4jPointer *) &scalarA;
+        else params[0] = (Nd4jPointer *) extraA;
+
+        if (opTypeB == 0) params[1] = (Nd4jPointer *) &scalarB;
+        else params[1] = (Nd4jPointer *) extraB;
+
+        paramsPtr = (T *) params;
+    }
+    __syncthreads();
+
+    /*
+
+     T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo
+
+     */
+
+    DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+}
 
 template <typename T>
 __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
@@ -212,6 +242,11 @@ __global__ void metaPredicateReduceFloat(const int opTypeA, const int opNumA, co
                                                 float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo,  int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB, bool scalarReturned) {
 
     metaPredicateReduceGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, reductionBuffer, extraA, extraB, scalarA, scalarB, scalarReturned);
+}
+
+__global__ void metaPredicateShapeFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
+
+    metaPredicateShapeGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
 #endif //LIBND4J_GRID_H

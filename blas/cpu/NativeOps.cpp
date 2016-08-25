@@ -2589,3 +2589,7 @@ void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTy
 bool NativeOps::isExperimentalEnabled() {
     return experimentalSupport;
 }
+
+void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+}

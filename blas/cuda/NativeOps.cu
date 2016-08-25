@@ -5886,7 +5886,7 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
     float *extrasA = reinterpret_cast<float *> (extraA);
     float *extrasB = reinterpret_cast<float *> (extraB);
 
-    metaPredicateStridedFloat<<<64, 64, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateStridedFloat<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5919,7 +5919,29 @@ void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTy
 float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB) {
  */
 
-    metaPredicateReduceFloat<<<64, 64, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
+    metaPredicateReduceFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *> (dx);
+    float *y = reinterpret_cast<float *> (dy);
+    float *z = reinterpret_cast<float *> (dz);
+
+    int *xShape = reinterpret_cast<int *> (xShapeInfo);
+    int *yShape = reinterpret_cast<int *> (yShapeInfo);
+    int *zShape = reinterpret_cast<int *> (zShapeInfo);
+
+    float *extrasA = reinterpret_cast<float *> (extraA);
+    float *extrasB = reinterpret_cast<float *> (extraB);
+
+    metaPredicateShapeFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));

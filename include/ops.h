@@ -22,7 +22,7 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __device__
+#define op_def __noinline__ __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -1835,7 +1835,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // scalar, transform, reduce, indexreduce entry
-        op_def static T op(T d1, T *params) {
+        __device__ __noinline__ static T op(T d1, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -1844,7 +1844,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
         }
 
         // PWT, broadcast entry. Predicate can be only scalar, transform
-        op_def static T op(T d1, T d2, T *params) {
+        __device__ __noinline__ static T op(T d1, T d2, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1857,7 +1857,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // will be called for reduce, reduce3
-        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+        __device__ __noinline__ static T postProcess(T reduction, Nd4jIndex n, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */

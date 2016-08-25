@@ -259,6 +259,7 @@ template<typename OpType>
 					result[resultOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 				}
 			}
+
 		}
 	}
 
