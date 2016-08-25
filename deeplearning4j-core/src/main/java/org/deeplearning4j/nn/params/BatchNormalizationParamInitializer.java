@@ -14,6 +14,12 @@ import java.util.Map;
  */
 
 public class BatchNormalizationParamInitializer implements ParamInitializer {
+
+    private static final BatchNormalizationParamInitializer INSTANCE = new BatchNormalizationParamInitializer();
+    public static BatchNormalizationParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
     public final static String GAMMA = "gamma";
     public final static String BETA = "beta";
 

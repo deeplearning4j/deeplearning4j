@@ -11,6 +11,12 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class EmptyParamInitializer implements ParamInitializer {
+
+    private static final EmptyParamInitializer INSTANCE = new EmptyParamInitializer();
+    public static EmptyParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
     @Override
     public int numParams(NeuralNetConfiguration conf, boolean backprop) {
         return 0;

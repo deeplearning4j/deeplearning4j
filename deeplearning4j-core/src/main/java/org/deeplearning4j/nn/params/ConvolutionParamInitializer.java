@@ -37,6 +37,12 @@ import java.util.Map;
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
 
+    private static final ConvolutionParamInitializer INSTANCE = new ConvolutionParamInitializer();
+    public static ConvolutionParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
+
     public final static String WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
 

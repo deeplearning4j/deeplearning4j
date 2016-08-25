@@ -31,6 +31,12 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class PretrainParamInitializer extends DefaultParamInitializer {
+
+    private static final PretrainParamInitializer INSTANCE = new PretrainParamInitializer();
+    public static PretrainParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
     public final static String VISIBLE_BIAS_KEY = DefaultParamInitializer.BIAS_KEY + "B";
 
     @Override

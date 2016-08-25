@@ -26,6 +26,12 @@ import java.util.Map;
 
 
 public class GRUParamInitializer implements ParamInitializer {
+
+    private static final GRUParamInitializer INSTANCE = new GRUParamInitializer();
+    public static GRUParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
 	/** Weights for previous time step -> current time step connections */
     public final static String RECURRENT_WEIGHT_KEY = "RW";
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
