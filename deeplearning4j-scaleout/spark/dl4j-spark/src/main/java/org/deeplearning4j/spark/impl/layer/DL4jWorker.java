@@ -20,11 +20,9 @@ package org.deeplearning4j.spark.impl.layer;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,12 +43,9 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
 
     public DL4jWorker(String json,INDArray params) {
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
-        LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
-        if(layerFactory == null)
-            throw new IllegalStateException("Please specify a layer factory");
-        int numParams = layerFactory.initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray thisParams = Nd4j.create(1, numParams);
-        this.network = layerFactory.create(conf, null, 0, thisParams, true);
+        this.network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
         if(numParams != params.length())
             throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
         Layer network = (Layer) this.network;

@@ -20,12 +20,10 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -53,9 +51,10 @@ public class AutoEncoderTest {
                 .layer(build)
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+//        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -80,9 +79,9 @@ public class AutoEncoderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0, params, true);
+        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0, params, true);
         assertEquals(da.params(),da.params());
         assertEquals(471784,da.params().length());
         da.setParams(da.params());
@@ -96,7 +95,7 @@ public class AutoEncoderTest {
     @Test
     public void testBackProp() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
+//        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
@@ -111,14 +110,11 @@ public class AutoEncoderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = layerFactory.create(conf,null,0,params, true);
+        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf,null,0,params, true);
         Gradient g = new DefaultGradient();
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(input)).sub(input));
-
     }
-
-
 
 }

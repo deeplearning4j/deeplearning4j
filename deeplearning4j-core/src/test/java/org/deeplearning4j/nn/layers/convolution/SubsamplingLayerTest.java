@@ -12,7 +12,6 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -213,7 +212,7 @@ public class SubsamplingLayerTest {
                         .build())
                 .build();
 
-        return LayerFactories.getFactory(conf).create(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, 0, null, true);
     }
 
     public INDArray getData() throws Exception {

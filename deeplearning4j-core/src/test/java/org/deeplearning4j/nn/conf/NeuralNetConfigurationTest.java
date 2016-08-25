@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -130,9 +129,9 @@ public class NeuralNetConfigurationTest {
                 .layer(layer)
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer model = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer model = conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
@@ -152,9 +151,9 @@ public class NeuralNetConfigurationTest {
                 .layer(layer2)
                 .build();
 
-        int numParams2 = LayerFactories.getFactory(conf2).initializer().numParams(conf,true);
+        int numParams2 = conf2.getLayer().initializer().numParams(conf,true);
         INDArray params2 = Nd4j.create(1, numParams);
-        Layer model2 = LayerFactories.getFactory(conf2).create(conf2, null, 0, params2, true);
+        Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -255,9 +254,9 @@ public class NeuralNetConfigurationTest {
 
     private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit){
         NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit);
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        return LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        return conf.getLayer().instantiate(conf, null, 0, params, true);
     }
 
 
