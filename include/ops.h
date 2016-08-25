@@ -15,9 +15,11 @@
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
+#define meta_def __noinline__ __device__
 #include <sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #else
+#define meta_def inline
 #define no_op_exec_special_cuda
 #endif
 
@@ -30,6 +32,8 @@
 #elif __GNUC__
 #define op_def _Pragma("omp declare simd") inline
 #endif
+
+
 
 
 namespace functions {
@@ -1781,12 +1785,12 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		 * PREDICATE
 		 */
 
-        op_def static T startingValue(const T *input) {
+		meta_def static T startingValue(const T *input) {
             return (T) 0.0;
         }
 
 		// scalar, transform, reduce, indexreduce entry
-		op_def static T op(T d1, T *params) {
+		meta_def static T op(T d1, T *params) {
 			/*
 			 * We assume, that params for MetaOp is a set of pointers to actual op A & B extraArgs
 			 */
@@ -1798,7 +1802,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		}
 
 		// PWT, broadcast entry. Predicate can be only scalar, transform
-		op_def static T op(T d1, T d2, T *params) {
+		meta_def static T op(T d1, T d2, T *params) {
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
 			T *paramsA = reinterpret_cast<T *> (wrap[0]);
 			T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1811,7 +1815,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		 */
 
 		// will be called for reduce, reduce3
-		op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
 			T *paramsA = reinterpret_cast<T *> (wrap[0]);
 			T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1835,7 +1839,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // scalar, transform, reduce, indexreduce entry
-        __device__ __noinline__ static T op(T d1, T *params) {
+		meta_def static T op(T d1, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -1844,7 +1848,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
         }
 
         // PWT, broadcast entry. Predicate can be only scalar, transform
-        __device__ __noinline__ static T op(T d1, T d2, T *params) {
+        meta_def static T op(T d1, T d2, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1857,7 +1861,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // will be called for reduce, reduce3
-        __device__ __noinline__ static T postProcess(T reduction, Nd4jIndex n, T *params) {
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -1875,11 +1879,11 @@ template<typename T, typename OpTypeA, typename OpTypeB>
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static T startingValue(const T *input) {
+		meta_def static T startingValue(const T *input) {
             return OpTypeB::startingValue(input);
         }
 
-        op_def static T merge(T old, T opOutput, T *params) {
+		meta_def static T merge(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1887,7 +1891,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return OpTypeB::merge(old, opOutput, paramsB);
         }
 
-        op_def static T update(T old, T opOutput, T *params) {
+		meta_def static T update(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1895,7 +1899,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return OpTypeB::update(old, opOutput, paramsB);
         }
 
-        op_def static T op(T d1, T *params) {
+		meta_def static T op(T d1, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1903,7 +1907,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
         }
 
-        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);

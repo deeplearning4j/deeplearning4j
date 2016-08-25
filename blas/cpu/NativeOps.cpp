@@ -2568,17 +2568,6 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     // no-op
 }
 
-void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                     Nd4jIndex n,
-                                     float dx,
-                                     Nd4jPointer dy,
-                                     int incy,
-                                     Nd4jPointer paramsB,
-                                     Nd4jPointer result,
-                                     int resultStride) {
-    // no-op
-}
-
 void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
     // no-op
 }
