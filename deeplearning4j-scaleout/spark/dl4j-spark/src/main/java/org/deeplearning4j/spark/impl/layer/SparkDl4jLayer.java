@@ -29,7 +29,6 @@ import org.datavec.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.spark.datavec.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Add;
 import org.deeplearning4j.spark.util.MLLibUtil;
@@ -111,9 +110,9 @@ public class SparkDl4jLayer implements Serializable {
 
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
-            int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf,true);
             final INDArray params = Nd4j.create(1, numParams);
-            Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params, true);
+            Layer layer = conf.getLayer().instantiate(conf,null,0,params, true);
             layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
 //            final INDArray params = layer.params();
             this.params = sc.broadcast(params);
@@ -130,9 +129,9 @@ public class SparkDl4jLayer implements Serializable {
         }
         else {
             conf.setNumIterations(1);
-            int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf,true);
             final INDArray params = Nd4j.create(1, numParams);
-            Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
+            Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
 //            final INDArray params = layer.params();
             this.params = sc.broadcast(params);

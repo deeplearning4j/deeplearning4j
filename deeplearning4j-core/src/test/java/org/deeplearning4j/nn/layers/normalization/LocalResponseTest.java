@@ -12,7 +12,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
@@ -124,7 +123,7 @@ public class LocalResponseTest {
                         .build())
                 .build();
 
-        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, null, false);
+        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
         activationsActual = layer.activate(x);
     }
 

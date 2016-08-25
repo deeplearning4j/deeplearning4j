@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -47,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -71,9 +71,9 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params, true);
+        OutputLayer l = (OutputLayer)conf.getLayer().instantiate(conf, Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),0,params, true);
 		l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -106,9 +106,9 @@ public class OutputLayerTest {
                         .activation("softmax")
                         .weightInit(WeightInit.XAVIER).build()).build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        org.deeplearning4j.nn.layers.OutputLayer layer = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        org.deeplearning4j.nn.layers.OutputLayer layer = (org.deeplearning4j.nn.layers.OutputLayer)conf.getLayer().instantiate(conf,null,0,params,true);
 		layer.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         DataSet next = iter.next();
@@ -139,9 +139,9 @@ public class OutputLayerTest {
                         .activation("softmax").build())
                 .build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        OutputLayer o = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        OutputLayer o = (OutputLayer)conf.getLayer().instantiate(conf,null,0,params,true);
 		o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
 
@@ -200,9 +200,9 @@ public class OutputLayerTest {
                         .build())
                 .build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        OutputLayer o = LayerFactories.getFactory(conf).create(conf, null, 0, params,true);
+        OutputLayer o = (OutputLayer)conf.getLayer().instantiate(conf, null, 0, params,true);
 		o.setBackpropGradientsViewArray(Nd4j.create(1,params.length()));
 
         o.setListeners(new ScoreIterationListener(1));
@@ -225,9 +225,9 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params,true);
+        OutputLayer l = (OutputLayer)conf.getLayer().instantiate(conf, Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),0,params,true);
 		l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -262,9 +262,9 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params,true);
+        OutputLayer l = (OutputLayer)conf.getLayer().instantiate(conf, Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),0,params,true);
         params = l.params();
         l.setParams(params);
         assertEquals(params,l.params());

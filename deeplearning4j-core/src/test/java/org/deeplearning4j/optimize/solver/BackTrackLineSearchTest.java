@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -154,9 +153,9 @@ public class BackTrackLineSearchTest {
                         .build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        return LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
+        return (OutputLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
     }
 
 ///////////////////////////////////////////////////////////////////////////
