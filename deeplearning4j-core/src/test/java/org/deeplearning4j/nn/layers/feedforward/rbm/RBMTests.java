@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -63,9 +62,9 @@ public class RBMTests {
                 .layer(cnn)
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -89,10 +88,9 @@ public class RBMTests {
                 .learningRate(1e-3f)
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf)
-                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params, true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params, true);
 
         rbm.fit(d.getFeatureMatrix());
     }
@@ -112,9 +110,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM r = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         r.fit(d.getFeatureMatrix());
 
     }
@@ -134,9 +132,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM r = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         r.fit(d.getFeatureMatrix());
 
     }
@@ -164,9 +162,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         rbm.fit(input);
 
         assertEquals(24, rbm.gradient().getGradientFor("W").length());
@@ -199,9 +197,9 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         rbm.fit(input);
 
     }
@@ -215,9 +213,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
@@ -248,9 +246,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
         double value = rbm.score();
         rbm.fit(input);
         value = rbm.score();
@@ -283,9 +281,9 @@ public class RBMTests {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,true);
 
         rbm.fit(input);
         double value = rbm.score();
