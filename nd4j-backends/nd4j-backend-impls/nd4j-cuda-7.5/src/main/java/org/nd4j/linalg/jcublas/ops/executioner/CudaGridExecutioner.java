@@ -195,38 +195,36 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     */
                     pushToGrid(last, false);
 
-                    if (op instanceof Set && op.y() != null) {
+                    if (op instanceof TransformOp && op.y() != null) {
                         lastOp.set(new OpDescriptor(op));
                     } else {
-                        pushToGrid(new OpDescriptor(op, dimension));
+                        pushToGrid(new OpDescriptor(op, dimension), false);
                     }
                 }
                 break;
                 case PREDICATE: {
                     MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
-                    pushToGrid(new OpDescriptor(metaOp));
+                    pushToGrid(new OpDescriptor(metaOp), false);
                 }
                 break;
                 case INVERTED_PREDICATE: {
                     MetaOp metaOp = new InvertedPredicateMetaOp(last, new OpDescriptor(op, dimension));
-                   // pushToGrid(last);
-                   // pushToGrid(new OpDescriptor(op, dimension));
-                    pushToGrid(new OpDescriptor(metaOp));
+                    pushToGrid(new OpDescriptor(metaOp), false);
                 }
                 break;
                 case POSTULATE: {
                     MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
-                    pushToGrid(new OpDescriptor(metaOp));
+                    pushToGrid(new OpDescriptor(metaOp), false);
                 }
                 break;
                 default:
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            if (op instanceof Set && op.y() != null) {
+            if (op instanceof TransformOp && op.y() != null) {
                 lastOp.set(new OpDescriptor(op));
             } else {
-                pushToGrid(new OpDescriptor(op, dimension));
+                pushToGrid(new OpDescriptor(op, dimension), false);
             }
         }
 
@@ -288,14 +286,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     protected boolean isMatchingZX(Op opA, Op opB) {
-        AllocationPoint aX = AtomicAllocator.getInstance().getAllocationPoint(opA.x());
-        AllocationPoint aZ = AtomicAllocator.getInstance().getAllocationPoint(opA.z());
-
-        AllocationPoint bX = AtomicAllocator.getInstance().getAllocationPoint(opB.x());
-        AllocationPoint bZ = AtomicAllocator.getInstance().getAllocationPoint(opB.z());
-
-        //if (aX.getPointers().getDevicePointer().address() == bX.getPointers().getDevicePointer().address() && aX.getPointers().getDevicePointer().address() == bZ.getPointers().getDevicePointer().address() && aZ.getPointers().getDevicePointer().address() == bZ.getPointers().getDevicePointer().address())
-        //    return true;
         if (opA.x() == opB.x() && opA.z() == opB.z() && opA.x() == opB.z())
             return true;
 

@@ -1195,15 +1195,9 @@ public class NativeOps extends Pointer {
 
     // GridOps
 
-    public native void execMetaStridedFloat(PointerPointer extraPointers, int opTypeA, int opNumA, int opTypeB, int opNumB,
-                         long n,
-                         float dx,
-                         Pointer dy,
-                         int incy,
-                         Pointer paramsB,
-                         Pointer result,
-                         int resultStride);
 
+
+    // MetaOps
     public native void execMetaPredicateStridedFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                          long N,
                                                          Pointer dx,
