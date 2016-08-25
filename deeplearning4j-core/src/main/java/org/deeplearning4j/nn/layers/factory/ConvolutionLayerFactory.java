@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
  * Create a convolution layer
  * @author Adam Gibson
  */
+@Deprecated
 public class ConvolutionLayerFactory extends DefaultLayerFactory {
     public ConvolutionLayerFactory(Class<? extends Layer> layerConfig) {
         super(layerConfig);

@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 
 /**
  */
+@Deprecated
 public class EmptyFactory extends DefaultLayerFactory {
     public EmptyFactory(Class<? extends Layer> layerClazz) {
         super(layerClazz);

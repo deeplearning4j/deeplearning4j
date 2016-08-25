@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
  *  For LSTM based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
+@Deprecated
 public class GravesBidirectionalLSTMLayerFactory extends DefaultLayerFactory {
 
     public GravesBidirectionalLSTMLayerFactory(Class<? extends Layer> layerConfig) {

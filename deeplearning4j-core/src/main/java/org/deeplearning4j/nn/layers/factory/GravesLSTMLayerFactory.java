@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
  *  For LSTM based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
+@Deprecated
 public class GravesLSTMLayerFactory extends DefaultLayerFactory {
 
     public GravesLSTMLayerFactory(Class<? extends Layer> layerConfig) {

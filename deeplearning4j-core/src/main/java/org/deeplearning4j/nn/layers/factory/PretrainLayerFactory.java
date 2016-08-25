@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
  * Used for creating pretrain neural net layers
  * @author Adam Gibson
  */
+@Deprecated
 public class PretrainLayerFactory extends DefaultLayerFactory {
 
 
