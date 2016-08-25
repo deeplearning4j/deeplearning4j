@@ -36,6 +36,12 @@ import java.util.Map;
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
 public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer {
+
+    private static final GravesBidirectionalLSTMParamInitializer INSTANCE = new GravesBidirectionalLSTMParamInitializer();
+    public static GravesBidirectionalLSTMParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
 	/** Weights for previous time step -> current time step connections */
     public final static String RECURRENT_WEIGHT_KEY_FORWARDS = "RWF";
     public final static String BIAS_KEY_FORWARDS = DefaultParamInitializer.BIAS_KEY + "F";

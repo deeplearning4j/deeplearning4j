@@ -19,6 +19,13 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
@@ -29,6 +36,16 @@ public class DenseLayer extends FeedForwardLayer {
 
     private DenseLayer(Builder builder) {
     	super(builder);
+    }
+
+    @Override
+    public Layer instantiate(Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        return null;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return DefaultParamInitializer.getInstance();
     }
 
     @AllArgsConstructor

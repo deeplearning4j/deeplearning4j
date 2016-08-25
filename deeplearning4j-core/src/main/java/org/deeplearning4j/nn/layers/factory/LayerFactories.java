@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.*;
  * Static method for finding which layer factory to use
  * @author Adam Gibson
  */
+@Deprecated
 public class LayerFactories {
     private LayerFactories() {
     }

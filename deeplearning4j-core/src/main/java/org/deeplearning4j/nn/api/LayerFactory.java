@@ -31,6 +31,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public interface LayerFactory {
 
     /**
