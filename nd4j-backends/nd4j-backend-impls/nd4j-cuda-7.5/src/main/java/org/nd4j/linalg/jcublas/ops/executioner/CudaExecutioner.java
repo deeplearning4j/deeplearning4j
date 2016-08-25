@@ -66,6 +66,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     private static Logger log = LoggerFactory.getLogger(CudaExecutioner.class);
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
+    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
 
     public CudaExecutioner() {
 
@@ -79,6 +80,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         Arrays.sort(dimension);
     //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
@@ -105,7 +109,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -222,7 +226,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -515,6 +523,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(IndexAccumulation op, int... dimension) {
         checkForCompression(op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
         Arrays.sort(dimension);
 
         //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -578,7 +589,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -707,6 +718,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
      //   log.info("B1 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -724,7 +738,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -797,6 +811,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected CudaContext invoke(IndexAccumulation op,int[] dimension)  {
         checkForCompression(op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
@@ -822,7 +839,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -924,6 +941,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected CudaContext invoke(Accumulation op, int[] dimension) {
         checkForCompression(op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
       //  log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
@@ -947,7 +967,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -1239,6 +1259,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected CudaContext invoke(ScalarOp op) {
         checkForCompression(op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
@@ -1256,7 +1279,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -1310,6 +1333,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected CudaContext invoke(TransformOp op) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         //if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
@@ -1415,7 +1441,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
                 AtomicAllocator.getInstance().getDeviceIdPointer(),        // 2
@@ -1434,6 +1460,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer // special pointer for IsMax  // 16
         );
+
+
 /*
         log.info("------------------------------------");
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));

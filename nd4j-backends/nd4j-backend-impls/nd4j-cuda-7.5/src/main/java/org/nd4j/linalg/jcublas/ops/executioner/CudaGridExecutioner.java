@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,7 +49,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private ThreadLocal<OpDescriptor> lastOp = new ThreadLocal<>();
     private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     private ThreadLocal<Deque<OpDescriptor>> deviceQueues = new ThreadLocal<>();
-    private PointerPointer exxtrazz = new PointerPointer(4);
 
     private AtomicLong metaCounter = new AtomicLong(0);
     private AtomicLong execCounter = new AtomicLong(0);
@@ -94,6 +94,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             invoke((BroadcastOp) op);
 
         } else {
+            logger.info("Random op: {}", op.getClass().getSimpleName());
             pushToGrid(new OpDescriptor(op));
         }
 
@@ -184,43 +185,36 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         */
 
         OpDescriptor last = lastOp.get();
-        lastOp.remove();
         if (last != null) {
             MetaType type = getMetaOpType(op, dimension);
+            lastOp.remove();
             switch (type) {
                 case NOT_APPLICABLE: {
                     /*
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
-
-
                     pushToGrid(last, false);
 
-
                     if (op instanceof Set && op.y() != null) {
-                        lastOp.set(new OpDescriptor(op, dimension));
+                        lastOp.set(new OpDescriptor(op));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension));
                     }
                 }
                 break;
                 case PREDICATE: {
-                    lastOp.remove();
-
                     MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
                 break;
                 case INVERTED_PREDICATE: {
-                    lastOp.remove();
-
                     MetaOp metaOp = new InvertedPredicateMetaOp(last, new OpDescriptor(op, dimension));
+                   // pushToGrid(last);
+                   // pushToGrid(new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
                 break;
                 case POSTULATE: {
-                    lastOp.remove();
-
                     MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp));
                 }
@@ -230,7 +224,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         } else {
             if (op instanceof Set && op.y() != null) {
-                lastOp.set(new OpDescriptor(op, dimension));
+                lastOp.set(new OpDescriptor(op));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension));
             }
@@ -294,7 +288,15 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     protected boolean isMatchingZX(Op opA, Op opB) {
-        if (opA.z() == opB.x() && opA.x() == opB.z())
+        AllocationPoint aX = AtomicAllocator.getInstance().getAllocationPoint(opA.x());
+        AllocationPoint aZ = AtomicAllocator.getInstance().getAllocationPoint(opA.z());
+
+        AllocationPoint bX = AtomicAllocator.getInstance().getAllocationPoint(opB.x());
+        AllocationPoint bZ = AtomicAllocator.getInstance().getAllocationPoint(opB.z());
+
+        //if (aX.getPointers().getDevicePointer().address() == bX.getPointers().getDevicePointer().address() && aX.getPointers().getDevicePointer().address() == bZ.getPointers().getDevicePointer().address() && aZ.getPointers().getDevicePointer().address() == bZ.getPointers().getDevicePointer().address())
+        //    return true;
+        if (opA.x() == opB.x() && opA.z() == opB.z() && opA.x() == opB.z())
             return true;
 
         return false;
@@ -573,6 +575,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
         GridPointers second = op.getGridDescriptor().getGridPointers().get(1);
 
+        //logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
+
         /*
             TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.
             We just need to pass all pointers.
@@ -590,7 +594,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (op instanceof PredicateMetaOp || op instanceof InvertedPredicateMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
-                /*if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
+                if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedFloat(extras,
                             first.getType().ordinal(),
                             first.getOpNum(),
@@ -608,7 +612,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             (float) scalarA,
                             (float) scalarB
                     );
-                } else {*/
+                } else {
+            //        logger.info("aX: {}, aY: {}, aZ: {}", first.getX().address(), first.getY().address(), first.getZ().address());
+            //        logger.info("bX: {}, bY: {}, bZ: {}", second.getX().address(), second.getY(), second.getZ().address());
+            //        logger.info("------------------------");
                     nativeOps.execMetaPredicateShapeFloat(extras,
                             first.getType().ordinal(),
                             first.getOpNum(),
@@ -626,7 +633,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             (float) scalarA,
                             (float) scalarB
                     );
-//                }
+                }
             }
         } else if (op instanceof ReduceMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
@@ -689,8 +696,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (!nativeOps.isExperimentalEnabled()) {
                 // it might be only pairwise transform here for now
       //          logger.info("Flushing existing lastOp");
-                pushToGrid(op, false);
                 lastOp.remove();
+                pushToGrid(op, false);
             } else {
                 throw new UnsupportedOperationException("Experimental flush isn't supported yet");
             }
