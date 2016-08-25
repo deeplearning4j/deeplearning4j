@@ -50,9 +50,8 @@ public class DenseLayer extends FeedForwardLayer {
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        //TODO Could do: return a map, rather than pass one in...
-        Map<String, INDArray> params = initializer().init(conf, layerParamsView, initializeParams);
-        ret.setParamTable(params);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
         ret.setConf(conf);
         return ret;
     }
