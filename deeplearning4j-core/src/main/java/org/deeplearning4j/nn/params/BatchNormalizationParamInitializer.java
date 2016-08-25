@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -30,7 +31,8 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // gamma & beta per activation for DNN and per per feature matrix for CNN layers
         // TODO setup for CNN & RNN
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
@@ -43,6 +45,8 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         conf.addVariable(GAMMA);
         params.put(BETA, createBeta(conf, betaView, initializeParams));
         conf.addVariable(BETA);
+
+        return params;
     }
 
     @Override

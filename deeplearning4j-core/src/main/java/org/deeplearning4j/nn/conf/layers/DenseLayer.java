@@ -21,11 +21,15 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
@@ -39,8 +43,18 @@ public class DenseLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        return null;
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
+                             INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret
+                = new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        //TODO Could do: return a map, rather than pass one in...
+        Map<String, INDArray> params = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(params);
+        ret.setConf(conf);
+        return ret;
     }
 
     @Override
