@@ -36,7 +36,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
@@ -65,9 +64,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 
@@ -381,7 +378,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             int[] nParamsPerLayer = new int[nLayers];
             for( int i=0; i<nLayers; i++ ){
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                nParamsPerLayer[i] = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+                nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf,true);
                 backpropParamLength += nParamsPerLayer[i];
             }
 
@@ -412,7 +409,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView, initializeParams);
+                layers[i] = conf.getLayer().instantiate(conf, listeners, i, paramsView, initializeParams);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -447,7 +444,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int[] nParamsPerLayer = new int[nLayers];
         for( int i=0; i<nLayers; i++ ){
             NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-            nParamsPerLayer[i] = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf,true);
             backpropParamLength += nParamsPerLayer[i];
         }
 
