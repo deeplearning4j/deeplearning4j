@@ -41,7 +41,7 @@ template<typename T>
 		__host__ __device__
 
 #endif
-		inline T nd4j_swap(T &val1, T &val2);
+		inline void nd4j_swap(T &val1, T &val2);
 
 		template<typename T>
 #ifdef __CUDACC__
@@ -757,8 +757,8 @@ template<typename T>
 		__host__ __device__
 
 #endif
-		inline T nd4j_swap(T &val1, T &val2) {
-            T temp(val1); val1=val2; val2=temp;
+		inline void nd4j_swap(T &val1, T &val2) {
+            T temp = val1; val1=val2; val2=temp;
 		};
 
 #ifdef __CUDACC__

@@ -2509,11 +2509,6 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
 #pragma omp simd
                     for (Nd4jIndex i = 0; i < tadLength; i++) {
-                        /*T oldX = rX[i];
-                        T oldY = rY[i];
-
-                        zX[i] = oldY;
-                        zY[i] = oldX;*/
                         nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
                     }
 
@@ -2529,7 +2524,6 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
                     Nd4jIndex xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
                     Nd4jIndex yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
-
 
                     nd4j::math::nd4j_swap<T>(x[xOffset], x[yOffset]);
                 }
