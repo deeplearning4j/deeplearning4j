@@ -58,6 +58,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int iterationCount = 0;
     private Repartition repartition;
     private RepartitionStrategy repartitionStrategy;
+    private StorageLevel storageLevel;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -69,6 +70,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.prefetchNumBatches = builder.prefetchNumBatches;
         this.repartition = builder.repartition;
         this.repartitionStrategy = builder.repartitionStrategy;
+        this.storageLevel = builder.storageLevel;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
@@ -89,6 +91,13 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
                                             int averagingFrequency, int prefetchNumBatches, Repartition repartition,
                                             RepartitionStrategy repartitionStrategy, boolean collectTrainingStats) {
+        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches,
+                repartition, repartitionStrategy, StorageLevel.MEMORY_ONLY_SER(), collectTrainingStats);
+    }
+
+    public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
+                                            int averagingFrequency, int prefetchNumBatches, Repartition repartition,
+                                            RepartitionStrategy repartitionStrategy, StorageLevel storageLevel, boolean collectTrainingStats) {
         if (numWorkers <= 0)
             throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
         if (rddDataSetNumExamples <= 0)
@@ -103,6 +112,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.collectTrainingStats = collectTrainingStats;
         this.repartition = repartition;
         this.repartitionStrategy = repartitionStrategy;
+        this.storageLevel = storageLevel;
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
@@ -164,7 +174,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
-        trainingData.persist(StorageLevel.MEMORY_ONLY());
+        if (storageLevel != null) trainingData.persist(storageLevel);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -211,7 +221,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     @Override
-    public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths){
+    public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths) {
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
@@ -251,6 +261,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
+        if (storageLevel != null) trainingData.persist(storageLevel);
 
         if (collectTrainingStats) stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -331,7 +342,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     @Override
-    public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths){
+    public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths) {
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
@@ -355,7 +366,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     @Override
-    public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths){
+    public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths) {
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
@@ -590,6 +601,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private int prefetchNumBatches = 0;
         private Repartition repartition = Repartition.Always;
         private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
+        private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
 
 
         /**
@@ -702,6 +714,25 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder repartitionStrategy(RepartitionStrategy repartitionStrategy) {
             this.repartitionStrategy = repartitionStrategy;
+            return this;
+        }
+
+        /**
+         * Set the storage level for {@code RDD<DataSet>}s.<br>
+         * Default: StorageLevel.MEMORY_ONLY_SER() - i.e., store in memory, in serialized form<br>
+         * To use no RDD persistence, use {@code null}<br>
+         * <p>
+         * <b>Note</b>: Spark's StorageLevel.MEMORY_ONLY() and StorageLevel.MEMORY_AND_DISK() can be problematic when
+         * it comes to off-heap data (which DL4J/ND4J uses extensively). Spark does not account for off-heap memory
+         * when deciding if/when to drop blocks to ensure enough free memory; consequently, for DataSet RDDs that are
+         * larger than the total amount of (off-heap) memory, this can lead to OOM issues. Put another way: Spark counts
+         * the on-heap size of DataSet and INDArray objects only (which is negligible) resulting in a significant
+         * underestimate of the true DataSet object sizes. More DataSets are thus kept in memory than we can really afford.
+         *
+         * @param storageLevel Storage level to use for DataSet RDDs
+         */
+        public Builder storageLevel(StorageLevel storageLevel) {
+            this.storageLevel = storageLevel;
             return this;
         }
 
