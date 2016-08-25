@@ -96,10 +96,11 @@ public class DefaultLayerFactory implements LayerFactory {
 
 
     protected Map<String, INDArray> getParams(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        ParamInitializer init = initializer();
-        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        init.init(params, conf, paramsView, initializeParams);
-        return params;
+//        ParamInitializer init = initializer();
+//        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+//        init.init(params, conf, paramsView, initializeParams);
+//        return params;
+        throw new UnsupportedOperationException();
     }
 
     @Override

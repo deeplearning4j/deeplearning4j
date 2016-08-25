@@ -43,7 +43,8 @@ public class GRUParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+
     	org.deeplearning4j.nn.conf.layers.GRU layerConf =
                 (org.deeplearning4j.nn.conf.layers.GRU) conf.getLayer();
 //        Distribution dist = Distributions.createDistribution(layerConf.getDist());

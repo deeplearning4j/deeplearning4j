@@ -124,7 +124,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners, int layerIndex,
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
                                                                 INDArray layerParamsView, boolean initializeParams);
 
     public abstract ParamInitializer initializer();
