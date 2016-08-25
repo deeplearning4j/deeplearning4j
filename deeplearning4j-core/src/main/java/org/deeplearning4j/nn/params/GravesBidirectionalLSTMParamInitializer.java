@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -67,7 +68,9 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
@@ -129,6 +132,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
             params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new int[]{nL, 4 * nL + 3}, rwR));
             params.put(BIAS_KEY_BACKWARDS, bR);
         }
+
+        return params;
     }
 
 

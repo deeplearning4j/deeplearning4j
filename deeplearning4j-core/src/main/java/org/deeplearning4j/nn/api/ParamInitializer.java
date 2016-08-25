@@ -35,13 +35,13 @@ public interface ParamInitializer {
     /**
      * Initialize the parameters
      *
-     * @param paramsMap        the map (initially empty) that will contain a view of the 'paramsView' array
      * @param conf             the configuration
      * @param paramsView       a view of the full network (backprop) parameters
      * @param initializeParams if true: initialize the parameters according to the configuration. If false: don't modify the
      *                         values in the paramsView array (but do select out the appropriate subset, reshape etc as required)
+     * @return Map of parameters keyed by type (view of the 'paramsView' array)
      */
-    void init(Map<String, INDArray> paramsMap, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams);
+    Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams);
 
     /**
      * Return a map of gradients (in their standard non-flattened representation), taken from the flattened (row vector) gradientView array.
