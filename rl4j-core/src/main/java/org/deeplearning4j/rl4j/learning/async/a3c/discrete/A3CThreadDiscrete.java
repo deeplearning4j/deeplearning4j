@@ -80,9 +80,11 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
             targets.putScalar(i, r);
 
             //the actor
-            INDArray row = Nd4j.create(1, mdp.getActionSpace().getSize());
-            row = row.putScalar(minTrans.getAction(), r - minTrans.getOutput()[0].getDouble(0));
-            System.out.println(minTrans.getOutput()[0] + " " + r + " " + minTrans.getOutput()[1]);
+            INDArray row = minTrans.getOutput()[1];
+            double prevV = row.getDouble(minTrans.getAction());
+            double expectedV =  minTrans.getOutput()[0].getDouble(0);
+            double advantage = r - expectedV;
+            row = row.putScalar(minTrans.getAction(), prevV + advantage);
             logSoftmax.putRow(i, row);
         }
 
