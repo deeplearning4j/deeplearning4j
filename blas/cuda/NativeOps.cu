@@ -5855,27 +5855,6 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::execMetaStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                     Nd4jIndex n,
-                                     float dx,
-                                     Nd4jPointer dy,
-                                     int incy,
-                                     Nd4jPointer paramsB,
-                                     Nd4jPointer result,
-                                     int resultStride) {
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
-
-    float *x = reinterpret_cast<float *> (dy);
-    float *params = reinterpret_cast<float *> (paramsB);
-    float *z = reinterpret_cast<float *> (result);
-
-    metaStridedFloat<<<64, 32, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, n, dx, x, incy, params, z, resultStride);
-
-    if (debug)
-        checkCudaErrors(cudaStreamSynchronize(*stream));
-}
-
-
 void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 

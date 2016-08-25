@@ -9,96 +9,6 @@
 #define GRID_WIDTH 19
 
 
-//#include <scalar.h>
-//#include <transform.h>
-//#include <pairwise_transform.h>
-
-
-
-namespace functions {
-    namespace meta {
-
-        template<typename T>
-        class MetaTransform {
-        public:
-            template<typename OpTypeA, typename OpTypeB>
-            static inline __device__ void transformCuda(
-                    Nd4jIndex n,
-                    T *dy,
-                    int incy,
-                    T *paramsA,
-                    T *paramsB,
-                    T *result,
-                    int resultStride) {
-
-                int totalThreads = gridDim.x * blockDim.x;
-                int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-                Nd4jIndex i = tid;
-                if (incy == 1 && resultStride == 1) {
-
-                    for (; i < n; i += totalThreads) {
-                        result[i] = OpTypeB::op(OpTypeA::op(dy[i], paramsA), paramsB);
-                    }
-                } else {
-
-                    for (; i < n; i += totalThreads) {
-                        result[i * resultStride] = OpTypeB::op(OpTypeA::op(dy[i * incy], paramsA), paramsB);
-                    }
-                }
-            }
-
-            static inline __device__ void processMetaLinear(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                            Nd4jIndex n,
-                                                            T *dy,
-                                                            int incy,
-                                                            T *paramsA,
-                                                            T *paramsB,
-                                                            T *result,
-                                                            int resultStride) {
-                if (opTypeA == 0) {
-                    transformCuda<simdOps::Add <T>, simdOps::Abs <T>> (n, dy, incy, paramsA, paramsB, result, resultStride);
-                } else if (opTypeA == 1) {
-                    transformCuda<simdOps::Abs <T>, simdOps::Add <T>> (n, dy, incy, paramsB, paramsA, result, resultStride);
-                }
-            }
-        };
-    }
-}
-
-template <typename T>
-__device__ inline void metaStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                          Nd4jIndex n,
-                                          T dx,
-                                          T *dy,
-                                          int incy,
-                                          T *params,
-                                          T *result,
-                                          int resultStride) {
-
-    /*
-    __shared__ T paramsA[1];
-    if (threadIdx.x == 0)
-        paramsA[0] = dx;
-    __syncthreads();
-*/
-    functions::meta::MetaTransform<T>::processMetaLinear(opTypeA, opNumA, opTypeB, opNumB, n, dy, incy, &dx, params, result, resultStride);
-}
-
-
-__global__ void metaStridedFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                 Nd4jIndex n,
-                                 float dx,
-                                 float *dy,
-                                 int incy,
-                                 float *paramsB,
-                                 float *result,
-                                 int resultStride) {
-
-
-    metaStridedGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, n, dx, dy, incy, paramsB, result, resultStride);
-}
-
 template <typename T>
 __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
                                                          T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, T *reductionBuffer, T *extraA, T *extraB, T scalarA, T scalarB, bool scalarReturned) {
@@ -121,21 +31,6 @@ __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, cons
     }
     __syncthreads();
 
-/*
-
-T *dx,
-int *xShapeInfo,
-T *extraParams,
-T *result,
-int *resultShapeInfo,
-int *dimension,
-int dimensionLength,
-T *reductionBuffer,
-UnifiedSharedMemory *manager,
-int *tadOnlyShapeInfo, int *tadOffsets
-
- */
-
     // this op can be used only for reduce calls now
 
     if (opTypeA == 0) { // scalar
@@ -152,32 +47,26 @@ int *tadOnlyShapeInfo, int *tadOffsets
 template <typename T>
 __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
                                                           T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
-    __shared__ Nd4jPointer params[2];
-    __shared__ T *paramsPtr;
+    __shared__
+    Nd4jPointer params[2];
+    __shared__
+    T *paramsPtr;
     if (threadIdx.x == 0) {
-        if (opTypeA == 0) params[0] = (Nd4jPointer *) &scalarA;
+        if (opTypeA == 0) params[0] = (Nd4jPointer * ) & scalarA;
         else params[0] = (Nd4jPointer *) extraA;
 
-        if (opTypeB == 0) params[1] = (Nd4jPointer *) &scalarB;
+        if (opTypeB == 0) params[1] = (Nd4jPointer * ) & scalarB;
         else params[1] = (Nd4jPointer *) extraB;
 
         paramsPtr = (T *) params;
     }
     __syncthreads();
 
-    /*
-
-     T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo
-
-     */
-
-    DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
 }
 
 template <typename T>
@@ -207,10 +96,8 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
             DISPATCH_METAOP(functions::transform::Transform<T>::template transformCuda, PARAMS(N, dx, xStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), MetaOp, OPS_A(TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         } else if (opTypeA == 2) {
             // pwt
-#endif
             // this is the most important thing here: its Dup() + Scalar
             DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
-#ifdef __EXPERIMENTAL__
         }
     } else if (opTypeB == 1) { // TRANSFORM
         if (opTypeA == 0) {
@@ -229,6 +116,12 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
     } else {
         if (threadIdx.x == 0 && blockIdx.x)
             printf("Unknown opTypeB: [%i]\n", opTypeB);
+    }
+#else
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
     }
 #endif
 }
