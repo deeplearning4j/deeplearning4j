@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 /**
  * Created by agibsonccc on 9/27/15.
  */
+@Deprecated
 public class BatchNormalizationLayerFactory extends DefaultLayerFactory {
     public BatchNormalizationLayerFactory(Class<? extends Layer> layerConfig) {
         super(layerConfig);

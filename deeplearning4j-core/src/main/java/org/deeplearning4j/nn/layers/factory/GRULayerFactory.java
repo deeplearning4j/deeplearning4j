@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.params.GRUParamInitializer;
 
 /**GRU: Gated Recurrent Unit RNN
  */
+@Deprecated
 public class GRULayerFactory extends DefaultLayerFactory {
 
     public GRULayerFactory(Class<? extends Layer> layerConfig) {

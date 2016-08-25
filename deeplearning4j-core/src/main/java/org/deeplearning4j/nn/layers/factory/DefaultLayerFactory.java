@@ -38,6 +38,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class DefaultLayerFactory implements LayerFactory {
 
     protected org.deeplearning4j.nn.conf.layers.Layer layerConfig;

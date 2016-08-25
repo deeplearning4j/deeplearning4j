@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class SubsampleLayerFactory extends DefaultLayerFactory {
     public SubsampleLayerFactory(Class<? extends Layer> layerClazz) {
         super(layerClazz);
