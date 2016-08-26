@@ -22,28 +22,39 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Created by Alex on 26/08/2016.
  */
 @Data
-public class CustomTestLayer extends Layer {
+public class CustomLayer extends FeedForwardLayer {
 
     private final double someCustomParameter;
 
-    public CustomTestLayer(@JsonProperty("someCustomParameter") double someCustomParameter) {
+    public CustomLayer(@JsonProperty("someCustomParameter") double someCustomParameter) {
         this.someCustomParameter = someCustomParameter;
+        this.nIn = 10;
+        this.nOut = 10;
     }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        CustomLayerImpl ret = new CustomLayerImpl(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
     }
 
     @Override
