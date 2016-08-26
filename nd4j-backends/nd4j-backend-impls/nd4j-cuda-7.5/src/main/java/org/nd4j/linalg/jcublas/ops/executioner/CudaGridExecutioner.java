@@ -469,13 +469,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-        buildZ(op, dimension);
+//        buildZ(op, dimension);
 
         // we should check, if this op returns scalar or not
         // if op.Z is scalar, we can't use GridOp here
-        if (op.z().isScalar()) {
+        //if (op.z().isScalar()) {
+        if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
             // So, that's scalar. We'll have to flush queue
             processAsGridOp(op, dimension);
+           // flushQueue();
+
+            //super.exec(op, dimension);
         } else {
             processAsGridOp(op, dimension);
         }
@@ -486,7 +490,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
-        buildZ(op, dimension);
+//        buildZ(op, dimension);
 
         if (op.z().isScalar()) {
             // So, that's scalar. We'll have to flush queue
