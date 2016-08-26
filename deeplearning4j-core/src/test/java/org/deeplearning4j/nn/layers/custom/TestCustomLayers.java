@@ -19,12 +19,16 @@ package org.deeplearning4j.nn.layers.custom;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collection;
@@ -40,9 +44,8 @@ import static org.junit.Assert.assertTrue;
 public class TestCustomLayers {
 
     @Test
-    public void testJsonRegistration(){
-
-        //First: Ensure that the CustomTestLayer class is registered
+    public void testJsonMultiLayerNetwork() {
+        //First: Ensure that the CustomLayer class is registered
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
 
         AnnotatedClass ac = AnnotatedClass.construct(Layer.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
@@ -52,10 +55,10 @@ public class TestCustomLayers {
         for (NamedType nt : types) {
             System.out.println(nt);
 //            registeredSubtypes.add(nt.getType());
-            if(nt.getType() == CustomTestLayer.class) found = true;
+            if (nt.getType() == CustomLayer.class) found = true;
         }
 
-        assertTrue("CustomTestLayer: not registered with NeuralNetConfiguration mapper",found);
+        assertTrue("CustomLayer: not registered with NeuralNetConfiguration mapper", found);
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
 
@@ -63,7 +66,7 @@ public class TestCustomLayers {
                 .learningRate(0.1)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new CustomTestLayer(3.14159))
+                .layer(1, new CustomLayer(3.14159))
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
                 .pretrain(false).backprop(true).build();
 
@@ -77,7 +80,57 @@ public class TestCustomLayers {
 
         MultiLayerConfiguration confFromYaml = MultiLayerConfiguration.fromYaml(yaml);
         assertEquals(conf, confFromYaml);
+    }
 
+    @Test
+    public void testJsonComputationGraph() {
+        //ComputationGraph with a custom layer; check JSON and YAML config actually works...
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("1", new CustomLayer(3.14159), "0")
+                .addLayer("2", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build(), "1")
+                .setOutputs("2")
+                .pretrain(false).backprop(true).build();
+
+        String json = conf.toJson();
+        String yaml = conf.toYaml();
+
+        System.out.println(json);
+
+        ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf, confFromJson);
+
+        ComputationGraphConfiguration confFromYaml = ComputationGraphConfiguration.fromYaml(yaml);
+        assertEquals(conf, confFromYaml);
+    }
+
+
+    @Test
+    public void checkInitializationFF() {
+        //Actually create a network with a custom layer; check initialization and forward pass
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.1)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).build())
+                .layer(1, new CustomLayer(3.14159)) //hard-coded nIn/nOut of 10
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(11).build())
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(9 * 10 + 10, net.getLayer(0).numParams());
+        assertEquals(10 * 10 + 10, net.getLayer(1).numParams());
+        assertEquals(10 * 11 + 11, net.getLayer(2).numParams());
+
+        //Check for exceptions...
+        net.output(Nd4j.rand(1, 9));
+        net.fit(new DataSet(Nd4j.rand(1, 9), Nd4j.rand(1, 11)));
     }
 
 }
