@@ -21,7 +21,7 @@ Content
 * <a href="#dsstne">DSSTNE</a>
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
-* <a href="#java">DL4J: Why Java?</a>
+* <a href="#java">DL4J: Why the JVM?</a>
 * <a href="#ecosystem">DL4J: Ecosystem</a>
 * <a href="#scala">DL4S: Deep Learning in Scala</a>
 * <a href="#ml">Machine-Learning Frameworks</a>
@@ -134,13 +134,15 @@ While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic
 
 For a full list of Deeplearning4j's features, please see our [features page](./features.html).
 
-### <a name="java">Why Java?</a>
+### <a name="java">Why the JVM?</a>
 
-We're often asked why we chose to implement an open-source deep-learning project in Java, when so much of the deep-learning community is focused on Python. After all, Python has great syntactic elements that allow you to add matrices together without creating explicit classes, as Java requires you to do. Likewise, Python has an extensive scientific computing environment with native extensions like Theano and Numpy.
+We're often asked why we chose to implement an open-source deep-learning project for the JVM, when so much of the deep-learning community is focused on Python. After all, Python has great syntactic elements that allow you to add matrices together without creating explicit classes, as Java requires you to do. Likewise, Python has an extensive scientific computing environment with native extensions like Theano and Numpy.
 
-Yet Java has several advantages. First of all, as a language it is inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C or C++. (When we talk about operations, we also consider things like strings and other tasks involved with higher-level machine learning processes.) Most deep-learning projects that are initially written in Python will have to be rewritten if they are to be put in production. Deeplearning4j relies on [JavaCPP](https://github.com/bytedeco/javacpp) to call pre-compiled native C++ from Java, substantially accelerating the speed of training. 
+Yet the JVM and its main languages - Java and Scala - have several advantages. 
 
-Secondly, most major companies use Java or a JVM-based system. It remains the most widely used language in enterprise. It is the language of Hadoop, ElasticSearch, Hive, Lucene and Pig, which happen to be useful for machine learning problems. Spark and Kafka are written in Scala, another JVM language. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
+First of all, they are inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C or C++. (When we talk about operations, we also consider things like strings and other tasks involved with higher-level machine learning processes.) Most deep-learning projects that are initially written in Python will have to be rewritten if they are to be put in production. Deeplearning4j relies on [JavaCPP](https://github.com/bytedeco/javacpp) to call pre-compiled native C++ from Java, substantially accelerating the speed of training. Many Python programmers opt to do deep learning in Scala because they prefer static typing and functional programming when working with others on a shared code base. 
+
+Secondly, most major companies and large government organizations rely heavily on Java or a JVM-based system. Java remains the most widely used language in enterprise. It is the language of Hadoop, ElasticSearch, Hive, Lucene and Pig, which happen to be useful for machine learning problems. Spark and Kafka are written in Scala, another JVM language. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
 
 Thirdly, Java's lack of robust scientific computing libraries can be solved by writing them, which we've done with [ND4J](http://nd4j.org). ND4J runs on distributed GPUs or GPUs, and can be interfaced via a Java or Scala API.
 
