@@ -185,7 +185,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * More data is almost always better, because it helps fight overfitting. 
 * Train over multiple epochs (complete passes through the dataset). 
 * Evaluate test set performance at each epoch to know when to stop (early stopping).
-* The learning rate is the single most important hyperparameter. Tune this using [deeplearning4j-ui](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui); see [this graph] (http://cs231n.github.io/neural-networks-3/#baby)
+* The learning rate is the single most important hyperparameter. Tune this using [deeplearning4j-ui](http://deeplearning4j.org/visualization); see [this graph](http://cs231n.github.io/neural-networks-3/#baby)
 * In general, stacking layers can help.
 * For LSTMs, use the softsign (not softmax) activation function over tanh (it's faster and less prone to saturation (~0 gradients)).
 * Updaters: RMSProp, AdaGrad or momentum (Nesterovs) are usually good choices. AdaGrad also decays the learning rate, which can help sometimes.
