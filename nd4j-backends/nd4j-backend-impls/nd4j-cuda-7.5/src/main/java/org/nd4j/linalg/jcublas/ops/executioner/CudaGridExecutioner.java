@@ -76,23 +76,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
          */
 
         if (op instanceof Accumulation) {
-            Accumulation acc = (Accumulation) op;
-
-            exec(acc, new int[]{Integer.MAX_VALUE});
+            exec((Accumulation) op, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
-            IndexAccumulation acc = (IndexAccumulation) op;
-
-            exec(acc, new int[]{Integer.MAX_VALUE});
+            exec((IndexAccumulation) op, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof ScalarOp || op instanceof TransformOp){
             // the only entry place for TADless ops
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
-
             processAsGridOp(op);
-
-            AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
         } else if (op instanceof BroadcastOp) {
             invoke((BroadcastOp) op);
-
         } else {
             logger.info("Random op: {}", op.getClass().getSimpleName());
             pushToGrid(new OpDescriptor(op));
@@ -134,8 +125,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Accumulation acc = (Accumulation) op;
             if (flush) flushQueue();
 
-            //logger.info("Sending AccumulationOp to CudaExecutioner");
-            super.exec(acc, dimensions);
+            //logger.info("Sending AccumulationOp to CudaExecutioner: {}", Arrays.toString(dimensions));
+            super.naiveExec(acc, dimensions);
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             if (flush) flushQueue();
@@ -147,7 +138,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (flush) flushQueue();
 
             //logger.info("Sending BroadcastOp to CudaExecutioner");
-            super.exec(broadcastOp, dimensions);
+            if (dimensions != null){
+                super.exec(broadcastOp, dimensions);
+            } else {
+                super.invoke(broadcastOp);
+            }
         }
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
@@ -164,6 +159,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             exec((GridOp) op);
         }
     }
+
+
 
     public long getMetaCounter() {
         return metaCounter.get();
@@ -183,6 +180,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             So we either should append this op to future GridOp, form MetaOp, or immediately execute everything
             But we don't expect this method called for blocking ops ever, so it's either
         */
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+
 
         OpDescriptor last = lastOp.get();
         if (last != null) {
@@ -195,8 +194,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     */
                     pushToGrid(last, false);
 
-                    if (op instanceof TransformOp && op.y() != null) {
-                        lastOp.set(new OpDescriptor(op));
+                    if ((op instanceof TransformOp && op.y() != null) || op instanceof ScalarOp) {
+                        lastOp.set(new OpDescriptor(op, dimension));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension), false);
                     }
@@ -221,12 +220,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            if (op instanceof TransformOp && op.y() != null) {
-                lastOp.set(new OpDescriptor(op));
+            if ((op instanceof TransformOp && op.y() != null ) || op instanceof ScalarOp) {
+                lastOp.set(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
             }
         }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
         //return op;
     }
@@ -242,6 +243,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else {
             // Experimental native compilation required for full MIMD support
             if (nativeOps.isExperimentalEnabled()) {
+                logger.info("Experimental hook");
                 if (last.getOp() instanceof ScalarOp || last.getOp() instanceof TransformOp) {
                 /*
                     Predicate logic is simple:
@@ -469,18 +471,18 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-//        buildZ(op, dimension);
+
 
         // we should check, if this op returns scalar or not
         // if op.Z is scalar, we can't use GridOp here
-        //if (op.z().isScalar()) {
         if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
             // So, that's scalar. We'll have to flush queue
-            processAsGridOp(op, dimension);
-           // flushQueue();
+           // processAsGridOp(op, dimension);
+            flushQueue();
 
-            //super.exec(op, dimension);
+            super.exec(op, new int[]{Integer.MAX_VALUE});
         } else {
+            buildZ(op, dimension);
             processAsGridOp(op, dimension);
         }
 
@@ -492,10 +494,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public INDArray exec(IndexAccumulation op, int... dimension) {
 //        buildZ(op, dimension);
 
-        if (op.z().isScalar()) {
+        if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
             // So, that's scalar. We'll have to flush queue
-            processAsGridOp(op, dimension);
+            flushQueue();
+
+            super.exec(op, new int[]{Integer.MAX_VALUE});
         } else {
+            logger.info("PEWPEW");
+            buildZ(op, dimension);
             processAsGridOp(op, dimension);
         }
 
@@ -607,9 +613,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             (float) scalarB
                     );
                 } else {
-            //        logger.info("aX: {}, aY: {}, aZ: {}", first.getX().address(), first.getY().address(), first.getZ().address());
-            //        logger.info("bX: {}, bY: {}, bZ: {}", second.getX().address(), second.getY(), second.getZ().address());
-            //        logger.info("------------------------");
                     nativeOps.execMetaPredicateShapeFloat(extras,
                             first.getType().ordinal(),
                             first.getOpNum(),
@@ -712,12 +715,40 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
+/*
+    @Override
+    public INDArray execAndReturn(BroadcastOp op) {
+        flushQueue();
+        execCounter.incrementAndGet();
+
+        return super.execAndReturn(op);
+    }
+
+    @Override
+    public INDArray execAndReturn(Op op) {
+        flushQueue();
+        execCounter.incrementAndGet();
+
+        return super.execAndReturn(op);
+    }
+
+    @Override
+    public INDArray execAndReturn(ScalarOp op) {
+        flushQueue();
+        execCounter.incrementAndGet();
+
+        super.invoke(op);
+        return op.z();
+    }
 
     @Override
     public INDArray execAndReturn(TransformOp op) {
         flushQueue();
         execCounter.incrementAndGet();
 
-        return super.execAndReturn(op);
+        super.invoke(op);
+
+        return op.z();
     }
+    */
 }

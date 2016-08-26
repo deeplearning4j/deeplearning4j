@@ -168,48 +168,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return op.z();
     }
 
-    @Override
-    public INDArray exec(Accumulation op, int... dimension) {
-        checkForCompression(op);
+    /**
+     *
+     * @param op
+     * @param dimension
+     * @return
+     */
+    protected INDArray naiveExec(Accumulation op, int... dimension) {
 
-        Arrays.sort(dimension);
-
-//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
-//            OpDashboard.getInstance().processOpCall(op);
-
-  //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
-//
-//        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
-        for(int i = 0; i < dimension.length; i++) {
-            if(dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[]{Integer.MAX_VALUE};
-
-
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new int[]{1, retShape[0]};
-            else
-                retShape = new int[]{retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new int[]{1, 1};
-        }
-
-        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-            return op.noOp();
-
-        INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
-            ret= Nd4j.zeros(retShape);
-        } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        }
-        op.setZ(ret);
+        INDArray ret = op.z();
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -516,7 +483,55 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        return ret;
+        return op.z();
+    }
+
+    @Override
+    public INDArray exec(Accumulation op, int... dimension) {
+        checkForCompression(op);
+
+        Arrays.sort(dimension);
+
+//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+//            OpDashboard.getInstance().processOpCall(op);
+
+  //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//
+//        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
+        for(int i = 0; i < dimension.length; i++) {
+            if(dimension[i] < 0)
+                dimension[i] += op.x().rank();
+        }
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
+
+
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
+        }
+
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.noOp();
+
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
+        op.setZ(ret);
+
+        naiveExec(op, dimension);
+
+        return op.z();
     }
 
     @Override

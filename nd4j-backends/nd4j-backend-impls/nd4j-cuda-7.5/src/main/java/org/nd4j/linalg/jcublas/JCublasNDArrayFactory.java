@@ -1168,8 +1168,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             elementSize = 8;
         else throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
 
+        // flushQueue should be blocking here, because typeConversion happens on cpu side
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         DataBuffer buffer = null;
 
