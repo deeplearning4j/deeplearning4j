@@ -1,17 +1,17 @@
 ---
-tutorial: A Beginner's Guide to Reinforcement Learning
+title: A Beginner's Guide to Reinforcement Learning (for Java)
 layout: default
 ---
 
-# A Beginner's Guide to Reinforcement Learning
+# A Beginner's Guide to Reinforcement Learning (for Java)
 
 Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but reinforcement learning may be their killer app. 
 
 Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
 
-Reinforcement algorithms with deep learning at their core are currently beating expert humans at numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. A form of RL called Deep-Q learning has been implemented in [Scala atop Deeplearning4j](https://github.com/rubenfiszel/scala-drl), and it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
+Reinforcement algorithms with deep learning at their core are currently beating expert humans at numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). They it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
-In time, we expect RL to perform better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. When people talk about building robot armies, this is what they mean. :) 
+In time, we expect reinforcement learning to perform better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. When people talk about building robot armies, this is what they mean. :) 
 
 <p align="center">
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
