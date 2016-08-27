@@ -545,6 +545,7 @@ public class TestDecayPolicies {
                     .learningRateDecayPolicy(LearningRatePolicy.Schedule)
                     .learningRateSchedule(learningRateSchedule)
                     .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS)
+                    .weightInit(WeightInit.XAVIER)
                     .momentum(0.9)
                     .momentumAfter(momentumSchedule)
                     .regularization(true).l2(0.0001)

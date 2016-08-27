@@ -26,6 +26,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -79,6 +80,9 @@ public class BatchNormalizationTest {
                 2.80000000e+01,   3.00000000e+01
         },new int[]{2, 16});
 
+        System.out.println(Arrays.toString(activationsExpected.data().asFloat()));
+        System.out.println(Arrays.toString(activationsActual.data().asFloat()));
+
         assertEquals(activationsExpected, activationsActual);
         assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
     }
@@ -128,6 +132,9 @@ public class BatchNormalizationTest {
                     38.,  40.,  42.,  44.,  46.
                 }, new int[] {1, 16});
 
+        System.out.println(Arrays.toString(dnnExpectedEpsilonOut.data().asFloat()));
+        System.out.println(Arrays.toString(actualOut.getSecond().data().asFloat()));
+
         // arrays are the same but assert does not see that
         assertEquals(dnnExpectedEpsilonOut, actualOut.getSecond());
         assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
@@ -168,6 +175,9 @@ public class BatchNormalizationTest {
                 6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
                 6.00000000e+00
         },new int[]{2,2,4,4});
+
+        System.out.println(Arrays.toString(activationsExpected.data().asFloat()));
+        System.out.println(Arrays.toString(activationsActual.data().asFloat()));
 
         assertEquals(activationsExpected, activationsActual);
         assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
@@ -216,6 +226,9 @@ public class BatchNormalizationTest {
                 {
                         752, 1264
                 }, new int[] {1, 2});
+
+        System.out.println(Arrays.toString(expectedEpsilonOut.data().asFloat()));
+        System.out.println(Arrays.toString(actualOut.getSecond().data().asFloat()));
 
         // arrays are the same but assert does not see that
         assertEquals(expectedEpsilonOut, actualOut.getSecond());
