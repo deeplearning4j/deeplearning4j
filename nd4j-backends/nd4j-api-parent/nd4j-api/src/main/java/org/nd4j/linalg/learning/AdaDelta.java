@@ -83,7 +83,7 @@ public class AdaDelta implements Serializable, GradientUpdater {
         INDArray update = gradient.muli(rmsdx_t1.divi(rmsg_t));
 
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
-        msdx.muli(rho).addi(update.mul(update));
+        msdx.muli(rho).addi(update.mul(update).muli(1-rho));
 
         return update;
     }
