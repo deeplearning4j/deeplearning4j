@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaDelta;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Field;
@@ -165,8 +166,8 @@ public class TestUpdaters {
 
         updater.update(layer, gradient, iteration, 1);
 
-        double beta1t = FastMath.pow(beta1, iteration);
-        double beta2t = FastMath.pow(beta2, iteration);
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+        double beta2t = FastMath.pow(beta2, iteration + 1);
         double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
 
