@@ -109,6 +109,9 @@ template<typename OpType>
 				int *tadOnlyShapeInfo) {
 				int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
+				if (threadIdx.x == 0)
+				printf("Reduce starts...\n");
+
 				int n = shape::length(xShapeInfo);
 
 				int tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -181,7 +184,9 @@ template<typename OpType>
 					if (threadIdx.x == 0) {
 						unsigned int *tc = (unsigned *)reductionBuffer;
 						tc[4096] = 0;
-						result[0] = OpType::postProcess(sPartials[0], n, extraParams);
+						T res = OpType::postProcess(sPartials[0], n, extraParams);
+						printf("Reduce result: [%f]\n", res);
+						result[0] = res;
 					}
 				}
 			}

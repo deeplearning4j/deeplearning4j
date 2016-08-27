@@ -2882,6 +2882,8 @@ float NativeOps::execReduceScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
 
+	printf("reduceScalarFloat is going to start...\n");
+
 	reduceScalarFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2893,6 +2895,8 @@ float NativeOps::execReduceScalarFloat(
 			1,
 			reductionPointer, deviceTADShapeInfo
 	);
+
+	printf("kernel fired...\n");
 
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
