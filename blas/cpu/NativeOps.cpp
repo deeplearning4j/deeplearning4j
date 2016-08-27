@@ -2568,10 +2568,6 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     // no-op
 }
 
-void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
-    // no-op
-}
-
 void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB, bool scalarReturned) {
     // no-op
 }
@@ -2582,4 +2578,24 @@ bool NativeOps::isExperimentalEnabled() {
 
 void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
     // no-op;
+}
+
+void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op
+}
+
+void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    // no-op;
+}
+
+void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    // no-op
+}
+
+void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+}
+
+void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op
 }

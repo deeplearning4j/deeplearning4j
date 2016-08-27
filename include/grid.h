@@ -131,6 +131,16 @@ __global__ void metaPredicateStridedFloat(const int opTypeA, const int opNumA, c
     metaPredicateStridedGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 }
 
+__global__ void metaPredicateStridedDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, double *dx, int xStride, double *dy, int yStride, double *dz, int zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
+
+    metaPredicateStridedGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
+}
+
+__global__ void metaPredicateStridedHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, nd4j::float16 *dx, int xStride, nd4j::float16 *dy, int yStride, nd4j::float16 *dz, int zStride, nd4j::float16 *extraA, nd4j::float16 *extraB, float scalarA, float scalarB) {
+
+    metaPredicateStridedGeneric<nd4j::float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
+}
+
 __global__ void metaPredicateReduceFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
                                                 float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo,  int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB, bool scalarReturned) {
 
@@ -140,6 +150,16 @@ __global__ void metaPredicateReduceFloat(const int opTypeA, const int opNumA, co
 __global__ void metaPredicateShapeFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
 
     metaPredicateShapeGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+}
+
+__global__ void metaPredicateShapeDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, double *dx, int *xShapeInfo, double *dy, int *yShapeInfo, double *dz, int *zShapeInfo, double *extraA, double *extraB, float scalarA, float scalarB) {
+
+    metaPredicateShapeGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+}
+
+__global__ void metaPredicateShapeHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, nd4j::float16 *dx, int *xShapeInfo, nd4j::float16 *dy, int *yShapeInfo, nd4j::float16 *dz, int *zShapeInfo, nd4j::float16 *extraA, nd4j::float16 *extraB, float scalarA, float scalarB) {
+
+    metaPredicateShapeGeneric<nd4j::float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
 #endif //LIBND4J_GRID_H

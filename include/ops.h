@@ -1885,7 +1885,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T merge(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+//            T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::merge(old, opOutput, paramsB);
@@ -1893,7 +1893,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T update(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            //T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::update(old, opOutput, paramsB);
@@ -1909,7 +1909,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+//            T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::postProcess(reduction, n, paramsB);
