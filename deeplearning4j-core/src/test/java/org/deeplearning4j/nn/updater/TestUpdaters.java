@@ -57,7 +57,7 @@ public class TestUpdaters {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .rho(rho)
                 .layer(new DenseLayer.Builder()
-                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).epsilon(Nd4j.EPS_THRESHOLD).build())
                 .build();
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf, true);
@@ -89,7 +89,7 @@ public class TestUpdaters {
                 }
 
                 msgTmp.muli(rho);
-                msgTmp.addi(1 - rho).muli(val.mul(val));
+                msgTmp.addi(val.mul(val).muli(1 - rho));
 
                 gradExpected = Transforms.sqrt(msdxTmp.add(Nd4j.EPS_THRESHOLD))
                         .divi(Transforms.sqrt(msgTmp.add(Nd4j.EPS_THRESHOLD))).muli(val);
@@ -262,6 +262,8 @@ public class TestUpdaters {
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
         gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
+        double epsilon = 1e-8;
+
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             key = entry.getKey();
             val = entry.getValue();
@@ -271,7 +273,7 @@ public class TestUpdaters {
                 lastGTmp = Nd4j.zeros(val.shape());
 
             lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(Nd4j.EPS_THRESHOLD)));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
 
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
             lastG.put(key, lastGTmp);
