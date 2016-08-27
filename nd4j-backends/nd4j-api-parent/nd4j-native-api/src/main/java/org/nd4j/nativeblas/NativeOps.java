@@ -1211,6 +1211,32 @@ public class NativeOps extends Pointer {
                                                          float scalarA,
                                                          float scalarB);
 
+    public native void execMetaPredicateStridedDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                     long N,
+                                                     Pointer dx,
+                                                     int xStride,
+                                                     Pointer dy,
+                                                     int yStride,
+                                                     Pointer dz,
+                                                     int zStride,
+                                                     Pointer extraA,
+                                                     Pointer extraB,
+                                                     double scalarA,
+                                                     double scalarB);
+
+    public native void execMetaPredicateStridedHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                     long N,
+                                                     Pointer dx,
+                                                     int xStride,
+                                                     Pointer dy,
+                                                     int yStride,
+                                                     Pointer dz,
+                                                     int zStride,
+                                                     Pointer extraA,
+                                                     Pointer extraB,
+                                                     float scalarA,
+                                                     float scalarB);
+
     public native void execMetaPredicateShapeFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                      long N,
                                                      Pointer dx,
@@ -1223,6 +1249,32 @@ public class NativeOps extends Pointer {
                                                      Pointer extraB,
                                                      float scalarA,
                                                      float scalarB);
+
+    public native void execMetaPredicateShapeDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                   long N,
+                                                   Pointer dx,
+                                                   Pointer xShape,
+                                                   Pointer dy,
+                                                   Pointer yShape,
+                                                   Pointer dz,
+                                                   Pointer zShape,
+                                                   Pointer extraA,
+                                                   Pointer extraB,
+                                                   double scalarA,
+                                                   double scalarB);
+
+    public native void execMetaPredicateShapeHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                   long N,
+                                                   Pointer dx,
+                                                   Pointer xShape,
+                                                   Pointer dy,
+                                                   Pointer yShape,
+                                                   Pointer dz,
+                                                   Pointer zShape,
+                                                   Pointer extraA,
+                                                   Pointer extraB,
+                                                   float scalarA,
+                                                   float scalarB);
 
     public native void execMetaPredicateReduceFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                     Pointer dx,

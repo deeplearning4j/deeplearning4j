@@ -47,7 +47,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     // last op
     private ThreadLocal<OpDescriptor> lastOp = new ThreadLocal<>();
-    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+//    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     private ThreadLocal<Deque<OpDescriptor>> deviceQueues = new ThreadLocal<>();
 
     private AtomicLong metaCounter = new AtomicLong(0);
@@ -56,7 +56,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
     public CudaGridExecutioner() {
-        extraz.set(new PointerPointer(10));
+//        extraz.set(new PointerPointer(10));
         deviceQueues.set(new ArrayDeque<OpDescriptor>());
     }
 
@@ -194,7 +194,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     */
                     pushToGrid(last, false);
 
-                    if ((op instanceof TransformOp && op.y() != null) || op instanceof ScalarOp) {
+                    //|| op instanceof ScalarOp
+                    if ((op instanceof TransformOp && op.y() != null) ) {
                         lastOp.set(new OpDescriptor(op, dimension));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension), false);
@@ -220,7 +221,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            if ((op instanceof TransformOp && op.y() != null ) || op instanceof ScalarOp) {
+            if ((op instanceof TransformOp && op.y() != null )) {
                 lastOp.set(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
@@ -614,6 +615,82 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     );
                 } else {
                     nativeOps.execMetaPredicateShapeFloat(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXShapeInfo(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYShapeInfo(), // cane be -1
+                            second.getZ(),
+                            second.getZShapeInfo(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            (float) scalarA,
+                            (float) scalarB
+                    );
+                }
+            } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
+                if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
+                    nativeOps.execMetaPredicateStridedDouble(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXStride(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            second.getZ(),
+                            second.getZStride(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            scalarA,
+                            scalarB
+                    );
+                } else {
+                    nativeOps.execMetaPredicateShapeDouble(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXShapeInfo(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYShapeInfo(), // cane be -1
+                            second.getZ(),
+                            second.getZShapeInfo(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            scalarA,
+                            scalarB
+                    );
+                }
+            } else {
+                if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
+                    nativeOps.execMetaPredicateStridedHalf(extras,
+                            first.getType().ordinal(),
+                            first.getOpNum(),
+                            second.getType().ordinal(),
+                            second.getOpNum(),
+                            first.getXLength(),
+                            first.getX(),
+                            first.getXStride(),
+                            yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            second.getZ(),
+                            second.getZStride(),
+                            first.getExtraArgs(),
+                            second.getExtraArgs(),
+                            (float) scalarA,
+                            (float) scalarB
+                    );
+                } else {
+                    nativeOps.execMetaPredicateShapeHalf(extras,
                             first.getType().ordinal(),
                             first.getOpNum(),
                             second.getType().ordinal(),

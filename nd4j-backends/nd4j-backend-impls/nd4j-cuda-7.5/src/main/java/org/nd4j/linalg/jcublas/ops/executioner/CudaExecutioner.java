@@ -66,7 +66,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     private static Logger log = LoggerFactory.getLogger(CudaExecutioner.class);
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
-    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+    protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
 
     public CudaExecutioner() {
 
