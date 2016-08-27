@@ -645,11 +645,11 @@ public class TestComputationGraphNetwork {
         net.init();
         net.fit(iter.next());
         Gradient actualGradient = net.gradient;
-        assertNotEquals(expectedGradient.getGradientFor("0_W"), actualGradient.getGradientFor("0_W"));
+        assertNotEquals(expectedGradient.getGradientFor("first_W"), actualGradient.getGradientFor("first_W"));
 
         net.update(expectedGradient);
         actualGradient = net.gradient;
-        assertEquals(expectedGradient.getGradientFor("0_W"), actualGradient.getGradientFor("0_W"));
+        assertEquals(expectedGradient.getGradientFor("first_W"), actualGradient.getGradientFor("first_W"));
 
         // Update params with set
         net.setParam("first_W", Nd4j.ones(4,5));
