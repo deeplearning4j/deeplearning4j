@@ -16,6 +16,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdaDelta;
+import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Field;
@@ -54,7 +57,7 @@ public class TestUpdaters {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .rho(rho)
                 .layer(new DenseLayer.Builder()
-                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).epsilon(Nd4j.EPS_THRESHOLD).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf, true);
@@ -86,7 +89,7 @@ public class TestUpdaters {
                 }
 
                 msgTmp.muli(rho);
-                msgTmp.addi(1 - rho).muli(val.mul(val));
+                msgTmp.addi(val.mul(val).muli(1 - rho));
 
                 gradExpected = Transforms.sqrt(msdxTmp.add(Nd4j.EPS_THRESHOLD))
                         .divi(Transforms.sqrt(msgTmp.add(Nd4j.EPS_THRESHOLD))).muli(val);
@@ -162,8 +165,8 @@ public class TestUpdaters {
 
         updater.update(layer, gradient, iteration, 1);
 
-        double beta1t = FastMath.pow(beta1, iteration);
-        double beta2t = FastMath.pow(beta2, iteration);
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+        double beta2t = FastMath.pow(beta2, iteration + 1);
         double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
 
@@ -259,6 +262,8 @@ public class TestUpdaters {
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
         gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
+        double epsilon = 1e-8;
+
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             key = entry.getKey();
             val = entry.getValue();
@@ -268,7 +273,7 @@ public class TestUpdaters {
                 lastGTmp = Nd4j.zeros(val.shape());
 
             lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(Nd4j.EPS_THRESHOLD)));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
 
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
             lastG.put(key, lastGTmp);
@@ -474,5 +479,72 @@ public class TestUpdaters {
         Updater newUpdater = UpdaterCreator.getUpdater(net);
         net.setUpdater(newUpdater);
         assertTrue(newUpdater == net.getUpdater());    //Should be identical object
+    }
+
+
+    @Test
+    public void testEpsilon(){
+        //Test epsilon setting - adagrad
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).epsilon(0.123).build())
+                .layer(2, new OutputLayer.Builder().nIn(2).nOut(2).epsilon(0.456).build())
+                .build();
+
+        assertEquals(1e-6, conf.getConf(0).getLayer().getEpsilon(), 0.0);
+        assertEquals(0.123, conf.getConf(1).getLayer().getEpsilon(), 0.0);
+        assertEquals(0.456, conf.getConf(2).getLayer().getEpsilon(), 0.0);
+
+        MultiLayerNetwork net =  new MultiLayerNetwork(conf);
+        net.init();
+        MultiLayerUpdater updater = (MultiLayerUpdater)net.getUpdater();
+        Updater[] updaters = updater.getLayerUpdaters();
+
+        AdaGradUpdater u0 = (AdaGradUpdater)updaters[0];
+        AdaGrad adaGrad = (AdaGrad)u0.updaterForVariable.get("W");
+        assertEquals(1e-6, adaGrad.getEpsilon(), 0.0);
+
+        AdaGradUpdater u1 = (AdaGradUpdater)updaters[1];
+        AdaGrad adaGrad1 = (AdaGrad)u1.updaterForVariable.get("W");
+        assertEquals(0.123, adaGrad1.getEpsilon(), 0.0);
+
+        AdaGradUpdater u2 = (AdaGradUpdater)updaters[2];
+        AdaGrad adaGrad2 = (AdaGrad)u2.updaterForVariable.get("W");
+        assertEquals(0.456, adaGrad2.getEpsilon(), 0.0);
+
+
+
+        //Test epsilon setting - adadelta
+        conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).epsilon(0.123).build())
+                .layer(2, new OutputLayer.Builder().nIn(2).nOut(2).epsilon(0.456).build())
+                .build();
+
+        assertEquals(1e-6, conf.getConf(0).getLayer().getEpsilon(), 0.0);
+        assertEquals(0.123, conf.getConf(1).getLayer().getEpsilon(), 0.0);
+        assertEquals(0.456, conf.getConf(2).getLayer().getEpsilon(), 0.0);
+
+        net =  new MultiLayerNetwork(conf);
+        net.init();
+        updater = (MultiLayerUpdater)net.getUpdater();
+        updaters = updater.getLayerUpdaters();
+
+        AdaDeltaUpdater u0_2 = (AdaDeltaUpdater) updaters[0];
+        AdaDelta adaDelta = (AdaDelta) u0_2.updaterForVariable.get("W");
+        assertEquals(1e-6, adaDelta.getEpsilon(), 0.0);
+
+        AdaDeltaUpdater u1_2 = (AdaDeltaUpdater) updaters[1];
+        AdaDelta adaDelta1 = (AdaDelta)u1_2.updaterForVariable.get("W");
+        assertEquals(0.123, adaDelta1.getEpsilon(), 0.0);
+
+        AdaDeltaUpdater u2_2 = (AdaDeltaUpdater)updaters[2];
+        AdaDelta adaDelta2 = (AdaDelta) u2_2.updaterForVariable.get("W");
+        assertEquals(0.456, adaDelta2.getEpsilon(), 0.0);
+
     }
 }

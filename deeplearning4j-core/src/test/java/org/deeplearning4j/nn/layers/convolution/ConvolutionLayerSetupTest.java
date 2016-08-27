@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -126,25 +127,18 @@ public class ConvolutionLayerSetupTest {
 
     @Test
     public void testMultiChannel() throws Exception {
-        //ensure LFW data set is present
-        List<String> labels = new ArrayList<>(Arrays.asList("Zico", "Ziwang_Xu"));
-        String rootDir = new ClassPathResource("lfwtest").getFile().getAbsolutePath();
+        INDArray in = Nd4j.rand(new int[]{10,3,28,28});
+        INDArray labels = Nd4j.rand(10,2);
+        DataSet next = new DataSet(in,labels);
 
-        RecordReader reader = new ImageRecordReader(28,28,3);
-        reader.initialize(new FileSplit(new File(rootDir)));
-        DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,1,labels.size());
-
-        labels.remove("lfwtest");
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         new ConvolutionLayerSetup(builder,28,28,3);
         ConvolutionLayer layer2 = (ConvolutionLayer) builder.getLayerwise().get(2).getLayer();
         assertEquals(6,layer2.getNIn());
-        DataSet next = recordReader.next();
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         network.fit(next);
-
     }
 
     @Test
