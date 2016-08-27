@@ -729,6 +729,20 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
     @Test
+    public void testVectorSum2() {
+        INDArray lin = Nd4j.create(new double[]{1, 2, 3, 4});
+        assertEquals(10.0,lin.sumNumber().doubleValue(),1e-1);
+
+    }
+
+    @Test
+    public void testVectorSum3() {
+        INDArray lin = Nd4j.create(new double[]{1, 2, 3, 4});
+        INDArray lin2 = Nd4j.create(new double[]{1, 2, 3, 4});
+        assertEquals(lin, lin2);
+    }
+
+        @Test
     public void testSmallSum() {
         INDArray base = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007});
         base.addi(1e-12);

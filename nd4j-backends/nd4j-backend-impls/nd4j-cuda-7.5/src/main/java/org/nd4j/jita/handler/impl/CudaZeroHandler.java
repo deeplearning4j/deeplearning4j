@@ -123,7 +123,7 @@ public class CudaZeroHandler implements MemoryHandler {
             }
             break;
             case SEQUENTIAL: {
-                this.flowController = new GridFlowController();
+                this.flowController = new SynchronousFlowController();
                 this.contextPool = new LimitedContextPool();
             }
             break;

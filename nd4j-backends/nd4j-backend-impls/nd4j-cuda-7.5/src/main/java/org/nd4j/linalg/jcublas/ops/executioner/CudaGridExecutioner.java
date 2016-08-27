@@ -562,7 +562,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+        PointerPointer extras = new PointerPointer(null, context.getOldStream());
 
         double scalarA = 0.0;
         double scalarB = 0.0;
