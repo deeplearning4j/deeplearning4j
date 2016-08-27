@@ -79,6 +79,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Updater updater;
     //adadelta - weight for how much to consider previous history
     protected double rho;
+    //Epsilon value for adagrad and adadelta
+    protected double epsilon;
     protected double rmsDecay;
     protected double adamMeanDecay;
     protected double adamVarDecay;
@@ -102,6 +104,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.dropOut = builder.dropOut;
         this.updater = builder.updater;
         this.rho = builder.rho;
+        this.epsilon = builder.epsilon;
         this.rmsDecay = builder.rmsDecay;
         this.adamMeanDecay = builder.adamMeanDecay;
         this.adamVarDecay = builder.adamVarDecay;
@@ -171,6 +174,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double dropOut = Double.NaN;
         protected Updater updater = null;
         protected double rho = Double.NaN;
+        protected double epsilon = Double.NaN;
         protected double rmsDecay = Double.NaN;
         protected double adamMeanDecay = Double.NaN;
         protected double adamVarDecay = Double.NaN;
@@ -297,7 +301,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * Ada delta coefficient
+         * Ada delta coefficient, rho. Only applies if using .updater(Updater.ADADELTA)
          *
          * @param rho
          */
@@ -312,6 +316,16 @@ public abstract class Layer implements Serializable, Cloneable {
         public T rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return (T) this;
+        }
+
+        /**
+         * Epsilon value for updaters: Adagrad and Adadelta. Only used if using Updater.ADAGRAD or Updater.ADADELTA
+         *
+         * @param epsilon    Epsilon value to use for adagrad and adadelta
+         */
+        public T epsilon(double epsilon){
+            this.epsilon = epsilon;
+            return (T)this;
         }
 
         /**
