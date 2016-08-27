@@ -12,6 +12,7 @@ import java.io.Serializable;
 
 /**
  * http://www.matthewzeiler.com/pubs/googleTR2012/googleTR2012.pdf
+ * https://arxiv.org/pdf/1212.5701v1.pdf
  * <p>
  * Ada delta updater. More robust adagrad that keeps track of a moving window
  * average of the gradient rather than the every decaying learning rates of adagrad
@@ -21,13 +22,19 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 public class AdaDelta implements Serializable, GradientUpdater {
-    private INDArray msg;
-    private INDArray msdx;
+    private INDArray msg;       //E[g^2]_t by arxiv paper, algorithm 1
+    private INDArray msdx;      //E[delta x^2]_t by arxiv paper, algorithm 1
     private double rho = 0.95;
+    private double epsilon = Nd4j.EPS_THRESHOLD;
 
 
     public AdaDelta(double rho) {
         this.rho = rho;
+    }
+
+    public AdaDelta(double rho, double epsilon){
+        this.rho = rho;
+        this.epsilon = epsilon;
     }
 
     @Override
@@ -69,16 +76,21 @@ public class AdaDelta implements Serializable, GradientUpdater {
         if (msg == null || msdx == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        msg.muli(rho);
-        msg.addi(1 - rho).muli(gradient.mul(gradient));
-        // modifiedGradient = sqrt(modifiedGradient^2)_t-1 / sqrt(avgSquaredRawGradient^2)_t * rawGradient
-        INDArray ret = gradient.muli(Transforms.sqrt(msdx.add(Nd4j.EPS_THRESHOLD), false)
-                .divi(Transforms.sqrt(msg.add(Nd4j.EPS_THRESHOLD), false)));
-        msdx.muli(rho);
-        INDArray dxSquared = ret.mul(ret);
-        msdx.addi(dxSquared.muli(1 - rho));
+        //Line 4 of Algorithm 1: https://arxiv.org/pdf/1212.5701v1.pdf
+        //E[g^2]_t = rho * E[g^2]_{t−1} + (1-rho)*g^2_t
+        msg.muli(rho).addi(gradient.mul(gradient).muli(1-rho));
 
-        return ret;
+        //Calculate update:
+        //dX = - g * RMS[delta x]_{t-1} / RMS[g]_t
+        //Note: negative is applied in the DL4J step function: params -= update rather than params += update
+        INDArray rmsdx_t1 = Transforms.sqrt(msdx.add(epsilon), false);
+        INDArray rmsg_t = Transforms.sqrt(msg.add(epsilon), false);
+        INDArray update = gradient.muli(rmsdx_t1.divi(rmsg_t));
+
+        //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
+        msdx.muli(rho).addi(update.mul(update).muli(1-rho));
+
+        return update;
     }
 
     @Override
