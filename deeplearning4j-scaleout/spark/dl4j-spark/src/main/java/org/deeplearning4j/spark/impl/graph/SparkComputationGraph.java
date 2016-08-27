@@ -166,7 +166,6 @@ public class SparkComputationGraph implements Serializable {
      */
     public ComputationGraph fit(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -182,7 +181,6 @@ public class SparkComputationGraph implements Serializable {
      */
     public ComputationGraph fit(String path, int minPartitions) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -195,7 +193,6 @@ public class SparkComputationGraph implements Serializable {
      * @return trained network
      */
     public ComputationGraph fitPaths(JavaRDD<String> paths){
-        paths.cache();
         trainingMaster.executeTrainingPaths(this, paths);
         return network;
     }
@@ -230,7 +227,6 @@ public class SparkComputationGraph implements Serializable {
      */
     public ComputationGraph fitMultiDataSet(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        serializedDataSets.cache();
         trainingMaster.executeTrainingMDS(this, serializedDataSets);
         return network;
     }
@@ -243,7 +239,6 @@ public class SparkComputationGraph implements Serializable {
      * @return trained network
      */
     public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths){
-        paths.cache();
         trainingMaster.executeTrainingPathsMDS(this, paths);
         return network;
     }
@@ -258,7 +253,6 @@ public class SparkComputationGraph implements Serializable {
      */
     public ComputationGraph fitMultiDataSet(String path, int minPartitions) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        serializedDataSets.cache();
         trainingMaster.executeTrainingMDS(this, serializedDataSets);
         return network;
     }

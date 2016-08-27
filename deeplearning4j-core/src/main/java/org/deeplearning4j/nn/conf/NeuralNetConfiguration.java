@@ -396,6 +396,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected Updater updater = Updater.SGD;
         protected double momentum = Double.NaN;
         protected Map<Integer, Double> momentumSchedule = null;
+        protected double epsilon = Double.NaN;
         protected double rho = Double.NaN;
         protected double rmsDecay = Double.NaN;
         protected double adamMeanDecay = Double.NaN;
@@ -675,6 +676,17 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+
+        /**
+         * Epsilon value for updaters: Adagrad and Adadelta.
+         *
+         * @param epsilon    Epsilon value to use for adagrad or
+         */
+        public Builder epsilon(double epsilon){
+            this.epsilon = epsilon;
+            return this;
+        }
+
         /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
          */
         public Builder rmsDecay(double rmsDecay) {
@@ -790,6 +802,21 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case ADADELTA:
                     if (Double.isNaN(layer.getRho()))
                         layer.setRho(rho);
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
+                        layer.setEpsilon(1e-6);
+                        log.warn("Layer \"" + layerName + "\" AdaDelta epsilon is automatically set to 1e-6. Add epsilon to configuration to change the value.");
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
+                case ADAGRAD:
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
+                        layer.setEpsilon(1e-6);
+                        //Do we warn here? When epsilon was not configurable, we didn't...
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
                 case RMSPROP:
                     if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
                         layer.setRmsDecay(0.95);
