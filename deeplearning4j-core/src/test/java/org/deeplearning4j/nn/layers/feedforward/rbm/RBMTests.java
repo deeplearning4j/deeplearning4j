@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -71,11 +72,8 @@ public class RBMTests {
     }
 
     @Test
-    public void testLfw() {
-        LFWDataSetIterator iter = new LFWDataSetIterator(10,10,new int[] {28,28,1}, true, 1.0);
-        DataSet d = iter.next();
-
-        d.normalizeZeroMeanZeroUnitVariance();
+    public void testLfw() throws Exception {
+        DataSet d = new MnistDataSetIterator(10,true,12345).next();
 
         int nOut = 600;
 
@@ -222,7 +220,7 @@ public class RBMTests {
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
         rbm.computeGradientAndScore();
-        INDArray getParams = rbm.params();
+        INDArray getParams = rbm.params(true);
         assertEquals(rand2,getParams);
     }
 
