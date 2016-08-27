@@ -544,6 +544,7 @@ public class TestDecayPolicies {
                     .learningRateDecayPolicy(LearningRatePolicy.Schedule)
                     .learningRateSchedule(learningRateSchedule)
                     .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS)
+                    .weightInit(WeightInit.XAVIER)
                     .momentum(0.9)
                     .momentumAfter(momentumSchedule)
                     .regularization(true).l2(0.0001)
@@ -657,8 +658,8 @@ public class TestDecayPolicies {
             mTmp.muli(beta1).addi(val.mul(1.0-beta1));
             vTmp.muli(beta2).addi(val.mul(val).mul(1.0-beta2));
 
-            double beta1t = FastMath.pow(beta1, i);
-            double beta2t = FastMath.pow(beta2, i);
+            double beta1t = FastMath.pow(beta1, i + 1);
+            double beta2t = FastMath.pow(beta2, i + 1);
             double alphat = lr * FastMath.sqrt(1-beta2t)/(1-beta1t);
             if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
 

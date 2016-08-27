@@ -218,7 +218,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -234,7 +233,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path, int minPartitions) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -247,7 +245,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return trained network
      */
     public MultiLayerNetwork fitPaths(JavaRDD<String> paths){
-        paths.cache();
         trainingMaster.executeTrainingPaths(this, paths);
         return network;
     }
