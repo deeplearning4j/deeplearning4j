@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.updater;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -17,7 +18,7 @@ import java.util.Map;
  * Expects backprop gradients for all layers to be in single Gradient object,
  * keyed by "0_b", "1_w" etc., as per MultiLayerNetwork.backward()
  */
-@EqualsAndHashCode
+@EqualsAndHashCode @Getter
 public class MultiLayerUpdater implements Updater {
     private final Updater[] layerUpdaters;
     private INDArray viewArray;
