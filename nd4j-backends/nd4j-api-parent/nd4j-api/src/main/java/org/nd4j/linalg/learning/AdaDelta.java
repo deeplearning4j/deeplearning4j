@@ -25,11 +25,16 @@ public class AdaDelta implements Serializable, GradientUpdater {
     private INDArray msg;       //E[g^2]_t by arxiv paper, algorithm 1
     private INDArray msdx;      //E[delta x^2]_t by arxiv paper, algorithm 1
     private double rho = 0.95;
-    private double eps = Nd4j.EPS_THRESHOLD;
+    private double epsilon = Nd4j.EPS_THRESHOLD;
 
 
     public AdaDelta(double rho) {
         this.rho = rho;
+    }
+
+    public AdaDelta(double rho, double epsilon){
+        this.rho = rho;
+        this.epsilon = epsilon;
     }
 
     @Override
@@ -78,8 +83,8 @@ public class AdaDelta implements Serializable, GradientUpdater {
         //Calculate update:
         //dX = - g * RMS[delta x]_{t-1} / RMS[g]_t
         //Note: negative is applied in the DL4J step function: params -= update rather than params += update
-        INDArray rmsdx_t1 = Transforms.sqrt(msdx.add(eps), false);
-        INDArray rmsg_t = Transforms.sqrt(msg.add(eps), false);
+        INDArray rmsdx_t1 = Transforms.sqrt(msdx.add(epsilon), false);
+        INDArray rmsg_t = Transforms.sqrt(msg.add(epsilon), false);
         INDArray update = gradient.muli(rmsdx_t1.divi(rmsg_t));
 
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
