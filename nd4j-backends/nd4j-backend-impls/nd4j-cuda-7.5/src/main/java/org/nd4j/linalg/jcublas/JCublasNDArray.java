@@ -449,8 +449,8 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public boolean equals(Object o) {
-        if (o != null) AtomicAllocator.getInstance().synchronizeHostData((INDArray) o);
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        //if (o != null) AtomicAllocator.getInstance().synchronizeHostData((INDArray) o);
+        //AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.equals(o);
     }
 

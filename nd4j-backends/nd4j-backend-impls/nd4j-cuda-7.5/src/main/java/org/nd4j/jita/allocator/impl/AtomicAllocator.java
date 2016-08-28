@@ -15,6 +15,7 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.constant.ConstantProtector;
@@ -403,6 +404,9 @@ public class AtomicAllocator implements Allocator {
         allocationsMap.remove(objectId);
 
         memoryHandler.purgeZeroObject(bucketId, objectId, point, copyback);
+
+        getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+        getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
     }
 
     /**

@@ -1,5 +1,6 @@
 package org.nd4j.jita.flow.impl;
 
+import lombok.Getter;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -7,6 +8,7 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
@@ -38,6 +40,8 @@ public class AsynchronousFlowController implements FlowController{
     private static Logger log = LoggerFactory.getLogger(AsynchronousFlowController.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+    @Getter protected EventsProvider eventsProvider = new EventsProvider();
 
     private transient TimeProvider timeProvider = new OperativeProvider();
 
