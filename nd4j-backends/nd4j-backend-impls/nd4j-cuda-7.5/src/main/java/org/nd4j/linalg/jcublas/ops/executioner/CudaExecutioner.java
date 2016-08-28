@@ -214,7 +214,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         );
 
 
-        Pointer extraArgs = op.extraArgs() != null && op instanceof Variance ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
         //Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : 0;
         //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
         Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
