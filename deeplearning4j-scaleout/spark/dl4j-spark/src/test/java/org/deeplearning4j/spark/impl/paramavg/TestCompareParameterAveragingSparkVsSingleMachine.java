@@ -18,6 +18,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -319,7 +320,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
-                assertEquals(finalParams, finalSparkParams);
+
+                float[] finalParamsFloat = finalParams.dup().data().asFloat();
+                float[] finalSparkParamsFloat = finalSparkParams.dup().data().asFloat();
+                assertArrayEquals(finalParamsFloat, finalSparkParamsFloat, 0.001f);
 
                 double sparkScore = sparkNet.getScore();
                 assertTrue(sparkScore > 0.0);
