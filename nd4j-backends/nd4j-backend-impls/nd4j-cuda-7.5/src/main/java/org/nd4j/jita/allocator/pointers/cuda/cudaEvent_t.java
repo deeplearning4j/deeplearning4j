@@ -32,16 +32,22 @@ public class cudaEvent_t extends CudaPointer{
         destroyed.set(true);
     }
 
-    public synchronized void destroy() {
+    public void destroy() {
         if (!isDestroyed()) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(this);
             markDestoryed();
         }
     }
 
-    public synchronized void synchronize() {
+    public void synchronize() {
         if (!isDestroyed()) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this);
+        }
+    }
+
+    public void register(cudaStream_t stream) {
+        if (!isDestroyed()) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().registerEvent(this, stream);
         }
     }
 }

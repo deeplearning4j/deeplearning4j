@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
@@ -67,17 +68,18 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void waitTillFinished(AllocationPoint point) {
-        CudaContext context = point.getCurrentContext(); //(CudaContext) allocator.getDeviceContext().getContext();
+        /*CudaContext context = point.getCurrentContext(); //(CudaContext) allocator.getDeviceContext().getContext();
         if (context == null)
             context = (CudaContext) allocator.getDeviceContext().getContext();
         context.syncOldStream();
+        */
+
+        if (point.getLastWriteEvent() != null) {
+            point.getLastWriteEvent().synchronize();
+        }
     }
 
-    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
-        if (result == null) return;
-        AllocationPoint point = allocator.getAllocationPoint(result);
-        point.tickDeviceWrite();
-    }
+
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
@@ -93,6 +95,8 @@ public class SynchronousFlowController implements FlowController {
             prepareDelayedMemory(result);
             AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
+
+
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
           //      log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
@@ -159,11 +163,44 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void waitTillReleased(AllocationPoint point) {
         waitTillFinished(point);
+
+        if (point.getLastReadEvent() != null)
+            point.getLastReadEvent().synchronize();
     }
 
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
+
+        EventsProvider.getInstance().storeEvent(result.getLastWriteEvent());
+        result.setLastWriteEvent(EventsProvider.getInstance().getEvent());
+        result.getLastWriteEvent().register(context.getOldStream());
+
+
+        for(AllocationPoint operand: operands) {
+            EventsProvider.getInstance().storeEvent(operand.getLastReadEvent());
+            operand.setLastReadEvent(EventsProvider.getInstance().getEvent());
+            operand.getLastReadEvent().register(context.getOldStream());
+        }
         context.syncOldStream();
+    }
+
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
+        if (result == null) return;
+        AllocationPoint point = allocator.getAllocationPoint(result);
+        point.tickDeviceWrite();
+        EventsProvider.getInstance().storeEvent(point.getLastWriteEvent());
+        point.setLastWriteEvent(EventsProvider.getInstance().getEvent());
+        point.getLastWriteEvent().register(context.getOldStream());
+
+        for (INDArray operand: operands) {
+            if (operand == null)
+                continue;
+
+            AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            EventsProvider.getInstance().storeEvent(pointOperand.getLastReadEvent());
+            pointOperand.setLastReadEvent(EventsProvider.getInstance().getEvent());
+            pointOperand.getLastReadEvent().register(context.getOldStream());
+        }
     }
 
     @Override

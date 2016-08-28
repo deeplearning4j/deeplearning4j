@@ -101,6 +101,10 @@ public class AllocationPoint {
 
     private volatile GarbageBufferReference garbageBufferReference;
 
+    @Getter @Setter private cudaEvent_t lastWriteEvent;
+
+    @Getter @Setter private cudaEvent_t lastReadEvent;
+
     private cudaEvent_t lastEvent;
 
     private volatile CudaContext currentContext;
