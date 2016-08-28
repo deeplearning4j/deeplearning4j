@@ -10,6 +10,11 @@
 #include <types/float8.h>
 #include <type_conversions.h>
 
+#ifdef __EXPERIMENTAL__
+bool experimentalSupport = true;
+#else
+bool experimentalSupport = false;
+#endif
 
 
 /**
@@ -2536,7 +2541,6 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 }
 
 void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
-    // to be implemented
     float **x = reinterpret_cast<float **>(dx);
     float **z = reinterpret_cast<float **>(dz);
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
@@ -2549,10 +2553,37 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xS
 }
 
 void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
-    // to be implemented
+    double **x = reinterpret_cast<double **>(dx);
+    double **z = reinterpret_cast<double **>(dz);
+    int **xShape = reinterpret_cast<int **>(xShapeInfo);
+    int **zShape = reinterpret_cast<int **>(zShapeInfo);
+    int *shuffle = reinterpret_cast<int *>(shuffleMap);
+    int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
+    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+
+    shuffleGeneric<double>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
 }
 
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     // no-op
 }
 
+void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op
+}
+
+void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB, bool scalarReturned) {
+    // no-op
+}
+
+bool NativeOps::isExperimentalEnabled() {
+    return experimentalSupport;
+}
+
+void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+}
+
+void NativeOps::setOmpMinThreads(int threads) {
+    // TODO: to be implemented
+}

@@ -128,12 +128,12 @@ namespace nd4j
   struct float16
   {
     /* constexpr */ op_def float16() { data.x = 0; }
-    
+
     template <class T>
     op_def /*explicit*/ float16(const T& rhs) {
       assign(rhs);
     }
-      
+
 //    op_def float16(float rhs) {
 //      assign(rhs);
 //    }
@@ -150,8 +150,8 @@ namespace nd4j
 #endif
     }
 
-    //    op_def operator double() const { return (float)*this; } 
-       
+    //    op_def operator double() const { return (float)*this; }
+
     op_def operator half() const { return data; }
 
     op_def unsigned short getx() const { return data.x; }
@@ -173,7 +173,7 @@ namespace nd4j
     op_def void assign(double rhs) {
       assign((float)rhs);
     }
-   
+
     op_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
       data.x = __float2half_rn(rhs);
@@ -197,29 +197,29 @@ namespace nd4j
       data = rhs.data;
     }
 
-    op_def float16& operator+=(float16 rhs) { assign((float)*this + rhs); return *this; }  
+    op_def float16& operator+=(float16 rhs) { assign((float)*this + rhs); return *this; }
 
-    op_def float16& operator-=(float16 rhs) { assign((float)*this - rhs); return *this; }  
+    op_def float16& operator-=(float16 rhs) { assign((float)*this - rhs); return *this; }
 
-    op_def float16& operator*=(float16 rhs) { assign((float)*this * rhs); return *this; }   
+    op_def float16& operator*=(float16 rhs) { assign((float)*this * rhs); return *this; }
 
-    op_def float16& operator/=(float16 rhs) { assign((float)*this / rhs); return *this; }  
+    op_def float16& operator/=(float16 rhs) { assign((float)*this / rhs); return *this; }
 
-    op_def float16& operator+=(float rhs) { assign((float)*this + rhs); return *this; }  
+    op_def float16& operator+=(float rhs) { assign((float)*this + rhs); return *this; }
 
-    op_def float16& operator-=(float rhs) { assign((float)*this - rhs); return *this; }  
+    op_def float16& operator-=(float rhs) { assign((float)*this - rhs); return *this; }
 
-    op_def float16& operator*=(float rhs) { assign((float)*this * rhs); return *this; }  
+    op_def float16& operator*=(float rhs) { assign((float)*this * rhs); return *this; }
 
-    op_def float16& operator/=(float rhs) { assign((float)*this / rhs); return *this; }  
+    op_def float16& operator/=(float rhs) { assign((float)*this / rhs); return *this; }
 
-    op_def float16& operator++() { assign(*this + 1.f); return *this; }  
+    op_def float16& operator++() { assign(*this + 1.f); return *this; }
 
-    op_def float16& operator--() { assign(*this - 1.f); return *this; }  
+    op_def float16& operator--() { assign(*this - 1.f); return *this; }
 
-    op_def float16 operator++(int i) { assign(*this + (float)i); return *this; }  
+    op_def float16 operator++(int i) { assign(*this + (float)i); return *this; }
 
-    op_def float16 operator--(int i) { assign(*this - (float)i); return *this; }  
+    op_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
 
 
     half data;
@@ -253,15 +253,15 @@ namespace nd4j
 //
 //  template <class T>
 //  op_def float16 operator/(const float16& a, const T& b) { return float16((float)a / (float)b); }
-  
+
 
   op_def float16 /* constexpr */ operator+(const float16& h) { return h; }
-  
+
   op_def float16 operator - (const float16& h) { return float16(hneg(h.data)); }
 
 #ifdef __CUDACC__
   op_def int isnan(const float16& h)  { return ishnan(h.data); }
-  
+
   op_def int isinf(const float16& h) { return ishinf(h.data); }
 #endif
 

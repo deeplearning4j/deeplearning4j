@@ -1405,7 +1405,7 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
 template <typename T>
 __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, bool propagate) {
 
-    T *shmem;
+    __shared__ T *shmem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char sharedmem[];

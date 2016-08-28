@@ -15,14 +15,16 @@
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
+#define meta_def __noinline__ __device__
 #include <sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #else
+#define meta_def inline
 #define no_op_exec_special_cuda
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __device__
+#define op_def __noinline__ __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -30,6 +32,8 @@
 #elif __GNUC__
 #define op_def _Pragma("omp declare simd") inline
 #endif
+
+
 
 
 namespace functions {
@@ -62,6 +66,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 + params[0];
+		}
 	};
 
 	template<typename T>
@@ -77,6 +86,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 - params[0];
 		}
 	};
 
@@ -94,6 +108,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0] - d1;
+		}
 	};
 
 	template<typename T>
@@ -109,6 +128,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 * params[0];
 		}
 	};
 
@@ -126,6 +150,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return d1 / params[0];
+		}
 	};
 
 	template<typename T>
@@ -142,6 +171,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0] / d1;
+		}
 	};
 
 	template<typename T>
@@ -157,6 +191,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0];
 		}
 	};
 
@@ -203,6 +242,11 @@ namespace simdOps {
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}
+
+		// op for MetaOp
+		op_def static T op(T d1, T *params) {
+			return (int)d1 % (int)params[0];
+		}
 	};
 
 	template<typename T>
@@ -210,6 +254,11 @@ namespace simdOps {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d2 % (int)d1;
+		}
+
+		// op for MetaOp
+		op_def static T op(T d1, T *params) {
+			return (int)params[0] % (int)d1;
 		}
 	};
 
@@ -269,6 +318,7 @@ namespace simdOps {
 			return d1 >= d2;
 		}
 
+		// FIXME: this signature clashes with MetaOp stuff
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -282,6 +332,7 @@ namespace simdOps {
 			return d1 > d2;
 		}
 
+		// FIXME: this signature clashes with MetaOp stuff
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -917,6 +968,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_max<T>(d1, d2);
 		}
 
+		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
@@ -946,6 +998,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_min(d1, d2);
 		}
 
+		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
@@ -1562,6 +1615,7 @@ template<typename T>
             T eps = extraParams[1];
 
             int mode = (int) extraParams[2];
+
             if (mode == 0) // equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
             else if (mode == 1) // not equals
@@ -1588,6 +1642,7 @@ template<typename T>
                 return (d1 != compare) ? 1.0 : 0.0;
             else
                 printf("Undefined match condition: [%i]\n", mode);
+
             return d1;
         }
 
@@ -1715,6 +1770,153 @@ template<typename T>
             return d1;
         }
 	};
+
+/**
+ * Special case here: MetaOp which consist of 2 operations.
+ *
+ * Predicate can be either scalar or transform, to process data before actual op call
+ * Postulate will be the scalar/transform, but will be applied to result of broadcast/reduce/reduce3
+ */
+template<typename T, typename OpTypeA, typename OpTypeB>
+	class MetaOp {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		/*
+		 * PREDICATE
+		 */
+
+		meta_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+		// scalar, transform, reduce, indexreduce entry
+		meta_def static T op(T d1, T *params) {
+			/*
+			 * We assume, that params for MetaOp is a set of pointers to actual op A & B extraArgs
+			 */
+			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+			return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
+		}
+
+		// PWT, broadcast entry. Predicate can be only scalar, transform
+		meta_def static T op(T d1, T d2, T *params) {
+			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+			return OpTypeB::op(OpTypeA::op(d1, paramsA), d2, paramsB);
+		}
+
+		/*
+		 * POSTULATE
+		 */
+
+		// will be called for reduce, reduce3
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+			T *paramsA = reinterpret_cast<T *> (wrap[0]);
+			T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+			return OpTypeB::op(OpTypeA::postProcess(reduction, n, paramsA), paramsB);
+		}
+
+	};
+
+    /**
+     * InvertedMetaOp shares the same idea as MetaOp, but op being applied to op.Y in pairwise/broadcast ops
+     */
+template<typename T, typename OpTypeA, typename OpTypeB>
+    class InvertedMetaOp {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        /*
+         * PREDICATE
+         */
+
+        // scalar, transform, reduce, indexreduce entry
+		meta_def static T op(T d1, T *params) {
+            /*
+             * We assume, that this method won't be EVER called
+             */
+            printf("You should NEVER see this message in output\n");
+            return 0.0f;
+        }
+
+        // PWT, broadcast entry. Predicate can be only scalar, transform
+        meta_def static T op(T d1, T d2, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::op(OpTypeA::op(d1, d2, paramsA), paramsB);
+        }
+
+        /*
+         * POSTULATE
+         */
+
+        // will be called for reduce, reduce3
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+            /*
+             * We assume, that this method won't be EVER called
+             */
+            printf("You should NEVER EVER see this message in output\n");
+
+            return 0.0f;
+        }
+
+    };
+
+
+template<typename T, typename OpTypeA, typename OpTypeB>
+    class ReduceMetaOp {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+		meta_def static T startingValue(const T *input) {
+            return OpTypeB::startingValue(input);
+        }
+
+		meta_def static T merge(T old, T opOutput, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::merge(old, opOutput, paramsB);
+        }
+
+		meta_def static T update(T old, T opOutput, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::update(old, opOutput, paramsB);
+        }
+
+		meta_def static T op(T d1, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
+        }
+
+		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
+            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+
+            return OpTypeB::postProcess(reduction, n, paramsB);
+        }
+    };
 }
 
 #endif

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_conversions.h>
+#include <grid.h>
 //#include <sys/time.h>
 
 
@@ -36,10 +37,28 @@ bool debug = false;
 bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
+#ifdef __EXPERIMENTAL__
+bool experimentalSupport = true;
+#else
+bool experimentalSupport = false;
+#endif
 
-int minThreads = 128;
+int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
+
+typedef struct {
+    long streamId;
+    long callId;
+} __syncInfo;
+
+typedef __syncInfo SyncInfo;
+
+void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data){
+    SyncInfo *sync = (SyncInfo *) data;
+
+    printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
+}
 
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jIndex)ptrToDeviceId;
@@ -2085,11 +2104,14 @@ void   NativeOps::execBroadcastFloat(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension, int dimensionLength){
+/*
+    cudaEvent_t start;
+    cudaEventCreateWithFlags(&start, cudaEventDisableTiming);
 
-//    timespec tsX;
-//    timespec tsY;
-//    clock_gettime(CLOCK_REALTIME, &tsX);
-
+    timespec tsX;
+    timespec tsY;
+    clock_gettime(CLOCK_REALTIME, &tsX);
+*/
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *yPointer = reinterpret_cast<float *>(y);
@@ -2109,6 +2131,7 @@ void   NativeOps::execBroadcastFloat(
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
 
+
 	if (debug && verbose)
 		printf("F3 opNum:[%i]\n", opNum);
 
@@ -2116,12 +2139,15 @@ void   NativeOps::execBroadcastFloat(
 
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
+/*
+    SyncInfo *info = new SyncInfo();
+    info->streamId = 32;
+    info->callId = 1234567890;
 
-
-//    timespec ts1;
-//    timespec ts2;
-//    clock_gettime(CLOCK_REALTIME, &ts1);
-
+    timespec ts1;
+    timespec ts2;
+    clock_gettime(CLOCK_REALTIME, &ts1);
+*/
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2132,17 +2158,23 @@ void   NativeOps::execBroadcastFloat(
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+/*
+    clock_gettime(CLOCK_REALTIME, &ts2);
 
-//    clock_gettime(CLOCK_REALTIME, &ts2);
+//    cudaEventRecord(start, 0);
 
+//    cudaStreamAddCallback(*stream, syncCallback, (void*)info, 0);
+*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+/*
+    clock_gettime(CLOCK_REALTIME, &tsY);
 
-//    clock_gettime(CLOCK_REALTIME, &tsY);
-
-//    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
-//    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
-//    printf("-------------------------------------\n");
+    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
+    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
+    printf("Callback setup time: %i\n", (tsY.tv_nsec - ts2.tv_nsec));
+    printf("-------------------------------------\n");
+    */
 }
 
 
@@ -2875,6 +2907,8 @@ float NativeOps::execReduceScalarFloat(
 
 	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
+
+    //printf("Launch params: {x: %i, y: %i, z: %i}\n", launchDims.x,launchDims.y, launchDims.z);
 
 	reduceScalarFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -5810,6 +5844,9 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer x
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelDouble<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap,   Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -5824,6 +5861,9 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xS
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelFloat<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
@@ -5838,4 +5878,87 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
     shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffle, tadOnlyShapeInfo, tadOffset);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *> (dx);
+    float *y = reinterpret_cast<float *> (dy);
+    float *z = reinterpret_cast<float *> (dz);
+
+    float *extrasA = reinterpret_cast<float *> (extraA);
+    float *extrasB = reinterpret_cast<float *> (extraB);
+
+    metaPredicateStridedFloat<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB, bool scalarReturned) {
+    // no-op
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *> (dx);
+    float *y = reinterpret_cast<float *> (dy);
+    float *z = reinterpret_cast<float *> (dz);
+
+    int *xShape = reinterpret_cast<int *> (xShapeInfo);
+    int *yShape = reinterpret_cast<int *> (yShapeInfo);
+    int *zShape = reinterpret_cast<int *> (zShapeInfo);
+
+    int *tadShape = reinterpret_cast<int *> (tadShapeInfo);
+    int *tadOffset = reinterpret_cast<int *> (tadOffsets);
+
+    int *dim = reinterpret_cast<int *> (dimension);
+
+    float *extrasA = reinterpret_cast<float *> (extraA);
+    float *extrasB = reinterpret_cast<float *> (extraB);
+
+/*
+ metaPredicateReduceFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
+float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB) {
+ */
+
+    metaPredicateReduceFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float *x = reinterpret_cast<float *> (dx);
+    float *y = reinterpret_cast<float *> (dy);
+    float *z = reinterpret_cast<float *> (dz);
+
+    int *xShape = reinterpret_cast<int *> (xShapeInfo);
+    int *yShape = reinterpret_cast<int *> (yShapeInfo);
+    int *zShape = reinterpret_cast<int *> (zShapeInfo);
+
+    float *extrasA = reinterpret_cast<float *> (extraA);
+    float *extrasB = reinterpret_cast<float *> (extraB);
+
+    metaPredicateShapeFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+bool NativeOps::isExperimentalEnabled() {
+    return experimentalSupport;
+}
+
+void NativeOps::setOmpMinThreads(int threads) {
+    minThreads = nd4j::math::nd4j_max<int>(32, threads);
+    minThreads = nd4j::math::nd4j_min<int>(maxThreads, minThreads);
 }
