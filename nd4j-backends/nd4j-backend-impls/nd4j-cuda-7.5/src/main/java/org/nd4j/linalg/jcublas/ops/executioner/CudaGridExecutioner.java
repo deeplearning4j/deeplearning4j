@@ -501,7 +501,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             super.exec(op, new int[]{Integer.MAX_VALUE});
         } else {
-            logger.info("PEWPEW");
             buildZ(op, dimension);
             processAsGridOp(op, dimension);
         }
@@ -792,7 +791,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
-/*
+
     @Override
     public INDArray execAndReturn(BroadcastOp op) {
         flushQueue();
@@ -827,5 +826,5 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         return op.z();
     }
-    */
+
 }

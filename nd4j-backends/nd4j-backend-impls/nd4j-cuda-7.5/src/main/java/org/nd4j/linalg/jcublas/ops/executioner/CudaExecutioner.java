@@ -382,11 +382,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     ret.putScalar(0, resx);
 
                     op.setFinalResult(ret.getFloat(0));
-
-                    log.info("Static result: " + resx);
-                    log.info("Ret result: " + ret.getFloat(0));
-                    log.info("Op result: " + op.getFinalResult().floatValue());
-
                 } else {
                     nativeOps.execReduceFloat(
                             xShapeInfoHostPointer,

@@ -939,6 +939,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray put = Nd4j.create(new double[]{5, 6});
         row1.putRow(1, put);
 
+        System.out.println(row1);
 
         INDArray row1Fortran = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray putFortran = Nd4j.create(new double[]{5, 6});
