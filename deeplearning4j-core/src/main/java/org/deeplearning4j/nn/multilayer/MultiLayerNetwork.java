@@ -24,6 +24,8 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
@@ -1028,7 +1030,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(DataSetIterator iterator) {
         DataSetIterator iter;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
-        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator)) {
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator || iterator instanceof MultipleEpochsIterator
+        || iterator instanceof CifarDataSetIterator || iterator instanceof LFWDataSetIterator)) {
             iter = new AsyncDataSetIterator(iterator, 2);
         } else iter = iterator;
 
