@@ -27,6 +27,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -37,7 +38,6 @@ import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -1676,8 +1676,8 @@ public class ComputationGraph implements Serializable, Model {
                 if (current.hasLayer()) {
                     //Layer
                     Layer l = current.getLayer();
-                    if (l instanceof BaseRecurrentLayer<?>) {
-                        out = ((BaseRecurrentLayer<?>) l).rnnTimeStep(current.getInputs()[0]);
+                    if (l instanceof RecurrentLayer) {
+                        out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0]);
                     } else if (l instanceof MultiLayerNetwork) {
                         out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
                     } else {
@@ -1741,8 +1741,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Map<String, INDArray> rnnGetPreviousState(String layerName) {
         Layer l = verticesMap.get(layerName).getLayer();
-        if (l == null || !(l instanceof BaseRecurrentLayer<?>)) return null;
-        return ((BaseRecurrentLayer<?>) l).rnnGetPreviousState();
+        if (l == null || !(l instanceof RecurrentLayer)) return null;
+        return ((RecurrentLayer) l).rnnGetPreviousState();
     }
 
     /**
@@ -1755,8 +1755,8 @@ public class ComputationGraph implements Serializable, Model {
     public Map<String, Map<String, INDArray>> rnnGetPreviousStates() {
         Map<String, Map<String, INDArray>> states = new HashMap<>();
         for (Layer l : layers) {
-            if (l instanceof BaseRecurrentLayer<?>) {
-                states.put(l.conf().getLayer().getLayerName(), ((BaseRecurrentLayer<?>) l).rnnGetPreviousState());
+            if (l instanceof RecurrentLayer) {
+                states.put(l.conf().getLayer().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
             }
         }
         return states;
@@ -1780,10 +1780,10 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void rnnSetPreviousState(String layerName, Map<String, INDArray> state) {
         Layer l = verticesMap.get(layerName).getLayer();
-        if (l == null || !(l instanceof BaseRecurrentLayer<?>)) {
+        if (l == null || !(l instanceof RecurrentLayer)) {
             throw new UnsupportedOperationException("Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
         }
-        ((BaseRecurrentLayer<?>) l).rnnSetPreviousState(state);
+        ((RecurrentLayer) l).rnnSetPreviousState(state);
     }
 
     /**
@@ -1804,7 +1804,7 @@ public class ComputationGraph implements Serializable, Model {
     public void rnnClearPreviousState() {
         if (layers == null) return;
         for (Layer layer : layers) {
-            if (layer instanceof BaseRecurrentLayer) ((BaseRecurrentLayer<?>) layer).rnnClearPreviousState();
+            if (layer instanceof RecurrentLayer) ((RecurrentLayer) layer).rnnClearPreviousState();
             else if (layer instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork) layer).rnnClearPreviousState();
             }
@@ -1935,8 +1935,8 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray out;
                 if (current.hasLayer()) {
                     Layer l = current.getLayer();
-                    if (l instanceof BaseRecurrentLayer<?>) {
-                        out = ((BaseRecurrentLayer<?>) l).rnnActivateUsingStoredState(current.getInputs()[0], training, storeLastForTBPTT);
+                    if (l instanceof RecurrentLayer) {
+                        out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], training, storeLastForTBPTT);
                     } else if (l instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(current.getInputs()[0], training, storeLastForTBPTT);
                         out = temp.get(temp.size() - 1);
@@ -2014,7 +2014,7 @@ public class ComputationGraph implements Serializable, Model {
                     GraphVertex nextVertex = verticesMap.get(nextVertexName);
                     if (nextVertex.hasLayer()) {
                         Layer l = nextVertex.getLayer();
-                        if (l instanceof BaseRecurrentLayer<?>) {
+                        if (l instanceof RecurrentLayer) {
                             //terminate this part of the depth-first search
                             continue;
                         } else if (l.type() == Layer.Type.FEED_FORWARD || l.type() == Layer.Type.CONVOLUTIONAL) {
@@ -2062,8 +2062,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     protected void rnnUpdateStateWithTBPTTState() {
         for (int i = 0; i < layers.length; i++) {
-            if (layers[i] instanceof BaseRecurrentLayer) {
-                BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>) layers[i]);
+            if (layers[i] instanceof RecurrentLayer) {
+                RecurrentLayer l = ((RecurrentLayer) layers[i]);
                 l.rnnSetPreviousState(l.rnnGetTBPTTState());
             } else if (layers[i] instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork) layers[i]).updateRnnStateWithTBPTTState();
