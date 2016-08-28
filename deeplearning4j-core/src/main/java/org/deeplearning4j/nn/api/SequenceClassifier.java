@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * Created by agibsonccc on 8/27/14.
  */
+@Deprecated
 public interface SequenceClassifier {
 
 

@@ -14,13 +14,14 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.nn.api;
+package org.deeplearning4j.nn.api.layers;
 
+import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Interface for output layers (those that calculate gradients with respect to a labels array)
- *
  */
 public interface IOutputLayer extends Layer, Classifier {
 
@@ -30,6 +31,13 @@ public interface IOutputLayer extends Layer, Classifier {
      * @param labels Labels array to set
      */
     void setLabels(INDArray labels);
+
+    /**
+     * Get the labels array previously set with {@link #setLabels(INDArray)}
+     *
+     * @return Labels array, or null if it has not been set
+     */
+    INDArray getLabels();
 
     /**
      * Compute score after labels and input have been set.
