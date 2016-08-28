@@ -69,23 +69,23 @@ import java.util.*;
 
 
 /**
- * A base class for a multi
- * layer neural network with a logistic output layer
- * and multiple hidden neuralNets.
+ * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.
+ * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
+ * which allows for an arbitrary directed acyclic graph connection structure.
+ * MultiLayerNetwork is trainable via backprop, with optional pretraining, depending on the type of layers it contains.
  *
  * @author Adam Gibson
  */
 public class MultiLayerNetwork implements Serializable, Classifier, Layer {
-
-
     private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
-    //the hidden neuralNets
+
+    //the hidden neural network layers (including output layer)
     protected Layer[] layers;
     protected LinkedHashMap<String, Layer> layerMap = new LinkedHashMap<>();
 
-    //default training examples and associated neuralNets
+    //Current training data: input features and labels
     protected INDArray input, labels;
-    //sometimes we may need to transform weights; this allows a
+
     protected boolean initCalled = false;
     private Collection<IterationListener> listeners = new ArrayList<>();
 
