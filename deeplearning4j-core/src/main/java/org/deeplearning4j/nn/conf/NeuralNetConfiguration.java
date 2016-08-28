@@ -361,7 +361,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 }
                 toRegister.add(new NamedType(c, name));
 
-                log.info("Registering custom Layer class for JSON serialization: {}",c);
+                log.debug("Registering custom Layer class for JSON serialization: {}",c);
             }
         }
 
