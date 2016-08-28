@@ -1615,6 +1615,7 @@ template<typename T>
             T eps = extraParams[1];
 
             int mode = (int) extraParams[2];
+
             if (mode == 0) // equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
             else if (mode == 1) // not equals
@@ -1641,6 +1642,7 @@ template<typename T>
                 return (d1 != compare) ? 1.0 : 0.0;
             else
                 printf("Undefined match condition: [%i]\n", mode);
+
             return d1;
         }
 

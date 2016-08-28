@@ -1104,6 +1104,8 @@ public:
 
     void setOmpNumThreads(int threads);
 
+    void setOmpMinThreads(int threads);
+
 
 
     Nd4jPointer createContext();
