@@ -19,6 +19,7 @@ public class CudaEnvironment {
         configuration.allowCrossDeviceAccess(configuration.isCrossDeviceAccessAllowed());
         configuration.setMaximumGridSize(configuration.getMaximumGridSize());
         configuration.setMaximumBlockSize(configuration.getMaximumBlockSize());
+        configuration.setMinimumBlockSize(configuration.getMinimumBlockSize());
     }
 
     public static CudaEnvironment getInstance() {
