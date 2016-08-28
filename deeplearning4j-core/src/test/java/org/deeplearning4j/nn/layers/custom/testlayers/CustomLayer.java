@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.nn.layers.custom;
+package org.deeplearning4j.nn.layers.custom.testlayers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;

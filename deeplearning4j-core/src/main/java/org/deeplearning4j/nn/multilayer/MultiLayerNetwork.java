@@ -945,11 +945,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * and the output layer w,bias
      *
      * @return a singular matrix of all of the neuralNets packed in to one matrix
+     * @deprecated use
      */
-
+    @Deprecated
     public INDArray pack() {
         return params();
-
     }
 
     /**
@@ -957,7 +957,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @param layers the neuralNets to pack
      * @return a singular matrix of all of the neuralNets packed in to one matrix
+     * @deprecated use {@link #params()}
      */
+    @Deprecated
     public INDArray pack(List<Pair<INDArray, INDArray>> layers) {
         List<INDArray> list = new ArrayList<>();
 
@@ -989,7 +991,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @param param the param vector
      * @return a segmented list of the param vector
+     * @deprecated use {@link #setParameters(INDArray)}
      */
+    @Deprecated
     public List<Pair<INDArray, INDArray>> unPack(INDArray param) {
         //more sanity checks!
         if (param.size(0) != 1)

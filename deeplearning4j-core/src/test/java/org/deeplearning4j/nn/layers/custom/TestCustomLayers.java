@@ -25,8 +25,14 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.custom.testlayers.CustomLayer;
+import org.deeplearning4j.nn.layers.custom.testlayers.CustomOutputLayer;
+import org.deeplearning4j.nn.layers.custom.testlayers.CustomOutputLayerImpl;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -133,4 +139,130 @@ public class TestCustomLayers {
         net.fit(new DataSet(Nd4j.rand(1, 9), Nd4j.rand(1, 11)));
     }
 
+
+
+    @Test
+    public void testCustomOutputLayerMLN(){
+        //First: Ensure that the CustomOutputLayer class is registered
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+
+        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+        Set<Class<?>> registeredSubtypes = new HashSet<>();
+        boolean found = false;
+        for (NamedType nt : types) {
+            System.out.println(nt);
+//            registeredSubtypes.add(nt.getType());
+            if (nt.getType() == CustomOutputLayer.class) found = true;
+        }
+
+        assertTrue("CustomOutputLayer: not registered with NeuralNetConfiguration mapper", found);
+
+        //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.1)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
+                .pretrain(false).backprop(true).build();
+
+        String json = conf.toJson();
+        String yaml = conf.toYaml();
+
+        System.out.println(json);
+
+        MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
+        assertEquals(conf, confFromJson);
+
+        MultiLayerConfiguration confFromYaml = MultiLayerConfiguration.fromYaml(yaml);
+        assertEquals(conf, confFromYaml);
+
+        //Third: check initialization
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertTrue(net.getLayer(1) instanceof CustomOutputLayerImpl);
+
+        //Fourth: compare to an equivalent standard output layer (should be identical)
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.1)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
+                .pretrain(false).backprop(true).build();
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        assertEquals(net2.params(), net.params());
+
+        INDArray testFeatures = Nd4j.rand(1,10);
+        INDArray testLabels = Nd4j.zeros(1,10);
+        testLabels.putScalar(0,3,1.0);
+        DataSet ds = new DataSet(testFeatures, testLabels);
+
+        assertEquals(net2.output(testFeatures), net.output(testFeatures));
+        assertEquals(net2.score(ds), net.score(ds), 1e-6);
+    }
+
+
+    @Test
+    public void testCustomOutputLayerCG(){
+        //Create a ComputationGraphConfiguration with custom output layer, and check JSON and YAML config actually works...
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("1", new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true).build();
+
+        String json = conf.toJson();
+        String yaml = conf.toYaml();
+
+        System.out.println(json);
+
+        ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf, confFromJson);
+
+        ComputationGraphConfiguration confFromYaml = ComputationGraphConfiguration.fromYaml(yaml);
+        assertEquals(conf, confFromYaml);
+
+        //Third: check initialization
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        assertTrue(net.getLayer(1) instanceof CustomOutputLayerImpl);
+
+        //Fourth: compare to an equivalent standard output layer (should be identical)
+        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true).build();
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph net2 = new ComputationGraph(conf2);
+        net2.init();
+
+        assertEquals(net2.params(), net.params());
+
+        INDArray testFeatures = Nd4j.rand(1,10);
+        INDArray testLabels = Nd4j.zeros(1,10);
+        testLabels.putScalar(0,3,1.0);
+        DataSet ds = new DataSet(testFeatures, testLabels);
+
+        assertEquals(net2.output(testFeatures)[0], net.output(testFeatures)[0]);
+        assertEquals(net2.score(ds), net.score(ds), 1e-6);
+    }
 }
