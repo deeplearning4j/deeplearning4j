@@ -43,9 +43,22 @@ bool experimentalSupport = true;
 bool experimentalSupport = false;
 #endif
 
-int minThreads = 128;
+int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
+
+typedef struct {
+    long streamId;
+    long callId;
+} __syncInfo;
+
+typedef __syncInfo SyncInfo;
+
+void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data){
+    SyncInfo *sync = (SyncInfo *) data;
+
+    printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
+}
 
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jIndex)ptrToDeviceId;
@@ -2091,11 +2104,14 @@ void   NativeOps::execBroadcastFloat(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension, int dimensionLength){
+/*
+    cudaEvent_t start;
+    cudaEventCreateWithFlags(&start, cudaEventDisableTiming);
 
-//    timespec tsX;
-//    timespec tsY;
-//    clock_gettime(CLOCK_REALTIME, &tsX);
-
+    timespec tsX;
+    timespec tsY;
+    clock_gettime(CLOCK_REALTIME, &tsX);
+*/
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *yPointer = reinterpret_cast<float *>(y);
@@ -2115,6 +2131,7 @@ void   NativeOps::execBroadcastFloat(
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
 
+
 	if (debug && verbose)
 		printf("F3 opNum:[%i]\n", opNum);
 
@@ -2122,12 +2139,15 @@ void   NativeOps::execBroadcastFloat(
 
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
+/*
+    SyncInfo *info = new SyncInfo();
+    info->streamId = 32;
+    info->callId = 1234567890;
 
-
-//    timespec ts1;
-//    timespec ts2;
-//    clock_gettime(CLOCK_REALTIME, &ts1);
-
+    timespec ts1;
+    timespec ts2;
+    clock_gettime(CLOCK_REALTIME, &ts1);
+*/
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2138,17 +2158,23 @@ void   NativeOps::execBroadcastFloat(
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+/*
+    clock_gettime(CLOCK_REALTIME, &ts2);
 
-//    clock_gettime(CLOCK_REALTIME, &ts2);
+//    cudaEventRecord(start, 0);
 
+//    cudaStreamAddCallback(*stream, syncCallback, (void*)info, 0);
+*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+/*
+    clock_gettime(CLOCK_REALTIME, &tsY);
 
-//    clock_gettime(CLOCK_REALTIME, &tsY);
-
-//    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
-//    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
-//    printf("-------------------------------------\n");
+    printf("Execution time: %i\n", (ts2.tv_nsec - ts1.tv_nsec));
+    printf("Overall time: %i\n", (tsY.tv_nsec - tsX.tv_nsec));
+    printf("Callback setup time: %i\n", (tsY.tv_nsec - ts2.tv_nsec));
+    printf("-------------------------------------\n");
+    */
 }
 
 
@@ -2882,7 +2908,9 @@ float NativeOps::execReduceScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
 
-	printf("reduceScalarFloat is going to start...\n");
+    //printf("Launch params: {x: %i, y: %i, z: %i}\n", launchDims.x,launchDims.y, launchDims.z);
+
+	//printf("reduceScalarFloat is going to start...\n");
 
 	reduceScalarFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -2896,7 +2924,7 @@ float NativeOps::execReduceScalarFloat(
 			reductionPointer, deviceTADShapeInfo
 	);
 
-	printf("kernel fired...\n");
+	//printf("kernel fired...\n");
 
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6008,4 +6036,9 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
 
 bool NativeOps::isExperimentalEnabled() {
     return experimentalSupport;
+}
+
+void NativeOps::setOmpMinThreads(int threads) {
+    minThreads = nd4j::math::nd4j_max<int>(32, threads);
+    minThreads = nd4j::math::nd4j_min<int>(maxThreads, minThreads);
 }
