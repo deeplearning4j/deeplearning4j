@@ -163,7 +163,7 @@ Then we configure the neural network:
         net.init();
 
 Here is a diagram of the neural net above:
-![Alt text](./img/flow.png)
+![Alt text](./img/flow2.png)
 
 
 Note that above, we also have a more complex (but versatile) [Computation Graph API](http://deeplearning4j.org/compgraph) for those familiar with other frameworks.
