@@ -20,6 +20,8 @@ public class cudaEvent_t extends CudaPointer{
 
     @Getter @Setter private int laneId;
 
+    @Getter @Setter private int deviceId;
+
     public cudaEvent_t(Pointer pointer) {
         super(pointer);
     }

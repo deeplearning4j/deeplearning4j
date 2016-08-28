@@ -1,6 +1,7 @@
 package org.nd4j.jita.flow.impl;
 
 
+import lombok.Getter;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -33,6 +34,7 @@ public class SynchronousFlowController implements FlowController {
     private volatile Allocator allocator;
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+    @Getter protected EventsProvider eventsProvider = new EventsProvider();
 
     @Override
     public void init(Allocator allocator) {
@@ -171,14 +173,14 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
 
-        EventsProvider.getInstance().storeEvent(result.getLastWriteEvent());
-        result.setLastWriteEvent(EventsProvider.getInstance().getEvent());
+        eventsProvider.storeEvent(result.getLastWriteEvent());
+        result.setLastWriteEvent(eventsProvider.getEvent());
         result.getLastWriteEvent().register(context.getOldStream());
 
 
         for(AllocationPoint operand: operands) {
-            EventsProvider.getInstance().storeEvent(operand.getLastReadEvent());
-            operand.setLastReadEvent(EventsProvider.getInstance().getEvent());
+            eventsProvider.storeEvent(operand.getLastReadEvent());
+            operand.setLastReadEvent(eventsProvider.getEvent());
             operand.getLastReadEvent().register(context.getOldStream());
         }
         context.syncOldStream();
@@ -188,8 +190,8 @@ public class SynchronousFlowController implements FlowController {
         if (result == null) return;
         AllocationPoint point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
-        EventsProvider.getInstance().storeEvent(point.getLastWriteEvent());
-        point.setLastWriteEvent(EventsProvider.getInstance().getEvent());
+        eventsProvider.storeEvent(point.getLastWriteEvent());
+        point.setLastWriteEvent(eventsProvider.getEvent());
         point.getLastWriteEvent().register(context.getOldStream());
 
         for (INDArray operand: operands) {
@@ -197,8 +199,8 @@ public class SynchronousFlowController implements FlowController {
                 continue;
 
             AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
-            EventsProvider.getInstance().storeEvent(pointOperand.getLastReadEvent());
-            pointOperand.setLastReadEvent(EventsProvider.getInstance().getEvent());
+            eventsProvider.storeEvent(pointOperand.getLastReadEvent());
+            pointOperand.setLastReadEvent(eventsProvider.getEvent());
             pointOperand.getLastReadEvent().register(context.getOldStream());
         }
     }

@@ -3,6 +3,7 @@ package org.nd4j.jita.flow;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -55,4 +56,6 @@ public interface FlowController {
      * This method should be called after memcpy operations, to control their flow.
      */
     void commitTransfer(cudaStream_t streamUsed);
+
+    EventsProvider getEventsProvider();
 }

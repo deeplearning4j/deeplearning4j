@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,7 +23,7 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class EndlessTests {
-    private static final int RUN_LIMIT = 10;
+    private static final int RUN_LIMIT = 100000;
 
     @Before
     public void setUp() {
@@ -30,7 +31,7 @@ public class EndlessTests {
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
-                .enableDebug(true)
+                .enableDebug(false)
                 .setVerbose(false);
 
 
@@ -160,6 +161,9 @@ public class EndlessTests {
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             arr.addiRowVector(arr2);
         }
+
+//        System.out.println("New counter: " + EventsProvider.getInstance().getEventsNumber());
+//        System.out.println("Cached counter: " + EventsProvider.getInstance().getCachedNumber());
     }
 
     @Test
