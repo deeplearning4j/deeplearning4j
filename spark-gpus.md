@@ -18,6 +18,8 @@ In this post, we will cover the below technologies and their interactions:
  3. cuDNN
  4. DL4J Ecosystem (Deeplearning4j,ND4J,DataVec,JavaCPP)
 
+![Alt text](./img/dl4j-diagram.png)
+
 ## Apache Spark
 
 As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer for a cluster, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL (extract transform load) or data storage and access for the hadoop ecosystem (HDFS or hadoop file system). The goal is to leverage hadoop's data locality mechanisms while speeding up compute with native computations.
@@ -71,6 +73,12 @@ With data parallelism, you subdivide a very large dataset into batches, and dist
 Imagine training on an encyclopedia, subdividing it into batches of 10 pages, and distributing 10 batches to 10 models to train, then averaging the parameters of those trained models in one master model, and pushing the updated weights of the master model out to the distributed models. The model parameters are then averaged at the end of training to yield a single model.
 
 Deeplearning4j relies on data parallelism and uses Spark for distributed host thread orchestration across a cluster.
+
+Here is a visualization:
+ 
+![Alt text](./img/mapreduce_v_iterative.png)
+
+
 
 ## Does Parameter Averaging work?
 See references at the bottom of this post for some papers to dig in to.
@@ -153,6 +161,10 @@ Then we configure the neural network:
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
+
+Here is a diagram of the neural net above:
+![Alt text](./img/flow.png)
+
 
 Note that above, we also have a more complex (but versatile) [Computation Graph API](http://deeplearning4j.org/compgraph) for those familiar with other frameworks.
 
