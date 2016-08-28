@@ -31,12 +31,12 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
@@ -71,7 +71,7 @@ import java.util.*;
 /**
  * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.
  * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * which allows for an arbitrary directed acyclic graph connection structure.
+ * which allows for an arbitrary directed acyclic graph connection structure between layers.
  * MultiLayerNetwork is trainable via backprop, with optional pretraining, depending on the type of layers it contains.
  *
  * @author Adam Gibson
@@ -1227,8 +1227,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public void updateRnnStateWithTBPTTState() {
         for(int i=0; i<layers.length; i++){
-            if(layers[i] instanceof BaseRecurrentLayer) {
-                BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>)layers[i]);
+            if(layers[i] instanceof RecurrentLayer) {
+                RecurrentLayer l = ((RecurrentLayer)layers[i]);
                 l.rnnSetPreviousState(l.rnnGetTBPTTState());
             }
             else if(layers[i] instanceof MultiLayerNetwork) {
@@ -1276,8 +1276,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            if(currLayer instanceof BaseRecurrentLayer){
-                currPair = ((BaseRecurrentLayer<?>)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
+            if(currLayer instanceof RecurrentLayer){
+                currPair = ((RecurrentLayer)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
             } else {
                 currPair = currLayer.backpropGradient(currPair.getSecond());
             }
@@ -2193,8 +2193,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,getInputMiniBatchSize());
-            if(layers[i] instanceof BaseRecurrentLayer){
-                input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
+            if(layers[i] instanceof RecurrentLayer){
+                input = ((RecurrentLayer)layers[i]).rnnTimeStep(input);
             } else if(layers[i] instanceof MultiLayerNetwork){
                 input = ((MultiLayerNetwork)layers[i]).rnnTimeStep(input);
             } else {
@@ -2217,8 +2217,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public Map<String,INDArray> rnnGetPreviousState(int layer){
         if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
-        if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
-        return ((BaseRecurrentLayer<?>)layers[layer]).rnnGetPreviousState();
+        if( !(layers[layer] instanceof RecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+        return ((RecurrentLayer)layers[layer]).rnnGetPreviousState();
     }
 
     /**Set the state of the RNN layer.
@@ -2227,9 +2227,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
         if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
-        if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+        if( !(layers[layer] instanceof RecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
 
-        BaseRecurrentLayer<?> r = (BaseRecurrentLayer<?>)layers[layer];
+        RecurrentLayer r = (RecurrentLayer)layers[layer];
         r.rnnSetPreviousState(state);
     }
 
@@ -2238,7 +2238,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void rnnClearPreviousState(){
         if( layers == null ) return;
         for( int i=0; i<layers.length; i++ ){
-            if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
+            if( layers[i] instanceof RecurrentLayer ) ((RecurrentLayer)layers[i]).rnnClearPreviousState();
             else if( layers[i] instanceof MultiLayerNetwork ){
                 ((MultiLayerNetwork)layers[i]).rnnClearPreviousState();
             }
@@ -2263,8 +2263,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for( int i=0; i<layers.length; i++ ){
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput,input.size(0));
-            if(layers[i] instanceof BaseRecurrentLayer){
-                currInput = ((BaseRecurrentLayer<?>)layers[i]).rnnActivateUsingStoredState(currInput,training,storeLastForTBPTT);
+            if(layers[i] instanceof RecurrentLayer){
+                currInput = ((RecurrentLayer)layers[i]).rnnActivateUsingStoredState(currInput,training,storeLastForTBPTT);
             } else if(layers[i] instanceof MultiLayerNetwork){
                 List<INDArray> temp = ((MultiLayerNetwork)layers[i]).rnnActivateUsingStoredState(currInput, training, storeLastForTBPTT);
                 currInput = temp.get(temp.size()-1);
