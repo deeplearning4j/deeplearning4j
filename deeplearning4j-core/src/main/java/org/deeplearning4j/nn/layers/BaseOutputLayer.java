@@ -48,7 +48,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
  * Output layer with different objective
- * incooccurrences for different objectives.
+ * in co-occurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
@@ -449,7 +449,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return labels;
     }
 
-    public  void setLabels(INDArray labels) {
+    public void setLabels(INDArray labels) {
         this.labels = labels;
     }
 
