@@ -30,12 +30,12 @@ import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
@@ -516,9 +516,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         setInput(data.getFeatureMatrix());
         feedForward(getInput());
         this.labels = data.getLabels();
-        if (getOutputLayer() instanceof BaseOutputLayer) {
-            BaseOutputLayer o = (BaseOutputLayer) getOutputLayer();
-            o.setLabels(labels);
+        if (getOutputLayer() instanceof IOutputLayer) {
+            IOutputLayer ol = (IOutputLayer) getOutputLayer();
+            ol.setLabels(labels);
         }
     }
 
@@ -1116,12 +1116,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int layerFrom;
         Pair<Gradient,INDArray> currPair;
         if(withOutputLayer) {
-            if(!(getOutputLayer() instanceof BaseOutputLayer)) {
+            if(!(getOutputLayer() instanceof IOutputLayer)) {
                 log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
                 return null;
             }
 
-            BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
+            IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
             if (labels == null)
                 throw new IllegalStateException("No labels found");
             outputLayer.setLabels(labels);
@@ -1244,12 +1244,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         gradient = new DefaultGradient();
         Layer currLayer;
 
-        if(!(getOutputLayer() instanceof BaseOutputLayer)) {
+        if(!(getOutputLayer() instanceof IOutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop (truncated BPTT) without an output layer.");
             return;
         }
 
-        BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
+        IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
         if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO){
@@ -1348,7 +1348,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void finetune() {
         if(flattenedGradients == null) initGradientsView();
 
-        if (!(getOutputLayer() instanceof BaseOutputLayer)) {
+        if (!(getOutputLayer() instanceof IOutputLayer)) {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
@@ -1356,7 +1356,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             throw new IllegalStateException("No labels found");
 
         log.info("Finetune phase");
-        BaseOutputLayer output = (BaseOutputLayer) getOutputLayer();
+        IOutputLayer output = (IOutputLayer) getOutputLayer();
         if (output.conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             feedForward();
             output.fit(output.input(), labels);
@@ -1412,7 +1412,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public INDArray labelProbabilities(INDArray examples) {
         List<INDArray> feed = feedForward(examples);
-        BaseOutputLayer o = (BaseOutputLayer) getOutputLayer();
+        IOutputLayer o = (IOutputLayer) getOutputLayer();
         return o.labelProbabilities(feed.get(feed.size() - 1));
     }
 
@@ -1719,8 +1719,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
         int n = activations.size();
         setLabels(data.getLabels());
-        if( getOutputLayer() instanceof BaseOutputLayer ){
-            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+        if( getOutputLayer() instanceof IOutputLayer ){
+            IOutputLayer ol = (IOutputLayer) getOutputLayer();
             INDArray olInput = activations.get(n-1);
             if(getLayerWiseConfigurations().getInputPreProcess(n-1) != null){
                 olInput = getLayerWiseConfigurations().getInputPreProcess(n-1).preProcess(olInput,input.size(0));
@@ -1761,14 +1761,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         setLabels(data.getLabels());
 
         INDArray out;
-        if( getOutputLayer() instanceof BaseOutputLayer ){
-            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+        if( getOutputLayer() instanceof IOutputLayer ){
+            IOutputLayer ol = (IOutputLayer) getOutputLayer();
             ol.setLabels(data.getLabels());
             double l1 = (addRegularizationTerms ? calcL1() : 0.0);
             double l2 = (addRegularizationTerms ? calcL2() : 0.0);
             out = ol.computeScoreForExamples(l1,l2);
         } else {
-            throw new UnsupportedOperationException("Cannot calculate score wrt labels without an OutputLayer");
+            throw new UnsupportedOperationException("Cannot calculate score with respect to labels without an OutputLayer");
         }
         if(hasMaskArray) clearLayerMaskArrays();
         return out;
@@ -1820,7 +1820,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Then: compute gradients
             backprop();
         }
-        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
+        if(!(getOutputLayer() instanceof IOutputLayer)){
+            throw new IllegalStateException("Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
+        }
+        score = ((IOutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
     }
 
     @Override
@@ -2078,7 +2081,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        if(layers[layers.length-1] instanceof BaseOutputLayer<?> )
+        if(getOutputLayer() instanceof IOutputLayer )
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
         return calcBackpropGradients(epsilon, false);
@@ -2332,7 +2335,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
         if(labelsMaskArray != null ){
-            if(!(layers[layers.length-1] instanceof BaseOutputLayer) ) return;
+            if(!(getOutputLayer() instanceof IOutputLayer) ) return;
             layers[layers.length-1].setMaskArray(labelsMaskArray);
         }
     }
@@ -2359,7 +2362,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Evaluation object, summarizing returs of the evaluation
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList){
-        if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
+        if(layers == null || !(getOutputLayer() instanceof IOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
         if (labelsList == null)
