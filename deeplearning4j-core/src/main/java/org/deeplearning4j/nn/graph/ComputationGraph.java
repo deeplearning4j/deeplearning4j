@@ -26,6 +26,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -35,7 +36,6 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -510,7 +510,7 @@ public class ComputationGraph implements Serializable, Model {
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
             if (!vertices[i].hasLayer()) continue;
-            if (vertices[i].getLayer() instanceof BaseOutputLayer<?>) continue;  //Don't pretrain output layer
+            if (vertices[i].getLayer() instanceof IOutputLayer) continue;  //Don't pretrain output layer
 
             //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
             // end up doing forward pass on layers we don't need to.
@@ -899,7 +899,7 @@ public class ComputationGraph implements Serializable, Model {
         for (String s : configuration.getNetworkOutputs()) {
             GraphVertex gv = verticesMap.get(s);
 
-            score += ((BaseOutputLayer<?>) gv.getLayer()).computeScore(l1, l2, true);
+            score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true);
 
             //Only want to add l1/l2 once...
             l1 = 0.0;
@@ -976,7 +976,7 @@ public class ComputationGraph implements Serializable, Model {
 
             } else {
                 //Do forward pass:
-                if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer() && current.getLayer() instanceof BaseOutputLayer) {
+                if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer() && current.getLayer() instanceof IOutputLayer) {
                     //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
                     // we only need to ensure the input to the output layers is set properly
                     continue;
@@ -1071,12 +1071,12 @@ public class ComputationGraph implements Serializable, Model {
 
             if (current.isOutputVertex()) {
                 //Two reasons for a vertex to be an output vertex:
-                //(a) it's an output layer (i.e., instanceof BaseOutputLayer), or
+                //(a) it's an output layer (i.e., instanceof IOutputLayer), or
                 //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
                 int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                if (current.getLayer() instanceof BaseOutputLayer) {
-                    BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) current.getLayer();
+                if (current.getLayer() instanceof IOutputLayer) {
+                    IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
 
                     INDArray currLabels = labels[thisOutputNumber];
                     outputLayer.setLabels(currLabels);
@@ -1320,12 +1320,12 @@ public class ComputationGraph implements Serializable, Model {
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
             Layer outLayer = verticesMap.get(s).getLayer();
-            if (outLayer == null || !(outLayer instanceof BaseOutputLayer<?>)) {
+            if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
                 log.warn("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
                 return 0.0;
             }
 
-            BaseOutputLayer<?> ol = (BaseOutputLayer<?>) outLayer;
+            IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
             score += ol.computeScore(l1, l2, true);
@@ -1381,11 +1381,11 @@ public class ComputationGraph implements Serializable, Model {
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
             Layer outLayer = verticesMap.get(s).getLayer();
-            if (outLayer == null || !(outLayer instanceof BaseOutputLayer<?>)) {
+            if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
                 throw new UnsupportedOperationException("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
             }
 
-            BaseOutputLayer<?> ol = (BaseOutputLayer<?>) outLayer;
+            IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
             INDArray scoreCurrLayer = ol.computeScoreForExamples(l1, l2);
