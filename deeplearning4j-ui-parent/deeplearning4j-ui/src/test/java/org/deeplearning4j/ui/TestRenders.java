@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
@@ -60,9 +59,9 @@ public class TestRenders extends BaseUiServerTest {
 
         INDArray input = d2.getFeatureMatrix();
         PlotFilters filters = new PlotFilters(input,new int[]{10,10},new int[]{0,0},new int[]{28,28});
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)
+        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)
                 ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0, params, true);
         da.setParams(da.params());
         da.fit(input);
@@ -86,9 +85,9 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params, true);
+        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params, true);
         da.setParams(da.params());
         da.fit(input);
     }
@@ -112,9 +111,9 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params, true);
+        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, null, 0, params, true);
         da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));
         da.setParams(da.params());
         da.fit(input);

@@ -1,6 +1,5 @@
 /*
- *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,44 +12,41 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
- *
  */
 
-package org.deeplearning4j.nn.conf.layers;
+package org.deeplearning4j.nn.layers.custom.testlayers;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.deeplearning4j.nn.api.*;
-import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * Output layer with different objective co-occurrences for different objectives.
- * This includes classification as well as regression
- *
+ * Created by Alex on 26/08/2016.
  */
-@Data @NoArgsConstructor
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class OutputLayer extends BaseOutputLayer {
+@Data
+public class CustomLayer extends FeedForwardLayer {
 
-    protected OutputLayer(Builder builder) {
-    	super(builder);
+    private final double someCustomParameter;
+
+    public CustomLayer(@JsonProperty("someCustomParameter") double someCustomParameter) {
+        this.someCustomParameter = someCustomParameter;
+        this.nIn = 10;
+        this.nOut = 10;
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.OutputLayer ret
-                = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        CustomLayerImpl ret = new CustomLayerImpl(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -65,18 +61,18 @@ public class OutputLayer extends BaseOutputLayer {
         return DefaultParamInitializer.getInstance();
     }
 
-    @NoArgsConstructor
-    public static class Builder extends BaseOutputLayer.Builder<Builder> {
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        return InputType.feedForward(10);
+    }
 
-        public Builder(LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
-        }
-        
-        @Override
-        @SuppressWarnings("unchecked")
-        public OutputLayer build() {
-            return new OutputLayer(this);
-        }
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        //No op
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        return null;
     }
 }
-
