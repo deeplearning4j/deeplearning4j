@@ -20,7 +20,6 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
-import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -219,7 +218,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
@@ -235,22 +233,18 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path, int minPartitions) {
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        serializedDataSets.cache();
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
     }
 
     /**
-     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
      * Fit the network using a list of paths for serialized DataSet objects.
      * Similar to {@link #fit(String)} but without the PortableDataStream objects
      *
      * @param paths    List of paths
      * @return trained network
      */
-    @Experimental
     public MultiLayerNetwork fitPaths(JavaRDD<String> paths){
-        paths.cache();
         trainingMaster.executeTrainingPaths(this, paths);
         return network;
     }

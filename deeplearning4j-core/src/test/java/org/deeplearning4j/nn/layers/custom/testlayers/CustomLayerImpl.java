@@ -1,6 +1,5 @@
 /*
- *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,29 +12,21 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
- *
  */
 
-package org.deeplearning4j.nn.layers.factory;
+package org.deeplearning4j.nn.layers.custom.testlayers;
 
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.BaseLayer;
 
 /**
- * Used for creating pretrain neural net layers
- * @author Adam Gibson
+ *
+ * Basically: identical to DenseLayer
+ *
+ * Created by Alex on 26/08/2016.
  */
-public class PretrainLayerFactory extends DefaultLayerFactory {
-
-
-    public PretrainLayerFactory(Class<? extends org.deeplearning4j.nn.conf.layers.Layer> layerConfig) {
-        super(layerConfig);
-    }
-
-
-
-    @Override
-    public ParamInitializer initializer() {
-        return new PretrainParamInitializer();
+public class CustomLayerImpl extends BaseLayer<CustomLayer> {
+    public CustomLayerImpl(NeuralNetConfiguration conf) {
+        super(conf);
     }
 }

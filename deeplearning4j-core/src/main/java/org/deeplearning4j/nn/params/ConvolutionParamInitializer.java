@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -36,6 +37,12 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
+
+    private static final ConvolutionParamInitializer INSTANCE = new ConvolutionParamInitializer();
+    public static ConvolutionParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
 
     public final static String WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
@@ -52,9 +59,11 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length != 2)
             throw new IllegalArgumentException("Filter size must be == 2");
+
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
@@ -71,6 +80,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
+        return params;
     }
 
     @Override

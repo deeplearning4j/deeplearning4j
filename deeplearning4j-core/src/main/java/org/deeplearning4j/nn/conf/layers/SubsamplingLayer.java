@@ -1,8 +1,16 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.params.EmptyParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Subsampling layer also referred to as pooling in convolution neural nets
@@ -48,6 +56,24 @@ public class SubsamplingLayer extends Layer {
         if(clone.stride != null) clone.stride = clone.stride.clone();
         if(clone.padding != null) clone.padding = clone.padding.clone();
         return clone;
+    }
+
+    @Override
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret
+                = new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return EmptyParamInitializer.getInstance();
     }
 
     @Override

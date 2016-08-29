@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -42,9 +41,9 @@ public class GRUTest {
 						.build())
 				.build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
+		GRU layer = (GRU)conf.getLayer().instantiate(conf,null,0,params,true);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -92,9 +91,9 @@ public class GRUTest {
 						.build())
 				.build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GRU gru = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
+		GRU gru = (GRU)conf.getLayer().instantiate(conf,null,0,params,true);
 		//Set input, do a forward pass:
 		gru.activate(inputData);
 		assertNotNull(gru.input());
