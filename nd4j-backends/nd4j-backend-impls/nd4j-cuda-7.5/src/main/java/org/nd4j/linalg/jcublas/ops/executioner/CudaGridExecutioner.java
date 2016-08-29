@@ -53,6 +53,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private AtomicLong metaCounter = new AtomicLong(0);
     private AtomicLong execCounter = new AtomicLong(0);
 
+
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
     public CudaGridExecutioner() {
@@ -196,7 +197,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
                     //|| op instanceof ScalarOp
                     if ((op instanceof TransformOp && op.y() != null) ) {
-                        lastOp.set(new OpDescriptor(op, dimension));
+                        enqueueOp(new OpDescriptor(op, dimension));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension), false);
                     }
@@ -222,7 +223,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         } else {
             if ((op instanceof TransformOp && op.y() != null )) {
-                lastOp.set(new OpDescriptor(op, dimension));
+                enqueueOp(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
             }
@@ -231,6 +232,19 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      //   AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
         //return op;
+    }
+
+    protected void enqueueOp(OpDescriptor descriptor) {
+        lastOp.set(descriptor);
+
+        AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(true);
+        AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(true);
+    }
+
+    protected void dequeueOp(OpDescriptor descriptor) {
+
+        AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(false);
+        AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(false);
     }
 
     protected MetaType getMetaOpType(Op op, int... dimension) {
@@ -781,6 +795,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 // it might be only pairwise transform here for now
       //          logger.info("Flushing existing lastOp");
                 lastOp.remove();
+                dequeueOp(op);
                 pushToGrid(op, false);
             } else {
                 throw new UnsupportedOperationException("Experimental flush isn't supported yet");

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -101,6 +102,8 @@ public class AllocationPoint {
 
     private volatile GarbageBufferReference garbageBufferReference;
 
+    private AtomicBoolean enqueued = new AtomicBoolean(false);
+
     @Getter @Setter private cudaEvent_t lastWriteEvent;
 
     @Getter @Setter private cudaEvent_t lastReadEvent;
@@ -108,6 +111,14 @@ public class AllocationPoint {
     private cudaEvent_t lastEvent;
 
     private volatile CudaContext currentContext;
+
+    public boolean isEnqueued() {
+        return enqueued.get();
+    }
+
+    public void markEnqueued(boolean reallyEnqueued) {
+        enqueued.set(reallyEnqueued);
+    }
 
     public CudaContext getCurrentContext() {
         synchronized (this) {

@@ -700,4 +700,22 @@ public class GridExecutionerTest {
         assertEquals(Nd4j.scalar(12), mulled);
         assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
+
+    @Test
+    public void testReverseFlow3() throws Exception {
+        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray ascending = Nd4j.sort(toSort.dup(), 1, true);
+        assertEquals(toSort, ascending);
+
+        INDArray columnSorted = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
+
+        // in this particular code point, toSort.dup() isn't executed, but queued
+        INDArray dupd = toSort.dup();
+
+        // if we execute muli - dup() op will be flushed as metaOp
+        //dupd.muli(1.0);
+
+        INDArray sorted = Nd4j.sort(dupd, 1, false);
+        assertEquals(columnSorted, sorted);
+    }
 }
