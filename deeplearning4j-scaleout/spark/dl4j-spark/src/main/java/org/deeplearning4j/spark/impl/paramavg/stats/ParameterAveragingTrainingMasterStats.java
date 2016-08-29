@@ -21,6 +21,7 @@ import java.util.*;
 public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats {
 
     public static final String DEFAULT_DELIMITER = CommonSparkTrainingStats.DEFAULT_DELIMITER;
+    public static final String FILENAME_EXPORT_RDD_TIME = "parameterAveragingMasterExportTimesMs.txt";
     public static final String FILENAME_COUNT_RDD_SIZE = "parameterAveragingMasterCountRddSizeTimesMs.txt";
     public static final String FILENAME_BROADCAST_CREATE = "parameterAveragingMasterBroadcastCreateTimesMs.txt";
     public static final String FILENAME_FIT_TIME = "parameterAveragingMasterFitTimesMs.txt";
@@ -30,6 +31,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     public static final String FILENAME_PROCESS_PARAMS_TIME = "parameterAveragingMasterProcessParamsUpdaterTimesMs.txt";
     public static final String FILENAME_REPARTITION_STATS = "parameterAveragingMasterRepartitionTimesMs.txt";
 
+    public static final String PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS = "parameterAveragingMasterExportTimesMs";
     public static final String PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS = "ParameterAveragingMasterCountRddSizeTimesMs";
     public static final String PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS = "ParameterAveragingMasterBroadcastCreateTimesMs";
     public static final String PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS = "ParameterAveragingMasterFitTimesMs";
@@ -41,6 +43,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
+                    PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS,
                     PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS,
                     PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS,
                     PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS,
@@ -52,6 +55,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             )));
 
     private SparkTrainingStats workerStats;
+    private List<EventStats> parameterAveragingMasterExportTimesMs;
     private List<EventStats> parameterAveragingMasterCountRddSizeTimesMs;
     private List<EventStats> parameterAveragingMasterBroadcastCreateTimesMs;
     private List<EventStats> parameterAveragingMasterFitTimesMs;
@@ -62,12 +66,14 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     private List<EventStats> parameterAveragingMasterRepartitionTimesMs;
 
 
-    public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, List<EventStats> parameterAveragingMasterCountRddSizeTimesMs,
+    public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, List<EventStats> parameterAveragingMasterExportTimesMs,
+                                                 List<EventStats> parameterAveragingMasterCountRddSizeTimesMs,
                                                  List<EventStats> parameterAveragingMasterBroadcastCreateTimeMs,
                                                  List<EventStats> parameterAveragingMasterFitTimeMs, List<EventStats> parameterAveragingMasterSplitTimeMs,
                                                  List<EventStats> parameterAveragingMasterMapPartitionsTimesMs, List<EventStats> parameterAveragingMasterAggregateTimesMs,
                                                  List<EventStats> parameterAveragingMasterProcessParamsUpdaterTimesMs, List<EventStats> parameterAveragingMasterRepartitionTimesMs) {
         this.workerStats = workerStats;
+        this.parameterAveragingMasterExportTimesMs = parameterAveragingMasterExportTimesMs;
         this.parameterAveragingMasterCountRddSizeTimesMs = parameterAveragingMasterCountRddSizeTimesMs;
         this.parameterAveragingMasterBroadcastCreateTimesMs = parameterAveragingMasterBroadcastCreateTimeMs;
         this.parameterAveragingMasterFitTimesMs = parameterAveragingMasterFitTimeMs;
@@ -89,6 +95,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     @Override
     public List<EventStats> getValue(String key) {
         switch (key) {
+            case PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS:
+                return parameterAveragingMasterExportTimesMs;
             case PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS:
                 return parameterAveragingMasterCountRddSizeTimesMs;
             case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
@@ -114,6 +122,8 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     @Override
     public String getShortNameForKey(String key) {
         switch (key) {
+            case PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS:
+                return "Export";
             case PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS:
                 return "CountRDD";
             case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
@@ -142,6 +152,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             case PARAMETER_AVERAGING_MASTER_FIT_TIMES_MS:
             case PARAMETER_AVERAGING_MASTER_MAP_PARTITIONS_TIMES_MS:
                 return false;
+            case PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS:
             case PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS:
             case PARAMETER_AVERAGING_MASTER_SPLIT_TIMES_MS:
             case PARAMETER_AVERAGING_MASTER_BROADCAST_CREATE_TIMES_MS:
@@ -168,6 +179,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
             if (o.workerStats != null) workerStats = o.workerStats;
         }
 
+        this.parameterAveragingMasterExportTimesMs.addAll(o.parameterAveragingMasterExportTimesMs);
         this.parameterAveragingMasterCountRddSizeTimesMs.addAll(o.parameterAveragingMasterCountRddSizeTimesMs);
         this.parameterAveragingMasterBroadcastCreateTimesMs.addAll(o.parameterAveragingMasterBroadcastCreateTimesMs);
         this.parameterAveragingMasterRepartitionTimesMs.addAll(o.parameterAveragingMasterRepartitionTimesMs);
@@ -190,6 +202,11 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     public String statsAsString() {
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
+
+        sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_EXPORT_RDD_TIMES_MS));
+        if (parameterAveragingMasterExportTimesMs == null) sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingMasterExportTimesMs, ",")).append("\n");
 
         sb.append(String.format(f, PARAMETER_AVERAGING_MASTER_COUNT_RDD_TIMES_MS));
         if (parameterAveragingMasterCountRddSizeTimesMs == null) sb.append("-\n");
@@ -234,6 +251,10 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
     @Override
     public void exportStatFiles(String outputPath, SparkContext sc) throws IOException {
         String d = DEFAULT_DELIMITER;
+
+        //Export times
+        String exportRddPath = FilenameUtils.concat(outputPath, FILENAME_EXPORT_RDD_TIME);
+        StatsUtils.exportStats(parameterAveragingMasterExportTimesMs, exportRddPath, d, sc);
 
         //Count RDD times:
         String countRddPath = FilenameUtils.concat(outputPath, FILENAME_COUNT_RDD_SIZE);
@@ -302,14 +323,14 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
         private final TimeSource timeSource = TimeSourceProvider.getInstance();
 
-        public void logExportStart(){
+        public void logExportStart() {
             this.lastExportStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logExportEnd(){
+        public void logExportEnd() {
             long now = timeSource.currentTimeMillis();
 
-            exportTimes.add(new BaseEventStats(lastExportStartTime, now-lastExportStartTime));
+            exportTimes.add(new BaseEventStats(lastExportStartTime, now - lastExportStartTime));
         }
 
         public void logCountStart() {
@@ -392,7 +413,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         }
 
         public ParameterAveragingTrainingMasterStats build() {
-            return new ParameterAveragingTrainingMasterStats(workerStats, countTimes, broadcastTimes, fitTimes, splitTimes,
+            return new ParameterAveragingTrainingMasterStats(workerStats, exportTimes, countTimes, broadcastTimes, fitTimes, splitTimes,
                     mapPartitions, aggregateTimes, processParamsUpdaterTimes, repartitionTimes);
         }
 

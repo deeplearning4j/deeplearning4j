@@ -331,9 +331,15 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
+                float[] fp = finalParams.data().asFloat();
+                float[] fps = finalSparkParams.data().asFloat();
+                System.out.println("Initial params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Final (Local) params: " + Arrays.toString(fp));
+                System.out.println("Final (Spark) params: " + Arrays.toString(fps));
+
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
-                assertEquals(finalParams, finalSparkParams);
+                assertArrayEquals(fp, fps, 1e-5f);
 
                 double sparkScore = sparkNet.getScore();
                 assertTrue(sparkScore > 0.0);
