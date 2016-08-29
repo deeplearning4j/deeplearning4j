@@ -53,7 +53,6 @@ public class MiniBatchTests extends BaseSparkTest {
         assertEquals(30,count);
 
         miniBatches.map(new DataSetAssertionFunction());
-
     }
 
 
