@@ -42,6 +42,8 @@ public class TestExport extends BaseSparkTest {
     @Test
     public void testBatchAndExportDataSetsFunction() throws Exception {
 
+        System.out.println("HADOOP TEMP DIRECTORY: " + sc.hadoopConfiguration().get("hadoop.tmp.dir"));
+
 
         String baseDir = System.getProperty("java.io.tmpdir");
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExport/");
