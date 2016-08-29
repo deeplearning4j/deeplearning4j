@@ -1,6 +1,5 @@
 /*
- *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,44 +12,46 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
- *
  */
 
-package org.deeplearning4j.nn.conf.layers;
+package org.deeplearning4j.nn.layers.custom.testlayers;
+
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * Output layer with different objective co-occurrences for different objectives.
- * This includes classification as well as regression
+ * A custom output layer for testing. Functionally equivalent to {@link OutputLayer}, but
+ * defined here to test JSON etc.
  *
+ * @author Alex Black
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class OutputLayer extends BaseOutputLayer {
-
-    protected OutputLayer(Builder builder) {
-    	super(builder);
+public class CustomOutputLayer extends BaseOutputLayer {
+    protected CustomOutputLayer(Builder builder) {
+        super(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.OutputLayer ret
-                = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -66,17 +67,16 @@ public class OutputLayer extends BaseOutputLayer {
     }
 
     @NoArgsConstructor
-    public static class Builder extends BaseOutputLayer.Builder<Builder> {
+    public static class Builder extends BaseOutputLayer.Builder<CustomOutputLayer.Builder> {
 
-        public Builder(LossFunction lossFunction) {
+        public Builder(LossFunctions.LossFunction lossFunction) {
             this.lossFunction = lossFunction;
         }
-        
+
         @Override
         @SuppressWarnings("unchecked")
-        public OutputLayer build() {
-            return new OutputLayer(this);
+        public CustomOutputLayer build() {
+            return new CustomOutputLayer(this);
         }
     }
 }
-

@@ -21,13 +21,13 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -106,9 +106,9 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         Pair<Gradient,INDArray> pair;
-        if(tbptt && layer instanceof BaseRecurrentLayer<?>){
+        if(tbptt && layer instanceof RecurrentLayer){
             //Truncated BPTT for recurrent layers
-            pair = ((BaseRecurrentLayer<?>)layer).tbpttBackpropGradient(epsTotal, graph.getConfiguration().getTbpttBackLength());
+            pair = ((RecurrentLayer)layer).tbpttBackpropGradient(epsTotal, graph.getConfiguration().getTbpttBackLength());
         } else {
             //Normal backprop
             pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers

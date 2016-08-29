@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -36,6 +37,12 @@ import java.util.Map;
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
 public class GravesLSTMParamInitializer implements ParamInitializer {
+
+    private static final GravesLSTMParamInitializer INSTANCE = new GravesLSTMParamInitializer();
+    public static GravesLSTMParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
 	/** Weights for previous time step -> current time step connections */
     public final static String RECURRENT_WEIGHT_KEY = "RW";
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
@@ -57,7 +64,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
@@ -100,6 +108,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             params.put(BIAS_KEY, biasView);
         }
 
+        return params;
     }
 
     @Override

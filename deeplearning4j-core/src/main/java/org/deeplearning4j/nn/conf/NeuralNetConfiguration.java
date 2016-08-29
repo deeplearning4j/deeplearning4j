@@ -22,23 +22,28 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 
@@ -284,9 +289,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
-        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        ret.enable(SerializationFeature.INDENT_OUTPUT);
+//        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+//        ret.enable(SerializationFeature.INDENT_OUTPUT);
+        configureMapper(ret);
         return ret;
     }
 
@@ -313,11 +319,53 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
+        configureMapper(ret);
+        return ret;
+    }
+
+    private static void configureMapper(ObjectMapper ret){
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-        return ret;
+
+        //Custom layer support
+        // First: scan the classpath and find all instances of Layer configuration; register them
+        Reflections reflections = new Reflections();
+        Set<Class<? extends Layer>> subTypes = reflections.getSubTypesOf(Layer.class);
+
+        //Second: get all of the currently registered Layer subtypes
+        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, ret.getSerializationConfig().getAnnotationIntrospector(), null);
+        Collection<NamedType> types = ret.getSubtypeResolver().collectAndResolveSubtypes(ac, ret.getSerializationConfig(), ret.getSerializationConfig().getAnnotationIntrospector());
+        Set<Class<?>> registeredSubtypes = new HashSet<>();
+        for (NamedType nt : types) {
+            registeredSubtypes.add(nt.getType());
+        }
+
+        //Third: register all _concrete_ subtypes that are not already registered
+        List<NamedType> toRegister = new ArrayList<>();
+        for (Class<? extends Layer> c : subTypes) {
+            //First: check if it's concrete or abstract
+            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
+                //log.info("Skipping abstract/interface: {}",c);
+                continue;
+            }
+
+            if (!registeredSubtypes.contains(c)) {
+                String name;
+                if (ClassUtils.isInnerClass(c)) {
+                    Class<?> c2 = c.getDeclaringClass();
+                    name = c2.getSimpleName() + "$" + c.getSimpleName();
+                } else {
+                    name = c.getSimpleName();
+                }
+                toRegister.add(new NamedType(c, name));
+
+                log.debug("Registering custom Layer class for JSON serialization: {}",c);
+            }
+        }
+
+        ret.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
 
     public Object[] getExtraArgs() {

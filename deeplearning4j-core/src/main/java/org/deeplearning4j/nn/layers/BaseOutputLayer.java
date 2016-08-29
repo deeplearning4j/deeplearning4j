@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -48,13 +49,13 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
  * Output layer with different objective
- * incooccurrences for different objectives.
+ * in co-occurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
  */
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
-        extends BaseLayer<LayerConfT> implements Serializable,Classifier {
+        extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -79,6 +80,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      *                 dropout, etc)
      * @return score (loss function)
      */
+    @Override
     public double computeScore( double fullNetworkL1, double fullNetworkL2, boolean training) {
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
@@ -102,6 +104,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
+    @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2){
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
@@ -264,7 +267,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return output(training);
     }
 
-    public  INDArray output(INDArray input) {
+    public INDArray output(INDArray input) {
         setInput(input);
         return output(false);
     }
@@ -292,6 +295,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
+    @Override
     public double f1Score(DataSet data) {
         return f1Score(data.getFeatureMatrix(), data.getLabels());
     }
@@ -306,6 +310,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @param labels   the true labels
      * @return the scores for each ndarray
      */
+    @Override
     public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
@@ -444,12 +449,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         throw new UnsupportedOperationException();
     }
 
-
-    public  INDArray getLabels() {
+    @Override
+    public INDArray getLabels() {
         return labels;
     }
 
-    public  void setLabels(INDArray labels) {
+    public void setLabels(INDArray labels) {
         this.labels = labels;
     }
 
