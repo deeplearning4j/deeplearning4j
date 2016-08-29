@@ -10,10 +10,7 @@ import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.spark.api.Repartition;
-import org.deeplearning4j.spark.api.RepartitionStrategy;
-import org.deeplearning4j.spark.api.TrainingMaster;
-import org.deeplearning4j.spark.api.WorkerConfiguration;
+import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.*;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -60,6 +57,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private RepartitionStrategy repartitionStrategy;
     private StorageLevel storageLevel;
     private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+    private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
 
 
     private ParameterAveragingTrainingMaster(Builder builder) {
@@ -73,6 +71,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.repartitionStrategy = builder.repartitionStrategy;
         this.storageLevel = builder.storageLevel;
         this.storageLevelStreams = builder.storageLevelStreams;
+        this.rddTrainingApproach = builder.rddTrainingApproach;
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples, int batchSizePerWorker,
@@ -613,6 +612,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
         private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+        private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
 
 
         /**
@@ -759,6 +759,17 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder storageLevelStreams(StorageLevel storageLevelStreams) {
             this.storageLevelStreams = storageLevel;
+            return this;
+        }
+
+        /**
+         * The approach to use when training on a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}.
+         * Default: {@link RDDTrainingApproach#Export}, which exports data to a temporary directory first
+         *
+         * @param rddTrainingApproach    Training approach to use when training from a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}
+         */
+        public Builder rddTrainingApproach(RDDTrainingApproach rddTrainingApproach){
+            this.rddTrainingApproach = rddTrainingApproach;
             return this;
         }
 
