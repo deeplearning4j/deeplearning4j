@@ -19,6 +19,7 @@ import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.*;
 import org.deeplearning4j.spark.data.BatchAndExportDataSetsFunction;
+import org.deeplearning4j.spark.data.BatchAndExportMultiDataSetsFunction;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -168,27 +169,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
     }
 
-//    private int numObjectsEachWorker() {
-//        return batchSizePerWorker * averagingFrequency / rddDataSetNumExamples;
-//    }
-//
-//    private int getNumDataSetObjectsPerSplit() {
-//        int dataSetObjectsPerSplit;
-//        if (rddDataSetNumExamples == 1) {
-//            dataSetObjectsPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
-//        } else {
-//            int numDataSetObjsReqEachWorker = numObjectsEachWorker();
-//            if (numDataSetObjsReqEachWorker < 1) {
-//                //In this case: more examples in a DataSet object than we actually require
-//                //For example, 100 examples in DataSet, with batchSizePerWorker=50 and averagingFrequency=1
-//                numDataSetObjsReqEachWorker = 1;
-//            }
-//
-//            dataSetObjectsPerSplit = numDataSetObjsReqEachWorker * numWorkers;
-//        }
-//        return dataSetObjectsPerSplit;
-//    }
-
     private int numObjectsEachWorker(int numExamplesEachRddObject) {
         return batchSizePerWorker * averagingFrequency / numExamplesEachRddObject;
     }
@@ -248,6 +228,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     @Override
+    @Deprecated
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
@@ -319,6 +300,16 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
         if (numWorkers == null) numWorkers = graph.getSparkContext().defaultParallelism();
 
+        if(rddTrainingApproach == RDDTrainingApproach.Direct){
+            executeTrainingDirect(graph, trainingData);
+        } else {
+            //Export data if required (or, use cached export)
+            JavaRDD<String> paths = exportIfRequiredMDS(graph.getSparkContext(), trainingData);
+            executeTrainingPathsMDSHelper(graph, paths, batchSizePerWorker);
+        }
+    }
+
+    private void executeTrainingDirect(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData){
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
@@ -432,6 +423,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     @Override
     public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths) {
+        executeTrainingPathsMDSHelper(network, trainingMultiDataPaths, rddDataSetNumExamples);
+    }
+
+    private void executeTrainingPathsMDSHelper(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths, int dataSetObjectsNumExamples){
         if (numWorkers == null) numWorkers = network.getSparkContext().defaultParallelism();
 
         if (collectTrainingStats) stats.logFitStart();
@@ -690,6 +685,37 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return sc.textFile(baseDir + "paths/");
     }
 
+    private JavaRDD<String> exportIfRequiredMDS(JavaSparkContext sc, JavaRDD<MultiDataSet> trainingData) {
+        if (collectTrainingStats) stats.logExportStart();
+
+        //Two possibilities here:
+        // 1. We've seen this RDD before (i.e., multiple epochs training case)
+        // 2. We have not seen this RDD before
+        //    (a) And we havent got any stored data -> simply export
+        //    (b) And we previously exported some data from a different RDD -> delete the last data
+        int currentRDDUid = trainingData.id();       //Id is a "A unique ID for this RDD (within its SparkContext)."
+
+        String baseDir;
+        if (lastExportedRDDId == Integer.MIN_VALUE) {
+            //Haven't seen a RDD<DataSet> yet in this training master -> export data
+            baseDir = exportMDS(trainingData);
+        } else {
+            if (lastExportedRDDId == currentRDDUid) {
+                //Use the already-exported data again for another epoch
+                baseDir = getBaseDirForRDD(trainingData);
+            } else {
+                //The new RDD is different to the last one
+                // Clean up the data for the last one, and export
+                deleteTempDir(sc, lastRDDExportPath);
+                baseDir = exportMDS(trainingData);
+            }
+        }
+
+        if (collectTrainingStats) stats.logExportEnd();
+
+        return sc.textFile(baseDir + "paths/");
+    }
+
     private String export(JavaRDD<DataSet> trainingData) {
         String baseDir = getBaseDirForRDD(trainingData);
         String dataDir = baseDir + "data/";
@@ -699,6 +725,21 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         JavaRDD<String> paths = trainingData.mapPartitionsWithIndex(new BatchAndExportDataSetsFunction(batchSizePerWorker, dataDir), true);
         paths.saveAsTextFile(pathsDir);
         log.info("RDD<DataSet> export complete at {}", baseDir);
+
+        lastExportedRDDId = trainingData.id();
+        lastRDDExportPath = baseDir;
+        return baseDir;
+    }
+
+    private String exportMDS(JavaRDD<MultiDataSet> trainingData){
+        String baseDir = getBaseDirForRDD(trainingData);
+        String dataDir = baseDir + "data/";
+        String pathsDir = baseDir + "paths/";
+
+        log.info("Initiating RDD<MultiDataSet> export at {}", baseDir);
+        JavaRDD<String> paths = trainingData.mapPartitionsWithIndex(new BatchAndExportMultiDataSetsFunction(batchSizePerWorker, dataDir), true);
+        paths.saveAsTextFile(pathsDir);
+        log.info("RDD<MultiDataSet> export complete at {}", baseDir);
 
         lastExportedRDDId = trainingData.id();
         lastRDDExportPath = baseDir;
