@@ -71,7 +71,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
             if (next.numExamples() == minibatchSize) {
-                export(next, partitionIdx, count++);
+                outputPaths.add(export(next, partitionIdx, count++));
                 continue;
             }
             //DataSet must be either smaller or larger than minibatch size...
@@ -99,7 +99,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
             numExamples += ds.numExamples();
         }
 
-        if(numExamples < minibatchSize && !finalExport ){
+        if (tempList.size() == 0 || (numExamples < minibatchSize && !finalExport)) {
             //No op
             return new Pair<>(countBefore, Collections.<String>emptyList());
         }
@@ -107,28 +107,27 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
         List<String> exportPaths = new ArrayList<>();
 
         int countAfter = countBefore;
-        if (finalExport || numExamples >= minibatchSize) {
-            //Batch the required number together
-            int countSoFar = 0;
-            List<DataSet> tempToMerge = new ArrayList<>();
-            while(tempList.size() > 0 && countSoFar != minibatchSize){
-                DataSet next = tempList.removeFirst();
-                if(countSoFar + next.numExamples() <= minibatchSize){
-                    //Add the entire DataSet object
-                    tempToMerge.add(next);
-                    countSoFar += next.numExamples();
-                } else {
-                    //Split the DataSet
-                    List<DataSet> examples = next.asList();
-                    for(DataSet ds : examples){
-                        tempList.addFirst(ds);
-                    }
+
+        //Batch the required number together
+        int countSoFar = 0;
+        List<DataSet> tempToMerge = new ArrayList<>();
+        while (tempList.size() > 0 && countSoFar != minibatchSize) {
+            DataSet next = tempList.removeFirst();
+            if (countSoFar + next.numExamples() <= minibatchSize) {
+                //Add the entire DataSet object
+                tempToMerge.add(next);
+                countSoFar += next.numExamples();
+            } else {
+                //Split the DataSet
+                List<DataSet> examples = next.asList();
+                for (DataSet ds : examples) {
+                    tempList.addFirst(ds);
                 }
             }
-            //At this point: we should have the required number of examples in tempToMerge (unless it's a final export)
-            DataSet toExport = DataSet.merge(tempToMerge);
-            exportPaths.add( export(toExport, partitionIdx, countAfter++ ));
         }
+        //At this point: we should have the required number of examples in tempToMerge (unless it's a final export)
+        DataSet toExport = DataSet.merge(tempToMerge);
+        exportPaths.add(export(toExport, partitionIdx, countAfter++));
 
         return new Pair<>(countAfter, exportPaths);
     }
