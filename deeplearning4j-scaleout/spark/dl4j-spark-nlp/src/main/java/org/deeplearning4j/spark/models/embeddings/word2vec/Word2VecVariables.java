@@ -30,7 +30,7 @@ public class Word2VecVariables {
     public final static Map<String, Object> defaultVals = new HashMap<String, Object>() {{
         put(VECTOR_LENGTH, 100);
         put(ADAGRAD, false);
-        put(NEGATIVE, 5);
+        put(NEGATIVE, 5.0);
         put(NUM_WORDS, 1);
         // TABLE would be a string of byte of the ndarray used for -ve sampling
         put(WINDOW, 5);
