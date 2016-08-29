@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 @RunWith(Parameterized.class)
 public class MultiDataSetTest extends BaseNd4jTest {
     public MultiDataSetTest(Nd4jBackend backend) {
@@ -283,6 +285,44 @@ public class MultiDataSetTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testSplit(){
+
+        INDArray[] features = new INDArray[2];
+        features[0] = Nd4j.linspace(1,30,30).reshape('c',3,10);
+        features[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10);
+
+        INDArray[] labels = new INDArray[2];
+        labels[0] = Nd4j.linspace(1,30,30).reshape('c',3,10).addi(0.5);
+        labels[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10).addi(0.3);
+
+        INDArray[] fMask = new INDArray[2];
+        fMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10);
+
+        INDArray[] lMask = new INDArray[2];
+        lMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10).addi(0.5);
+
+        MultiDataSet mds = new MultiDataSet(features, labels, fMask, lMask);
+
+        List<org.nd4j.linalg.dataset.api.MultiDataSet> list = mds.asList();
+
+        assertEquals(3, list.size());
+        for( int i=0; i<3; i++ ){
+            MultiDataSet m = (MultiDataSet) list.get(i);
+            assertEquals(features[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeatures(0));
+            assertEquals(features[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getFeatures(1));
+
+            assertEquals(labels[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getLabels(0));
+            assertEquals(labels[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getLabels(1));
+
+            assertNull(m.getFeaturesMaskArray(0));
+            assertEquals(fMask[1].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeaturesMaskArray(1));
+
+            assertNull(m.getLabelsMaskArray(0));
+            assertEquals(lMask[1].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getLabelsMaskArray(1));
+        }
+    }
+
+    @Test
     public void testToString() {
         //Mask arrays, and different lengths
 
@@ -415,8 +455,6 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 assertEquals(mds, mds2);
             }
         }
-
-
     }
 
     @Override

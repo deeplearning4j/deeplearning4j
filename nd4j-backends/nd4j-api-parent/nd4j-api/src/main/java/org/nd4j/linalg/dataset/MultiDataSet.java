@@ -264,6 +264,57 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         load(new FileInputStream(from));
     }
 
+    @Override
+    public List<org.nd4j.linalg.dataset.api.MultiDataSet> asList() {
+        int nExamples = features[0].size(0);
+
+        List<org.nd4j.linalg.dataset.api.MultiDataSet> list = new ArrayList<>();
+
+        for( int i=0; i<nExamples; i++ ){
+            INDArray[] thisFeatures = new INDArray[features.length];
+            INDArray[] thisLabels = new INDArray[labels.length];
+            INDArray[] thisFeaturesMaskArray = (featuresMaskArrays != null ? new INDArray[featuresMaskArrays.length] : null);
+            INDArray[] thisLabelsMaskArray = (labelsMaskArrays != null ? new INDArray[labelsMaskArrays.length] : null);
+
+            for( int j=0; j<features.length; j++ ){
+                thisFeatures[j] = getSubsetForExample(features[j],i);
+            }
+            for( int j=0; j<labels.length; j++ ){
+                thisLabels[j] = getSubsetForExample(labels[j],i);
+            }
+            if(thisFeaturesMaskArray != null){
+                for( int j=0; j<thisFeaturesMaskArray.length; j++ ){
+                    if(featuresMaskArrays[j] == null) continue;
+                    thisFeaturesMaskArray[j] = getSubsetForExample(featuresMaskArrays[j],i);
+                }
+            }
+            if(thisLabelsMaskArray != null){
+                for( int j=0; j<thisLabelsMaskArray.length; j++ ){
+                    if(labelsMaskArrays[j] == null) continue;
+                    thisLabelsMaskArray[j] = getSubsetForExample(labelsMaskArrays[j],i);
+                }
+            }
+
+            list.add(new MultiDataSet(thisFeatures, thisLabels, thisFeaturesMaskArray, thisLabelsMaskArray));
+        }
+
+        return list;
+    }
+
+
+    private static INDArray getSubsetForExample(INDArray array, int idx){
+        switch (array.rank()){
+            case 2:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all());
+            case 3:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all(), NDArrayIndex.all());
+            case 4:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+            default:
+                throw new IllegalStateException("Cannot get subset for rank " + array.rank() + " array");
+        }
+    }
+
 
     /** Merge a collection of MultiDataSet objects into a single MultiDataSet.
      * Merging is done by concatenating along dimension 0 (example number in batch)
