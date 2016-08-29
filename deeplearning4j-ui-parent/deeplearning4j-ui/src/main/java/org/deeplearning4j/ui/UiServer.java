@@ -156,6 +156,7 @@ public class UiServer extends Application<UIConfiguration> {
     @Override
     public void initialize(Bootstrap<UIConfiguration> bootstrap) {
         //custom serializers for the json serde
+
         bootstrap.getObjectMapper().registerModule(module());
 
 
