@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 
 /**
@@ -19,10 +20,16 @@ public class GridPointers {
     private int opNum;
     private DataBuffer.Type dtype;
 
+    // indarrays
+    private INDArray opX;
+    private INDArray opY;
+    private INDArray opZ;
+
     // data buffers
     private Pointer x;
     private Pointer y;
     private Pointer z;
+
 
     // strides
     private int xStride = -1;
@@ -58,6 +65,9 @@ public class GridPointers {
         this.dtype = op.x().data().dataType();
         this.opNum = op.opNum();
 
+        this.opX = op.x();
+        this.opZ = op.z();
+
         this.xLength = op.x().length();
         this.zLength = op.z().length();
 
@@ -70,6 +80,7 @@ public class GridPointers {
             this.yStride = op.y().elementWiseStride();
             this.yLength = op.y().length();
             this.yOrder = op.y().ordering();
+            this.opY = op.y();
         }
 
         if (dimensions != null)

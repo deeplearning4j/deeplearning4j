@@ -3,6 +3,8 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -598,5 +600,104 @@ public class GridExecutionerTest {
     @Test
     public void testMetaOpScalarTransform1() throws Exception {
 
+    }
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/*
+    Reverse flow tests
+*/
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+    @Test
+    public void testReverseFlow1() throws Exception {
+        CudaGridExecutioner executioner = ((CudaGridExecutioner) Nd4j.getExecutioner());
+
+        INDArray put = Nd4j.create(new double[]{5, 6});
+
+        INDArray row1 = Nd4j.linspace(1, 4, 4);
+
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(row1);
+
+        assertEquals(0, executioner.getQueueLength());
+        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        System.out.println("A: --------------------------");
+
+        row1 = row1.reshape(2, 2);
+
+        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        System.out.println("B: --------------------------");
+
+//        ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        row1.putRow(1, put);
+
+        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        System.out.println("C: --------------------------");
+
+        assertEquals(1, executioner.getQueueLength());
+
+        executioner.flushQueueBlocking();
+
+        assertEquals(0, executioner.getQueueLength());
+
+        assertEquals(false, point.isActualOnHostSide());
+        assertEquals(true, point.isActualOnDeviceSide());
+
+        System.out.println("D: --------------------------");
+
+
+    //    ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        //System.out.println(row1);
+        assertArrayEquals(new float[]{1, 2, 5, 6}, row1.data().asFloat(), 0.1f);
+
+    }
+
+    @Test
+    public void testReverseFlow2() {
+        CudaGridExecutioner executioner = ((CudaGridExecutioner) Nd4j.getExecutioner());
+
+        INDArray n1 = Nd4j.scalar(1);
+        INDArray n2 = Nd4j.scalar(2);
+        INDArray n3 = Nd4j.scalar(3);
+        INDArray n4 = Nd4j.scalar(4);
+
+        System.out.println("0: ------------------------");
+
+        INDArray nClone = n1.add(n2);
+
+        assertEquals(Nd4j.scalar(3), nClone);
+        INDArray n1PlusN2 = n1.add(n2);
+        assertFalse(n1PlusN2.equals(n1));
+
+        System.out.println("2: ------------------------");
+
+        System.out.println(n4);
+
+        INDArray subbed = n4.sub(n3);
+        INDArray mulled = n4.mul(n3);
+        INDArray div = n4.div(n3);
+
+        System.out.println("Subbed: " + subbed);
+        System.out.println("Mulled: " + mulled);
+        System.out.println("Div: " + div);
+        System.out.println("4: ------------------------");
+
+        assertFalse(subbed.equals(n4));
+        assertFalse(mulled.equals(n4));
+
+        assertEquals(0, executioner.getQueueLength());
+
+        assertEquals(Nd4j.scalar(1), subbed);
+        assertEquals(Nd4j.scalar(12), mulled);
+        assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
 }

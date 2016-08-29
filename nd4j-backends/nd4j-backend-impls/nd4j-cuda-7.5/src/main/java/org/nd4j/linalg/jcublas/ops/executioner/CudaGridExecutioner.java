@@ -180,7 +180,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             So we either should append this op to future GridOp, form MetaOp, or immediately execute everything
             But we don't expect this method called for blocking ops ever, so it's either
         */
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+       // CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
 
         OpDescriptor last = lastOp.get();
@@ -228,7 +228,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         }
 
-        AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
+     //   AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
         //return op;
     }
@@ -324,6 +324,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
+//        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
         // FIXME: do not leave it as is
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -557,9 +558,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public void exec(MetaOp op) {
         prepareGrid(op);
 
-        //CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z());
+        GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
+        GridPointers second = op.getGridDescriptor().getGridPointers().get(1);
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        // we need to use it only for first op, since for MetaOps second op shares the same X & Z by definition
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(first.getOpZ(), first.getOpY());
+
+//        AtomicAllocator.getInstance().getFlowController().prepareAction(second.getOpX(), second.getOpY(), second.getOpZ());
+
+
+        //CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
 
         PointerPointer extras = new PointerPointer(null, context.getOldStream());
 
@@ -572,8 +581,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (op.getSecondOp() instanceof ScalarOp)
             scalarB = ((ScalarOp) op.getSecondOp()).scalar().doubleValue();
 
-        GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
-        GridPointers second = op.getGridDescriptor().getGridPointers().get(1);
+
 
         //logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
 
@@ -734,6 +742,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         );
             }
         }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, first.getOpZ(), first.getOpY());
+//        AtomicAllocator.getInstance().getFlowController().registerAction(context, second.getOpX(), second.getOpY(), second.getOpZ());
     }
 
     @Override

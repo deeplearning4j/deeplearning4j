@@ -358,6 +358,8 @@ public class CudaZeroHandler implements MemoryHandler {
                  throw new IllegalStateException("devicePointer is NULL!");
             }
 
+            //log.info("Copying to device");
+
             if (nativeOps.memcpyAsync(
                             point.getPointers().getDevicePointer(),
                             point.getPointers().getHostPointer(),
