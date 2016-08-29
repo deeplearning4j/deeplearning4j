@@ -278,6 +278,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
     public static class ParameterAveragingTrainingMasterStatsHelper {
 
+        private long lastExportStartTime;
         private long lastCountStartTime;
         private long lastBroadcastStartTime;
         private long lastRepartitionStartTime;
@@ -289,6 +290,7 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
 
         private SparkTrainingStats workerStats;
 
+        private List<EventStats> exportTimes = new ArrayList<>();   //Starts for exporting data
         private List<EventStats> countTimes = new ArrayList<>();
         private List<EventStats> broadcastTimes = new ArrayList<>();
         private List<EventStats> repartitionTimes = new ArrayList<>();
@@ -299,6 +301,16 @@ public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats
         private List<EventStats> processParamsUpdaterTimes = new ArrayList<>();
 
         private final TimeSource timeSource = TimeSourceProvider.getInstance();
+
+        public void logExportStart(){
+            this.lastExportStartTime = timeSource.currentTimeMillis();
+        }
+
+        public void logExportEnd(){
+            long now = timeSource.currentTimeMillis();
+
+            exportTimes.add(new BaseEventStats(lastExportStartTime, now-lastExportStartTime));
+        }
 
         public void logCountStart() {
             this.lastCountStartTime = timeSource.currentTimeMillis();
