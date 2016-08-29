@@ -188,7 +188,7 @@ public class SynchronousFlowController implements FlowController {
             operand.setLastReadEvent(eventsProvider.getEvent());
             operand.getLastReadEvent().register(context.getOldStream());
         }
-        context.syncOldStream();
+     //   context.syncOldStream();
     }
 
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {

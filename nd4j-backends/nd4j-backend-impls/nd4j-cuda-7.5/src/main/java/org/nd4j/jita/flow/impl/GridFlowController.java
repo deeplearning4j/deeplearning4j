@@ -28,13 +28,12 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void synchronizeToHost(AllocationPoint point) {
-        if (!point.isActualOnHostSide() || point.isEnqueued()) {
-            if (!point.isConstant())
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        if (!point.isConstant() || point.isEnqueued())
+            if (Nd4j.getExecutioner() instanceof GridExecutioner) {
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+            }
 
             super.synchronizeToHost(point);
-        }
     }
 
     /**
@@ -44,7 +43,7 @@ public class GridFlowController extends SynchronousFlowController {
      */
     @Override
     public void waitTillFinished(AllocationPoint point) {
-        if (!point.isConstant())
+        if (!point.isConstant() || point.isEnqueued())
             if (Nd4j.getExecutioner() instanceof GridExecutioner) {
                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
             }

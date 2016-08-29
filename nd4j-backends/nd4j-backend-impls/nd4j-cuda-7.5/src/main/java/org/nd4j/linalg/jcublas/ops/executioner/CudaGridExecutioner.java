@@ -70,7 +70,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     @Override
-    public synchronized Op exec(Op op) {
+    public Op exec(Op op) {
         /*
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
@@ -171,7 +171,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return execCounter.get();
     }
 
-    protected synchronized void processAsGridOp(Op op, int... dimension) {
+    protected void processAsGridOp(Op op, int... dimension) {
         /*
             We have multiple options here:
                 1) Op has no relation to lastOp
@@ -209,7 +209,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 }
                 break;
                 case INVERTED_PREDICATE: {
-                    MetaOp metaOp = new InvertedPredicateMetaOp(last, new OpDescriptor(op, dimension));
+                    OpDescriptor currentOp = new OpDescriptor(op, dimension);
+
+                    dequeueOp(last);
+                    dequeueOp(currentOp);
+
+                    MetaOp metaOp = new InvertedPredicateMetaOp(last, currentOp);
                     pushToGrid(new OpDescriptor(metaOp), false);
                 }
                 break;
@@ -235,10 +240,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     protected void enqueueOp(OpDescriptor descriptor) {
-        lastOp.set(descriptor);
-
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(true);
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(true);
+
+        lastOp.set(descriptor);
     }
 
     protected void dequeueOp(OpDescriptor descriptor) {
@@ -572,6 +577,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     @Override
     public void exec(MetaOp op) {
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
         prepareGrid(op);
 
         GridPointers first = op.getGridDescriptor().getGridPointers().get(0);
@@ -586,7 +594,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         //CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
 
-        PointerPointer extras = new PointerPointer(null, context.getOldStream());
+        PointerPointer extras = extraz.get().put(null, context.getOldStream());
 
         double scalarA = 0.0;
         double scalarB = 0.0;
@@ -773,7 +781,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      *
      * PLEASE NOTE: This call IS non-blocking
      */
-    public synchronized void flushQueue() {
+    public void flushQueue() {
         /*
             Basically we just want to form GridOp and pass it to native executioner
             But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
@@ -814,12 +822,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * PLEASE NOTE: This call is always blocking, until all queued operations are finished
      */
     @Override
-    public synchronized void flushQueueBlocking() {
+    public void flushQueueBlocking() {
         flushQueue();
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
-
+/*
     @Override
     public INDArray execAndReturn(BroadcastOp op) {
         flushQueue();
@@ -854,5 +862,5 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         return op.z();
     }
-
+*/
 }
