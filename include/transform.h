@@ -920,7 +920,7 @@ __device__ void concatKernelGeneric(int dimension,
 		__shared__ int yEWS;
 		if (threadIdx.x == 0) {
 			tDim[0] = dimension;
-			tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength) // (manager->getTADSpace())
 			tad->setExternalBuffers((void *) manager);
 			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
 			tad->init(resultShapeInfo, tDim, 1);
@@ -1074,7 +1074,7 @@ __device__ void concatKernelGeneric(int dimension,
 //				delete inputTAD;
 		}
 
-		if (threadIdx.x == 0)
+		if (threadIdx.x == 0 && tad != NULL)
 			delete tad;
 }
 
