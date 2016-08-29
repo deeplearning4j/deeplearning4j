@@ -811,6 +811,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         allocator.getFlowController().registerAction(context, target);
 
+        tempX.address();
+
         return target;
     }
 

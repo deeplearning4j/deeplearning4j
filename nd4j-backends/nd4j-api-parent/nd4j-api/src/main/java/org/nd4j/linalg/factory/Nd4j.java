@@ -47,7 +47,6 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -58,15 +57,11 @@ import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
-import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -734,10 +729,18 @@ public class Nd4j {
             n2 *= a.size(axes[0][i]);
         }
 
+        //if listA and listB are empty these donot initialize.
+        //so initializing with {1} which will then get overriden if not empty
         int[] newShapeA = {-1,n2};
-        int[] oldShapeA = Ints.toArray(listA);
-        for(int i = 0; i < oldShapeA.length; i++)
-            oldShapeA[i] = a.size(oldShapeA[i]);
+        int [] oldShapeA;
+        if (listA.size() == 0) {
+            oldShapeA = new int [] {1};
+        }
+        else {
+            oldShapeA = Ints.toArray(listA);
+            for (int i = 0; i < oldShapeA.length; i++)
+                oldShapeA[i] = a.size(oldShapeA[i]);
+        }
 
         int n3 = 1;
         int bNax = Math.min(b.rank(), axes[1].length);
@@ -747,10 +750,15 @@ public class Nd4j {
 
 
         int[] newShapeB = {n3,-1};
-        int[] oldShapeB = Ints.toArray(listB);
-        for(int i = 0; i < oldShapeB.length; i++)
-            oldShapeB[i] = b.size(oldShapeB[i]);
-
+        int [] oldShapeB;
+        if (listB.size() == 0) {
+            oldShapeB = new int [] {1};
+        }
+        else {
+            oldShapeB = Ints.toArray(listB);
+            for (int i = 0; i < oldShapeB.length; i++)
+                oldShapeB[i] = b.size(oldShapeB[i]);
+        }
 
 
         INDArray at = a.permute(newAxesA).reshape(newShapeA);

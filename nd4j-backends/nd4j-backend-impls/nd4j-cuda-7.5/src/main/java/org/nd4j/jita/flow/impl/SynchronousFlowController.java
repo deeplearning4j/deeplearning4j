@@ -1,12 +1,14 @@
 package org.nd4j.jita.flow.impl;
 
 
+import lombok.Getter;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
@@ -32,6 +34,7 @@ public class SynchronousFlowController implements FlowController {
     private volatile Allocator allocator;
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+    @Getter protected EventsProvider eventsProvider = new EventsProvider();
 
     @Override
     public void init(Allocator allocator) {
@@ -67,17 +70,18 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void waitTillFinished(AllocationPoint point) {
-        CudaContext context = point.getCurrentContext(); //(CudaContext) allocator.getDeviceContext().getContext();
+        /*CudaContext context = point.getCurrentContext(); //(CudaContext) allocator.getDeviceContext().getContext();
         if (context == null)
             context = (CudaContext) allocator.getDeviceContext().getContext();
         context.syncOldStream();
+        */
+
+        if (point.getLastWriteEvent() != null) {
+            point.getLastWriteEvent().synchronize();
+        }
     }
 
-    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
-        if (result == null) return;
-        AllocationPoint point = allocator.getAllocationPoint(result);
-        point.tickDeviceWrite();
-    }
+
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
@@ -93,6 +97,8 @@ public class SynchronousFlowController implements FlowController {
             prepareDelayedMemory(result);
             AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
+
+
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
           //      log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
@@ -159,11 +165,44 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void waitTillReleased(AllocationPoint point) {
         waitTillFinished(point);
+
+        if (point.getLastReadEvent() != null)
+            point.getLastReadEvent().synchronize();
     }
 
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
+
+        eventsProvider.storeEvent(result.getLastWriteEvent());
+        result.setLastWriteEvent(eventsProvider.getEvent());
+        result.getLastWriteEvent().register(context.getOldStream());
+
+
+        for(AllocationPoint operand: operands) {
+            eventsProvider.storeEvent(operand.getLastReadEvent());
+            operand.setLastReadEvent(eventsProvider.getEvent());
+            operand.getLastReadEvent().register(context.getOldStream());
+        }
         context.syncOldStream();
+    }
+
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
+        if (result == null) return;
+        AllocationPoint point = allocator.getAllocationPoint(result);
+        point.tickDeviceWrite();
+        eventsProvider.storeEvent(point.getLastWriteEvent());
+        point.setLastWriteEvent(eventsProvider.getEvent());
+        point.getLastWriteEvent().register(context.getOldStream());
+
+        for (INDArray operand: operands) {
+            if (operand == null)
+                continue;
+
+            AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            eventsProvider.storeEvent(pointOperand.getLastReadEvent());
+            pointOperand.setLastReadEvent(eventsProvider.getEvent());
+            pointOperand.getLastReadEvent().register(context.getOldStream());
+        }
     }
 
     @Override

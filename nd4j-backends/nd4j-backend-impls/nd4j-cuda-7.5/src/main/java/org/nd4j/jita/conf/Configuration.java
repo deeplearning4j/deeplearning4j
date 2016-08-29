@@ -123,6 +123,8 @@ public class Configuration implements Serializable {
 
     @Getter private int maximumBlockSize = 128;
 
+    @Getter private int minimumBlockSize = 64;
+
     @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
     @Getter private long maximumDeviceCache = 1024 * 1024 * 1024L;
@@ -385,6 +387,18 @@ public class Configuration implements Serializable {
         this.maximumBlockSize = blockDim;
 
         nativeOps.setOmpNumThreads(blockDim);
+
+        return this;
+    }
+
+    public Configuration setMinimumBlockSize(int blockDim) {
+        if (blockDim < 32 || blockDim > 768)
+            throw new IllegalStateException("Please keep blockDim in range [32...768]");
+
+
+        this.minimumBlockSize = blockDim;
+
+        nativeOps.setOmpMinThreads(blockDim);
 
         return this;
     }

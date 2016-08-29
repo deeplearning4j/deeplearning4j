@@ -1096,6 +1096,12 @@ public class NativeOps extends Pointer {
     public native void setOmpNumThreads(int threads);
 
     /**
+     * Sets the minimal number of openmp threads for variative methods
+     * @param threads
+     */
+    public native void setOmpMinThreads(int threads);
+
+    /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
      */
     public native void initializeDevicesAndFunctions();
