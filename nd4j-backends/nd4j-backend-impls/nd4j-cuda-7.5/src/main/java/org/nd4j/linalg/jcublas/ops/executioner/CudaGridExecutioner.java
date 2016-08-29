@@ -481,7 +481,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     @Override
     public Op exec(Op op, int... dimension) {
         // FIXME: make sure we're not going this route
-        if (1>0) throw new UnsupportedOperationException("Bad execution route");
+       // if (1>0) throw new UnsupportedOperationException("Bad execution route");
+        flushQueue();
+
         return super.exec(op, dimension);
     }
 
