@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -35,6 +36,11 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class DefaultParamInitializer implements ParamInitializer {
+
+    private static final DefaultParamInitializer INSTANCE = new DefaultParamInitializer();
+    public static DefaultParamInitializer getInstance(){
+        return INSTANCE;
+    }
 
     public final static String WEIGHT_KEY = "W";
     public final static String BIAS_KEY = "b";
@@ -49,9 +55,11 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParameters) {
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
+
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         int length = numParams(conf,true);
         if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView.length());
@@ -66,10 +74,12 @@ public class DefaultParamInitializer implements ParamInitializer {
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
 
 
-        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParameters));
-        params.put(BIAS_KEY,createBias(conf, biasView, initializeParameters));
+        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParams));
+        params.put(BIAS_KEY,createBias(conf, biasView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
+
+        return params;
     }
 
     @Override

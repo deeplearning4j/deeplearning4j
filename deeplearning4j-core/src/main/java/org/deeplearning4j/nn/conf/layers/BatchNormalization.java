@@ -1,10 +1,19 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Batch normalization configuration
@@ -36,6 +45,24 @@ public class BatchNormalization extends FeedForwardLayer {
     public BatchNormalization clone() {
         BatchNormalization clone = (BatchNormalization) super.clone();
         return clone;
+    }
+
+    @Override
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.normalization.BatchNormalization ret
+                = new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return BatchNormalizationParamInitializer.getInstance();
     }
 
 

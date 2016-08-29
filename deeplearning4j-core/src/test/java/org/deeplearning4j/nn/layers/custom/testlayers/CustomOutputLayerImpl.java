@@ -1,6 +1,5 @@
 /*
- *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,26 +12,18 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
- *
  */
 
-package org.deeplearning4j.nn.layers.factory;
+package org.deeplearning4j.nn.layers.custom.testlayers;
 
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 
 /**
- * Create a convolution layer
- * @author Adam Gibson
+ * Created by Alex on 28/08/2016.
  */
-public class ConvolutionLayerFactory extends DefaultLayerFactory {
-    public ConvolutionLayerFactory(Class<? extends Layer> layerConfig) {
-        super(layerConfig);
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return new ConvolutionParamInitializer();
+public class CustomOutputLayerImpl extends BaseOutputLayer<CustomOutputLayer> {
+    public CustomOutputLayerImpl(NeuralNetConfiguration conf) {
+        super(conf);
     }
 }

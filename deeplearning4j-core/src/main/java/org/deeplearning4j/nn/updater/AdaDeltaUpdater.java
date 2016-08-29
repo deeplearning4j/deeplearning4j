@@ -20,7 +20,7 @@ public class AdaDeltaUpdater extends BaseUpdater {
     public GradientUpdater init(String variable, Layer layer) {
         GradientUpdater updater = updaterForVariable.get(variable);
         if (updater == null) {
-            updater = new AdaDelta(layer.conf().getLayer().getRho());
+            updater = new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
             updaterForVariable.put(variable,updater);
         }
 

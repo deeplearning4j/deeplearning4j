@@ -18,17 +18,12 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
@@ -321,7 +316,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 + ", got params of length " + gradients.length());
 
         this.gradientsFlattened = gradients;
-        this.gradientViews = LayerFactories.getFactory(conf).initializer().getGradientsFromFlattened(conf,gradients);
+        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf,gradients);
     }
 
     @Override
@@ -616,7 +611,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             }
 
             INDArray paramsView = Nd4j.create(1,w.length() + nOut);
-            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsView, true);
+            layer = clone.getLayer().instantiate(clone, iterationListeners, this.index, paramsView, true);
 
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());
             layer.setParam(DefaultParamInitializer.BIAS_KEY,newB);

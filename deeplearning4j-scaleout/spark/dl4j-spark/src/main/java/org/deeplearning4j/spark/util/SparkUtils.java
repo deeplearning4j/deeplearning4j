@@ -220,7 +220,6 @@ public class SparkUtils {
                 //First: count number of elements in each partition. Need to know this so we can work out how to properly index each example,
                 // so we can in turn create properly balanced partitions after repartitioning
                 //Because the objects (DataSets etc) should be small, this should be OK
-                rdd.persist(StorageLevel.MEMORY_ONLY());
 
                 //Count each partition...
                 List<Tuple2<Integer, Integer>> partitionCounts = rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
