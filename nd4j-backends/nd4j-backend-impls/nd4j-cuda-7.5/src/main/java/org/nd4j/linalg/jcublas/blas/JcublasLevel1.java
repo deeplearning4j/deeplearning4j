@@ -536,7 +536,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT axpy called");
 
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
 /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -559,12 +559,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
     protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 //        CublasPointer xAPointer = new CublasPointer(X, ctx);
 //        CublasPointer xBPointer = new CublasPointer(Y, ctx);
@@ -586,7 +586,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -664,7 +664,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE axpy called");
 
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+        //CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 
     //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
@@ -685,7 +685,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override

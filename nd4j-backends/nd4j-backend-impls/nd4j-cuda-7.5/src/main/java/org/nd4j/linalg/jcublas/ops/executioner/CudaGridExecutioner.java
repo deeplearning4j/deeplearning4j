@@ -514,7 +514,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             // So, that's scalar. We'll have to flush queue
             flushQueue();
 
-            super.exec(op, new int[]{Integer.MAX_VALUE});
+            super.invoke(op, new int[]{Integer.MAX_VALUE});
         } else {
             buildZ(op, dimension);
             processAsGridOp(op, dimension);
