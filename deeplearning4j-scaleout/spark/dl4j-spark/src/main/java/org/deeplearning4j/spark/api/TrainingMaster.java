@@ -55,7 +55,9 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      *
      * @param network      Current network state
      * @param trainingData Data to train on
+     * @deprecated Deprecated due to poor performance
      */
+    @Deprecated
     void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData);
 
 
@@ -84,7 +86,9 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      *
      * @param network      Current network state
      * @param trainingData Data to train on
+     * @deprecated Deprecated due to poor performance
      */
+    @Deprecated
     void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
 
     /**
@@ -121,7 +125,9 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      *
      * @param network      Current network state
      * @param trainingData Data to train on
+     * @deprecated Deprecated due to poor performance
      */
+    @Deprecated
     void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
 
     /**
