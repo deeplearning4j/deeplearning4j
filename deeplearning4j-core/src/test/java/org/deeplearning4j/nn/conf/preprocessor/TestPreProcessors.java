@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -40,9 +39,9 @@ public class TestPreProcessors {
                             .nIn(layerSize).nOut(layerSize).build())
                     .build();
 
-            int numParams = LayerFactories.getFactory(nnc.getLayer()).initializer().numParams(nnc,true);
+            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
+            DenseLayer layer = (DenseLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray activations3dc = Nd4j.create(new int[]{miniBatchSize, layerSize, timeSeriesLength}, 'c');
@@ -125,9 +124,9 @@ public class TestPreProcessors {
                             .nIn(layerSize).nOut(layerSize).build())
                     .build();
 
-            int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
+            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
+            DenseLayer layer = (DenseLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray rand = Nd4j.rand(miniBatchSize * timeSeriesLength, layerSize);
@@ -207,9 +206,9 @@ public class TestPreProcessors {
                                     .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(inputWidth, inputHeight)
                                             .nIn(cnnNChannelsIn).nOut(nChannels).build()).build();
 
-                            int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
+                            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
+                            ConvolutionLayer layer = (ConvolutionLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             INDArray activationsCnn = Nd4j.rand(
@@ -285,9 +284,9 @@ public class TestPreProcessors {
                                     .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(inputWidth, inputHeight)
                                             .nIn(cnnNChannelsIn).nOut(nChannels).build()).build();
 
-                            int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
+                            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
+                            ConvolutionLayer layer = (ConvolutionLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             int[] shape_rnn = new int[]{miniBatchSize, nChannels * inputHeight * inputWidth, timeSeriesLength};

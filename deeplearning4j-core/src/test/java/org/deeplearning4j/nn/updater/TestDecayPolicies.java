@@ -14,7 +14,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -99,9 +98,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -133,9 +132,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -167,9 +166,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -199,9 +198,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -234,9 +233,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0,params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0,params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -268,9 +267,9 @@ public class TestDecayPolicies {
                             .nIn(nIn).nOut(nOut).updater(updaterFunc).build())
                     .build();
 
-            int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf,true);
             INDArray params = Nd4j.create(1, numParams);
-            Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+            Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             Updater updater = UpdaterCreator.getUpdater(layer);
             int stateSize = updater.stateSizeForLayer(layer);
             if(stateSize > 0) updater.setStateViewArray(layer, Nd4j.create(1,stateSize), true);
@@ -446,9 +445,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int stateSize = updater.stateSizeForLayer(layer);
         updater.setStateViewArray(layer, Nd4j.create(1,stateSize), true);

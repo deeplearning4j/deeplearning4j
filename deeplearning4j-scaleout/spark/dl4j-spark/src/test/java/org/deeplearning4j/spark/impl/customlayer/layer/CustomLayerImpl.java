@@ -1,6 +1,5 @@
 /*
- *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,25 +12,21 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
+ */
+
+package org.deeplearning4j.spark.impl.customlayer.layer;
+
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.BaseLayer;
+
+/**
  *
+ * Basically: identical to DenseLayer
+ *
+ * Created by Alex on 26/08/2016.
  */
-
-package org.deeplearning4j.nn.layers.factory;
-
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.GRUParamInitializer;
-
-/**GRU: Gated Recurrent Unit RNN
- */
-public class GRULayerFactory extends DefaultLayerFactory {
-
-    public GRULayerFactory(Class<? extends Layer> layerConfig) {
-        super(layerConfig);
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return new GRUParamInitializer();
+public class CustomLayerImpl extends BaseLayer<CustomLayer> {
+    public CustomLayerImpl(NeuralNetConfiguration conf) {
+        super(conf);
     }
 }
