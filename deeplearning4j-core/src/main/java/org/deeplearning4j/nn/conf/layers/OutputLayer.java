@@ -22,11 +22,20 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Output layer with different objective co-occurrences for different objectives.
- * This includes classification as well as prediction
+ * This includes classification as well as regression
  *
  */
 @Data @NoArgsConstructor
@@ -36,6 +45,24 @@ public class OutputLayer extends BaseOutputLayer {
 
     protected OutputLayer(Builder builder) {
     	super(builder);
+    }
+
+    @Override
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.OutputLayer ret
+                = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return DefaultParamInitializer.getInstance();
     }
 
     @NoArgsConstructor

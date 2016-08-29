@@ -31,6 +31,12 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class PretrainParamInitializer extends DefaultParamInitializer {
+
+    private static final PretrainParamInitializer INSTANCE = new PretrainParamInitializer();
+    public static PretrainParamInitializer getInstance(){
+        return INSTANCE;
+    }
+
     public final static String VISIBLE_BIAS_KEY = DefaultParamInitializer.BIAS_KEY + "B";
 
     @Override
@@ -42,14 +48,16 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        super.init(params, conf, paramsView, initializeParams);
+    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        Map<String,INDArray> params = super.init(conf, paramsView, initializeParams);
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
 
 
         params.put(VISIBLE_BIAS_KEY, Nd4j.valueArrayOf(layerConf.getNIn(),0.0));
         conf.addVariable(VISIBLE_BIAS_KEY);
+
+        return params;
     }
 
 

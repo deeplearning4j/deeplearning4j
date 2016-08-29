@@ -100,9 +100,6 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
-        if(train != null) train.cache();
-        else trainMulti.cache();
-
         int epochCount = 0;
         while (true) {  //Iterate (do epochs) until termination condition hit
             double lastScore;

@@ -276,7 +276,6 @@ public class LayerConfigTest {
         assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
         assertEquals(0.5, conf.getConf(1).getLayer().getRho(), 0.0);
         assertEquals(1.0, conf.getConf(0).getLayer().getRmsDecay(), 0.0);
-        assertEquals(2.0, conf.getConf(1).getLayer().getRmsDecay(), 0.0);
     }
 
 
