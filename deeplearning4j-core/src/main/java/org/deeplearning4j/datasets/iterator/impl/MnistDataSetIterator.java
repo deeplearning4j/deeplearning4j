@@ -19,7 +19,6 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 
 import java.io.IOException;
 
