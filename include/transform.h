@@ -863,7 +863,7 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         int highestElement = (int) dX[r];
 
         if (threadIdx.x == 0)
-            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
+            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i], tadOffset: [%i]\n", r, highestElement, numTads, tadLength, tadOffsetForBlock);
 /*
 
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
