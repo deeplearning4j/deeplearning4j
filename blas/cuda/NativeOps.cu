@@ -1772,8 +1772,8 @@ void   NativeOps::execTransformDouble(
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxDouble<<<128, 64, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-                        if (debug)
-                            checkCudaErrors(cudaStreamSynchronize(*stream));
+
+                        checkCudaErrors(cudaStreamSynchronize(*stream));
 
 
 					}
@@ -4242,8 +4242,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
 
-
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+						if (debug)
+							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
@@ -4485,8 +4485,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxHalf<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-                        if (debug)
-                            checkCudaErrors(cudaStreamSynchronize(*stream));
+
+                        checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
