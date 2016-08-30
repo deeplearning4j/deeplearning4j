@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
