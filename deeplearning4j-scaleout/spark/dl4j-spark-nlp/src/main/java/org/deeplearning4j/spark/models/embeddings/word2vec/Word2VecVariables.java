@@ -38,7 +38,7 @@ public class Word2VecVariables {
         put(MIN_ALPHA, 1e-2);
         put(ITERATIONS, 1);
         put(N_GRAMS, 1);
-        put(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory");
+        put(TOKENIZER, "org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory");
         put(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor");
         put(REMOVE_STOPWORDS, false);
         put(SEED, 42L);
