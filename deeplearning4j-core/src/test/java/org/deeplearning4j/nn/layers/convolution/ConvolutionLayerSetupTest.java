@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -308,5 +309,42 @@ public class ConvolutionLayerSetupTest {
         assertEquals(8*8*3,((FeedForwardLayer)conf.getConf(2).getLayer()).getNIn());
     }
 
+
+    @Test
+    public void testCNNDBNMultiLayer() throws Exception {
+        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSet next = iter.next();
+
+        // Run with separate activation layer
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(2)
+                .seed(123)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder(new int[]{1,1}, new int[]{1,1}).nIn(1).nOut(6).activation("identity").build())
+                .layer(1, new BatchNormalization.Builder().build())
+                .layer(2, new ActivationLayer.Builder().activation("relu").build())
+                .layer(3, new DenseLayer.Builder().nIn(28*28*6).nOut(10).activation("identity").build())
+                .layer(4, new BatchNormalization.Builder().nOut(10).build())
+                .layer(5, new ActivationLayer.Builder().activation("relu").build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(10).nOut(10).build())
+                .backprop(true).pretrain(false)
+                .cnnInputSize(28,28,1)
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+        network.setInput(next.getFeatureMatrix());
+        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        assertEquals(10, activationsActual.shape()[1], 1e-2);
+
+        network.fit(next);
+        INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
+        INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
+        assertTrue(actualGammaParam != null);
+        assertTrue(actualBetaParam != null);
+    }
 
 }
