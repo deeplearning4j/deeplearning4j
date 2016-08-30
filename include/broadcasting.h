@@ -150,12 +150,12 @@ template<typename OpType>
              */
 			template<typename OpType>
 			static void exec(T *x,
-							  int *xShapeInfo,
-							  T *y,
-							  int *yShapeInfo,
-							  T *result,
-							  int *dimension,
-							  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+							 int *xShapeInfo,
+							 T *y,
+							 int *yShapeInfo,
+							 T *result,
+							 int *dimension,
+							 int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
@@ -183,8 +183,12 @@ template<typename OpType>
 				int yStride = shape::elementWiseStride(yShapeInfo);
 				int tads =shape::length(xShapeInfo) / tadLength;
 
+				int tadsPerThread = tads / 64;
+				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
 				if (result == x) {
-#pragma omp parallel for schedule(guided) if (tads > 16)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
 
@@ -216,7 +220,7 @@ template<typename OpType>
 				}
 				else {
 
-#pragma omp  parallel  for schedule(guided)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
 						T *xIter = x + offset;

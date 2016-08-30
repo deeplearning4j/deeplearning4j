@@ -424,7 +424,13 @@ template<typename OpType>
                     int *yStride = shape::stride(yShapeBuffer);
                     int *resultStride = shape::stride(resultShapeBuffer);
 
-#pragma omp parallel for
+                    // tad-oriented rotation technically
+
+                    int tadsPerThread = xShape[0] / 32;
+                    int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                    num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1)
 for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     T *dxLocal = dx + xStride[0] * i;
                     T *yLocal = y + yStride[0] * i;
@@ -485,6 +491,10 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
 
                 else {
+                    int xCoord[MAX_RANK];
+                    int yCoord[MAX_RANK];
+                    int resultCoord[MAX_RANK];
+
                     Nd4jIndex len = shape::length(xShapeBuffer);
                     int xRank = shape::rank(xShapeBuffer);
                     int yRank = shape::rank(yShapeBuffer);
@@ -498,11 +508,9 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
                     if(dx == result) {
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
-                            int xCoord[MAX_RANK];
-                            int yCoord[MAX_RANK];
-                            int resultCoord[MAX_RANK];
+
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
@@ -515,11 +523,8 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
-                            int xCoord[MAX_RANK];
-                            int yCoord[MAX_RANK];
-                            int resultCoord[MAX_RANK];
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
@@ -535,45 +540,52 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
             }
 
-			template<typename OpType>
-			static void exec(T *dx,
-                              Nd4jIndex xStride,
-                              T *y,
-                              Nd4jIndex yStride,
-                              T *result,
-                              Nd4jIndex resultStride,
-                              T *extraParams,
-                              Nd4jIndex n) {
+            template<typename OpType>
+            static void exec(T *dx,
+                             Nd4jIndex xStride,
+                             T *y,
+                             Nd4jIndex yStride,
+                             T *result,
+                             Nd4jIndex resultStride,
+                             T *extraParams,
+                             const Nd4jIndex n) {
+                int elementsPerThread = n / 8192;
+                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+                int nthreads, tid, start, end;
+                int span = (n / num_threads) + 8;
+
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-					if (n > 2048) {
-#pragma omp parallel for simd schedule(guided)
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = OpType::op(dx[i], y[i], extraParams);
-						}
-					} else {
+#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+                    {
+                        tid = omp_get_thread_num();
+                        start = span * tid;
+                        end = span * (tid + 1);
+                        if (end > n) end = n;
+                        //printf("Thread: [%i], start: [%i], end: [%i], length: [%i]\n", tid, start, end, n);
 #pragma omp simd
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = OpType::op(dx[i], y[i], extraParams);
-						}
-					}
+                        for (Nd4jIndex i = start; i < end; i++) {
+                            result[i] = OpType::op(dx[i], y[i], extraParams);
+                        }
+                    }
                 }
                 else {
-					if (n > 2048) {
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i * resultStride] = OpType::op(dx[i * xStride],
-																  y[i * yStride], extraParams);
-						}
-					} else {
+#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+                    {
+                        tid = omp_get_thread_num();
+                        start = span * tid;
+                        end = span * (tid + 1);
+                        if (end > n) end = n;
+                        //printf("Thread: [%i], start: [%i], end: [%i], length: [%i]\n", tid, start, end, n);
 #pragma omp simd
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i * resultStride] = OpType::op(dx[i * xStride],
-																  y[i * yStride], extraParams);
-						}
-					}
+                        for (Nd4jIndex i = start; i < end; i++) {
+                            result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
+                        }
+                    }
                 }
             }
-		};
+        };
     }
 }
 

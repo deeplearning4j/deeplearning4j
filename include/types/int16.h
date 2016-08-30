@@ -26,26 +26,26 @@ namespace nd4j {
     struct int16 {
         int16_t data;
 
-        op_def int16() { data = cpu_float2int16(0.0f); }
+        local_def int16() { data = cpu_float2int16(0.0f); }
 
         template <class T>
-        op_def int16(const T& rhs) {
+        local_def int16(const T& rhs) {
             assign(rhs);
         }
 
         template <class T>
-        op_def int16& operator=(const T& rhs) { assign(rhs); return *this; }
+        local_def int16& operator=(const T& rhs) { assign(rhs); return *this; }
 
 
-        op_def operator float() const {
+        local_def operator float() const {
             return cpu_int162float(data);
         }
 
-        op_def void assign(double rhs) {
+        local_def void assign(double rhs) {
             assign((float)rhs);
         }
 
-        op_def void assign(float rhs) {
+        local_def void assign(float rhs) {
             data = cpu_float2int16(rhs);
         }
     };
