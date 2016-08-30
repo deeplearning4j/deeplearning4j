@@ -4229,6 +4229,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
 						fillIsMaxFloat<<< 1, 128, 1536, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+
+                        checkCudaErrors(cudaStreamSynchronize(*stream));
 					} else {
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
@@ -4246,8 +4248,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-                        if (debug)
-						    checkCudaErrors(cudaStreamSynchronize(*stream));
+
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
