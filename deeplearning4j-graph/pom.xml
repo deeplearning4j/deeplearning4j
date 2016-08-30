@@ -4,6 +4,7 @@
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>0.5.1-SNAPSHOT</version>
+        <relativePath>../deeplearning4j-scaleout/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
