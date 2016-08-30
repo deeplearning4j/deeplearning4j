@@ -26,26 +26,26 @@ namespace nd4j {
     struct uint8 {
         uint8_t data;
 
-        local_def uint8() { data = cpu_float2uint8(0.0f); }
+        op_def uint8() { data = cpu_float2uint8(0.0f); }
 
         template <class T>
-        local_def uint8(const T& rhs) {
+        op_def uint8(const T& rhs) {
             assign(rhs);
         }
 
         template <class T>
-        local_def uint8& operator=(const T& rhs) { assign(rhs); return *this; }
+        op_def uint8& operator=(const T& rhs) { assign(rhs); return *this; }
 
 
-        local_def operator float() const {
+        op_def operator float() const {
             return cpu_uint82float(data);
         }
 
-        local_def void assign(double rhs) {
+        op_def void assign(double rhs) {
             assign((float)rhs);
         }
 
-        local_def void assign(float rhs) {
+        op_def void assign(float rhs) {
             data = cpu_float2uint8(rhs);
         }
     };
