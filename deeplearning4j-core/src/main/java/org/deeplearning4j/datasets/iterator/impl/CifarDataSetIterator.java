@@ -77,6 +77,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables, ImageTransform imageTransform, int normalizeValue, boolean train) {
         super(null, batchSize, 1, numExamples);
         this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, normalizeValue, train);
+        this.totalExamples = train? totalExamples: CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
         this.numPossibleLabels = numPossibleLables;
         this.inputStream  = loader.getInputStream();
