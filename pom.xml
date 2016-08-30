@@ -184,9 +184,11 @@
     <modules>
         <module>deeplearning4j-core</module>
         <module>deeplearning4j-scaleout</module>
-        <module>dl4j-caffe</module>
         <module>deeplearning4j-ui-parent</module>
-        <module>deeplearning4j-cuda-7.5</module>
+        <module>deeplearning4j-graph</module>
+        <module>deeplearning4j-cuda</module>
+        <module>deeplearning4j-nlp-parent</module>
+        <module>deeplearning4j-nn</module>
     </modules>
 
     <licenses>
