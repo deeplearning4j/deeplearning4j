@@ -34,8 +34,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -68,7 +68,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
     // Input by user only via setters
     private int nGrams = 1;
-    private String tokenizer = "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory";
+    private String tokenizer = "org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory";
     private String tokenPreprocessor = "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor";
     private boolean removeStop = false;
     private long seed = 42L;
