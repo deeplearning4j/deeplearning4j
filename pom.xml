@@ -188,6 +188,7 @@
         <module>deeplearning4j-graph</module>
         <module>deeplearning4j-cuda</module>
         <module>deeplearning4j-nlp-parent</module>
+        <module>deeplearning4j-nn</module>
     </modules>
 
     <licenses>
