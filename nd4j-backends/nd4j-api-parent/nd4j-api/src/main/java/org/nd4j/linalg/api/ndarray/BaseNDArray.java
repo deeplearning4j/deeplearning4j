@@ -3843,13 +3843,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         INDArray n = (INDArray) o;
-        /*
+
         if (this.lengthLong() != n.lengthLong())
             return false;
-        */
 
-        if (!Arrays.equals(this.shape(), n.shape()))
-            return false;
+
+
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
@@ -3905,6 +3904,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return true;
 */
         }
+
+        if (!Arrays.equals(this.shape(), n.shape()))
+            return false;
 
 
         if (!Shape.shapeEquals(shape(), n.shape())) {
