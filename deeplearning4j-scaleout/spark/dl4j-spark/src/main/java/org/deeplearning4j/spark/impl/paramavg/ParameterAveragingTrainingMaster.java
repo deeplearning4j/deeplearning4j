@@ -436,7 +436,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         long totalDataSetObjectCount = trainingMultiDataPaths.count();
         if (collectTrainingStats) stats.logCountEnd();
 
-        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(dataSetObjectsNumExamples);
         if (collectTrainingStats) stats.logSplitStart();
         JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingMultiDataPaths);
         if (collectTrainingStats) stats.logSplitEnd();
@@ -444,7 +444,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int splitNum = 1;
         for (JavaRDD<String> split : splits) {
-            doIterationPathsMDS(network, split, splitNum++, splits.length);
+            doIterationPathsMDS(network, split, splitNum++, splits.length, dataSetObjectsNumExamples);
         }
 
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
@@ -536,14 +536,14 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits) {
+    private void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits, int dataSetObjectNumExamples) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                 splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
         if (collectTrainingStats) stats.logMapPartitionsStart();
 
         JavaRDD<String> splitData = split;
         if (collectTrainingStats) stats.logRepartitionStart();
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(dataSetObjectNumExamples), numWorkers);
         int nPartitions = splitData.partitions().size();
         if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
 
