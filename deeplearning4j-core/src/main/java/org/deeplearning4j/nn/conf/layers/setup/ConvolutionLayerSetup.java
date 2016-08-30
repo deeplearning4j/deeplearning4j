@@ -175,7 +175,7 @@ public class ConvolutionLayerSetup {
                             lastnOut = lastHeight * lastWidth * lastOutChannels;
                             storeNInAndNOut(outLayerName, lastnOut);
                             feedForwardLayer.setNIn(lastnOut);
-                            conf.inputPreProcessor(i + 1, new CnnToFeedForwardPreProcessor(lastHeight, lastWidth, lastOutChannels));
+                            conf.inputPreProcessor(i + 1,  new CnnToFeedForwardPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
                         case GRAVES_LSTM:
                         case GRAVES_BIDIRECTIONAL_LSTM:
@@ -276,10 +276,14 @@ public class ConvolutionLayerSetup {
                             break;
                         case BATCH_NORMALIZATION:
                             BatchNormalization bnLayer = (BatchNormalization) outputLayer;
-                            conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
-                            lastnOut = lastOutChannels;
+                            // cudnn currently set for only 4 D on BatchNorm; thus, hack around it with following
+                            lastnOut = feedForwardLayer.getNOut();
+                            lastHeight = 1;
+                            lastWidth = 1;
+                            lastOutChannels = lastnOut;
                             storeNInAndNOut(outLayerName, lastnOut);
                             bnLayer.setNOut(lastnOut);
+                            conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
                         case ACTIVATION_LAYER:
                             feedForwardLayer2 = (FeedForwardLayer) outputLayer;
@@ -296,14 +300,8 @@ public class ConvolutionLayerSetup {
                     switch (outputLayer.getClass().getSimpleName()) {
                         case CONVOLUTION_LAYER:
                             convolutionLayer = (ConvolutionLayer) outputLayer;
-                            if(useCNN) {
-                                storeNInAndNOut(outLayerName, lastOutChannels);
-                                convolutionLayer.setNIn(lastnOut);
-                            } else {
-                                conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
-                                lastnOut = lastOutChannels;
-                                convolutionLayer.setNIn(lastnOut);
-                            }
+                            storeNInAndNOut(outLayerName, lastOutChannels);
+                            convolutionLayer.setNIn(lastnOut);
                             break;
                         case SUBSAMPLING_LAYER:
                             storeNInAndNOut(inLayerName, lastnOut);
@@ -312,17 +310,11 @@ public class ConvolutionLayerSetup {
                         case RBM:
                         case DENSE_LAYER:
                         case OUTPUT_LAYER:
-                            if(useCNN) {
-                                feedForwardLayer = (FeedForwardLayer) outputLayer;
-                                lastnOut = lastHeight * lastWidth * lastOutChannels;
-                                storeNInAndNOut(outLayerName, lastnOut); // required to be before inputPreProcessor to update lastHeight and lastWidth
-                                feedForwardLayer.setNIn(lastnOut);
-                                conf.inputPreProcessor(i + 1, new CnnToFeedForwardPreProcessor(lastHeight, lastWidth, lastOutChannels));
-                            } else {
-                                feedForwardLayer = (FeedForwardLayer) outputLayer;
-                                storeNInAndNOut(outLayerName, lastnOut);
-                                feedForwardLayer.setNIn(lastnOut);
-                            }
+                            feedForwardLayer = (FeedForwardLayer) outputLayer;
+                            lastnOut = lastHeight * lastWidth * lastOutChannels;
+                            storeNInAndNOut(outLayerName, lastnOut); // required to be before inputPreProcessor to update lastHeight and lastWidth
+                            feedForwardLayer.setNIn(lastnOut);
+                            conf.inputPreProcessor(i + 1, new CnnToFeedForwardPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
                         case GRAVES_LSTM:
                         case GRAVES_BIDIRECTIONAL_LSTM:
