@@ -864,13 +864,14 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
 
         if (threadIdx.x == 0)
             printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i], tadOffset: [%i], tadEWS: [%i]\n", r, highestElement, numTads, tadLength, tadOffsetForBlock, tadEWS);
-/*
+
 
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
             // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
-            dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
+            printf("Modifying index: [%i]\n", (tadOffsetForBlock + e * tadEWS));
+         //   dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
         }
-        */
+
     }
 }
 
