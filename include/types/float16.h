@@ -25,18 +25,18 @@ typedef __half half;
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __host__ __device__
+#define local_def inline __host__ __device__
 #elif _MSC_VER
-#define op_def inline
+#define local_def inline
 #elif __clang__
-#define op_def inline
+#define local_def inline
 #elif __GNUC__
-#define op_def inline
+#define local_def inline
 #endif
 
 #include <fp16_emu.h>
 
-op_def float cpu_half2float(half h) {
+local_def float cpu_half2float(half h) {
     unsigned sign = ((h.x >> 15) & 1);
     unsigned exponent = ((h.x >> 10) & 0x1f);
     unsigned mantissa = ((h.x & 0x3ff) << 13);
@@ -65,7 +65,7 @@ op_def float cpu_half2float(half h) {
 }
 
 
-op_def half cpu_float2half_rn(float f)
+local_def half cpu_float2half_rn(float f)
 {
     half ret;
 
@@ -127,22 +127,22 @@ namespace nd4j
 
   struct float16
   {
-    /* constexpr */ op_def float16() { data.x = 0; }
+    /* constexpr */ local_def float16() { data.x = 0; }
 
     template <class T>
-    op_def /*explicit*/ float16(const T& rhs) {
+    local_def /*explicit*/ float16(const T& rhs) {
       assign(rhs);
     }
 
-//    op_def float16(float rhs) {
+//    local_def float16(float rhs) {
 //      assign(rhs);
 //    }
 //
-//    op_def float16(double rhs) {
+//    local_def float16(double rhs) {
 //      assign(rhs);
 //    }
 
-    op_def operator float() const {
+    local_def operator float() const {
 #ifdef __CUDA_ARCH__
       return __half2float(data);
 #else
@@ -150,31 +150,31 @@ namespace nd4j
 #endif
     }
 
-    //    op_def operator double() const { return (float)*this; }
+    //    local_def operator double() const { return (float)*this; }
 
-    op_def operator half() const { return data; }
+    local_def operator half() const { return data; }
 
-    op_def unsigned short getx() const { return data.x; }
-    op_def float16& setx(unsigned short x) { data.x = x; return *this; }
+    local_def unsigned short getx() const { return data.x; }
+    local_def float16& setx(unsigned short x) { data.x = x; return *this; }
 
     template <class T>
-    op_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
+    local_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
 
-    op_def void assign(unsigned int rhs) {
+    local_def void assign(unsigned int rhs) {
       // may be a better way ?
       assign((float)rhs);
     }
 
-    op_def void assign(int rhs) {
+    local_def void assign(int rhs) {
       // may be a better way ?
       assign((float)rhs);
     }
 
-    op_def void assign(double rhs) {
+    local_def void assign(double rhs) {
       assign((float)rhs);
     }
 
-    op_def void assign(float rhs) {
+    local_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
       data.x = __float2half_rn(rhs);
 #else
@@ -189,37 +189,37 @@ namespace nd4j
 #endif
     }
 
-    op_def void assign(const half& rhs) {
+    local_def void assign(const half& rhs) {
       data = rhs;
     }
 
-    op_def void assign(const float16& rhs) {
+    local_def void assign(const float16& rhs) {
       data = rhs.data;
     }
 
-    op_def float16& operator+=(float16 rhs) { assign((float)*this + rhs); return *this; }
+    local_def float16& operator+=(float16 rhs) { assign((float)*this + rhs); return *this; }
 
-    op_def float16& operator-=(float16 rhs) { assign((float)*this - rhs); return *this; }
+    local_def float16& operator-=(float16 rhs) { assign((float)*this - rhs); return *this; }
 
-    op_def float16& operator*=(float16 rhs) { assign((float)*this * rhs); return *this; }
+    local_def float16& operator*=(float16 rhs) { assign((float)*this * rhs); return *this; }
 
-    op_def float16& operator/=(float16 rhs) { assign((float)*this / rhs); return *this; }
+    local_def float16& operator/=(float16 rhs) { assign((float)*this / rhs); return *this; }
 
-    op_def float16& operator+=(float rhs) { assign((float)*this + rhs); return *this; }
+    local_def float16& operator+=(float rhs) { assign((float)*this + rhs); return *this; }
 
-    op_def float16& operator-=(float rhs) { assign((float)*this - rhs); return *this; }
+    local_def float16& operator-=(float rhs) { assign((float)*this - rhs); return *this; }
 
-    op_def float16& operator*=(float rhs) { assign((float)*this * rhs); return *this; }
+    local_def float16& operator*=(float rhs) { assign((float)*this * rhs); return *this; }
 
-    op_def float16& operator/=(float rhs) { assign((float)*this / rhs); return *this; }
+    local_def float16& operator/=(float rhs) { assign((float)*this / rhs); return *this; }
 
-    op_def float16& operator++() { assign(*this + 1.f); return *this; }
+    local_def float16& operator++() { assign(*this + 1.f); return *this; }
 
-    op_def float16& operator--() { assign(*this - 1.f); return *this; }
+    local_def float16& operator--() { assign(*this - 1.f); return *this; }
 
-    op_def float16 operator++(int i) { assign(*this + (float)i); return *this; }
+    local_def float16 operator++(int i) { assign(*this + (float)i); return *this; }
 
-    op_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
+    local_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
 
 
     half data;
@@ -230,39 +230,39 @@ namespace nd4j
     static const float16 minus_one;
   };
 
-//  op_def bool  operator==(const float16& a, const float16& b) { return ishequ(a.data, b.data); }
+//  local_def bool  operator==(const float16& a, const float16& b) { return ishequ(a.data, b.data); }
 //
-//  op_def bool  operator!=(const float16& a, const float16& b) { return !(a == b); }
+//  local_def bool  operator!=(const float16& a, const float16& b) { return !(a == b); }
 //
-//  op_def bool  operator<(const float16& a, const float16& b) { return (float)a < (float)b; }
+//  local_def bool  operator<(const float16& a, const float16& b) { return (float)a < (float)b; }
 //
-//  op_def bool  operator>(const float16& a, const float16& b) { return (float)a > (float)b; }
+//  local_def bool  operator>(const float16& a, const float16& b) { return (float)a > (float)b; }
 //
-//  op_def bool  operator<=(const float16& a, const float16& b) { return (float)a <= (float)b; }
+//  local_def bool  operator<=(const float16& a, const float16& b) { return (float)a <= (float)b; }
 //
-//  op_def bool  operator>=(const float16& a, const float16& b) { return (float)a >= (float)b; }
-//
-//  template <class T>
-//  op_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
+//  local_def bool  operator>=(const float16& a, const float16& b) { return (float)a >= (float)b; }
 //
 //  template <class T>
-//  op_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
+//  local_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
 //
 //  template <class T>
-//  op_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
+//  local_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
 //
 //  template <class T>
-//  op_def float16 operator/(const float16& a, const T& b) { return float16((float)a / (float)b); }
+//  local_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
+//
+//  template <class T>
+//  local_def float16 operator/(const float16& a, const T& b) { return float16((float)a / (float)b); }
 
 
-  op_def float16 /* constexpr */ operator+(const float16& h) { return h; }
+  local_def float16 /* constexpr */ operator+(const float16& h) { return h; }
 
-  op_def float16 operator - (const float16& h) { return float16(hneg(h.data)); }
+  local_def float16 operator - (const float16& h) { return float16(hneg(h.data)); }
 
 #ifdef __CUDACC__
-  op_def int isnan(const float16& h)  { return ishnan(h.data); }
+  local_def int isnan(const float16& h)  { return ishnan(h.data); }
 
-  op_def int isinf(const float16& h) { return ishinf(h.data); }
+  local_def int isinf(const float16& h) { return ishinf(h.data); }
 #endif
 
   std::ostream& operator << (std::ostream& s, const float16&);

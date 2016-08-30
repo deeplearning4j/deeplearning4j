@@ -15,6 +15,7 @@
 #define ND4J_DOUBLE 7
 #define ND4J_FLOAT24 119
 
+#include <ops.h>
 #include <types/float16.h>
 #include <types/float8.h>
 #include <types/uint8.h>

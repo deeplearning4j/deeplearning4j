@@ -5897,7 +5897,7 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
     float *extrasA = reinterpret_cast<float *> (extraA);
     float *extrasB = reinterpret_cast<float *> (extraB);
 
-    metaPredicateStridedFloat<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateStridedFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5913,7 +5913,7 @@ void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int op
     double *extrasA = reinterpret_cast<double *> (extraA);
     double *extrasB = reinterpret_cast<double *> (extraB);
 
-    metaPredicateStridedDouble<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateStridedDouble<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5929,7 +5929,7 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
     nd4j::float16 *extrasA = reinterpret_cast<nd4j::float16 *> (extraA);
     nd4j::float16 *extrasB = reinterpret_cast<nd4j::float16 *> (extraB);
 
-    metaPredicateStridedHalf<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateStridedHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5962,7 +5962,7 @@ void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTy
 float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB) {
  */
 
-    metaPredicateReduceFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
+    metaPredicateReduceFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5984,7 +5984,7 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
     float *extrasA = reinterpret_cast<float *> (extraA);
     float *extrasB = reinterpret_cast<float *> (extraB);
 
-    metaPredicateShapeFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateShapeFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6006,7 +6006,7 @@ void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTy
     double *extrasA = reinterpret_cast<double *> (extraA);
     double *extrasB = reinterpret_cast<double *> (extraB);
 
-    metaPredicateShapeDouble<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateShapeDouble<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6028,7 +6028,7 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
     nd4j::float16 *extrasA = reinterpret_cast<nd4j::float16 *> (extraA);
     nd4j::float16 *extrasB = reinterpret_cast<nd4j::float16 *> (extraB);
 
-    metaPredicateShapeHalf<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
+    metaPredicateShapeHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
