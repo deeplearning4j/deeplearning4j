@@ -1,17 +1,15 @@
 package org.nd4j.linalg.shape;
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.api.shape.Shape;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson
@@ -162,7 +160,7 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray newAxisAssertion = Nd4j.create(new double[]{1, 3}).reshape(1,1,2);
+        INDArray newAxisAssertion = Nd4j.create(new double[]{1, 3}).reshape(1,2,1);
         INDArray newAxisGet = arr.get(NDArrayIndex.point(0),NDArrayIndex.newAxis());
         assertEquals(newAxisAssertion,newAxisGet);
 
