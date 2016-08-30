@@ -20,8 +20,8 @@ package org.deeplearning4j.spark.text.functions;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.NGramTokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
 
 import java.util.Arrays;
 import java.util.List;

@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -44,9 +43,9 @@ public class GravesLSTMTest {
 						.build())
 				.build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GravesLSTM layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
+		GravesLSTM layer = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -92,10 +91,10 @@ public class GravesLSTMTest {
 						.build())
 				.build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
-		lstm.setBackpropGradientsViewArray(Nd4j.create(1, LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true)));
+		GravesLSTM lstm = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
+		lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf,true)));
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());
@@ -145,9 +144,9 @@ public class GravesLSTMTest {
 				.build())
 		.build();
 
-		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
+		GravesLSTM lstm = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
 		INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
 		lstm.setInput(input);
 
