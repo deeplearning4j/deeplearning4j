@@ -472,6 +472,16 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return null;
     }
 
+    @Override
+    public boolean deleteTempFiles(JavaSparkContext sc) {
+        return lastRDDExportPath == null || deleteTempDir(sc, lastRDDExportPath);
+    }
+
+    @Override
+    public boolean deleteTempFiles(SparkContext sc){
+        return deleteTempFiles(new JavaSparkContext(sc));
+    }
+
 
     private void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
