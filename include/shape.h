@@ -70,6 +70,7 @@ namespace shape {
     };
 
 
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
