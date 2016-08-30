@@ -4,7 +4,6 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -36,9 +35,9 @@ public class SeedTest {
                 .seed(123)
                 .build();
 
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
+        Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.fit(data.getFeatureMatrix());
 
         layer.computeGradientAndScore();

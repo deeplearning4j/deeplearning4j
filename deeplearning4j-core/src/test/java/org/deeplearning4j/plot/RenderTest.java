@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -62,9 +61,9 @@ public class RenderTest {
 
         INDArray input = d2.getFeatureMatrix();
         Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1),listener);
-        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0, params, true);
+        Layer da = conf.getLayer().instantiate(conf, listeners,0, params, true);
         da.fit(input);
 
 

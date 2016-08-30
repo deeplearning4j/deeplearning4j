@@ -30,8 +30,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,7 +68,7 @@ public class Word2VecTest {
 
         Word2Vec word2Vec = new Word2Vec.Builder()
                 .setNGrams(1)
-           //     .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+           //     .setTokenizer("org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory")
            //     .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
            //     .setRemoveStop(false)
                 .tokenizerFactory(t)
@@ -185,7 +185,7 @@ public class Word2VecTest {
 
         Word2Vec word2Vec = new Word2Vec.Builder()
                 .setNGrams(1)
-                //     .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                //     .setTokenizer("org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory")
                 //     .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
                 //     .setRemoveStop(false)
                 .tokenizerFactory(t)
