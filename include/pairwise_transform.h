@@ -424,7 +424,7 @@ template<typename OpType>
                     int *yStride = shape::stride(yShapeBuffer);
                     int *resultStride = shape::stride(resultShapeBuffer);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided)
 for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     T *dxLocal = dx + xStride[0] * i;
                     T *yLocal = y + yStride[0] * i;
@@ -545,8 +545,8 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                               T *extraParams,
                               Nd4jIndex n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-					if (n > 2048) {
-#pragma omp parallel for simd schedule(guided)
+					if (n > 4096) {
+#pragma omp parallel for simd schedule(guided) if (n > 4096)
 						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i] = OpType::op(dx[i], y[i], extraParams);
 						}
@@ -558,8 +558,8 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
 					}
                 }
                 else {
-					if (n > 2048) {
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
+					if (n > 4096) {
+#pragma omp parallel for simd schedule(guided) if (n > 4096)
 						for (Nd4jIndex i = 0; i < n; i++) {
 							result[i * resultStride] = OpType::op(dx[i * xStride],
 																  y[i * yStride], extraParams);
@@ -567,8 +567,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
 					} else {
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i * resultStride] = OpType::op(dx[i * xStride],
-																  y[i * yStride], extraParams);
+							result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
 						}
 					}
                 }
