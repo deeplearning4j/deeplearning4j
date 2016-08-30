@@ -1436,6 +1436,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer // special pointer for IsMax  // 16
         );
+
+        log.info("Op X: {}", x);
+        log.info("Op Z: {}", z);
 /*
         log.info("------------------------------------");
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));

@@ -860,6 +860,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray arrC = Nd4j.linspace(1,length, length).reshape('c',shape);
                 INDArray arrF = arrC.dup('f');
                 Nd4j.getExecutioner().execAndReturn(new IsMax(arrC, alongDimension));
+                System.out.println("--------------------------");
                 Nd4j.getExecutioner().execAndReturn(new IsMax(arrF, alongDimension));
 
                 double[] cBuffer = arrC.data().asDouble();
