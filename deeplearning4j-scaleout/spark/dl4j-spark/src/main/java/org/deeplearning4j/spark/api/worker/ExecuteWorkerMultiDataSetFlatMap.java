@@ -2,6 +2,8 @@ package org.deeplearning4j.spark.api.worker;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
