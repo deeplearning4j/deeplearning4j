@@ -20,6 +20,7 @@
 #define CONCAT2(A,B) A ## B
 #define CONCAT3(A,B,C) A ## B ## C
 
+#define ARGMIX4(A,B,C,D) A ## B ## _## C ## _ ## D
 
 #define MIX2(A,B) A ## _ ## B
 #define MIX3(A,B,C) A ## _ ## B ## _## C
@@ -281,6 +282,7 @@
 //////////////////////////////
 
 #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(64, 64, 1024, *stream) SIG; }
+#define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, float)(INPUTZ) {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<T>, TYPE_B<T>>(PARAMZ) };
 #define _EXPAND_PACKED_META_CALL(FN, SIG, OPCLASS, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _META_CALL (FN, SIG, OPCLASS, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A) ))
 //////////////////////////////
 
@@ -307,11 +309,15 @@
 
 #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
 #define PARAMS(...) __VA_ARGS__
+#define INPUT(...) __VA_ARGS__
 #define OPS_A(...) __VA_ARGS__
 #define OPS_B(...) __VA_ARGS__
 #define OPS_X(...) __VA_ARGS__
 //#define BETA(A, B, C, D) EVAL(_EXEC_META_E(_EXPAND_PACKED_META_CALL, A, B, C, UNPAREN(D)))
 //#define BETA(A, B, C, D) OPS_A(UNPAREN(D))
 #define ALPHA(A, B, C, D, E) EXPAND(DISPATCH_INTERNAL(A, B, C, E, UNPAREN(D)))
+
+
+#define DISPATCH_KERNEL_META(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, ... )
 
 
