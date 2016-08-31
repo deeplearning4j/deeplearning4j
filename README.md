@@ -101,10 +101,10 @@ See [Windows.md](windows.md)
 
 ## Linking with MKL
 
-We can link with MKL either at build time, or at runtime with binaries initially linked with another BLAS implementation such as OpenBLAS. In either case, simply add the path containing `libmkl_rt.so` (or `mkl_rt.dll` on Windows), say `/path/to/intel64/lib/`, to the `LD_LIBRARY_PATH` environment variable on Linux (or `PATH` on Windows), and build or run your Java application as usual. On Linux though, to make sure it uses the correct version of OpenMP, we also might need to set these environment variables:
+We can link with MKL either at build time, or at runtime with binaries initially linked with another BLAS implementation such as OpenBLAS. In either case, simply add the path containing `libmkl_rt.so` (or `mkl_rt.dll` on Windows), say `/path/to/intel64/lib/`, to the `LD_LIBRARY_PATH` environment variable on Linux (or `PATH` on Windows), and build or run your Java application as usual. If you get an error message like `undefined symbol: omp_get_num_procs`, it probably means that `libiomp5.so`, `libiomp5.dylib`, or `libiomp5md.dll` is not present on your system. In that case though, it is still possible to use the GNU version of OpenMP by setting these environment variables on Linux, for example:
 
 ```bash
 export MKL_THREADING_LAYER=GNU
-export LD_PRELOAD=/lib64/libgomp.so.1
+export LD_PRELOAD=/usr/lib64/libgomp.so.1
 ```
 
