@@ -2650,6 +2650,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
              * allocating a temporary object on the side and copy the result later.
              */
             INDArray temp = create(result.shape(), Nd4j.getStrides(result.shape(),'f'));
+            temp.setOrder('f');
 
             if (other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
@@ -2678,6 +2679,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         } else {
+            INDArray tempf = result.ordering() == 'c' ? create(result.shape(), Nd4j.getStrides(result.shape(),'f')): result.dup();
+            tempf.setOrder('f');
             if(other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
                         ordering()
@@ -2686,20 +2689,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         ,this
                         ,other
                         ,0.0
-                        ,result);
+                        ,tempf);
             }
             else {
                 Nd4j.getBlasWrapper().level3().gemm(
                         ordering()
                         , BlasBufferUtil.getCharForTranspose(other)
-                        , BlasBufferUtil.getCharForTranspose(result)
+                        , BlasBufferUtil.getCharForTranspose(tempf)
                         , 1.0
                         , this
                         , other
                         , 0.0
-                        , result);
+                        , tempf);
             }
-
+            result.assign(tempf);
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
