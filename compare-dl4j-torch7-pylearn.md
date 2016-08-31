@@ -119,9 +119,10 @@ Pros and Cons:
 
 ### <a name="dsstne">DSSTNE</a>
 
-Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, appears to be fast, although it has not attracted as large a community as the other libraries. 
+Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, DSSTNE appears to be fast, although it has not attracted as large a community as the other libraries. 
 
 * (+) Handles Sparse encoding!
+* (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
 
 ### <a name="licensing">Licensing</a>
 
