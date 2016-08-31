@@ -5902,12 +5902,11 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
 
 //    metaPredicateStridedFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
-    if (opTypeA == 2) {
-        if (opTypeB == 0) {
-            // DISPATCH_METAOP(invertedMetaOpKernel_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), Float, OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS));
-            //invertedMetaOpKernel_Pairwise_Scalar_16_1_Float<<<256, 256, 1024, *stream>>>(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
-        }
-    }
+	if (opTypeA == 2) {
+		if (opTypeB == 0) {
+			DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+		}
+	}
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5925,7 +5924,11 @@ void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int op
 
 //    metaPredicateStridedDouble<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
 
-
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5942,6 +5945,12 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
     float16 *extrasB = reinterpret_cast<float16 *> (extraB);
 
 //    metaPredicateStridedHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6024,8 +6033,11 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
     float16 *extrasA = reinterpret_cast<float16 *> (extraA);
     float16 *extrasB = reinterpret_cast<float16 *> (extraB);
 
-//    metaPredicateShapeHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
-
+	if (opTypeA == 2) {
+		if (opTypeB == 0) {
+			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+		}
+	}
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -6052,7 +6064,8 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
         }
     }
 
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 bool NativeOps::isExperimentalEnabled() {
