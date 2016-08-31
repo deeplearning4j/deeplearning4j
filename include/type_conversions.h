@@ -74,7 +74,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<nd4j::float8, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<nd4j::float8, nd4j::float16>(dx, N, dz);
+            convertGeneric<nd4j::float8, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<nd4j::float8, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
@@ -96,7 +96,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<nd4j::int8, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<nd4j::int8, nd4j::float16>(dx, N, dz);
+            convertGeneric<nd4j::int8, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<nd4j::int8, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
@@ -118,7 +118,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<nd4j::uint8, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<nd4j::uint8, nd4j::float16>(dx, N, dz);
+            convertGeneric<nd4j::uint8, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<nd4j::uint8, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
@@ -134,23 +134,23 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         }
     } else if (srcType == ND4J_FLOAT16) {
         if (dstType == ND4J_FLOAT8) {
-            convertGeneric<nd4j::float16, nd4j::float8>(dx, N, dz);
+            convertGeneric<float16, nd4j::float8>(dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            convertGeneric<nd4j::float16, nd4j::int8>(dx, N, dz);
+            convertGeneric<float16, nd4j::int8>(dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            convertGeneric<nd4j::float16, nd4j::uint8>(dx, N, dz);
+            convertGeneric<float16, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<nd4j::float16, nd4j::float16>(dx, N, dz);
+            convertGeneric<float16, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            convertGeneric<nd4j::float16, nd4j::int16>(dx, N, dz);
+            convertGeneric<float16, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            convertGeneric<nd4j::float16, nd4j::uint16>(dx, N, dz);
+            convertGeneric<float16, nd4j::uint16>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {
-            convertGeneric<nd4j::float16, float>(dx, N, dz);
+            convertGeneric<float16, float>(dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            convertGeneric<nd4j::float16, double>(dx, N, dz);
+            convertGeneric<float16, double>(dx, N, dz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -162,7 +162,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<nd4j::int16, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<nd4j::int16, nd4j::float16>(dx, N, dz);
+            convertGeneric<nd4j::int16, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<nd4j::int16, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
@@ -186,7 +186,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<float, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<float, nd4j::float16>(dx, N, dz);
+            convertGeneric<float, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<float, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
@@ -206,7 +206,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
         } else if (dstType == ND4J_UINT8) {
             convertGeneric<double, nd4j::uint8>(dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            convertGeneric<double, nd4j::float16>(dx, N, dz);
+            convertGeneric<double, float16>(dx, N, dz);
         } else if (dstType == ND4J_INT16) {
             convertGeneric<double, nd4j::int16>(dx, N, dz);
         } else if (dstType == ND4J_UINT16) {

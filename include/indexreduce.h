@@ -796,15 +796,15 @@ __global__ void indexReduceFloat(
 
 __global__ void indexReduceHalf(
 		int op,
-		nd4j::float16 *dx,
+		float16 *dx,
 		int *xShapeInfo, int xRank,
-		nd4j::float16 *extraParams,
-		nd4j::float16 *result,
+		float16 *extraParams,
+		float16 *result,
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, nd4j::float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
-	indexReduceGeneric<nd4j::float16>(
+		int postProcessOrNot,  int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+	indexReduceGeneric<float16>(
 			op,
 			dx,
 			xShapeInfo, xRank,

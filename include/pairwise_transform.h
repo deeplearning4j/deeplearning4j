@@ -719,14 +719,14 @@ extern "C" __global__ void pairWiseTransformFloat(
 
 extern "C" __global__ void pairWiseTransformHalf(
 		int opNum,
-		nd4j::float16 *dx,
-		nd4j::float16 *dy,
-		nd4j::float16 *params,
-		nd4j::float16 *result,
+		float16 *dx,
+		float16 *dy,
+		float16 *params,
+		float16 *result,
 		int *xShapeInfo, int xRank,
 		int *yShapeInfo, int yRank,
 		int *resultShapeInfo, int zRank, int *allocationPointer, int *tadOnlyShapeInfo) {
-	pairWiseTransformGeneric<nd4j::float16>(
+	pairWiseTransformGeneric<float16>(
 			opNum,
 			dx,
 			dy,
@@ -885,17 +885,17 @@ extern "C" __global__ void pairWiseTransformFloatIndex(
 
 extern "C" __global__ void pairWiseTransformHalfIndex(
 		int opNum,
-		nd4j::float16 *dx,
-		nd4j::float16 *dy,
-		nd4j::float16 *params,
-		nd4j::float16 *result,
+		float16 *dx,
+		float16 *dy,
+		float16 *params,
+		float16 *result,
 		int *xShapeInfo, int xRank,
 		int *yShapeInfo, int yRank,
 		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer, int *tadOnlyShapeInfo) {
-	pairWiseTransformGeneric<nd4j::float16>(
+	pairWiseTransformGeneric<float16>(
 			opNum,
 			dx,
 			dy,
@@ -1043,14 +1043,14 @@ extern "C" __global__ void pairWiseTransformStridedFloat(
 extern "C" __global__ void pairWiseTransformStridedHalf(
 		int opNum,
 		Nd4jIndex n,
-		nd4j::float16 *dx,
-		nd4j::float16 *dy,
+		float16 *dx,
+		float16 *dy,
 		int incx,
 		int incy,
-		nd4j::float16 *params,
-		nd4j::float16 *result,
+		float16 *params,
+		float16 *result,
 		int incz, int *allocationPointer, int *tadOnlyShapeInfo) {
-	pairWiseTransformStridedGeneric<nd4j::float16>(
+	pairWiseTransformStridedGeneric<float16>(
 			opNum,
 			n,
 			dx,

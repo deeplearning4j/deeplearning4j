@@ -405,12 +405,12 @@ extern "C" __global__ void broadcastFloat(
 
 extern "C" __global__ void broadcastHalf(
 		int opNum,
-		nd4j::float16 *x, int *xShapeInfo, int xRank,
-		nd4j::float16 *y, int *yShapeInfo, int yRank,
-		nd4j::float16 *result, int *resultShapeInfo, int zRank,
+		float16 *x, int *xShapeInfo, int xRank,
+		float16 *y, int *yShapeInfo, int yRank,
+		float16 *result, int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
-	broadcastGeneric<nd4j::float16>(
+	broadcastGeneric<float16>(
 			opNum,
 			x,
 			xShapeInfo, xRank,

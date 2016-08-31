@@ -651,13 +651,13 @@ extern "C" __global__ void scalarFloat(
 extern "C" __global__ void scalarHalf(
 		int opNum,
 		float dx,
-		nd4j::float16 *dy,
+		float16 *dy,
 		int *shapeInfo, int xRank,
-		nd4j::float16 *params,
-		nd4j::float16 *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
-	scalarGeneric<nd4j::float16>(
+		float16 *params,
+		float16 *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
+	scalarGeneric<float16>(
 			opNum,
-			(nd4j::float16) dx,
+			(float16) dx,
 			dy,
 			shapeInfo, xRank,
 			params,
