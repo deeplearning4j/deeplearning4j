@@ -45,8 +45,8 @@ __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, cons
 }
 
 template <typename T>
-__device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
-                                                          T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
+                                                        long N, T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
     __shared__
     Nd4jPointer params[2];
     __shared__
@@ -64,15 +64,15 @@ __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        //    DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
           //  functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::InvertedMetaOp<T, simdOps::Copy<T>, simdOps::Multiply<T>>>(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr);
         }
     }
 }
 
 template <typename T>
-__device__ inline static void metaPredicateStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N,
-                                                       T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
+__device__ inline static void metaPredicateStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
+                                                          long N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
     ) {
 
     __shared__ Nd4jPointer params[2];
@@ -121,47 +121,52 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
 #else
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+      //      DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
       //      functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<simdOps::InvertedMetaOp<T, simdOps::Copy<T>, simdOps::Multiply<T>>>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr);
         }
     }
 #endif
 }
 
-__global__ void metaPredicateStridedFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, float *dx, int xStride, float *dy, int yStride, float *dz, int zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
+template<typename T, typename OpClass>
+__device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTypeA, const int opTypeB, long N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
+    __shared__ Nd4jPointer params[2];
+    __shared__ T *paramsPtr;
+    if (threadIdx.x == 0) {
+        if (opTypeA == 0) params[0] = (Nd4jPointer *) &scalarA;
+        else params[0] = (Nd4jPointer *) extraA;
 
-    metaPredicateStridedGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
-}
+        if (opTypeB == 0) params[1] = (Nd4jPointer *) &scalarB;
+        else params[1] = (Nd4jPointer *) extraB;
 
-__global__ void metaPredicateStridedDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, double *dx, int xStride, double *dy, int yStride, double *dz, int zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
+        paramsPtr = (T *) params;
+    }
+    __syncthreads();
 
-    metaPredicateStridedGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
-}
+    functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<OpClass>(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr);
+};
 
-__global__ void metaPredicateStridedHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, nd4j::float16 *dx, int xStride, nd4j::float16 *dy, int yStride, nd4j::float16 *dz, int zStride, nd4j::float16 *extraA, nd4j::float16 *extraB, float scalarA, float scalarB) {
+template<typename T, typename OpClass>
+__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, long N, T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+    __shared__ Nd4jPointer params[2];
+    __shared__ T *paramsPtr;
+    if (threadIdx.x == 0) {
+        if (opTypeA == 0) params[0] = (Nd4jPointer *) &scalarA;
+        else params[0] = (Nd4jPointer *) extraA;
 
-    metaPredicateStridedGeneric<nd4j::float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
-}
+        if (opTypeB == 0) params[1] = (Nd4jPointer *) &scalarB;
+        else params[1] = (Nd4jPointer *) extraB;
 
-__global__ void metaPredicateReduceFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo,  int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB, bool scalarReturned) {
+        paramsPtr = (T *) params;
+    }
+    __syncthreads();
 
-    metaPredicateReduceGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, reductionBuffer, extraA, extraB, scalarA, scalarB, scalarReturned);
-}
+    functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<OpClass>(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr);
+};
 
-__global__ void metaPredicateShapeFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
 
-    metaPredicateShapeGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-}
-
-__global__ void metaPredicateShapeDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, double *dx, int *xShapeInfo, double *dy, int *yShapeInfo, double *dz, int *zShapeInfo, double *extraA, double *extraB, float scalarA, float scalarB) {
-
-    metaPredicateShapeGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-}
-
-__global__ void metaPredicateShapeHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, nd4j::float16 *dx, int *xShapeInfo, nd4j::float16 *dy, int *yShapeInfo, nd4j::float16 *dz, int *zShapeInfo, nd4j::float16 *extraA, nd4j::float16 *extraB, float scalarA, float scalarB) {
-
-    metaPredicateShapeGeneric<nd4j::float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+extern "C" __global__ void invertedMetaOpKernel_Pairwise_Scalar_16_1_Float(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
+    invertedMetaPairwiseShapedGeneric<float, simdOps::InvertedMetaOp<float, simdOps::Copy<float>, simdOps::Multiply<float>>>(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
 #endif //LIBND4J_GRID_H
