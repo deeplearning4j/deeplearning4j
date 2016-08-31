@@ -17,6 +17,15 @@
 #define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
 #define EVAL5(...) __VA_ARGS__
 
+#define CONCAT2(A,B) A ## B
+#define CONCAT3(A,B,C) A ## B ## C
+
+
+#define MIX2(A,B) A ## _ ## B
+#define MIX3(A,B,C) A ## _ ## B ## _## C
+#define MIX4(A,B,C,D) A ## _ ## B ## _## C ## _ ## D
+
+
 #define EMPTY()
 #define DEFER(id) id EMPTY()
 #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
@@ -270,7 +279,8 @@
 #define FX_70(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
 
 //////////////////////////////
-#define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ FN<simdOps::OPCLASS<T, TYPE_A<T>, TYPE_B<T>>>SIG; }
+
+#define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(64, 64, 1024, *stream) SIG; }
 #define _EXPAND_PACKED_META_CALL(FN, SIG, OPCLASS, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _META_CALL (FN, SIG, OPCLASS, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A) ))
 //////////////////////////////
 
