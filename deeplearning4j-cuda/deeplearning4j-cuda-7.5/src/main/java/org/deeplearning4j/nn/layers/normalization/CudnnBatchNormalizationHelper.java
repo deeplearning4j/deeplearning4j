@@ -33,6 +33,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -43,6 +45,7 @@ import static org.bytedeco.javacpp.cudnn.*;
  * @author saudet
  */
 public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
+    protected static final Logger log = LoggerFactory.getLogger(CudnnBatchNormalizationHelper.class);
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
@@ -107,12 +110,24 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
             @Override public void deallocate() { checkCuda(cudaFree(this)); setNull(); }
         }
 
+        static class HostDeallocator extends Cache implements Pointer.Deallocator {
+            HostDeallocator(Cache c) { super(c); }
+            @Override public void deallocate() { checkCuda(cudaFreeHost(this)); setNull(); }
+        }
+
         Cache() { }
 
         Cache(long size) {
-            checkCuda(cudaMalloc(this, size));
+            position = 0;
             limit = capacity = size;
-            deallocator(new Deallocator(this));
+            int error = cudaMalloc(this, size);
+            if (error != cudaSuccess) {
+                log.warn("Cannot allocate " + size + " bytes of device memory (CUDA error = " + error + "), proceeding with host memory");
+                checkCuda(cudaMallocHost(this, size));
+                deallocator(new HostDeallocator(this));
+            } else {
+                deallocator(new Deallocator(this));
+            }
         }
 
         Cache(Cache c) {
