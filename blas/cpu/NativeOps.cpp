@@ -718,6 +718,7 @@ float   NativeOps::execIndexReduceScalarHalf(Nd4jPointer *extraPointers, int opN
                                               Nd4jPointer xShapeInfo,
                                               Nd4jPointer extraParams) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -1072,6 +1073,8 @@ float NativeOps::execReduceScalarHalf(
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams) {
     // no-op
+
+    return 0.0;
 }
 
 /**
@@ -1157,6 +1160,7 @@ float   NativeOps::execReduce3ScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                           Nd4jPointer y,
                                           Nd4jPointer yShapeInfo) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -1358,6 +1362,7 @@ float   NativeOps::execSummaryStatsScalarHalf(
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,bool biasCorrected) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -2482,7 +2487,7 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 #pragma omp parallel for if (N > 1)
     for (int f = 0; f < N; f++) {
         T *x = (T *) dX[f];
-        T *z = (T *) dZ[f];
+        //T *z = (T *) dZ[f];
 
         int *tadOffset = (int *) tadOffsets[f];
 
@@ -2505,10 +2510,6 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
             T *rX = x + oldOffset;
             T *rY = x + newOffset;
-
-            T *zX = z + oldOffset;
-            T *zY = z + newOffset;
-
 
             if (tadEWS == 1) {
 

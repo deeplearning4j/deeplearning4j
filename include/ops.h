@@ -1549,8 +1549,9 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
-			T length = params[1];
+
 #ifdef __CUDACC__
+			T length = params[1];
             int tid = gridDim.x * blockDim.x + threadIdx.x;
             T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
@@ -1568,8 +1569,8 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
-			T length = params[1];
 #ifdef __CUDACC__
+			T length = params[1];
 			int tid = gridDim.x * blockDim.x + threadIdx.x;
             T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
