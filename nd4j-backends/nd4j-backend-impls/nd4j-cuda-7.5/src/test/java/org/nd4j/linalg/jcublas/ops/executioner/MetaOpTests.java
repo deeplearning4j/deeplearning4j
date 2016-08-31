@@ -271,9 +271,9 @@ public class MetaOpTests {
         INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f});
         INDArray exp2 = Nd4j.create(new float[]{11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f, 20f});
         */
-        INDArray arrayX = Nd4j.create(1024);
-        INDArray arrayY = Nd4j.create(1024);
-        INDArray exp2 = Nd4j.create(1024);
+        INDArray arrayX = Nd4j.create(65536);
+        INDArray arrayY = Nd4j.create(65536);
+        INDArray exp2 = Nd4j.create(65536);
 
         Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
 
@@ -293,22 +293,22 @@ public class MetaOpTests {
         assertEquals(Op.Type.SCALAR, descriptor.getGridPointers().get(1).getType());
 
         long time1 = System.nanoTime();
-        for (int x = 0; x < 100000; x++) {
+        for (int x = 0; x < 1000000; x++) {
             executioner.exec(metaOp);
         }
         long time2 = System.nanoTime();
 
-        System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
+        System.out.println("Execution time Meta: " + ((time2 - time1) / 1000000));
       //  assertEquals(exp, array);
 
         time1 = System.nanoTime();
-        for (int x = 0; x < 100000; x++) {
+        for (int x = 0; x < 1000000; x++) {
             Nd4j.getExecutioner().exec(opA);
             Nd4j.getExecutioner().exec(opB);
         }
         time2 = System.nanoTime();
 
-        System.out.println("Execution time Linear: " + ((time2 - time1) / 100000));
+        System.out.println("Execution time Linear: " + ((time2 - time1) / 1000000));
 
 
       //  assertEquals(exp2, array);

@@ -388,8 +388,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      *
      * @return
      */
-    protected int getQueueLength() {
-        return deviceQueues.get().size() + (lastOp.get() == null ? 0 : 1);
+    public int getQueueLength() {
+        //return deviceQueues.get().size() + (lastOp.get() == null ? 0 : 1);
+        return (lastOp.get() == null ? 0 : 1);
     }
 
     /**
@@ -787,6 +788,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
          */
         // TODO: proper implementation for GridOp creation required here
+        /*
         Deque<OpDescriptor> currentQueue = deviceQueues.get();
         if (currentQueue == null)
             return;
@@ -797,9 +799,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             op = currentQueue.pollFirst();
         }
+        */
 
         // we need to check,
-        op = lastOp.get();
+        OpDescriptor op = lastOp.get();
         if (op != null) {
             if (!nativeOps.isExperimentalEnabled()) {
                 // it might be only pairwise transform here for now

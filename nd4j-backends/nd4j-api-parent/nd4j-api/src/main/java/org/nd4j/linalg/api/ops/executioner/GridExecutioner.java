@@ -18,4 +18,7 @@ public interface GridExecutioner extends OpExecutioner {
      * PLEASE NOTE: This call is always blocking, until all queued operations are finished
      */
     void flushQueueBlocking();
+
+
+    int getQueueLength();
 }
