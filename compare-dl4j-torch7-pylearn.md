@@ -29,11 +29,11 @@ Content
 
 ### <a name="theano">Theano and Ecosystem</a>
 
-Most academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
+Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
 
 Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
 
-In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html). 
+In contrast, Deeplearning4j brings deep learning to production evnironment to create solutions in JVM languages like Java and Scala. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html). 
 
 Pros and Cons
 
@@ -65,10 +65,11 @@ Pros and Cons:
 * (-) You usually write your own training code (Less plug and play)
 * (-) Not good for recurrent neural networks
 * (-) No commercial support
+* (-) Spott documentation
 
 ### <a name="tensorflow">TensorFlow</a>
 
-* Google created TensorFlow to replace Theano. The two libraries are very similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google. 
+* Google created TensorFlow to replace Theano. The two libraries are in fact quite similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google before leaving for OpenAI. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
 * Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
@@ -142,7 +143,7 @@ Yet the JVM and its main languages - Java and Scala - have several advantages.
 
 First of all, they are inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C or C++. (When we talk about operations, we also consider things like strings and other tasks involved with higher-level machine learning processes.) Most deep-learning projects that are initially written in Python will have to be rewritten if they are to be put in production. Deeplearning4j relies on [JavaCPP](https://github.com/bytedeco/javacpp) to call pre-compiled native C++ from Java, substantially accelerating the speed of training. Many Python programmers opt to do deep learning in Scala because they prefer static typing and functional programming when working with others on a shared code base. 
 
-Secondly, most major companies and large government organizations rely heavily on Java or a JVM-based system. Java remains the most widely used language in enterprise. It is the language of Hadoop, ElasticSearch, Hive, Lucene and Pig, which happen to be useful for machine learning problems. Spark and Kafka are written in Scala, another JVM language. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
+Secondly, most major companies and large government organizations rely heavily on Java or a JVM-based system. They have made a huge investment, which they can leverage with JVM-based AI. Java remains the most widely used language in enterprise. It is the language of Hadoop, ElasticSearch, Hive, Lucene and Pig, which happen to be useful for machine learning problems. Spark and Kafka are written in Scala, another JVM language. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
 
 Thirdly, Java's lack of robust scientific computing libraries can be solved by writing them, which we've done with [ND4J](http://nd4j.org). ND4J runs on distributed GPUs or GPUs, and can be interfaced via a Java or Scala API.
 
