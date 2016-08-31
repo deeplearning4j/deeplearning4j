@@ -35,7 +35,7 @@ __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, cons
 
     if (opTypeA == 0) { // scalar
 
-  //      DISPATCH_METAOP(functions::reduce::ReduceFunction<T>::template transformCuda6D, PARAMS(dx, xShapeInfo, paramsPtr, dz, zShapeInfo,  dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffsets), ReduceMetaOp, OPS_A(SCALAR_OPS), OPS_B(REDUCE_OPS));
+     //   DISPATCH_METAOP(functions::reduce::ReduceFunction<T>::template transformCuda6D, PARAMS(dx, xShapeInfo, paramsPtr, dz, zShapeInfo,  dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffsets), ReduceMetaOp, OPS_A(SCALAR_OPS), OPS_B(REDUCE_OPS));
     } else if (opTypeA == 1) { // transform
 
     } else {
@@ -64,7 +64,7 @@ __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+      //      DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 }
@@ -120,7 +120,7 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
 #else
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+     //       DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 #endif

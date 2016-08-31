@@ -28,7 +28,7 @@
 
 
 #ifdef __CUDACC__
-#define INLINEDEF __noinline__
+#define INLINEDEF inline
 #else
 #define INLINEDEF inline
 #endif
@@ -68,6 +68,7 @@ namespace shape {
         int endingThreadIndex;
 
     };
+
 
 
 #ifdef __CUDACC__

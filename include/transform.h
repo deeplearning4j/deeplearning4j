@@ -369,30 +369,47 @@ template<typename OpType>
 				}
 			}
 
-			template<typename OpType>
-			static void exec(T *dx,
-                              int xStride,
-                              T *result,
-                              int resultStride,
-                              T *extraParams,
-                              const int n) {
+            template<typename OpType>
+            static void exec(T *dx,
+                             int xStride,
+                             T *result,
+                             int resultStride,
+                             T *extraParams,
+                             const int n) {
+
+                int elementsPerThread = n / 2048;
+                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+                int nthreads, tid, start, end;
+                int span = (n / num_threads) + 8;
+
                 if (xStride == 1 && resultStride == 1) {
-					if (n > 2048) {
-#pragma omp parallel for simd schedule(guided)
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = OpType::op(dx[i], extraParams);
-						}
-					} else {
+
+#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+                    {
+                        tid = omp_get_thread_num();
+                        start = span * tid;
+                        end = span * (tid + 1);
+                        if (end > n) end = n;
 #pragma omp simd
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = OpType::op(dx[i], extraParams);
-						}
-					}
-                } else {
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
-                        for (Nd4jIndex i = 0; i < n; i++) {
-                            result[i * resultStride] = OpType::op(dx[i * xStride], extraParams);
+                        for (Nd4jIndex i = start; i < end; i++) {
+                            result[i] = OpType::op(dx[i], extraParams);
                         }
+                    }
+                } else {
+
+#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+                    {
+                        tid = omp_get_thread_num();
+                        start = span * tid;
+                        end = span * (tid + 1);
+                        if (end > n) end = n;
+#pragma omp simd
+                        for (Nd4jIndex i = start; i < end; i++) {
+                            result[i*resultStride] = OpType::op(dx[i * resultStride], extraParams);
+                        }
+                    }
                 }
             }
         };
@@ -861,15 +878,17 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         int tadOffsetForBlock = tadOffsets[r];
 
         int highestElement = (int) dX[r];
-/*
-        if (threadIdx.x == 0)
-            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
-*/
+
+//        if (threadIdx.x == 0)
+//            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i], tadOffset: [%i], tadEWS: [%i]\n", r, highestElement, numTads, tadLength, tadOffsetForBlock, tadEWS);
+
 
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
             // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
-            dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
+            int idx = tadOffsetForBlock + (e * tadEWS);
+            dZ[idx] = (e == highestElement? (T) 1.0 : (T) 0.0);
         }
+
     }
 }
 
