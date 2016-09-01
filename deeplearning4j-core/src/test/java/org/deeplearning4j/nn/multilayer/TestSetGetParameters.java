@@ -102,10 +102,10 @@ public class TestSetGetParameters {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new GravesLSTM.Builder().nIn(10).nOut(10).build())
-                .layer(2, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                .layer(3, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2).padding(2, 2).build())
+                .layer(0, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2).padding(2, 2).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
+                .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
                 .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build())
                 .pretrain(false).backprop(true).build();
 

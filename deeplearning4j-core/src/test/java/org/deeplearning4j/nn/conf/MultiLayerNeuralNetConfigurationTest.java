@@ -79,11 +79,10 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testConvnetJson() {
-        final int numRows = 75;
-        final int numColumns = 75;
+        final int numRows = 76;
+        final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
-        int batchSize = 500;
         int iterations = 10;
         int seed = 123;
 
@@ -100,7 +99,6 @@ public class MultiLayerNeuralNetConfigurationTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
-
                 .layer(1, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .build())
@@ -114,7 +112,6 @@ public class MultiLayerNeuralNetConfigurationTest {
                         .build())
                 .layer(4, new DenseLayer.Builder().nOut(100).activation("relu")
                         .build())
-
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
