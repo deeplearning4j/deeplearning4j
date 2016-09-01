@@ -289,7 +289,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         @Deprecated
         public Builder cnnInputSize(int[] cnnInputSize){
-            inputType = InputType.convolutional(cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
+            if(cnnInputSize != null) {
+                inputType = InputType.convolutional(cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
+            }
             return this;
         }
 
@@ -300,8 +302,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         public MultiLayerConfiguration build() {
 
-            if(inputType == null){
+            if(inputType == null && inputPreProcessors.get(0) == null){
                 //User hasn't set the InputType. Sometimes we can infer it...
+                // For example, Dense/RNN layers, where preprocessor isn't set -> user is *probably* going to feed in
+                // standard feedforward or RNN data
+                //This isn't the most elegant implementation, but should avoid breaking backward compatibility here
                 //Can't infer InputType for CNN layers, however (don't know image dimensions/depth)
                 Layer firstLayer = confs.get(0).getLayer();
                 if(firstLayer instanceof BaseRecurrentLayer){
@@ -310,7 +315,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     if(nIn > 0){
                         inputType = InputType.recurrent(nIn);
                     }
-                } else if(firstLayer instanceof FeedForwardLayer){
+                } else if( firstLayer instanceof DenseLayer ||
+                        firstLayer instanceof EmbeddingLayer ||
+                        firstLayer instanceof OutputLayer ){
+                    //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
                     FeedForwardLayer ffl = (FeedForwardLayer)firstLayer;
                     int nIn = ffl.getNIn();
                     if(nIn > 0){
@@ -324,13 +332,27 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             // 1. User calls setInputType directly
             // 2. Via ConvolutionLayerSetup -> internally calls setInputType(InputType.convolutional(...))
             // 3. User calls one of  the two cnnInputSize methods -> sets inputType field directly
-            // 4. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> calls setInputType(...)
+            // 4. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
 
             if(inputType != null){
                 InputType currentInputType = inputType;
-                for(NeuralNetConfiguration c : confs){
-                    Layer l = c.getLayer();
-                    
+                for( int i=0; i<confs.size(); i++){
+                    Layer l = confs.get(i).getLayer();
+                    if(inputPreProcessors.get(i) == null){
+                        //Don't override preprocessor setting, but set preprocessor if required...
+                        InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);
+                        if(inputPreProcessor != null){
+                            inputPreProcessors.put(i, inputPreProcessor);
+                        }
+                    }
+
+                    InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
+                    if(inputPreProcessor != null){
+                        currentInputType = inputPreProcessor.getOutputType(currentInputType);
+                    }
+                    l.setNIn(currentInputType, false);  //Don't override the nIn setting, if it's manually set by the user
+
+                    currentInputType = l.getOutputType(currentInputType);
                 }
             }
 
