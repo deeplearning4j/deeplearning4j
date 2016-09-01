@@ -2679,30 +2679,45 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         } else {
-            INDArray tempf = result.ordering() == 'c' ? create(result.shape(), Nd4j.getStrides(result.shape(),'f')): result.dup();
-            tempf.setOrder('f');
+
+            //We require that the result array is 'f' (fortran) order
+            // However, user might have called mmuli with a c order array for the result
+            // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
+
+            boolean requiresTemp = result.ordering() == 'c';
+            INDArray gemmResultArr;
+            if(requiresTemp){
+                //Can use createUninitialized due to beta==0.0 parameter in gemm
+                gemmResultArr = Nd4j.createUninitialized(result.shape(),'f');
+            } else {
+                gemmResultArr = result;
+            }
+
             if(other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
-                        ordering()
-                        ,  BlasBufferUtil.getCharForTranspose(other),
-                        1.0
-                        ,this
-                        ,other
-                        ,0.0
-                        ,tempf);
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
             }
             else {
                 Nd4j.getBlasWrapper().level3().gemm(
-                        ordering()
-                        , BlasBufferUtil.getCharForTranspose(other)
-                        , BlasBufferUtil.getCharForTranspose(tempf)
-                        , 1.0
-                        , this
-                        , other
-                        , 0.0
-                        , tempf);
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        BlasBufferUtil.getCharForTranspose(gemmResultArr),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
             }
-            result.assign(tempf);
+
+            if(requiresTemp){
+                result.assign(gemmResultArr);
+            }
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
