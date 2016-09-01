@@ -1558,11 +1558,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
 
-        assertTrue(mmul.equals(mmulCopy));
-
-        INDArray mmul2 = tad.mmul(first);
-        INDArray mmul2copy = copy.mmul(first);
-        assertTrue(mmul2.equals(mmul2copy));
+        assertEquals(mmul, mmulCopy);
     }
 
     @Test
@@ -1592,10 +1588,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mmulCopy = first.mmul(copy);
 
         assertTrue(mmul.equals(mmulCopy));
-
-        INDArray mmul2 = tad.mmul(first);
-        INDArray mmul2copy = copy.mmul(first);
-        assertTrue(mmul2.equals(mmul2copy));
     }
 
 
