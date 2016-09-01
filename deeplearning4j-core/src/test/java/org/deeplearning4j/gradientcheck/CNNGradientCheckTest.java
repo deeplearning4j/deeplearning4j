@@ -321,9 +321,9 @@ public class CNNGradientCheckTest {
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(3).nOut(2)
-                                    .build())
+                                    .build())   //Output: (3-2+0)/1+1 = 2
                             .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
-                                    .nIn(2 * 3 * 3)
+                                    .nIn(2 * 2 * 2)
                                     .nOut(4)
                                     .build())
                             .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
