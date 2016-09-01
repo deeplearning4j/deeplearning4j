@@ -103,19 +103,11 @@ public class ConvolutionLayerSetupTest {
     @Test
     public void testMnistLenet() throws Exception {
         MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
-        ConvolutionLayerSetup setup = new ConvolutionLayerSetup(incomplete,28,28,1);
-        //first convolution and subsampling
-        assertArrayEquals(new int[]{24,24,20},setup.getOutSizesEachLayer().get("0"));
-        assertArrayEquals(new int[]{12,12,20},setup.getOutSizesEachLayer().get("1"));
-
-        //second convolution and subsampling
-        assertArrayEquals(new int[]{8,8,50},setup.getOutSizesEachLayer().get("2"));
-        assertArrayEquals(new int[]{4,4,50},setup.getOutSizesEachLayer().get("3"));
-        assertEquals(800, setup.getnInForLayer().get("4").intValue());
-        assertEquals(500, setup.getnInForLayer().get("5").intValue());
-
+        new ConvolutionLayerSetup(incomplete,28,28,1);
 
         MultiLayerConfiguration testConf = incomplete.build();
+        assertEquals(800, ((FeedForwardLayer)testConf.getConf(4).getLayer()).getNIn());
+        assertEquals(500, ((FeedForwardLayer)testConf.getConf(5).getLayer()).getNIn());
 
         //test instantiation
         DataSetIterator iter = new MnistDataSetIterator(10,10);
@@ -134,9 +126,10 @@ public class ConvolutionLayerSetupTest {
 
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         new ConvolutionLayerSetup(builder,28,28,3);
-        ConvolutionLayer layer2 = (ConvolutionLayer) builder.getLayerwise().get(2).getLayer();
-        assertEquals(6,layer2.getNIn());
         MultiLayerConfiguration conf = builder.build();
+        ConvolutionLayer layer2 = (ConvolutionLayer)conf.getConf(2).getLayer();
+        assertEquals(6,layer2.getNIn());
+
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         network.fit(next);
@@ -280,7 +273,6 @@ public class ConvolutionLayerSetupTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
-                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6))
                 .backprop(true).pretrain(false);
 
