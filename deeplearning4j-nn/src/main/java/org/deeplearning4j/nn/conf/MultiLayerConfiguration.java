@@ -173,8 +173,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         @Deprecated
         protected boolean redistributeParams = false;
-        @Deprecated
-        protected int[] cnnInputSize = null;    //Order: height/width/depth
         protected InputType inputType;
 
         /**
