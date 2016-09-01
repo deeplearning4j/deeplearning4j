@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -433,7 +434,7 @@ public class TestPreProcessors {
                         .activation("softmax")
                         .updater(Updater.SGD)
                         .build())
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(true).pretrain(false).build();
 
         assertNotNull(conf.getInputPreProcess(0));

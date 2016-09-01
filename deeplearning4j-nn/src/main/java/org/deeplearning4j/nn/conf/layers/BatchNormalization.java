@@ -68,16 +68,38 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || (inputType.getType() != InputType.Type.CNN && inputType.getType() != InputType.Type.CNNFlat)){
-            //Can handle CNN or flat CNN input formats only
+        if(inputType == null){
             throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, got " + inputType);
         }
-        return inputType;
+
+        //Can handle CNN, flat CNN or FF input formats only
+        switch (inputType.getType()){
+            case FF:
+            case CNN:
+            case CNNFlat:
+                return inputType; //OK
+            default:
+                throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got " + inputType);
+        }
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override){
-        //No op
+        if(nIn <= 0 || override){
+            switch (inputType.getType()){
+                case FF:
+                    nIn = ((InputType.InputTypeFeedForward)inputType).getSize();
+                    break;
+                case CNN:
+                    nIn = ((InputType.InputTypeConvolutional)inputType).getDepth();
+                    break;
+                case CNNFlat:
+                    nIn = ((InputType.InputTypeConvolutionalFlat)inputType).getDepth();
+                default:
+                    throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got " + inputType);
+            }
+            nOut = nIn;
+        }
     }
 
     @Override

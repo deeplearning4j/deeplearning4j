@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
@@ -51,8 +52,8 @@ public class ConvolutionLayerSetupTest {
 
     @Test
     public void testDenseToOutputLayer() {
-        final int numRows = 75;
-        final int numColumns = 75;
+        final int numRows = 76;
+        final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
         int iterations = 3;
@@ -92,7 +93,7 @@ public class ConvolutionLayerSetupTest {
                 .backprop(true).pretrain(false);
 
         new ConvolutionLayerSetup(builder,numRows,numColumns,nChannels);
-        DataSet d = new DataSet(Nd4j.rand(12345,10,3,75,75).reshape(10,3 * 75 * 75), FeatureUtil.toOutcomeMatrix(new int[]{1,1,1,1,1,1,1,1,1,1},6));
+        DataSet d = new DataSet(Nd4j.rand(12345,10,nChannels,numRows,numColumns), FeatureUtil.toOutcomeMatrix(new int[]{1,1,1,1,1,1,1,1,1,1},6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();
         network.fit(d);
@@ -103,7 +104,7 @@ public class ConvolutionLayerSetupTest {
     @Test
     public void testMnistLenet() throws Exception {
         MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
-        new ConvolutionLayerSetup(incomplete,28,28,1);
+        incomplete.setInputType(InputType.convolutionalFlat(28,28,1));
 
         MultiLayerConfiguration testConf = incomplete.build();
         assertEquals(800, ((FeedForwardLayer)testConf.getConf(4).getLayer()).getNIn());
@@ -145,8 +146,11 @@ public class ConvolutionLayerSetupTest {
         DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,1,labels.size());
         labels.remove("lfwtest");
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLRN();
-        new ConvolutionLayerSetup(builder,28,28,3);
-        ConvolutionLayer layer2 = (ConvolutionLayer) builder.getLayerwise().get(3).getLayer();
+        builder.setInputType(InputType.convolutional(28,28,3));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3).getLayer();
         assertEquals(6, layer2.getNIn());
 
     }
@@ -191,10 +195,10 @@ public class ConvolutionLayerSetupTest {
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nIn(1).nOut(20)
                         .build())
-                .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{1,1},new int[]{2,2}).build())
+                .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2,2},new int[]{2,2}).build())
                 .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(50)
                         .build())
-                .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{1,1},new int[]{2,2}).build())
+                .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2,2},new int[]{2,2}).build())
                 .layer(4,new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(500)
                         .build())
                 .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation("softmax")
@@ -322,7 +326,7 @@ public class ConvolutionLayerSetupTest {
                 .layer(5, new ActivationLayer.Builder().activation("relu").build())
                 .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(10).nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28,28,1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
