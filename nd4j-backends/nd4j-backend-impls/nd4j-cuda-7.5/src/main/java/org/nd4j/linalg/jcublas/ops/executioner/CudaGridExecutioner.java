@@ -777,6 +777,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         // TODO: to be implemented
     }
 
+    protected void purgeQueue() {
+        lastOp.remove();
+    }
+
     /**
      * This method forces all currently enqueued ops to be executed immediately
      *

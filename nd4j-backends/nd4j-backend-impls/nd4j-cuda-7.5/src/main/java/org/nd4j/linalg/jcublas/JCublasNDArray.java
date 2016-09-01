@@ -369,7 +369,6 @@ public class JCublasNDArray extends BaseNDArray {
             ret.markAsCompressed(true);
             return ret;
         }
-        Nd4j.getCompressor().autoDecompress(this);
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
@@ -415,7 +414,6 @@ public class JCublasNDArray extends BaseNDArray {
             ret.markAsCompressed(true);
             return ret;
         }
-        Nd4j.getCompressor().autoDecompress(this);
 /*
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();

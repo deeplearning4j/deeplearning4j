@@ -315,6 +315,40 @@ public class MetaOpTests {
 
     }
 
+    @Test
+    public void testEnqueuePerformance1() throws Exception {
+        CudaGridExecutioner executioner = new CudaGridExecutioner();
+
+        INDArray arrayX = Nd4j.create(65536);
+        INDArray arrayY = Nd4j.create(65536);
+
+        Set opA = new Set(arrayX, arrayY, arrayX, arrayX.length());
+
+        ScalarMultiplication opB = new ScalarMultiplication(arrayX, 2.0f);
+        //ScalarAdd opB = new ScalarAdd(arrayX, 3.0f);
+
+        PredicateMetaOp metaOp = new PredicateMetaOp(opA, opB);
+
+        executioner.prepareGrid(metaOp);
+
+        GridDescriptor descriptor = metaOp.getGridDescriptor();
+
+        assertEquals(2, descriptor.getGridDepth());
+        assertEquals(2, descriptor.getGridPointers().size());
+
+        assertEquals(Op.Type.PAIRWISE, descriptor.getGridPointers().get(0).getType());
+        assertEquals(Op.Type.SCALAR, descriptor.getGridPointers().get(1).getType());
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 10000000; x++) {
+            executioner.exec(opA);
+            executioner.purgeQueue();
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Enqueue time: " + ((time2 - time1) / 10000000));
+    }
+
 
     @Ignore
     @Test
