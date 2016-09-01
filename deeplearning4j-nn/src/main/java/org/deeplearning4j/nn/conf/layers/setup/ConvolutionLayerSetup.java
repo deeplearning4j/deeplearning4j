@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers.setup;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
@@ -29,7 +30,10 @@ import java.util.Map;
  * such as when a shift from
  * convolution to dense happens.
  *
+ * @deprecated Use {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration.Builder#setInputType(InputType)} to set nIns
+ * and add preprocessors as required. This can be done using {@code builder.setInputType(InputType.convolutional(height, width, channels))}
  */
+@Deprecated
 public class ConvolutionLayerSetup {
 
     public static final String CONVOLUTION_LAYER = "ConvolutionLayer";
@@ -65,22 +69,25 @@ public class ConvolutionLayerSetup {
      */
 
     public ConvolutionLayerSetup(MultiLayerConfiguration.Builder builder,int height,int width,int channels) {
-        conf = builder;
-        lastHeight = height;
-        lastWidth = width;
-        lastOutChannels = channels;
 
-        if(conf instanceof NeuralNetConfiguration.ListBuilder) {
-            NeuralNetConfiguration.ListBuilder listBuilder = (NeuralNetConfiguration.ListBuilder) conf;
-            numLayers = listBuilder.getLayerwise().size();
-        } else {
-            numLayers = conf.getConfs().size();
-        }
-        for(int i = 0; i < numLayers-1; i++) {
-            Layer inputLayer = getLayer(i,conf);
-            Layer outputLayer = getLayer(i+1,conf);
-            updateLayerInputs(i, inputLayer, outputLayer);
-        }
+        builder.setInputType(InputType.convolutional(height, width, channels));
+
+//        conf = builder;
+//        lastHeight = height;
+//        lastWidth = width;
+//        lastOutChannels = channels;
+//
+//        if(conf instanceof NeuralNetConfiguration.ListBuilder) {
+//            NeuralNetConfiguration.ListBuilder listBuilder = (NeuralNetConfiguration.ListBuilder) conf;
+//            numLayers = listBuilder.getLayerwise().size();
+//        } else {
+//            numLayers = conf.getConfs().size();
+//        }
+//        for(int i = 0; i < numLayers-1; i++) {
+//            Layer inputLayer = getLayer(i,conf);
+//            Layer outputLayer = getLayer(i+1,conf);
+//            updateLayerInputs(i, inputLayer, outputLayer);
+//        }
     }
 
     private void storeNInAndNOut(String inName, int out){
