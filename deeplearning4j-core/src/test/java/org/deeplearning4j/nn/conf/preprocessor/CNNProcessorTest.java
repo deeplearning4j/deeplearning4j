@@ -7,6 +7,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -233,7 +234,7 @@ public class CNNProcessorTest {
 
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
-        MultiLayerConfiguration.Builder conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .iterations(5)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -252,8 +253,8 @@ public class CNNProcessorTest {
                         .nOut(10)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
-                        .build());
-        new ConvolutionLayerSetup(conf,28,28,1);
-        return new MultiLayerNetwork(conf.build());
+                        .build())
+                .setInputType(InputType.convolutionalFlat(28,28,1)).build();
+        return new MultiLayerNetwork(conf);
     }
 }
