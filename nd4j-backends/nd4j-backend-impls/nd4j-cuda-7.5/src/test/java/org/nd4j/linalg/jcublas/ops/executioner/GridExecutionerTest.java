@@ -10,6 +10,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -717,5 +718,35 @@ public class GridExecutionerTest {
 
         INDArray sorted = Nd4j.sort(dupd, 1, false);
         assertEquals(columnSorted, sorted);
+    }
+
+    @Test
+    public void testDupLocality1() throws Exception {
+        INDArray array1 = Nd4j.create(new double[]{1,2,3,4,5});
+
+        AllocationPoint point1 = AtomicAllocator.getInstance().getAllocationPoint(array1);
+        assertEquals(true, point1.isActualOnDeviceSide());
+        assertEquals(false, point1.isActualOnHostSide());
+
+        INDArray array2 = array1.dup();
+
+        //((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        AllocationPoint point2 = AtomicAllocator.getInstance().getAllocationPoint(array2);
+
+        assertEquals(true, point2.isActualOnDeviceSide());
+        assertEquals(true, point2.isActualOnHostSide());
+    }
+
+    @Test
+    public void testDupLocality2() throws Exception {
+        INDArray array2 = Nd4j.createUninitialized(new int[]{10, 10}, 'c');
+
+        //((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        AllocationPoint point2 = AtomicAllocator.getInstance().getAllocationPoint(array2);
+
+        assertEquals(true, point2.isActualOnDeviceSide());
+        assertEquals(true, point2.isActualOnHostSide());
     }
 }

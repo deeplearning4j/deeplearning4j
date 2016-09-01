@@ -269,6 +269,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
                           //  point.tickDeviceWrite();
                             point.tickHostWrite();
+
+                            if (!initialize) {
+                                point.tickDeviceWrite();
+                                point.tickHostRead();
+                            }
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]", deviceId, reqMemory);
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
@@ -359,6 +364,8 @@ public class CudaZeroHandler implements MemoryHandler {
             }
 
             //log.info("Copying to device");
+          //  Random rnd = new Random();
+          //  if (rnd.nextInt(100) < 3) throw new RuntimeException("Relocate");
 
             if (nativeOps.memcpyAsync(
                             point.getPointers().getDevicePointer(),
