@@ -182,8 +182,8 @@ public abstract class BaseUpdater implements Updater {
                 break;
             case ClipElementWiseAbsoluteValue:
                 for( INDArray g : gradient.gradientForVariable().values()){
-                    BooleanIndexing.applyWhere(g, Conditions.greaterThan(threshold), new Value(threshold));
-                    BooleanIndexing.applyWhere(g, Conditions.lessThan(-threshold), new Value(-threshold));
+                    BooleanIndexing.replaceWhere(g, threshold, Conditions.greaterThan(threshold));
+                    BooleanIndexing.replaceWhere(g, -threshold, Conditions.lessThan(-threshold));
                 }
                 break;
             case ClipL2PerLayer:
