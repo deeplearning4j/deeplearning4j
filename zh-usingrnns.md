@@ -5,7 +5,7 @@ layout: zh-default
 
 # DL4J中的递归网络
 
-本页将简要介绍递归网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非递归神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[递归网络和LSTM教程](/lstm.html)，再学习本页内容。
+本页将简要介绍递归网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非递归神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[递归网络和LSTM教程](/zh-lstm.html)，再学习本页内容。
 
 **目录**
 
@@ -114,7 +114,7 @@ DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩�
 
 DL4J中的RNN层可以与其他类型的层结合使用。例如，可以在同一个网络结合使用DenseLayer和GravesLSTM层；或者将卷积（CNN）层与GravesLSTM层结合用于处理视频。
 
-当然，DenseLayer和卷积层并不处理时间序列数据－这些层要求的输入类型不同。为了解决这一问题，我们需要使用层预处理器功能：比如CnnToRnnPreProcessor和FeedForwardToRnnPreprocessor类。点击[此处](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)查看所有预处理器。大部分情况下，DL4J配置系统会自动添加所需的预处理器。但预处理器也可以手动添加（替代为每一层自动添加的预处理器）。
+当然，DenseLayer和卷积层并不处理时间序列数据－这些层要求的输入类型不同。为了解决这一问题，我们需要使用层预处理器功能：比如CnnToRnnPreProcessor和FeedForwardToRnnPreprocessor类。点击[此处](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)查看所有预处理器。大部分情况下，DL4J配置系统会自动添加所需的预处理器。但预处理器也可以手动添加（替代为每一层自动添加的预处理器）。
 
 例如，如需在第1和第2层之间添加预处理器，可在网络配置中添加下列代码：`.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`.
 
@@ -174,7 +174,7 @@ rnnTimeStep可以同时用于任意数量的时间步，而不仅仅是一个时
 
 RNN的数据导入比较复杂，因为可能使用的数据类型较多：一对多、多对一、长度可变的时间序列等。本节将介绍DL4J目前已实现的数据导入机制。
 
-此处介绍的方法采用SequenceRecordReaderDataSetIterator类，以及Canova的CSVSequenceRecordReader类。该方法目前可加载来自文件的已分隔（用制表符或逗号）数据，每个时间序列为一个单独文件。
+此处介绍的方法采用SequenceRecordReaderDataSetIterator类，以及DataVec的CSVSequenceRecordReader类。该方法目前可加载来自文件的已分隔（用制表符或逗号）数据，每个时间序列为一个单独文件。
 该方法还支持：
 
 * 长度可变的时间序列输入
@@ -184,13 +184,13 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 注意在所有情况下，数据文件中的每一行都表示一个时间步。
 
-（除了下文的示例外，还可参考[这些单元测试](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetiteratorTest.java)。）
+（除了下文的示例外，还可参考[这些单元测试](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetiteratorTest.java)。）
 
 #### 示例1：等长时间序列，输入和标签在不同文件内
 
 假设定型数据中有10个时间序列，以20个文件表示：10个文件为每个时间序列的输入，10个文件为输出／标签。现在暂时假设这20个文件都包含同样数量的时间步（即行数相同）。
 
-为了使用[SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/SequenceRecordReaderDataSetIterator.java)和[CSVSequenceRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVSequenceRecordReader.java)方法，首先要创建两个CSVSequenceRecordReader对象，一个用于输入，一个用于标签：
+为了使用[SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/SequenceRecordReaderDataSetIterator.java)和[CSVSequenceRecordReader](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java)方法，首先要创建两个CSVSequenceRecordReader对象，一个用于输入，一个用于标签：
 
     SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
     SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -198,7 +198,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 这一构造方法指定需要跳过的行数（此处跳过1行）和分隔符（此处使用逗号）。
 
 其次，我们需要将这两个读取器初始化，指示它们从何处获取数据。这一步可以用InputSplit对象完成。
-假设我们的时间序列带有编号，文件名如“myInput_0.csv”、“myInput_1.csv”、……“myLabels_0.csv”等。方法之一是使用[NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java)：
+假设我们的时间序列带有编号，文件名如“myInput_0.csv”、“myInput_1.csv”、……“myLabels_0.csv”等。方法之一是使用[NumberedFileInputSplit](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/split/NumberedFileInputSplit.java)：
 
     featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
     labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
@@ -287,7 +287,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 需要注意的是，这一方法的级别较低：运用DataSetIterator时，必须手动创建所需的输入和标签INDArrays，以及输入和标签掩模数组（如需要）。但这一方法可以让数据加载方式变得十分灵活。
 
-本方法的实践应用可参考[文字/字符示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)以及[Word2Vec电影评论情绪示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)对迭代器的应用。
+本方法的实践应用可参考[文字/字符示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/CharacterIterator.java)以及[Word2Vec电影评论情绪示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/SentimentExampleIterator.java)对迭代器的应用。
 
 **注**：在创建自定义的DataSetIterator时，包括输入特征、标签以及任何掩模数组在内的数组都应当按“f”（fortran）顺序创建。有关数组顺序的详情请参阅[ND4J用户指南](http://nd4j.org/userguide.html#inmemory)。在实际操作中，这意味着要使用Nd4j.create方法来指定数组顺序：```Nd4j.create(new int[]{numExamples, inputSize, timeSeriesLength},'f')```。虽然“c”顺序的数组也可以运行，但由于在进行某些运算时需要先将数组复制到“f”顺序，会导致性能有所下降。
 
@@ -295,8 +295,8 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 ## <a name="examples">示例</a>
 
-DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)：
+DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent)：
 
-* [字符建模示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文
-* [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类
-* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个RNN将电影评论分为正面和负面两类。
+* [字符建模示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文
+* [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类
+* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个RNN将电影评论分为正面和负面两类。
