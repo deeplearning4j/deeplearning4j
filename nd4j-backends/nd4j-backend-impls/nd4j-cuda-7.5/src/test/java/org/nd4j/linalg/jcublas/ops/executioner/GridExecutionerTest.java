@@ -775,4 +775,36 @@ public class GridExecutionerTest {
         assertEquals(exp1, array1);
         assertEquals(exp2, array2);
     }
+
+    @Test
+    public void testDupLocality4() throws Exception {
+        int nIn = 8;
+        int layerSize = 10;
+        int nOut = 4;
+
+        INDArray in = Nd4j.ones(1,10).dup('c');
+        AllocationPoint point1 = AtomicAllocator.getInstance().getAllocationPoint(in);
+        assertEquals(true, point1.isEnqueued());
+
+        //assertEquals(1, ((GridExecutioner) Nd4j.getExecutioner()).getQueueLength());
+
+        INDArray out = Nd4j.zeros(1, 10).dup('c');
+        AllocationPoint point1A = AtomicAllocator.getInstance().getAllocationPoint(in);
+        AllocationPoint point2 = AtomicAllocator.getInstance().getAllocationPoint(out);
+        assertEquals(1, ((GridExecutioner) Nd4j.getExecutioner()).getQueueLength());
+        assertTrue(point1 == point1A);
+        assertEquals(true, point2.isEnqueued());
+        assertEquals(false, point1.isEnqueued());
+
+
+        assertEquals(Nd4j.ones(1, 10), in);
+        assertEquals(Nd4j.zeros(1, 10), out);
+
+        INDArray inCopy = in.dup('c');
+        AllocationPoint point3 = AtomicAllocator.getInstance().getAllocationPoint(inCopy);
+
+        assertEquals(false, point2.isEnqueued());
+        assertEquals(true, point3.isEnqueued());
+        assertEquals(true, point1.isEnqueued());
+    }
 }

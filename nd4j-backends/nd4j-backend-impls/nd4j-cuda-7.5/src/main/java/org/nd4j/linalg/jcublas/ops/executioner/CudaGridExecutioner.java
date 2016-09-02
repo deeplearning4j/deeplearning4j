@@ -193,6 +193,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     /*
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
+                    dequeueOp(last);
                     pushToGrid(last, false);
 
                     //|| op instanceof ScalarOp
