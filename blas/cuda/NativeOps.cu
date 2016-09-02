@@ -205,7 +205,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
 
 	if (debug && verbose)
-		printf("numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared);
+		printf("Launch context: numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i], elementSize: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared, elementSize);
 
 	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block = 0;
@@ -230,7 +230,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	int max_active_blocks = shmemThreshold / nd4j::math::nd4j_max<int>(memory_limit, 1);
 
 	if (debug && verbose)
-		printf("MAB: [%i], memory_limit: [%i]\n", max_active_blocks, memory_limit);
+		printf("MAB: [%i], memory_floor: [%i], memory_limit: [%i], reductionPerBlock: [%i]\n", max_active_blocks, memory_floor, memory_limit, reduction_per_block);
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 
@@ -341,8 +341,7 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *tadShapeInfo, cud
 	dim3 launchDims = getBetterDimensions(deviceId, numTads, tadLength, xRank, funcAttr, dimensionLength, elementSize, reductionSize);
 
 	if ((debug && verbose ) ) { //|| launchDims.x == 1
-		printf("B xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.x: [%i], launchDims.y: [%i]\n", shape::length(xShapeInfo), numTads, tadLength, launchDims.x, launchDims.y);
-		//shape::printShapeInfo(xShapeInfo);
+		printf("Reduce LaunchParams: xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.x: [%i], launchDims.y: [%i], launchDims.z: [%i]\n", shape::length(xShapeInfo), numTads, tadLength, launchDims.x, launchDims.y, launchDims.z);
 	}
 
 	return launchDims;
@@ -928,9 +927,11 @@ void   NativeOps::execReduceDouble(
 
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
+
 
 	if (dimensionLength == 1) {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[32], dimensionLength, sizeof(double), 2);
+
 		reduceDouble1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
@@ -941,7 +942,10 @@ void   NativeOps::execReduceDouble(
 						dimensionPointer,
 						dimensionLength,
 						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[33], dimensionLength, sizeof(double), 2);
+
 		reduceDouble6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
@@ -952,7 +956,10 @@ void   NativeOps::execReduceDouble(
 						dimensionPointer,
 						dimensionLength,
 						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+
 	} else {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 2);
+
 		reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
