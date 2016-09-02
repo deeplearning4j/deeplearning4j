@@ -29,12 +29,10 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 /**
  * dl4j port of original t-sne algorithm described/implemented by van der Maaten and Hinton
  *
- * DECOMPOSED VERSION, DO NOT USE IT EVER
  *
  * @author raver119@gmail.com
  * @author Adam Gibson
  */
-@Deprecated
 public class Tsne {
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
