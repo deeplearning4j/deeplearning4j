@@ -21,6 +21,8 @@ Data parallelism shards large datasets and hands those pieces to separate neural
     * [How Deeplearning4j (and ND4J) Manages Memory](#memory1)
     * [How YARN Manages Memory](#memory2)
     * [Configuring Memory for Deeplearning4j Spark Training on YARN](#memory3)
+* [Spark Locality Configuration for Improved Training Performance](#locality)
+* [Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;](#caching)
 * [Using Kryo Serialization with Deeplearning4j](#kryo)
 * [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
 
@@ -126,13 +128,20 @@ The ParameterAveragingTrainingMaster defines a number of configuration options t
 * **saveUpdater**: In DL4J, training methods such as momentum, RMSProp and AdaGrad are known as 'updaters'. Most of these updaters have internal history or state.
     * If saveUpdater is set to true: the updater state (at each worker) will be averaged and returned to the master along with the parameters; the current updater state will also be distributed from the master to the workers. This adds extra time and network traffic, but may improve training results.
     * If saveUpdater is set to false: the updater state (at each worker) is discarded, and the updater is reset/reinitialized in each worker.
+* [DL4J 0.5.1 and later only] **rddTrainingApproach**: As of version 0.5.1 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct``` 
+    * Export: (Default) This first saves the ```RDD<DataSet>``` to disk, in batched and serialized form. The executors then load the DataSet objects asynchronously, as required. This approach performs better than the Direct approach, especially for large data sets and multiple epochs. It avoids the split and repartitioning overhead of the Direct method, and also uses less memory. Temporary files can be deleted using ```TrainingMaster.deleteTempFiles()```
+    * Direct: This is how DL4J operated in earlier releases. It may provide good performance for small data sets that fit entirely into memory.
+* [DL4J 0.5.1 and later only] **exportDirectory**: only used with the Export training approach (above). This controls where the temporary data files are stored. Default: use ```{hadoop.tmp.dir}/dl4j/``` directory, where ```{hadoop.tmp.dir}``` is the Hadoop temporary directory property value.
+* [DL4J 0.5.1 and later only] **storageLevel**: Only applies when (a) using Direct training approach, and (b) training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. This is the storage level that DL4J will persist the RDDs at. Default: StorageLevel.MEMORY_ONLY_SER.
+* [DL4J 0.5.1 and later only] **storageLevelStreams**: Only applies when using the ```fitPaths(RDD<String>)``` method. This is the storage level that DL4J will use for persisting the ```RDD<String>```. Default: StorageLevel.MEMORY_ONLY. The default value should be ok in almost all circumstances.
 * **repartition**: Configuration setting for when data should be repartitioned. The ParameterAveragingTrainingMaster does a mapParititons operation; consequently, the number of partitions (and, the values in each partition) matters a lot for proper cluster utilization. However, repartitioning is not a free operation, as some data necessarily has to be copied across the network. The following options are available:
-    * Always: Default option. That is, repartition data to ensure the correct number of partitions
+    * Always: Default option. That is, repartition data to ensure the correct number of partitions. Recommended, especially with RDDTrainingApproach.Export (default as of 0.5.1) or ```fitPaths(RDD<String>)```
     * Never: Never repartition the data, no matter how imbalanced the partitions may be.
     * NumPartitionsWorkersDiffers: Repartition only if the number of partitions and the number of workers (total number of cores) differs. Note however that even if the number of partitions is equal to the total number of cores, this does not guarantee that the correct number of DataSet objects is present in each partition: some partitions may be much larger or smaller than others.
 * **repartitionStrategy**: Strategy by which repartitioning should be done
+    * Balanced: (Default) This is a custom repartitioning strategy defined by DL4J. It attempts to ensure that each partition is more balanced (in terms of number of objects) compared to the SparkDefault option. However, in practice this requires an additional count operation to execute; in some cases (most notably in small networks, or those with a small amount of computation per minibatch), the benefit may not outweigh additional overhead of executing the better repartitioning. Recommended, especially with RDDTrainingApproach.Export (default as of 0.5.1) or ```fitPaths(RDD<String>)```
     * SparkDefault: This is the stardard repartitioning strategy used by Spark. Essentially, each object in the initial RDD is mapped to one of N RDDs independently at random. Consequently, the partitions may not be optimally balanced; this can be especially problematic with smaller RDDs, such as those used for preprocessed DataSet objects and frequent averaging periods (simply due to random sampling variation).
-    * Balanced: This is a custom repartitioning strategy defined by DL4J. It attempts to ensure that each partition is more balanced (in terms of number of objects) compared to the SparkDefault option. However, in practice this requires an additional count operation to execute; in some cases (most notably in small networks, or those with a small amount of computation per minibatch), the benefit may not outweigh additional overhead of executing the better repartitioning.   
+    
     
 
 
@@ -149,7 +158,7 @@ To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency
         </dependency>
 ```
 
-Note that the ```_${scala.binary.version}``` should be ```_2.10``` or ```_2.11``` and should match the version of Spark you are using. 
+Note that ```${scala.binary.version}``` is a Maven property with the value ```2.10``` or ```2.11``` and should match the version of Spark you are using. 
 
 
 ## <a name="examples">Spark Examples Repository</a>
@@ -232,6 +241,51 @@ The arguments for Spark submit would be specified as follows:
 ```
 --class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf "spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf "spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf spark.yarn.executor.memoryOverhead=6144
 ```
+
+## <a name="locality">Spark Locality Configuration for Improved Training Performance</a>
+
+Configuring Spark locality settings is an optional configuration option that can improve training performance.
+
+The summary: adding ```--conf spark.locality.wait=0``` to your Spark submit configuration may reduce training times, by scheduling the network fit operations to be started sooner.
+
+### Why Configuring Spark Locality Configuration Can Improve Performance
+
+Spark has a number of configuration options for how it controls execution. One important component of this is the settings around locality.
+Locality, simply put, refers to where data is relative to where data can be processed. Suppose an executor is free, but data would have to be copied across the network, in order to process it. Spark must decide whether it should execute that network transfer, or if instead it should wait for an executor that has local access to the data to become free. By default, instead of transferring data immediately, Spark will wait a bit before transferring data across the network to a free executor. This default behaviour might work well for other tasks, but isn't an ideal fit for maximizing cluster utilization when training networks with Deeplearning4j.
+
+Deep learning is computationally intensive, and hence the amount of computation per input DataSet object is relatively high. Furthermore, during Spark training, DL4J ensures there is exactly one task (partition) per executor. Consequently, we are always better off immediately transferring data to a free executor, rather than waiting for another executor to become free. The computation time will outweigh any network transfer time.
+The way we can instruct Spark to do this is to add ```--conf spark.locality.wait=0``` to our Spark submit configuration.
+
+For more details, see the [Spark Tuning Guide - Data Locality](http://spark.apache.org/docs/latest/tuning.html#data-locality) and [Spark Configuration Guide](http://spark.apache.org/docs/1.6.2/configuration.html#scheduling).
+
+
+## <a name="caching">Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;</a>
+
+Spark has some quirks regarding how it handles Java objects with large off-heap components, such as the DataSet and INDArray objects used in Deeplearning4j. This section explains the issues related to caching/persisting these objects.
+
+The key points to know about are:
+
+* ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence can be problematic with off-heap memory, due to Spark not properly estimating the size of objects in the RDD. This can lead to out of memory issues.
+* When persisting a ```RDD<DataSet>``` or ```RDD<INDArray>``` for re-use, use ```MEMORY_ONLY_SER``` or ```MEMORY_AND_DISK_SER```
+* As of Deeplearning4j 0.5.1 and later, by default the training data (```RDD<DataSet>```) will be exported to disk first (this improves performance, especially for large training sets); it is neither necessary nor recommended to manually persist/cache your training data RDDs. (This behaviour is configurable using the rddTrainingApproach configuration option).
+
+### Why MEMORY_ONLY_SER or MEMORY_AND_DISK_SER Are Recommended
+
+One of the way that Apache Spark improves performance is by allowing users to cache data in memory. This can be done using the ```RDD.cache()``` or ```RDD.persist(StorageLevel.MEMORY_ONLY())``` to store the contents in-memory, in deserialized (i.e., standard Java object) form.
+The basic idea is simple: if you persist a RDD, you can re-use it from memory (or disk, depending on configuration) without having to recalculate it. However, large RDDs may not entirely fit into memory. In this case, some parts of the RDD have to be recomputed or loaded from disk, depending on the storage level used. Furthermore, to avoid using too much memory, Spark will drop parts (blocks) of an RDD when required.
+
+The main storage levels available in Spark are listed below. For an explanation of  these, see the [Spark Programming Guide](https://spark.apache.org/docs/1.6.2/programming-guide.html#rdd-persistence).
+
+* MEMORY_ONLY
+* MEMORY_AND_DISK
+* MEMORY_ONLY_SER
+* MEMORY_AND_DISK_SER
+* DISK_ONLY
+
+The problem with Spark is how it handles memory. In particular, Spark will drop part of an RDD (a block) based on the estimated size of that block. The way Spark estimates the size of a block depends on the persistence level. For ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, this is done by walking the Java object graph - i.e., look at the fields in an object and recursively estimate the size of those objects. This process does not however take into account the off-heap memory used by Deeplearning4j or ND4J. For objects like DataSets and INDArrays (which are stored almost entirely off-heap), Spark significantly under-estimates the true size of the objects using this process. Furthermore, Spark considers only the amount of on-heap memory use when deciding whether to keep or drop blocks. Because DataSet and INDArray objects have a very small on-heap size, Spark will keep too many of them around with ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, resulting in off-heap memory being exhausted, causing out of memory issues.
+
+However, for ```MEMORY_ONLY_SER``` and ```MEMORY_AND_DISK_SER``` Spark stores blocks in *serialized* form, on the Java heap. The size of objects stored in serialized form can be estimated accurately by Spark (there is no off-heap memory component for the serialized objects) and consequently Spark will drop blocks when required - avoiding any out of memory issues.
+
 
 
 ## <a name="kryo">Using Kryo Serialization with Deeplearning4j</a>
