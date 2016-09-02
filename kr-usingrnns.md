@@ -114,7 +114,7 @@ DL4J 사용시 패딩 배열은 데이터를 import하는 단계에서 생성됩
 
 DL4J에서는 RNNs층과 다른 유형의 층을 결합하는 것이 가능합니다. 예를 들어 `GravesLSTM`과 `DenseLayer`를 연결할 수 있습니다. 비디오 데이터가 들어오는 경우엔 컨볼루션 층(Convolutional layer)과 `GravesLSTM`를 결합할 수 있습니다.
 
-이렇게 여러 층을 결합한 신경망이 잘 작동하게 하려면 데이터를 전처리해야합니다. 예를 들어 `CnnToRnnPreProcessor`,  `FeedForwardToRnnPreprocessor`를 이용할 수 있습니다. 전처리기 목록은 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)에 정리되어있습니다. 대부분의 경우 DL4J는 자동으로 이 전처리기를 추가합니다. 아래의 코드를 참고하면 직접 전처리기를 추가할 수 있습니다. 이 예제는 층 1과 2 사이에 전처리기를 추가하는 코드입니다.
+이렇게 여러 층을 결합한 신경망이 잘 작동하게 하려면 데이터를 전처리해야합니다. 예를 들어 `CnnToRnnPreProcessor`,  `FeedForwardToRnnPreprocessor`를 이용할 수 있습니다. 전처리기 목록은 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)에 정리되어있습니다. 대부분의 경우 DL4J는 자동으로 이 전처리기를 추가합니다. 아래의 코드를 참고하면 직접 전처리기를 추가할 수 있습니다. 이 예제는 층 1과 2 사이에 전처리기를 추가하는 코드입니다.
 
 		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor()).
 		
@@ -174,7 +174,7 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 일대다, 다대일 등 다양한 구성때문에 시계열 데이터도 다양한 종류가 필요합니다. 이제부터 DL4J에서 어떻게 데이터를 불러오는지 다루겠습니다.
 
-여기에서는 DL4J의 `SequenceRecordReaderDataSetIterator`와 Canova의 `CSVSequenceRecordReader`를 사용하는 방법을 설명하려고 합니다. 이 방법은 시계열 데이터마다 별도의 파일로 저장된 CSV 포맷에서 데이터를 불러올 수 있습니다.
+여기에서는 DL4J의 `SequenceRecordReaderDataSetIterator`와 DataVec의 `CSVSequenceRecordReader`를 사용하는 방법을 설명하려고 합니다. 이 방법은 시계열 데이터마다 별도의 파일로 저장된 CSV 포맷에서 데이터를 불러올 수 있습니다.
 아래와 같은 경우에 사용이 가능합니다.
 
 * 가변 길이 시계열 입력
@@ -184,13 +184,13 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 항상 데이터 파일의 각 줄(line)이 시간 단계 하나에 해당한다는 것을 유의하시기 바랍니다.
 
-(아래의 예제와 별도로 [이 테스트 코드](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetiteratorTest.java)를 참고하셔도 좋습니다.)
+(아래의 예제와 별도로 [이 테스트 코드](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetiteratorTest.java)를 참고하셔도 좋습니다.)
 
 #### 예제 1: 동일한 길이의 시계열 입력/라벨이 별도의 파일에 저장된 경우
 
 10개의 시계열 데이터로 이루어진 학습 데이터가 있다고 가정해봅시다. 즉 입력 데이터가 10개, 출력 데이터가 10개로 총 20개의 파일이 있는 경우입니다. 그리고 각 시계열 데이터는 같은 수의 시간 단계로 이루어져 있습니다. 다시 말해 행의 수가 같습니다.
 
-[SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/SequenceRecordReaderDataSetIterator.java) 와 [CSVSequenceRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVSequenceRecordReader.java)를 사용하려면 우선 입력과 출력을 위해 두 개의 `CSVSequenceRecordReader` 인스턴스를 생성합니다.
+[SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/SequenceRecordReaderDataSetIterator.java) 와 [CSVSequenceRecordReader](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java)를 사용하려면 우선 입력과 출력을 위해 두 개의 `CSVSequenceRecordReader` 인스턴스를 생성합니다.
 
 		SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ","); 
 		SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -198,7 +198,7 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 입력 변수를 보면 `1`은 데이터 파일의 맨 위 한 줄을 무시한다는 의미이고 우리가 읽어올 데이터가 콤마로 나뉘어져 있다는 것을 알려줍니다. 
 
 이제 이 두 인스턴스를 초기화해야합니다. 여기에서 초기화는 파일의 위치를 지정해주는 과정인데, `InputSplit` 객체를 사용하겠습니다. 
-파일의 이름 포맷이 `myInput_%d.csv`, `myLabels_%d.csv`라고 가정하겠습니다. [NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java)를 쓰면 아래와 같습니다. 
+파일의 이름 포맷이 `myInput_%d.csv`, `myLabels_%d.csv`라고 가정하겠습니다. [NumberedFileInputSplit](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/split/NumberedFileInputSplit.java)를 쓰면 아래와 같습니다. 
 
 		featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9)); 
 		labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9)); 
@@ -283,16 +283,16 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 ![Sequence Alignment](./img/rnn_seq_alignment_2.png)
 
 #### 다른 방법: 사용자 정의 DataSetIterator 구현하기
-지금까지는 미리 구현된 클래스를 이용하는 방법을 알아봤습니다. 더 복잡한 기능이 필요한 경우엔 직접 [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)를 구현하는 방법이 있습니다. 간단히 말하면 `DataSetIterator`는 `DataSet` 객체를 반복 처리하는 인터페이스일 뿐 입니다.
+지금까지는 미리 구현된 클래스를 이용하는 방법을 알아봤습니다. 더 복잡한 기능이 필요한 경우엔 직접 [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)를 구현하는 방법이 있습니다. 간단히 말하면 `DataSetIterator`는 `DataSet` 객체를 반복 처리하는 인터페이스일 뿐 입니다.
 
 하지만 이 방법은 상당히 로우레벨의 작업입니다. `DataSetIterator`를 구현하려면 직접 입력/레이블의 마스크 어레이를 구현하고 적합한 `INDArrays`를 생성해야합니다. 물론, 그 대신에 데이터를 정확히 어떻게 불러오고 사용하는지를 이해할 수 있고 더 다양한 학습 상황을 구현할 수 있습니다.
 
-[tex/character 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)와 [Word2Vec move review sentiment 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)에서 사용하는 iterator를 참고하시기 바랍니다. 
+[tex/character 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/CharacterIterator.java)와 [Word2Vec move review sentiment 예제](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/SentimentExampleIterator.java)에서 사용하는 iterator를 참고하시기 바랍니다. 
 
 ## <a name="examples">예제</a>
 
 DL4J는 현재 세 가지 RNNs 예제를 제공합니다.
 
-* [글자(character) 모델링 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java)로, 셰익스피어의 작품을 글자(character) 기반으로 학습하고 생성합니다.
-* [간단한 비디오 프레임 분류 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java)로, 비디오 (.mp4 형식)를 불러와서 각 프레임의 객체를 분류합니다.
-* [Word2vec 시퀀스 분류 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java)는 영화 리뷰를 긍정적/부정적 리뷰로 분류하는 예제이며 사전에 학습된 단어 벡터와 RNNs을 사용합니다.
+* [글자(character) 모델링 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)로, 셰익스피어의 작품을 글자(character) 기반으로 학습하고 생성합니다.
+* [간단한 비디오 프레임 분류 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)로, 비디오 (.mp4 형식)를 불러와서 각 프레임의 객체를 분류합니다.
+* [Word2vec 시퀀스 분류 예제](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)는 영화 리뷰를 긍정적/부정적 리뷰로 분류하는 예제이며 사전에 학습된 단어 벡터와 RNNs을 사용합니다.
