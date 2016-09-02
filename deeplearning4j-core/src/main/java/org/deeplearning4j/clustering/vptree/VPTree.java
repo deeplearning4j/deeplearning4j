@@ -59,9 +59,11 @@ public class VPTree {
         for(int i = 0; i < items.slices(); i++)
             thisItems.add(new DataPoint(i,items.slice(i),this.similarityFunction,invert));
         this.items = thisItems;
+        final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public double count(DataPoint v1, DataPoint v2) {
+                Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
         });
