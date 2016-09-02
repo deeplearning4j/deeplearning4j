@@ -273,7 +273,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param height Input image height
          * @param width Input image width
          * @param depth Input image depth / number of channels (for example: 3 for color, 1 for grayscale etc)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional()}
+         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
+         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
+         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
          */
         @Deprecated
         public Builder cnnInputSize(int height, int width, int depth){
@@ -283,7 +285,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         /** CNN input size, in order of {height,width,depth}.
          * @see #cnnInputSize(int, int, int)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional()}
+         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
+         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
+         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
          */
         @Deprecated
         public Builder cnnInputSize(int[] cnnInputSize){
