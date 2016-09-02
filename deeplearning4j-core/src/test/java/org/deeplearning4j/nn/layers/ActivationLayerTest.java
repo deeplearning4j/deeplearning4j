@@ -186,7 +186,7 @@ public class ActivationLayerTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);

@@ -385,13 +385,28 @@ public class TestPreProcessors {
                         .nOut(10).kernelSize(5, 5).stride(1, 1).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
                 .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
-        //Expect preprocessors: 0: FF->CNN, 1: CNN->FF; 2: FF->RNN
+        //Expect preprocessors: 0: FF->CNN; 1: CNN->FF; 2: FF->RNN
         assertEquals(3, conf2.getInputPreProcessors().size());
         assertTrue(conf2.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
         assertTrue(conf2.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
         assertTrue(conf2.getInputPreProcess(2) instanceof FeedForwardToRnnPreProcessor);
+
+        //CNN-> FF, FF->RNN - InputType.convolutional instead of convolutionalFlat
+        MultiLayerConfiguration conf2a = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder()
+                        .nOut(10).kernelSize(5, 5).stride(1, 1).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
+                .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
+                .setInputType(InputType.convolutional(28,28,1))
+                .build();
+        //Expect preprocessors: 1: CNN->FF; 2: FF->RNN
+        assertEquals(2, conf2a.getInputPreProcessors().size());
+        assertTrue(conf2a.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2a.getInputPreProcess(2) instanceof FeedForwardToRnnPreProcessor);
+
 
         //FF->CNN and CNN->RNN:
         MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder()
@@ -400,7 +415,7 @@ public class TestPreProcessors {
                         .nOut(10).kernelSize(5, 5).stride(1, 1).build())
                 .layer(1, new GravesLSTM.Builder().nOut(6).build())
                 .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
         assertEquals(2, conf3.getInputPreProcessors().size());

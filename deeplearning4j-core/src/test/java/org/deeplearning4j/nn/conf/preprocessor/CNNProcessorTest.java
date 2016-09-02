@@ -249,7 +249,6 @@ public class CNNProcessorTest {
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(20)
                         .nOut(10)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
