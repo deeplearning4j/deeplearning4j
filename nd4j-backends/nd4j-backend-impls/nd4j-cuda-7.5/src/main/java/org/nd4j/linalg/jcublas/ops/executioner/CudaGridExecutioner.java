@@ -243,6 +243,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(true);
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(true);
 
+        if (descriptor.getOp().y() != null)
+            AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(true);
+
         lastOp.set(descriptor);
     }
 
@@ -250,6 +253,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(false);
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(false);
+
+        if (descriptor.getOp().y() != null)
+            AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(false);
     }
 
     protected MetaType getMetaOpType(Op op, int... dimension) {

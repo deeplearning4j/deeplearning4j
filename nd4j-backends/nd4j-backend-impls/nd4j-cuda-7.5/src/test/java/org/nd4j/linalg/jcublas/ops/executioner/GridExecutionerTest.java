@@ -749,4 +749,30 @@ public class GridExecutionerTest {
         assertEquals(true, point2.isActualOnDeviceSide());
         assertEquals(true, point2.isActualOnHostSide());
     }
+
+    @Test
+    public void testDupLocality3() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f});
+        INDArray exp1 = Nd4j.create(new float[]{0f, 1f, 1f, 1f, 1f});
+        INDArray exp2 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f});
+        INDArray array2 = array1.dup();
+
+
+        AllocationPoint point1 = AtomicAllocator.getInstance().getAllocationPoint(array1);
+        AllocationPoint point2 = AtomicAllocator.getInstance().getAllocationPoint(array2);
+        assertTrue(point1.isActualOnDeviceSide());
+        assertTrue(point2.isActualOnDeviceSide());
+
+        assertTrue(point1.isEnqueued());
+        assertTrue(point2.isEnqueued());
+
+        array1.putScalar(0, 0f);
+
+        assertEquals(0, ((GridExecutioner)Nd4j.getExecutioner()).getQueueLength());
+
+        assertFalse(point1.isActualOnDeviceSide());
+
+        assertEquals(exp1, array1);
+        assertEquals(exp2, array2);
+    }
 }
