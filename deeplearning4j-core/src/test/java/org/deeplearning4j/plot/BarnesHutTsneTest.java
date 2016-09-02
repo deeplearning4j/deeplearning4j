@@ -21,7 +21,7 @@ package org.deeplearning4j.plot;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.jita.conf.CudaEnvironment;
+//import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 public class BarnesHutTsneTest {
     @Before
     public void setUp() {
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
+     //   CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
 
     }
 
