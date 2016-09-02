@@ -114,7 +114,7 @@ Score calculation will also make use of the mask arrays, via the MultiLayerNetwo
 
 RNN layers in DL4J can be combined with other layer types. For example, it is possible to combine DenseLayer and GravesLSTM layers in the same network; or combine Convolutional (CNN) layers and GravesLSTM layers for video.
 
-Of course, the DenseLayer and Convolutional layers do not handle time series data - they expect a different  type of input. To deal with this, we need to use the layer preprocessor functionality: for example, the CnnToRnnPreProcessor and FeedForwardToRnnPreprocessor classes. See [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor) for all preprocessors. Fortunately, in most situations, the DL4J configuration system will automatically add these preprocessors as required. However, the preprocessors can be added manually (overriding the automatic addition of preprocessors, for each layer).
+Of course, the DenseLayer and Convolutional layers do not handle time series data - they expect a different  type of input. To deal with this, we need to use the layer preprocessor functionality: for example, the CnnToRnnPreProcessor and FeedForwardToRnnPreprocessor classes. See [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) for all preprocessors. Fortunately, in most situations, the DL4J configuration system will automatically add these preprocessors as required. However, the preprocessors can be added manually (overriding the automatic addition of preprocessors, for each layer).
 
 For example, to manually add a preprocessor between layers 1 and 2, add the following to your network configuration: `.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`.
 
@@ -174,7 +174,7 @@ Some other points of note:
 
 Data import for RNNs is complicated by the fact that we have multiple different types of data we could want to use for RNNs: one-to-many, many-to-one, variable length time series, etc. This section will describe the currently implemented data import mechanisms for DL4J.
 
-The methods described here utilize the SequenceRecordReaderDataSetIterator class, in conjunction with the CSVSequenceRecordReader class from Canova. This approach currently allows you to load delimited (tab, comma, etc) data from files, where each time series is in a separate file.
+The methods described here utilize the SequenceRecordReaderDataSetIterator class, in conjunction with the CSVSequenceRecordReader class from DataVec. This approach currently allows you to load delimited (tab, comma, etc) data from files, where each time series is in a separate file.
 This method also supports:
 
 * Variable length time series input
@@ -184,13 +184,13 @@ This method also supports:
 
 Note that in all cases, each line in the data files represents one time step.
 
-(In addition to the examples below, you might find [these unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetiteratorTest.java) to be of some use.)
+(In addition to the examples below, you might find [these unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetiteratorTest.java) to be of some use.)
 
 #### Example 1: Time Series of Same Length, Input and Labels in Separate Files
 
 Suppose we have 10 time series in our training data, represented by 20 files: 10 files for the input of each time series, and 10 files for the output/labels. For now, assume these 20 files all contain the same number of time steps (i.e., same number of rows).
 
-To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
+To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
 
     SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
     SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -198,7 +198,7 @@ To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning
 This particular constructor takes the number of lines to skip (1 row skipped here), and the delimiter (comma character used here).
 
 Second, we need to initialize these two readers, by telling them where to get the data from. We do this with an InputSplit object.
-Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java):
+Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/deeplearning4j/datavec/blob/master/datavec-api/src/main/java/org/datavec/api/split/NumberedFileInputSplit.java):
 
     featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
     labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
@@ -287,7 +287,7 @@ In some cases, you will have to do something that doesn't fit into a typical dat
 
 Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded.
 
-For example of this approach in practice, see the the iterator for the [character example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
+For example of this approach in practice, see the the iterator for the [character example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/SentimentExampleIterator.java).
 
 **Note**: When creating a custom DataSetIterator, it is important that your data arrays - the input features, the labels, and any mask arrays - are created in 'f' (fortran) order. See the [ND4J user guide](http://nd4j.org/userguide.html#inmemory) for details on array orders. In practice, this means using the Nd4j.create methods that allow you to specify the array order: ```Nd4j.create(new int[]{numExamples, inputSize, timeSeriesLength},'f')```. Though 'c' order arrays will also work, performance will be reduced due to the need to copy the arrays to 'f' order first, for certain operations.
 
@@ -295,9 +295,9 @@ For example of this approach in practice, see the the iterator for the [characte
 
 ## <a name="examples">Examples</a>
 
-DL4J currently has the following [recurrent neural network examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent):
+DL4J currently has the following [recurrent neural network examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent):
 
-* A [character modelling example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
-* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
-* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
+* A [character modelling example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
+* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
+* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
 
