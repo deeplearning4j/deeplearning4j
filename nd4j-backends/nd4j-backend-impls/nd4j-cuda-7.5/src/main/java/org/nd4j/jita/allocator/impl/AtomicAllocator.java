@@ -584,7 +584,6 @@ public class AtomicAllocator implements Allocator {
 
         @Override
         public void run() {
-            if (1>0) return;
             while (true) {
                 GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
                 if (reference != null) {
