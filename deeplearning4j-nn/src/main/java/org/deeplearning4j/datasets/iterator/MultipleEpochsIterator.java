@@ -157,6 +157,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
         return iter.resetSupported();
     }
 
+    @Override
+    public boolean asyncSupported() {
+        return iter.asyncSupported();
+    }
+
     /**
      * Resets the iterator back to the beginning
      */
