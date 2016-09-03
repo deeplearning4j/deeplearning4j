@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_conversions.h>
+#include <op_boilerplate.h>
 #include <grid.h>
 //#include <sys/time.h>
 
@@ -204,7 +205,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
 
 	if (debug && verbose)
-		printf("numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared);
+		printf("Launch context: numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i], elementSize: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared, elementSize);
 
 	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block = 0;
@@ -229,7 +230,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	int max_active_blocks = shmemThreshold / nd4j::math::nd4j_max<int>(memory_limit, 1);
 
 	if (debug && verbose)
-		printf("MAB: [%i], memory_limit: [%i]\n", max_active_blocks, memory_limit);
+		printf("MAB: [%i], memory_floor: [%i], memory_limit: [%i], reductionPerBlock: [%i]\n", max_active_blocks, memory_floor, memory_limit, reduction_per_block);
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 
@@ -340,8 +341,7 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *tadShapeInfo, cud
 	dim3 launchDims = getBetterDimensions(deviceId, numTads, tadLength, xRank, funcAttr, dimensionLength, elementSize, reductionSize);
 
 	if ((debug && verbose ) ) { //|| launchDims.x == 1
-		printf("B xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.x: [%i], launchDims.y: [%i]\n", shape::length(xShapeInfo), numTads, tadLength, launchDims.x, launchDims.y);
-		//shape::printShapeInfo(xShapeInfo);
+		printf("Reduce LaunchParams: xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.x: [%i], launchDims.y: [%i], launchDims.z: [%i]\n", shape::length(xShapeInfo), numTads, tadLength, launchDims.x, launchDims.y, launchDims.z);
 	}
 
 	return launchDims;
@@ -927,9 +927,11 @@ void   NativeOps::execReduceDouble(
 
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
+
 
 	if (dimensionLength == 1) {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[32], dimensionLength, sizeof(double), 2);
+
 		reduceDouble1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
@@ -940,7 +942,10 @@ void   NativeOps::execReduceDouble(
 						dimensionPointer,
 						dimensionLength,
 						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[33], dimensionLength, sizeof(double), 2);
+
 		reduceDouble6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
@@ -951,7 +956,10 @@ void   NativeOps::execReduceDouble(
 						dimensionPointer,
 						dimensionLength,
 						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+
 	} else {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 2);
+
 		reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
 						xPointer,
@@ -1917,9 +1925,9 @@ float   NativeOps::execIndexReduceScalarHalf(
 		Nd4jPointer x,
 		Nd4jPointer xShapeInfo,
 		Nd4jPointer extraParams){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	if (debug && verbose)
 		printf("H1 opNum:[%i]\n", opNum);
@@ -1935,11 +1943,11 @@ float   NativeOps::execIndexReduceScalarHalf(
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
+	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], 1, sizeof(nd4j::float16), 2);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], 1, sizeof(float16), 2);
 
 	if (debug && verbose && launchDims.x == 1)
 		printf("AH1 opNum:[%i]\n", opNum);
@@ -2037,10 +2045,10 @@ void   NativeOps::execIndexReduceHalf(
 		Nd4jPointer resultShapeInfoBuffer,
 		Nd4jPointer dimension,
 		int dimensionLength){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 
@@ -2059,9 +2067,9 @@ void   NativeOps::execIndexReduceHalf(
 
 	// dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], dimensionLength, sizeof(nd4j::float16), 2);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], dimensionLength, sizeof(float16), 2);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH2 opNum:[%i]\n", opNum);
@@ -2188,11 +2196,11 @@ void   NativeOps::execBroadcastHalf(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension, int dimensionLength){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 
@@ -2213,7 +2221,7 @@ void   NativeOps::execBroadcastHalf(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[getDeviceId(extraPointers[2])]);
 
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(nd4j::float16), 0);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float16), 0);
 
 	broadcastHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2302,10 +2310,10 @@ void   NativeOps::execPairwiseTransformHalf(
 		Nd4jPointer result,
 		int resultStride,
 		Nd4jPointer extraParams, Nd4jIndex n){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2432,13 +2440,13 @@ void NativeOps::execPairwiseTransformHalf(
 		Nd4jPointer xIndexes,
 		Nd4jPointer yIndexes,
 		Nd4jPointer resultIndexes){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
 	int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
 	int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
@@ -2459,7 +2467,7 @@ void NativeOps::execPairwiseTransformHalf(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[10], 1, sizeof(nd4j::float16), 0);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[10], 1, sizeof(float16), 0);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH5 opNum:[%i]\n", opNum);
@@ -2559,13 +2567,13 @@ void NativeOps::execPairwiseTransformHalf(
 		Nd4jPointer result,
 		Nd4jPointer  resultShapeInfo,
 		Nd4jPointer extraParams){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2666,11 +2674,11 @@ void   NativeOps::execReduceHalf(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2682,9 +2690,9 @@ void   NativeOps::execReduceHalf(
 	if (debug && verbose)
 		printf("H7 opNum:[%i]\n", opNum);
 
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, sizeof(nd4j::float16), 1);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, sizeof(float16), 1);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH7 opNum:[%i]\n", opNum);
@@ -2799,11 +2807,11 @@ void   NativeOps::execReduceHalf(
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer dimension,int dimensionLength){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -2820,9 +2828,9 @@ void   NativeOps::execReduceHalf(
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
 
 
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(nd4j::float16), 1);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float16), 1);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH8 opNum:[%i]\n", opNum);
@@ -2910,6 +2918,8 @@ float NativeOps::execReduceScalarFloat(
 
     //printf("Launch params: {x: %i, y: %i, z: %i}\n", launchDims.x,launchDims.y, launchDims.z);
 
+	//printf("reduceScalarFloat is going to start...\n");
+
 	reduceScalarFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -2921,6 +2931,8 @@ float NativeOps::execReduceScalarFloat(
 			1,
 			reductionPointer, deviceTADShapeInfo
 	);
+
+	//printf("kernel fired...\n");
 
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2935,9 +2947,9 @@ float NativeOps::execReduceScalarHalf(
 		Nd4jPointer x,
 		Nd4jPointer xShapeInfo,
 		Nd4jPointer extraParams){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2950,8 +2962,8 @@ float NativeOps::execReduceScalarHalf(
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
 
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 2, funcAttributes[8]);
@@ -3056,13 +3068,13 @@ void   NativeOps::execReduce3Half(
 		Nd4jPointer yShapeInfo,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParamsVals);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParamsVals);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -3077,7 +3089,7 @@ void   NativeOps::execReduce3Half(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+    float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfoPointer);
@@ -3177,11 +3189,11 @@ float   NativeOps::execReduce3ScalarHalf(
 		Nd4jPointer extraParamsVals,
 		Nd4jPointer y,
 		Nd4jPointer yShapeInfo) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParamsVals);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParamsVals);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -3194,8 +3206,8 @@ float   NativeOps::execReduce3ScalarHalf(
 	if (debug && verbose)
 		printf("H11 opNum:[%i]\n", opNum);
 
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
-    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
+    float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[7]);
@@ -3323,13 +3335,13 @@ void   NativeOps::execReduce3Half(
 		Nd4jPointer resultShapeInfoBuffer,
 		Nd4jPointer dimension,
 		int dimensionLength){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(y);
+	float16 *yPointer = reinterpret_cast<float16 *>(y);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParamsVals);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParamsVals);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -3347,7 +3359,7 @@ void   NativeOps::execReduce3Half(
 		printf("H12 opNum:[%i]\n", opNum);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-    nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+    float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 8, funcAttributes[7]);
 
@@ -3503,10 +3515,10 @@ void NativeOps::execScalarHalf(
 		Nd4jPointer resultShapeInfo,
 		float scalar,
 		Nd4jPointer extraParams){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -3661,9 +3673,9 @@ float   NativeOps::execSummaryStatsScalarHalf(
 		Nd4jPointer x,
 		Nd4jPointer xShapeInfo,
 		Nd4jPointer extraParams,bool biasCorrected){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -3677,13 +3689,13 @@ float   NativeOps::execSummaryStatsScalarHalf(
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[5]);
+	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(nd4j::float16), 8);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float16), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH16 opNum:[%i]\n", opNum);
@@ -3775,11 +3787,11 @@ void   NativeOps::execSummaryStatsHalf(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,bool biasCorrected){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -3796,9 +3808,9 @@ void   NativeOps::execSummaryStatsHalf(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(nd4j::float16), 8);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float16), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH17 opNum:[%i]\n", opNum);
@@ -3895,11 +3907,11 @@ void   NativeOps::execSummaryStatsHalf(
 		Nd4jPointer resultShapeInfoBuffer,
 		Nd4jPointer dimension,
 		int dimensionLength,bool biasCorrected){
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(x);
+	float16 *xPointer = reinterpret_cast<float16 *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -3916,9 +3928,9 @@ void   NativeOps::execSummaryStatsHalf(
 	//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], dimensionLength, sizeof(nd4j::float16), 8);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], dimensionLength, sizeof(float16), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AH18 opNum:[%i]\n", opNum);
@@ -4002,9 +4014,9 @@ void   NativeOps::execTransformHalf(
 		int resultStride,
 		Nd4jPointer extraParams,
 		Nd4jIndex n) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -4016,7 +4028,7 @@ void   NativeOps::execTransformHalf(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[2], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[2]);
 
@@ -4283,10 +4295,10 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 									 Nd4jPointer result,
 									 Nd4jPointer resultShapeInfo,
 									 Nd4jPointer extraParams) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -4300,15 +4312,15 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	// special pointer for special buffer for special ops
-	nd4j::float16 *specialPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[6]);
+	float16 *specialPointer = reinterpret_cast<float16 *>(extraPointers[6]);
 
 	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
 	int *maxShapeBuffer = (int *) maxDimension + 1;
-	nd4j::float16 * special = (nd4j::float16 *) maxShapeBuffer + (MAX_RANK * 2 + 4);
+	float16 * special = (float16 *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[1]);
 
@@ -4579,10 +4591,10 @@ void   NativeOps::execTransformHalf(
 		Nd4jPointer extraParams,
 		Nd4jPointer xIndexes,
 		Nd4jPointer resultIndexes) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(dx);
+	float16 *xPointer = reinterpret_cast<float16 *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-	nd4j::float16 *resultPointer = reinterpret_cast<nd4j::float16 *>(result);
-	nd4j::float16 *extraParamsPointer = reinterpret_cast<nd4j::float16 *>(extraParams);
+	float16 *resultPointer = reinterpret_cast<float16 *>(result);
+	float16 *extraParamsPointer = reinterpret_cast<float16 *>(extraParams);
 	int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -4593,7 +4605,7 @@ void   NativeOps::execTransformHalf(
 		printf("H21 opNum:[%i]\n", opNum);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-	nd4j::float16 *reductionPointer = reinterpret_cast<nd4j::float16 *>(extraPointers[4]);
+	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[0]);
 
@@ -4744,12 +4756,12 @@ extern "C" __global__ void flattenKernelFloat(int offset,
 
 extern "C" __global__ void flattenKernelHalf(int offset,
 											  char order,
-											  nd4j::float16 *result,
+											  float16 *result,
 											  int *resultShapeInfo,
-											  nd4j::float16 *input,
+											  float16 *input,
 											  int *inputShapeInfo, int *allocationPointer) {
 
-	flattenKernelGeneric<nd4j::float16>(
+	flattenKernelGeneric<float16>(
 			offset,
 			order,
 			result,
@@ -4814,9 +4826,9 @@ void NativeOps::flattenHalf(
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer input,
 		Nd4jPointer inputShapeInfo) {
-	nd4j::float16 *xPointer = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *xPointer = reinterpret_cast<float16 *>(result);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-	nd4j::float16 *yPointer = reinterpret_cast<nd4j::float16 *>(input);
+	float16 *yPointer = reinterpret_cast<float16 *>(input);
 	int *yShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -5490,7 +5502,7 @@ void NativeOps::concatHalf(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	nd4j::float16 *resultData = reinterpret_cast<nd4j::float16 *>(result);
+	float16 *resultData = reinterpret_cast<float16 *>(result);
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
@@ -5729,8 +5741,8 @@ void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPoin
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    nd4j::float16 *xBuffer = reinterpret_cast<nd4j::float16 *>(x);
-    nd4j::float16 *zBuffer = reinterpret_cast<nd4j::float16 *>(z);
+    float16 *xBuffer = reinterpret_cast<float16 *>(x);
+    float16 *zBuffer = reinterpret_cast<float16 *>(z);
     int *zShape = reinterpret_cast<int *>(zShapeInfo);
     int *xShape = reinterpret_cast<int *>(xShapeInfo);
 
@@ -5788,13 +5800,13 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jPo
 void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer dz, int n, Nd4jIndex length, bool propagate) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
-    nd4j::float16 **x = reinterpret_cast<nd4j::float16 **>(dx);
-    nd4j::float16 *z = reinterpret_cast<nd4j::float16 *>(dz);
+    float16 **x = reinterpret_cast<float16 **>(dx);
+    float16 *z = reinterpret_cast<float16 *>(dz);
 
     if (debug && verbose)
         printf("averageHalf called\n");
 
-    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(nd4j::float16), funcAttributes[44]);
+    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float16), funcAttributes[44]);
 
     averagingKernelHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, z, n, length, propagate);
 
@@ -5871,8 +5883,8 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xS
 void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, int N, Nd4jPointer shuffleMap, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
-    nd4j::float16 **x = reinterpret_cast<nd4j::float16 **>(dx);
-    nd4j::float16 **z = reinterpret_cast<nd4j::float16 **>(dz);
+    float16 **x = reinterpret_cast<float16 **>(dx);
+    float16 **z = reinterpret_cast<float16 **>(dz);
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
     int **zShape = reinterpret_cast<int **>(zShapeInfo);
     int *shuffle = reinterpret_cast<int *>(shuffleMap);
@@ -5895,7 +5907,57 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
     float *extrasA = reinterpret_cast<float *> (extraA);
     float *extrasB = reinterpret_cast<float *> (extraB);
 
-    metaPredicateStridedFloat<<<128, 128, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+//    metaPredicateStridedFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+	if (opTypeA == 2) {
+		if (opTypeB == 0) {
+			DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+		}
+	}
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    double *x = reinterpret_cast<double *> (dx);
+    double *y = reinterpret_cast<double *> (dy);
+    double *z = reinterpret_cast<double *> (dz);
+
+    double *extrasA = reinterpret_cast<double *> (extraA);
+    double *extrasB = reinterpret_cast<double *> (extraB);
+
+//    metaPredicateStridedDouble<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float16 *x = reinterpret_cast<float16 *> (dx);
+    float16 *y = reinterpret_cast<float16 *> (dy);
+    float16 *z = reinterpret_cast<float16 *> (dz);
+
+    float16 *extrasA = reinterpret_cast<float16 *> (extraA);
+    float16 *extrasB = reinterpret_cast<float16 *> (extraB);
+
+//    metaPredicateStridedHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB);
+
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xStride, y, yStride, z, zStride, extrasA, extrasB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5928,8 +5990,61 @@ void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTy
 float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets, float *reductionBuffer, float *extraA, float *extraB, float scalarA, float scalarB) {
  */
 
-    metaPredicateReduceFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
+//    metaPredicateReduceFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, x, xShape, y, yShape, z, zShape, dim, dimensionLength, tadShape, tadOffset, nullptr, extrasA, extrasB, scalarA, scalarB, scalarReturned);
 
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+
+void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    // no-op;
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    double *x = reinterpret_cast<double *> (dx);
+    double *y = reinterpret_cast<double *> (dy);
+    double *z = reinterpret_cast<double *> (dz);
+
+    int *xShape = reinterpret_cast<int *> (xShapeInfo);
+    int *yShape = reinterpret_cast<int *> (yShapeInfo);
+    int *zShape = reinterpret_cast<int *> (zShapeInfo);
+
+    double *extrasA = reinterpret_cast<double *> (extraA);
+    double *extrasB = reinterpret_cast<double *> (extraB);
+
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+        }
+    }
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    float16 *x = reinterpret_cast<float16 *> (dx);
+    float16 *y = reinterpret_cast<float16 *> (dy);
+    float16 *z = reinterpret_cast<float16 *> (dz);
+
+    int *xShape = reinterpret_cast<int *> (xShapeInfo);
+    int *yShape = reinterpret_cast<int *> (yShapeInfo);
+    int *zShape = reinterpret_cast<int *> (zShapeInfo);
+
+    float16 *extrasA = reinterpret_cast<float16 *> (extraA);
+    float16 *extrasB = reinterpret_cast<float16 *> (extraB);
+
+	if (opTypeA == 2) {
+		if (opTypeB == 0) {
+			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+		}
+	}
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -5950,7 +6065,13 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
     float *extrasA = reinterpret_cast<float *> (extraA);
     float *extrasB = reinterpret_cast<float *> (extraB);
 
-    metaPredicateShapeFloat<<<128, 128, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB);
+    if (opTypeA == 2) {
+        if (opTypeB == 0) {
+            DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+
+//            if(false){} else if(opNumA == 0 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 0){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_0_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 1){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_1_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 2){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_2_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 3){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_3_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 4){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_4_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 5){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_5_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 6){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_6_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 7){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_7_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 8){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_8_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 9){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_9_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 10){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_10_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 11){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_11_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 12){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_12_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 13){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_13_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 14){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_14_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 15){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_15_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 0 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_0_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 1 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_1_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 2 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_2_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 3 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_3_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 4 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_4_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 5 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_5_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 6 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_6_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 7 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_7_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 8 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_8_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 9 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_9_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 10 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_10_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 11 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_11_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 12 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_12_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 13 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_13_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 14 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_14_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 15 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_15_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 16 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_16_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 17 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_17_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 45 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_45_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); }else if(opNumA == 46 && opNumB == 16){ invertedMetaPairwiseShaped_Pairwise_Scalar_46_16_float <<<256, 256, 1024, *stream>>> (opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB); } else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNumA, "include/play.h", 71); };
+        }
+    }
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));

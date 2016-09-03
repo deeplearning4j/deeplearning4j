@@ -718,6 +718,7 @@ float   NativeOps::execIndexReduceScalarHalf(Nd4jPointer *extraPointers, int opN
                                               Nd4jPointer xShapeInfo,
                                               Nd4jPointer extraParams) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -1072,6 +1073,8 @@ float NativeOps::execReduceScalarHalf(
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams) {
     // no-op
+
+    return 0.0;
 }
 
 /**
@@ -1157,6 +1160,7 @@ float   NativeOps::execReduce3ScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                           Nd4jPointer y,
                                           Nd4jPointer yShapeInfo) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -1358,6 +1362,7 @@ float   NativeOps::execSummaryStatsScalarHalf(
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,bool biasCorrected) {
     // no-op
+    return 0.0;
 }
 
 /**
@@ -2482,7 +2487,7 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 #pragma omp parallel for if (N > 1)
     for (int f = 0; f < N; f++) {
         T *x = (T *) dX[f];
-        T *z = (T *) dZ[f];
+        //T *z = (T *) dZ[f];
 
         int *tadOffset = (int *) tadOffsets[f];
 
@@ -2505,10 +2510,6 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
             T *rX = x + oldOffset;
             T *rY = x + newOffset;
-
-            T *zX = z + oldOffset;
-            T *zY = z + newOffset;
-
 
             if (tadEWS == 1) {
 
@@ -2568,10 +2569,6 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer dx, Nd4jPointer xSh
     // no-op
 }
 
-void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
-    // no-op
-}
-
 void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer tadShapeInfo, Nd4jPointer tadOffsets, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB, bool scalarReturned) {
     // no-op
 }
@@ -2586,4 +2583,24 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
 
 void NativeOps::setOmpMinThreads(int threads) {
     // TODO: to be implemented
+}
+
+void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op
+}
+
+void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    // no-op;
+}
+
+void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, double scalarA, double scalarB) {
+    // no-op
+}
+
+void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, Nd4jPointer xShapeInfo, Nd4jPointer dy, Nd4jPointer yShapeInfo, Nd4jPointer dz, Nd4jPointer zShapeInfo, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op;
+}
+
+void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, long N, Nd4jPointer dx, int xStride, Nd4jPointer dy, int yStride, Nd4jPointer dz, int zStride, Nd4jPointer extraA, Nd4jPointer extraB, float scalarA, float scalarB) {
+    // no-op
 }

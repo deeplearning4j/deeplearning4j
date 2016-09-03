@@ -24,7 +24,7 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def __noinline__ __device__
+#define op_def inline __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -1549,8 +1549,9 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
-			T length = params[1];
+
 #ifdef __CUDACC__
+			T length = params[1];
             int tid = gridDim.x * blockDim.x + threadIdx.x;
             T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
@@ -1568,8 +1569,8 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
-			T length = params[1];
 #ifdef __CUDACC__
+			T length = params[1];
 			int tid = gridDim.x * blockDim.x + threadIdx.x;
             T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
@@ -1841,7 +1842,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // scalar, transform, reduce, indexreduce entry
-		meta_def static T op(T d1, T *params) {
+		op_def static T op(T d1, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -1850,7 +1851,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
         }
 
         // PWT, broadcast entry. Predicate can be only scalar, transform
-        meta_def static T op(T d1, T d2, T *params) {
+        op_def static T op(T d1, T d2, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
             T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -1863,7 +1864,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
          */
 
         // will be called for reduce, reduce3
-		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -1887,7 +1888,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T merge(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+//            T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::merge(old, opOutput, paramsB);
@@ -1895,7 +1896,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T update(T old, T opOutput, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+            //T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::update(old, opOutput, paramsB);
@@ -1911,7 +1912,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 
 		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
+//            T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);
 
             return OpTypeB::postProcess(reduction, n, paramsB);

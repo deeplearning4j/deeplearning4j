@@ -122,8 +122,8 @@ local_def half cpu_float2half_rn(float f)
     return ret;
 }
 
-namespace nd4j
-{
+//namespace nd4j
+//{
 
   struct float16
   {
@@ -267,6 +267,6 @@ namespace nd4j
 
   std::ostream& operator << (std::ostream& s, const float16&);
 
-}   // namespace caffe
+//}   // namespace caffe
 
 #endif

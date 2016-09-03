@@ -381,12 +381,12 @@ template<typename OpType>
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int nthreads, tid, start, end;
+                int tid, start, end;
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;
@@ -399,7 +399,7 @@ template<typename OpType>
                     }
                 } else {
 
-#pragma omp parallel num_threads(num_threads) private(nthreads, tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;
@@ -530,12 +530,12 @@ __global__ void transformFloat(
 __global__ void transformHalf(
 		int opNum,
 		Nd4jIndex n,
-		nd4j::float16 *dy,
+		float16 *dy,
 		int incy,
-		nd4j::float16 *params,
-		nd4j::float16 *result,int resultStride, int *allocationPointer, nd4j::float16 *reductionPointer) {
+		float16 *params,
+		float16 *result,int resultStride, int *allocationPointer, float16 *reductionPointer) {
 
-	transformGeneric<nd4j::float16>(
+	transformGeneric<float16>(
 			opNum,
 			n,
 			dy,
@@ -650,12 +650,12 @@ extern "C" __global__ void transformFloat(
 
 extern "C" __global__ void transformHalf(
 		int opNum,
-		nd4j::float16 *dy,
+		float16 *dy,
 		int *shapeInfo, int xRank,
-		nd4j::float16 *params,
-		nd4j::float16 *result,int *resultShapeInfo, int zRank, int *allocationPointer, nd4j::float16 *reductionPointer) {
+		float16 *params,
+		float16 *result,int *resultShapeInfo, int zRank, int *allocationPointer, float16 *reductionPointer) {
 
-	transformGeneric<nd4j::float16>(
+	transformGeneric<float16>(
 			opNum,
 			dy,
 			shapeInfo, xRank,
@@ -769,12 +769,12 @@ extern "C" __global__ void transformFloatIndexes(
 
 extern "C" __global__ void transformHalfIndexes(
 		int opNum,
-		nd4j::float16 *dy,
+		float16 *dy,
 		int *shapeInfo, int xRank,
-		nd4j::float16 *params,
-		nd4j::float16 *result,int *indexes, int *allocationPointer, nd4j::float16 *reductionPointer) {
+		float16 *params,
+		float16 *result,int *indexes, int *allocationPointer, float16 *reductionPointer) {
 
-	transformGenericIndexes<nd4j::float16>(
+	transformGenericIndexes<float16>(
 			opNum,
 			dy,
 			shapeInfo, xRank,
@@ -837,8 +837,8 @@ extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
     fillIsMaxGeneric<double>(dx, length, idx);
 }
 
-extern "C" __global__ void fillIsMaxHalf(nd4j::float16 *dx, long length, long idx) {
-    fillIsMaxGeneric<nd4j::float16>(dx, length, idx);
+extern "C" __global__ void fillIsMaxHalf(float16 *dx, long length, long idx) {
+    fillIsMaxGeneric<float16>(dx, length, idx);
 }
 
 template <typename T>
@@ -900,8 +900,8 @@ extern "C" __global__ void fillDimensionalIsMaxDouble(double *dx, int *xShapeInf
     fillDimensionalIsMaxGeneric<double>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
-extern "C" __global__ void fillDimensionalIsMaxHalf(nd4j::float16 *dx, int *xShapeInfo, nd4j::float16 *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
-    fillDimensionalIsMaxGeneric<nd4j::float16>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+extern "C" __global__ void fillDimensionalIsMaxHalf(float16 *dx, int *xShapeInfo, float16 *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
+    fillDimensionalIsMaxGeneric<float16>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
 template <typename T>
@@ -1127,10 +1127,10 @@ extern "C" __global__ void concatKernelScalarHalf(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  nd4j::float16 *result,
+											  float16 *result,
 											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-    concatKernelScalarGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+    concatKernelScalarGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 extern "C" __global__ void concatKernelScalarDouble(int dimension,
@@ -1217,10 +1217,10 @@ extern "C" __global__ void concatKernelHStackHalf(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  nd4j::float16 *result,
+											  float16 *result,
 											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-    concatKernelHStackGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+    concatKernelHStackGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 template <typename T>
@@ -1290,10 +1290,10 @@ extern "C" __global__ void concatKernelVStackHalf(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  nd4j::float16 *result,
+											  float16 *result,
 											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-    concatKernelVStackGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+    concatKernelVStackGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 
@@ -1319,9 +1319,9 @@ extern "C" __global__ void concatKernelHalf(int dimension,
 											 int numArrays,
 											 Nd4jPointer *data,
 											 Nd4jPointer *inputShapeInfo,
-											 nd4j::float16 *result,
+											 float16 *result,
 											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<nd4j::float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+	concatKernelGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 
@@ -1353,15 +1353,15 @@ __device__ void pullRowsKernelGeneric(T *x,
 }
 
 extern "C" __global__ void pullRowsKernelHalf(
-                                     nd4j::float16 *x,
+                                     float16 *x,
                                      int *xShapeInfo,
-                                     nd4j::float16 *z,
+                                     float16 *z,
                                      int *zShapeInfo,
                                      int n,
                                      int *indexes,
                                      int *tadShapeInfo,
                                      int *tadOffsets) {
-    pullRowsKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+    pullRowsKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
 }
 
 extern "C" __global__ void pullRowsKernelFloat(float *x,
@@ -1468,8 +1468,8 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
 }
 
 
-extern "C" __global__ void averagingKernelHalf(nd4j::float16 **dx, nd4j::float16 *dz, int n, Nd4jIndex length, bool propagate) {
-    averagingKernelGeneric<nd4j::float16>(dx, dz, n, length, propagate);
+extern "C" __global__ void averagingKernelHalf(float16 **dx, float16 *dz, int n, Nd4jIndex length, bool propagate) {
+    averagingKernelGeneric<float16>(dx, dz, n, length, propagate);
 }
 
 extern "C" __global__ void averagingKernelFloat(float **dx, float *dz, int n, Nd4jIndex length, bool propagate) {
@@ -1566,8 +1566,8 @@ extern "C" __global__ void shuffleKernelFloat(float **x, int **xShapeInfo, float
     shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void shuffleKernelHalf(nd4j::float16 **x, int **xShapeInfo, nd4j::float16 **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
-    shuffleKernelGeneric<nd4j::float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+extern "C" __global__ void shuffleKernelHalf(float16 **x, int **xShapeInfo, float16 **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+    shuffleKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
 #endif
