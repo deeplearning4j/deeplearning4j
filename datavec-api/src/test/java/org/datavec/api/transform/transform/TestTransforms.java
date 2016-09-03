@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.ColumnType;
@@ -26,10 +27,6 @@ import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
-import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
-import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
-import org.datavec.api.transform.transform.column.RenameColumnsTransform;
-import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
@@ -215,6 +212,29 @@ public class TestTransforms {
 
         assertEquals(Arrays.asList(new Text("one"), new IntWritable(1)),
                 transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"), new IntWritable(1), new LongWritable(1L))));
+    }
+
+    @Test
+    public void testRemoveAllColumnsExceptForTransform() {
+        Schema schema = new Schema.Builder()
+                .addColumnDouble("first")
+                .addColumnString("second")
+                .addColumnInteger("third")
+                .addColumnLong("fourth")
+                .build();
+
+        Transform transform = new RemoveAllColumnsExceptForTransform("second", "third");
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+
+        assertEquals(2, out.getColumnMetaData().size());
+        TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
+        TestCase.assertEquals(ColumnType.Integer, out.getMetaData(1).getColumnType());
+
+        assertEquals(Arrays.asList(new Text("one"), new IntWritable(1)),
+                transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"), new IntWritable(1), new LongWritable(1L))));
+
     }
 
     @Test
