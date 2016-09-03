@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -623,8 +622,8 @@ public class ComputationGraph implements Serializable, Model {
                     + " multiple inputs or outputs using a DataSetIterator");
 
         DataSetIterator dataSetIterator;
-        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
-        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
+        if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator, 2);
         } else dataSetIterator = iterator;
 
@@ -684,12 +683,12 @@ public class ComputationGraph implements Serializable, Model {
     /**
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
-    public void fit(MultiDataSetIterator multic) {
+    public void fit(MultiDataSetIterator multi) {
 
         MultiDataSetIterator multiDataSetIterator;
-        if (!(multic instanceof AsyncMultiDataSetIterator)) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 2);
-        } else multiDataSetIterator = multic;
+        if (multi.asyncSupported()) {
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, 2);
+        } else multiDataSetIterator = multi;
 
         if (configuration.isPretrain()) {
             pretrain(multiDataSetIterator);
