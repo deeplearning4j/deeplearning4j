@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -377,6 +378,9 @@ public class ParallelWrapper {
                 updater = ((ComputationGraph) replicatedModel).getUpdater();
                 updater.setStateViewArray(view.dup());
             }
+
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
 
         public boolean isRunning(){
@@ -407,6 +411,10 @@ public class ParallelWrapper {
                         } else if (replicatedModel instanceof ComputationGraph) {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
+
+                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
                         running.decrementAndGet();
                     }
                 }
