@@ -171,4 +171,42 @@ public class TestAnalysis extends BaseSparkTest {
         assertTrue(re3 < 1e-6);
     }
 
+
+    @Test
+    public void testSampleMostFrequent(){
+
+        List<List<Writable>> toParallelize = new ArrayList<>();
+        toParallelize.add(Arrays.<Writable>asList(new Text("a"), new Text("MostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("b"), new Text("SecondMostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("c"), new Text("SecondMostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("d"), new Text("0")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("e"), new Text("MostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("f"), new Text("ThirdMostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("c"), new Text("MostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("h"), new Text("1")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("i"), new Text("SecondMostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("j"), new Text("2")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("k"), new Text("ThirdMostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("l"), new Text("MostCommon")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("m"), new Text("3")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("n"), new Text("4")));
+        toParallelize.add(Arrays.<Writable>asList(new Text("o"), new Text("5")));
+
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(toParallelize);
+
+        Schema schema = new Schema.Builder()
+                .addColumnsString("irrelevant","column")
+                .build();
+
+        Map<Writable,Long> map = AnalyzeSpark.sampleMostFrequentFromColumn(3, "column", schema, rdd);
+
+        System.out.println(map);
+
+        assertEquals(3,map.size());
+        assertEquals(4L, (long)map.get(new Text("MostCommon")));
+        assertEquals(3L, (long)map.get(new Text("SecondMostCommon")));
+        assertEquals(2L, (long)map.get(new Text("ThirdMostCommon")));
+    }
+
 }
