@@ -31,7 +31,7 @@ Word2vec is a popular natural-language processing algorithm capable of creating 
 
 This tutorial shows you how a multilayer perceptron can be used as a linear classifier. 
 
-[Just show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)
+[Just show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)
 
 ### XOR Tutorial
 
