@@ -48,6 +48,37 @@ public abstract class BaseOp implements Op {
         return false;
     }
 
+    public static Type getOpType(Op op) {
+        Type type = null;
+
+        if (op instanceof TransformOp) {
+            if (op.y() == null) {
+                if (!op.isExecSpecial())
+                    type = Op.Type.TRANSFORM;
+                else
+                    type = Op.Type.SPECIAL;
+            } else {
+                type = Op.Type.PAIRWISE;
+            }
+        } else if (op instanceof Accumulation) {
+            if (op.y() == null)
+                type = Op.Type.REDUCE;
+            else type = Op.Type.REDUCE3;
+        } else if (op instanceof ScalarOp) {
+            type = Op.Type.SCALAR;
+        } else if(op instanceof BroadcastOp) {
+            type = Op.Type.BROADCAST;
+        } else if(op instanceof IndexAccumulation) {
+            type = Op.Type.INDEXREDUCE;
+        } else if (op instanceof MetaOp) {
+            type = Type.META;
+        } else if (op instanceof GridOp) {
+            type = Type.GRID;
+        }
+
+        return type;
+    }
+
 /*
     op instanceof Variance
     op instanceof CosineSimilarity

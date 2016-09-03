@@ -1196,4 +1196,106 @@ public class NativeOps extends Pointer {
     // type conversion
 
     public native void convertTypes(PointerPointer extras, int srcType, Pointer x, long N, int dstType, Pointer z);
+
+    public native boolean isExperimentalEnabled();
+
+    // GridOps
+
+
+
+    // MetaOps
+    public native void execMetaPredicateStridedFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                         long N,
+                                                         Pointer dx,
+                                                         int xStride,
+                                                         Pointer dy,
+                                                         int yStride,
+                                                         Pointer dz,
+                                                         int zStride,
+                                                         Pointer extraA,
+                                                         Pointer extraB,
+                                                         float scalarA,
+                                                         float scalarB);
+
+    public native void execMetaPredicateStridedDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                     long N,
+                                                     Pointer dx,
+                                                     int xStride,
+                                                     Pointer dy,
+                                                     int yStride,
+                                                     Pointer dz,
+                                                     int zStride,
+                                                     Pointer extraA,
+                                                     Pointer extraB,
+                                                     double scalarA,
+                                                     double scalarB);
+
+    public native void execMetaPredicateStridedHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                     long N,
+                                                     Pointer dx,
+                                                     int xStride,
+                                                     Pointer dy,
+                                                     int yStride,
+                                                     Pointer dz,
+                                                     int zStride,
+                                                     Pointer extraA,
+                                                     Pointer extraB,
+                                                     float scalarA,
+                                                     float scalarB);
+
+    public native void execMetaPredicateShapeFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                     long N,
+                                                     Pointer dx,
+                                                     Pointer xShape,
+                                                     Pointer dy,
+                                                     Pointer yShape,
+                                                     Pointer dz,
+                                                     Pointer zShape,
+                                                     Pointer extraA,
+                                                     Pointer extraB,
+                                                     float scalarA,
+                                                     float scalarB);
+
+    public native void execMetaPredicateShapeDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                   long N,
+                                                   Pointer dx,
+                                                   Pointer xShape,
+                                                   Pointer dy,
+                                                   Pointer yShape,
+                                                   Pointer dz,
+                                                   Pointer zShape,
+                                                   Pointer extraA,
+                                                   Pointer extraB,
+                                                   double scalarA,
+                                                   double scalarB);
+
+    public native void execMetaPredicateShapeHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                   long N,
+                                                   Pointer dx,
+                                                   Pointer xShape,
+                                                   Pointer dy,
+                                                   Pointer yShape,
+                                                   Pointer dz,
+                                                   Pointer zShape,
+                                                   Pointer extraA,
+                                                   Pointer extraB,
+                                                   float scalarA,
+                                                   float scalarB);
+
+    public native void execMetaPredicateReduceFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
+                                                    Pointer dx,
+                                                    Pointer xShapeInfo,
+                                                    Pointer dy,
+                                                    Pointer yShapeInfo,
+                                                    Pointer dz,
+                                                    Pointer zShapeInfo,
+                                                    Pointer dimension,
+                                                    int dimensionLength,
+                                                    Pointer tadShapeInfo,
+                                                    Pointer tadOffsets,
+                                                    Pointer extraA,
+                                                    Pointer extraB,
+                                                    float scalarA,
+                                                    float scalarB,
+                                                    boolean scalarReturned);
 }

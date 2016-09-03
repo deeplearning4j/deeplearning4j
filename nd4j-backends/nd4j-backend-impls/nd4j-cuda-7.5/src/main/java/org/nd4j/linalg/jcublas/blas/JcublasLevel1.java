@@ -11,15 +11,15 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner;
 import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +86,10 @@ public class JcublasLevel1 extends BaseLevel1 {
             logger.warn("FLOAT dot called");
 
         DataTypeValidation.assertSameDataType(X, Y);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
@@ -126,6 +130,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE dot called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         double ret;
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
@@ -182,6 +189,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float snrm2(int N, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT nrm2 called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
 
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
@@ -262,6 +272,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected double dnrm2(int N, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE nrm2 called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         double ret;
 
@@ -384,6 +397,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT iamax called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
@@ -414,6 +429,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected int idamax(int N, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE imax called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
@@ -457,6 +475,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT swap called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
@@ -481,6 +501,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT copy called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
@@ -513,7 +536,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT axpy called");
 
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
 /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -536,19 +559,19 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
     protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 //        CublasPointer xAPointer = new CublasPointer(X, ctx);
 //        CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
 //        cublasHandle_t handle = ctx.getHandle();
 
-        ((JCudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
+        ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
 
 /*        synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
@@ -563,7 +586,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -580,6 +603,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE swap called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
@@ -605,6 +631,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE copy called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
@@ -635,7 +664,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE axpy called");
 
-        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+        //CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 
     //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
@@ -656,7 +685,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 */
-        allocator.registerAction(ctx, Y, X);
+//        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -751,6 +780,9 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT scal called");
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
 
         CudaContext ctx = allocator.getFlowController().prepareAction(X);
 
@@ -774,6 +806,9 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dscal(int N, double alpha, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE scal called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(X);
 

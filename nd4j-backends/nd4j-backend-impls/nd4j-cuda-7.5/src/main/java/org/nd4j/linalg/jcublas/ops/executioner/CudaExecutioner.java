@@ -27,8 +27,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
-import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.jita.perf.OpDashboard;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -60,16 +58,17 @@ import java.util.Arrays;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public class JCudaExecutioner extends DefaultOpExecutioner {
+public class CudaExecutioner extends DefaultOpExecutioner {
 
-    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 //    private static final Allocator allocator = AtomicAllocator.getInstance();
-    private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
+    private static Logger log = LoggerFactory.getLogger(CudaExecutioner.class);
 
-    @Getter private static TADManager tadManager = new DeviceTADManager();
+    @Getter protected static TADManager tadManager = new DeviceTADManager();
+    protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
 
-    public JCudaExecutioner() {
+    public CudaExecutioner() {
 
     }
 
@@ -81,6 +80,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         Arrays.sort(dimension);
     //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
@@ -107,7 +109,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        // extraz.get().put
+        // new PointerPointer
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -166,48 +170,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return op.z();
     }
 
-    @Override
-    public INDArray exec(Accumulation op, int... dimension) {
-        checkForCompression(op);
+    /**
+     *
+     * @param op
+     * @param dimension
+     * @return
+     */
+    protected INDArray naiveExec(Accumulation op, int... dimension) {
 
-        Arrays.sort(dimension);
-
-//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
-//            OpDashboard.getInstance().processOpCall(op);
-
-  //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
-//
-//        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
-        for(int i = 0; i < dimension.length; i++) {
-            if(dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[]{Integer.MAX_VALUE};
-
-
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new int[]{1, retShape[0]};
-            else
-                retShape = new int[]{retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new int[]{1, 1};
-        }
-
-        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-            return op.noOp();
-
-        INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
-            ret= Nd4j.zeros(retShape);
-        } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        }
-        op.setZ(ret);
+        INDArray ret = op.z();
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -224,7 +195,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -397,13 +372,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 if (ret.isScalar()) {
                     AtomicAllocator.getInstance().tickHostWrite(ret);
 
-                    ret.putScalar(0, nativeOps.execReduceScalarFloat(
+                    float resx = nativeOps.execReduceScalarFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
                             x,
                             xShapeInfo,
                             extraArgs
-                    ));
+                    );
+
+                    ret.putScalar(0, resx);
 
                     op.setFinalResult(ret.getFloat(0));
                 } else {
@@ -510,12 +487,63 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        return ret;
+        return op.z();
+    }
+
+    @Override
+    public INDArray exec(Accumulation op, int... dimension) {
+        checkForCompression(op);
+
+        Arrays.sort(dimension);
+
+//        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+//            OpDashboard.getInstance().processOpCall(op);
+
+  //      log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//
+//        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
+        for(int i = 0; i < dimension.length; i++) {
+            if(dimension[i] < 0)
+                dimension[i] += op.x().rank();
+        }
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
+
+
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
+        }
+
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.noOp();
+
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
+        op.setZ(ret);
+
+        naiveExec(op, dimension);
+
+        return op.z();
     }
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         Arrays.sort(dimension);
 
@@ -535,8 +563,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
-        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+
+
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
             return op.x();
+        }
 
 
         //ensure vector is proper shape
@@ -580,7 +611,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -704,10 +735,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(BroadcastOp op) {
+    protected CudaContext invoke(BroadcastOp op) {
         checkForCompression(op);
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
      //   log.info("B1 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
@@ -726,7 +760,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -796,15 +830,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+    protected CudaContext invoke(IndexAccumulation op,int[] dimension)  {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
-        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
@@ -824,7 +861,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -923,8 +960,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private CudaContext invoke(Accumulation op, int[] dimension) {
+    protected CudaContext invoke(Accumulation op, int[] dimension) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
       //  log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
@@ -949,7 +989,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(offsets, context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -1238,8 +1278,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private CudaContext invoke(ScalarOp op) {
+    protected CudaContext invoke(ScalarOp op) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
@@ -1258,7 +1301,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
 
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
@@ -1310,8 +1353,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return  null;
     }
 
-    private CudaContext invoke(TransformOp op) {
+    protected CudaContext invoke(TransformOp op) {
         checkForCompression(op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         //if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
@@ -1417,7 +1463,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
-        PointerPointer xShapeInfoHostPointer = new PointerPointer(
+
+        PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
                 AtomicAllocator.getInstance().getDeviceIdPointer(),        // 2
@@ -1436,6 +1483,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer // special pointer for IsMax  // 16
         );
+
+
 /*
         log.info("------------------------------------");
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));

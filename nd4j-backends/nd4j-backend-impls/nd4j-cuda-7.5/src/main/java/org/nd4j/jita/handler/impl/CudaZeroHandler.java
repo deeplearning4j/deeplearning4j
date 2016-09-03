@@ -23,6 +23,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.impl.GridFlowController;
 import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
@@ -122,7 +123,7 @@ public class CudaZeroHandler implements MemoryHandler {
             }
             break;
             case SEQUENTIAL: {
-                this.flowController = new SynchronousFlowController();
+                this.flowController = new GridFlowController();
                 this.contextPool = new LimitedContextPool();
             }
             break;
@@ -268,6 +269,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
                           //  point.tickDeviceWrite();
                             point.tickHostWrite();
+
+                            if (!initialize) {
+                                point.tickDeviceWrite();
+                                point.tickHostRead();
+                            }
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]", deviceId, reqMemory);
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
@@ -356,6 +362,10 @@ public class CudaZeroHandler implements MemoryHandler {
             if (point.getPointers().getDevicePointer() == null) {
                  throw new IllegalStateException("devicePointer is NULL!");
             }
+
+            //log.info("Copying to device");
+          //  Random rnd = new Random();
+          //  if (rnd.nextInt(100) < 3) throw new RuntimeException("Relocate");
 
             if (nativeOps.memcpyAsync(
                             point.getPointers().getDevicePointer(),
