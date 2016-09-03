@@ -38,10 +38,7 @@ import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
 import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
-import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
-import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
-import org.datavec.api.transform.transform.column.RenameColumnsTransform;
-import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
+import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
@@ -355,6 +352,22 @@ public class TransformProcess implements Serializable {
          */
         public Builder removeColumns(Collection<String> columnNames) {
             return transform(new RemoveColumnsTransform(columnNames.toArray(new String[columnNames.size()])));
+        }
+
+        /**
+         * Remove all columns, except for those that are specified here
+         * @param columnNames    Names of the columns to keep
+         */
+        public Builder removeAllColumnsExceptFor(String... columnNames){
+            return transform(new RemoveAllColumnsExceptForTransform(columnNames));
+        }
+
+        /**
+         * Remove all columns, except for those that are specified here
+         * @param columnNames    Names of the columns to keep
+         */
+        public Builder removeAllColumnsExceptFor(Collection<String> columnNames){
+            return removeAllColumnsExceptFor(columnNames.toArray(new String[columnNames.size()]));
         }
 
         /**

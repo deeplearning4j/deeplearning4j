@@ -18,62 +18,56 @@ package org.datavec.api.transform.transform.column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
-import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
 
 import java.util.*;
 
 /**
- * Remove the specified columns from the data.
- * To specify only the columns to keep, use {@link RemoveAllColumnsExceptForTransform}
+ * Transform that removes all columns except for those that are explicitly specified as ones to keep
+ * To specify only the columns to remove, use {@link RemoveColumnsTransform}
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
-public class RemoveColumnsTransform extends BaseTransform {
+@JsonIgnoreProperties({"inputSchema", "columnsToKeepIdx", "indicesToKeep"})
+public class RemoveAllColumnsExceptForTransform extends BaseTransform {
 
-    private int[] columnsToRemoveIdx;
-    private String[] columnsToRemove;
-    private Set<Integer> indicesToRemove;
+    private int[] columnsToKeepIdx;
+    private String[] columnsToKeep;
+    private Set<Integer> indicesToKeep;
 
-    public RemoveColumnsTransform(@JsonProperty("columnsToRemove") String... columnsToRemove) {
-        this.columnsToRemove = columnsToRemove;
+    public RemoveAllColumnsExceptForTransform(@JsonProperty("columnsToKeep") String... columnsToKeep) {
+        this.columnsToKeep = columnsToKeep;
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         super.setInputSchema(schema);
 
-        indicesToRemove = new HashSet<>();
+        indicesToKeep = new HashSet<>();
 
         int i = 0;
-        columnsToRemoveIdx = new int[columnsToRemove.length];
-        for (String s : columnsToRemove) {
+        columnsToKeepIdx = new int[columnsToKeep.length];
+        for (String s : columnsToKeep) {
             int idx = schema.getIndexOfColumn(s);
             if (idx < 0) throw new RuntimeException("Column \"" + s + "\" not found");
-            columnsToRemoveIdx[i++] = idx;
-            indicesToRemove.add(idx);
+            columnsToKeepIdx[i++] = idx;
+            indicesToKeep.add(idx);
         }
     }
 
     @Override
     public Schema transform(Schema schema) {
-        int nToRemove = columnsToRemove.length;
-        int newNumColumns = schema.numColumns() - nToRemove;
-        if (newNumColumns <= 0)
-            throw new IllegalStateException("Number of columns after executing operation is " + newNumColumns + " (is <= 0). " +
-                    "origColumns = " + schema.getColumnNames() + ", toRemove = " + Arrays.toString(columnsToRemove));
-
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
 
-        Set<String> set = new HashSet<>();
-        Collections.addAll(set, columnsToRemove);
+        Set<String> keepSet = new HashSet<>();
+        Collections.addAll(keepSet, columnsToKeep);
 
 
-        List<ColumnMetaData> newMeta = new ArrayList<>(newNumColumns);
+        List<ColumnMetaData> newMeta = new ArrayList<>(columnsToKeep.length);
 
         Iterator<String> namesIter = origNames.iterator();
         Iterator<ColumnMetaData> metaIter = origMeta.iterator();
@@ -81,7 +75,7 @@ public class RemoveColumnsTransform extends BaseTransform {
         while (namesIter.hasNext()) {
             String n = namesIter.next();
             ColumnMetaData t = metaIter.next();
-            if (!set.contains(n)) {
+            if (keepSet.contains(n)) {
                 newMeta.add(t);
             }
         }
@@ -96,11 +90,11 @@ public class RemoveColumnsTransform extends BaseTransform {
                     "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
         }
 
-        List<Writable> outList = new ArrayList<>(writables.size() - columnsToRemove.length);
+        List<Writable> outList = new ArrayList<>(columnsToKeep.length);
 
         int i = 0;
         for (Writable w : writables) {
-            if (indicesToRemove.contains(i++)) continue;
+            if (!indicesToKeep.contains(i++)) continue;
             outList.add(w);
         }
         return outList;
@@ -108,7 +102,7 @@ public class RemoveColumnsTransform extends BaseTransform {
 
     @Override
     public String toString() {
-        return "RemoveColumnsTransform(" + Arrays.toString(columnsToRemove) + ")";
+        return "RemoveAllColumnsExceptForTransform(" + Arrays.toString(columnsToKeep) + ")";
     }
 
     @Override
@@ -116,13 +110,13 @@ public class RemoveColumnsTransform extends BaseTransform {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        RemoveColumnsTransform o2 = (RemoveColumnsTransform) o;
+        RemoveAllColumnsExceptForTransform o2 = (RemoveAllColumnsExceptForTransform) o;
 
-        return Arrays.equals(columnsToRemove, o2.columnsToRemove);
+        return Arrays.equals(columnsToKeep, o2.columnsToKeep);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(columnsToRemove);
+        return Arrays.hashCode(columnsToKeep);
     }
 }
