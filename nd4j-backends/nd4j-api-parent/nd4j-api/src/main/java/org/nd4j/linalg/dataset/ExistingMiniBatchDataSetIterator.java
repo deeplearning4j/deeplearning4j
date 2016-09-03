@@ -14,21 +14,33 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
-    private List<String[]> paths;
+
+    public static final String DEFAULT_PATTERN = "dataset-%d.bin";
+
     private int currIdx;
     private File rootDir;
     private int totalBatches = -1;
     private DataSetPreProcessor dataSetPreProcessor;
+    private final String pattern;
 
     /**
-     * Create with the given root directory
+     * Create with the given root directory, using the default filename pattern {@link #DEFAULT_PATTERN}
      * @param rootDir the root directory to use
      */
     public ExistingMiniBatchDataSetIterator(File rootDir) {
+        this(rootDir, DEFAULT_PATTERN);
+    }
+
+    /**
+     *
+     * @param rootDir    The root directory to use
+     * @param pattern    The filename pattern to use. Used with {@code String.format(pattern,idx)}, where idx is an
+     *                   integer, starting at 0.
+     */
+    public ExistingMiniBatchDataSetIterator(File rootDir, String pattern) {
         this.rootDir = rootDir;
-        this.paths = new ArrayList<>();
-        if(totalBatches < 1)
-            totalBatches = rootDir.list().length;
+        totalBatches = rootDir.list().length;
+        this.pattern = pattern;
     }
 
     @Override
@@ -54,6 +66,11 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean resetSupported(){
+        return true;
+    }
+
+    @Override
+    public boolean asyncSupported() {
         return true;
     }
 
@@ -117,7 +134,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     private DataSet read(int idx) throws IOException {
-        File path = new File(rootDir,String.format("dataset-%d.bin",idx));
+        File path = new File(rootDir,String.format(pattern,idx));
         DataSet d = new DataSet();
         d.load(path);
         return d;

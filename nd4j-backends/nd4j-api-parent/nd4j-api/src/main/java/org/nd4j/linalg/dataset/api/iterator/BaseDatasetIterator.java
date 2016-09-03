@@ -87,6 +87,11 @@ public class BaseDatasetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return true;
+    }
+
+    @Override
     public void reset() {
         fetcher.reset();
     }
