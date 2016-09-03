@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.SequenceDataAnalysis;
@@ -34,6 +35,9 @@ import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisAddF
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisMergeFunction;
 import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
 import org.datavec.spark.transform.filter.FilterWritablesBySchemaFunction;
+import org.datavec.spark.transform.misc.ColumnToKeyPairTransform;
+import org.datavec.spark.transform.misc.SumLongsFunction2;
+import org.datavec.spark.transform.misc.comparator.Tuple2Comparator;
 import org.datavec.spark.transform.quality.integer.IntegerQualityAddFunction;
 import org.datavec.spark.transform.quality.longq.LongQualityMergeFunction;
 import org.datavec.spark.transform.quality.string.StringQualityAddFunction;
@@ -62,11 +66,12 @@ import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
- * Created by Alex on 4/03/2016.
+ * AnalizeSpark: static methods for analyzing and processing {@code RDD<List<Writable>>} and {@code RDD<List<List<Writable>>}
+ *
+ * @author Alex Black
  */
 public class AnalyzeSpark {
 
@@ -714,4 +719,32 @@ public class AnalyzeSpark {
         return sampleInvalidFromColumn(numToSample, columnName, schema, flattened);
     }
 
+    /**
+     * Sample the N most frequently occurring values in the specified column
+     *
+     * @param nMostFrequent    Top N values to sample
+     * @param columnName       Name of the column to sample from
+     * @param schema           Schema of the data
+     * @param data             RDD containing the data
+     * @return                 List of the most frequently occurring Writable objects in that column, along with their counts
+     */
+    public static Map<Writable,Long> sampleMostFrequentFromColumn(int nMostFrequent, String columnName, Schema schema, JavaRDD<List<Writable>> data){
+
+        int columnIdx = schema.getIndexOfColumn(columnName);
+
+        JavaPairRDD<Writable,Long> keyedByWritable = data.mapToPair(new ColumnToKeyPairTransform(columnIdx));
+        JavaPairRDD<Writable,Long> reducedByWritable = keyedByWritable.reduceByKey(new SumLongsFunction2());
+
+        List<Tuple2<Writable,Long>> list = reducedByWritable.takeOrdered(nMostFrequent, new Tuple2Comparator<Writable>(false));
+
+        List<Tuple2<Writable,Long>> sorted = new ArrayList<>(list);
+        Collections.sort(sorted, new Tuple2Comparator<Writable>(false));
+
+        Map<Writable,Long> map = new LinkedHashMap<>();
+        for(Tuple2<Writable,Long> t2 : sorted){
+            map.put(t2._1(), t2._2());
+        }
+
+        return map;
+    }
 }
