@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -623,8 +622,8 @@ public class ComputationGraph implements Serializable, Model {
                     + " multiple inputs or outputs using a DataSetIterator");
 
         DataSetIterator dataSetIterator;
-        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
-        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
+        if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator, 2);
         } else dataSetIterator = iterator;
 
@@ -684,12 +683,12 @@ public class ComputationGraph implements Serializable, Model {
     /**
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
-    public void fit(MultiDataSetIterator multic) {
+    public void fit(MultiDataSetIterator multi) {
 
         MultiDataSetIterator multiDataSetIterator;
-        if (!(multic instanceof AsyncMultiDataSetIterator)) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 2);
-        } else multiDataSetIterator = multic;
+        if (multi.asyncSupported()) {
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, 2);
+        } else multiDataSetIterator = multi;
 
         if (configuration.isPretrain()) {
             pretrain(multiDataSetIterator);
@@ -1015,6 +1014,18 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
+     * A convenience method that returns a single INDArray, instead of an INDArray[].
+     * Useful for ComputationGraphs that have only a single output.
+     * Otherwise identical to {@link #output(INDArray...)}
+     *
+     * @param input Inputs to the network
+     * @return Output activations array
+     */
+    public INDArray outputSingle(INDArray... input) {
+        return outputSingle(false, input);
+    }
+
+    /**
      * Return an array of network outputs (predictions), given the specified network inputs
      * Network outputs are for output layers only.
      *
@@ -1031,6 +1042,22 @@ public class ComputationGraph implements Serializable, Model {
             outputs[i++] = activations.get(s);
         }
         return outputs;
+    }
+
+    /**
+     * A convenience method that returns a single INDArray, instead of an INDArray[].
+     * Useful for ComputationGraphs that have only a single output.
+     * Otherwise identical to {@link #output(boolean, INDArray...)}
+     *
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param input Inputs to the network
+     * @return Output activations array
+     */
+    public INDArray outputSingle(boolean train, INDArray... input){
+        if(numOutputArrays != 1){
+            throw new IllegalStateException("Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: " + numOutputArrays);
+        }
+        return output(train, input)[0];
     }
 
     /**
