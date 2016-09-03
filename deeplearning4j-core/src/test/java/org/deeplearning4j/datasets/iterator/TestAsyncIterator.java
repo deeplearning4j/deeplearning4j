@@ -198,6 +198,11 @@ public class TestAsyncIterator {
         }
 
         @Override
+        public boolean asyncSupported() {
+            return false;
+        }
+
+        @Override
         public void reset() {
             cursor = 0;
         }

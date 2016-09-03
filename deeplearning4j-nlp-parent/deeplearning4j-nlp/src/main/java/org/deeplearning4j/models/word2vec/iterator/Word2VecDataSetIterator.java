@@ -222,6 +222,11 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return false;
+    }
+
+    @Override
     public void reset() {
         iter.reset();
         cachedWindow.clear();

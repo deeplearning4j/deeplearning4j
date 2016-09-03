@@ -65,6 +65,11 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return true;
+    }
+
+    @Override
     public void reset() {
         if(dataSetStreams == null) throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
         iter = dataSetStreams.iterator();
