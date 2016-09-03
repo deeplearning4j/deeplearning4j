@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -297,6 +298,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     feeder.incrementAndGet();
                     lock.writeLock().lock();
                     DataSet ds = baseIterator.next();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 
