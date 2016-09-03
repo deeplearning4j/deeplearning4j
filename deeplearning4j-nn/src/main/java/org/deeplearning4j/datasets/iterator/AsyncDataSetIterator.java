@@ -47,7 +47,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param baseIterator The DataSetIterator to load data from asynchronously
      */
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
-        this(baseIterator, 1);
+        this(baseIterator, 8);
     }
 
     /**

@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -121,8 +122,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                         INDArray inputs = ((ConvolutionLayer) layer).input();
 
                         try {
-                            sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, 3, 2, 1));
-//                            ImageIO.write( sourceImage,"png",new File("tmp/input_" + minibatchNum + ".png"));
+                            sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -521,10 +521,21 @@ public class ConvolutionalIterationListener implements IterationListener {
      * @return
      */
     private BufferedImage restoreRGBImage(INDArray tensor3D) {
+        INDArray arrayR = null;
+        INDArray arrayG = null;
+        INDArray arrayB = null;
 
-        INDArray arrayR = tensor3D.tensorAlongDimension(2, 2, 1);
-        INDArray arrayG = tensor3D.tensorAlongDimension(1, 2, 1);
-        INDArray arrayB = tensor3D.tensorAlongDimension(0, 2, 1);
+        // entry for 3D input vis
+        if (tensor3D.shape()[0] == 3) {
+            arrayR = tensor3D.tensorAlongDimension(2, 2, 1);
+            arrayG = tensor3D.tensorAlongDimension(1, 2, 1);
+            arrayB = tensor3D.tensorAlongDimension(0, 2, 1);
+        } else {
+            // for all other cases input is just black & white, so we just assign the same channel data to RGB, and represent everything as RGB
+            arrayB = tensor3D.tensorAlongDimension(0, 2, 1);
+            arrayG = arrayB;
+            arrayR = arrayB;
+        }
 
         BufferedImage imageToRender = new BufferedImage(arrayR.columns(),arrayR.rows(),BufferedImage.TYPE_INT_RGB);
         for( int x = 0; x < arrayR.columns(); x++ ){
