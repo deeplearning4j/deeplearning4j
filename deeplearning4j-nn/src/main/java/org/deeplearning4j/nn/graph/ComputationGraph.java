@@ -1014,6 +1014,18 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
+     * A convenience method that returns a single INDArray, instead of an INDArray[].
+     * Useful for ComputationGraphs that have only a single output.
+     * Otherwise identical to {@link #output(INDArray...)}
+     *
+     * @param input Inputs to the network
+     * @return Output activations array
+     */
+    public INDArray outputSingle(INDArray... input) {
+        return outputSingle(false, input);
+    }
+
+    /**
      * Return an array of network outputs (predictions), given the specified network inputs
      * Network outputs are for output layers only.
      *
@@ -1030,6 +1042,22 @@ public class ComputationGraph implements Serializable, Model {
             outputs[i++] = activations.get(s);
         }
         return outputs;
+    }
+
+    /**
+     * A convenience method that returns a single INDArray, instead of an INDArray[].
+     * Useful for ComputationGraphs that have only a single output.
+     * Otherwise identical to {@link #output(boolean, INDArray...)}
+     *
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param input Inputs to the network
+     * @return Output activations array
+     */
+    public INDArray outputSingle(boolean train, INDArray... input){
+        if(numOutputArrays != 1){
+            throw new IllegalStateException("Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: " + numOutputArrays);
+        }
+        return output(train, input)[0];
     }
 
     /**
