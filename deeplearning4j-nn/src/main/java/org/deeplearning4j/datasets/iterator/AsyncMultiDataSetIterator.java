@@ -66,6 +66,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return false;
+    }
+
+    @Override
     public void reset() {
         if (!resetSupported())
             throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");

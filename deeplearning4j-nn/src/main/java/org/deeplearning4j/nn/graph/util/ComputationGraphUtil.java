@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph.util;
 
+import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -47,57 +48,7 @@ public class ComputationGraphUtil {
 
     /** Convert a DataSetIterator to a MultiDataSetIterator, via an adaptor class */
     public static MultiDataSetIterator toMultiDataSetIterator(DataSetIterator iterator){
-        return new MultiDataSetIteratorAdaptor(iterator);
-    }
-
-
-    private static class MultiDataSetIteratorAdaptor implements MultiDataSetIterator {
-
-        private DataSetIterator iter;
-        private MultiDataSetPreProcessor preProcessor;
-
-        public MultiDataSetIteratorAdaptor(DataSetIterator iter) {
-            this.iter = iter;
-        }
-
-        @Override
-        public MultiDataSet next(int i) {
-            MultiDataSet mds = toMultiDataSet(iter.next(i));
-            if(preProcessor != null) preProcessor.preProcess(mds);
-            return mds;
-        }
-
-        @Override
-        public void setPreProcessor(MultiDataSetPreProcessor multiDataSetPreProcessor) {
-            this.preProcessor = multiDataSetPreProcessor;
-        }
-
-        @Override
-        public boolean resetSupported(){
-            return iter.resetSupported();
-        }
-
-        @Override
-        public void reset() {
-            iter.reset();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return iter.hasNext();
-        }
-
-        @Override
-        public MultiDataSet next() {
-            MultiDataSet mds = toMultiDataSet(iter.next());
-            if(preProcessor != null) preProcessor.preProcess(mds);
-            return mds;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
+        return new MultiDataSetIteratorAdapter(iterator);
     }
 
 }
