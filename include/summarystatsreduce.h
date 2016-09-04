@@ -359,14 +359,12 @@ template<typename OpType>
 
 				sPartials = (SummaryStatsData<T> *) manager->getSharedReductionBuffer(); //holder.getPointer();
 				T startingVal = startingValue(dx);
-#pragma unroll
-				for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
-					SummaryStatsData<T> val;
-					val.initWithValue(startingVal);
-					val.n = 0;
-					sPartials[i] = val;
-				}
-				__syncthreads();
+
+				SummaryStatsData<T> val;
+				val.initWithValue(startingVal);
+				val.n = 0;
+				sPartials[threadIdx.x] = val;
+
 
 				//length for the tad
 				__shared__ volatile int xLength;
@@ -436,6 +434,10 @@ template<typename OpType>
 						for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 							int tadOffsetForBlock = tadOffsets[r];
 
+							val.initWithValue(startingVal);
+					        val.n = 0;
+					        sPartials[threadIdx.x] = val;
+
 							for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 								shape::ind2subC(tadRank, tadShape, i, xCoord);
 								int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
@@ -458,9 +460,12 @@ template<typename OpType>
 					else {
 
 
-#pragma unroll
 						for (int i = blockIdx.x; i < numTads; i += gridDim.x) {
 							int tadOffsetForBlock = tadOffsets[i];
+
+					        val.initWithValue(startingVal);
+					        val.n = 0;
+					        sPartials[threadIdx.x] = val;
 
 							int indexX = tadOffsetForBlock + xElementWiseStride * threadIdx.x;
 
@@ -696,7 +701,6 @@ template<typename OpType>
 				if (tad.dimensionLength < 1)
 					return;
 
-
 				int resultLength = shape::length(resultShapeInfoBuffer);
 				//pre squeezed: this is for keeping the pointer to the original
 				//shape information for tad offset
@@ -708,7 +712,7 @@ template<typename OpType>
 				}
 
 				if (!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
-					shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing))) {
+					shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) && !(dimensionLength > 1)) {
 
 					/**
 					 * The element wise stride belong longs to a reduction index.
@@ -764,23 +768,54 @@ template<typename OpType>
 					}
 				}
 				else {
-					int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
-					int tadLength = shape::length(tad.tadOnlyShapeInfo);
-#pragma omp parallel for
-					for (int i = 0; i < resultLength; i++) {
-						int baseOffset = tad.tadOffsets[i];
-						SummaryStatsData<T> comp;
-						comp.initWithValue(x[baseOffset]);
+                    if (dimensionLength == 1) {
+                        int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
+                        int tadLength = shape::length(tad.tadOnlyShapeInfo);
+
+#pragma omp parallel for schedule(guided)
+                        for (int i = 0; i < resultLength; i++) {
+                            int baseOffset = tad.tadOffsets[i];
+                            SummaryStatsData<T> comp;
+                            comp.initWithValue(x[baseOffset]);
 #pragma omp simd
-						for (int j = 1; j < tadLength; j++) {
-							SummaryStatsData<T> comp2;
-							comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
-							comp = update(comp, comp2, extraParams);
-						}
+                            for (int j = 1; j < tadLength; j++) {
+                                SummaryStatsData<T> comp2;
+                                comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
+                                comp = update(comp, comp2, extraParams);
+                            }
 
-						result[i] = OpType::getValue(biasCorrected, comp);
-					}
+                            result[i] = OpType::getValue(biasCorrected, comp);
+                        }
+                    } else {
+                        int xCoord[MAX_RANK];
 
+                        int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+
+                        int *tadShape = shape::shapeOf(tadShapeShapeInfo);
+                        int *tadStride = shape::stride(tadShapeShapeInfo);
+                        int tadRank = shape::rank(tadShapeShapeInfo);
+                        int tadLength = shape::length(tad.tadOnlyShapeInfo);
+
+#pragma omp parallel for schedule(guided)
+                        for (int r = 0; r < resultLength; r ++) {
+                            int tadOffsetForBlock = tad.tadOffsets[r];
+
+                            SummaryStatsData<T> comp;
+                            comp.initWithValue(x[tadOffsetForBlock]);
+
+#pragma omp simd
+                            for (int i = 1; i < tadLength; i ++) {
+                                shape::ind2subC(tadRank, tadShape, i, xCoord);
+                                int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+
+                                SummaryStatsData <T> indexVal2;
+                                indexVal2.initWithValue(x[xOffset]);
+
+                                comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                            }
+                            result[r] = OpType::getValue(biasCorrected, comp);
+                        }
+                    }
 				}
 			}
 		};
