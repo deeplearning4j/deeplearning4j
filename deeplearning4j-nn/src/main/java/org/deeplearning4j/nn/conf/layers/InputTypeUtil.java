@@ -29,6 +29,18 @@ public class InputTypeUtil {
         int sH = stride[0];
         int sW = stride[1];
 
+        if(sH <= 0 || sW <= 0){
+            throw new IllegalStateException("Invalid strides: must be > 0 (strideH = " + sH + ", strideW = " + sW + ")");
+        }
+
+        if( kH <= 0 || kH > inHeight){
+            throw new IllegalStateException("Invalid input configuration for kernel height: 0 < kH <= inHeight; got (kH=" + kH + ", inHeight=" + inHeight + ")");
+        }
+
+        if( kW <= 0 || kW > inWidth){
+            throw new IllegalStateException("Invalid input configuration for kernel width: 0 < kW <= inWidth; got (kW=" + kW + ", inWidth=" + inWidth + ")");
+        }
+
         if ((inHeight - kH + 2 * padH) % sH != 0) {
             throw new IllegalStateException("Invalid input configuration (layer name = \"" + layerName + "\") for height: inHeight=" + inHeight + ", kernelH="
                     + kH + ", padH=" + padH + ", strideH=" + sH + "; (" + inHeight + "-" + kH + "+2*" + padH + ")/" + sH

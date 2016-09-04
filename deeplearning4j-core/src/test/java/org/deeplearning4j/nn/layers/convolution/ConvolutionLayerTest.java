@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -78,8 +79,9 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder,28,28,1);
+
         DataSetIterator iter = new MnistDataSetIterator(10,10);
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -119,8 +121,8 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
                 .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -134,7 +136,7 @@ public class ConvolutionLayerTest {
     }
 
 
-    @Test(expected = InvalidInputTypeException.class)
+    @Test(expected = IllegalStateException.class)
     public void testCNNTooLargeKernel(){
         int imageHeight= 20;
         int imageWidth= 23;
@@ -150,7 +152,7 @@ public class ConvolutionLayerTest {
                 .seed(123)
                 .iterations(1)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)
+                .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)       //(img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
                         .stride(1,1)
                         .nOut(2)
                         .activation("relu")
@@ -161,8 +163,8 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
                 .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -175,7 +177,7 @@ public class ConvolutionLayerTest {
         model.fit(trainInput);
     }
 
-    @Test (expected = InvalidInputTypeException.class)
+    @Test (expected = Exception.class)
     public void testCNNZeroStride(){
         int imageHeight= 20;
         int imageWidth= 23;
@@ -683,6 +685,7 @@ public class ConvolutionLayerTest {
                         .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
+                        .stride(1,1)
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
@@ -691,9 +694,8 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(backprop).pretrain(pretrain);
-
-        new ConvolutionLayerSetup(conf,numRows,numColumns,nChannels);
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();
