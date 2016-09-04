@@ -25,7 +25,9 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * Created by Alex on 11/03/2016.
+ * A SequenceSchema is a {@link Schema} for sequential data.
+ *
+ * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
