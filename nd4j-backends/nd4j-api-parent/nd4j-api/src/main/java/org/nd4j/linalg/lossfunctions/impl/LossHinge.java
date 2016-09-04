@@ -2,6 +2,7 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
@@ -13,23 +14,15 @@ public class LossHinge implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
-        since it's not differentiable
-        use the Rennie and Srebro's version
          */
-        INDArray scoreArr;
         INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
-        INDArray yhaty = labels.mul(postOutput);
-        INDArray zeroMin = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("max",Nd4j.zeros(labels.shape()),yhaty));
-        INDArray oneMax = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("max",Nd4j.ones(labels.shape()),yhaty));
-        INDArray zeroMinOneMax = zeroMin.mul(oneMax);
-        zeroMinOneMax = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("min",Nd4j.ones(labels.shape()),zeroMinOneMax));
+        INDArray oneMinusyhaty = labels.mul(postOutput);
+        oneMinusyhaty.muli(-1);
+        oneMinusyhaty.addi(1);
 
-        INDArray fullMask = zeroMinOneMax.sub(oneMax);
-        fullMask.muli(zeroMin);
-        fullMask.divi(yhaty);
-
-        scoreArr = fullMask.mul(yhaty);
+        INDArray scoreArr = oneMinusyhaty.dup();
+        Nd4j.getExecutioner().exec(new Max(Nd4j.zeros(labels.shape()),oneMinusyhaty,scoreArr,oneMinusyhaty.length()));
 
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
@@ -54,20 +47,19 @@ public class LossHinge implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        /*
+        gradient is 0 if yhaty is >= 1
+        else gradient is gradient of the loss function = (1-yhaty) wrt preOutput = -y*derivative_of_yhat wrt preout
+        */
+        INDArray yhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray oneMinusyyhat = labels.mul(yhat).mul(-1).add(1);
 
-        INDArray yhaty = labels.mul(postOutput);
-        INDArray zeroMin = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("max",Nd4j.zeros(labels.shape()),yhaty));
-        INDArray oneMax = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("max",Nd4j.ones(labels.shape()),yhaty));
-        INDArray zeroMinOneMax = zeroMin.mul(oneMax);
-
-        INDArray fullMask = zeroMinOneMax.sub(oneMax);
-
-        INDArray gradients = labels.mul(-1).mul(postOutDer);
-        //use Rennie and Srebro's smoothed out version
-
-
+        INDArray scoreAsFilter = scoreArray(labels,preOutput,activationFn,null);
+        scoreAsFilter = scoreAsFilter.div(oneMinusyyhat);//0s and 1s now
+        INDArray gradients = scoreAsFilter.mul(labels);
+        gradients.muli(-1);
+        gradients.muli(postOutDer);
         return gradients;
     }
 
