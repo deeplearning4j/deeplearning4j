@@ -34,11 +34,11 @@ import java.util.*;
 /**
  * Created by Alex on 4/03/2016.
  */
-@JsonIgnoreProperties({"columnNames","columnNamesIndex"})
+@JsonIgnoreProperties({"columnNames", "columnNamesIndex"})
 @EqualsAndHashCode
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
+@JsonSubTypes(value = {
         @JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),
 })
 public class Schema implements Serializable {
@@ -48,14 +48,14 @@ public class Schema implements Serializable {
     private List<ColumnMetaData> columnMetaData;
     private Map<String, Integer> columnNamesIndex;   //For efficient lookup
 
-    private Schema(){
+    private Schema() {
         //No-arg constructor for Jackson
     }
 
     protected Schema(Builder builder) {
         this.columnMetaData = builder.columnMetaData;
         this.columnNames = new ArrayList<>();
-        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
+        for (ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
         columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
@@ -63,10 +63,11 @@ public class Schema implements Serializable {
     }
 
     public Schema(@JsonProperty("columns") List<ColumnMetaData> columnMetaData) {
-        if (columnMetaData == null || columnMetaData.size() == 0) throw new IllegalArgumentException("Column meta data must be non-empty");
+        if (columnMetaData == null || columnMetaData.size() == 0)
+            throw new IllegalArgumentException("Column meta data must be non-empty");
         this.columnMetaData = columnMetaData;
         this.columnNames = new ArrayList<>();
-        for(ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
+        for (ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
         this.columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
@@ -157,15 +158,15 @@ public class Schema implements Serializable {
         return sb.toString();
     }
 
-    public String toJson(){
+    public String toJson() {
         return toJacksonString(new JsonFactory());
     }
 
-    public String toYaml(){
+    public String toYaml() {
         return toJacksonString(new YAMLFactory());
     }
 
-    private String toJacksonString(JsonFactory factory){
+    private String toJacksonString(JsonFactory factory) {
         ObjectMapper om = new ObjectMapper(factory);
         om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -174,24 +175,24 @@ public class Schema implements Serializable {
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         String str;
-        try{
+        try {
             str = om.writeValueAsString(this);
-        } catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         return str;
     }
 
-    public static Schema fromJson(String json){
+    public static Schema fromJson(String json) {
         return fromJacksonString(json, new JsonFactory());
     }
 
-    public static Schema fromYaml(String yaml){
+    public static Schema fromYaml(String yaml) {
         return fromJacksonString(yaml, new YAMLFactory());
     }
 
-    private static Schema fromJacksonString(String str, JsonFactory factory){
+    private static Schema fromJacksonString(String str, JsonFactory factory) {
         ObjectMapper om = new ObjectMapper(factory);
         om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -199,9 +200,9 @@ public class Schema implements Serializable {
         om.enable(SerializationFeature.INDENT_OUTPUT);
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        try{
+        try {
             return om.readValue(str, Schema.class);
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -255,6 +256,40 @@ public class Schema implements Serializable {
         }
 
         /**
+         * A convenience method for adding multiple double columns.
+         * For example, to add columns "myDoubleCol_0", "myDoubleCol_1", "myDoubleCol_2", use
+         * {@code addColumnsDouble("myDoubleCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         */
+        public Builder addColumnsDouble(String pattern, int minIdxInclusive, int maxIdxInclusive) {
+            return addColumnsDouble(pattern, minIdxInclusive, maxIdxInclusive, null, null, false, false);
+        }
+
+        /**
+         * A convenience method for adding multiple double columns, with additional restrictions that apply to all columns
+         * For example, to add columns "myDoubleCol_0", "myDoubleCol_1", "myDoubleCol_2", use
+         * {@code addColumnsDouble("myDoubleCol_%d",0,2,null,null,false,false)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         * @param allowNaN        If false: don't allow NaN values. If true: allow.
+         * @param allowInfinite   If false: don't allow infinite values. If true: allow
+         */
+        public Builder addColumnsDouble(String pattern, int minIdxInclusive, int maxIdxInclusive, Double minAllowedValue, Double maxAllowedValue,
+                                        boolean allowNaN, boolean allowInfinite) {
+            for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
+                addColumnDouble(String.format(pattern, i), minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);
+            }
+            return this;
+        }
+
+        /**
          * Add an integer column with no restrictions on the allowable values
          *
          * @param name Name of the column
@@ -281,6 +316,37 @@ public class Schema implements Serializable {
          */
         public Builder addColumnsInteger(String... names) {
             for (String s : names) addColumnInteger(s);
+            return this;
+        }
+
+        /**
+         * A convenience method for adding multiple Integer columns.
+         * For example, to add columns "myIntegerCol_0", "myIntegerCol_1", "myIntegerCol_2", use
+         * {@code addColumnsInteger("myIntegerCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         */
+        public Builder addColumnsInteger(String pattern, int minIdxInclusive, int maxIdxInclusive) {
+            return addColumnsInteger(pattern, minIdxInclusive, maxIdxInclusive, null, null);
+        }
+
+        /**
+         * A convenience method for adding multiple Integer columns.
+         * For example, to add columns "myIntegerCol_0", "myIntegerCol_1", "myIntegerCol_2", use
+         * {@code addColumnsInteger("myIntegerCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         */
+        public Builder addColumnsInteger(String pattern, int minIdxInclusive, int maxIdxInclusive, Integer minAllowedValue, Integer maxAllowedValue) {
+            for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
+                addColumnInteger(String.format(pattern, i), minAllowedValue, maxAllowedValue);
+            }
             return this;
         }
 
@@ -335,6 +401,38 @@ public class Schema implements Serializable {
         }
 
         /**
+         * A convenience method for adding multiple Long columns.
+         * For example, to add columns "myLongCol_0", "myLongCol_1", "myLongCol_2", use
+         * {@code addColumnsLong("myLongCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         */
+        public Builder addColumnsLong(String pattern, int minIdxInclusive, int maxIdxInclusive) {
+            return addColumnsLong(pattern, minIdxInclusive, maxIdxInclusive, null, null);
+        }
+
+        /**
+         * A convenience method for adding multiple Long columns.
+         * For example, to add columns "myLongCol_0", "myLongCol_1", "myLongCol_2", use
+         * {@code addColumnsLong("myLongCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         */
+        public Builder addColumnsLong(String pattern, int minIdxInclusive, int maxIdxInclusive, Long minAllowedValue, Long maxAllowedValue) {
+            for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
+                addColumnLong(String.format(pattern, i), minAllowedValue, maxAllowedValue);
+            }
+            return this;
+        }
+
+
+        /**
          * Add a column
          *
          * @param metaData metadata for this column
@@ -367,12 +465,44 @@ public class Schema implements Serializable {
          * Add a String column with the specified restrictions
          *
          * @param name               Name of the column
-         * @param regex              Regex that the String must match in order to be considered value. If null: no regex restriction
+         * @param regex              Regex that the String must match in order to be considered valid. If null: no regex restriction
          * @param minAllowableLength Minimum allowable length for the String to be considered valid
          * @param maxAllowableLength Maximum allowable length for the String to be considered valid
          */
         public Builder addColumnString(String name, String regex, Integer minAllowableLength, Integer maxAllowableLength) {
             return addColumn(new StringMetaData(name, regex, minAllowableLength, maxAllowableLength));
+        }
+
+        /**
+         * A convenience method for adding multiple numbered String columns.
+         * For example, to add columns "myStringCol_0", "myStringCol_1", "myStringCol_2", use
+         * {@code addColumnsString("myStringCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         */
+        public Builder addColumnsString(String pattern, int minIdxInclusive, int maxIdxInclusive) {
+            return addColumnsString(pattern, minIdxInclusive, maxIdxInclusive, null, null, null);
+        }
+
+        /**
+         * A convenience method for adding multiple numbered String columns.
+         * For example, to add columns "myStringCol_0", "myStringCol_1", "myStringCol_2", use
+         * {@code addColumnsString("myStringCol_%d",0,2)}
+         *
+         * @param pattern          Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive  Minimum column index to use (inclusive)
+         * @param maxIdxInclusive  Maximum column index to use (inclusive)
+         * @param regex            Regex that the String must match in order to be considered valid. If null: no regex restriction
+         * @param minAllowedLength Minimum allowed length of strings (inclusive). If null: no restriction
+         * @param maxAllowedLength Maximum allowed length of strings (inclusive). If null: no restriction
+         */
+        public Builder addColumnsString(String pattern, int minIdxInclusive, int maxIdxInclusive, String regex, Integer minAllowedLength, Integer maxAllowedLength) {
+            for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
+                addColumnString(String.format(pattern, i), regex, minAllowedLength, maxAllowedLength);
+            }
+            return this;
         }
 
         /**
