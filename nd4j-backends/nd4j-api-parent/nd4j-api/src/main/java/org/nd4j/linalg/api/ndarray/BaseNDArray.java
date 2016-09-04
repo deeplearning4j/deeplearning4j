@@ -2650,6 +2650,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
              * allocating a temporary object on the side and copy the result later.
              */
             INDArray temp = create(result.shape(), Nd4j.getStrides(result.shape(),'f'));
+            temp.setOrder('f');
 
             if (other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
@@ -2678,28 +2679,45 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         } else {
+
+            //We require that the result array is 'f' (fortran) order
+            // However, user might have called mmuli with a c order array for the result
+            // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
+
+            boolean requiresTemp = result.ordering() == 'c';
+            INDArray gemmResultArr;
+            if(requiresTemp){
+                //Can use createUninitialized due to beta==0.0 parameter in gemm
+                gemmResultArr = Nd4j.createUninitialized(result.shape(),'f');
+            } else {
+                gemmResultArr = result;
+            }
+
             if(other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
-                        ordering()
-                        ,  BlasBufferUtil.getCharForTranspose(other),
-                        1.0
-                        ,this
-                        ,other
-                        ,0.0
-                        ,result);
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
             }
             else {
                 Nd4j.getBlasWrapper().level3().gemm(
-                        ordering()
-                        , BlasBufferUtil.getCharForTranspose(other)
-                        , BlasBufferUtil.getCharForTranspose(result)
-                        , 1.0
-                        , this
-                        , other
-                        , 0.0
-                        , result);
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        BlasBufferUtil.getCharForTranspose(gemmResultArr),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
             }
 
+            if(requiresTemp){
+                result.assign(gemmResultArr);
+            }
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -3847,6 +3865,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.lengthLong() != n.lengthLong())
             return false;
 
+
+
+
         //epsilon equals
         if (isScalar() && n.isScalar()) {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
@@ -3901,6 +3922,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return true;
 */
         }
+
+        if (!Arrays.equals(this.shape(), n.shape()))
+            return false;
 
 
         if (!Shape.shapeEquals(shape(), n.shape())) {

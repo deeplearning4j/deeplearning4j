@@ -1558,11 +1558,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
 
-        assertTrue(mmul.equals(mmulCopy));
-
-        INDArray mmul2 = tad.mmul(first);
-        INDArray mmul2copy = copy.mmul(first);
-        assertTrue(mmul2.equals(mmul2copy));
+        assertEquals(mmul, mmulCopy);
     }
 
     @Test
@@ -1592,10 +1588,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mmulCopy = first.mmul(copy);
 
         assertTrue(mmul.equals(mmulCopy));
-
-        INDArray mmul2 = tad.mmul(first);
-        INDArray mmul2copy = copy.mmul(first);
-        assertTrue(mmul2.equals(mmul2copy));
     }
 
 
@@ -1619,13 +1611,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray get0 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1));
         INDArray getPoint0 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(0));
+        get0 = get0.reshape(getPoint0.shape());
         INDArray tad0 = arr3d.tensorAlongDimension(0,1,0);
 
         assertTrue(get0.equals(getPoint0)); //OK
-        assertTrue(get0.equals(tad0));      //OK
+        assertTrue(getPoint0.equals(tad0));      //OK
 
         INDArray get1 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(1,2));
         INDArray getPoint1 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(1));
+        get1 = get1.reshape(getPoint1.shape());
         INDArray tad1 = arr3d.tensorAlongDimension(1,1,0);
 
         assertTrue(getPoint1.equals(tad1)); //OK
@@ -1634,6 +1628,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray get2 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(2,3));
         INDArray getPoint2 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(2));
+        get2 = get2.reshape(getPoint2.shape());
         INDArray tad2 = arr3d.tensorAlongDimension(2,1,0);
 
         assertTrue(getPoint2.equals(tad2)); //OK
@@ -1642,6 +1637,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray get3 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(3, 4));
         INDArray getPoint3 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(3));
+        get3 = get3.reshape(getPoint3.shape());
         INDArray tad3 = arr3d.tensorAlongDimension(3, 1, 0);
 
         assertTrue(getPoint3.equals(tad3)); //OK

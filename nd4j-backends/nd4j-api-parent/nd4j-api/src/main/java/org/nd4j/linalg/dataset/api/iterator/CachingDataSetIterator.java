@@ -20,8 +20,13 @@ public class CachingDataSetIterator implements DataSetIterator {
     private String namespace;
     private int currentIndex = 0;
     private boolean usingCache = false;
+    private boolean allowPrefetching;
 
     public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache, String namespace) {
+        this(sourceIterator, cache, namespace, false);
+    }
+
+    public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache, String namespace, boolean allowPrefetching) {
         this.sourceIterator = sourceIterator;
         this.cache = cache;
         this.preProcessor = null;
@@ -29,6 +34,7 @@ public class CachingDataSetIterator implements DataSetIterator {
         this.currentIndex = 0;
 
         this.usingCache = cache.isComplete(namespace);
+        this.allowPrefetching = allowPrefetching;
     }
 
     public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache) {
@@ -62,6 +68,11 @@ public class CachingDataSetIterator implements DataSetIterator {
     @Override
     public boolean resetSupported(){
         return true;
+    }
+
+    @Override
+    public boolean asyncSupported() {
+        return allowPrefetching;
     }
 
     @Override

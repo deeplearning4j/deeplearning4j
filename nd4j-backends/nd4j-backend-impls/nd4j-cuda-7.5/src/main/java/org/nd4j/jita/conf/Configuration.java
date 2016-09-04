@@ -119,9 +119,9 @@ public class Configuration implements Serializable {
 
     @Getter private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 256;
+    @Getter private int maximumGridSize = 512;
 
-    @Getter private int maximumBlockSize = 128;
+    @Getter private int maximumBlockSize = 256;
 
     @Getter private int minimumBlockSize = 64;
 
@@ -361,7 +361,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setMaximumGridSize(int gridDim) {
-        if (gridDim <= 0 || gridDim > 512)
+        if (gridDim <= 0 || gridDim > 768)
             throw new IllegalStateException("Please keep gridDim in range [8...512]");
 
         this.maximumGridSize = gridDim;

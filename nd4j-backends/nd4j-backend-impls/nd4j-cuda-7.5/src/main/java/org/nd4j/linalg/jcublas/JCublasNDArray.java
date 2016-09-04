@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -368,10 +369,10 @@ public class JCublasNDArray extends BaseNDArray {
             ret.markAsCompressed(true);
             return ret;
         }
-        Nd4j.getCompressor().autoDecompress(this);
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
+        /*
         if (!isView() && ordering() == Nd4j.order() && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), ordering());
@@ -403,7 +404,7 @@ public class JCublasNDArray extends BaseNDArray {
 
             allocator.getFlowController().registerAction(context, array, this);
             return array;
-        } else return super.dup();
+        } else */return super.dup();
     }
 
     @Override
@@ -413,8 +414,7 @@ public class JCublasNDArray extends BaseNDArray {
             ret.markAsCompressed(true);
             return ret;
         }
-        Nd4j.getCompressor().autoDecompress(this);
-
+/*
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.createUninitialized(shape(), order);
@@ -444,7 +444,7 @@ public class JCublasNDArray extends BaseNDArray {
             allocator.getFlowController().registerAction(context, array, this);
 
             return array;
-        } else return super.dup(order);
+        } else */return super.dup(order);
     }
 
     @Override
@@ -476,5 +476,13 @@ public class JCublasNDArray extends BaseNDArray {
     private Object writeReplace()
         throws java.io.ObjectStreamException {
         return new BaseNDArrayProxy(this);
+    }
+
+    @Override
+    public INDArray permutei(int... rearrange) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        return super.permutei(rearrange);
     }
 }

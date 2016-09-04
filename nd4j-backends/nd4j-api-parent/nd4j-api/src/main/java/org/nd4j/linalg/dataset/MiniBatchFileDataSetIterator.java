@@ -109,6 +109,11 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return true;
+    }
+
+    @Override
     public void reset() {
         currIdx = 0;
     }

@@ -2,14 +2,11 @@ package org.nd4j.linalg.jcublas.context;
 
 import lombok.Data;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -87,6 +84,7 @@ public class CudaContext {
      */
     public void syncOldStream() {
 //        ContextHolder.getInstance().setContext();
+//        System.out.println("old sync called");
         syncOldStream(false);
     }
 

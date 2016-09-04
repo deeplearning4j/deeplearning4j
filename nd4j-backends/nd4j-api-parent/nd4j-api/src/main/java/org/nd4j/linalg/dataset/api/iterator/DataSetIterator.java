@@ -93,6 +93,21 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
     boolean resetSupported();
 
     /**
+     * Does this DataSetIterator support asynchronous prefetching of multiple DataSet objects?
+     * Most DataSetIterators do, but in some cases it may not make sense to wrap this iterator in an
+     * iterator that does asynchronous prefetching. For example, it would not make sense to use asynchronous
+     * prefetching for the following types of iterators:
+     * (a) Iterators that store their full contents in memory already
+     * (b) Iterators that re-use features/labels arrays (as future next() calls will overwrite past contents)
+     * (c) Iterators that already implement some level of asynchronous prefetching
+     * (d) Iterators that may return different data depending on when the next() method is called
+     *
+     * @return true if asynchronous prefetching from this iterator is OK; false if asynchronous prefetching should not
+     * be used with this iterator
+     */
+    boolean asyncSupported();
+
+    /**
      * Resets the iterator back to the beginning
      */
     void reset();

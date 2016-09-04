@@ -694,7 +694,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public int numInputs() {
-        return getFeatures().columns();
+        return getFeatures().size(1);
     }
 
     @Override
@@ -1190,7 +1190,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numOutcomes() {
-        return getLabels().columns();
+        return getLabels().size(1);
     }
 
     @Override

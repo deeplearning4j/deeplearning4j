@@ -3,6 +3,7 @@ package org.nd4j.linalg.dataset.api;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.*;
+import java.util.List;
 
 /**
  * MultiDataSet is an interface for representing complex data sets, that have (potentially) multiple inputs and outputs
@@ -127,5 +128,12 @@ public interface MultiDataSet extends Serializable {
      * Load the contents of this MultiDataSet from the specified file
      */
     void load(File from) throws IOException;
+
+    /**
+     * Split the MultiDataSet into a list of individual examples.
+     *
+     * @return List of MultiDataSets, each with 1 example
+     */
+    List<MultiDataSet> asList();
 
 }

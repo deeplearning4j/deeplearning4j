@@ -30,8 +30,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Experimental code, do not use please.
+ *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class AsynchronousFlowController implements FlowController{
     private volatile Allocator allocator;
 

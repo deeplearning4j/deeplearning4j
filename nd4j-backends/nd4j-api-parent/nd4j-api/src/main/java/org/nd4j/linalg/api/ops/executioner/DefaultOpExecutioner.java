@@ -315,4 +315,14 @@ public  class DefaultOpExecutioner implements OpExecutioner {
         throw new IllegalStateException("Java computation no longer supported");
 
     }
+
+    @Override
+    public void exec(MetaOp op) {
+        throw new UnsupportedOperationException("MetaOp execution isn't supported for this OpExecutioner yet");
+    }
+
+    @Override
+    public void exec(GridOp op) {
+        throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
+    }
 }

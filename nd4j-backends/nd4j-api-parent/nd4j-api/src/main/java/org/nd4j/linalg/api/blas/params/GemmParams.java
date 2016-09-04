@@ -4,6 +4,8 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+
 /**
  * Used for setting the gemm parameters
  * Separates blas logic from
@@ -26,10 +28,18 @@ public @Data class GemmParams {
      * @param c
      */
     public GemmParams(INDArray a,INDArray b,INDArray c) {
-        if(b.columns() != c.columns())
-            throw new IllegalArgumentException("B columns must match C columns");
-        if(a.rows() != c.rows())
-            throw new IllegalArgumentException("A rows must equal C rows");
+        if(a.columns() != b.rows()){
+            throw new IllegalArgumentException("A columns must equal B rows. MMul attempt: " + Arrays.toString(a.shape()) + "x"
+                    + Arrays.toString(b.shape()));
+        }
+        if(b.columns() != c.columns()) {
+            throw new IllegalArgumentException("B columns must match C columns. MMul attempt: " + Arrays.toString(a.shape()) + "x"
+                    + Arrays.toString(b.shape()) + "; result array provided: " + Arrays.toString(c.shape()));
+        }
+        if(a.rows() != c.rows()) {
+            throw new IllegalArgumentException("A rows must equal C rows. MMul attempt: " + Arrays.toString(a.shape()) + "x"
+                    + Arrays.toString(b.shape()) + "; result array provided: " + Arrays.toString(c.shape()));
+        }
 
 
 
