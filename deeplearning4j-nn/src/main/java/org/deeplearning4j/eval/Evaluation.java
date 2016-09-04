@@ -213,11 +213,9 @@ public class Evaluation implements Serializable {
             INDArray guessIndex = Nd4j.argMax(guesses, 1);
             INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
 
-            for (int colReal = 0; colReal < nCols; colReal++) {
-                for (int colGuess = 0; colGuess < nCols; colGuess++) {
-                    int matchCount = guessIndex.eps(colGuess).muli(realOutcomeIndex.eps(colReal)).sumNumber().intValue();
-                    confusion.add(colReal, colGuess, matchCount);
-                }
+            int nExamples = guessIndex.length();
+            for( int i=0; i<nExamples; i++ ){
+                confusion.add((int)realOutcomeIndex.getDouble(i),(int)guessIndex.getDouble(i));
             }
 
             for (int col = 0; col < nCols; col++) {

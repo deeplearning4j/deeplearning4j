@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -85,7 +86,7 @@ public class CNNGradientCheckTest {
                                     .weightInit(WeightInit.XAVIER)
                                     .updater(Updater.NONE)
                                     .build())
-                            .cnnInputSize(2,2,1)
+                            .setInputType(InputType.convolutionalFlat(1,4,1))
                             .pretrain(false).backprop(true);
 
                     MultiLayerConfiguration conf = builder.build();
@@ -172,14 +173,16 @@ public class CNNGradientCheckTest {
                                         .build())
                                 .layer(1, new OutputLayer.Builder(lf)
                                         .activation(outputActivation)
-                                        .nIn(6).nOut(3)
+                                        .nOut(3)
                                         .weightInit(WeightInit.XAVIER)
                                         .updater(Updater.NONE)
                                         .build())
                                 .pretrain(false).backprop(true)
-                                .cnnInputSize(2,2,1);   //Equivalent to: new ConvolutionLayerSetup(builder,2,2,1);
+                        .setInputType(InputType.convolutionalFlat(1,4,1));
 
-                        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
+                        MultiLayerConfiguration conf = builder.build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
                         String testName = new Object() {
                         }.getClass().getEnclosingMethod().getName();
@@ -260,7 +263,7 @@ public class CNNGradientCheckTest {
                                     .nIn(3 * 3 * 3)
                                     .nOut(4)
                                     .build())
-                            .cnnInputSize(height, width, inputDepth)
+                            .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                             .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -318,12 +321,12 @@ public class CNNGradientCheckTest {
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(3).nOut(2)
-                                    .build())
+                                    .build())   //Output: (3-2+0)/1+1 = 2
                             .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
-                                    .nIn(2 * 3 * 3)
+                                    .nIn(2 * 2 * 2)
                                     .nOut(4)
                                     .build())
-                            .cnnInputSize(height, width, inputDepth)
+                            .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                             .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -394,7 +397,7 @@ public class CNNGradientCheckTest {
                                         .nIn(2 * 2 * 2)
                                         .nOut(nOut)
                                         .build())
-                                .cnnInputSize(height, width, inputDepth)
+                                .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                                 .build();
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);

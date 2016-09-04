@@ -242,7 +242,7 @@ public class SubsamplingLayerTest {
 
     //////////////////////////////////////////////////////////////////////////////////
 
-    @Test(expected = InvalidInputTypeException.class)
+    @Test(expected = IllegalStateException.class)
     public void testSubTooLargeKernel(){
         int imageHeight= 20;
         int imageWidth= 23;

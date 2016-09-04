@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -164,7 +165,7 @@ public class ActivationLayerTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -185,7 +186,7 @@ public class ActivationLayerTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);
