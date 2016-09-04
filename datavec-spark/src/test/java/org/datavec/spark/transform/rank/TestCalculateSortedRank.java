@@ -64,8 +64,7 @@ public class TestCalculateSortedRank extends BaseSparkTest {
         assertEquals(Arrays.asList("TextCol","DoubleCol","rank"), outSchema.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Long), outSchema.getColumnTypes());
 
-        SparkTransformExecutor exec = new SparkTransformExecutor();
-        JavaRDD<List<Writable>> out = exec.execute(rdd, tp);
+        JavaRDD<List<Writable>> out = SparkTransformExecutor.execute(rdd, tp);
 
         List<List<Writable>> collected = out.collect();
         assertEquals(4, collected.size());
