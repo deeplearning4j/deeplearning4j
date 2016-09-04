@@ -129,6 +129,10 @@ public abstract class BaseUpdater implements Updater {
             case Step:
                 conf.setLearningRateByParam(variable, lr * Math.pow(decayRate, Math.floor(iteration/conf.getLrPolicySteps())));
                 break;
+            case TorchStep:
+                if (iteration > 1 && conf.getLrPolicySteps() % iteration == 0)
+                    conf.setLearningRateByParam(variable, lr * decayRate);
+                break;
             case Poly:
                 conf.setLearningRateByParam(variable, lr * Math.pow((1 - ((double)iteration)/conf.getNumIterations()), conf.getLrPolicyPower()));
                 break;
