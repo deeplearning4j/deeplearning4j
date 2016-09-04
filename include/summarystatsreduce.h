@@ -796,14 +796,14 @@ template<typename OpType>
                         int tadRank = shape::rank(tadShapeShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided) private(xCoord)
                         for (int r = 0; r < resultLength; r ++) {
                             int tadOffsetForBlock = tad.tadOffsets[r];
 
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[tadOffsetForBlock]);
 
-#pragma omp simd
+#pragma omp simd private(xCoord)
                             for (int i = 1; i < tadLength; i ++) {
                                 shape::ind2subC(tadRank, tadShape, i, xCoord);
                                 int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
