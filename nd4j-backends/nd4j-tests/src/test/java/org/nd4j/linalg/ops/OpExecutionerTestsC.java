@@ -26,6 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
@@ -39,11 +42,13 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -657,6 +662,44 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertTrue(consec.eps(5).sumNumber().doubleValue() == 1);
         assertTrue(consec.sub(1).eps(5).sumNumber().doubleValue() == 1);
         assertTrue(consec.sub(1).eps(5).getDouble(0,5) == 1);
+    }
+
+    @Test
+    public void testVarianceSingleVsMultipleDimensions(){
+        Nd4j.getRandom().setSeed(12345);
+
+        //Generate C order random numbers. Strides: [500,100,10,1]
+        INDArray fourd = Nd4j.rand('c',new int[]{100,5,10,10}).muli(10);
+        INDArray twod = Shape.newShapeNoCopy(fourd,new int[]{100,5*10*10},false);
+
+        //Population variance. These two should be identical
+        INDArray var4 = fourd.var(false,1,2,3);
+        INDArray var2 = twod.var(false,1);
+
+        //Manual calculation of population variance, not bias corrected
+        //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Na.C3.AFve_algorithm
+        double[] sums = new double[100];
+        double[] sumSquares = new double[100];
+        NdIndexIterator iter = new NdIndexIterator(fourd.shape());
+        while(iter.hasNext()){
+            int[] next = iter.next();
+            double d = fourd.getDouble(next);
+            sums[next[0]] += d;
+            sumSquares[next[0]] += d*d;
+        }
+
+        double[] manualVariance = new double[100];
+        int N = (fourd.length() / sums.length);
+        for( int i=0; i<sums.length; i++ ){
+            manualVariance[i] = (sumSquares[i] - (sums[i]*sums[i])/N) / N;
+        }
+
+        INDArray var4bias = fourd.var(true,1,2,3);
+        INDArray var2bias = twod.var(true,1);
+
+        assertArrayEquals(var2.data().asDouble(), var4.data().asDouble(), 1e-6);
+        assertArrayEquals(manualVariance, var2.data().asDouble(), 1e-6);
+        assertArrayEquals(var2bias.data().asDouble(), var4bias.data().asDouble(), 1e-6);
     }
 
     @Override
