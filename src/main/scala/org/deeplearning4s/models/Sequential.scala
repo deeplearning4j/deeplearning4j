@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential extends Model {
+class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
   private var layers: List[Node] = List()
   private var model: MultiLayerNetwork = _
   private var preprocessors: Map[Int, Node] = Map()
@@ -69,7 +69,7 @@ class Sequential extends Model {
 
   override def compile(lossFunction: LossFunction,
                        optimizationAlgo: OptimizationAlgorithm,
-                       suppressConvolutionSetup: Boolean = false): Unit = {
+                       suppressConvolutionLayerSetup: Boolean = false): Unit = {
     var builder: NeuralNetConfiguration.ListBuilder = new NeuralNetConfiguration.Builder()
       .optimizationAlgo(optimizationAlgo)
       .iterations(1)
@@ -102,7 +102,7 @@ class Sequential extends Model {
  */
 //    if (layers.head.isInstanceOf[ConvolutionBaseLayer])
 //      builder.cnnInputSize(layers.head.inputShape.toArray)
-    if (!suppressConvolutionSetup)
+    if (!suppressConvolutionLayerSetup)
       new ConvolutionLayerSetup(builder,
                                 layers.head.inputShape.head,
                                 layers.head.inputShape.tail.head,
