@@ -20,9 +20,10 @@ package org.deeplearning4s.layers
 
 import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer}
 import org.deeplearning4j.nn.weights.WeightInit
+import org.deeplearning4s.regularizers.{NoRegularizer, WeightRegularizer}
 
 /**
-  * Abstract base class for layers in neural net architectures.
+  * Dense fully connected layer in neural net architectures.
   *
   * @author David Kale
   */
@@ -30,12 +31,14 @@ class Dense(
     nOut: Int,
     nIn: Int = 0,
     val weightInit: WeightInit = WeightInit.VI,
-    val activation: String = "identity")
+    val activation: String = "identity",
+    val regularizer: WeightRegularizer = NoRegularizer(),
+    val dropOut: Double = 0.0)
   extends Node with Layer with Output {
 
   _outputShape = List(nOut)
   if (nIn > 0)
-    _inputShape = List(nIn)
+    inputShape = List(nIn)
 
   override def outputShape = _outputShape
 
@@ -44,18 +47,24 @@ class Dense(
       throw new IllegalArgumentException("Input shape must be nonempty.")
 
     if (isOutput) {
-      new OutputLayer.Builder(_lossFunction)
+      new OutputLayer.Builder(lossFunction)
         .nIn(inputShape.last)
         .nOut(outputShape.last)
-        .activation(activation)
         .weightInit(weightInit)
+        .activation(activation)
+        .l1(regularizer.l1)
+        .l2(regularizer.l2)
+        .dropOut(dropOut)
         .build()
     } else {
       new DenseLayer.Builder()
         .nIn(inputShape.last)
         .nOut(outputShape.last)
-        .activation(activation)
         .weightInit(weightInit)
+        .activation(activation)
+        .l1(regularizer.l1)
+        .l2(regularizer.l2)
+        .dropOut(dropOut)
         .build()
     }
   }
