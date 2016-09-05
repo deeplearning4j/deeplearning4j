@@ -27,6 +27,6 @@ public class ConvolutionLayerSetup {
      */
     @Deprecated
     public ConvolutionLayerSetup(MultiLayerConfiguration.Builder builder, int height, int width, int channels) {
-        builder.setInputType(InputType.convolutional(height, width, channels));
+        builder.setInputType(InputType.convolutionalFlat(height, width, channels));
     }
 }
