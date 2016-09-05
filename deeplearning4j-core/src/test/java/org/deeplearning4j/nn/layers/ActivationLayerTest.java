@@ -21,11 +21,27 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  */
 
 public class ActivationLayerTest {
+
+    @Test
+    public void testInputTypes(){
+        org.deeplearning4j.nn.conf.layers.ActivationLayer l =
+                new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("relu").build();
+
+
+        InputType in1 = InputType.feedForward(20);
+        InputType in2 = InputType.convolutional(28,28,1);
+
+        assertEquals(in1, l.getOutputType(in1));
+        assertEquals(in2, l.getOutputType(in2));
+        assertNull(l.getPreProcessorForInputType(in1));
+        assertNull(l.getPreProcessorForInputType(in2));
+    }
 
     @Test
     public void testDenseActivationLayer() throws Exception {
