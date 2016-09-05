@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 import java.util.Map;
@@ -26,8 +25,7 @@ import java.util.Map;
 public class BatchNormalization extends FeedForwardLayer {
     protected double decay;
     protected double eps;
-    @Deprecated
-    protected boolean useBatchMean;
+    protected boolean isMinibatch;
     protected double gamma;
     protected double beta;
     protected boolean lockGammaBeta;
@@ -36,7 +34,7 @@ public class BatchNormalization extends FeedForwardLayer {
         super(builder);
         this.decay = builder.decay;
         this.eps = builder.eps;
-        this.useBatchMean = builder.useBatchMean;
+        this.isMinibatch = builder.isMinibatch;
         this.gamma = builder.gamma;
         this.beta = builder.beta;
         this.lockGammaBeta = builder.lockGammaBeta;
@@ -117,16 +115,14 @@ public class BatchNormalization extends FeedForwardLayer {
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected double decay = 0.9;
         protected double eps = 1e-5;
-        @Deprecated //useBatchMean = false ->
-        protected boolean useBatchMean = true; // TODO auto set this if layer conf is batch
+        protected boolean isMinibatch = true; // TODO auto set this if layer conf is batch
         protected boolean lockGammaBeta = false;
         protected double gamma = 1.0;
         protected double beta = 0.0;
 
-        @Deprecated
-        public Builder(double decay, boolean useBatchMean) {
+        public Builder(double decay, boolean isMinibatch) {
             this.decay = decay;
-            this.useBatchMean = useBatchMean;
+            this.isMinibatch = isMinibatch;
         }
 
         public Builder(double gamma, double beta) {
@@ -145,6 +141,19 @@ public class BatchNormalization extends FeedForwardLayer {
         }
 
         public Builder() {
+        }
+
+        /**
+         * If doing minibatch training or not. Default: true.
+         * Under most circumstances, this should be set to true.
+         * If doing full batch training (i.e., all examples in a single DataSet object - very small data sets) then
+         * this should be set to false. Affects how global mean/variance estimates are calculated.
+         *
+         * @param minibatch    Minibatch parameter
+         */
+        public Builder minibatch(boolean minibatch){
+            this.isMinibatch = minibatch;
+            return this;
         }
 
         /**
