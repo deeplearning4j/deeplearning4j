@@ -64,7 +64,10 @@ public class BatchNormalizationTest {
                 .iterations(1).layer(bN).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf, true);
-        INDArray params = Nd4j.create(1, numParams);
+        INDArray params = null;
+        if(numParams > 0) {
+            params = Nd4j.create(1, numParams);
+        }
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         return layer;
     }
@@ -74,6 +77,7 @@ public class BatchNormalizationTest {
     public void testDnnForwardPass() {
         int nOut = 10;
         Layer l = getLayer(nOut, 0.0, false, -1, -1);
+        assertEquals(2*nOut, l.numParams());
 
         INDArray randInput = Nd4j.rand(100, nOut);
         INDArray output = l.activate(randInput, true);
@@ -90,6 +94,7 @@ public class BatchNormalizationTest {
         double gamma = 2.0;
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
+        assertEquals(0, l.numParams()); //Should have 0 parameters for fixed gamma/beta case
         output = l.activate(randInput, true);
         mean = output.mean(0);
         stdev = output.std(false, 0);
@@ -102,6 +107,7 @@ public class BatchNormalizationTest {
     public void testCnnForwardPass() {
         int nOut = 10;
         Layer l = getLayer(nOut, 0.0, false, -1, -1);
+        assertEquals(2*nOut, l.numParams());
         int hw = 15;
 
         Nd4j.getRandom().setSeed(12345);
@@ -120,6 +126,7 @@ public class BatchNormalizationTest {
         double gamma = 2.0;
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
+        assertEquals(0, l.numParams()); //Should have 0 parameters for fixed gamma/beta case
         output = l.activate(randInput, true);
         mean = output.mean(0, 2, 3);
         stdev = output.std(false, 0, 2, 3);
