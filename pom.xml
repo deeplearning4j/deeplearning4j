@@ -53,6 +53,7 @@
     <properties>
         <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
         <datavec.version>0.5.1-SNAPSHOT</datavec.version>
+        <dl4j-test-resources.version>0.4.1-SNAPSHOT</dl4j-test-resources.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
@@ -85,7 +86,7 @@
                 <dependency>
                     <groupId>org.deeplearning4j</groupId>
                     <artifactId>dl4j-test-resources</artifactId>
-                    <version>${project.version}</version>
+                    <version>${dl4j-test-resources.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

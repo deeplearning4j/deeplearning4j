@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -21,8 +22,9 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class ModelSerializerTest {
 
+public class ModelSerializerTest {
+    @Ignore
     @Test
     public void testWriteMLNModel() throws Exception {
         int nIn = 5;
