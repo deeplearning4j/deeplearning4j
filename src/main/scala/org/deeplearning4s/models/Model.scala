@@ -38,7 +38,9 @@ abstract class Model {
    * @param lossFunction        loss function to use
    * @param optimizationAlgo    optimization algorithm to use
    */
-  def compile(lossFunction: LossFunction, optimizationAlgo: OptimizationAlgorithm): Unit
+  def compile(lossFunction: LossFunction,
+              optimizationAlgo: OptimizationAlgorithm,
+              suppressConvolutionLayerSetup: Boolean = true): Unit
 
   /**
     * Fit neural net to data.
