@@ -35,6 +35,50 @@ public class BNGradientCheckTest {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
+    @Test
+    public void testGradient2dSimple(){
+        DataSet ds = new IrisDataSetIterator(150,150).next();
+        ds.normalizeZeroMeanZeroUnitVariance();
+        INDArray input = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .learningRate(1.0)
+                .regularization(true)
+//                .l2(0.01).l1(0.02)
+                .updater(Updater.SGD)
+                .seed(12345L)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(3)
+                        .activation("identity")
+                        .build())
+                .layer(1, new BatchNormalization.Builder()
+                        .nOut(3)
+                        .build())
+                .layer(2, new ActivationLayer.Builder().activation("tanh").build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .nIn(3).nOut(3)
+                        .updater(Updater.SGD)
+                        .build())
+                .pretrain(false).backprop(true);
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
+        mln.init();
+
+        if (PRINT_RESULTS) {
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+        assertTrue(gradOK);
+    }
+
     @Test@Ignore
     public void testGradientBNWithCNN(){
         //Parameterized test, testing combinations of:
