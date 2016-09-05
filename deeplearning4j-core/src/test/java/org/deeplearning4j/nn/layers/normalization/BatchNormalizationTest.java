@@ -20,11 +20,16 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -34,6 +39,7 @@ import static org.junit.Assert.*;
 /**
  */
 public class BatchNormalizationTest {
+
     protected INDArray dnnInput = Nd4j.linspace(0,31,32).reshape(2,16);
     protected INDArray dnnEpsilon = Nd4j.linspace(0,31,32).reshape(2,16);
 
@@ -44,8 +50,12 @@ public class BatchNormalizationTest {
     public void doBefore() {
     }
 
-    protected Layer setupActivations(int nIn, int nOut){
-        BatchNormalization bN = new BatchNormalization.Builder().nIn(nIn).nOut(nOut).build();
+    protected static Layer getLayer(int nOut) {
+        return getLayer(nOut, Nd4j.EPS_THRESHOLD);
+    }
+
+    protected static Layer getLayer(int nOut, double epsilon){
+        BatchNormalization bN = new BatchNormalization.Builder().nOut(nOut).eps(epsilon).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
 
@@ -55,9 +65,47 @@ public class BatchNormalizationTest {
         return layer;
     }
 
+
+    @Test
+    public void testDnnForwardPass(){
+        int nOut = 10;
+        Layer l = getLayer(nOut, 0.0);
+
+        INDArray randInput = Nd4j.rand(100,nOut);
+        INDArray output = l.activate(randInput,true);
+
+        INDArray mean = output.mean(0);
+        INDArray stdev = output.std(false, 0);
+
+        System.out.println(Arrays.toString(mean.data().asFloat()));
+
+        assertArrayEquals(new float[nOut], mean.data().asFloat(), 1e-6f);
+        assertEquals(Nd4j.ones(1,nOut), stdev);
+    }
+
+    @Test
+    public  void testCnnForwardPass(){
+        int nOut = 10;
+        Layer l = getLayer(nOut, 0.0);
+        int hw = 15;
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray randInput = Nd4j.rand(12345, 100, nOut, hw, hw);
+        INDArray output = l.activate(randInput, true);
+
+        assertEquals(4, output.rank());
+
+        INDArray mean = output.mean(0,2,3);
+        INDArray stdev = output.std(false, 0,2,3);
+        INDArray stdev2 = output.std(true, 0,2,3);
+
+        assertArrayEquals(new float[nOut], mean.data().asFloat(), 1e-6f);
+        assertArrayEquals(Nd4j.ones(1,nOut).data().asFloat(), stdev.data().asFloat(), 1e-6f);
+    }
+
     @Test
     public void testDnnShapeBatchNormForward() {
-        Layer layer = setupActivations(2, 16);
+        Layer layer = getLayer(16);
         // Confirm param initial shape before override
         assertArrayEquals(new int[]{1,16}, layer.getParam("gamma").shape());
         assertArrayEquals(new int[]{1,16}, layer.getParam("beta").shape());
@@ -90,7 +138,7 @@ public class BatchNormalizationTest {
 
     @Test
     public void testDnnShapeBatchNormBack(){
-        Layer layer = setupActivations(2, 16);
+        Layer layer = getLayer(16);
         layer.setParam("gamma", Nd4j.linspace(0,15,16));
         layer.setParam("beta", Nd4j.linspace(0,15,16));
 
@@ -143,7 +191,7 @@ public class BatchNormalizationTest {
 
     @Test
     public void testCnnShapeBatchNormForward() {
-        Layer layer = setupActivations(2, 2);
+        Layer layer = getLayer(2);
         // Confirm param initial shape before override
         assertArrayEquals(new int[]{1,2}, layer.getParam("gamma").shape());
         assertArrayEquals(new int[]{1,2}, layer.getParam("beta").shape());
@@ -185,7 +233,7 @@ public class BatchNormalizationTest {
 
     @Test
     public void testCnnShapeBatchNormBack(){
-        Layer layer = setupActivations(2, 2);
+        Layer layer = getLayer(2);
         layer.setParam("gamma", Nd4j.linspace(2,3,2));
         layer.setParam("beta", Nd4j.linspace(2,3,2));
         layer.preOutput(cnnInput);

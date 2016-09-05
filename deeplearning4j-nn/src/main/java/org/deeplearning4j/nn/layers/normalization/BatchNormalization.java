@@ -183,7 +183,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(boolean training) {
-        return preOutput(input, training == true? TrainingMode.TRAIN: TrainingMode.TEST);
+        return preOutput(input, training ? TrainingMode.TRAIN: TrainingMode.TEST);
     }
 
     @Override
@@ -208,19 +208,37 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         shape = getShape(x);
 
 
-        // xHat = x-xmean / sqrt(var + epsilon)
+        // xHat = (x-xmean) / sqrt(var + epsilon)
+        //Note that for CNNs, mean and variance are calculated per feature map (i.e., per activation) rather than per activation
+        //Pg5 of http://arxiv.org/pdf/1502.03167v3.pdf
+        // "For convolutional layers, we additionally want the normalization to obey the convolutional property – so that
+        //  different elements of the same feature map, at different locations, are normalized in the same way. To achieve
+        //  this, we jointly normalize all the activations in a minibatch, over all locations."
         INDArray mean, var;
         if (trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
-            // mean and var over samples in batch
-            mean = x.mean(0);
-            var = x.var(false, 0);
+            switch(x.rank()){
+                case 2:
+                    // mean and variance over samples in batch
+                    mean = x.mean(0);
+                    var = x.var(false, 0);
+                    break;
+                case 4:
+                    // mean and variance over samples AND locations
+                    mean = x.mean(0,2,3);
+                    var = x.var(false, 0,2,3);
+                    break;
+                default:
+                    throw new IllegalStateException("Batch normalization on activations of rank " + x.rank() + " not supported");
+            }
+
+
             var.addi(layerConf.getEps());
         } else {
             // cumulative mean and var - primarily used after training
             mean = this.mean;
             var = this.var;
         }
-        std = Transforms.sqrt(var);
+        std = Transforms.sqrt(var,true);
 
         if (layerConf.isLockGammaBeta()) {
             gamma = Nd4j.ones(shape);
@@ -246,15 +264,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
-            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, x.dup(), -1));
-            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(), -1));
-
-            activations = xHat.dup().mulRowVector(gamma).addRowVector(beta);
+            xMu = x.subRowVector(mean);
+            xHat = xMu.divRowVector(std);
+            activations = xHat.mulRowVector(gamma).addiRowVector(beta);
         } else if (x.rank() == 4) {
-            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, x.dup(), new int[]{1,2,3}));
-            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(), new int[]{1,2,3}));
+            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
+            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
 
-            activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,xHat.dup(),1));
+            activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,Nd4j.createUninitialized(x.shape(),x.ordering()),1));
             activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(activations,beta,activations,1));
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
