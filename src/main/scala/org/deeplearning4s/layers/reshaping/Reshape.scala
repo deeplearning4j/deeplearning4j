@@ -27,7 +27,7 @@ class Reshape(
   nOut: List[Int],
   nIn: List[Int] = List())
   extends Node with Preprocessor {
-  _inputShape = nIn
+  inputShape = nIn
   _outputShape = nOut
 
   override def outputShape: List[Int] = _outputShape

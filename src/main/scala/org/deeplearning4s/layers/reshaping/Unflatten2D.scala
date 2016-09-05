@@ -29,7 +29,7 @@ class Unflatten2D(
   extends Node with Preprocessor {
   _outputShape = nOut
   if (nIn > 0)
-    _inputShape = List(nIn)
+    inputShape = List(nIn)
 
   override def outputShape: List[Int] = _outputShape
 

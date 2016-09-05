@@ -25,7 +25,7 @@ import org.deeplearning4s.layers.{Node, Preprocessor}
 
 class Flatten2D(nIn: Int = 0) extends Node with Preprocessor {
   if (nIn > 0)
-    _inputShape = List(nIn)
+    inputShape = List(nIn)
 
   override def outputShape = List(inputShape.product)
 
