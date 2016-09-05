@@ -27,24 +27,34 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     @Override
     public int numParams(NeuralNetConfiguration conf, boolean backprop){
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        return 2*layer.getNOut();
+
+        if(layer.isLockGammaBeta()){
+            //Special case: gamma and beta are fixed values for all outputs -> no parameters in this case
+            return 0;
+        } else {
+            //Standard case: gamma and beta are learned per output
+            return 2*layer.getNOut();
+        }
     }
 
     @Override
     public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // gamma & beta per activation for DNN and per per feature matrix for CNN layers
-        // TODO setup for CNN & RNN
+        // TODO setup for RNN
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
         int nOut = layer.getNOut();
 
-        INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nOut));
-        INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut,2*nOut));
+        if(!layer.isLockGammaBeta()) {  //No parameters when gamma/beta are locked
 
-        params.put(GAMMA,createGamma(conf, gammaView, initializeParams));
-        conf.addVariable(GAMMA);
-        params.put(BETA, createBeta(conf, betaView, initializeParams));
-        conf.addVariable(BETA);
+            INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
+            INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
+
+            params.put(GAMMA, createGamma(conf, gammaView, initializeParams));
+            conf.addVariable(GAMMA);
+            params.put(BETA, createBeta(conf, betaView, initializeParams));
+            conf.addVariable(BETA);
+        }
 
         return params;
     }
