@@ -49,7 +49,7 @@ public class ActivationLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: null");
+        if(inputType == null) throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
         return inputType;
     }
 
