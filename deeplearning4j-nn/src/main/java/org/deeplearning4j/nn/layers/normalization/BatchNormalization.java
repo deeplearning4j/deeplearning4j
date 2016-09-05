@@ -239,7 +239,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         INDArray gamma = null;
         INDArray beta = null;
-        if (!layerConf.isLockGammaBeta()) {
+        if (layerConf.isLockGammaBeta()) {
             if(helper != null){
                 //TODO: don't create these each iteration, when using cudnn
                 int[] gammaBetaShape = new int[]{1,layerConf().getNOut()};
@@ -272,24 +272,39 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             if(layerConf.isLockGammaBeta()){
                 //Special case: gamma/beta have fixed values for all outputs
+                //Use mul/addi(Number) here to avoid allocating temp arrays of all same value
                 double g = layerConf.getGamma();
                 double b = layerConf.getBeta();
                 if(g != 1.0 && b != 0.0){
                     //Default and most common case: 1.0 and 0.0 for these parameters. No point executing 1 * x + 0 op
-                    activations = xHat.mul(g).addi(beta);
+                    activations = xHat.mul(g).addi(b);
+                } else {
+                    activations = xHat;
                 }
             } else {
                 //Standard case: gamma and beta are learned per parameter
                 activations = xHat.mulRowVector(gamma).addiRowVector(beta);
             }
-
-            activations = xHat.mulRowVector(gamma).addiRowVector(beta);
         } else if (x.rank() == 4) {
             xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
             xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
 
-            activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,Nd4j.createUninitialized(x.shape(),x.ordering()),1));
-            activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(activations,beta,activations,1));
+            if(layerConf.isLockGammaBeta()){
+                //Special case: gamma/beta have fixed values for all outputs
+                //Use mul/addi(Number) here to avoid allocating temp arrays of all same value
+                double g = layerConf.getGamma();
+                double b = layerConf.getBeta();
+                if(g != 1.0 && b != 0.0){
+                    //Default and most common case: 1.0 and 0.0 for these parameters. No point executing 1 * x + 0 op
+                    activations = xHat.mul(g).addi(b);
+                } else {
+                    activations = xHat;
+                }
+            } else {
+                //Standard case: gamma and beta are learned per parameter
+                activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,Nd4j.createUninitialized(x.shape(),x.ordering()),1));
+                activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(activations,beta,activations,1));
+            }
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException("The layer prior to BatchNorm in the configuration is not currently supported.");
