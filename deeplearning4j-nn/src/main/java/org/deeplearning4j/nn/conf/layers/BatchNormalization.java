@@ -17,9 +17,9 @@ import java.util.Map;
 
 /**
  * Batch normalization configuration
- *
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Builder
@@ -31,7 +31,7 @@ public class BatchNormalization extends FeedForwardLayer {
     protected double beta;
     protected boolean lockGammaBeta;
 
-    private BatchNormalization(Builder builder){
+    private BatchNormalization(Builder builder) {
         super(builder);
         this.decay = builder.decay;
         this.eps = builder.eps;
@@ -68,12 +68,12 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null){
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, got " + inputType);
         }
 
         //Can handle CNN, flat CNN or FF input formats only
-        switch (inputType.getType()){
+        switch (inputType.getType()) {
             case FF:
             case CNN:
             case CNNFlat:
@@ -84,17 +84,17 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override){
-        if(nIn <= 0 || override){
-            switch (inputType.getType()){
+    public void setNIn(InputType inputType, boolean override) {
+        if (nIn <= 0 || override) {
+            switch (inputType.getType()) {
                 case FF:
-                    nIn = ((InputType.InputTypeFeedForward)inputType).getSize();
+                    nIn = ((InputType.InputTypeFeedForward) inputType).getSize();
                     break;
                 case CNN:
-                    nIn = ((InputType.InputTypeConvolutional)inputType).getDepth();
+                    nIn = ((InputType.InputTypeConvolutional) inputType).getDepth();
                     break;
                 case CNNFlat:
-                    nIn = ((InputType.InputTypeConvolutionalFlat)inputType).getDepth();
+                    nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
                 default:
                     throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got " + inputType);
             }
@@ -103,9 +103,9 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType){
-        if(inputType.getType() == InputType.Type.CNNFlat){
-            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat)inputType;
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType.getType() == InputType.Type.CNNFlat) {
+            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
         }
 
@@ -141,29 +141,35 @@ public class BatchNormalization extends FeedForwardLayer {
             this.lockGammaBeta = lockGammaBeta;
         }
 
-        public Builder(){}
+        public Builder() {
+        }
 
-        public Builder gamma(double gamma){
+        public Builder gamma(double gamma) {
             this.gamma = gamma;
             return this;
         }
 
-        public Builder beta(double beta){
+        public Builder beta(double beta) {
             this.beta = beta;
             return this;
         }
 
-        public Builder eps(double eps){
+        /**
+         * Epsilon value for batch normalization
+         *
+         * @param eps Epsilon
+         */
+        public Builder eps(double eps) {
             this.eps = eps;
             return this;
         }
 
-        public Builder decay(double decay){
+        public Builder decay(double decay) {
             this.decay = decay;
             return this;
         }
 
-        public Builder lockGammaBeta(boolean lockGammaBeta){
+        public Builder lockGammaBeta(boolean lockGammaBeta) {
             this.lockGammaBeta = lockGammaBeta;
             return this;
         }
