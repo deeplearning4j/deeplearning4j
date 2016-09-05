@@ -118,5 +118,12 @@ class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
       model.fit(iter)
   }
 
+
+
   override def predict(x: INDArray): INDArray = model.output(x, false)
+
+  def getNetwork(): MultiLayerNetwork = {
+    return model
+  }
+
 }
