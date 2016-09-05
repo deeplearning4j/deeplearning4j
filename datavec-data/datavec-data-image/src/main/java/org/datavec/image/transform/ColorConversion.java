@@ -15,46 +15,41 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacpp.opencv_core;
+import java.util.Random;
+
+import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
-import java.util.Random;
-
-import static org.bytedeco.javacpp.opencv_imgproc.resize;
+import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
+import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
+import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
- * Resize image transform is suited to force the same image size for whole pipeline.
- *
- * @author raver119@gmail.com
+ * Color conversion transform using CVT (cvtcolor):
+ * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor"CVT Color</a>.
+ * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-"More CVT Color</a>.
  */
-public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat>  {
+public class ColorConversion extends BaseImageTransform {
 
-    int newHeight, newWidth;
+    int conversionCode;
 
     /**
-     * Returns new ResizeImageTransform object
-     *
-     * @param newWidth new Width for the outcome images
-     * @param newHeight new Height for outcome images
+     * Default conversion BGR to Luv (chroma) color.
      */
-    public ResizeImageTransform(int newWidth, int newHeight) {
-        this(null, newWidth, newHeight);
+    public ColorConversion() {
+        this(new Random(1234), COLOR_BGR2Luv);
     }
 
     /**
-     * Returns new ResizeImageTransform object
+     * Return new ColorConversion object
      *
      * @param random Random
-     * @param newWidth new Width for the outcome images
-     * @param newHeight new Height for outcome images
+     * @param conversionCode  to transform,
      */
-    public ResizeImageTransform(Random random, int newWidth, int newHeight) {
+    public ColorConversion(Random random, int conversionCode) {
         super(random);
-
-        this.newWidth = newWidth;
-        this.newHeight = newHeight;
-
+        this.conversionCode = conversionCode;
         converter = new OpenCVFrameConverter.ToMat();
     }
 
@@ -71,11 +66,14 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat>  {
         if (image == null) {
             return null;
         }
-        opencv_core.Mat mat = converter.convert(image.getFrame());
+        Mat mat = (Mat) converter.convert(image.getFrame());
+        Mat result = new Mat();
 
-        opencv_core.Mat result = new opencv_core.Mat();
-        resize(mat, result, new opencv_core.Size(newWidth, newHeight));
-
-        return new ImageWritable(converter.convert(result));
+        try {
+            cvtColor(mat, result, conversionCode);
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return image;
     }
 }

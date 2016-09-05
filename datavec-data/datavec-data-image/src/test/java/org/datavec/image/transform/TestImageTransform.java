@@ -155,6 +155,18 @@ public class TestImageTransform {
         assertEquals(null, transform.transform(null));
     }
 
+    @Test
+    public void testConvertColorTransform() throws Exception {
+        ImageWritable writable = makeRandomImage(32, 32, 3);
+        Frame frame = writable.getFrame();
+        ImageTransform transform = new ColorConversion();
+
+        ImageWritable w = transform.transform(writable);
+        Frame f = w.getFrame();
+        assertEquals(f, frame);
+        assertEquals(null, transform.transform(null));
+    }
+
     public static ImageWritable makeRandomImage(int height, int width, int channels) {
         if (height <= 0) {
             height = rng.nextInt() % 100 + 200;
