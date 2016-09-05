@@ -13,6 +13,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.spark.api.RDDTrainingApproach;
+import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -24,6 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -240,7 +243,15 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
+//                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
+                ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
+                        .averagingFrequency(1)
+                        .batchSizePerWorker(miniBatchSizePerWorker)
+                        .saveUpdater(saveUpdater)
+                        .workerPrefetchNumBatches(0)
+//                        .rddTrainingApproach(RDDTrainingApproach.Direct)
+                        .rddTrainingApproach(RDDTrainingApproach.Export)
+                        .build();
                 SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
@@ -258,6 +269,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
+                System.out.println("Initial params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
+                System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertEquals(finalParams, finalSparkParams);
 
                 double sparkScore = sparkNet.getScore();
@@ -318,12 +332,15 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
+                float[] fp = finalParams.data().asFloat();
+                float[] fps = finalSparkParams.data().asFloat();
+                System.out.println("Initial params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Final (Local) params: " + Arrays.toString(fp));
+                System.out.println("Final (Spark) params: " + Arrays.toString(fps));
+
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
-
-                float[] finalParamsFloat = finalParams.dup().data().asFloat();
-                float[] finalSparkParamsFloat = finalSparkParams.dup().data().asFloat();
-                assertArrayEquals(finalParamsFloat, finalSparkParamsFloat, 0.001f);
+                assertArrayEquals(fp, fps, 1e-5f);
 
                 double sparkScore = sparkNet.getScore();
                 assertTrue(sparkScore > 0.0);

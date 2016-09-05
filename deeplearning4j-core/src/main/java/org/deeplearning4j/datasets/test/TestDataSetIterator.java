@@ -85,6 +85,11 @@ public class TestDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
+	public boolean asyncSupported() {
+		return wrapped.asyncSupported();
+	}
+
+	@Override
 	public void reset() {
 		wrapped.reset();
 	}

@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -63,6 +64,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     @Override
     public boolean resetSupported() {
         return iterator.resetSupported();
+    }
+
+    @Override
+    public boolean asyncSupported() {
+        return false;
     }
 
     @Override
@@ -225,6 +231,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
                     lock.writeLock().lock();
                     MultiDataSet ds = iterator.next();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
                     lock.writeLock().unlock();

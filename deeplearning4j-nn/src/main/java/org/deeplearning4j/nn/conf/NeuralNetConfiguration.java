@@ -209,7 +209,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
                     .redistributeParams(redistributeParams)
-                    .cnnInputSize(cnnInputSize)
+                    .setInputType(this.inputType)
                     .confs(list).build();
         }
 
@@ -426,8 +426,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         /**
-         * Use drop connect: multiply the coefficients
-         * by a binomial sampling wrt the dropout probability
+         * Use drop connect: multiply the weight by a binomial sampling wrt the dropout probability.
+         * Dropconnect probability is set using {@link #dropOut(double)}; this is the probability of retaining a weight
          * @param useDropConnect whether to use drop connect or not
          * @return the
          */
@@ -517,6 +517,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         }
 
+        /**
+         * Create a GraphBuilder (for creating a ComputationGraphConfiguration).
+         */
         public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
             return new ComputationGraphConfiguration.GraphBuilder(this);
         }
@@ -541,6 +544,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /**
+         * Optimization algorithm to use. Most common: OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT
+         *
+         * @param optimizationAlgo    Optimization algorithm to use when training
+         */
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
@@ -589,6 +597,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
             }
 
+        /**
+         * Constant for bias initialization. Default: 0.0
+         *
+         * @param biasInit    Constant for bias initialization
+         */
         public Builder biasInit(double biasInit) {
             this.biasInit = biasInit;
             return this;
@@ -627,30 +640,45 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** L1 regularization coefficient.*/
+        /** L1 regularization coefficient.
+         *  Use with .regularization(true)
+         */
         public Builder l1(double l1) {
             this.l1 = l1;
             return this;
         }
 
-        /** L2 regularization coefficient. */
+        /** L2 regularization coefficient
+         * Use with .regularization(true)
+         */
         public Builder l2(double l2) {
             this.l2 = l2;
             return this;
         }
 
+        /**
+         * Dropout probability. This is the probability of <it>retaining</it> an activation. So dropOut(x) will keep an
+         * activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is disabled (default).
+         *
+         * @param dropOut    Dropout probability (probability of retaining an activation)
+         */
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
         }
 
-        /** Momentum rate. */
+        /** Momentum rate
+         *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         */
         public Builder momentum(double momentum) {
             this.momentum = momentum;
             return this;
         }
 
-        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
+        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration
+         *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         */
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumSchedule = momentumAfter;
             return this;
@@ -668,7 +696,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /**
          * Ada delta coefficient
          * @param rho
-         * @return
          */
         public Builder rho(double rho) {
             this.rho = rho;

@@ -16,15 +16,14 @@ import java.util.Random;
  */
 public class BalancedPartitioner extends Partitioner {
     private final int numPartitions;            //Total number of partitions
-    private final int numStandardPartitions;    //Number of partitions of standard size; these are 1 larger than the others (==numPartitions where total number of examples is divisible into numPartitions without remainder)
     private final int elementsPerPartition;
+    private final int remainder;
     private Random r;
 
-    public BalancedPartitioner(int numPartitions, int numStandardPartitions, int elementsPerPartition) {
-        if(numStandardPartitions > numPartitions) throw new IllegalArgumentException("Invalid input: numStandardPartitions > numPartitions");
+    public BalancedPartitioner(int numPartitions, int elementsPerPartition, int remainder) {
         this.numPartitions = numPartitions;
-        this.numStandardPartitions = numStandardPartitions;
         this.elementsPerPartition = elementsPerPartition;
+        this.remainder = remainder;
     }
 
     @Override
@@ -34,27 +33,27 @@ public class BalancedPartitioner extends Partitioner {
 
     @Override
     public int getPartition(Object key) {
-        int elementIdx = (Integer)key;
+        int elementIdx = key.hashCode();
 
-        //First 'numStandardPartitions' executors get "elementsPerPartition" each; the remainder get
-        // elementsPerPartition-1 each. This is because the total number of examples might not be an exact multiple
+        //First 'remainder' executors get elementsPerPartition+1 each; the remainder get
+        // elementsPerPartition each. This is because the total number of examples might not be an exact multiple
         // of the number of cores in the cluster
 
         //Work out: which partition it belongs to...
-        if(elementIdx <= elementsPerPartition * numStandardPartitions){
-            //This goes into one of the standard partitions (of size 'elementsPerPartition')
-            int outputPartition = elementIdx / elementsPerPartition;
+        if(elementIdx <= (elementsPerPartition+1) * remainder){
+            //This goes into one of the larger partitions (of size elementsPerPartition+1)
+            int outputPartition = elementIdx / (elementsPerPartition+1);
             if(outputPartition >= numPartitions){
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
             }
             return outputPartition;
         } else {
-            //This goes into one of the smaller partitions (of size elementsPerPartition - 1)
-            int numValsInStdPartitions = elementsPerPartition * numStandardPartitions;
-            int idxInSmallerPartitions = elementIdx - numValsInStdPartitions;
-            int smallPartitionIdx = idxInSmallerPartitions / (elementsPerPartition-1);
-            int outputPartition = numStandardPartitions + smallPartitionIdx;
+            //This goes into one of the standard size partitions (of size elementsPerPartition)
+            int numValsInLargerPartitions = remainder * (elementsPerPartition+1);
+            int idxInSmallerPartitions = elementIdx - numValsInLargerPartitions;
+            int smallPartitionIdx = idxInSmallerPartitions / elementsPerPartition;
+            int outputPartition = remainder + smallPartitionIdx;
             if(outputPartition >= numPartitions){
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);

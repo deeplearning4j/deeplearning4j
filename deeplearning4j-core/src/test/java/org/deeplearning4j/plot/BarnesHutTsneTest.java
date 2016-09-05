@@ -19,8 +19,11 @@
 package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.Test;
+//import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -35,11 +38,17 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 10/1/14.
  */
 public class BarnesHutTsneTest {
+    @Before
+    public void setUp() {
+     //   CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
+
+    }
+
 
     @Test
     public void testTsne() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10)
                 .theta(0.5).learningRate(500).useAdaGrad(false)

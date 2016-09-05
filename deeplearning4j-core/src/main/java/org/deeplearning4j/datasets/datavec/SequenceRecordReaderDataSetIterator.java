@@ -384,6 +384,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        return true;
+    }
+
+    @Override
     public void reset() {
         recordReader.reset();
         if(labelsReader != null) labelsReader.reset();  //May be null for single seqRR case

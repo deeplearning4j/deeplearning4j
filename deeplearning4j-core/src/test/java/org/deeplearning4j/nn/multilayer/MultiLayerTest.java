@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -611,6 +612,12 @@ public class MultiLayerTest {
     @Test
     public void testDataSetScoreCNN(){
 
+        int miniBatch = 3;
+        int depth = 2;
+        int width = 3;
+        int height = 3;
+        int nOut = 2;
+
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .regularization(false)
                 .learningRate(1.0)
@@ -618,17 +625,11 @@ public class MultiLayerTest {
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(2,2).nOut(1).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(2).build())
-                .cnnInputSize(3,3,2)
+                .setInputType(InputType.convolutionalFlat(height,width,depth))
                 .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-
-        int miniBatch = 3;
-        int depth = 2;
-        int width = 3;
-        int height = 3;
-        int nOut = 2;
 
         Nd4j.getRandom().setSeed(12345);
         Random r = new Random(12345);
