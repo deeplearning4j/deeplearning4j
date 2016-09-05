@@ -21,17 +21,16 @@ package org.deeplearning4s.layers
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
-  * Abstract base class for layers in neural net architectures.
+  * Trait for output layers in DL4J neural networks and computational graphs.
   *
   * @author David Kale
   */
 trait Output {
-  protected var _isOutput = false
-  protected var _lossFunction: LossFunction = null
+  protected var isOutput = false
+  protected var lossFunction: LossFunction = _
 
-  def isOutput: Boolean = _isOutput
   def makeOutput(lossFunction: LossFunction): Unit = {
-    _isOutput = true
-    _lossFunction = lossFunction
+    isOutput = true
+    this.lossFunction = lossFunction
   }
 }
