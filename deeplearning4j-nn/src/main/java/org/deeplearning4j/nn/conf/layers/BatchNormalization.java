@@ -111,6 +111,29 @@ public class BatchNormalization extends FeedForwardLayer {
         return null;
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        //Don't regularize batch norm params: similar to biases in the sense that there are not many of them...
+        return 0.0;
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        //Don't regularize batch norm params: similar to biases in the sense that there are not many of them...
+        return 0;
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch(paramName){
+            case BatchNormalizationParamInitializer.BETA:
+            case BatchNormalizationParamInitializer.GAMMA:
+                return learningRate;
+            default:
+                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected double decay = 0.9;

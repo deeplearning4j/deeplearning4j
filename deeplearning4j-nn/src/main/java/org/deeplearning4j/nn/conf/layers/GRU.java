@@ -65,6 +65,50 @@ public class GRU extends BaseRecurrentLayer {
         return GRUParamInitializer.getInstance();
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch(paramName){
+            case GRUParamInitializer.INPUT_WEIGHT_KEY:
+            case GRUParamInitializer.RECURRENT_WEIGHT_KEY:
+                return l1;
+            case GRUParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch(paramName){
+            case GRUParamInitializer.INPUT_WEIGHT_KEY:
+            case GRUParamInitializer.RECURRENT_WEIGHT_KEY:
+                return l2;
+            case GRUParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch(paramName){
+            case GRUParamInitializer.INPUT_WEIGHT_KEY:
+            case GRUParamInitializer.RECURRENT_WEIGHT_KEY:
+                return learningRate;
+            case GRUParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {      
         @Override
