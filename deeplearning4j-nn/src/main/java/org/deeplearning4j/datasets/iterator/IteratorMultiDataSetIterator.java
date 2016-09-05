@@ -133,6 +133,12 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        //No need to asynchronously prefetch here: already in memory
+        return false;
+    }
+
+    @Override
     public void reset() {
         throw new UnsupportedOperationException("Reset not supported");
     }

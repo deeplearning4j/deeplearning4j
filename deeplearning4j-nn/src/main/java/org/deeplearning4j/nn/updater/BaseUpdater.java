@@ -13,8 +13,8 @@ import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
-import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.*;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -185,16 +185,9 @@ public abstract class BaseUpdater implements Updater {
                 }
                 break;
             case ClipElementWiseAbsoluteValue:
-                Condition absValueCondition = new AbsValueGreaterThan(threshold);
-                Function<Number,Number> clipFn = new Function<Number, Number>() {
-                    @Override
-                    public Number apply(Number number) {
-                        return (number.doubleValue() > threshold ? threshold : -threshold);
-                    }
-                };
-
                 for( INDArray g : gradient.gradientForVariable().values()){
-                    BooleanIndexing.applyWhere(g, absValueCondition, clipFn);
+                    BooleanIndexing.replaceWhere(g, threshold, Conditions.greaterThan(threshold));
+                    BooleanIndexing.replaceWhere(g, -threshold, Conditions.lessThan(-threshold));
                 }
                 break;
             case ClipL2PerLayer:

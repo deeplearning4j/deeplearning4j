@@ -237,17 +237,12 @@ public class SparkUtils {
                 }
 
                 if (numPartitions * objectsPerPartition < totalObjects) {
-                    int add = (totalObjects - numPartitions * objectsPerPartition) / numPartitions;
-                    int mod = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
-                    if (mod != 0) add++; //round up
-                    objectsPerPartition += add;
-
                     allCorrectSize = true;
                     for (Tuple2<Integer, Integer> t2 : partitionCounts) {
                         allCorrectSize &= (t2._2() == objectsPerPartition);
                     }
                 }
-                if (numPartitions * objectsPerPartition < totalObjects) throw new RuntimeException();
+
 
                 if (initialPartitions == numPartitions && allCorrectSize) {
                     //Don't need to do any repartitioning here - already in the format we want
@@ -264,10 +259,8 @@ public class SparkUtils {
                 JavaRDD<Tuple2<Integer, T>> indexed = rdd.mapPartitionsWithIndex(new AssignIndexFunction<T>(elementStartOffsetByPartitions), true);
                 JavaPairRDD<Integer, T> pairIndexed = indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, T>(), true);
 
-                int numStandardPartitions = totalObjects / objectsPerPartition;
-                if (totalObjects % objectsPerPartition != 0) numStandardPartitions++; //Round up.
-
-                pairIndexed = pairIndexed.partitionBy(new BalancedPartitioner(numPartitions, numStandardPartitions, objectsPerPartition));
+                int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
+                pairIndexed = pairIndexed.partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
 
                 return pairIndexed.values();
             default:

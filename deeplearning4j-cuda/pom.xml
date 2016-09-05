@@ -12,4 +12,8 @@
     <artifactId>deeplearning4j-cuda</artifactId>
     <packaging>pom</packaging>
 
+    <modules>
+        <module>deeplearning4j-cuda-7.5</module>
+    </modules>
+
 </project>

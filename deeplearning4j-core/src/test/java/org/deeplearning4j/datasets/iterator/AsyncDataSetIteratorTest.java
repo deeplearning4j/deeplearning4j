@@ -3,11 +3,14 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -84,6 +87,47 @@ public class AsyncDataSetIteratorTest {
             consumer.consumeWhileHasNext(true);
 
             assertEquals(TEST_SIZE, consumer.getCount());
+        }
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testWithException() {
+        ExistingDataSetIterator crashingIterator = new ExistingDataSetIterator(new IterableWithException(100));
+        AsyncDataSetIterator iterator = new AsyncDataSetIterator(crashingIterator, 8);
+
+        TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, EXECUTION_SMALL);
+        consumer.consumeWhileHasNext(true);
+    }
+
+    private class IterableWithException implements Iterable<DataSet> {
+        private final AtomicLong counter = new AtomicLong(0);
+        private final int crashIteration;
+        public IterableWithException(int iteration) {
+            crashIteration = iteration;
+        }
+
+        @Override
+        public Iterator<DataSet> iterator() {
+            counter.set(0);
+            return new Iterator<DataSet>() {
+                @Override
+                public boolean hasNext() {
+                    return true;
+                }
+
+                @Override
+                public DataSet next() {
+                    if (counter.incrementAndGet() >= crashIteration)
+                        throw new ArrayIndexOutOfBoundsException("Thrown as expected");
+
+                    return new DataSet(Nd4j.create(10), Nd4j.create(10));
+                }
+
+                @Override
+                public void remove() {
+
+                }
+            };
         }
     }
 }

@@ -7,7 +7,7 @@
 		<link rel="stylesheet" href="node_modules/todomvc-app-css/index.css">
 
         <!-- jQuery -->
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+        <script src="/assets/1-jquery.min.js"></script>
         <script src="/assets/d3.min.js"></script>
         <script src="/assets/render.js"></script>
         <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>

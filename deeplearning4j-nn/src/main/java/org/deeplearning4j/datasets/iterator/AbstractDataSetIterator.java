@@ -89,6 +89,10 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
         return iterable != null;
     }
 
+    @Override
+    public boolean asyncSupported(){
+        return true;
+    }
     /**
      * Resets the iterator back to the beginning
      */
