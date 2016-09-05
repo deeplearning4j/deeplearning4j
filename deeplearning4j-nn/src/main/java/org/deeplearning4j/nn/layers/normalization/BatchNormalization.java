@@ -232,15 +232,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             var.addi(layerConf.getEps());
         } else {
-            // cumulative mean and var - used after training
+            // Global mean and variance estimate - used after training
             mean = this.globalMean;
             var = this.globalVar;
         }
         std = Transforms.sqrt(var,true);
 
         if (layerConf.isLockGammaBeta()) {
-            gamma = Nd4j.ones(shape);
-            beta = Nd4j.zeros(shape);
+            //TODO: reuse these arrays... they won't don't change
+            int[] gammaBetaShape = new int[]{1,layerConf.getNOut()};
+            gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf.getGamma());
+            beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf.getBeta());
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             beta = getParam(BatchNormalizationParamInitializer.BETA);
@@ -250,7 +252,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             double decay = setMeanVar ? 1 : layerConf.getDecay();
             if (setMeanVar){
                 this.globalMean = this.globalMean == null? Nd4j.zeros(mean.shape()): this.globalMean;
-                this.globalVar = this.globalVar == null? Nd4j.valueArrayOf(var.shape(), layerConf.getEps()): this.globalVar;
+                this.globalVar = this.globalVar == null? Nd4j.ones(var.shape()): this.globalVar;
                 setMeanVar = false;
             }
             INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN,
@@ -285,18 +287,25 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             if (setMeanVar){
                 this.globalMean = this.globalMean == null? Nd4j.zeros(mean.shape()): this.globalMean;
-                this.globalVar = this.globalVar == null? Nd4j.valueArrayOf(var.shape(), layerConf.getEps()): this.globalVar;
+                this.globalVar = this.globalVar == null? Nd4j.ones(var.shape()): this.globalVar;
                 setMeanVar = false;
             }
 
-            decay = layerConf.getDecay();
+            if(layerConf.isMinibatch()){
+                //Standard case: Estimate global mean and variance stats by moving average
+                //globalMean = decay * globalMean + (1-decay) * minibatchMean
+                //globalVar  = decay * globalVar  + (1-decay) * minibatchVar
+                //Note that it's safe to do a muli on 'mean' and 'var' variables: can't be the global arrays with training == Trainingmode.TRAIN
+                decay = layerConf.getDecay();
+                this.globalMean.muli(decay).addi(mean.muli(1-decay));
+                this.globalVar.muli(decay).addi(var.muli(1-decay));
 
-            //Estimate global mean and variance stats by moving average
-            //globalMean = decay * globalMean + (1-decay) * minibatchMean
-            //globalVar  = decay * globalVar  + (1-decay) * minibatchVar
-            //Note that it's safe to do a muli on 'mean' and 'var' variables: can't be the global arrays wih training == Trainingmode.TRAIN
-            this.globalMean.muli(decay).addi(mean.muli(1-decay));
-            this.globalVar.muli(decay).addi(var.muli(1-decay));
+            } else {
+                //Special case: doing full-batch (entire data set) training (uncommon; only tiny data sets)
+                //In this case, minibatch and global stats are identical. Don't want to use a moving average estimate.
+                this.globalMean = mean;
+                this.globalVar = var;
+            }
         }
 
         return activations;
