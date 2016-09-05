@@ -20,18 +20,14 @@ package org.deeplearning4s.layers
 
 
 /**
-  * Abstract base class for layers in neural net architectures.
+  * Trait for node in DL4J neural networks and computational graphs.
+  * Nodes are assumed to have inputs and ouputs with "shapes."
   *
   * @author David Kale
   */
-abstract class Node {
-  protected var _inputShape = List[Int]()
+trait Node {
+  var inputShape = List[Int]()
   protected var _outputShape = List[Int]()
-
-  def inputShape = _inputShape
-  def inputShape_=(newInputShape: List[Int]): Unit = {
-    _inputShape = newInputShape
-  }
 
   def outputShape: List[Int]
 }
