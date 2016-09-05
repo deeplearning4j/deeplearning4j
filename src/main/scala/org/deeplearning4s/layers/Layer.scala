@@ -18,7 +18,15 @@
 
 package org.deeplearning4s.layers
 
+import org.deeplearning4j.nn.conf.layers.{Layer => JLayer}
 
+
+/**
+  * Trait for proper "layer" in DL4J neural networks and computational graphs.
+  * Compiles out to DL4J layer.
+  *
+  * @author David Kale
+  */
 trait Layer {
   def compile: org.deeplearning4j.nn.conf.layers.Layer
 }
