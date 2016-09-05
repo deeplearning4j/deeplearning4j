@@ -417,9 +417,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
         //Keyed as per backprop()
         defaultConfiguration.clearVariables();
+        List<String> variables = defaultConfiguration.variables(false);
         for( int i=0; i<layers.length; i++ ){
             for( String s : layers[i].conf().variables() ){
-                defaultConfiguration.addVariable(i+"_"+s);
+                variables.add(i+"_"+s);
             }
         }
     }

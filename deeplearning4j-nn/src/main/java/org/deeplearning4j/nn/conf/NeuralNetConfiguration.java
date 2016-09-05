@@ -108,6 +108,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new ArrayList<>(variables);
     }
 
+    public List<String> variables(boolean copy){
+        if(copy) return variables();
+        return variables;
+    }
+
     public void addVariable(String variable) {
         if(!variables.contains(variable)) {
             variables.add(variable);
