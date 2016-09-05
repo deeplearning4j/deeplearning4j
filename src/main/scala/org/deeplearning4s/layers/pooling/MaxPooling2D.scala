@@ -20,14 +20,14 @@ package org.deeplearning4s.layers.pooling
 
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer
 import org.deeplearning4s.layers.Layer
-import org.deeplearning4s.layers.convolutional.ConvolutionBase
+import org.deeplearning4s.layers.convolutional.Convolution
 
 
 class MaxPooling2D(
     kernelSize: List[Int],
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0))
-  extends ConvolutionBase(_kernelSize = kernelSize, _stride = stride, _padding = padding)
+  extends Convolution(kernelSize, stride, padding)
   with Layer {
   if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2)
     throw new IllegalArgumentException("Kernel, stride, padding must all equal 2.")
