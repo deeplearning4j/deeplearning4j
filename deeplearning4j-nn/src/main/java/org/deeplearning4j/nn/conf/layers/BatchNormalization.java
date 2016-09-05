@@ -26,6 +26,7 @@ import java.util.Map;
 public class BatchNormalization extends FeedForwardLayer {
     protected double decay;
     protected double eps;
+    @Deprecated
     protected boolean useBatchMean;
     protected double gamma;
     protected double beta;
@@ -115,12 +116,14 @@ public class BatchNormalization extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected double decay = 0.9;
-        protected double eps = Nd4j.EPS_THRESHOLD;
+        protected double eps = 1e-5;
+        @Deprecated //useBatchMean = false ->
         protected boolean useBatchMean = true; // TODO auto set this if layer conf is batch
         protected boolean lockGammaBeta = false;
-        protected double gamma = 1;
-        protected double beta = 0;
+        protected double gamma = 1.0;
+        protected double beta = 0.0;
 
+        @Deprecated
         public Builder(double decay, boolean useBatchMean) {
             this.decay = decay;
             this.useBatchMean = useBatchMean;
@@ -144,31 +147,60 @@ public class BatchNormalization extends FeedForwardLayer {
         public Builder() {
         }
 
+        /**
+         * Used only when 'true' is passed to {@link #lockGammaBeta(boolean)}. Value is not used otherwise.<br>
+         * Default: 1.0
+         *
+         * @param gamma    Gamma parameter for all activations, used only with locked gamma/beta configuration mode
+         */
         public Builder gamma(double gamma) {
             this.gamma = gamma;
             return this;
         }
 
+        /**
+         * Used only when 'true' is passed to {@link #lockGammaBeta(boolean)}. Value is not used otherwise.<br>
+         * Default: 0.0
+         *
+         * @param beta    Beta parameter for all activations, used only with locked gamma/beta configuration mode
+         */
         public Builder beta(double beta) {
             this.beta = beta;
             return this;
         }
 
         /**
-         * Epsilon value for batch normalization
+         * Epsilon value for batch normalization; small floating point value added to variance
+         * (algorithm 1 in http://arxiv.org/pdf/1502.03167v3.pdf) to reduce/avoid underflow issues.<br>
+         * Default: 1e-5
          *
-         * @param eps Epsilon
+         * @param eps Epsilon values to use
          */
         public Builder eps(double eps) {
             this.eps = eps;
             return this;
         }
 
+        /**
+         * At test time: we can use a global estimate of the mean and variance, calculated using a moving average
+         * of the batch means/variances. This moving average is implemented as:<br>
+         * globalMeanEstimate = decay * globalMeanEstimate + (1-decay) * batchMean<br>
+         * globalVarianceEstimate = decay * globalVarianceEstimate + (1-decay) * batchVariance<br>
+         *
+         * @param decay Decay value to use for global stats calculation
+         */
         public Builder decay(double decay) {
             this.decay = decay;
             return this;
         }
 
+        /**
+         * If set to true: lock the gamma and beta parameters to the values for each activation, specified by
+         * {@link #gamma(double)} and {@link #beta(double)}. Default: false -> learn gamma and beta parameter values
+         * during network training.
+         *
+         * @param lockGammaBeta If true: use fixed beta/gamma values. False: learn during
+         */
         public Builder lockGammaBeta(boolean lockGammaBeta) {
             this.lockGammaBeta = lockGammaBeta;
             return this;
