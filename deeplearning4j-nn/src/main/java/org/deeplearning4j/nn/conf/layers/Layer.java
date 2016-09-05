@@ -163,6 +163,36 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
 
+    /**
+     * Get the L1 coefficient for the given parameter.
+     * Different parameters may have different L1 values, even for a single .l1(x) configuration.
+     * For example, biases generally aren't L1 regularized, even if weights are
+     *
+     * @param paramName    Parameter name
+     * @return L1 value for that parameter
+     */
+    public abstract double getL1ByParam(String paramName);
+
+    /**
+     * Get the L2 coefficient for the given parameter.
+     * Different parameters may have different L2 values, even for a single .l2(x) configuration.
+     * For example, biases generally aren't L1 regularized, even if weights are
+     *
+     * @param paramName    Parameter name
+     * @return L2 value for that parameter
+     */
+    public abstract double getL2ByParam(String paramName);
+
+    /**
+     * Get the (initial) learning rate coefficient for the given parameter.
+     * Different parameters may be configured to have different learning rates, though commonly all parameters will
+     * have the same learning rate
+     *
+     * @param paramName    Parameter name
+     * @return Initial learning rate value for that parameter
+     */
+    public abstract double getLearningRateByParam(String paramName);
+
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
