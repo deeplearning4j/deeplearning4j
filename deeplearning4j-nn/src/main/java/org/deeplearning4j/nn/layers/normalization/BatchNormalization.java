@@ -196,7 +196,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     public INDArray preOutput(INDArray x, TrainingMode training){
-        INDArray gamma, beta;
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
@@ -238,11 +237,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
         std = Transforms.sqrt(var,true);
 
-        if (layerConf.isLockGammaBeta()) {
-            //TODO: reuse these arrays... they won't don't change
-            int[] gammaBetaShape = new int[]{1,layerConf.getNOut()};
-            gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf.getGamma());
-            beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf.getBeta());
+        INDArray gamma = null;
+        INDArray beta = null;
+        if (!layerConf.isLockGammaBeta()) {
+            if(helper != null){
+                //TODO: don't create these each iteration, when using cudnn
+                int[] gammaBetaShape = new int[]{1,layerConf().getNOut()};
+                gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
+                beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta());
+            }
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             beta = getParam(BatchNormalizationParamInitializer.BETA);
@@ -266,6 +269,20 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (x.rank() == 2) {
             xMu = x.subRowVector(mean);
             xHat = xMu.divRowVector(std);
+
+            if(layerConf.isLockGammaBeta()){
+                //Special case: gamma/beta have fixed values for all outputs
+                double g = layerConf.getGamma();
+                double b = layerConf.getBeta();
+                if(g != 1.0 && b != 0.0){
+                    //Default and most common case: 1.0 and 0.0 for these parameters. No point executing 1 * x + 0 op
+                    activations = xHat.mul(g).addi(beta);
+                }
+            } else {
+                //Standard case: gamma and beta are learned per parameter
+                activations = xHat.mulRowVector(gamma).addiRowVector(beta);
+            }
+
             activations = xHat.mulRowVector(gamma).addiRowVector(beta);
         } else if (x.rank() == 4) {
             xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
