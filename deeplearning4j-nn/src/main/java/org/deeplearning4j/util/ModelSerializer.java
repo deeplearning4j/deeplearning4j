@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -46,6 +47,8 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))){
             writeModel(model, stream, saveUpdater);
+            stream.flush();
+            stream.close();
         }
     }
 
@@ -60,6 +63,8 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull String path, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(path))){
             writeModel(model, stream, saveUpdater);
+            stream.flush();
+            stream.close();
         }
     }
 
@@ -71,7 +76,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater) throws IOException {
-        ZipOutputStream zipfile = new ZipOutputStream(stream);
+        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
 
         // save json first
         String json = "";

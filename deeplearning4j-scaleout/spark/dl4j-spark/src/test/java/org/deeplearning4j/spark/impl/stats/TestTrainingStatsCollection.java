@@ -120,47 +120,53 @@ public class TestTrainingStatsCollection {
             assertTrue(stats instanceof ParameterAveragingTrainingMasterStats);
             ParameterAveragingTrainingMasterStats masterStats = (ParameterAveragingTrainingMasterStats) stats;
 
+            List<EventStats> exportTimeStats = masterStats.getParameterAveragingMasterExportTimesMs();
+            assertEquals(1, exportTimeStats.size());
+            assertDurationGreaterZero(exportTimeStats);
+            assertNonNullFields(exportTimeStats);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(exportTimeStats, 1, 1, 1);
+
             List<EventStats> countRddTime = masterStats.getParameterAveragingMasterCountRddSizeTimesMs();
             assertEquals(1, countRddTime.size());   //occurs once per fit
             assertDurationGreaterEqZero(countRddTime);
             assertNonNullFields(countRddTime);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(countRddTime,1,1,1);   //should occur only in master once
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(countRddTime, 1, 1, 1);   //should occur only in master once
 
             List<EventStats> broadcastCreateTime = masterStats.getParameterAveragingMasterBroadcastCreateTimesMs();
             assertEquals(numberOfAveragings, broadcastCreateTime.size());
             assertDurationGreaterEqZero(broadcastCreateTime);
             assertNonNullFields(broadcastCreateTime);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(broadcastCreateTime,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(broadcastCreateTime, 1, 1, 1);   //only 1 thread for master
 
             List<EventStats> fitTimes = masterStats.getParameterAveragingMasterFitTimesMs();
             assertEquals(1, fitTimes.size());   //i.e., number of times fit(JavaRDD<DataSet>) was called
             assertDurationGreaterZero(fitTimes);
             assertNonNullFields(fitTimes);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(fitTimes,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(fitTimes, 1, 1, 1);   //only 1 thread for master
 
             List<EventStats> splitTimes = masterStats.getParameterAveragingMasterSplitTimesMs();
             assertEquals(1, splitTimes.size());     //Splitting of the data set is executed once only (i.e., one fit(JavaRDD<DataSet>) call)
             assertDurationGreaterEqZero(splitTimes);
             assertNonNullFields(splitTimes);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(splitTimes,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(splitTimes, 1, 1, 1);   //only 1 thread for master
 
             List<EventStats> aggregateTimesMs = masterStats.getParamaterAveragingMasterAggregateTimesMs();
             assertEquals(numberOfAveragings, aggregateTimesMs.size());
             assertDurationGreaterEqZero(aggregateTimesMs);
             assertNonNullFields(aggregateTimesMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(aggregateTimesMs,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(aggregateTimesMs, 1, 1, 1);   //only 1 thread for master
 
             List<EventStats> processParamsTimesMs = masterStats.getParameterAveragingMasterProcessParamsUpdaterTimesMs();
             assertEquals(numberOfAveragings, processParamsTimesMs.size());
             assertDurationGreaterEqZero(processParamsTimesMs);
             assertNonNullFields(processParamsTimesMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(processParamsTimesMs,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(processParamsTimesMs, 1, 1, 1);   //only 1 thread for master
 
             List<EventStats> repartitionTimesMs = masterStats.getParameterAveragingMasterRepartitionTimesMs();
             assertEquals(numberOfAveragings, repartitionTimesMs.size());
             assertDurationGreaterEqZero(repartitionTimesMs);
             assertNonNullFields(repartitionTimesMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(repartitionTimesMs,1,1,1);   //only 1 thread for master
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(repartitionTimesMs, 1, 1, 1);   //only 1 thread for master
 
             //Second: Common spark training stats
             SparkTrainingStats commonStats = masterStats.getNestedTrainingStats();
@@ -171,13 +177,13 @@ public class TestTrainingStatsCollection {
             assertEquals(numberOfAveragings * nWorkers, workerFlatMapTotalTimeMs.size());
             assertDurationGreaterZero(workerFlatMapTotalTimeMs);
             assertNonNullFields(workerFlatMapTotalTimeMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapTotalTimeMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapTotalTimeMs, 1, 1, nWorkers);
 
             List<EventStats> workerFlatMapGetInitialModelTimeMs = cStats.getWorkerFlatMapGetInitialModelTimeMs();
             assertEquals(numberOfAveragings * nWorkers, workerFlatMapGetInitialModelTimeMs.size());
             assertDurationGreaterEqZero(workerFlatMapGetInitialModelTimeMs);
             assertNonNullFields(workerFlatMapGetInitialModelTimeMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapGetInitialModelTimeMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapGetInitialModelTimeMs, 1, 1, nWorkers);
 
             List<EventStats> workerFlatMapDataSetGetTimesMs = cStats.getWorkerFlatMapDataSetGetTimesMs();
             int numMinibatchesProcessed = workerFlatMapDataSetGetTimesMs.size();
@@ -187,10 +193,10 @@ public class TestTrainingStatsCollection {
             assertTrue(numMinibatchesProcessed >= expectedNumMinibatchesProcessed - 5);
 
             List<EventStats> workerFlatMapProcessMiniBatchTimesMs = cStats.getWorkerFlatMapProcessMiniBatchTimesMs();
-            assertTrue(workerFlatMapProcessMiniBatchTimesMs.size() >= numberOfAveragings * nWorkers * averagingFrequency - 5 );
+            assertTrue(workerFlatMapProcessMiniBatchTimesMs.size() >= numberOfAveragings * nWorkers * averagingFrequency - 5);
             assertDurationGreaterEqZero(workerFlatMapProcessMiniBatchTimesMs);
             assertNonNullFields(workerFlatMapDataSetGetTimesMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapDataSetGetTimesMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(workerFlatMapDataSetGetTimesMs, 1, 1, nWorkers);
 
             //Third: ParameterAveragingTrainingWorker stats
             SparkTrainingStats paramAvgStats = cStats.getNestedTrainingStats();
@@ -202,45 +208,45 @@ public class TestTrainingStatsCollection {
             assertEquals(numberOfAveragings * nWorkers, parameterAveragingWorkerBroadcastGetValueTimeMs.size());
             assertDurationGreaterEqZero(parameterAveragingWorkerBroadcastGetValueTimeMs);
             assertNonNullFields(parameterAveragingWorkerBroadcastGetValueTimeMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerBroadcastGetValueTimeMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerBroadcastGetValueTimeMs, 1, 1, nWorkers);
 
             List<EventStats> parameterAveragingWorkerInitTimeMs = pStats.getParameterAveragingWorkerInitTimeMs();
             assertEquals(numberOfAveragings * nWorkers, parameterAveragingWorkerInitTimeMs.size());
             assertDurationGreaterEqZero(parameterAveragingWorkerInitTimeMs);
             assertNonNullFields(parameterAveragingWorkerInitTimeMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerInitTimeMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerInitTimeMs, 1, 1, nWorkers);
 
             List<EventStats> parameterAveragingWorkerFitTimesMs = pStats.getParameterAveragingWorkerFitTimesMs();
             assertTrue(parameterAveragingWorkerFitTimesMs.size() >= numberOfAveragings * nWorkers * averagingFrequency - 5);
             assertDurationGreaterEqZero(parameterAveragingWorkerFitTimesMs);
             assertNonNullFields(parameterAveragingWorkerFitTimesMs);
-            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerFitTimesMs,1,1,nWorkers);
+            assertExpectedNumberMachineIdsJvmIdsThreadIds(parameterAveragingWorkerFitTimesMs, 1, 1, nWorkers);
 
             assertNull(pStats.getNestedTrainingStats());
 
 
             //Finally: try exporting stats
             String tempDir = System.getProperty("java.io.tmpdir");
-            String outDir = FilenameUtils.concat(tempDir,"dl4j_testTrainingStatsCollection");
+            String outDir = FilenameUtils.concat(tempDir, "dl4j_testTrainingStatsCollection");
             stats.exportStatFiles(outDir, sc.sc());
 
-            String htmlPlotsPath = FilenameUtils.concat(outDir,"AnalysisPlots.html");
+            String htmlPlotsPath = FilenameUtils.concat(outDir, "AnalysisPlots.html");
             StatsUtils.exportStatsAsHtml(stats, htmlPlotsPath, sc);
         } finally {
             sc.stop();
         }
     }
 
-    private static void assertDurationGreaterEqZero(List<EventStats> array){
-        for(EventStats e : array) assertTrue(e.getDurationMs() >= 0);
+    private static void assertDurationGreaterEqZero(List<EventStats> array) {
+        for (EventStats e : array) assertTrue(e.getDurationMs() >= 0);
     }
 
-    private static void assertDurationGreaterZero(List<EventStats> array){
-        for(EventStats e : array) assertTrue(e.getDurationMs() > 0);
+    private static void assertDurationGreaterZero(List<EventStats> array) {
+        for (EventStats e : array) assertTrue(e.getDurationMs() > 0);
     }
 
-    private static void assertNonNullFields(List<EventStats> array){
-        for(EventStats e : array){
+    private static void assertNonNullFields(List<EventStats> array) {
+        for (EventStats e : array) {
             assertNotNull(e.getMachineID());
             assertNotNull(e.getJvmID());
             assertNotNull(e.getDurationMs());
@@ -250,11 +256,11 @@ public class TestTrainingStatsCollection {
         }
     }
 
-    private static void assertExpectedNumberMachineIdsJvmIdsThreadIds(List<EventStats> events, int expNMachineIDs, int expNumJvmIds, int expNumThreadIds){
+    private static void assertExpectedNumberMachineIdsJvmIdsThreadIds(List<EventStats> events, int expNMachineIDs, int expNumJvmIds, int expNumThreadIds) {
         Set<String> machineIDs = new HashSet<>();
         Set<String> jvmIDs = new HashSet<>();
         Set<Long> threadIDs = new HashSet<>();
-        for(EventStats e : events){
+        for (EventStats e : events) {
             machineIDs.add(e.getMachineID());
             jvmIDs.add(e.getJvmID());
             threadIDs.add(e.getThreadID());

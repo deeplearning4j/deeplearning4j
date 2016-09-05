@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -251,7 +252,7 @@ public class BatchNormalizationTest {
                         .activation("softmax")
                         .nIn(2).nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28,28,1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -375,7 +376,7 @@ public class BatchNormalizationTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28,28,1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
