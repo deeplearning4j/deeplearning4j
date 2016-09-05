@@ -18,11 +18,13 @@
 
 package org.deeplearning4s.models
 
-import org.deeplearning4s.layers.{Node, Output, Layer, Preprocessor}
+import org.deeplearning4s.layers.{Layer, Node, Output, Preprocessor}
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup
 import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4s.layers.convolutional.Convolution
 import org.deeplearning4s.layers.reshaping.Reshape
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -43,6 +45,7 @@ class Sequential extends Model {
   private var layers: List[Node] = List()
   private var model: MultiLayerNetwork = _
   private var preprocessors: Map[Int, Node] = Map()
+  private var hasConvolutionLayer: Boolean = false
 
   def add(layer: Node): Unit = {
     if (preprocessors.contains(layers.length))
@@ -56,13 +59,17 @@ class Sequential extends Model {
     layer match {
       case l: Preprocessor =>
         preprocessors = preprocessors + (layers.length -> layer)
+      case l: Convolution =>
+        hasConvolutionLayer = true
+        layers = layers :+ layer
       case _ =>
         layers = layers :+ layer
     }
   }
 
   override def compile(lossFunction: LossFunction,
-                       optimizationAlgo: OptimizationAlgorithm): Unit = {
+                       optimizationAlgo: OptimizationAlgorithm,
+                       suppressConvolutionSetup: Boolean = false): Unit = {
     var builder: NeuralNetConfiguration.ListBuilder = new NeuralNetConfiguration.Builder()
       .optimizationAlgo(optimizationAlgo)
       .iterations(1)
@@ -95,6 +102,11 @@ class Sequential extends Model {
  */
 //    if (layers.head.isInstanceOf[ConvolutionBaseLayer])
 //      builder.cnnInputSize(layers.head.inputShape.toArray)
+    if (!suppressConvolutionSetup)
+      new ConvolutionLayerSetup(builder,
+                                layers.head.inputShape.head,
+                                layers.head.inputShape.tail.head,
+                                layers.head.inputShape.last)
 
     model = new MultiLayerNetwork(builder.build())
     model.init()
