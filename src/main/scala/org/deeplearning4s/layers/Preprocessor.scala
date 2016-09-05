@@ -21,6 +21,12 @@ package org.deeplearning4s.layers
 import org.deeplearning4j.nn.conf.InputPreProcessor
 
 
+/**
+  * Trait for preprocessing layers in DL4J neural networks and computational graphs.
+  * Compiles out to DL4J InputPreProcessor.
+  *
+  * @author David Kale
+  */
 trait Preprocessor {
   def compile: InputPreProcessor
 }
