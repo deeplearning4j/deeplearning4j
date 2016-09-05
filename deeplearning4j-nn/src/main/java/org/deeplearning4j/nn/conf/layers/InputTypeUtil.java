@@ -53,7 +53,7 @@ public class InputTypeUtil {
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
-        int wOut = (inWidth - kW + 2 * padW) / sH + 1;
+        int wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 
