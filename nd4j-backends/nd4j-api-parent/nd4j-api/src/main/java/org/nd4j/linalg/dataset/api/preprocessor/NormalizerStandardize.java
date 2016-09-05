@@ -87,9 +87,9 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
-        featureRank = dataSet.getFeatureMatrix().rank();
+        featureRank = dataSet.getFeatures().rank();
 
-        INDArray theFeatures = dataSet.getFeatureMatrix();
+        INDArray theFeatures = dataSet.getFeatures();
         if (featureRank == 3) theFeatures = tailor3d2d(dataSet,true);
         if (featureRank == 4) theFeatures = tailor4d2d(dataSet,true);
         featureMeanStd = fit(theFeatures);

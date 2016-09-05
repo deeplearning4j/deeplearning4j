@@ -72,11 +72,11 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        toPreProcess.getFeatureMatrix().divi(this.maxPixelVal); //Scaled to 0->1
+        toPreProcess.getFeatures().divi(this.maxPixelVal); //Scaled to 0->1
         if (this.maxRange - this.minRange != 1) 
-            toPreProcess.getFeatureMatrix().muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
+            toPreProcess.getFeatures().muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
         if (this.minRange != 0) 
-            toPreProcess.getFeatureMatrix().addi(this.minRange); //Offset by minRange
+            toPreProcess.getFeatures().addi(this.minRange); //Offset by minRange
     }
 
     /**
