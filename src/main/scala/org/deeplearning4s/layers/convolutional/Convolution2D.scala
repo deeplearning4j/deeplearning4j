@@ -21,20 +21,22 @@ package org.deeplearning4s.layers.convolutional
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4s.layers.Layer
+import org.deeplearning4s.regularizers.{NoRegularizer, WeightRegularizer}
 
 
 class Convolution2D(
+    nChannels: Int,
     nFilter: Int,
     kernelSize: List[Int],
-    nIn: List[Int] = List(),
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0),
     val weightInit: WeightInit = WeightInit.VI,
-    val activation: String = "identity")
-  extends ConvolutionBase(_kernelSize =  kernelSize, _stride = stride, _padding = padding)
+    val activation: String = "identity",
+    val regularizer: WeightRegularizer = NoRegularizer(),
+    val dropOut: Double = 0.0)
+  extends Convolution(kernelSize, stride, padding, nFilter)
   with Layer {
-  _nFilter = nFilter
-  _inputShape = nIn
+  inputShape = List(nChannels)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
     if (inputShape.isEmpty)
@@ -45,8 +47,11 @@ class Convolution2D(
       .stride(stride.head, stride.last)
       .padding(padding.head, padding.last)
       .nOut(outputShape.last)
-      .activation(activation)
       .weightInit(weightInit)
+      .activation(activation)
+      .l1(regularizer.l1)
+      .l2(regularizer.l2)
+      .dropOut(dropOut)
       .build()
   }
 }
