@@ -74,6 +74,6 @@ public class ColorConversion extends BaseImageTransform {
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return image;
+        return new ImageWritable(converter.convert(result));
     }
 }
