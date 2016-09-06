@@ -123,43 +123,26 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
 
-        int nOut = layerConf.getNOut();
         if (epsilon.rank() == 2) {
             //TODO: handle fixed beta/gamma case...
             INDArray dGamma = epsilon.mul(xHat).sum(0);     //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dBeta = epsilon.sum(0);                //dL/dBeta = sum_examples dL/dOut
             INDArray dxhat = epsilon.mulRowVector(gamma);   //dL/dxHat = dL/dOut . gamma        Shape: [minibatchSize, nOut]
-            int[] dxhatShape = dxhat.shape();
-            if(!Arrays.equals(new int[]{batchSize,nOut}, dxhatShape)) throw new RuntimeException();
 
-            //dL/dBatchVariance
-//            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0/2.0, true));   //Shape: [1, miniBatch]
-            INDArray dLdVar = dxhat.mul(xMu).mul(-0.5).mulRowVector(Transforms.pow(std, -3.0, true)).sum(0);   //Shape: [1, miniBatch]
-            int[] dLdVarShape = dLdVar.shape();
-            if(!Arrays.equals(new int[]{1,nOut}, dLdVarShape)) throw new RuntimeException();
-
-//            System.out.println("dLdVar (backprop)");
-//            System.out.println(Arrays.toString(dLdVar.data().asDouble()));
+            //dL/dVariance
+            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0, true));   //Shape: [1, miniBatch]
 
             //dL/dmu
-            INDArray dxmu1 = dxhat.divRowVector(std).neg().sum(0);    //Should be equivalent to the above, but faster + one less temp array
-            if(!Arrays.equals(new int[]{1,nOut}, dxmu1.shape())) throw new RuntimeException();
-//            INDArray dxmu1 = dxhat.sum(0).divi(std).negi();    //Should be equivalent to the above, but faster + one less temp array
-//            INDArray dxmu2 = dLdVar.mul(-2.0/batchSize).muli(xMu.sum(0));
-            INDArray dxmu2 = dLdVar.mul(xMu.mul(-2.0/batchSize).sum(0));
+//            INDArray dxmu1 = dxhat.divRowVector(std).sum(0).negi();
+            INDArray dxmu1 = dxhat.sum(0).divi(std).negi();
+            INDArray dxmu2 = xMu.sum(0).muli(-2.0/batchSize).muli(dLdVar);
 
-            INDArray dLdmu = dxmu1.add(dxmu2);  //Shape: [1, nOut]
-            if(!Arrays.equals(new int[]{1,nOut}, dLdmu.shape())) throw new RuntimeException();
-//            System.out.println("dLdMu (backprop)");
-//            System.out.println(Arrays.toString(dLdmu.data().asDouble()));
+            INDArray dLdmu = dxmu1.addi(dxmu2);  //Shape: [1, nOut]
 
-            INDArray dLdx = dxhat.divRowVector(std)
-                    .add(xMu.mulRowVector(dLdVar).mul(2.0/batchSize))
-                    .addRowVector(dLdmu.mul(1.0/batchSize));
-            if(!Arrays.equals(new int[]{batchSize,nOut}, dLdx.shape())) throw new RuntimeException();
-
-//            System.out.println("dLdx (backprop)");
-//            System.out.println(Arrays.toString(dLdx.data().asDouble()));
+            //Note the array reuse here: dxhat, xMu, dLdVar, dLdmu - all are invalid after this line (but aren't used later anyway)
+            INDArray dLdx = dxhat.diviRowVector(std)
+                    .addi(xMu.muliRowVector(dLdVar.muli(2.0/batchSize)))
+                    .addiRowVector(dLdmu.muli(1.0/batchSize));
 
             //TODO rework this to avoid the assign here
             dGammaView.assign(dGamma);
@@ -170,51 +153,54 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             nextEpsilon = dLdx;
 
+        } else if (epsilon.rank() == 4){
+//            System.out.println("**** EPSILON RANK 4 BACKPROP CALLED ****");
+
+            INDArray dGamma = epsilon.mul(xHat).sum(0,2,3);
+            INDArray dBeta = epsilon.sum(0,2,3);
+            INDArray dxhat = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon, gamma, Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering()), 1));
+
+            //dL/dVariance
+            INDArray temp = Transforms.pow(std, -3.0, true);
+            INDArray dLdVar = dxhat.mul(xMu).sum(0,2,3).muli(-0.5).muli(Transforms.pow(std, -3.0, true));
+
+            //dL/dmu
+            int effectiveBatchSize = input.size(0) * input.size(2) * input.size(3);
+            INDArray dxmu1 = dxhat.sum(0,2,3).divi(std).negi();
+            INDArray dxmu2 = xMu.sum(0,2,3).muli(-2.0/effectiveBatchSize).muli(dLdVar);
+            INDArray dLdmu = dxmu1.addi(dxmu2);
+
+            INDArray dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(dxhat,std,dxhat,1))
+                    .addi(Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xMu,dLdVar.muli(2.0/effectiveBatchSize),xMu,1)));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dLdx,dLdmu.muli(1.0/effectiveBatchSize),dLdx,1));
+
+            //TODO rework this to avoid the assign here
+            dGammaView.assign(dGamma);
+            dBetaView.assign(dBeta);
+
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+
+            nextEpsilon = dLdx;
+
+
 //            INDArray dsq = dxhat.mul(xMu).sum(0).mul(0.5).div(Transforms.pow(std, 3)).neg().div(batchSize);
 //
-//            INDArray dxmu1 = dxhat.divRowVector(std);
-//            INDArray dxmu2 = xMu.mul(2).mulRowVector(dsq);
+//            INDArray dxmu1 = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(dxhat, std, dxhat, new int[]{1,2,3}));
+//            INDArray dxmu2 = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xMu.mul(2), dsq, xMu.mul(2), new int[]{1,2,3}));
 //
 //            INDArray dx1 = dxmu1.add(dxmu2);
 //            INDArray dmu = dx1.sum(0).neg();
 //            INDArray dx2 = dmu.div(batchSize);
-//            nextEpsilon = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dx1, dx2, dx1.dup(), -1));
-//
-//            //alternative short calculation - does not match but more normalized epsilon
-//            INDArray r = xMu.divRowVector(Transforms.pow(std, 2)).mulRowVector(epsilon.mul(xMu).sum(0));
-//            INDArray otherEp = epsilon.mul(2).subRowVector(dBeta).mulRowVector(gamma.div(std.mul(2))).sub(r);
-//
-////            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
-////            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
+//            nextEpsilon = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dx1, dx2, dx1.dup(), new int[]{1,2,3}));
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
 //
 //            //TODO rework this to avoid the assign here
 //            dGammaView.assign(dGamma);
 //            dBetaView.assign(dBeta);
 //            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
 //            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
-
-        } else if (epsilon.rank() == 4){
-            INDArray dGamma = epsilon.mul(xHat).sum(0,2,3);
-            INDArray dBeta = epsilon.sum(0,2,3); // sum over examples in batch
-            INDArray dxhat = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon, gamma, epsilon.dup(), 1));
-
-            INDArray dsq = dxhat.mul(xMu).sum(0).mul(0.5).div(Transforms.pow(std, 3)).neg().div(batchSize);
-
-            INDArray dxmu1 = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(dxhat, std, dxhat, new int[]{1,2,3}));
-            INDArray dxmu2 = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xMu.mul(2), dsq, xMu.mul(2), new int[]{1,2,3}));
-
-            INDArray dx1 = dxmu1.add(dxmu2);
-            INDArray dmu = dx1.sum(0).neg();
-            INDArray dx2 = dmu.div(batchSize);
-            nextEpsilon = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dx1, dx2, dx1.dup(), new int[]{1,2,3}));
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
-
-            //TODO rework this to avoid the assign here
-            dGammaView.assign(dGamma);
-            dBetaView.assign(dBeta);
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
@@ -290,6 +276,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
         std = Transforms.sqrt(var,true);
 
+//        System.out.println("MEAN:");
+//        System.out.println(Arrays.toString(mean.data().asFloat()));
+//        System.out.println("VARIANCE:");
+//        System.out.println(Arrays.toString(var.data().asFloat()));
+
         INDArray gamma = null;
         INDArray beta = null;
         if (layerConf.isLockGammaBeta()) {
@@ -356,7 +347,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 //Standard case: gamma and beta are learned per parameter
                 activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,Nd4j.createUninitialized(x.shape(),x.ordering()),1));
+//                System.out.println("ACTIVATIONS 1:");
+//                System.out.println(Arrays.toString(activations.data().asFloat()));
                 activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(activations,beta,activations,1));
+//                System.out.println("ACTIVATIONS 2:");
+//                System.out.println(Arrays.toString(activations.data().asFloat()));
             }
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
