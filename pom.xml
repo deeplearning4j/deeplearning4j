@@ -2,12 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.deeplearning4s</groupId>
   <artifactId>deeplearning4s</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <inceptionYear>2008</inceptionYear>
+  <version>0.5.1-SNAPSHOT</version>
   <properties>
+    <scala.binary.version>2.11</scala.binary.version>
     <scala.version>2.11.8</scala.version>
-    <nd4j.version>0.4.0</nd4j.version>
-    <dl4j.version>0.4.0</dl4j.version>
+    <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
+    <dl4j.version>0.5.1-SNAPSHOT</dl4j.version>
     <slf4jVersion>1.7.21</slf4jVersion>
   </properties>
 
@@ -29,15 +29,15 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.nd4j</groupId>
+      <artifactId>nd4j-native</artifactId>
+      <version>${nd4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
       <version>${scala.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native-platform</artifactId>
-      <version>${nd4j.version}</version>
-      <!--<classifier>macosx-x86_64</classifier>-->
     </dependency>
     <dependency>
       <groupId>org.deeplearning4j</groupId>
