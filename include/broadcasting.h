@@ -183,7 +183,7 @@ template<typename OpType>
 				int yStride = shape::elementWiseStride(yShapeInfo);
 				int tads =shape::length(xShapeInfo) / tadLength;
 
-				int tadsPerThread = tads / 64;
+				int tadsPerThread = tads / TAD_THRESHOLD;
 				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 

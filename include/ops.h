@@ -12,6 +12,8 @@
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 #define FLOAT_MAX_VALUE 3.4028235E38
 #define EPS 1e-5
+#define ELEMENT_THRESHOLD 16384
+#define TAD_THRESHOLD 128
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__

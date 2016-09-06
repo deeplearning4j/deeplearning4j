@@ -426,7 +426,7 @@ template<typename OpType>
 
                     // tad-oriented rotation technically
 
-                    int tadsPerThread = xShape[0] / 64;
+                    int tadsPerThread = xShape[0] / TAD_THRESHOLD;
                     int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
@@ -508,7 +508,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
 
-                    int elementsPerThread = n / 8192;
+                    int elementsPerThread = n / ELEMENT_THRESHOLD;
                     int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
@@ -551,7 +551,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                              Nd4jIndex resultStride,
                              T *extraParams,
                              const Nd4jIndex n) {
-                int elementsPerThread = n / 8192;
+                int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 

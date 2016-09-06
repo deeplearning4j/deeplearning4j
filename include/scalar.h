@@ -409,7 +409,7 @@ template<typename OpType>
             static void transform(T *x, int xStride, T *result, int resultStride,
                                   T scalar, T *extraParams, const Nd4jIndex n) {
 
-                int elementsPerThread = n / 8192;
+                int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 

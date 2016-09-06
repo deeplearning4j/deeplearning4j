@@ -545,7 +545,7 @@ template<typename OpType>
 				int numTads = shape::length(xShapeInfo) / tadLength;
 				int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
-				int tadsPerThread = resultLength / 64;
+				int tadsPerThread = resultLength / TAD_THRESHOLD;
 				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
@@ -640,7 +640,7 @@ template<typename OpType>
 			static T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
 				T startingVal = OpType::startingValue(x);
 				if (xElementWiseStride == 1) {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						T local = OpType::startingValue(x);
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
