@@ -105,6 +105,7 @@ public class AtomicAllocator implements Allocator {
     private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
 
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
+    private AtomicLong useTracker = new AtomicLong(System.currentTimeMillis());
 
     public static AtomicAllocator getInstance() {
         if (INSTANCE == null)
@@ -355,6 +356,8 @@ public class AtomicAllocator implements Allocator {
     public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location, boolean initialize) {
         AllocationPoint point = new AllocationPoint();
 
+        useTracker.set(System.currentTimeMillis());
+
         // we use these longs as tracking codes for memory tracking
         Long allocId = objectsTracker.getAndIncrement();
         //point.attachBuffer(buffer);
@@ -574,6 +577,7 @@ public class AtomicAllocator implements Allocator {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
         private int deviceId;
+        private AtomicLong stopper = new AtomicLong(System.currentTimeMillis());
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -589,6 +593,9 @@ public class AtomicAllocator implements Allocator {
                 if (reference != null) {
                     AllocationPoint point = reference.getPoint();
 
+                    if (threadId == 0)
+                        stopper.set(System.currentTimeMillis());
+
                     if (point.getAllocationStatus() == AllocationStatus.HOST) {
                         purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
                     } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
@@ -601,7 +608,9 @@ public class AtomicAllocator implements Allocator {
                 } else {
                     try {
                         if (threadId == 0) {
-                            System.gc();
+                            // we don't call for System.gc if last memory allocation was more then 3 seconds ago
+                            if (useTracker.get() > System.currentTimeMillis() - 3000)
+                                System.gc();
                             Thread.sleep(100);
                         } else Thread.sleep(50);
                     } catch (Exception e) {
