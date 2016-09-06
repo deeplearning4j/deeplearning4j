@@ -25,7 +25,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4s.layers.convolutional.Convolution2D
 import org.deeplearning4s.layers.pooling.MaxPooling2D
 import org.deeplearning4s.layers.{Dense, DenseOutput}
-import org.deeplearning4s.models.{NeuralNet, Sequential}
+import org.deeplearning4s.models.Sequential
 import org.deeplearning4s.optimizers.SGD
 import org.deeplearning4s.regularizers.l2
 import org.nd4j.linalg.api.ndarray.INDArray
