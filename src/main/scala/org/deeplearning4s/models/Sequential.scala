@@ -19,7 +19,7 @@
 package org.deeplearning4s.models
 
 import org.deeplearning4s.layers.{Layer, Node, Output, Preprocessor}
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
+import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup
 import org.deeplearning4j.optimize.api.IterationListener
@@ -42,7 +42,8 @@ import scala.collection.JavaConverters._
   */
 class Sequential(var inputShape: List[Int] = List(),
                  val useNeuralNetConfiguration: Boolean = true,
-                 val addReshapersAutomatically: Boolean = true) extends Model {
+                 val addReshapersAutomatically: Boolean = true,
+                 val rngSeed: Long = 0) extends Model {
   private var layers: List[Node] = List()
   private var model: MultiLayerNetwork = _
   private var preprocessors: Map[Int, Node] = Map()
@@ -76,10 +77,14 @@ class Sequential(var inputShape: List[Int] = List(),
   override def compile(lossFunction: LossFunction = null,
                        optimizer: Optimizer = SGD(lr = 0.01)): Unit = {
     var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
+    if (rngSeed != 0)
+      builder = builder.seed(rngSeed)
     optimizer match {
       case o: SGD =>
         builder = builder.optimizationAlgo(o.optimizationAlgorithm)
           .learningRate(o.lr)
+        if (o.nesterov)
+          builder = builder.updater(Updater.NESTEROVS).momentum(o.momentum)
       case _ =>
         print("ERROR!")
         builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
