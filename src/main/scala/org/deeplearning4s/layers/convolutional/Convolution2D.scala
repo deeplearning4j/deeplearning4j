@@ -25,9 +25,9 @@ import org.deeplearning4s.regularizers.{NoRegularizer, WeightRegularizer}
 
 
 class Convolution2D(
-    nChannels: Int,
     nFilter: Int,
     kernelSize: List[Int],
+    nChannels: Int = 0,
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0),
     val weightInit: WeightInit = WeightInit.VI,
@@ -36,7 +36,7 @@ class Convolution2D(
     val dropOut: Double = 0.0)
   extends Convolution(kernelSize, stride, padding, nFilter)
   with Layer {
-  inputShape = List(nChannels)
+  inputShape = if (nChannels > 0) List(nChannels) else List()
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
     if (inputShape.isEmpty)
