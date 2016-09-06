@@ -90,6 +90,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
+        /*
+        NOTE: Instead of what is below have??
+        setScore(preOut)
+
         LossFunctions.LossFunction lf = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)conf.getLayer()).getLossFunction();
         if ( (lf == LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD || lf == LossFunctions.LossFunction.MCXENT) && layerConf().getActivationFunction().equals("softmax")) {
             //special case: softmax + NLL or MCXENT: use log softmax to avoid numerical underflow
@@ -98,6 +102,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
             setScoreWithZ(output);
         }
+        */
         return score;
     }
 
@@ -140,6 +145,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     private void setScore(INDArray z, INDArray preOut ){
+        /*
         if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
@@ -155,6 +161,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                     .useRegularization(conf.isUseRegularization())
                     .mask(maskArray).build().score();
         }
+        NOTE: Should now be
+        score = lossfunction.computeScore(blahbalh..
+        */
     }
 
     @Override
@@ -194,17 +203,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
 
-        if(maskArray != null){
-            //Masking on gradients. Mask values are 0 or 1. If 0: no output -> no error for this example
-            outSubLabels.muliColumnVector(maskArray);
-        }
 
         Triple<Gradient,INDArray,INDArray> triple;
-        switch (layerConf().getLossFunction()) {
-            /*
-
-             */
-        }
+        //NOTE: For the gradient I need to have dL/dw and dL/db
+        // delta is what is called the gradient in ILossFunctions
 
         return triple;
     }
