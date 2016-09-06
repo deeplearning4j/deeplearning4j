@@ -8,7 +8,7 @@
     <scala.version>2.11.8</scala.version>
     <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
     <dl4j.version>0.5.1-SNAPSHOT</dl4j.version>
-    <slf4jVersion>1.7.21</slf4jVersion>
+    <slf4j.version>1.7.21</slf4j.version>
   </properties>
 
   <repositories>
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4jVersion}</version>
+      <version>${slf4j.version}</version>
     </dependency>
   </dependencies>
 
