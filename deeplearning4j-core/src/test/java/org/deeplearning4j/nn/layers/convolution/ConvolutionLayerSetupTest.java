@@ -324,9 +324,9 @@ public class ConvolutionLayerSetupTest {
                 .layer(3, new DenseLayer.Builder().nIn(28*28*6).nOut(10).activation("identity").build())
                 .layer(4, new BatchNormalization.Builder().nOut(10).build())
                 .layer(5, new ActivationLayer.Builder().activation("relu").build())
-                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(10).nOut(10).build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(10).build())
                 .backprop(true).pretrain(false)
-                .setInputType(InputType.convolutionalFlat(28,28,1))
+                .cnnInputSize(28,28,1)
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
