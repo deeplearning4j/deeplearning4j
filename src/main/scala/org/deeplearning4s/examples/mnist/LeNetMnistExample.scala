@@ -57,16 +57,13 @@ object LeNetMnistExample extends App {
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
-//  private val model: Sequential = new Sequential(addReshapersAutomatically = false)
   private val model: Sequential = new Sequential(inputShape = List(nbRows, nbColumns, nbChannels))
-//  model.add(new Unflatten2D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
   model.add(new Convolution2D(20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
                               activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
                               activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-//  model.add(new Flatten2D())
   model.add(new Dense(500, nbRows*nbColumns, activation = "relu", regularizer = l2(weightDecay)))
   model.add(new DenseOutput(nbOutput, activation = "softmax", lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
   model.compile(optimizer = SGD(learningRate))
