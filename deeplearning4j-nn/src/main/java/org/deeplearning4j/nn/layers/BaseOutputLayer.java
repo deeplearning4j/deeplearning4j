@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -60,6 +61,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     protected INDArray labels;
 
     private transient Solver solver;
+
+    //NOTE: So shouldn't I have something like this here..with a setter?
+    private transient ILossFunction lossFunction;
 
     private double fullNetworkL1;
     private double fullNetworkL2;
@@ -197,47 +201,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         Triple<Gradient,INDArray,INDArray> triple;
         switch (layerConf().getLossFunction()) {
-            case NEGATIVELOGLIKELIHOOD:
-            case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
-                Nd4j.gemm(input,outSubLabels,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(outSubLabels));
-                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
+            /*
 
-            case XENT: // cross-entropy (single binary output variable)
-                Nd4j.gemm(input, outSubLabels.div(output.mul(output.rsub(1))), weightGradView, true, false, 1.0, 0.0);  //Equivalent to:  weightGradView.assign(input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
-                biasGradView.assign(outSubLabels.sum(0));    //TODO: do this without the assign
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
-
-            case MSE: // mean squared error
-                INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
-                Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);   //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-                biasGradView.assign(delta.sum(0));         //TODO: do this without the assign
-                triple = new Triple<>(gradient,delta,output);
-                break;
-
-            case EXPLL: // exponential logarithmic
-                Nd4j.gemm(input,labels.rsub(1).divi(output),weightGradView,true,false,1.0,0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(labels.rsub(1).divi(output)));
-                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
-
-            case RMSE_XENT: // root mean squared error cross entropy
-                INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
-                INDArray sqrt = sqrt(squaredrmseXentDiff);
-                Nd4j.gemm(input,sqrt,weightGradView,true,false,1.0,0.0);    //Equivalent to: weightGradView.assign(input.transpose().mmul(sqrt));
-                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
-
-            case SQUARED_LOSS:
-                Nd4j.gemm(input,outSubLabels.mul(outSubLabels),weightGradView,true,false,1.0,0.0);  //Equivalent to: weightGradView.assign(input.transpose().mmul(outSubLabels.mul(outSubLabels)));
-                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
-            default:
-                throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
+             */
         }
 
         return triple;
