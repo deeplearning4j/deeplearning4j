@@ -24,6 +24,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -199,6 +203,133 @@ public class BatchNormalizationTest {
 
         assertEquals(Nd4j.valueArrayOf(mean.shape(), beta), mean);
         assertEquals(Nd4j.valueArrayOf(stdev.shape(), gamma), stdev);
+    }
+
+    @Test
+    public void test2dVs4d(){
+        //Idea: 2d and 4d should be the same...
+        Nd4j.getRandom().setSeed(12345);
+
+        int m = 2;
+        int h = 3;
+        int w = 3;
+        int nOut = 2;
+
+        INDArray in = Nd4j.rand('c',m*h*w,nOut);
+
+        INDArray in4 = in.dup();
+        in4 = Shape.newShapeNoCopy(in4,new int[]{m,h,w,nOut},false);
+        assertNotNull(in4);
+        in4 = in4.permute(0,3,1,2).dup();
+        INDArray arr = Nd4j.rand(1,m*h*w*nOut).reshape('f',h,w,m,nOut).permute(2,3,1,0);
+        in4 = arr.assign(in4);
+
+        Layer l1 = getLayer(nOut);
+        Layer l2 = getLayer(nOut);
+
+        INDArray out2d = l1.activate(in.dup(), true);
+        INDArray out4d = l2.activate(in4.dup(), true);
+
+        INDArray out4dAs2 = out4d.permute(0,2,3,1).dup('c');
+        out4dAs2 = Shape.newShapeNoCopy(out4dAs2,new int[]{m*h*w,nOut},false);
+
+        assertEquals(out2d, out4dAs2);
+
+        //Test backprop:
+        INDArray epsilons2d = Nd4j.rand('c',m*h*w,nOut);
+        INDArray epsilons4d = epsilons2d.dup();
+        epsilons4d = Shape.newShapeNoCopy(epsilons4d,new int[]{m,h,w,nOut},false);
+        assertNotNull(epsilons4d);
+        epsilons4d = epsilons4d.permute(0,3,1,2).dup();
+
+        Pair<Gradient,INDArray> b2d = l1.backpropGradient(epsilons2d);
+        Pair<Gradient,INDArray> b4d = l2.backpropGradient(epsilons4d);
+
+        INDArray e4dAs2d = b4d.getSecond().permute(0,2,3,1).dup('c');
+        e4dAs2d = Shape.newShapeNoCopy(e4dAs2d,new int[]{m*h*w,nOut},false);
+
+        assertEquals(b2d.getSecond(), e4dAs2d);
+    }
+
+    @Test
+    public void testCnnForwardBackward(){
+        double eps = 1e-5;
+        int nIn = 4;
+        int hw = 3;
+        int minibatch = 2;
+        Nd4j.getRandom().setSeed(12345);
+        INDArray input = Nd4j.rand('c',new int[]{minibatch,nIn,hw,hw});
+
+        //TODO: other values for gamma/beta
+        INDArray gamma = Nd4j.ones(1,nIn);
+        INDArray beta = Nd4j.zeros(1,nIn);
+
+        Layer l = getLayer(nIn, eps, false, -1, -1);
+
+        INDArray mean = input.mean(0,2,3);
+        INDArray var = input.var(false, 0,2,3);
+        INDArray xHat = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastSubOp(input,mean,input.dup(),1));
+        Nd4j.getExecutioner().execAndReturn(
+                new BroadcastDivOp(xHat,Transforms.sqrt(var.add(eps),true),xHat,1));
+
+        INDArray outExpected = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastMulOp(xHat,gamma,xHat.dup(),1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(outExpected,beta,outExpected,1));
+
+        INDArray out = l.activate(input, true);
+
+        System.out.println(Arrays.toString(outExpected.data().asDouble()));
+        System.out.println(Arrays.toString(out.data().asDouble()));
+
+        assertEquals(outExpected, out);
+
+        //-------------------------------------------------------------
+        //Check backprop
+        INDArray epsilon = Nd4j.rand('c',new int[]{minibatch,nIn,hw,hw});    //dL/dy
+
+        int effectiveMinibatch = minibatch * hw * hw;
+
+        INDArray dldgammaExp = epsilon.mul(xHat).sum(0,2,3);
+        INDArray dldbetaExp = epsilon.sum(0,2,3);
+
+        INDArray dldxhat = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastMulOp(epsilon,gamma,epsilon.dup(),1)); //epsilon.mulRowVector(gamma);
+
+        INDArray inputSubMean = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastSubOp(input,mean,input.dup(),1));
+
+        INDArray dldvar = dldxhat.mul(inputSubMean).mul(-0.5);
+        dldvar = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(
+                dldvar, Transforms.pow(var.add(eps),-3.0/2.0, true), dldvar.dup(), 1));
+        dldvar = dldvar.sum(0,2,3);
+
+
+        INDArray dldmu = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastMulOp(dldxhat, Transforms.pow(var.add(eps),-1.0/2.0, true), dldxhat.dup(), 1))
+                .neg().sum(0,2,3);
+        dldmu = dldmu.add(
+                dldvar.mul(inputSubMean.mul(-2.0).sum(0,2,3).div(effectiveMinibatch)));
+
+        INDArray dldinExp = Nd4j.getExecutioner().execAndReturn(
+                new BroadcastMulOp(dldxhat, Transforms.pow(var.add(eps),-1.0/2.0, true), dldxhat.dup(), 1 ));
+        dldinExp = dldinExp.add(
+                Nd4j.getExecutioner().execAndReturn(
+                        new BroadcastMulOp(inputSubMean.mul(2.0/effectiveMinibatch),dldvar, inputSubMean.dup(), 1)));
+        dldinExp = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dldinExp, dldmu.mul(1.0/effectiveMinibatch), dldinExp.dup(), 1));
+
+        Pair<Gradient,INDArray> p = l.backpropGradient(epsilon);
+
+        INDArray dldgamma = p.getFirst().getGradientFor("gamma");
+        INDArray dldbeta = p.getFirst().getGradientFor("beta");
+
+        assertEquals(dldgammaExp, dldgamma);
+        assertEquals(dldbetaExp, dldbeta);
+
+        System.out.println("EPSILONS");
+        System.out.println(Arrays.toString(dldinExp.data().asDouble()));
+        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
+        assertEquals(dldinExp, p.getSecond());
     }
 
     @Test

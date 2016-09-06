@@ -6,7 +6,9 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
@@ -17,6 +19,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
@@ -62,6 +66,58 @@ public class BNGradientCheckTest {
                         .activation("softmax")
                         .nIn(3).nOut(3)
                         .build())
+                .pretrain(false).backprop(true);
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
+        mln.init();
+
+        if (PRINT_RESULTS) {
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+        assertTrue(gradOK);
+    }
+
+    @Test
+    public void testGradientCnnSimple(){
+        Nd4j.getRandom().setSeed(12345);
+        int minibatch = 10;
+        int depth = 1;
+        int hw = 4;
+        int nOut = 4;
+        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
+        INDArray labels = Nd4j.zeros(minibatch, nOut);
+        Random r = new Random(12345);
+        for( int i=0; i<minibatch; i++ ){
+            labels.putScalar(i,r.nextInt(nOut),1.0);
+        }
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .learningRate(1.0)
+                .regularization(false)
+                .updater(Updater.NONE)
+                .seed(12345L)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .list()
+                .layer(0, new ConvolutionLayer.Builder()
+//                        .kernelSize(2,2)
+                        .kernelSize(1,1)
+                        .stride(1,1)
+                        .nIn(depth).nOut(2)
+                        .activation("identity")
+                        .build())
+                .layer(1, new BatchNormalization.Builder()
+                        .build())
+                .layer(2, new ActivationLayer.Builder().activation("tanh").build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .nOut(nOut)
+                        .build())
+                .setInputType(InputType.convolutional(hw,hw,depth))
                 .pretrain(false).backprop(true);
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
