@@ -416,7 +416,7 @@ template<typename OpType>
                          shape::length(yShapeBuffer));
                 }
 
-                else if (false) {
+                else if (sameShape) {
                     int rank = shape::rank(xShapeBuffer);
                     int *xShape = shape::shapeOf(xShapeBuffer);
 
@@ -426,7 +426,7 @@ template<typename OpType>
 
                     // tad-oriented rotation technically
 
-                    int tadsPerThread = xShape[0] / 32;
+                    int tadsPerThread = xShape[0] / 64;
                     int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
@@ -507,8 +507,13 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     int *yStride = shape::stride(yShapeBuffer);
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
+
+                    int elementsPerThread = n / 8192;
+                    int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                    num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
                     if(dx == result) {
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
@@ -520,7 +525,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
