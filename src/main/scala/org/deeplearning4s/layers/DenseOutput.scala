@@ -33,30 +33,10 @@ class DenseOutput(
     activation: String,
     lossFunction: LossFunction,
     nIn: Int = 0,
-    val weightInit: WeightInit = WeightInit.VI,
-    val regularizer: WeightRegularizer = NoRegularizer(),
-    val dropOut: Double = 0.0)
-  extends Node with Layer with Output {
+    weightInit: WeightInit = WeightInit.VI,
+    regularizer: WeightRegularizer = NoRegularizer(),
+    dropOut: Double = 0.0)
+  extends Dense(nOut, nIn, weightInit, activation, regularizer, dropOut) {
 
-  _outputShape = List(nOut)
-  if (nIn > 0)
-    inputShape = List(nIn)
   makeOutput(lossFunction)
-
-  override def outputShape = _outputShape
-
-  override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
-    if (inputShape.isEmpty)
-      throw new IllegalArgumentException("Input shape must be nonempty.")
-
-    new OutputLayer.Builder(lossFunction)
-      .nIn(inputShape.last)
-      .nOut(outputShape.last)
-      .weightInit(weightInit)
-      .activation(activation)
-      .l1(regularizer.l1)
-      .l2(regularizer.l2)
-      .dropOut(dropOut)
-      .build()
-  }
 }

@@ -47,7 +47,7 @@ class Dense(
       throw new IllegalArgumentException("Input shape must be nonempty.")
 
     if (isOutput) {
-      new OutputLayer.Builder(lossFunction)
+      new OutputLayer.Builder(lossFunc)
         .nIn(inputShape.last)
         .nOut(outputShape.last)
         .weightInit(weightInit)

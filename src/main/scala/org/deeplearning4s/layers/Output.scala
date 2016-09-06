@@ -26,11 +26,13 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   * @author David Kale
   */
 trait Output {
-  protected var isOutput = false
-  protected var lossFunction: LossFunction = _
+  protected var _isOutput: Boolean = false
+  protected var lossFunc: LossFunction = _
+
+  def isOutput: Boolean = _isOutput
 
   def makeOutput(lossFunction: LossFunction): Unit = {
-    isOutput = true
-    this.lossFunction = lossFunction
+    _isOutput = true
+    lossFunc= lossFunction
   }
 }
