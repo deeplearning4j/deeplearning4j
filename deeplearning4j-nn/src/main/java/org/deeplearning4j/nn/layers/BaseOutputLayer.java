@@ -206,7 +206,13 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         Triple<Gradient,INDArray,INDArray> triple;
         //NOTE: For the gradient I need to have dL/dw and dL/db
-        // delta is what is called the gradient in ILossFunctions
+        //dL/dW = dL/dZ * dZ/dW
+        //dL/db = dL/dZ * dZ/db
+        //Z is preoutput
+        //Z = W.X + b
+        //So calculate dZ/dW and dZ/db first then get delta
+        // delta is what is called the gradient in the ILossFunctions, so that would just lossFunction.computeGradient
+        // multiply dZ/dW and dz/db by delta
 
         return triple;
     }
