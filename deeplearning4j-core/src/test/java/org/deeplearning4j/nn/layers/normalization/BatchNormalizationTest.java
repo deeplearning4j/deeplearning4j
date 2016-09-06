@@ -29,6 +29,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -39,6 +40,12 @@ import static org.junit.Assert.*;
 /**
  */
 public class BatchNormalizationTest {
+
+    static {
+        //Force Nd4j initialization, then set data type to double:
+        Nd4j.zeros(1);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
 
     protected INDArray dnnInput = Nd4j.linspace(0, 31, 32).reshape(2, 16);
     protected INDArray dnnEpsilon = Nd4j.linspace(0, 31, 32).reshape(2, 16);
@@ -69,6 +76,9 @@ public class BatchNormalizationTest {
             params = Nd4j.create(1, numParams);
         }
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        if(numParams > 0){
+            layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
+        }
         return layer;
     }
 
@@ -101,6 +111,62 @@ public class BatchNormalizationTest {
 
         assertEquals(Nd4j.valueArrayOf(mean.shape(), beta), mean);
         assertEquals(Nd4j.valueArrayOf(stdev.shape(), gamma), stdev);
+    }
+
+    @Test
+    public void testDnnForwardBackward(){
+        double eps = 1e-5;
+        int nIn = 4;
+        int minibatch = 2;
+        Nd4j.getRandom().setSeed(12345);
+        INDArray input = Nd4j.rand('c',new int[]{minibatch,nIn});
+
+        //TODO: other values for gamma/beta
+        INDArray gamma = Nd4j.ones(1,nIn);
+        INDArray beta = Nd4j.zeros(1,nIn);
+
+        Layer l = getLayer(nIn, eps, false, -1, -1);
+
+        INDArray mean = input.mean(0);
+        INDArray var = input.var(false, 0);
+        INDArray xHat = input.subRowVector(mean).divRowVector(Transforms.sqrt(var.add(eps),true));
+        INDArray outExpected = xHat.mulRowVector(gamma).addRowVector(beta);
+
+        INDArray out = l.activate(input, true);
+
+        System.out.println(Arrays.toString(outExpected.data().asDouble()));
+        System.out.println(Arrays.toString(out.data().asDouble()));
+
+        assertEquals(outExpected, out);
+
+        //-------------------------------------------------------------
+        //Check backprop
+        INDArray epsilon = Nd4j.rand(minibatch,nIn);    //dL/dy
+
+        INDArray dldgammaExp = epsilon.mul(xHat).sum(0);
+        INDArray dldbetaExp = epsilon.sum(0);
+
+        INDArray dldxhat = epsilon.mulRowVector(gamma);
+        INDArray dldvar = dldxhat.mul(input.subRowVector(mean)).mul(-0.5)
+                .mulRowVector(Transforms.pow(var.add(eps),-3.0/2.0, true)).sum(0);
+        INDArray dldmu = dldxhat.mulRowVector(Transforms.pow(var.add(eps),-1.0/2.0, true)).neg().sum(0)
+                .add(dldvar.mul(input.subRowVector(mean).mul(-2.0).sum(0).div(minibatch)));
+        INDArray dldinExp = dldxhat.mulRowVector(Transforms.pow(var.add(eps),-1.0/2.0, true))
+                .add(input.subRowVector(mean).mul(2.0/minibatch).mulRowVector(dldvar))
+                .addRowVector(dldmu.mul(1.0/minibatch));
+
+        Pair<Gradient,INDArray> p = l.backpropGradient(epsilon);
+
+        INDArray dldgamma = p.getFirst().getGradientFor("gamma");
+        INDArray dldbeta = p.getFirst().getGradientFor("beta");
+
+        assertEquals(dldgammaExp, dldgamma);
+        assertEquals(dldbetaExp, dldbeta);
+
+        System.out.println("EPSILONS");
+        System.out.println(Arrays.toString(dldinExp.data().asDouble()));
+        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
+        assertEquals(dldinExp, p.getSecond());
     }
 
     @Test

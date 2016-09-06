@@ -123,28 +123,43 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
 
+        int nOut = layerConf.getNOut();
         if (epsilon.rank() == 2) {
             //TODO: handle fixed beta/gamma case...
             INDArray dGamma = epsilon.mul(xHat).sum(0);     //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dBeta = epsilon.sum(0);                //dL/dBeta = sum_examples dL/dOut
             INDArray dxhat = epsilon.mulRowVector(gamma);   //dL/dxHat = dL/dOut . gamma        Shape: [minibatchSize, nOut]
+            int[] dxhatShape = dxhat.shape();
+            if(!Arrays.equals(new int[]{batchSize,nOut}, dxhatShape)) throw new RuntimeException();
 
             //dL/dBatchVariance
-            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).divi(Transforms.pow(std, 3.0, true));
+//            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0/2.0, true));   //Shape: [1, miniBatch]
+            INDArray dLdVar = dxhat.mul(xMu).mul(-0.5).mulRowVector(Transforms.pow(std, -3.0, true)).sum(0);   //Shape: [1, miniBatch]
+            int[] dLdVarShape = dLdVar.shape();
+            if(!Arrays.equals(new int[]{1,nOut}, dLdVarShape)) throw new RuntimeException();
 
-            //dL/dBatchMean
-//            INDArray dxmu1 = dxhat.divRowVector(std).sum(0);
-            INDArray dxmu1 = dxhat.sum(0).divi(std);    //Should be equivalent to the above, but faster + one less temp array
-            INDArray dxmu2 = xMu.mul(2.0/batchSize).muliRowVector(dLdVar);
+//            System.out.println("dLdVar (backprop)");
+//            System.out.println(Arrays.toString(dLdVar.data().asDouble()));
 
-            INDArray dLdmu = dxmu1.addi(dxmu2.sum(0).muli(dLdVar)).negi(); //Shape: [1, nOut]
+            //dL/dmu
+            INDArray dxmu1 = dxhat.divRowVector(std).neg().sum(0);    //Should be equivalent to the above, but faster + one less temp array
+            if(!Arrays.equals(new int[]{1,nOut}, dxmu1.shape())) throw new RuntimeException();
+//            INDArray dxmu1 = dxhat.sum(0).divi(std).negi();    //Should be equivalent to the above, but faster + one less temp array
+//            INDArray dxmu2 = dLdVar.mul(-2.0/batchSize).muli(xMu.sum(0));
+            INDArray dxmu2 = dLdVar.mul(xMu.mul(-2.0/batchSize).sum(0));
 
-//            INDArray dLdx = dxhat.divRowVector(std).addi(
-//                    dLdVar.muli(dxmu2.sum(0))  //don't need to reuse dLdVar after this, safe to do muli
-//                ).addi(dLdmu.muli(1.0/batchSize));
+            INDArray dLdmu = dxmu1.add(dxmu2);  //Shape: [1, nOut]
+            if(!Arrays.equals(new int[]{1,nOut}, dLdmu.shape())) throw new RuntimeException();
+//            System.out.println("dLdMu (backprop)");
+//            System.out.println(Arrays.toString(dLdmu.data().asDouble()));
 
-            INDArray dLdx = dxhat.divRowVector(std).addiRowVector(
-                    dLdVar.muli(dxmu2.sum(0)).addi(dLdmu.muli(1.0/batchSize)));
+            INDArray dLdx = dxhat.divRowVector(std)
+                    .add(xMu.mulRowVector(dLdVar).mul(2.0/batchSize))
+                    .addRowVector(dLdmu.mul(1.0/batchSize));
+            if(!Arrays.equals(new int[]{batchSize,nOut}, dLdx.shape())) throw new RuntimeException();
+
+//            System.out.println("dLdx (backprop)");
+//            System.out.println(Arrays.toString(dLdx.data().asDouble()));
 
             //TODO rework this to avoid the assign here
             dGammaView.assign(dGamma);
