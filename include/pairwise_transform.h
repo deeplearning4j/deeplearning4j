@@ -417,6 +417,7 @@ template<typename OpType>
                 }
 
                 else if (sameShape) {
+                    printf("Branch A\n");
                     int rank = shape::rank(xShapeBuffer);
                     int *xShape = shape::shapeOf(xShapeBuffer);
 
@@ -491,6 +492,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
 
                 else {
+                    printf("Branch B\n");
                     int xCoord[MAX_RANK];
                     int yCoord[MAX_RANK];
                     int resultCoord[MAX_RANK];
