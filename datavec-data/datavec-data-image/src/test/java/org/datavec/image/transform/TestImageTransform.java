@@ -23,6 +23,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -163,7 +164,7 @@ public class TestImageTransform {
 
         ImageWritable w = transform.transform(writable);
         Frame f = w.getFrame();
-        assertEquals(f, frame);
+        assertNotEquals(f, frame);
         assertEquals(null, transform.transform(null));
     }
 
