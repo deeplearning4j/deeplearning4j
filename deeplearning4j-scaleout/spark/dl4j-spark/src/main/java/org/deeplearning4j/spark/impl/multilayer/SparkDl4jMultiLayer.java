@@ -87,7 +87,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sparkContext the spark context to use
      * @param network      the network to use
      */
-    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network, TrainingMaster trainingMaster) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network, TrainingMaster<?,?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
@@ -97,7 +97,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sparkContext the spark context to use
      * @param conf         the configuration of the network
      */
-    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf, TrainingMaster trainingMaster) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf, TrainingMaster<?,?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), initNetwork(conf), trainingMaster);
     }
 
@@ -107,11 +107,11 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sc   the spark context to use
      * @param conf the configuration of the network
      */
-    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster<?,?> trainingMaster) {
         this(sc.sc(), conf, trainingMaster);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network, TrainingMaster trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network, TrainingMaster<?,?> trainingMaster) {
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
