@@ -18,8 +18,8 @@
 
 package org.deeplearning4s.models
 
-import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4s.optimizers.Optimizer
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -35,12 +35,10 @@ abstract class Model {
    * Compile neural net architecture. Call immediately
    * before training.
    *
-   * @param lossFunction        loss function to use
-   * @param optimizationAlgo    optimization algorithm to use
+   * @param lossFunction  loss function to use
+   * @param optimizer     optimization algorithm to use
    */
-  def compile(lossFunction: LossFunction,
-              optimizationAlgo: OptimizationAlgorithm,
-              suppressConvolutionLayerSetup: Boolean = true): Unit
+  def compile(lossFunction: LossFunction, optimizer: Optimizer): Unit
 
   /**
     * Fit neural net to data.
