@@ -20,15 +20,15 @@ package org.deeplearning4s.examples.mnist
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
-import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4s.layers.Dense
+import org.deeplearning4s.layers.{Dense, DenseOutput}
 import org.deeplearning4s.models.Sequential
+import org.deeplearning4s.optimizers.SGD
+import org.deeplearning4s.regularizers.l2
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -45,20 +45,22 @@ object MLPMnistTwoLayerExample extends App {
   private val outputNum: Int = 10
   private val batchSize: Int = 64
   private val rngSeed: Int = 123
-  private val rate: Double = 0.0015
+  private val numEpochs: Int = 15
+  private val learningRate: Double = 0.0015
 
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
-  private val model: Sequential = new Sequential()
-  model.add(new Dense(500, numRows*numColumns, activation = "relu"))
-  model.add(new Dense(100, activation = "relu"))
-  model.add(new Dense(outputNum, activation = "softmax"))
-  model.compile(LossFunction.MCXENT, OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+  private val model: Sequential = new Sequential(addReshapersAutomatically = false)
+  model.add(new Dense(500, nIn = numRows*numColumns, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new Dense(100, nIn = numRows*numColumns, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new DenseOutput(outputNum, activation = "softmax", lossFunction = LossFunction.MCXENT,
+                            regularizer = l2(learningRate * 0.005)))
+  model.compile(optimizer = SGD(learningRate))
 
   log.info("Train model....")
-  model.fit(mnistTrain, nbEpoch = 1, List(new ScoreIterationListener(5)))
+  model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(5)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(outputNum)
