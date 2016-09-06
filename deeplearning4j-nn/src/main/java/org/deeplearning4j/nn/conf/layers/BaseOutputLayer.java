@@ -20,32 +20,39 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     	super(builder);
         this.lossFunction = builder.lossFunction;
         this.customLossFunction = builder.customLossFunction;
-        this.iLossFunction = builder.iLossFunction;
+        this.iLossFunction = builder.ilossFunction;
     }
     
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
-        protected LossFunction lossFunction = LossFunction.RMSE_XENT;
-        protected ILossFunction iLossFunction = new LossMCXENT();
+        protected ILossFunction lossFunction = new LossMCXENT();
         protected String customLossFunction;
 
         public Builder() {}
 
         public Builder(LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
+            /*
+                SWITCH STATEMENT
+                case MSE:
+                    this.lossfunction = new LossMSE()
+            */
         }
         public Builder(ILossFunction lossFunction) {
-            this.iLossFunction = lossFunction;
+            this.lossFunction = lossFunction;
         }
 
         public T lossFunction(LossFunction lossFunction) {
+            /*
+                SWITCH STATEMENT
+                case MSE:
+                    this.lossfunction = new LossMSE()
+            */
+        }
+        public T lossFunction(ILossFunction lossFunction) {
             this.lossFunction = lossFunction;
             return (T)this;
         }
-        public T lossFunction(ILossFunction lossFunction) {
-            this.iLossFunction = lossFunction;
-            return (T)this;
-        }
 
+        //NOTE: Not needed?
         public T customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
             return (T)this;
