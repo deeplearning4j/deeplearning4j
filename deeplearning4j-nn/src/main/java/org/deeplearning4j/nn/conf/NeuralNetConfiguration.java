@@ -209,6 +209,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
                     .redistributeParams(redistributeParams)
+                    .cnnInputSize(this.cnnInputSize)
                     .setInputType(this.inputType)
                     .confs(list).build();
         }
