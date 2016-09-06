@@ -545,9 +545,13 @@ template<typename OpType>
 				int numTads = shape::length(xShapeInfo) / tadLength;
 				int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
+				int tadsPerThread = resultLength / 64;
+				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
 				if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for if (resultLength > 16 && tadLength > 16)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < resultLength; i++) {
 						T *iter = x + tadOffsets[i];
 						T start = OpType::startingValue(iter);
@@ -572,7 +576,7 @@ template<typename OpType>
 					int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					int *tadStride = shape::stride(tadOnlyShapeInfo);
 
-#pragma omp  parallel for schedule(guided) if (resultLength > 16 && tadLength > 16)
+#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < resultLength; i++) {
 						int offset = tadOffsets[i];
 						int xCoord[MAX_RANK];
