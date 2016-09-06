@@ -40,7 +40,7 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential(val inputShape: List[Int] = List(),
+class Sequential(var inputShape: List[Int] = List(),
                  val useNeuralNetConfiguration: Boolean = true,
                  val addReshapersAutomatically: Boolean = true) extends Model {
   private var layers: List[Node] = List()
@@ -53,8 +53,13 @@ class Sequential(val inputShape: List[Int] = List(),
       layer.inputShape = preprocessors(layers.length).outputShape
     else if (layers.nonEmpty)
       layer.inputShape = layers.last.outputShape
+    else if (inputShape.nonEmpty && layers.isEmpty && preprocessors.isEmpty && layer.inputShape != inputShape)
+      layer.inputShape = inputShape
     else if (layer.inputShape.isEmpty)
       throw new IllegalArgumentException("Input layer must have non-empty inputShape")
+    else if (inputShape.isEmpty && layers.isEmpty && preprocessors.isEmpty)
+      inputShape = layer.inputShape
+
     println("in=" + layer.inputShape + " out=" + layer.outputShape)
 
     layer match {
@@ -116,10 +121,7 @@ class Sequential(val inputShape: List[Int] = List(),
     }
 
     if (addReshapersAutomatically)
-      new ConvolutionLayerSetup(listBuilder,
-                                layers.head.inputShape.head,
-                                layers.head.inputShape.tail.head,
-                                layers.head.inputShape.last)
+      new ConvolutionLayerSetup(listBuilder, inputShape.head, inputShape.tail.head, inputShape.last)
 
     model = new MultiLayerNetwork(listBuilder.build())
     model.init()
