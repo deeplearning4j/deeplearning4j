@@ -34,12 +34,6 @@
       <version>${scala.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native</artifactId>
-      <version>${nd4j.version}</version>
-      <!--<classifier>macosx-x86_64</classifier>-->
-    </dependency>
-    <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
       <version>${dl4j.version}</version>
