@@ -12,6 +12,9 @@ package org.deeplearning4j.nn.conf.layers.setup;
         import java.util.Map;
 
 /**
+ * DO NOT DELETE UNTIL ALL FUNCTIONALITY MOVED TO NEW SETUP
+ *
+ * TODO Delete after 0.6.0 - deprecated in 0.5.0
  *
  * Automatic configuration of convolutional layers:
  * Handles all layer wise interactions
