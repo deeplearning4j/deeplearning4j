@@ -20,11 +20,12 @@ package org.deeplearning4s.mnist.example
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
+import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4s.layers.convolutional.Convolution2D
 import org.deeplearning4s.layers.pooling.MaxPooling2D
 import org.deeplearning4s.layers.{Dense, DenseOutput}
-import org.deeplearning4s.models.Sequential
+import org.deeplearning4s.models.{NeuralNet, Sequential}
 import org.deeplearning4s.optimizers.SGD
 import org.deeplearning4s.regularizers.l2
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -48,26 +49,27 @@ object LeNetMnistExample extends App {
   private val batchSize: Int = 64
   private val nbEpochs: Int = 1
   private val rngSeed: Int = 123
-  private val weightDecay: Double = 0.005
+  private val weightDecay: Double = 0.0005
+  private val momentum: Double = 0.9
   private val learningRate: Double = 0.01
 
-  private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
-  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
+  private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, 12345)
+  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, 12345)
 
   log.info("Build model....")
-  private val model: Sequential = new Sequential(inputShape = List(nbRows, nbColumns, nbChannels))
+  private val model: Sequential = new Sequential(inputShape = List(nbRows, nbColumns, nbChannels), rngSeed = rngSeed)
   model.add(new Convolution2D(20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
-                              activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
-                              activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(new Dense(500, nbRows*nbColumns, activation = "relu", regularizer = l2(weightDecay)))
-  model.add(new DenseOutput(nbOutput, activation = "softmax", lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
-  model.compile(optimizer = SGD(learningRate))
+  model.add(new Dense(500, nbRows*nbColumns, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
+  model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax", lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
+  model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
-  model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(5)))
+  model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(nbOutput)
