@@ -26,8 +26,9 @@ import static org.junit.Assert.assertTrue;
 public class BNGradientCheckTest {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-9;
+    private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -44,9 +45,8 @@ public class BNGradientCheckTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .learningRate(1.0)
-                .regularization(true)
-//                .l2(0.01).l1(0.02)
-                .updater(Updater.SGD)
+                .regularization(false)
+                .updater(Updater.NONE)
                 .seed(12345L)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .list()
@@ -58,10 +58,9 @@ public class BNGradientCheckTest {
                         .nOut(3)
                         .build())
                 .layer(2, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax")
                         .nIn(3).nOut(3)
-                        .updater(Updater.SGD)
                         .build())
                 .pretrain(false).backprop(true);
 
@@ -73,8 +72,8 @@ public class BNGradientCheckTest {
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
     }
@@ -105,22 +104,19 @@ public class BNGradientCheckTest {
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                             .regularization(false)
                             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                            .learningRate(1e-1)
+                            .updater(Updater.NONE)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
                             .seed(12345L)
                             .list()
-                            .layer(0, new ConvolutionLayer.Builder(new int[]{1, 1})
+                            .layer(0, new ConvolutionLayer.Builder(1, 1)
                                     .nOut(6)
-                                    .weightInit(WeightInit.XAVIER)
                                     .activation(afn)
-                                    .updater(Updater.NONE)
                                     .build())
                             .layer(1, new BatchNormalization.Builder()
                                     .build())
                             .layer(2, new OutputLayer.Builder(lf)
                                     .activation(outputActivation)
                                     .nOut(3)
-                                    .weightInit(WeightInit.XAVIER)
-                                    .updater(Updater.NONE)
                                     .build())
                             .cnnInputSize(2,2,1)
                             .pretrain(false).backprop(true);
@@ -155,8 +151,8 @@ public class BNGradientCheckTest {
                             System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(gradOK);
                 }
@@ -246,8 +242,8 @@ public class BNGradientCheckTest {
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
                     }
@@ -309,8 +305,8 @@ public class BNGradientCheckTest {
 
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
                 }
@@ -395,8 +391,8 @@ public class BNGradientCheckTest {
                             System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(gradOK);
                 }
@@ -486,8 +482,8 @@ public class BNGradientCheckTest {
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
                     }
