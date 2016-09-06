@@ -33,7 +33,8 @@ class Dense(
     val weightInit: WeightInit = WeightInit.VI,
     val activation: String = "identity",
     val regularizer: WeightRegularizer = NoRegularizer(),
-    val dropOut: Double = 0.0)
+    val dropOut: Double = 0.0,
+    override val name: String = null)
   extends Node with Layer with Output {
 
   _outputShape = List(nOut)
@@ -55,6 +56,7 @@ class Dense(
         .l1(regularizer.l1)
         .l2(regularizer.l2)
         .dropOut(dropOut)
+        .name(name)
         .build()
     } else {
       new DenseLayer.Builder()
@@ -65,6 +67,7 @@ class Dense(
         .l1(regularizer.l1)
         .l2(regularizer.l2)
         .dropOut(dropOut)
+        .name(name)
         .build()
     }
   }

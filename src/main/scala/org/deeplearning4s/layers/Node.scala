@@ -26,8 +26,9 @@ package org.deeplearning4s.layers
   * @author David Kale
   */
 trait Node {
-  var inputShape = List[Int]()
-  protected var _outputShape = List[Int]()
+  val name: String = null
+  var inputShape: List[Int] = List[Int]()
+  protected var _outputShape: List[Int] = List[Int]()
 
   def outputShape: List[Int]
 }

@@ -33,7 +33,8 @@ class Convolution2D(
     val weightInit: WeightInit = WeightInit.VI,
     val activation: String = "identity",
     val regularizer: WeightRegularizer = NoRegularizer(),
-    val dropOut: Double = 0.0)
+    val dropOut: Double = 0.0,
+    override val name: String = null)
   extends Convolution(kernelSize, stride, padding, nFilter)
   with Layer {
   inputShape = if (nChannels > 0) List(nChannels) else List()
@@ -52,6 +53,7 @@ class Convolution2D(
       .l1(regularizer.l1)
       .l2(regularizer.l2)
       .dropOut(dropOut)
+      .name(name)
       .build()
   }
 }

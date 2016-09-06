@@ -26,7 +26,8 @@ import org.deeplearning4s.layers.convolutional.Convolution
 class MaxPooling2D(
     kernelSize: List[Int],
     stride: List[Int] = List(1, 1),
-    padding: List[Int] = List(0, 0))
+    padding: List[Int] = List(0, 0),
+    override val name: String = null)
   extends Convolution(kernelSize, stride, padding)
   with Layer {
   if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2)
@@ -36,5 +37,6 @@ class MaxPooling2D(
     new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
       .kernelSize(kernelSize.head, kernelSize.last)
       .stride(stride.head, stride.last)
+      .name(name)
       .build()
   }

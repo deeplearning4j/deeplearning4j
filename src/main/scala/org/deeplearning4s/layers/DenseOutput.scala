@@ -35,7 +35,8 @@ class DenseOutput(
     nIn: Int = 0,
     weightInit: WeightInit = WeightInit.VI,
     regularizer: WeightRegularizer = NoRegularizer(),
-    dropOut: Double = 0.0)
+    dropOut: Double = 0.0,
+    override val name: String = null)
   extends Dense(nOut, nIn, weightInit, activation, regularizer, dropOut) {
 
   makeOutput(lossFunction)
