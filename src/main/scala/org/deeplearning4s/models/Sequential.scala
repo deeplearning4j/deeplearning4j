@@ -21,11 +21,10 @@ package org.deeplearning4s.models
 import org.deeplearning4s.layers.{Layer, Node, Output, Preprocessor}
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4s.layers.convolutional.Convolution
-import org.deeplearning4s.layers.reshaping.Reshape
+import org.deeplearning4s.optimizers.{Optimizer, SGD}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -41,7 +40,9 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
+class Sequential(val inputShape: List[Int] = List(),
+                 val useNeuralNetConfiguration: Boolean = true,
+                 val addReshapersAutomatically: Boolean = true) extends Model {
   private var layers: List[Node] = List()
   private var model: MultiLayerNetwork = _
   private var preprocessors: Map[Int, Node] = Map()
@@ -67,25 +68,32 @@ class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
     }
   }
 
-  override def compile(lossFunction: LossFunction,
-                       optimizationAlgo: OptimizationAlgorithm,
-                       suppressConvolutionLayerSetup: Boolean = false): Unit = {
-    var builder: NeuralNetConfiguration.ListBuilder = new NeuralNetConfiguration.Builder()
-      .optimizationAlgo(optimizationAlgo)
-      .iterations(1)
-      .list()
+  override def compile(lossFunction: LossFunction = null,
+                       optimizer: Optimizer = SGD(lr = 0.01)): Unit = {
+    var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
+    optimizer match {
+      case o: SGD =>
+        builder = builder.optimizationAlgo(o.optimizationAlgorithm)
+          .learningRate(o.lr)
+      case _ =>
+        print("ERROR!")
+        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
+          .learningRate(optimizer.asInstanceOf[SGD].lr)
+    }
+    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
 
-    layers.last.asInstanceOf[Output].makeOutput(lossFunction)
+    if (!layers.last.asInstanceOf[Output].isOutput)
+      layers.last.asInstanceOf[Output].makeOutput(lossFunction)
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       println("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
-      builder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
+      listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
     for ((layerIndex, preprocessor) <- preprocessors) {
       println("Preprocessor " + layerIndex + ": " + preprocessor.getClass.getSimpleName)
-      builder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
+      listBuilder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
     }
 
-    builder = builder.pretrain(false).backprop(true)
+    listBuilder = listBuilder.pretrain(false).backprop(true)
 /*
  * Setting cnnInputSize was necessary to trigger a call to
  * ConvolutionLayerSetup inside of the MultiLayerNetwork constructor.
@@ -102,13 +110,18 @@ class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
  */
 //    if (layers.head.isInstanceOf[ConvolutionBaseLayer])
 //      builder.cnnInputSize(layers.head.inputShape.toArray)
-    if (!suppressConvolutionLayerSetup)
-      new ConvolutionLayerSetup(builder,
+    println("Length: " + layers.length)
+    for ((layer, layerIndex) <- layers.zipWithIndex) {
+      println(layerIndex + " size: " + layer.inputShape)
+    }
+
+    if (addReshapersAutomatically)
+      new ConvolutionLayerSetup(listBuilder,
                                 layers.head.inputShape.head,
                                 layers.head.inputShape.tail.head,
                                 layers.head.inputShape.last)
 
-    model = new MultiLayerNetwork(builder.build())
+    model = new MultiLayerNetwork(listBuilder.build())
     model.init()
   }
 
@@ -118,12 +131,8 @@ class Sequential(useNeuralNetConfiguration: Boolean = true) extends Model {
       model.fit(iter)
   }
 
-
-
   override def predict(x: INDArray): INDArray = model.output(x, false)
 
-  def getNetwork(): MultiLayerNetwork = {
-    return model
-  }
+  def getNetwork(): MultiLayerNetwork = model
 
 }
