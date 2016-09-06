@@ -27,6 +27,7 @@ public class GradientCheckTestsMasking {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-14;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -91,8 +92,8 @@ public class GradientCheckTestsMasking {
 
             mln.setLayerMaskArrays(null,maskArr);
 
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength + ", miniBatchSize=" + 1;
             assertTrue(msg, gradOK);

@@ -38,6 +38,7 @@ public class CNNGradientCheckTest {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-14;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -119,8 +120,8 @@ public class CNNGradientCheckTest {
                             System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(gradOK);
                 }
@@ -210,8 +211,8 @@ public class CNNGradientCheckTest {
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
                     }
@@ -272,8 +273,8 @@ public class CNNGradientCheckTest {
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                     System.out.println(msg);
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
                 }
@@ -335,8 +336,8 @@ public class CNNGradientCheckTest {
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                     System.out.println(msg);
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
                 }
@@ -410,8 +411,8 @@ public class CNNGradientCheckTest {
                         String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                         System.out.println(msg);
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
                     }
