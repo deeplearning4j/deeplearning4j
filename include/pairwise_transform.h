@@ -416,8 +416,7 @@ template<typename OpType>
                          shape::length(yShapeBuffer));
                 }
 
-                else if (sameShape) {
-                    printf("Branch A\n");
+                else if (false) {
                     int rank = shape::rank(xShapeBuffer);
                     int *xShape = shape::shapeOf(xShapeBuffer);
 
@@ -492,7 +491,6 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
 
                 else {
-                    printf("Branch B\n");
                     int xCoord[MAX_RANK];
                     int yCoord[MAX_RANK];
                     int resultCoord[MAX_RANK];
@@ -512,11 +510,8 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     if(dx == result) {
 #pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
-
-
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
-                            shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
                             Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
