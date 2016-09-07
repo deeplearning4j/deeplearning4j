@@ -30,8 +30,10 @@ import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMa
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.spark.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -641,6 +643,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             stats.logProcessParamsUpdaterEnd();
             stats.addWorkerStats(aggregatedStats);
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
 
