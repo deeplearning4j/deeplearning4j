@@ -545,7 +545,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int nPartitions = splitData.partitions().size();
         if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
 
-
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
         if (network != null) function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network));
         else function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph));

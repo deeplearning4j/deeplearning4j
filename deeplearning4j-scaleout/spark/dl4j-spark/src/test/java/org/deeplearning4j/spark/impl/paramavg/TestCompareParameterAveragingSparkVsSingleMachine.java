@@ -236,6 +236,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 net.init();
                 INDArray initialParams = net.params().dup();
 
+                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
                     if (!saveUpdater) net.setUpdater(null);
@@ -267,6 +270,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
 
                 System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
@@ -323,6 +329,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
                 for (int i = 0; i < seeds.length; i++) {
                     List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -334,6 +342,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
                 float[] fp = finalParams.data().asFloat();
                 float[] fps = finalSparkParams.data().asFloat();
