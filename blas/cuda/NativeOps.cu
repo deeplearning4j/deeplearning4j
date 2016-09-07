@@ -621,6 +621,8 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
 
 	if (debug && verbose)
@@ -639,7 +641,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 			resultPointer,
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
-			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+			dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2137,6 +2139,8 @@ void   NativeOps::execBroadcastFloat(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
 
 
@@ -2165,7 +2169,7 @@ void   NativeOps::execBroadcastFloat(
 			resultPointer,
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
-			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+			dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ);
 /*
     clock_gettime(CLOCK_REALTIME, &ts2);
 
@@ -2213,6 +2217,8 @@ void   NativeOps::execBroadcastHalf(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
 
 	if (debug && verbose)
@@ -2232,7 +2238,7 @@ void   NativeOps::execBroadcastHalf(
 					resultPointer,
 					resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 					dimensionPointer,
-					dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
+					dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
