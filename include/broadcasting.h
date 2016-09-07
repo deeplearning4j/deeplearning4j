@@ -75,9 +75,9 @@ template<typename OpType>
       __shared__ int *zShape;
       __shared__ int *zStride;
       if (threadIdx.x == 0) {
-        if (tadShapeInfoZ == nullptr) {
-            tadShapeInfoZ = tadShapeShapeInfo;
-            tadOffsetZ = tadOffsets;
+        if (tadOnlyShapeInfoZ == nullptr) {
+            tadOnlyShapeInfoZ = tadOnlyShapeInfo;
+            tadOffsetsZ = tadOffsets;
         }
 
    	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
@@ -226,6 +226,8 @@ template<typename OpType>
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
+
+                        printf("xStride: [%i]; yStride: [%i], zStride: [%i]\n", tadEWS, yStride, zEWS);
 
 						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
 							T *oRes = result + offsetZ;
