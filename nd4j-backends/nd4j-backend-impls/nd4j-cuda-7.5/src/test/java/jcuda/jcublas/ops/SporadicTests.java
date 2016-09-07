@@ -23,7 +23,7 @@ public class SporadicTests {
 
     @Before
     public void setUp() throws Exception {
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true);
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
     }
 
     @Test

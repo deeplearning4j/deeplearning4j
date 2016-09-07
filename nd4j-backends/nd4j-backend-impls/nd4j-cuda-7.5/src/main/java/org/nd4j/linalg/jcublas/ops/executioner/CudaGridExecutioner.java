@@ -1,5 +1,8 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -26,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -53,6 +58,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private AtomicLong metaCounter = new AtomicLong(0);
     private AtomicLong execCounter = new AtomicLong(0);
 
+    private List<WatchdogPair> watchdog = new CopyOnWriteArrayList<>();
 
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
@@ -76,6 +82,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Also, it's the GriOp entry point
          */
 
+        invokeWatchdog(op);
+
         if (op instanceof Accumulation) {
             exec((Accumulation) op, new int[]{Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
@@ -98,6 +106,79 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         pushToGrid(descriptor, true);
     }
 
+
+    protected void invokeWatchdog(Op op) {
+
+        if (watchdog.size() > 0)
+            for (WatchdogPair pair: watchdog) {
+                if (compareArrays(pair.getArray(), op)) {
+                    logger.info("WATCHDOG: Invoked {} op on {} using JVM eq", op.getClass().getSimpleName(), pair.getTag());
+                    continue;
+                }
+
+                if (compareDevicePointers(pair.getArray(), op)) {
+                    logger.info("WATCHDOG: Invoked {} op on {} using device PTR; Thread ID: {}; deviceId: {}", op.getClass().getSimpleName(), pair.getTag(), Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                    throw new RuntimeException();
+                }
+
+                if (compareHostPointers(pair.getArray(), op)) {
+                    logger.info("WATCHDOG: Invoked {} op on {} using host PTR", op.getClass().getSimpleName(), pair.getTag());
+                    continue;
+                }
+            }
+    }
+
+    protected boolean compareDevicePointers(INDArray array, Op op) {
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        Pointer pointer = AtomicAllocator.getInstance().getPointer(array, context);
+
+        long opZ = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
+        long opX = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
+
+        long opY = op.y() == null ? 0 : AtomicAllocator.getInstance().getPointer(op.y(), context).address();
+
+        if (opZ == pointer.address()) {
+            logger.error("op.Z matched: {}", pointer.address());
+            return true;
+        }
+
+        if (opY == pointer.address()) {
+            logger.error("op.Y matched: {}", pointer.address());
+            return true;
+        }
+
+        if (opX == pointer.address()) {
+            logger.error("op.X matched: {}", pointer.address());
+            return true;
+        }
+
+        return false;
+    }
+
+
+    protected boolean compareHostPointers(INDArray array, Op op) {
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        Pointer pointer = AtomicAllocator.getInstance().getPointer(array, context);
+
+        long opZ = AtomicAllocator.getInstance().getHostPointer(op.z()).address();
+        long opX = AtomicAllocator.getInstance().getHostPointer(op.x()).address();
+
+        long opY = op.y() == null ? 0 : AtomicAllocator.getInstance().getHostPointer(op.y()).address();
+
+        if (opZ == pointer.address() || opY == pointer.address() || opX == pointer.address())
+            return true;
+
+        return false;
+    }
+
+    protected boolean compareArrays(INDArray array, Op op) {
+        if (op.x() == array || op.y() == array || op.z() == array)
+            return true;
+
+        return false;
+    }
 
     /**
      * This method adds op into GridOp queue
@@ -841,6 +922,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
+
+    public void addToWatchdog(INDArray array, String tag) {
+        watchdog.add(new WatchdogPair(array, tag));
+    }
+
 /*
     @Override
     public INDArray execAndReturn(BroadcastOp op) {
@@ -877,4 +963,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return op.z();
     }
 */
+
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class WatchdogPair {
+        private INDArray array;
+        private String tag;
+    }
 }

@@ -61,7 +61,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
 
-            //        log.info("Serving from cache {} bytes, pointer: {}", reqMemory, pointer.address());
+           //         log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
@@ -88,6 +88,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             AllocationShape shape = point.getShape();
+            int deviceId = point.getDeviceId();
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
@@ -96,11 +97,14 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 return;
             }
 
-            ensureDeviceCacheHolder(point.getDeviceId(), shape);
+            ensureDeviceCacheHolder(deviceId, shape);
 
-      //      log.info("Releasing point: {}", point.getDeviceId());
+//            log.info("Saving point: deviceId: {}; address: {};", deviceId, point.getPointers().getDevicePointer().address());
 
-            CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
+            CacheHolder cache = deviceCache.get(deviceId).get(shape);
+
+            if (point.getDeviceId() != deviceId)
+                throw new RuntimeException("deviceId changed!");
 
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
@@ -108,7 +112,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 return;
             } else {
                 long cacheEntries = cache.size();
-                long cacheHeight = deviceCache.get(point.getDeviceId()).size();
+                long cacheHeight = deviceCache.get(deviceId).size();
 
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;

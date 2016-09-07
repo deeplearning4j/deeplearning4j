@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -31,6 +32,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     private Map<Long, Integer> affinityMap = new ConcurrentHashMap<>();
     private AtomicInteger devPtr = new AtomicInteger(0);
+    private ThreadLocal<AtomicBoolean> affiliated = new ThreadLocal<>();
+
+    public CudaAffinityManager() {
+        super();
+    }
 
     @Override
     public Integer getDeviceForCurrentThread() {
@@ -47,12 +53,27 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (!affinityMap.containsKey(threadId)) {
             Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
+            affiliated.set(new AtomicBoolean(false));
 
-            if (threadId == Thread.currentThread().getId())
+            if (threadId == Thread.currentThread().getId()) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+         //       logger.debug("setDevice({}) called for thread {}", deviceId, threadId);
+                affiliated.get().set(true);
+            }
 
             return deviceId;
         }
+
+        if (threadId == Thread.currentThread().getId()) {
+            if (!affiliated.get().get()) {
+                int deviceId = affinityMap.get(threadId);
+                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+        //        logger.debug("SCARY setDevice({}) called for thread {}", deviceId, threadId);
+                affiliated.get().set(true);
+                return deviceId;
+            }
+        }
+
         return affinityMap.get(threadId);
     }
 
