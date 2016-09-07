@@ -29,6 +29,18 @@ public class InputTypeUtil {
         int sH = stride[0];
         int sW = stride[1];
 
+        if(sH <= 0 || sW <= 0){
+            throw new IllegalStateException("Invalid strides for layer \"\" + layerName + \"\": must be > 0 (strideH = " + sH + ", strideW = " + sW + ")");
+        }
+
+        if( kH <= 0 || kH > inHeight + 2*padH){
+            throw new IllegalStateException("Invalid input configuration for layer \"" + layerName + "\" kernel height: require 0 < kH <= inHeight + 2*padH; got (kH=" + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")");
+        }
+
+        if( kW <= 0 || kW > inWidth + 2*padW){
+            throw new IllegalStateException("Invalid input configuration for layer \"\" + layerName + \"\" kernel width: require 0 < kW <= inWidth + 2*padW; got (kW=" + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")");
+        }
+
         if ((inHeight - kH + 2 * padH) % sH != 0) {
             throw new IllegalStateException("Invalid input configuration (layer name = \"" + layerName + "\") for height: inHeight=" + inHeight + ", kernelH="
                     + kH + ", padH=" + padH + ", strideH=" + sH + "; (" + inHeight + "-" + kH + "+2*" + padH + ")/" + sH
@@ -41,7 +53,7 @@ public class InputTypeUtil {
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
-        int wOut = (inWidth - kW + 2 * padW) / sH + 1;
+        int wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 

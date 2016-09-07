@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -142,14 +143,15 @@ public class DataSetIteratorTest {
 						.activation("relu")
 						.build())
 				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+						.stride(1,1)
 						.build())
 				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
 						.nOut(outputNum)
 						.weightInit(WeightInit.XAVIER)
 						.activation("softmax")
 						.build())
+				.setInputType(InputType.convolutionalFlat(numRows,numColumns,numChannels))
 				.backprop(true).pretrain(false);
-		new ConvolutionLayerSetup(builder,numRows,numColumns,numChannels);
 
 		MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
 		model.init();
@@ -163,8 +165,6 @@ public class DataSetIteratorTest {
 		Evaluation eval = new Evaluation(outputNum);
 		eval.eval(dataTest.getLabels(), output);
 		System.out.println(eval.stats());
-
-
 	}
 
 	@Test
@@ -215,7 +215,7 @@ public class DataSetIteratorTest {
 						.activation("softmax")
 						.build())
 				.backprop(true).pretrain(false)
-				.cnnInputSize(height, width, channels);
+				.setInputType(InputType.convolutionalFlat(height,width,channels));
 
 		MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
 		model.init();

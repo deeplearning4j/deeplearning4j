@@ -25,6 +25,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -172,7 +173,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         @Deprecated
         protected boolean redistributeParams = false;
-        protected int[] cnnInputSize = null;    //Order: height/width/depth
+        protected InputType inputType;
+        @Deprecated
+        protected int[] cnnInputSize;
 
         /**
          * Whether to redistribute parameters as a view or not
@@ -272,7 +275,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param height Input image height
          * @param width Input image width
          * @param depth Input image depth / number of channels (for example: 3 for color, 1 for grayscale etc)
+         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
+         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
+         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
          */
+        @Deprecated
         public Builder cnnInputSize(int height, int width, int depth){
             this.cnnInputSize = new int[]{height,width,depth};
             return this;
@@ -280,38 +287,77 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         /** CNN input size, in order of {height,width,depth}.
          * @see #cnnInputSize(int, int, int)
+         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
+         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
+         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
          */
+        @Deprecated
         public Builder cnnInputSize(int[] cnnInputSize){
-            this.cnnInputSize = cnnInputSize;
+            if(cnnInputSize != null) {
+                this.cnnInputSize = cnnInputSize;
+            }
+            return this;
+        }
+
+        public Builder setInputType(InputType inputType){
+            this.inputType = inputType;
             return this;
         }
 
         public MultiLayerConfiguration build() {
-
-            //First: apply ConvolutionLayerSetup if necessary...
             if(cnnInputSize != null){
                 new ConvolutionLayerSetup(this,cnnInputSize[0],cnnInputSize[1],cnnInputSize[2]);
+            } else if(inputType == null && inputPreProcessors.get(0) == null){
+                //User hasn't set the InputType. Sometimes we can infer it...
+                // For example, Dense/RNN layers, where preprocessor isn't set -> user is *probably* going to feed in
+                // standard feedforward or RNN data
+                //This isn't the most elegant implementation, but should avoid breaking backward compatibility here
+                //Can't infer InputType for CNN layers, however (don't know image dimensions/depth)
+                Layer firstLayer = confs.get(0).getLayer();
+                if(firstLayer instanceof BaseRecurrentLayer){
+                    BaseRecurrentLayer brl = (BaseRecurrentLayer)firstLayer;
+                    int nIn = brl.getNIn();
+                    if(nIn > 0){
+                        inputType = InputType.recurrent(nIn);
+                    }
+                } else if( firstLayer instanceof DenseLayer ||
+                        firstLayer instanceof EmbeddingLayer ||
+                        firstLayer instanceof OutputLayer ){
+                    //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
+                    FeedForwardLayer ffl = (FeedForwardLayer)firstLayer;
+                    int nIn = ffl.getNIn();
+                    if(nIn > 0){
+                        inputType = InputType.feedForward(nIn);
+                    }
+                }
             }
 
-            //Second: apply layer preprocessors (dense/rnn layers etc) (a) where required, and (b) where no override is specified
-            //ConvolutionLayerSetup should handle all CNN-related preprocessors; so just need to handle dense -> RNN etc
-            int nLayers = this.confs.size();
-            for( int i=1; i<nLayers; i++ ){
-                if(inputPreProcessors.containsKey(i)) continue; //Override or ConvolutionLayerSetup
+            //Add preprocessors and set nIns, if InputType has been set
+            // Builder.inputType field can be set in 1 of 4 ways:
+            // 1. User calls setInputType directly
+            // 2. Via ConvolutionLayerSetup -> internally calls setInputType(InputType.convolutional(...))
+            // 3. User calls one of  the two cnnInputSize methods -> sets inputType field directly
+            // 4. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
 
-                Layer currLayer = this.confs.get(i).getLayer();
-                if( currLayer instanceof ConvolutionLayer || currLayer instanceof SubsamplingLayer ) continue;  //Handled by ConvolutionLayerSetup
-                Layer lastLayer = this.confs.get(i-1).getLayer();
-                if(lastLayer instanceof ConvolutionLayer || lastLayer instanceof SubsamplingLayer ) continue; //Handled by ConvolutionLayerSetup
-                //At this point: no CNN layers. must be dense/autoencoder/rbm etc or RNN
-                if(currLayer instanceof DenseLayer || currLayer instanceof BasePretrainNetwork || currLayer instanceof OutputLayer ){
-                    if(lastLayer instanceof BaseRecurrentLayer ){   //RNN -> FF
-                        inputPreProcessors.put(i,new RnnToFeedForwardPreProcessor());
+            if(inputType != null){
+                InputType currentInputType = inputType;
+                for( int i=0; i<confs.size(); i++){
+                    Layer l = confs.get(i).getLayer();
+                    if(inputPreProcessors.get(i) == null){
+                        //Don't override preprocessor setting, but set preprocessor if required...
+                        InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);
+                        if(inputPreProcessor != null){
+                            inputPreProcessors.put(i, inputPreProcessor);
+                        }
                     }
-                } else if( currLayer instanceof BaseRecurrentLayer || currLayer instanceof RnnOutputLayer ){
-                    if(lastLayer instanceof DenseLayer || lastLayer instanceof BasePretrainNetwork ){   //FF -> RNN
-                        inputPreProcessors.put(i,new FeedForwardToRnnPreProcessor());
+
+                    InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
+                    if(inputPreProcessor != null){
+                        currentInputType = inputPreProcessor.getOutputType(currentInputType);
                     }
+                    l.setNIn(currentInputType, false);  //Don't override the nIn setting, if it's manually set by the user
+
+                    currentInputType = l.getOutputType(currentInputType);
                 }
             }
 
