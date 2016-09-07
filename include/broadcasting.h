@@ -227,7 +227,6 @@ template<typename OpType>
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
 
-                        printf("xStride: [%i]; yStride: [%i], zStride: [%i]\n", tadEWS, yStride, zEWS);
 
 						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
 							T *oRes = result + offsetZ;
