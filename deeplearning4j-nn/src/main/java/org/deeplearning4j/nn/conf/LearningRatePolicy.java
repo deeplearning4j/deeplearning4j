@@ -24,6 +24,7 @@ public enum LearningRatePolicy {
     Poly,
     Sigmoid,
     Step,
+    TorchStep,
     Schedule,
     Score
 }

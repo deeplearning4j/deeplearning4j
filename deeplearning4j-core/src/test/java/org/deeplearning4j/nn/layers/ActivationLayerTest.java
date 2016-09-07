@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -20,11 +21,27 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  */
 
 public class ActivationLayerTest {
+
+    @Test
+    public void testInputTypes(){
+        org.deeplearning4j.nn.conf.layers.ActivationLayer l =
+                new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("relu").build();
+
+
+        InputType in1 = InputType.feedForward(20);
+        InputType in2 = InputType.convolutional(28,28,1);
+
+        assertEquals(in1, l.getOutputType(in1));
+        assertEquals(in2, l.getOutputType(in2));
+        assertNull(l.getPreProcessorForInputType(in1));
+        assertNull(l.getPreProcessorForInputType(in2));
+    }
 
     @Test
     public void testDenseActivationLayer() throws Exception {
@@ -164,7 +181,7 @@ public class ActivationLayerTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -185,7 +202,7 @@ public class ActivationLayerTest {
                         .activation("softmax")
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
-                .cnnInputSize(28, 28, 1)
+                .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);

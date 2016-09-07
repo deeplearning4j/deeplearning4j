@@ -185,6 +185,41 @@ public class TestDecayPolicies {
 
 
     @Test
+    public void testLearningRateTorchStepDecaySingleLayer() {
+        int iterations = 20;
+
+        double lr = 1;
+        double decayRate = .5;
+        double steps = 10;
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(lr)
+                .learningRateDecayPolicy(LearningRatePolicy.TorchStep)
+                .lrPolicyDecayRate(decayRate)
+                .lrPolicySteps(steps)
+                .iterations(iterations)
+                .layer(new DenseLayer.Builder()
+                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                .build();
+
+        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+
+        Gradient gradientActual = new DefaultGradient();
+        gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+
+        double expectedLr = lr;
+        for (int i = 0; i < iterations; i++) {
+            updater.update(layer, gradientActual, i, 1);
+            if (i > 1 && steps % i == 0) expectedLr = calcTorchStepDecay(expectedLr, decayRate);
+            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+        }
+    }
+
+    @Test
     public void testLearningRatePolyDecaySingleLayer() {
         int iterations = 2;
         double lr = 1e-2;
@@ -710,6 +745,10 @@ public class TestDecayPolicies {
 
     public double calcStepDecay(double lr, double decayRate, double iteration, double steps){
         return lr * Math.pow(decayRate, Math.floor(iteration/steps));
+    }
+
+    public double calcTorchStepDecay(double lr, double decayRate){
+        return lr * decayRate;
     }
 
     public double calcPolyDecay(double lr, double iteration, double power, double maxIterations){
