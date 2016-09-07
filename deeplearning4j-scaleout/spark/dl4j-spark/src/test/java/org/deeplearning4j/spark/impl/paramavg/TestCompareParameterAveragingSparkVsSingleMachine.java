@@ -18,12 +18,15 @@ import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.junit.Before;
 import org.junit.Test;
+//import org.nd4j.jita.conf.Configuration;
+//import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
+//import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+//import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -36,6 +39,11 @@ import static org.junit.Assert.*;
  * Created by Alex on 18/06/2016.
  */
 public class TestCompareParameterAveragingSparkVsSingleMachine {
+    @Before
+    public void setUp() {
+        //CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(false);
+    }
+
 
     private static MultiLayerConfiguration getConf(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
@@ -232,12 +240,13 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
+//                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
+
                 MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.SGD));
                 net.init();
                 INDArray initialParams = net.params().dup();
+  //              executioner.addToWatchdog(initialParams, "initialParams");
 
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -260,6 +269,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
+    //            executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
+
                 for (int i = 0; i < seeds.length; i++) {
                     List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
                     JavaRDD<DataSet> rdd = sc.parallelize(list);
@@ -270,10 +281,6 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
-
 
                 System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
                 System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
@@ -313,9 +320,12 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
+//                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
+
                 ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.SGD));
                 net.init();
                 INDArray initialParams = net.params().dup();
+//                executioner.addToWatchdog(initialParams, "initialParams");
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -323,14 +333,15 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
+//                executioner.addToWatchdog(finalParams, "finalParams");
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
                 SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+//                executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
 
                 for (int i = 0; i < seeds.length; i++) {
                     List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -342,9 +353,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+//                executioner.addToWatchdog(finalSparkParams, "finalSparkParams");
 
                 float[] fp = finalParams.data().asFloat();
                 float[] fps = finalSparkParams.data().asFloat();
