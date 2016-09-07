@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -28,7 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface ConvolutionHelper {
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta,
-                                              int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn);
-    INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad);
+                                              int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn, AlgoMode mode);
+    INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad, AlgoMode mode);
     INDArray activate(INDArray z, String afn);
 }

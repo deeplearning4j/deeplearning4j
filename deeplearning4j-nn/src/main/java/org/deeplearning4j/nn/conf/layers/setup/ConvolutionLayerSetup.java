@@ -1,16 +1,20 @@
 package org.deeplearning4j.nn.conf.layers.setup;
 
 
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.*;
-import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
+        import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+        import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+        import org.deeplearning4j.nn.conf.inputs.InputType;
+        import org.deeplearning4j.nn.conf.layers.*;
+        import org.deeplearning4j.nn.conf.preprocessor.*;
+        import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
 
-import java.util.HashMap;
-import java.util.Map;
+        import java.util.HashMap;
+        import java.util.Map;
 
 /**
+ * DO NOT DELETE UNTIL ALL FUNCTIONALITY MOVED TO NEW SETUP
+ *
+ * TODO Delete after 0.6.0 - deprecated in 0.5.0
  *
  * Automatic configuration of convolutional layers:
  * Handles all layer wise interactions
@@ -29,7 +33,12 @@ import java.util.Map;
  * such as when a shift from
  * convolution to dense happens.
  *
+ * @deprecated Use {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration.Builder#setInputType(InputType)} to set nIns
+ * and add preprocessors as required. This can be done using {@code builder.setInputType(InputType.convolutional(height, width, channels))}
  */
+
+
+@Deprecated
 public class ConvolutionLayerSetup {
 
     public static final String CONVOLUTION_LAYER = "ConvolutionLayer";
@@ -58,13 +67,20 @@ public class ConvolutionLayerSetup {
 
     /**
      * Take in the configuration
-     * @param builder the configuration builder
-     * @param height initial height of the data
-     * @param width initial width of the data
+     *
+     * @param builder  the configuration builder
+     * @param height   initial height of the data
+     * @param width    initial width of the data
      * @param channels initial number of channels in the data
+     * @deprecated Use {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration.Builder#setInputType(InputType)} to set nIns
+     * and add preprocessors as required. This can be done using {@code builder.setInputType(InputType.convolutional(height, width, channels))}
+     * For image data that has been flattened into a row vector per example (shape [minibatchSize,depth*height*width])
+     * instead use {@code InputType.convolutionalFlat(height,width,depth)}.
      */
-
     public ConvolutionLayerSetup(MultiLayerConfiguration.Builder builder,int height,int width,int channels) {
+
+//        builder.setInputType(InputType.convolutionalFlat(height, width, channels));
+
         conf = builder;
         lastHeight = height;
         lastWidth = width;
