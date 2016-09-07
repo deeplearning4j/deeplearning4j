@@ -127,8 +127,18 @@ public class SparkComputationGraph implements Serializable {
         return trainingMaster.getTrainingStats();
     }
 
+    /**
+     * @return The trained ComputationGraph
+     */
     public ComputationGraph getNetwork() {
         return network;
+    }
+
+    /**
+     * @return The TrainingMaster for this network
+     */
+    public TrainingMaster getTrainingMaster(){
+        return trainingMaster;
     }
 
     public void setNetwork(ComputationGraph network) {
