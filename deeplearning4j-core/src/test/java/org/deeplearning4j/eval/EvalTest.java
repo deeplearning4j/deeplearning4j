@@ -422,4 +422,16 @@ public class EvalTest {
         assertEquals(2, (int)eval.truePositives().get(1));
         assertEquals(1, (int)eval.falseNegatives().get(1));
     }
+
+    @Test
+    public void testEvalInvalid(){
+        Evaluation e = new Evaluation(5);
+
+        System.out.println(e.stats());
+
+        char c = "\uFFFD".toCharArray()[0];
+        System.out.println(c);
+
+        assertFalse(e.stats().contains("\uFFFD"));
+    }
 }
