@@ -75,6 +75,11 @@ template<typename OpType>
       __shared__ int *zShape;
       __shared__ int *zStride;
       if (threadIdx.x == 0) {
+        if (tadShapeInfoZ == nullptr) {
+            tadShapeInfoZ = tadShapeShapeInfo;
+            tadOffsetZ = tadOffsets;
+        }
+
    	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
         tadRank = shape::rank(tadOnlyShapeInfo);
@@ -89,6 +94,8 @@ template<typename OpType>
       	yStride = shape::elementWiseStride(yShapeInfo);
 
       	zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
+
+
       }
       __syncthreads();
 
@@ -147,8 +154,8 @@ template<typename OpType>
 				int *yShapeInfo,
 				T *result,
 				int *dimension,
-				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
-                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset), BROADCAST_OPS);
+				int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
+                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset, tadShapeInfoZ, tadOffsetZ), BROADCAST_OPS);
 			}
 
 			/**
@@ -169,7 +176,7 @@ template<typename OpType>
 							 int *yShapeInfo,
 							 T *result,
 							 int *dimension,
-							 int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+							 int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
 
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
@@ -186,6 +193,8 @@ template<typename OpType>
 
 					tadShapeShapeInfo = tad->tadOnlyShapeInfo;
 					tadOffsets = tad->tadOffsets;
+
+
 				}
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -197,20 +206,32 @@ template<typename OpType>
 				int yStride = shape::elementWiseStride(yShapeInfo);
 				int tads =shape::length(xShapeInfo) / tadLength;
 
+                if (tadShapeInfoZ == nullptr) {
+                    tadShapeInfoZ = tadShapeShapeInfo;
+                    tadOffsetZ = tadOffsets;
+                }
+
+                int *zShape = shape::shapeOf(tadShapeInfoZ);
+                int *zStride = shape::stride(tadShapeInfoZ);
+                int zRank = shape::rank(tadShapeInfoZ);
+                int zEWS = shape::elementWiseStride(tadShapeInfoZ);
+
+
 				int tadsPerThread = tads / 64;
 				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-				if (result == x) {
+				if (true) {
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
+                        int offsetZ = tadOffsetZ[i];
 
-						if (tadEWS > 0 && yStride > 0) {
-							T *oRes = result + offset;
+						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
+							T *oRes = result + offsetZ;
 							T *oX = x + offset;
 
-							if (tadEWS == 1 && yStride == 1) {
+							if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
 									oRes[f] = OpType::op(oX[f], y[f]);
@@ -218,22 +239,26 @@ template<typename OpType>
 							} else {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f * tadEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
+									oRes[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
 								}
 							}
 						} else {
 							int xCoord[MAX_RANK];
+                            int zCoord[MAX_RANK];
 
+#pragma omp simd
 							for (int f = 0; f < tadLength; f++) {
-								shape::ind2subC(tadRank,xShape, f, xCoord);
-								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
-								result[xOffset] = OpType::op(x[xOffset], y[f * yStride]);
+                                shape::ind2subC(tadRank,xShape, i, xCoord);
+                                shape::ind2subC(zRank,zShape, i, zCoord);
+                                Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
+                                Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
+                                result[zOffset] = OpType::op(x[xOffset], y[i * yStride]);
 							}
 						}
 					}
 				}
 				else {
-
+/*
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
@@ -260,7 +285,7 @@ template<typename OpType>
 													  resultStridesIter) >= 0) {
 							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
 							{
-								/* Process the innermost dimension */
+								//Process the innermost dimension
 								T val = OpType::op(xIter[0], y[vectorIdx]);
 								resultIter[0] = val;
 								vectorIdx += shape::elementWiseStride(yShapeInfo);
@@ -278,7 +303,7 @@ template<typename OpType>
 						}
 					}
 
-
+*/
 
 				}
 

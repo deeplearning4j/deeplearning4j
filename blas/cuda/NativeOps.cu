@@ -1705,6 +1705,8 @@ void   NativeOps::execTransformDouble(
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 					// sub 1
 					execBroadcastDouble(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
@@ -1726,6 +1728,8 @@ void   NativeOps::execTransformDouble(
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 
 					// divide 3
@@ -4168,6 +4172,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 
 					// sub 1
@@ -4200,6 +4206,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 					// divide 3
 					execBroadcastFloat(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
@@ -4400,6 +4408,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 
 					// sub 1
@@ -4432,6 +4442,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = nullptr;
+                    tempPointers[13] = nullptr;
 
 					// divide 3
 					execBroadcastHalf(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
