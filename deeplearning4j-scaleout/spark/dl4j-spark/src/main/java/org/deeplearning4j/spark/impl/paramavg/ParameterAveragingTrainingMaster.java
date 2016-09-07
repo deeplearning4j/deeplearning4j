@@ -146,6 +146,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         String jvmuid = UIDProvider.getJVMUID();
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
+        this.rng = new Random();
     }
 
     @Override
