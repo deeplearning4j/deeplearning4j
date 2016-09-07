@@ -30,6 +30,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -131,6 +132,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         //Epsilons in shape: [miniBatch, depth, outH, outW]
         //Epsilons out shape: [miniBatch, depth, inH, inW]
 
+
         int poolingMode;
         switch(poolingType) {
             case AVG:
@@ -152,6 +154,10 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
         int[] srcStride = input.stride();
         int[] deltaStride = epsilon.stride();
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, depth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, outH, outW,
@@ -205,6 +211,9 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
             default:
                 return null;
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
 
         int[] srcStride = input.stride();
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN,

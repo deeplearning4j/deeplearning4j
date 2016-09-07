@@ -20,6 +20,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -267,11 +268,13 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
-                assertEquals(initialParams, initialSparkParams);
-                assertNotEquals(initialParams, finalParams);
-                System.out.println("Initial params:       " + Arrays.toString(initialParams.data().asFloat()));
+
+                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
                 System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
+                assertEquals(initialParams, initialSparkParams);
+                assertNotEquals(initialParams, finalParams);
                 assertEquals(finalParams, finalSparkParams);
 
                 double sparkScore = sparkNet.getScore();
@@ -334,7 +337,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 float[] fp = finalParams.data().asFloat();
                 float[] fps = finalSparkParams.data().asFloat();
-                System.out.println("Initial params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(fp));
                 System.out.println("Final (Spark) params: " + Arrays.toString(fps));
 
