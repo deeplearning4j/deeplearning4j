@@ -417,9 +417,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
         //Keyed as per backprop()
         defaultConfiguration.clearVariables();
+        List<String> variables = defaultConfiguration.variables(false);
         for( int i=0; i<layers.length; i++ ){
             for( String s : layers[i].conf().variables() ){
-                defaultConfiguration.addVariable(i+"_"+s);
+                variables.add(i+"_"+s);
             }
         }
     }
@@ -978,7 +979,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public double f1Score(org.nd4j.linalg.dataset.api.DataSet data) {
-        return f1Score(data.getFeatureMatrix(), data.getLabels());
+        return f1Score(data.getFeatures(), data.getLabels());
     }
 
 
@@ -1396,7 +1397,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public List<String> predict(org.nd4j.linalg.dataset.api.DataSet dataSet) {
-        int[] intRet = predict(dataSet.getFeatureMatrix());
+        int[] intRet = predict(dataSet.getFeatures());
         List<String> ret = new ArrayList<>();
         for(int i=0; i < intRet.length; i++) {
             ret.add(i,dataSet.getLabelName(intRet[i]));
@@ -1481,12 +1482,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
+            doTruncatedBPTT(data.getFeatures(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         } else {
             //Standard training
             boolean hasMaskArrays = data.hasMaskArrays();
             if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-            fit(data.getFeatureMatrix(), data.getLabels());
+            fit(data.getFeatures(), data.getLabels());
             if(hasMaskArrays) clearLayerMaskArrays();
         }
     }
