@@ -572,6 +572,92 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         stats = sparkNet.getSparkTrainingStats();
         System.out.println(stats.statsAsString());
+    }
 
+
+    @Test
+    public void testSeedRepeatability() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(4).nOut(4)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(4).nOut(3)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork n1 = new MultiLayerNetwork(conf);
+        n1.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork n2 = new MultiLayerNetwork(conf);
+        n2.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork n3 = new MultiLayerNetwork(conf);
+        n3.init();
+
+        SparkDl4jMultiLayer sparkNet1 = new SparkDl4jMultiLayer(sc,n1,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(12345)
+                        .build());
+
+        Thread.sleep(100);  //Training master IDs are only unique if they are created at least 1 ms apart...
+
+        SparkDl4jMultiLayer sparkNet2 = new SparkDl4jMultiLayer(sc,n2,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(12345)
+                        .build());
+
+        Thread.sleep(100);
+
+        SparkDl4jMultiLayer sparkNet3 = new SparkDl4jMultiLayer(sc,n3,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(98765)
+                        .build());
+
+        List<DataSet> data = new ArrayList<>();
+        DataSetIterator iter = new IrisDataSetIterator(1,150);
+        while(iter.hasNext()) data.add(iter.next());
+
+        JavaRDD<DataSet> rdd = sc.parallelize(data);
+
+
+        sparkNet1.fit(rdd);
+        sparkNet2.fit(rdd);
+        sparkNet3.fit(rdd);
+
+
+        INDArray p1 = sparkNet1.getNetwork().params();
+        INDArray p2 = sparkNet2.getNetwork().params();
+        INDArray p3 = sparkNet3.getNetwork().params();
+
+        sparkNet1.getTrainingMaster().deleteTempFiles(sc);
+        sparkNet2.getTrainingMaster().deleteTempFiles(sc);
+        sparkNet3.getTrainingMaster().deleteTempFiles(sc);
+
+        assertEquals(p1,p2);
+        assertNotEquals(p1,p3);
     }
 }
