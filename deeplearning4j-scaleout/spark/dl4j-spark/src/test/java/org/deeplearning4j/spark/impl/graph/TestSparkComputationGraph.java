@@ -15,9 +15,11 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
@@ -34,6 +36,7 @@ import scala.Tuple2;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class TestSparkComputationGraph extends BaseSparkTest {
 
@@ -171,5 +174,93 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
 //            System.out.println(localScoresWithRegDouble[i] + "\t" + scoresWithReg.get(i) + "\t" + localScoresNoRegDouble[i] + "\t" + scoresNoReg.get(i));
         }
+    }
+
+    @Test
+    public void testSeedRepeatability() throws Exception {
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(4).nOut(4)
+                        .activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(4).nOut(3)
+                        .activation("softmax")
+                        .build(), "0")
+                .setOutputs("1")
+                .pretrain(false).backprop(true)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph n1 = new ComputationGraph(conf);
+        n1.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph n2 = new ComputationGraph(conf);
+        n2.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph n3 = new ComputationGraph(conf);
+        n3.init();
+
+        SparkComputationGraph sparkNet1 = new SparkComputationGraph(sc,n1,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(12345)
+                        .build());
+
+        Thread.sleep(100);  //Training master IDs are only unique if they are created at least 1 ms apart...
+
+        SparkComputationGraph sparkNet2 = new SparkComputationGraph(sc,n2,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(12345)
+                        .build());
+
+        Thread.sleep(100);
+
+        SparkComputationGraph sparkNet3 = new SparkComputationGraph(sc,n3,
+                new ParameterAveragingTrainingMaster.Builder(1)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(5)
+                        .averagingFrequency(1)
+                        .repartionData(Repartition.Always)
+                        .rngSeed(98765)
+                        .build());
+
+        List<DataSet> data = new ArrayList<>();
+        DataSetIterator iter = new IrisDataSetIterator(1,150);
+        while(iter.hasNext()) data.add(iter.next());
+
+        JavaRDD<DataSet> rdd = sc.parallelize(data);
+
+
+        sparkNet1.fit(rdd);
+        sparkNet2.fit(rdd);
+        sparkNet3.fit(rdd);
+
+
+        INDArray p1 = sparkNet1.getNetwork().params();
+        INDArray p2 = sparkNet2.getNetwork().params();
+        INDArray p3 = sparkNet3.getNetwork().params();
+
+        sparkNet1.getTrainingMaster().deleteTempFiles(sc);
+        sparkNet2.getTrainingMaster().deleteTempFiles(sc);
+        sparkNet3.getTrainingMaster().deleteTempFiles(sc);
+
+        assertEquals(p1,p2);
+        assertNotEquals(p1,p3);
     }
 }

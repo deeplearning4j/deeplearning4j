@@ -169,6 +169,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
         protected InputType inputType;
+        @Deprecated
+        protected int[] cnnInputSize;
 
         /**
          * Specify the processors.
@@ -262,7 +264,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         @Deprecated
         public Builder cnnInputSize(int height, int width, int depth){
-            inputType = InputType.convolutional(height, width, depth);
+            this.cnnInputSize = new int[]{height,width,depth};
             return this;
         }
 
@@ -275,7 +277,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         public Builder cnnInputSize(int[] cnnInputSize){
             if(cnnInputSize != null) {
-                inputType = InputType.convolutional(cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
+                this.cnnInputSize = cnnInputSize;
             }
             return this;
         }
@@ -286,8 +288,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
 
         public MultiLayerConfiguration build() {
-
-            if(inputType == null && inputPreProcessors.get(0) == null){
+            if(cnnInputSize != null){
+                new ConvolutionLayerSetup(this,cnnInputSize[0],cnnInputSize[1],cnnInputSize[2]);
+            } else if(inputType == null && inputPreProcessors.get(0) == null){
                 //User hasn't set the InputType. Sometimes we can infer it...
                 // For example, Dense/RNN layers, where preprocessor isn't set -> user is *probably* going to feed in
                 // standard feedforward or RNN data

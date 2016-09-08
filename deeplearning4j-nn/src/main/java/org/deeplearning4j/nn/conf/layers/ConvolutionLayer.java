@@ -26,6 +26,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
 
+    public enum AlgoMode { NO_WORKSPACE, PREFER_FASTEST }
+
+    /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+    protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+
     /**
     * ConvolutionLayer
     * nIn in the input layer is the number of channels
@@ -45,6 +50,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         if(builder.padding.length != 2)
             throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
+        this.cudnnAlgoMode = builder.cudnnAlgoMode;
     }
 
     @Override
@@ -151,6 +157,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
+        private AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
@@ -194,6 +201,12 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder padding(int... padding){
             this.padding = padding;
+            return this;
+        }
+
+        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode){
+            this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
 
