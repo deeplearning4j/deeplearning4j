@@ -277,6 +277,7 @@ public class ConvolutionLayerSetupTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns,nChannels))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6))
                 .backprop(true).pretrain(false);
 
