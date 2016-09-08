@@ -102,20 +102,26 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 //        INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.ones(shape) : getParam(BatchNormalizationParamInitializer.GAMMA);
 
         INDArray gamma = null;
-        INDArray beta = null;
+        INDArray dGammaView;
+        INDArray dBetaView;
         if( layerConf.isLockGammaBeta()){
-
+            int[] tempShape = new int[]{1,shape[1]};
+            dGammaView = Nd4j.createUninitialized(tempShape,'c');
+            dBetaView = Nd4j.createUninitialized(tempShape,'c');
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
-            beta = getParam(BatchNormalizationParamInitializer.BETA);
+            dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
+            dBetaView = gradientViews.get(BatchNormalizationParamInitializer.BETA);
         }
 
         Gradient retGradient = new DefaultGradient();
 
-        INDArray dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
-        INDArray dBetaView = gradientViews.get(BatchNormalizationParamInitializer.BETA);
+
 
         if (helper != null) {
+            if(layerConf.isLockGammaBeta()){
+                gamma = Nd4j.valueArrayOf(new int[]{1,shape[1]},layerConf.getGamma());
+            }
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon,
                     shape, gamma, dGammaView, dBetaView, layerConf.getEps());
             if (ret != null) {
@@ -128,7 +134,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //TODO: handle fixed beta/gamma case...
             INDArray dGamma = epsilon.mul(xHat).sum(0);     //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dBeta = epsilon.sum(0);                //dL/dBeta = sum_examples dL/dOut
-            INDArray dxhat = epsilon.mulRowVector(gamma);   //dL/dxHat = dL/dOut . gamma        Shape: [minibatchSize, nOut]
+            INDArray dxhat;
+            if(layerConf.isLockGammaBeta()){
+                dxhat = epsilon.mul(layerConf.getGamma());
+            } else {
+                //Standard case
+                dxhat = epsilon.mulRowVector(gamma);   //dL/dxHat = dL/dOut . gamma        Shape: [minibatchSize, nOut]
+            }
+
 
             //dL/dVariance
             INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0, true));   //Shape: [1, miniBatch]
@@ -159,7 +172,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             INDArray dGamma = epsilon.mul(xHat).sum(0,2,3);
             INDArray dBeta = epsilon.sum(0,2,3);
-            INDArray dxhat = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon, gamma, Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering()), 1));
+            INDArray dxhat;
+            if(layerConf.isLockGammaBeta()){
+                dxhat = epsilon.mul(layerConf.getGamma());
+            } else {
+                //Standard case
+                dxhat = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon, gamma, Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering()), 1));
+            }
 
             //dL/dVariance
             INDArray temp = Transforms.pow(std, -3.0, true);
