@@ -3,6 +3,8 @@ package org.deeplearning4j.spark.impl.paramavg.aggregator;
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Function used in ParameterAveraging TrainingMaster, for doing parameter averaging, and handling updaters
@@ -37,6 +39,9 @@ public class ParameterAveragingElementCombineFunction implements Function2<Param
             if(stats == null) stats = v2.getSparkTrainingStats();
             else stats.addOtherTrainingStats(v2.getSparkTrainingStats());
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         return new ParameterAveragingAggregationTuple(newParams, updaterStateSum, scoreSum, aggregationCount, stats);
     }

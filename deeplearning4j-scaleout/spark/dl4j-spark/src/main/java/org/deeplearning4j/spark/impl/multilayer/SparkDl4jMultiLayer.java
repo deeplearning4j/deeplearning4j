@@ -46,7 +46,9 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
@@ -211,6 +213,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the MultiLayerNetwork after training
      */
     public MultiLayerNetwork fit(JavaRDD<DataSet> trainingData) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         trainingMaster.executeTraining(this, trainingData);
         return network;
     }
@@ -224,6 +229,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return The MultiLayerNetwork after training
      */
     public MultiLayerNetwork fit(String path) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
@@ -239,6 +247,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return The MultiLayerNetwork after training
      */
     public MultiLayerNetwork fit(String path, int minPartitions) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
         trainingMaster.executeTraining(this, serializedDataSets);
         return network;
