@@ -134,7 +134,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
-
     }
 
     public double getLearningRateByParam(String variable){

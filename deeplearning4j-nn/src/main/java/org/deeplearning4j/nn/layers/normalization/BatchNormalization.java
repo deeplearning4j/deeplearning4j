@@ -35,20 +35,15 @@ import java.util.List;
  *
  * ideal to apply this between linear and non-linear transformations in layers it follows
  **/
-
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
     protected static final Logger log = LoggerFactory.getLogger(BatchNormalization.class);
 
     BatchNormalizationHelper helper = null;
     protected int index = 0;
     protected List<IterationListener> listeners = new ArrayList<>();
-    protected int[] shape;
-    protected INDArray globalMean;
-    protected INDArray globalVar;
     protected INDArray std;
     protected INDArray xMu;
     protected INDArray xHat;
-    protected boolean setMeanVar = true;
 
     public BatchNormalization(NeuralNetConfiguration conf) {
         super(conf);
@@ -95,11 +90,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray nextEpsilon;
-        shape = getShape(epsilon);
+        int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-
-//        INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.ones(shape) : getParam(BatchNormalizationParamInitializer.GAMMA);
 
         INDArray gamma = null;
         INDArray dGammaView;
@@ -147,7 +140,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0, true));   //Shape: [1, miniBatch]
 
             //dL/dmu
-//            INDArray dxmu1 = dxhat.divRowVector(std).sum(0).negi();
             INDArray dxmu1 = dxhat.sum(0).divi(std).negi();
             INDArray dxmu2 = xMu.sum(0).muli(-2.0/batchSize).muli(dLdVar);
 
@@ -240,8 +232,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         // batchnorm true but need to clarify if activation before or after
 
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-        int batchSize = x.size(0); // number examples in batch
-        shape = getShape(x);
+        int[] shape = getShape(x);
 
 
         // xHat = (x-xmean) / sqrt(var + epsilon)
@@ -271,18 +262,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             var.addi(layerConf.getEps());
         } else {
             // Global mean and variance estimate - used after training
-            mean = this.globalMean;
-            var = this.globalVar;
+            mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+            var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
         std = Transforms.sqrt(var,true);
 
-//        System.out.println("MEAN:");
-//        System.out.println(Arrays.toString(mean.data().asFloat()));
-//        System.out.println("VARIANCE:");
-//        System.out.println(Arrays.toString(var.data().asFloat()));
-
         INDArray gamma = null;
         INDArray beta = null;
+        INDArray globalMeanView = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         if (layerConf.isLockGammaBeta()) {
             if(helper != null){
                 //TODO: don't create these each iteration, when using cudnn
@@ -296,14 +284,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
         if (helper != null) {
-            double decay = setMeanVar ? 1 : layerConf.getDecay();
-            if (setMeanVar){
-                this.globalMean = this.globalMean == null? Nd4j.zeros(mean.shape()): this.globalMean;
-                this.globalVar = this.globalVar == null? Nd4j.ones(var.shape()): this.globalVar;
-                setMeanVar = false;
-            }
+            double decay = layerConf.getDecay();
             INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN,
-                    shape, gamma, beta, this.globalMean, this.globalVar, decay, layerConf.getEps());
+                    shape, gamma, beta, globalMeanView, globalVarView, decay, layerConf.getEps());
             if (ret != null) {
                 return ret;
             }
@@ -348,11 +331,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 //Standard case: gamma and beta are learned per parameter
                 activations = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,Nd4j.createUninitialized(x.shape(),x.ordering()),1));
-//                System.out.println("ACTIVATIONS 1:");
-//                System.out.println(Arrays.toString(activations.data().asFloat()));
                 activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(activations,beta,activations,1));
-//                System.out.println("ACTIVATIONS 2:");
-//                System.out.println(Arrays.toString(activations.data().asFloat()));
             }
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
@@ -366,11 +345,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 //          layerConf.setN(layerConf.getN() + 1);
 //          decay =  1. / layerConf.getN();
 
-            if (setMeanVar){
-                this.globalMean = this.globalMean == null? Nd4j.zeros(mean.shape()): this.globalMean;
-                this.globalVar = this.globalVar == null? Nd4j.ones(var.shape()): this.globalVar;
-                setMeanVar = false;
-            }
+//            if (setMeanVar){
+//                this.globalMean = this.globalMean == null? Nd4j.zeros(mean.shape()): this.globalMean;
+//                this.globalVar = this.globalVar == null? Nd4j.ones(var.shape()): this.globalVar;
+//                setMeanVar = false;
+//            }
 
             if(layerConf.isMinibatch()){
                 //Standard case: Estimate global mean and variance stats by moving average
@@ -378,14 +357,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 //globalVar  = decay * globalVar  + (1-decay) * minibatchVar
                 //Note that it's safe to do a muli on 'mean' and 'var' variables: can't be the global arrays with training == Trainingmode.TRAIN
                 decay = layerConf.getDecay();
-                this.globalMean.muli(decay).addi(mean.muli(1-decay));
-                this.globalVar.muli(decay).addi(var.muli(1-decay));
+                globalMeanView.muli(decay).addi(mean.muli(1-decay));
+                globalVarView.muli(decay).addi(var.muli(1-decay));
 
             } else {
                 //Special case: doing full-batch (entire data set) training (uncommon; only tiny data sets)
                 //In this case, minibatch and global stats are identical. Don't want to use a moving average estimate.
-                this.globalMean = mean;
-                this.globalVar = var;
+                globalMeanView.assign(mean);
+                globalVarView.assign(var);
             }
         }
 

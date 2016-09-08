@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,6 +37,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -663,8 +666,60 @@ public class BatchNormalizationTest {
 
         assertNotEquals(null, network.getLayer(0).getParam("W"));
         assertNotEquals(null, network.getLayer(0).getParam("b"));
-
     }
+
+
+    @Test
+    public void checkSerialization() throws Exception {
+        //Serialize the batch norm network (after training), and make sure we get same activations out as before
+        // i.e., make sure state is properly stored
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(2)
+                .seed(12345)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("identity").build())
+                .layer(1, new BatchNormalization.Builder().build())
+                .layer(2, new ActivationLayer.Builder().activation("leakyrelu").build())
+                .layer(3, new DenseLayer.Builder().nOut(10).activation("leakyrelu").build())
+                .layer(4, new BatchNormalization.Builder().build())
+                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nOut(10).build())
+                .backprop(true).pretrain(false)
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSetIterator iter = new MnistDataSetIterator(16,true,12345);
+        for( int i=0; i<20; i++ ){
+            net.fit(iter.next());
+        }
+
+        INDArray in = iter.next().getFeatureMatrix();
+
+        INDArray out = net.output(in, false);
+        INDArray out2 = net.output(in, false);
+
+        assertEquals(out, out2);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ModelSerializer.writeModel(net,baos,true);
+        baos.close();
+        byte[] bArr = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(bArr);
+        MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+
+        INDArray outDeser = net2.output(in, false);
+
+        assertEquals(out, outDeser);
+    }
+
 
     @Ignore
     @Test
