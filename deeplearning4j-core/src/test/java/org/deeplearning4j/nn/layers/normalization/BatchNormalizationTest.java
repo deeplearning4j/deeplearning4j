@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -43,9 +45,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -334,225 +334,10 @@ public class BatchNormalizationTest {
         assertEquals(dldgammaExp, dldgamma);
         assertEquals(dldbetaExp, dldbeta);
 
-        System.out.println("EPSILONS");
-        System.out.println(Arrays.toString(dldinExp.data().asDouble()));
-        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
+//        System.out.println("EPSILONS");
+//        System.out.println(Arrays.toString(dldinExp.data().asDouble()));
+//        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
         assertEquals(dldinExp, p.getSecond());
-    }
-
-    @Test
-    public void testDnnShapeBatchNormForward() {
-        Layer layer = getLayer(16);
-        // Confirm param initial shape before override
-        assertArrayEquals(new int[]{1, 16}, layer.getParam("gamma").shape());
-        assertArrayEquals(new int[]{1, 16}, layer.getParam("beta").shape());
-        layer.setParam("gamma", Nd4j.linspace(0, 15, 16));
-        layer.setParam("beta", Nd4j.linspace(0, 15, 16));
-
-
-        INDArray activationsActual = layer.preOutput(dnnInput);
-        INDArray activationsExpected = Nd4j.create(new double[]{
-                0.00000000e+00, 7.81248399e-11, 1.56249680e-10,
-                2.34374298e-10, 3.12499360e-10, 3.90624422e-10,
-                4.68748595e-10, 5.46873657e-10, 6.24998719e-10,
-                7.03122893e-10, 7.81248843e-10, 8.59373017e-10,
-                9.37497191e-10, 1.01562314e-09, 1.09374731e-09,
-                1.17187327e-09, 0.00000000e+00, 2.00000000e+00,
-                4.00000000e+00, 6.00000000e+00, 8.00000000e+00,
-                1.00000000e+01, 1.20000000e+01, 1.40000000e+01,
-                1.60000000e+01, 1.80000000e+01, 2.00000000e+01,
-                2.20000000e+01, 2.40000000e+01, 2.60000000e+01,
-                2.80000000e+01, 3.00000000e+01
-        }, new int[]{2, 16});
-
-        System.out.println(Arrays.toString(activationsExpected.data().asFloat()));
-        System.out.println(Arrays.toString(activationsActual.data().asFloat()));
-
-        assertEquals(activationsExpected, activationsActual);
-        assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
-    }
-
-
-    @Test
-    public void testDnnShapeBatchNormBack() {
-        Layer layer = getLayer(16);
-        layer.setParam("gamma", Nd4j.linspace(0, 15, 16));
-        layer.setParam("beta", Nd4j.linspace(0, 15, 16));
-
-        layer.preOutput(dnnInput);
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, 64));
-        Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
-
-        INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[]{
-                0.00000000e+00, -1.56249680e-10, -3.12499360e-10,
-                -4.68748595e-10, -6.24998719e-10, -7.81248843e-10,
-                -9.37497191e-10, -1.09374731e-09, -1.24999744e-09,
-                -1.40624934e-09, -1.56249413e-09, -1.71874603e-09,
-                -1.87499438e-09, -2.03124273e-09, -2.18749818e-09,
-                -2.34373942e-09, 0.00000000e+00, 1.56249680e-10,
-                3.12499804e-10, 4.68748595e-10, 6.24997831e-10,
-                7.81248843e-10, 9.37497191e-10, 1.09374731e-09,
-                1.24999744e-09, 1.40624579e-09, 1.56249769e-09,
-                1.71874603e-09, 1.87499438e-09, 2.03124983e-09,
-                2.18749818e-09, 2.34374653e-09
-        }, new int[]{2, 16});
-
-
-        // short calculation expected output
-        INDArray dnnExpectedEpsilonOutOther = Nd4j.create(new double[]{
-                16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6.,
-                5., 4., 3., 2., 1., -16., -15., -14., -13., -12., -11.,
-                -10., -9., -8., -7., -6., -5., -4., -3., -2., -1.
-        }, new int[]{2, 16});
-
-        INDArray expectedGGamma = Nd4j.create(new double[]
-                {
-                        16., 16., 16., 16., 16., 16., 16., 16., 16., 16., 16.,
-                        16., 16., 16., 16., 16.
-                }, new int[]{1, 16});
-
-        INDArray expectedBeta = Nd4j.create(new double[]
-                {
-                        16., 18., 20., 22., 24., 26., 28., 30., 32., 34., 36.,
-                        38., 40., 42., 44., 46.
-                }, new int[]{1, 16});
-
-        System.out.println(Arrays.toString(dnnExpectedEpsilonOut.data().asFloat()));
-        System.out.println(Arrays.toString(actualOut.getSecond().data().asFloat()));
-
-        // arrays are the same but assert does not see that
-        assertEquals(dnnExpectedEpsilonOut, actualOut.getSecond());
-        assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
-        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
-    }
-
-    @Test
-    public void testCnnShapeBatchNormForward() {
-        Layer layer = getLayer(2);
-        // Confirm param initial shape before override
-        assertArrayEquals(new int[]{1, 2}, layer.getParam("gamma").shape());
-        assertArrayEquals(new int[]{1, 2}, layer.getParam("beta").shape());
-
-        layer.setParam("gamma", Nd4j.linspace(2, 3, 2));
-        layer.setParam("beta", Nd4j.linspace(2, 3, 2));
-        INDArray activationsActual = layer.preOutput(cnnInput);
-        INDArray activationsExpected = Nd4j.create(new double[]{
-                3.90625310e-11, 3.90625310e-11, 3.90625310e-11,
-                3.90625310e-11, 3.90625310e-11, 3.90625310e-11,
-                3.90625310e-11, 3.90625310e-11, 3.90625310e-11,
-                3.90625310e-11, 3.90625310e-11, 3.90625310e-11,
-                3.90625310e-11, 3.90625310e-11, 3.90625310e-11,
-                3.90625310e-11, 5.85940185e-11, 5.85940185e-11,
-                5.85940185e-11, 5.85940185e-11, 5.85940185e-11,
-                5.85940185e-11, 5.85940185e-11, 5.85940185e-11,
-                5.85940185e-11, 5.85940185e-11, 5.85940185e-11,
-                5.85940185e-11, 5.85940185e-11, 5.85940185e-11,
-                5.85940185e-11, 5.85940185e-11, 4.00000000e+00,
-                4.00000000e+00, 4.00000000e+00, 4.00000000e+00,
-                4.00000000e+00, 4.00000000e+00, 4.00000000e+00,
-                4.00000000e+00, 4.00000000e+00, 4.00000000e+00,
-                4.00000000e+00, 4.00000000e+00, 4.00000000e+00,
-                4.00000000e+00, 4.00000000e+00, 4.00000000e+00,
-                6.00000000e+00, 6.00000000e+00, 6.00000000e+00,
-                6.00000000e+00, 6.00000000e+00, 6.00000000e+00,
-                6.00000000e+00, 6.00000000e+00, 6.00000000e+00,
-                6.00000000e+00, 6.00000000e+00, 6.00000000e+00,
-                6.00000000e+00, 6.00000000e+00, 6.00000000e+00,
-                6.00000000e+00
-        }, new int[]{2, 2, 4, 4});
-
-        System.out.println(Arrays.toString(activationsExpected.data().asFloat()));
-        System.out.println(Arrays.toString(activationsActual.data().asFloat()));
-
-        assertEquals(activationsExpected, activationsActual);
-        assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
-    }
-
-    @Test
-    public void testCnnShapeBatchNormBack() {
-        Layer layer = getLayer(2);
-        layer.setParam("gamma", Nd4j.linspace(2, 3, 2));
-        layer.setParam("beta", Nd4j.linspace(2, 3, 2));
-        layer.preOutput(cnnInput);
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, 4));
-        Pair<Gradient, INDArray> actualOut = layer.backpropGradient(cnnEpsilon);
-
-        INDArray expectedEpsilonOut = Nd4j.create(new double[]{
-                -7.81250620e-11, -7.81250620e-11, -7.81250620e-11,
-                -7.81250620e-11, -7.81250620e-11, -7.81250620e-11,
-                -7.81250620e-11, -7.81250620e-11, -7.81250620e-11,
-                -7.81250620e-11, -7.81250620e-11, -7.81250620e-11,
-                -7.81250620e-11, -7.81250620e-11, -7.81250620e-11,
-                -7.81250620e-11, -1.17187149e-10, -1.17187149e-10,
-                -1.17187149e-10, -1.17187149e-10, -1.17188037e-10,
-                -1.17187149e-10, -1.17187149e-10, -1.17187149e-10,
-                -1.17187149e-10, -1.17187149e-10, -1.17187149e-10,
-                -1.17188037e-10, -1.17186261e-10, -1.17186261e-10,
-                -1.17188037e-10, -1.17188037e-10, 7.81250620e-11,
-                7.81250620e-11, 7.81246179e-11, 7.81255061e-11,
-                7.81250620e-11, 7.81250620e-11, 7.81246179e-11,
-                7.81255061e-11, 7.81255061e-11, 7.81250620e-11,
-                7.81246179e-11, 7.81246179e-11, 7.81255061e-11,
-                7.81255061e-11, 7.81250620e-11, 7.81246179e-11,
-                1.17187149e-10, 1.17187149e-10, 1.17188037e-10,
-                1.17187149e-10, 1.17188037e-10, 1.17187149e-10,
-                1.17187149e-10, 1.17188037e-10, 1.17187149e-10,
-                1.17188037e-10, 1.17187149e-10, 1.17186261e-10,
-                1.17188037e-10, 1.17188037e-10, 1.17188037e-10,
-                1.17186261e-10
-        }, new int[]{2, 2, 4, 4});
-
-        INDArray expectedGGamma = Nd4j.create(new double[]
-                {
-                        512, 512
-                }, new int[]{1, 2});
-
-        INDArray expectedBeta = Nd4j.create(new double[]
-                {
-                        752, 1264
-                }, new int[]{1, 2});
-
-        System.out.println(Arrays.toString(expectedEpsilonOut.data().asFloat()));
-        System.out.println(Arrays.toString(actualOut.getSecond().data().asFloat()));
-
-        // arrays are the same but assert does not see that
-        assertEquals(expectedEpsilonOut, actualOut.getSecond());
-        assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
-        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
-
-    }
-
-    @Test
-    public void testMultiCNNBNLayer() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(1)
-                .seed(123)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("relu").build())
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new DenseLayer.Builder().nOut(2).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
-                        .nIn(2).nOut(10).build())
-                .backprop(true).pretrain(false)
-                .setInputType(InputType.convolutionalFlat(28, 28, 1))
-                .build();
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        DataSetIterator iter = new MnistDataSetIterator(2, 2);
-        DataSet next = iter.next();
-
-        network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
-        assertEquals(10, activationsActual.shape()[1], 1e-2);
-
-        network.fit(next);
-        INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
-        INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
-        assertTrue(actualGammaParam != null);
-        assertTrue(actualBetaParam != null);
     }
 
     @Test
@@ -566,7 +351,7 @@ public class BatchNormalizationTest {
                 .iterations(2)
                 .seed(123)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER).activation("relu").build())
                 .layer(1, new BatchNormalization.Builder().nOut(10).build())
                 .layer(2, new ActivationLayer.Builder().activation("relu").build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -588,60 +373,6 @@ public class BatchNormalizationTest {
         INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
         assertTrue(actualGammaParam != null);
         assertTrue(actualBetaParam != null);
-    }
-
-    @Ignore
-    @Test
-    public void testMultiLSTMBNLayer() throws Exception {
-        // TODO once BatchNorm setup for RNN, expand this test
-        int nChannelsIn = 3;
-        int inputSize = 10 * 10 * nChannelsIn;    //10px x 10px x 3 channels
-        int miniBatchSize = 4;
-        int timeSeriesLength = 10;
-        int nClasses = 3;
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray input = Nd4j.rand(new int[]{miniBatchSize, inputSize, timeSeriesLength});
-        INDArray labels = Nd4j.zeros(miniBatchSize, nClasses, timeSeriesLength);
-        Random r = new Random(12345);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < timeSeriesLength; j++) {
-                int idx = r.nextInt(nClasses);
-                labels.putScalar(new int[]{i, idx, j}, 1.0);
-            }
-        }
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
-                        .activation("identity").weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())    //Out: (10-5)/1+1 = 6 -> 6x6x5
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation("relu").build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2, 2).stride(1, 1).build())    //Out: (6-2)/1+1 = 5 -> 5x5x5
-                .layer(4, new DenseLayer.Builder().nIn(5 * 5 * 5).nOut(4)
-                        .updater(Updater.NONE).weightInit(WeightInit.XAVIER).activation("relu")
-                        .build())
-                .layer(5, new GravesLSTM.Builder().nIn(4).nOut(3)
-                        .activation("identity").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
-                        .build())
-//                .layer(6, new BatchNormalization.Builder().build())
-//                .layer(7, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(6, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
-                        .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .updater(Updater.NONE).build())
-                .cnnInputSize(10, 10, 3)
-                .pretrain(false).backprop(true)
-                .build();
-
-        conf.getInputPreProcessors().put(0, new RnnToCnnPreProcessor(10, 10, 3));
-
-        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-        mln.init();
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.fit();
-
     }
 
     @Test
@@ -795,164 +526,124 @@ public class BatchNormalizationTest {
     }
 
 
-    @Ignore
     @Test
-    public void testMultiLSTMLayer() throws Exception {
-        // TODO use this to test when batch norm implemented for RNN
-
-        int inputSize = 10 * 10;
-        int miniBatchSize = 4;
-        int timeSeriesLength = 10;
-        int nClasses = 3;
-
+    public void checkMeanVarianceEstimate() throws Exception{
         Nd4j.getRandom().setSeed(12345);
-        INDArray input = Nd4j.rand(new int[]{miniBatchSize, inputSize, timeSeriesLength});
-        INDArray labels = Nd4j.zeros(miniBatchSize, nClasses, timeSeriesLength);
-        Random r = new Random(12345);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < timeSeriesLength; j++) {
-                int idx = r.nextInt(nClasses);
-                labels.putScalar(new int[]{i, idx, j}, 1.0);
-            }
-        }
-        // Run without separate activation layer
+        //Check that the internal global mean/variance estimate is approximately correct
+
+        //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .updater(Updater.RMSPROP)
                 .seed(12345)
                 .list()
-                .layer(0, new GravesLSTM.Builder().nIn(100).nOut(3)
-                        .activation("tanh").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(1, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
-                        .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .updater(Updater.NONE).build())
-                .pretrain(false).backprop(true)
+                .layer(0, new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("identity")
+                        .nIn(10)
+                        .nOut(10).build())
+                .backprop(true).pretrain(false)
                 .build();
+        MultiLayerNetwork net =  new MultiLayerNetwork(conf);
+        net.init();
 
-        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-        mln.init();
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.fit();
-
-
-        // Run with separate activation layer
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .list()
-                .layer(0, new GravesLSTM.Builder().nIn(100).nOut(3)
-                        .activation("identity").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
-                        .build())
-//                .layer(, new BatchNormalization.Builder().build())
-                .layer(1, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(2, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
-                        .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .updater(Updater.NONE).build())
-                .pretrain(false).backprop(true)
-                .build();
-
-        conf2.getInputPreProcessors().put(1, new RnnToFeedForwardPreProcessor());
-        conf2.getInputPreProcessors().put(2, new FeedForwardToRnnPreProcessor());
-
-        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
-        mln2.init();
-        mln2.setInput(input);
-        mln2.setLabels(labels);
-        mln2.fit();
-
-//        assertEquals(mln.getLayer(0).getParam("W"), mln2.getLayer(0).getParam("W"));
-//        assertEquals(mln.getLayer(3).getParam("W"), mln2.getLayer(4).getParam("W"));
-//        assertEquals(mln.getLayer(0).getParam("b"), mln2.getLayer(0).getParam("b"));
-//        assertEquals(mln.getLayer(3).getParam("b"), mln2.getLayer(4).getParam("b"));
-    }
-
-
-    @Ignore
-    @Test
-    public void testMultiCNNLSTMLayer() throws Exception {
-        // TODO use this to test when batch norm implemented for RNN
-        int nChannelsIn = 3;
-        int inputSize = 10 * 10 * nChannelsIn;    //10px x 10px x 3 channels
-        int miniBatchSize = 4;
-        int timeSeriesLength = 10;
-        int nClasses = 3;
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray input = Nd4j.rand(new int[]{miniBatchSize, inputSize, timeSeriesLength});
-        INDArray labels = Nd4j.zeros(miniBatchSize, nClasses, timeSeriesLength);
-        Random r = new Random(12345);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < timeSeriesLength; j++) {
-                int idx = r.nextInt(nClasses);
-                labels.putScalar(new int[]{i, idx, j}, 1.0);
-            }
+        int minibatch = 32;
+        List<DataSet> list = new ArrayList<>();
+        for( int i=0; i<200; i++ ){
+            list.add(new DataSet(Nd4j.rand(minibatch, 10), Nd4j.rand(minibatch,10)));
         }
-        // Run without separate activation layer
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
-                        .activation("relu").weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())    //Out: (10-5)/1+1 = 6 -> 6x6x5
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2, 2).stride(1, 1).build())    //Out: (6-2)/1+1 = 5 -> 5x5x5
-                .layer(2, new DenseLayer.Builder().nIn(5 * 5 * 5).nOut(4)
-                        .updater(Updater.NONE).weightInit(WeightInit.XAVIER).activation("relu")
-                        .build())
-                .layer(3, new GravesLSTM.Builder().nIn(4).nOut(3)
-                        .activation("tanh").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(4, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
-                        .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .updater(Updater.NONE).build())
-                .cnnInputSize(10, 10, 3)
-                .pretrain(false).backprop(true)
-                .build();
 
-        conf.getInputPreProcessors().put(0, new RnnToCnnPreProcessor(10, 10, 3));
+        DataSetIterator iter = new ListDataSetIterator(list);
 
-        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-        mln.init();
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.fit();
+        INDArray expMean = Nd4j.valueArrayOf(new int[]{1,10},0.5);
+        INDArray expVar = Nd4j.valueArrayOf(new int[]{1,10},1/12.0);    //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
 
 
-        // Run with separate activation layer
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
-                        .activation("identity").weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())    //Out: (10-5)/1+1 = 6 -> 6x6x5
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation("relu").build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2, 2).stride(1, 1).build())    //Out: (6-2)/1+1 = 5 -> 5x5x5
-                .layer(4, new DenseLayer.Builder().nIn(5 * 5 * 5).nOut(4)
-                        .updater(Updater.NONE).weightInit(WeightInit.XAVIER).activation("relu")
-                        .build())
-                .layer(5, new GravesLSTM.Builder().nIn(4).nOut(3)
-                        .activation("identity").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(6, new BatchNormalization.Builder().build())
-                .layer(7, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(8, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
-                        .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .updater(Updater.NONE).build())
-                .cnnInputSize(10, 10, 3)
-                .pretrain(false).backprop(true)
-                .build();
+        for( int i=0; i<10; i++ ) {
+            iter.reset();
+            net.fit(iter);
+        }
 
-        conf2.getInputPreProcessors().put(0, new RnnToCnnPreProcessor(10, 10, 3));
+        INDArray estMean = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
 
-        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
-        mln2.init();
-        mln2.setInput(input);
-        mln2.setLabels(labels);
-        mln2.fit();
+        float[] fMeanExp = expMean.data().asFloat();
+        float[] fMeanAct = estMean.data().asFloat();
+        float[] fVarExp = expVar.data().asFloat();
+        float[] fVarAct = estVar.data().asFloat();
+
+//        System.out.println("Mean vs. estimated mean:");
+//        System.out.println(Arrays.toString(fMeanExp));
+//        System.out.println(Arrays.toString(fMeanAct));
 //
-//        assertEquals(mln.getLayer(0).getParam("W"), mln2.getLayer(0).getParam("W"));
-//        assertEquals(mln.getLayer(3).getParam("W"), mln2.getLayer(4).getParam("W"));
-//        assertEquals(mln.getLayer(0).getParam("b"), mln2.getLayer(0).getParam("b"));
-//        assertEquals(mln.getLayer(3).getParam("b"), mln2.getLayer(4).getParam("b"));
+//        System.out.println("Var vs. estimated var:");
+//        System.out.println(Arrays.toString(fVarExp));
+//        System.out.println(Arrays.toString(fVarAct));
+
+        assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
+        assertArrayEquals(fVarExp, fVarAct, 0.01f);
     }
 
+
+    @Test
+    public void checkMeanVarianceEstimateCNN() throws Exception{
+        Nd4j.getRandom().setSeed(12345);
+        //Check that the internal global mean/variance estimate is approximately correct
+
+        //First, Mnist data as 2d input (NOT taking into account convolution property)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .updater(Updater.RMSPROP)
+                .seed(12345)
+                .list()
+                .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("identity")
+                        .nOut(10).build())
+                .backprop(true).pretrain(false)
+                .setInputType(InputType.convolutional(5,5,3))
+                .build();
+        MultiLayerNetwork net =  new MultiLayerNetwork(conf);
+        net.init();
+
+        int minibatch = 32;
+        List<DataSet> list = new ArrayList<>();
+        for( int i=0; i<100; i++ ){
+            list.add(new DataSet(Nd4j.rand(new int[]{minibatch, 3, 5, 5}), Nd4j.rand(minibatch,10)));
+        }
+
+        DataSetIterator iter = new ListDataSetIterator(list);
+
+        INDArray expMean = Nd4j.valueArrayOf(new int[]{1,3},0.5);
+        INDArray expVar = Nd4j.valueArrayOf(new int[]{1,3},1/12.0);    //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
+
+
+        for( int i=0; i<10; i++ ) {
+            iter.reset();
+            net.fit(iter);
+        }
+
+        INDArray estMean = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+
+        float[] fMeanExp = expMean.data().asFloat();
+        float[] fMeanAct = estMean.data().asFloat();
+        float[] fVarExp = expVar.data().asFloat();
+        float[] fVarAct = estVar.data().asFloat();
+
+//        System.out.println("Mean vs. estimated mean:");
+//        System.out.println(Arrays.toString(fMeanExp));
+//        System.out.println(Arrays.toString(fMeanAct));
+//
+//        System.out.println("Var vs. estimated var:");
+//        System.out.println(Arrays.toString(fVarExp));
+//        System.out.println(Arrays.toString(fVarAct));
+
+        assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
+        assertArrayEquals(fVarExp, fVarAct, 0.01f);
+    }
 }
