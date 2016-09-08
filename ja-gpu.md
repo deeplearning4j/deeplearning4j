@@ -9,21 +9,14 @@ Deeplearning4jは分散GPUでもネイティブでも使用することができ
 
 GPU上でニューラルネットワークをトレーニングするには、POM.xmlファイルに1つ変更を行う必要があります。[クイックスタート](./quickstart)でご説明しましたが、POMファイルはCPUで動作するようにデフォルト設定されています。以下のような感じです。
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml?slice=52:62"></script>
+        <name>DeepLearning4j Examples Parent</name>
+        <description>Examples of training different data sets</description>
+        <properties>
+            <nd4j.backend>nd4j-native-platform</nd4j.backend>
 
-今回は、DeeplearningをGPU上で使用したいので、依存関係の`nd4j`の次行である`artifactId`にある`nd4j-native`を`nd4j-cuda-7.5`に変更します。以下のようになります。
+今回は、DeeplearningをGPU上で使用したいので、依存関係の`nd4j`の次行である`artifactId`にある`nd4j-native-platform`を`nd4j-cuda-7.5-platform`に変更します。以下のようになります。
 
-``` xml
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-7.5</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-```
+            <nd4j.backend>nd4j-cuda-7.5-platform</<nd4j.backend>
 
 ND4Jは、Deeplearning4jが使用する数値計算エンジンです。ND4Jにはいわゆる「バックエンド」というものがあります。あるいは様々な種類のハードウェアを使用します。[Deeplearning4j Gitter channel](https://gitter.im/deeplearning4j/deeplearning4j)では、バックエンド、チップに関連したパッケージについての情報交換を行うところです。バックエンドでは、ハードウェア上の最適化が行われています。
 
