@@ -23,12 +23,13 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Builder
 public class BatchNormalization extends FeedForwardLayer {
-    protected double decay;
-    protected double eps;
-    protected boolean isMinibatch;
-    protected double gamma;
-    protected double beta;
-    protected boolean lockGammaBeta;
+    //Note: need to set defaults here in addition to builder, in case user uses no-op constructor...
+    protected double decay = 0.9;
+    protected double eps = 1e-5;
+    protected boolean isMinibatch = true;
+    protected double gamma = 1.0;
+    protected double beta = 0.0;
+    protected boolean lockGammaBeta = false;
 
     private BatchNormalization(Builder builder) {
         super(builder);

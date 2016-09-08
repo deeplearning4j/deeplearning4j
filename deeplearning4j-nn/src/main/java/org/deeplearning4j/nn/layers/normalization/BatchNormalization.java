@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -154,7 +155,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             nextEpsilon = dLdx;
 
         } else if (epsilon.rank() == 4){
-//            System.out.println("**** EPSILON RANK 4 BACKPROP CALLED ****");
+            if(!Shape.strideDescendingCAscendingF(epsilon)) epsilon = epsilon.dup();  //TODO: temp Workaround for broadcast bug. To be removed when fixed
 
             INDArray dGamma = epsilon.mul(xHat).sum(0,2,3);
             INDArray dBeta = epsilon.sum(0,2,3);
@@ -182,26 +183,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
             nextEpsilon = dLdx;
-
-
-//            INDArray dsq = dxhat.mul(xMu).sum(0).mul(0.5).div(Transforms.pow(std, 3)).neg().div(batchSize);
-//
-//            INDArray dxmu1 = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(dxhat, std, dxhat, new int[]{1,2,3}));
-//            INDArray dxmu2 = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xMu.mul(2), dsq, xMu.mul(2), new int[]{1,2,3}));
-//
-//            INDArray dx1 = dxmu1.add(dxmu2);
-//            INDArray dmu = dx1.sum(0).neg();
-//            INDArray dx2 = dmu.div(batchSize);
-//            nextEpsilon = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dx1, dx2, dx1.dup(), new int[]{1,2,3}));
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
-//
-//            //TODO rework this to avoid the assign here
-//            dGammaView.assign(dGamma);
-//            dBetaView.assign(dBeta);
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
-//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
-
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException("The layer prior to BatchNorm in the configuration is not currently supported.");
@@ -330,6 +311,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 activations = xHat.mulRowVector(gamma).addiRowVector(beta);
             }
         } else if (x.rank() == 4) {
+            if(!Shape.strideDescendingCAscendingF(x)) x = x.dup();  //TODO: temp Workaround for broadcast bug. To be removed when fixed
             xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
             xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
 
