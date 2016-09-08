@@ -10,6 +10,11 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,8 +32,11 @@ public class WeirdSparkTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
+                .enableDebug(false)
+                .setVerbose(false)
+                .allowPreallocation(false)
                 .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
-                .setMemoryModel(Configuration.MemoryModel.DELAYED);
+                .setMemoryModel(Configuration.MemoryModel.IMMEDIATE);
     }
 
     @Test
@@ -172,6 +180,53 @@ public class WeirdSparkTests {
 
         //System.out.println(view);
         assertEquals(0.0f, view.getFloat(0), 0.01f);
+    }
+
+
+    @Test
+    public void testMultithreadedRandom1() throws Exception{
+    //    for (int i = 0; i < 5; i++) {
+     //       System.out.println("Starting iteration " + i);
+            final List<INDArray> holder = new ArrayList<>();
+            final AtomicLong failures = new AtomicLong(0);
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    holder.add(Nd4j.ones(10));
+                }
+            });
+
+
+            Nd4j.getAffinityManager().attachThreadToDevice(thread, 1);
+            thread.start();
+            thread.join();
+
+            Thread[] threads = new Thread[100];
+            for (int x = 0; x < threads.length; x++) {
+                threads[x] = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            INDArray array = holder.get(0).dup();
+
+                          //  ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        } catch (Exception e) {
+                            failures.incrementAndGet();
+                            throw new RuntimeException(e);
+                        }
+                    }
+                });
+
+                threads[x].start();
+            }
+
+            for (int x = 0; x < threads.length; x++) {
+                threads[x].join();
+            }
+
+            assertEquals(0, failures.get());
+   //     }
     }
 }
 

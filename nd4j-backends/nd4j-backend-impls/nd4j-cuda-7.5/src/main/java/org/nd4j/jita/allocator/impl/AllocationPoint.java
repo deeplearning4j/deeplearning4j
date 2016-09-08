@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class describes top-level allocation unit.
@@ -78,6 +79,16 @@ public class AllocationPoint {
     Valid integer >= 0 is deviceId, null for undefined
     */
     private volatile int deviceId;
+
+    private volatile ReentrantLock lock = new ReentrantLock();
+
+    public void acquireLock() {
+        lock.lock();
+    }
+
+    public void releaseLock() {
+        lock.unlock();
+    }
 
     public int getDeviceId() {
         return deviceId;

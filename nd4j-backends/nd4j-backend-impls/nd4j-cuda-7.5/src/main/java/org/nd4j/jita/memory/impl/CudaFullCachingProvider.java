@@ -26,7 +26,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
 
 
-
     protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
 
 
@@ -61,7 +60,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
 
-           //         log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
+//                    log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
@@ -89,6 +88,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             AllocationShape shape = point.getShape();
             int deviceId = point.getDeviceId();
+            long address = point.getDevicePointer().address();
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
@@ -98,14 +98,32 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             }
 
             ensureDeviceCacheHolder(deviceId, shape);
-
 //            log.info("Saving point: deviceId: {}; address: {};", deviceId, point.getPointers().getDevicePointer().address());
 
             CacheHolder cache = deviceCache.get(deviceId).get(shape);
 
+
+
             if (point.getDeviceId() != deviceId)
                 throw new RuntimeException("deviceId changed!");
 
+            if (validator.get(address).intValue() != deviceId) {
+                log.error("MISMATCH: {}", address);
+                throw new RuntimeException("PEW");
+            }
+/*
+            if (point.getDevicePointer().address() != address)
+                throw new RuntimeException("address changed!");
+
+            if (validator.contains(address)) {
+                if (validator.get(address).intValue() != deviceId) {
+                    log.error("MISMATCH: {}", address);
+                    throw new RuntimeException("PEW");
+                }
+            } else {
+                validator.put(address, deviceId);
+            }
+*/
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
                 cache.put(new CudaPointer(point.getDevicePointer().address()));

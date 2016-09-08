@@ -65,6 +65,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
         }
 
         if (threadId == Thread.currentThread().getId()) {
+            if (affiliated.get() == null)
+                affiliated.set(new AtomicBoolean(false));
+
             if (!affiliated.get().get()) {
                 int deviceId = affinityMap.get(threadId);
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
