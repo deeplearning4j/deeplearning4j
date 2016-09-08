@@ -16,6 +16,7 @@
 package org.datavec.image.transform;
 
 import java.util.Random;
+
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
@@ -67,13 +68,12 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
             return null;
         }
         Mat mat = converter.convert(image.getFrame());
-
         int h = Math.round(mat.rows() + dy * (random != null ? 2 * random.nextFloat() - 1 : 1));
         int w = Math.round(mat.cols() + dx * (random != null ? 2 * random.nextFloat() - 1 : 1));
 
         Mat result = new Mat();
         resize(mat, result, new Size(w, h));
-
         return new ImageWritable(converter.convert(result));
     }
+
 }

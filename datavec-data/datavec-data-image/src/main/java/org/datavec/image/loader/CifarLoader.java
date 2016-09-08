@@ -22,7 +22,7 @@ import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
-import org.datavec.image.transform.ColorConversion;
+import org.datavec.image.transform.ColorConversionTransform;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -213,12 +213,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
      */
     public opencv_core.Mat preProcessCifar(opencv_core.Mat image)  {
         OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
-        ImageTransform yuvTransform = new ColorConversion();
+        ImageTransform yuvTransform = new ColorConversionTransform();
 
         if (imageTransform != null && converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(image));
-            // TODO normalize| historgram equalization
             writable = yuvTransform.transform(writable);
+            // TODO normalize| historgram equalization - split channel to y
             image = converter.convert(writable.getFrame());
         }
         image = scalingIfNeed(image);

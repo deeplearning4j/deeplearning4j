@@ -72,13 +72,20 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         converter = new OpenCVFrameConverter.ToMat();
     }
 
+    /**
+     * Takes an image and returns a transformed image.
+     * Uses the random object in the case of random transformations.
+     *
+     * @param image  to transform, null == end of stream
+     * @param random object to use (or null for deterministic)
+     * @return transformed image
+     */
     @Override
     public ImageWritable transform(ImageWritable image, Random random) {
         if (image == null) {
             return null;
         }
         Mat mat = converter.convert(image.getFrame());
-
         Point2f src = new Point2f(4);
         Point2f dst = new Point2f(4);
         src.put(0,          0,
@@ -95,4 +102,5 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
 
         return new ImageWritable(converter.convert(result));
     }
+
 }

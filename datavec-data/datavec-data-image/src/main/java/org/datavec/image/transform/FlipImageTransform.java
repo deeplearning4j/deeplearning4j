@@ -30,7 +30,9 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
 
     int flipMode;
 
-    /** Calls {@code this(null)}. */
+    /**
+     * Calls {@code this(null)}.
+     */
     public FlipImageTransform() {
         this(null);
     }
@@ -79,3 +81,4 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
         return new ImageWritable(converter.convert(result));
     }
 }
+

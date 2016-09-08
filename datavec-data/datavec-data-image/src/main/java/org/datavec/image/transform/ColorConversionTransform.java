@@ -17,7 +17,6 @@ package org.datavec.image.transform;
 
 import java.util.Random;
 
-import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
@@ -27,17 +26,17 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
  * Color conversion transform using CVT (cvtcolor):
- * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor"CVT Color</a>.
- * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-"More CVT Color</a>.
+ * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor">CVT Color</a>.
+ * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-">More CVT Color</a>.
  */
-public class ColorConversion extends BaseImageTransform {
+public class ColorConversionTransform extends BaseImageTransform {
 
     int conversionCode;
 
     /**
      * Default conversion BGR to Luv (chroma) color.
      */
-    public ColorConversion() {
+    public ColorConversionTransform() {
         this(new Random(1234), COLOR_BGR2Luv);
     }
 
@@ -47,7 +46,7 @@ public class ColorConversion extends BaseImageTransform {
      * @param random Random
      * @param conversionCode  to transform,
      */
-    public ColorConversion(Random random, int conversionCode) {
+    public ColorConversionTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
         converter = new OpenCVFrameConverter.ToMat();
@@ -67,6 +66,7 @@ public class ColorConversion extends BaseImageTransform {
             return null;
         }
         Mat mat = (Mat) converter.convert(image.getFrame());
+
         Mat result = new Mat();
 
         try {
@@ -74,6 +74,9 @@ public class ColorConversion extends BaseImageTransform {
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         return new ImageWritable(converter.convert(result));
     }
+
+
 }

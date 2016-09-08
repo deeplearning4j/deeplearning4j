@@ -72,10 +72,10 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat>  {
             return null;
         }
         opencv_core.Mat mat = converter.convert(image.getFrame());
-
         opencv_core.Mat result = new opencv_core.Mat();
         resize(mat, result, new opencv_core.Size(newWidth, newHeight));
-
         return new ImageWritable(converter.convert(result));
     }
+
+
 }

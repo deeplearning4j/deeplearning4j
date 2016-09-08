@@ -160,7 +160,7 @@ public class TestImageTransform {
     public void testConvertColorTransform() throws Exception {
         ImageWritable writable = makeRandomImage(32, 32, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new ColorConversion();
+        ImageTransform transform = new ColorConversionTransform();
 
         ImageWritable w = transform.transform(writable);
         Frame f = w.getFrame();

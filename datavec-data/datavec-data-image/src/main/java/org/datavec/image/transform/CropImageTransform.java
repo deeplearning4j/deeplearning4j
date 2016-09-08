@@ -64,13 +64,20 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         converter = new OpenCVFrameConverter.ToMat();
     }
 
+    /**
+     * Takes an image and returns a transformed image.
+     * Uses the random object in the case of random transformations.
+     *
+     * @param image  to transform, null == end of stream
+     * @param random object to use (or null for deterministic)
+     * @return transformed image
+     */
     @Override
     public ImageWritable transform(ImageWritable image, Random random) {
         if (image == null) {
             return null;
         }
         Mat mat = converter.convert(image.getFrame());
-
         int top = random != null ? random.nextInt(cropTop + 1) : cropTop;
         int left = random != null ? random.nextInt(cropLeft + 1) : cropLeft;
         int bottom = random != null ? random.nextInt(cropBottom + 1) : cropBottom;
@@ -82,6 +89,8 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         int w = Math.max(1, mat.cols() - right - x);
         Mat result = mat.apply(new Rect(x, y, w, h));
 
+
         return new ImageWritable(converter.convert(result));
     }
+
 }
