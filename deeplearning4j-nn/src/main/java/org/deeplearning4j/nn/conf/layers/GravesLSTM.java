@@ -63,6 +63,50 @@ public class GravesLSTM extends BaseRecurrentLayer {
         return GravesLSTMParamInitializer.getInstance();
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch(paramName){
+            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
+            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
+                return l1;
+            case GravesLSTMParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch(paramName){
+            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
+            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
+                return l2;
+            case GravesLSTMParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch(paramName){
+            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
+            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
+                return learningRate;
+            case GravesLSTMParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
