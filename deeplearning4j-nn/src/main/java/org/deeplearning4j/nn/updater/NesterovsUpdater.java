@@ -7,6 +7,7 @@ import org.nd4j.linalg.learning.Nesterovs;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class NesterovsUpdater extends BaseUpdater {
 
 

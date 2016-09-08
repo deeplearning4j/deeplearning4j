@@ -292,6 +292,7 @@ public class BNGradientCheckTest {
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
+
                         String name = new Object() {}.getClass().getEnclosingMethod().getName();
 
                         if (doLearningFirst) {
@@ -327,8 +328,6 @@ public class BNGradientCheckTest {
             }
         }
     }
-
-
 
     @Test
     public void testGradient2dFixedGammaBeta(){

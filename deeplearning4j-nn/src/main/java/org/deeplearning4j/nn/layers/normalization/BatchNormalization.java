@@ -97,6 +97,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray gamma = null;
         INDArray dGammaView;
         INDArray dBetaView;
+        INDArray dGlobalMeanView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray dGlobalVarView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_VAR);
         if( layerConf.isLockGammaBeta()){
             int[] tempShape = new int[]{1,shape[1]};
             dGammaView = Nd4j.createUninitialized(tempShape,'c');
@@ -156,6 +158,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
             retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+            //TODO: do this properly
+            dGlobalMeanView.assign(0);
+            dGlobalVarView.assign(0);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
 
             nextEpsilon = dLdx;
 
@@ -173,7 +180,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
 
             //dL/dVariance
-            INDArray temp = Transforms.pow(std, -3.0, true);
             INDArray dLdVar = dxhat.mul(xMu).sum(0,2,3).muli(-0.5).muli(Transforms.pow(std, -3.0, true));
 
             //dL/dmu
@@ -192,6 +198,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
             retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+            //TODO: do this properly
+            dGlobalMeanView.assign(0);
+            dGlobalVarView.assign(0);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
 
             nextEpsilon = dLdx;
         } else {
