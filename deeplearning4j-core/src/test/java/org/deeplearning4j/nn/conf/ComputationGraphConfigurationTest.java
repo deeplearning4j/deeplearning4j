@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -222,7 +223,7 @@ public class ComputationGraphConfigurationTest {
         assertEquals(5,sigv.getSecondVal());
     }
 
-    @AllArgsConstructor @NoArgsConstructor @Data
+    @AllArgsConstructor @NoArgsConstructor @Data @EqualsAndHashCode(callSuper=false)
     public static class StaticInnerGraphVertex extends GraphVertex {
 
         private int firstVal;

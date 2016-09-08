@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 
 /**
  * Created by jeffreytang on 7/21/15.
@@ -73,6 +74,47 @@ public abstract class FeedForwardLayer extends Layer {
                 return new CnnToFeedForwardPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
+        }
+    }
+
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch (paramName){
+            case DefaultParamInitializer.WEIGHT_KEY:
+                return l1;
+            case DefaultParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch (paramName){
+            case DefaultParamInitializer.WEIGHT_KEY:
+                return l2;
+            case DefaultParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch (paramName){
+            case DefaultParamInitializer.WEIGHT_KEY:
+                return learningRate;
+            case DefaultParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
     }
 

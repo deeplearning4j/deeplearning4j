@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.misc;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -9,7 +10,7 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-@AllArgsConstructor @Data @NoArgsConstructor
+@AllArgsConstructor @Data @NoArgsConstructor @EqualsAndHashCode(callSuper=false)
 public class TestGraphVertex extends GraphVertex {
 
     private int firstVal;

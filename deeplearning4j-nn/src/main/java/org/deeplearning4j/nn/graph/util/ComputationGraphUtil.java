@@ -33,7 +33,7 @@ public class ComputationGraphUtil {
 
     /** Convert a DataSet to the equivalent MultiDataSet */
     public static MultiDataSet toMultiDataSet(DataSet dataSet){
-        INDArray f = dataSet.getFeatureMatrix();
+        INDArray f = dataSet.getFeatures();
         INDArray l = dataSet.getLabels();
         INDArray fMask = dataSet.getFeaturesMaskArray();
         INDArray lMask = dataSet.getLabelsMaskArray();

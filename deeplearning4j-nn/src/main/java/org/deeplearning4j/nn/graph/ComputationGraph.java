@@ -608,7 +608,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(fMask, lMask);
         }
 
-        fit(new INDArray[]{dataSet.getFeatureMatrix()}, new INDArray[]{dataSet.getLabels()});
+        fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         if (hasMaskArrays) clearLayerMaskArrays();
     }
 
@@ -635,7 +635,7 @@ public class ComputationGraph implements Serializable, Model {
             update(TaskUtils.buildTask(dataSetIterator));
             while (dataSetIterator.hasNext()) {
                 DataSet next = dataSetIterator.next();
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
@@ -651,7 +651,7 @@ public class ComputationGraph implements Serializable, Model {
                             (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
                             (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
                 } else {
-                    setInput(0, next.getFeatureMatrix());
+                    setInput(0, next.getFeatures());
                     setLabel(0, next.getLabels());
                     if (solver == null) {
                         solver = new Solver.Builder()

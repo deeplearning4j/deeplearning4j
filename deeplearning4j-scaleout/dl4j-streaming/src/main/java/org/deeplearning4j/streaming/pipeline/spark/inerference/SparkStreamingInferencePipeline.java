@@ -2,6 +2,7 @@ package org.deeplearning4j.streaming.pipeline.spark.inerference;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.camel.CamelContext;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -24,7 +25,7 @@ import java.util.Collections;
  *
  * @author Adam Gibson
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=true)
 public class SparkStreamingInferencePipeline extends BaseKafkaPipeline<JavaDStream<INDArray>,RecordToNDArray> {
     protected JavaStreamingContext jssc;
     protected SparkConf sparkConf;
