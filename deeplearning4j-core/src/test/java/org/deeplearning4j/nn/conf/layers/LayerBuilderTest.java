@@ -170,18 +170,6 @@ public class LayerBuilderTest {
         assertEquals(glstm.nOut,numOut);
         assertEquals(glstm.activationFunction,"tanh");
     }
-    
-    @Test
-    public void testGRU() throws Exception {
-    	GRU gru = new GRU.Builder().activation("tanh")
-    			.nIn(numIn).nOut(numOut).build();
-    	
-    	checkSerialization(gru);
-    	
-    	assertEquals(gru.nIn,numIn);
-    	assertEquals(gru.nOut,numOut);
-    	assertEquals(gru.activationFunction,"tanh");
-    }
 
     @Test
     public void testEmbeddingLayer() throws Exception {

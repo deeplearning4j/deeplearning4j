@@ -108,6 +108,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new ArrayList<>(variables);
     }
 
+    public List<String> variables(boolean copy){
+        if(copy) return variables();
+        return variables;
+    }
+
     public void addVariable(String variable) {
         if(!variables.contains(variable)) {
             variables.add(variable);
@@ -121,13 +126,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
     public void setLayerParamLR(String variable){
-        double lr = (variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
-        double l1 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL1();
-        double l2 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL2();
+        double lr = layer.getLearningRateByParam(variable);
+        double l1 = layer.getL1ByParam(variable);
+        if(Double.isNaN(l1)) l1 = 0.0;  //Not set
+        double l2 = layer.getL2ByParam(variable);
+        if(Double.isNaN(l2)) l2 = 0.0;  //Not set
         learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
-
     }
 
     public double getLearningRateByParam(String variable){
@@ -208,7 +214,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
-                    .redistributeParams(redistributeParams)
                     .cnnInputSize(this.cnnInputSize)
                     .setInputType(this.inputType)
                     .confs(list).build();

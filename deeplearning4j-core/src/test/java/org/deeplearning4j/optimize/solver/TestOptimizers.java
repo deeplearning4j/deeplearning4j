@@ -204,7 +204,7 @@ public class TestOptimizers {
                         .updater(Updater.SGD)
                         .build())
                 .build();
-        conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+        conf.addVariable("W");	//Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
         org.nd4j.linalg.api.rng.distribution.Distribution dist
@@ -297,7 +297,7 @@ public class TestOptimizers {
                             .nIn(1).nOut(1)
                             .updater(Updater.SGD)
                             .build()).build();
-            conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+            conf.addVariable("W");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100,dist,conf);
             if(i == 0) {
@@ -342,7 +342,7 @@ public class TestOptimizers {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
-            g.gradientForVariable().put("x", gradient);
+            g.gradientForVariable().put("W", gradient);
             this.gradient =  g;
             this.score = Nd4j.getBlasWrapper().dot(parameters, parameters);	//sum_i x_i^2
 
@@ -423,7 +423,7 @@ public class TestOptimizers {
                             .updater(Updater.ADAGRAD)
                             .build())
                    .build();
-            conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+            conf.addVariable("W");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(100,conf);
             int nParams = m.numParams();
@@ -487,7 +487,7 @@ public class TestOptimizers {
             gradient.addi(parameters.mul(2));
 
             Gradient g = new DefaultGradient();
-            g.gradientForVariable().put("x", gradient);
+            g.gradientForVariable().put("W", gradient);
             this.gradient = g;
             //If any parameters are outside range [-5.12,5.12]: score = infinity
             INDArray paramExceeds512 = parameters.cond(new Condition(){
@@ -594,7 +594,7 @@ public class TestOptimizers {
                             .updater(Updater.SGD)
                             .build())
                     .build();
-            conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+            conf.addVariable("W");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RosenbrockFunctionModel(100,conf);
             if(i == 0) {
@@ -668,7 +668,7 @@ public class TestOptimizers {
             double gl = 200 * (xl - xlm1 * xlm1);
             gradient.put(0, nDims - 1,gl);
             Gradient g = new DefaultGradient();
-            g.gradientForVariable().put("x", gradient);
+            g.gradientForVariable().put("W", gradient);
             this.gradient = g;
 
             INDArray paramExceeds5 = parameters.cond(new Condition(){
@@ -795,7 +795,7 @@ public class TestOptimizers {
 
         @Override
         public void update(INDArray gradient, String paramType) {
-            if(!"x".equals(paramType)) throw new UnsupportedOperationException();
+            if(!"W".equals(paramType)) throw new UnsupportedOperationException();
             parameters.subi(gradient);
         }
 
@@ -903,7 +903,7 @@ public class TestOptimizers {
 
         @Override
         public Map<String, INDArray> paramTable() {
-            return Collections.singletonMap("x", getParam("x"));
+            return Collections.singletonMap("W", getParam("W"));
         }
 
         @Override
