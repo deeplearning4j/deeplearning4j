@@ -1124,6 +1124,8 @@ public:
 
     int setDevice(Nd4jPointer ptrToDeviceId);
 
+    int getDevice();
+
     int streamSynchronize(Nd4jPointer stream);
 
     int eventSynchronize(Nd4jPointer event);
