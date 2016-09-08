@@ -38,10 +38,15 @@ public class LayerUpdater implements Updater {
             INDArray paramsArray = entry.getValue();
             GradientUpdater gu = init(entry.getKey(), layer);
             int thisSize = gu.stateSizeForInputSize(entry.getValue().length());
+            if(thisSize == 0) continue;
             INDArray subset = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(count, count+thisSize));
             gu.setStateViewArray(subset, paramsArray.shape(), paramsArray.ordering(), initialize);
             count += thisSize;
         }
+    }
+
+    public Map<String,GradientUpdater> getUpdaterForVariable(){
+        return updaterForVariable;
     }
 
     @Override
