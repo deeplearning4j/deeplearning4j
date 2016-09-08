@@ -58,25 +58,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected boolean regression = false;
     @Getter protected DataSetPreProcessor preProcessor;
 
-
-
-    @Deprecated
-    public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
-        this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
-    }
-    @Deprecated
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter) {
-        this(recordReader, converter, 10, -1, -1);
-    }
-    @Deprecated
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int labelIndex, int numPossibleLabels) {
-        this(recordReader, converter, 10, labelIndex, numPossibleLabels);
-    }
-    @Deprecated
-    public RecordReaderDataSetIterator(RecordReader recordReader) {
-        this(recordReader, new SelfWritableConverter());
-    }
-
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
                 recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
