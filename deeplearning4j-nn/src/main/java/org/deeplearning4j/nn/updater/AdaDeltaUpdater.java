@@ -7,6 +7,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class AdaDeltaUpdater extends BaseUpdater {
 
 

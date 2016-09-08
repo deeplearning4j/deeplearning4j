@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.GradientUpdaterAggregator;
 
-@EqualsAndHashCode
+@EqualsAndHashCode @Deprecated
 public class NoOpUpdater extends BaseUpdater {
 	private NoOpGradientUpdater updater;
 	
