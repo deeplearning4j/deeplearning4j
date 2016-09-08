@@ -85,7 +85,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             extraz.set(new PointerPointer(32));
 
         Arrays.sort(dimension);
-    //    log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
+//        log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
 
    //     if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
    //         OpDashboard.getInstance().processOpCall(op);
@@ -109,6 +109,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+//        if (!Arrays.equals(op.x().shape(),op.z().shape()) || !Arrays.equals(op.x().stride(),op.z().stride()) || op.x().ordering() != op.z().ordering()) {
+            // that's the place where we're going to have second TAD in place
+            Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+            devTadShapeInfoZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getFirst(), context);
+            devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
+//        }
+
         // extraz.get().put
         // new PointerPointer
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
@@ -123,7 +134,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hostZShapeInfo,
                 hostTadShapeInfo,
                 devTadShapeInfo,
-                devTadOffsets
+                devTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
         );
 
         //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
@@ -760,6 +773,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
 
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+//        if (!Arrays.equals(op.x().shape(),op.z().shape()) || !Arrays.equals(op.x().stride(),op.z().stride()) || op.x().ordering() != op.z().ordering()) {
+        // that's the place where we're going to have second TAD in place
+        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), op.getDimension());
+
+        devTadShapeInfoZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getFirst(), context);
+        devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
+//        }
+
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
@@ -772,7 +796,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hostZShapeInfo,
                 hostTadShapeInfo,
                 devTadShapeInfo,
-                devTadOffsets
+                devTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
         );
 
         Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);

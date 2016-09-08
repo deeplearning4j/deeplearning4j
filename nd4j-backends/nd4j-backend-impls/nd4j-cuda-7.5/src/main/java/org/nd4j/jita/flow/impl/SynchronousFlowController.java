@@ -103,6 +103,7 @@ public class SynchronousFlowController implements FlowController {
             AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
 
+            pointData.acquireLock();
 
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
@@ -139,6 +140,8 @@ public class SynchronousFlowController implements FlowController {
 
             AllocationPoint pointData = allocator.getAllocationPoint(operand);
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
+
+            pointData.acquireLock();
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
 //                log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
@@ -198,12 +201,14 @@ public class SynchronousFlowController implements FlowController {
         eventsProvider.storeEvent(point.getLastWriteEvent());
         point.setLastWriteEvent(eventsProvider.getEvent());
         point.getLastWriteEvent().register(context.getOldStream());
+        point.releaseLock();
 
         for (INDArray operand: operands) {
             if (operand == null)
                 continue;
 
             AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            pointOperand.releaseLock();
             eventsProvider.storeEvent(pointOperand.getLastReadEvent());
             pointOperand.setLastReadEvent(eventsProvider.getEvent());
             pointOperand.getLastReadEvent().register(context.getOldStream());

@@ -1130,6 +1130,8 @@ public class NativeOps extends Pointer {
 
     public native int setDevice(Pointer ptrToDeviceId);
 
+    public native int getDevice();
+
     public native int streamSynchronize(Pointer stream);
 
     public native int eventSynchronize(Pointer event);

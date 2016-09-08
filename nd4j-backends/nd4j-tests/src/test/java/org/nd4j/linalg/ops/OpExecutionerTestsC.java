@@ -697,9 +697,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray var4bias = fourd.var(true,1,2,3);
         INDArray var2bias = twod.var(true,1);
 
-        assertArrayEquals(var2.data().asDouble(), var4.data().asDouble(), 1e-6);
-        assertArrayEquals(manualVariance, var2.data().asDouble(), 1e-6);
-        assertArrayEquals(var2bias.data().asDouble(), var4bias.data().asDouble(), 1e-6);
+        assertArrayEquals(var2.data().asDouble(), var4.data().asDouble(), 1e-5);
+        assertArrayEquals(manualVariance, var2.data().asDouble(), 1e-5);
+        assertArrayEquals(var2bias.data().asDouble(), var4bias.data().asDouble(), 1e-5);
     }
 
     @Override

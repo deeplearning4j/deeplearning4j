@@ -14,6 +14,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -24,6 +25,9 @@ public class CudaDirectProvider implements MemoryProvider {
     protected static final long DEVICE_RESERVED_SPACE = 1024 * 1024 * 50L;
     private static Logger log = LoggerFactory.getLogger(CudaDirectProvider.class);
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+    protected volatile ConcurrentHashMap<Long, Integer> validator = new ConcurrentHashMap<>();
+
 
     private AtomicLong emergencyCounter = new AtomicLong(0);
 
@@ -68,7 +72,7 @@ public class CudaDirectProvider implements MemoryProvider {
             }
             case DEVICE: {
                 // cudaMalloc call
-
+                int deviceId = AtomicAllocator.getInstance().getDeviceId();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
@@ -80,7 +84,9 @@ public class CudaDirectProvider implements MemoryProvider {
 
 
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
-//                log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
+                //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
+
+                validator.put(pointer.address(), deviceId);
 
                 if (pointer == null)
                     return null;
@@ -94,7 +100,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
-                point.setDeviceId(AtomicAllocator.getInstance().getDeviceId());
+                point.setDeviceId(deviceId);
 
                 return devicePointerInfo;
             }

@@ -6,14 +6,18 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -236,7 +240,37 @@ public class NativeOpExecutionerTest {
         res = Nd4j.argMax(array2);
         System.out.println("Res length: " + res.length());
         assertEquals(0.0f, res.getFloat(0), 0.01f);
+    }
+
+    @Test
+    public void testBroadcastWithPermute(){
+        Nd4j.getRandom().setSeed(12345);
+        int length = 4*4*5*2;
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',4,4,5,2).permute(2,3,1,0);
+//        INDArray arr = Nd4j.linspace(1,length,length).reshape('f',4,4,5,2).permute(2,3,1,0);
+        INDArray arrDup = arr.dup('c');
+
+        INDArray row = Nd4j.rand(1,2);
+        assertEquals(row.length(), arr.size(1));
+        assertEquals(row.length(), arrDup.size(1));
+
+        assertEquals(arr,arrDup);
 
 
+
+        INDArray first =  Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(arr,    row, Nd4j.createUninitialized(arr.shape(), 'c'), 1));
+        INDArray second = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(arrDup, row, Nd4j.createUninitialized(arr.shape(), 'c'), 1));
+
+        System.out.println("A1: " + Arrays.toString(arr.shapeInfoDataBuffer().asInt()));
+        System.out.println("A2: " + Arrays.toString(first.shapeInfoDataBuffer().asInt()));
+        System.out.println("B1: " + Arrays.toString(arrDup.shapeInfoDataBuffer().asInt()));
+        System.out.println("B2: " + Arrays.toString(second.shapeInfoDataBuffer().asInt()));
+
+        INDArray resultSameStrides = Nd4j.zeros(new int[]{4,4,5,2},'c').permute(2,3,1,0);
+        assertArrayEquals(arr.stride(), resultSameStrides.stride());
+     //   INDArray third = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(arr, row, resultSameStrides, 1));
+
+       // assertEquals(second, third);    //Original and result w/ same strides: passes
+       // assertEquals(first,second);     //Original and result w/ different strides: fails
     }
 }

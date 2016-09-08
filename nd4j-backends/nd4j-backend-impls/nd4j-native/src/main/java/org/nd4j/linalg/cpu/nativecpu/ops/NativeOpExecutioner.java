@@ -556,9 +556,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
         Pointer hostTadOffsets = tadBuffers.getSecond().addressPointer();
 
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+//        if (!Arrays.equals(op.x().shape(),op.z().shape()) || !Arrays.equals(op.x().stride(),op.z().stride()) || op.x().ordering() != op.z().ordering()) {
+        // that's the place where we're going to have second TAD in place
+        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+        devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
+        devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
+
         PointerPointer dummy = new PointerPointer(
                 hostTadShapeInfo,
-                hostTadOffsets
+                hostTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
         );
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
