@@ -51,7 +51,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         int nOut = layer.getNOut();
 
         int meanOffset = 0;
-        if(!layer.isLockGammaBeta()) {  //No parameters when gamma/beta are locked
+        if(!layer.isLockGammaBeta()) {  //No gamma/beta parameters when gamma/beta are locked
             INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
 

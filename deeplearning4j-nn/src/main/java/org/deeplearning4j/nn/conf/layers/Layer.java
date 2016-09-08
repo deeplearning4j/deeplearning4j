@@ -193,6 +193,17 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public abstract double getLearningRateByParam(String paramName);
 
+    /**
+     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
+     * is not necessarily the case
+     *
+     * @param paramName    Parameter name
+     * @return             Updater for the parameter
+     */
+    public Updater getUpdaterByParam(String paramName){
+        return updater;
+    }
+
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
