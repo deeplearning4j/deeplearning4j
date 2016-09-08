@@ -110,6 +110,47 @@ public class ConvolutionLayer extends FeedForwardLayer {
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return l1;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return l2;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return learningRate;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;

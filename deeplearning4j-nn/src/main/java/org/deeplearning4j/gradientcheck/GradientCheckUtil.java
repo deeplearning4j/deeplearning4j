@@ -2,6 +2,10 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -38,18 +42,18 @@ public class GradientCheckUtil {
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
      * @param epsilon Usually on the order/ of 1e-4 or so.
-     * @param maxRelError Maximum relative error. Usually < 0.01, though maybe more for deep networks
+     * @param maxRelError Maximum relative error. Usually < 1e-5 or so, though maybe more for deep networks or those with nonlinear activation
+     * @param minAbsoluteError Minimum absolute error to cause a failure. Numerical gradients can be non-zero due to precision issues.
+     *                         For example, 0.0 vs. 1e-18: relative error is 1.0, but not really a failure
      * @param print Whether to print full pass/failure details for each parameter gradient
      * @param exitOnFirstError If true: return upon first failure. If false: continue checking even if
      *  one parameter gradient has failed. Typically use false for debugging, true for unit tests.
      * @param input Input array to use for forward pass. May be mini-batch data.
      * @param labels Labels/targets to use to calculate backprop gradient. May be mini-batch data.
-     * @param useUpdater Whether to put the gradient through Updater.update(...). Necessary for testing things
-     *  like l1 and l2 regularization.
      * @return true if gradients are passed, false otherwise.
      */
-    public static boolean checkGradients( MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                          boolean print, boolean exitOnFirstError, INDArray input, INDArray labels, boolean useUpdater) {
+    public static boolean checkGradients( MultiLayerNetwork mln, double epsilon, double maxRelError, double minAbsoluteError,
+                                          boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
         //Basic sanity checks on input:
         if(epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -58,15 +62,29 @@ public class GradientCheckUtil {
         if( !(mln.getOutputLayer() instanceof BaseOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
+        //Check network configuration:
+
+        int layerCount = 0;
+        for(NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()){
+            org.deeplearning4j.nn.conf.Updater u = n.getLayer().getUpdater();
+            if(u == org.deeplearning4j.nn.conf.Updater.SGD){
+                //Must have LR of 1.0
+                double lr = n.getLayer().getLearningRate();
+                if(lr != 1.0){
+                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer " + layerCount + "; got " + u + " with lr=" + lr);
+                }
+            } else if( u != org.deeplearning4j.nn.conf.Updater.NONE ){
+                throw new IllegalStateException("Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+            }
+        }
+
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
         Pair<Gradient,Double> gradAndScore = mln.gradientAndScore();
 
-        if(useUpdater) {
-            Updater updater = UpdaterCreator.getUpdater(mln);
-            updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
-        }
+        Updater updater = UpdaterCreator.getUpdater(mln);
+        updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup();   //need dup: params are a *view* of full parameters
@@ -104,12 +122,18 @@ public class GradientCheckUtil {
 
             if(relError > maxError) maxError = relError;
             if(relError > maxRelError || Double.isNaN(relError)) {
-                if(print)
-                    log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
-                            + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);
-                if(exitOnFirstError)
-                    return false;
-                totalNFailures++;
+                double absError = Math.abs(backpropGradient - numericalGradient);
+                if(absError < minAbsoluteError){
+                    log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                            + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
+                } else {
+                    if (print)
+                        log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                                + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                    if (exitOnFirstError)
+                        return false;
+                    totalNFailures++;
+                }
             }
             else if(print) {
                 log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
@@ -133,6 +157,8 @@ public class GradientCheckUtil {
      * @param graph ComputationGraph to test. This must be initialized.
      * @param epsilon Usually on the order of 1e-4 or so.
      * @param maxRelError Maximum relative error. Usually < 0.01, though maybe more for deep networks
+     * @param minAbsoluteError Minimum absolute error to cause a failure. Numerical gradients can be non-zero due to precision issues.
+     *                         For example, 0.0 vs. 1e-18: relative error is 1.0, but not really a failure
      * @param print Whether to print full pass/failure details for each parameter gradient
      * @param exitOnFirstError If true: return upon first failure. If false: continue checking even if
      *  one parameter gradient has failed. Typically use false for debugging, true for unit tests.
@@ -140,7 +166,7 @@ public class GradientCheckUtil {
      * @param labels Labels/targets (output) arrays to use to calculate backprop gradient. May be mini-batch data.
      * @return true if gradients are passed, false otherwise.
      */
-    public static boolean checkGradients( ComputationGraph graph, double epsilon, double maxRelError,
+    public static boolean checkGradients( ComputationGraph graph, double epsilon, double maxRelError, double minAbsoluteError,
                                           boolean print, boolean exitOnFirstError, INDArray[] inputs, INDArray[] labels) {
         //Basic sanity checks on input:
         if(epsilon <= 0.0 || epsilon > 0.1)
@@ -150,6 +176,25 @@ public class GradientCheckUtil {
 
         if(graph.getNumInputArrays() != inputs.length) throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
         if(graph.getNumOutputArrays() != labels.length) throw new IllegalArgumentException("Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
+
+        //Check configuration
+        int layerCount = 0;
+        for(String vertexName : graph.getConfiguration().getVertices().keySet()){
+            GraphVertex gv = graph.getConfiguration().getVertices().get(vertexName);
+            if(!(gv instanceof LayerVertex)) continue;
+            LayerVertex lv = (LayerVertex)gv;
+
+            org.deeplearning4j.nn.conf.Updater u = lv.getLayerConf().getLayer().getUpdater();
+            if(u == org.deeplearning4j.nn.conf.Updater.SGD){
+                //Must have LR of 1.0
+                double lr = lv.getLayerConf().getLayer().getLearningRate();
+                if(lr != 1.0){
+                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer \"" + vertexName + "\"; got " + u);
+                }
+            } else if( u != org.deeplearning4j.nn.conf.Updater.NONE ){
+                throw new IllegalStateException("Must have Updater.NONE (or SGD + lr=1.0) for layer \"" + vertexName + "\"; got " + u);
+            }
+        }
 
         for( int i=0; i<inputs.length; i++ ) graph.setInput(i,inputs[i]);
         for( int i=0; i<labels.length; i++ ) graph.setLabel(i,labels[i]);
@@ -196,12 +241,18 @@ public class GradientCheckUtil {
 
             if(relError > maxError) maxError = relError;
             if(relError > maxRelError || Double.isNaN(relError)) {
-                if(print)
-                    log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
-                            + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);
-                if(exitOnFirstError)
-                    return false;
-                totalNFailures++;
+                double absError = Math.abs(backpropGradient - numericalGradient);
+                if(absError < minAbsoluteError){
+                    log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                            + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
+                } else {
+                    if (print)
+                        log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                                + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                    if (exitOnFirstError)
+                        return false;
+                    totalNFailures++;
+                }
             }
             else if(print) {
                 log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient

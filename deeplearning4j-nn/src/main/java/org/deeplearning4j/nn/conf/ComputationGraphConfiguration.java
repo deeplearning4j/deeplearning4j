@@ -74,8 +74,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
-    //whether to redistribute params or not
-    protected boolean redistributeParams = false;
 
     protected NeuralNetConfiguration defaultConfiguration;
 
@@ -199,7 +197,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
-        conf.redistributeParams = redistributeParams;
         conf.defaultConfiguration = defaultConfiguration.clone();
 
         return conf;
@@ -398,8 +395,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
 
         protected Map<String, InputPreProcessor> inputPreProcessors = new LinkedHashMap<>();
-        //whether to redistribute params or not
-        protected boolean redistributeParams = false;
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
@@ -409,12 +404,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Whether to redistribute parameters as a view or not
-         *
-         * @param redistributeParams whether to redistribute parameters as a view or not
+         * @deprecated As of 0.6.0
          */
+        @Deprecated
         public GraphBuilder redistributeParams(boolean redistributeParams) {
-            this.redistributeParams = redistributeParams;
             return this;
         }
 
