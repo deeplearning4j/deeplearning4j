@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -632,7 +633,7 @@ public class GradientCheckTests {
                         .nOut(nClasses)
                         .activation("softmax")
                         .build())
-                .cnnInputSize(10, 10, 3)
+                .setInputType(InputType.convolutional(10,10,3))
                 .pretrain(false).backprop(true)
                 .build();
 
