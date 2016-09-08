@@ -8,6 +8,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -122,17 +123,21 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
         if (sequenceLearningAlgorithm == null) {
-            sequenceLearningAlgorithm = new DBOW<>();
+            sequenceLearningAlgorithm = new DM<>();
             sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
         }
         Sequence<VocabWord> sequence = new Sequence<>();
         sequence.addElements(document);
         sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
 
+        /*
         for (int i = 0; i < iterations; i++) {
             sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
-        }
-        return null;
+        }*/
+
+        INDArray inf = sequenceLearningAlgorithm.inferSequence(sequence, 119, learningRate);
+
+        return inf;
     }
 
     /**
