@@ -81,6 +81,24 @@ public class LocalResponseNormalization extends Layer {
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         // defaults based on AlexNet model

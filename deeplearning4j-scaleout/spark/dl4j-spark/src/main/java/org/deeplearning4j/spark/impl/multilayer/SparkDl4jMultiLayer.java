@@ -140,6 +140,13 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
+     * @return The TrainingMaster for this network
+     */
+    public TrainingMaster getTrainingMaster(){
+        return trainingMaster;
+    }
+
+    /**
      * Set the network that underlies this SparkDl4jMultiLayer instacne
      *
      * @param network network to set
