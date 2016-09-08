@@ -9,6 +9,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,5 +104,18 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 skipGram.iterateSample(word, lastWord,nextRandom,alpha);
             }
         }
+    }
+
+    /**
+     * This method does training on previously unseen paragraph, and returns inferred vector
+     *
+     * @param sequence
+     * @param nextRandom
+     * @param learningRate
+     * @return
+     */
+    @Override
+    public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate) {
+        throw new UnsupportedOperationException("not implemented for DBOW, please use DM instead");
     }
 }

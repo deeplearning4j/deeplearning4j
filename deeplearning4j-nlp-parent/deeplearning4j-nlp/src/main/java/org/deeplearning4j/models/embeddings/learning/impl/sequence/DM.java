@@ -82,15 +82,21 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(seq.isEmpty() || labels.isEmpty())
             return 0;
 
+        List<INDArray> labelArrays = new ArrayList<>();
+
+        for (T label:labels) {
+            labelArrays.add(syn0.getRow(label.getIndex()));
+        }
+
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate);
+            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays);
         }
 
         return 0;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<INDArray> labels) {
         int end =  window * 2 + 1 - b;
         int cw = 0;
         INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
@@ -110,8 +116,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
         }
 
-        for (T label: sequence.getSequenceLabels()) {
-            neu1.addiRowVector(syn0.getRow(label.getIndex()));
+        for (INDArray label: labels) {
+            neu1.addiRowVector(label);
             cw++;
         }
 
@@ -122,9 +128,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         INDArray neu1e = cbow.iterateSample(currentWord, neu1, nextRandom, alpha);
 
-        for (T label: sequence.getSequenceLabels()) {
-            INDArray syn0row = syn0.getRow(label.getIndex());
-            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, syn0row);
+        for (INDArray label: labels) {
+            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, label);
         }
 
     }
@@ -132,5 +137,39 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public boolean isEarlyTerminationHit() {
         return false;
+    }
+
+    /**
+     * This method does training on previously unseen paragraph, and returns inferred vector
+     *
+     * @param sequence
+     * @param nr
+     * @param learningRate
+     * @return
+     */
+    @Override
+    public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate) {
+        AtomicLong nextRandom = new AtomicLong(nr);
+        Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
+
+
+        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+
+        if(seq.isEmpty())
+            return null;
+
+        List<INDArray> labelArrays = new ArrayList<>();
+
+        INDArray ret = Nd4j.rand(nr, new int[]{1 ,lookupTable.layerSize()}).subi(0.5).divi(lookupTable.layerSize());
+
+        labelArrays.add(ret);
+
+        for (int i = 0; i < seq.size(); i++) {
+            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays);
+        }
+
+
+        return ret;
     }
 }
