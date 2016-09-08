@@ -56,9 +56,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
-    //whether to redistribute params or not
-    @Deprecated
-    protected boolean redistributeParams = false;
 
     /**
      *
@@ -171,21 +168,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
-        @Deprecated
-        protected boolean redistributeParams = false;
         protected InputType inputType;
-
-        /**
-         * Whether to redistribute parameters as a view or not
-         * @param redistributeParams whether to redistribute parameters
-         *                           as a view or not
-         * @return
-         */
-        @Deprecated
-        public Builder redistributeParams(boolean redistributeParams) {
-            this.redistributeParams = redistributeParams;
-            return this;
-        }
 
         /**
          * Specify the processors.
@@ -367,7 +350,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
-            conf.redistributeParams = redistributeParams;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 
