@@ -57,7 +57,7 @@ template<typename OpType>
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
@@ -70,42 +70,64 @@ template<typename OpType>
       __shared__ int *tadShape;
       __shared__ int *tadStride;
       __shared__ int yStride;
+      __shared__ int zEWS;
+      __shared__ int zRank;
+      __shared__ int *zShape;
+      __shared__ int *zStride;
       if (threadIdx.x == 0) {
+        if (tadOnlyShapeInfoZ == nullptr) {
+            tadOnlyShapeInfoZ = tadOnlyShapeInfo;
+            tadOffsetsZ = tadOffsets;
+        }
+
    	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
         tadRank = shape::rank(tadOnlyShapeInfo);
+        zRank = shape::rank(tadOnlyShapeInfoZ);
         numTads = shape::length(xShapeInfo) / tadLength;
 
         tadShape = shape::shapeOf(tadOnlyShapeInfo);
       	tadStride = shape::stride(tadOnlyShapeInfo);
+      	zShape = shape::shapeOf(tadOnlyShapeInfoZ);
+      	zStride = shape::stride(tadOnlyShapeInfoZ);
+
       	yStride = shape::elementWiseStride(yShapeInfo);
+
+      	zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
+
+
       }
       __syncthreads();
 
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
 			int tadOffsetForBlock = tadOffsets[r];
-            T *rR = result + tadOffsetForBlock;
+			int tadOffsetForBlockZ = tadOffsetsZ[r];
+            T *rR = result + tadOffsetForBlockZ;
             T *rX = x + tadOffsetForBlock;
 
 
             if(tadEWS > 0) {
-            	if (tadEWS == 1 && yStride == 1) {
+            	if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
                 	for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
 					for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i * tadEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
+                    	rR[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
             }
             else {
                 int xCoord[MAX_RANK];
+                int zCoord[MAX_RANK];
+
                 for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
+                    shape::ind2subC(zRank,zShape, i, zCoord);
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-                    result[xOffset] = OpType::op(x[xOffset], y[i * yStride]);
+                    Nd4jIndex zOffset = shape::getOffset(tadOffsetForBlockZ, zShape, zStride, zCoord, zRank);
+                    result[zOffset] = OpType::op(x[xOffset], y[i * yStride]);
                 }
             }
 		}
@@ -121,9 +143,8 @@ template<typename OpType>
 				T *result,
 				int *resultShapeInfo,
 				int *dimension,
-				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset) {
-
-                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset), BROADCAST_OPS);
+				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
+                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset, tadOnlyShapeInfoZ, tadOffsetsZ), BROADCAST_OPS);
 			}
 #endif
 
@@ -133,8 +154,8 @@ template<typename OpType>
 				int *yShapeInfo,
 				T *result,
 				int *dimension,
-				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
-                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset), BROADCAST_OPS);
+				int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
+                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset, tadShapeInfoZ, tadOffsetZ), BROADCAST_OPS);
 			}
 
 			/**
@@ -155,7 +176,7 @@ template<typename OpType>
 							 int *yShapeInfo,
 							 T *result,
 							 int *dimension,
-							 int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+							 int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
 
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
@@ -172,6 +193,8 @@ template<typename OpType>
 
 					tadShapeShapeInfo = tad->tadOnlyShapeInfo;
 					tadOffsets = tad->tadOffsets;
+
+
 				}
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -183,20 +206,33 @@ template<typename OpType>
 				int yStride = shape::elementWiseStride(yShapeInfo);
 				int tads =shape::length(xShapeInfo) / tadLength;
 
+                if (tadShapeInfoZ == nullptr) {
+                    tadShapeInfoZ = tadShapeShapeInfo;
+                    tadOffsetZ = tadOffsets;
+                }
+
+                int *zShape = shape::shapeOf(tadShapeInfoZ);
+                int *zStride = shape::stride(tadShapeInfoZ);
+                int zRank = shape::rank(tadShapeInfoZ);
+                int zEWS = shape::elementWiseStride(tadShapeInfoZ);
+
+
 				int tadsPerThread = tads / 64;
 				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-				if (result == x) {
+				if (true) {
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
+                        int offsetZ = tadOffsetZ[i];
 
-						if (tadEWS > 0 && yStride > 0) {
-							T *oRes = result + offset;
+
+						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
+							T *oRes = result + offsetZ;
 							T *oX = x + offset;
 
-							if (tadEWS == 1 && yStride == 1) {
+							if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
 									oRes[f] = OpType::op(oX[f], y[f]);
@@ -204,22 +240,26 @@ template<typename OpType>
 							} else {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f * tadEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
+									oRes[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
 								}
 							}
 						} else {
 							int xCoord[MAX_RANK];
+                            int zCoord[MAX_RANK];
 
+#pragma omp simd
 							for (int f = 0; f < tadLength; f++) {
-								shape::ind2subC(tadRank,xShape, f, xCoord);
-								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
-								result[xOffset] = OpType::op(x[xOffset], y[f * yStride]);
+                                shape::ind2subC(tadRank,xShape, i, xCoord);
+                                shape::ind2subC(zRank,zShape, i, zCoord);
+                                Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
+                                Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
+                                result[zOffset] = OpType::op(x[xOffset], y[i * yStride]);
 							}
 						}
 					}
 				}
 				else {
-
+/*
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
@@ -246,7 +286,7 @@ template<typename OpType>
 													  resultStridesIter) >= 0) {
 							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
 							{
-								/* Process the innermost dimension */
+								//Process the innermost dimension
 								T val = OpType::op(xIter[0], y[vectorIdx]);
 								resultIter[0] = val;
 								vectorIdx += shape::elementWiseStride(yShapeInfo);
@@ -264,7 +304,7 @@ template<typename OpType>
 						}
 					}
 
-
+*/
 
 				}
 
@@ -305,7 +345,7 @@ __device__ void broadcastGeneric(
 		int *resultShapeInfo,
 		int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -328,7 +368,9 @@ __device__ void broadcastGeneric(
 			dimensionLength,
 			manager,
 			tadOnlyShapeInfo,
-			tadOffsets);
+			tadOffsets,
+			tadOnlyShapeInfoZ,
+			tadOffsetsZ);
 }
 
 /**
@@ -352,7 +394,7 @@ extern "C" __global__ void broadcastDouble(
 		double *y, int *yShapeInfo, int yRank,
 		double *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 	broadcastGeneric<double>(
 			opNum,
 			x,
@@ -362,7 +404,7 @@ extern "C" __global__ void broadcastDouble(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets);
+			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 
 }
 
@@ -388,7 +430,7 @@ extern "C" __global__ void broadcastFloat(
 		float *y, int *yShapeInfo, int yRank,
 		float *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 	broadcastGeneric<float>(
 			opNum,
 			x,
@@ -398,7 +440,7 @@ extern "C" __global__ void broadcastFloat(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets);
+			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 
 }
 
@@ -409,7 +451,7 @@ extern "C" __global__ void broadcastHalf(
 		float16 *y, int *yShapeInfo, int yRank,
 		float16 *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 	broadcastGeneric<float16>(
 			opNum,
 			x,
@@ -419,7 +461,7 @@ extern "C" __global__ void broadcastHalf(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets);
+			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 
 }
 

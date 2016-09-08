@@ -692,7 +692,7 @@ namespace simdOps {
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
-					nullptr, nullptr);
+					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
 				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
@@ -703,7 +703,7 @@ namespace simdOps {
 
 				//divide by the sum
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
-					nullptr, nullptr);
+					nullptr, nullptr, nullptr, nullptr);
 
 				delete[] maxResultShapeBuffer;
 			}
@@ -855,7 +855,7 @@ namespace simdOps {
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
-					nullptr, nullptr);
+					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
 				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
@@ -866,7 +866,7 @@ namespace simdOps {
 
 				//divide by the sum
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
-					nullptr, nullptr);
+					nullptr, nullptr, nullptr, nullptr);
 
 				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
@@ -1029,7 +1029,7 @@ namespace simdOps {
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
-					nullptr, nullptr);
+					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
 				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
@@ -1039,7 +1039,8 @@ namespace simdOps {
 					1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1, nullptr, nullptr);
+				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1, nullptr, nullptr,
+                                                                                      nullptr, nullptr);
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {
