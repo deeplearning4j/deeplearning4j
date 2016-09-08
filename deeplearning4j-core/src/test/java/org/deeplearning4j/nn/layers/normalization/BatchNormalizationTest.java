@@ -94,7 +94,7 @@ public class BatchNormalizationTest {
     public void testDnnForwardPass() {
         int nOut = 10;
         Layer l = getLayer(nOut, 0.0, false, -1, -1);
-        assertEquals(2*nOut, l.numParams());
+        assertEquals(4*nOut, l.numParams());        //Gamma, beta, global mean, global var
 
         INDArray randInput = Nd4j.rand(100, nOut);
         INDArray output = l.activate(randInput, true);
@@ -111,7 +111,7 @@ public class BatchNormalizationTest {
         double gamma = 2.0;
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
-        assertEquals(0, l.numParams()); //Should have 0 parameters for fixed gamma/beta case
+        assertEquals(2*nOut, l.numParams()); //Should have only global mean/var parameters
         output = l.activate(randInput, true);
         mean = output.mean(0);
         stdev = output.std(false, 0);
@@ -180,7 +180,7 @@ public class BatchNormalizationTest {
     public void testCnnForwardPass() {
         int nOut = 10;
         Layer l = getLayer(nOut, 0.0, false, -1, -1);
-        assertEquals(2*nOut, l.numParams());
+        assertEquals(4*nOut, l.numParams());        //Gamma, beta, global mean, global var
         int hw = 15;
 
         Nd4j.getRandom().setSeed(12345);
@@ -199,7 +199,7 @@ public class BatchNormalizationTest {
         double gamma = 2.0;
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
-        assertEquals(0, l.numParams()); //Should have 0 parameters for fixed gamma/beta case
+        assertEquals(2*nOut, l.numParams()); //Should have only global mean/var parameters
         output = l.activate(randInput, true);
         mean = output.mean(0, 2, 3);
         stdev = output.std(false, 0, 2, 3);
@@ -375,7 +375,7 @@ public class BatchNormalizationTest {
         layer.setParam("beta", Nd4j.linspace(0, 15, 16));
 
         layer.preOutput(dnnInput);
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, 32));
+        layer.setBackpropGradientsViewArray(Nd4j.create(1, 64));
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
 
         INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[]{

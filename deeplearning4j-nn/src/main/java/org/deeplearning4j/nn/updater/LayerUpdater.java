@@ -242,6 +242,7 @@ public class LayerUpdater implements Updater {
                     updater = new AdaGrad(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
                     break;
                 case RMSPROP:
+                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getRmsDecay());
                     break;
                 case NONE:
                     updater = new NoOpUpdater();

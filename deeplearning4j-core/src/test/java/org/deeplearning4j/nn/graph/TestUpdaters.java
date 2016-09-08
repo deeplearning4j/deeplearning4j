@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.updater.BaseUpdater;
+import org.deeplearning4j.nn.updater.LayerUpdater;
 import org.deeplearning4j.nn.updater.NesterovsUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.junit.Test;
@@ -98,11 +99,11 @@ public class TestUpdaters {
             int updaterIdx = layerUpdatersMap.get(layerName);
             org.deeplearning4j.nn.api.Updater u = layerUpdaters[updaterIdx];
 
-            NesterovsUpdater nu = (NesterovsUpdater)u;
+            LayerUpdater lu = (LayerUpdater) u;
 
-            Field updaterForVariableField = BaseUpdater.class.getDeclaredField("updaterForVariable");
+            Field updaterForVariableField = LayerUpdater.class.getDeclaredField("updaterForVariable");
             updaterForVariableField.setAccessible(true);
-            Map<String,GradientUpdater> updaterForVariable = (Map<String,GradientUpdater>)updaterForVariableField.get(nu);
+            Map<String,GradientUpdater> updaterForVariable = (Map<String,GradientUpdater>)updaterForVariableField.get(lu);
             Map<String,Integer> updaterStateSizeCounts = new HashMap<>();
             for(Map.Entry<String,GradientUpdater> entry : updaterForVariable.entrySet()){
                 GradientUpdater gu = entry.getValue();

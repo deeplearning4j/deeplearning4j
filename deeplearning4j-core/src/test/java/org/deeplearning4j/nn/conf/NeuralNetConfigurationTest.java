@@ -351,10 +351,13 @@ public class NeuralNetConfigurationTest {
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
         assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 1e-4);
-        assertEquals(0.5, net.getLayer(1).conf().getL2ByParam("gamma"), 1e-4);
+        assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("beta"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("gamma"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("mean"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("var"), 0.0);
         assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 1e-4);
+        assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 0.0);
     }
 
 

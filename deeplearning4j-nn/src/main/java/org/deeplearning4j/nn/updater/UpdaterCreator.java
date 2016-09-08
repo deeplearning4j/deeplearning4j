@@ -21,6 +21,7 @@ public class UpdaterCreator {
      * Create an updater based on the configuration
      * @param conf the configuration to get the updater for
      * @return the updater for the configuration
+     * @deprecated As of 0.6.0. Use {@link LayerUpdater instead}
      */
     @Deprecated
     private static org.deeplearning4j.nn.api.Updater getUpdater(NeuralNetConfiguration conf) {
