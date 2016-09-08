@@ -426,6 +426,9 @@ public class EvalTest {
     @Test
     public void testEvalInvalid(){
         Evaluation e = new Evaluation(5);
+        e.eval(0,1);
+        e.eval(1,0);
+        e.eval(1,1);
 
         System.out.println(e.stats());
 
@@ -433,5 +436,43 @@ public class EvalTest {
         System.out.println(c);
 
         assertFalse(e.stats().contains("\uFFFD"));
+    }
+
+    @Test
+    public void testEvalInvalid2(){
+
+        /*
+        Examples labeled as 0 classified by model as 0: 5550 times
+        Examples labeled as 0 classified by model as 1: 488 times
+        Examples labeled as 1 classified by model as 0: 1197 times
+        Examples labeled as 2 classified by model as 0: 709 times
+        Examples labeled as 3 classified by model as 0: 196 times
+        Examples labeled as 4 classified by model as 0: 187 times
+        Examples labeled as 4 classified by model as 2: 488 times
+        Examples labeled as 5 classified by model as 0: 206 times
+        Examples labeled as 6 classified by model as 0: 174 times
+        Examples labeled as 7 classified by model as 0: 178 times
+        Examples labeled as 8 classified by model as 0: 199 times
+        Examples labeled as 9 classified by model as 0: 212 times
+         */
+
+        Evaluation eval = new Evaluation(10);
+        for( int i=0; i<5550; i++ ) eval.eval(0,0);
+        for( int i=0; i<488; i++) eval.eval(0,1);
+        for( int i=0; i<1197; i++) eval.eval(1,0);
+        for( int i=0; i<709; i++) eval.eval(2,0);
+        for( int i=0; i<196; i++) eval.eval(3,0);
+        for( int i=0; i<187; i++) eval.eval(4,0);
+        for( int i=0; i<488; i++) eval.eval(4,2);
+        for( int i=0; i<206; i++) eval.eval(5,0);
+        for( int i=0; i<174; i++) eval.eval(6,0);
+        for( int i=0; i<178; i++) eval.eval(7,0);
+        for( int i=0; i<199; i++) eval.eval(8,0);
+        for( int i=0; i<212; i++) eval.eval(9,0);
+
+
+
+        System.out.println(eval.stats());
+
     }
 }
