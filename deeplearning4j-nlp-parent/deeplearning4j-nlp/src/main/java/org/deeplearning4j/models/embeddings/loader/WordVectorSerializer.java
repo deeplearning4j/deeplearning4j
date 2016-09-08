@@ -410,6 +410,62 @@ public class WordVectorSerializer {
         }
     }
 
+    /**
+     * This method allows you to read ParagraphVectors from externaly originated vectors and syn1.
+     * I.e. Gensim uses 3 files per model.
+     *
+     * @param vectors
+     * @param hs
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectorsFromText(@NonNull File vectors, @NonNull File hs, @NonNull File hs_mapping,  @NonNull VectorsConfiguration configuration) throws IOException  {
+        // first we load syn0
+        Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
+        InMemoryLookupTable lookupTable = pair.getFirst();
+        VocabCache<VocabWord> vocab = (VocabCache<VocabWord>) pair.getSecond();
+
+        // now we load syn1
+        BufferedReader reader = new BufferedReader(new FileReader(hs));
+        String line = null;
+        List<INDArray> rows = new ArrayList<>();
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            double array[] = new double[split.length];
+            for (int i = 0; i < split.length; i++) {
+                array[i] = Double.parseDouble(split[i]);
+            }
+            rows.add(Nd4j.create(array));
+        }
+        reader.close();
+
+        INDArray syn1 = Nd4j.vstack(rows);
+        lookupTable.setSyn1(syn1);
+
+        // now we transform mappings into huffman tree codes
+        reader = new BufferedReader(new FileReader(hs_mapping));
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            VocabWord word = vocab.wordFor(split[0]);
+            List<Integer> codes = new ArrayList<>();
+            for (int i = 1; i < split.length; i++ ){
+                codes.add(Integer.parseInt(split[i]));
+            }
+
+            word.setCodes(codes);
+
+        }
+        reader.close();
+
+
+        ParagraphVectors d2v = new ParagraphVectors.Builder(configuration)
+                .vocabCache(vocab)
+                .lookupTable(lookupTable)
+                .resetModel(false)
+                .build();
+
+        return d2v;
+    }
+
 
     /**
      * Restores previously serialized ParagraphVectors model
