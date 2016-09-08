@@ -46,7 +46,6 @@ import java.util.Map;
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
-        @JsonSubTypes.Type(value = GRU.class, name = "gru"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
