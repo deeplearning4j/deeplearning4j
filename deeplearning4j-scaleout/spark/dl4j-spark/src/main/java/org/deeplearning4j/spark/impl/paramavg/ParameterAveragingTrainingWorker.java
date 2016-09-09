@@ -47,10 +47,10 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
         MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters(), true);
+        net.init(tuple.getParameters().unsafeDuplication(), true);
 
         if(tuple.getUpdaterState() != null){
-            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().dup()));  //Can't have shared updater state
+            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication()));  //Can't have shared updater state
         }
 
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
@@ -71,10 +71,10 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
         ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters(), true);
+        net.init(tuple.getParameters().unsafeDuplication(), true);
 
         if(tuple.getUpdaterState() != null){
-            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().dup())); //Again: can't have shared updater state
+            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
