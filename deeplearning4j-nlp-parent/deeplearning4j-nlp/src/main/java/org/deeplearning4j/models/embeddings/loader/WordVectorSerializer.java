@@ -30,7 +30,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.io.output.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 // FIXME: remove that
@@ -508,9 +510,25 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
+        ZipEntry config = new ZipEntry("config.json");
+        zipfile.putNextEntry(config);
+        writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
+
+
         zipfile.flush();
         zipfile.close();
     }
+
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(String path) throws IOException {
+        return readParagraphVectors(new File(path));
+    }
+
 
     /**
      * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
@@ -518,7 +536,40 @@ public class WordVectorSerializer {
      * @return
      */
     public static ParagraphVectors readParagraphVectors(File file) throws IOException {
-        return null;
+
+        File tmpFileSyn0 = File.createTempFile("paravec", "0");
+        File tmpFileSyn1 = File.createTempFile("paravec", "1");
+        File tmpFileH = File.createTempFile("paravec", "h");
+
+        ZipFile zipFile = new ZipFile(file);
+        ZipEntry syn0 = zipFile.getEntry("syn0.txt");
+        InputStream stream = zipFile.getInputStream(syn0);
+
+        Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry syn1 = zipFile.getEntry("syn1.txt");
+        stream = zipFile.getInputStream(syn1);
+
+        Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry huffman = zipFile.getEntry("huffman.txt");
+        stream = zipFile.getInputStream(huffman);
+
+        Files.copy(stream, Paths.get(tmpFileH.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry config = zipFile.getEntry("config.json");
+        stream = zipFile.getInputStream(config);
+        StringBuilder builder = new StringBuilder();
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+        }
+
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
+
+        return readParagraphVectorsFromText(tmpFileSyn0, tmpFileSyn1, tmpFileH, configuration);
     }
 
     /**
