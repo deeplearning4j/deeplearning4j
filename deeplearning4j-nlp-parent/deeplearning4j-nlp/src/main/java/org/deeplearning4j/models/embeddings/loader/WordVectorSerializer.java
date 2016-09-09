@@ -682,6 +682,7 @@ public class WordVectorSerializer {
                 codes.add(Integer.parseInt(split[i]));
             }
             word.setCodes(codes);
+            word.setCodeLength(codes.size());
         }
         reader.close();
 
