@@ -1,11 +1,25 @@
 package org.nd4j.linalg.lossfunctions;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.impl.*;
 
 /**
  * Interface for loss functions
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),
+        @JsonSubTypes.Type(value = LossHinge.class, name = "Hinge"),
+        @JsonSubTypes.Type(value = LossKLD.class, name = "KLD"),
+        @JsonSubTypes.Type(value = LossMAE.class, name = "MAE"),
+        @JsonSubTypes.Type(value = LossMAPE.class, name = "MAPE"),
+        @JsonSubTypes.Type(value = LossMCXENT.class, name = "MCXENT"),
+        @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
+        @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE")
+})
 public interface ILossFunction {
 
     /**

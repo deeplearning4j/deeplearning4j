@@ -1,5 +1,6 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,6 +10,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 /**
  * Created by susaneraly on 8/15/16.
  */
+@EqualsAndHashCode
 public class LossMSLE implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;

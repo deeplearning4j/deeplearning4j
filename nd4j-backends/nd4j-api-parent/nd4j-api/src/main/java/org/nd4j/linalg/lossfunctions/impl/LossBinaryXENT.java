@@ -1,5 +1,6 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by susaneraly on 8/22/16.
  */
+@EqualsAndHashCode
 public class LossBinaryXENT implements ILossFunction {
 
     private static Logger logger = LoggerFactory.getLogger(LossBinaryXENT.class);
