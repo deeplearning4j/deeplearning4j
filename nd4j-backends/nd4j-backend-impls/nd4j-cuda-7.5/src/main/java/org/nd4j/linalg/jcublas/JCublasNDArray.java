@@ -485,4 +485,20 @@ public class JCublasNDArray extends BaseNDArray {
 
         return super.permutei(rearrange);
     }
+
+    @Override
+    public synchronized INDArray unsafeDuplication() {
+        INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+        allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(), this.data.length() * this.data().getElementSize(), 0, context);
+        context.syncOldStream();
+
+        return ret;
+    }
 }

@@ -353,4 +353,9 @@ public class ComplexNDArray extends BaseComplexNDArray {
     public ComplexNDArray(float[] data, Character order) {
         super(data, order);
     }
+
+    @Override
+    public INDArray unsafeDuplication() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }

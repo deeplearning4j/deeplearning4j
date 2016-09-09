@@ -2276,5 +2276,5 @@ public interface INDArray extends Serializable  {
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
 
-
+   INDArray unsafeDuplication();
 }
