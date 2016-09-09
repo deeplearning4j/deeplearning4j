@@ -1705,8 +1705,8 @@ void   NativeOps::execTransformDouble(
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = nullptr;
-                    tempPointers[13] = nullptr;
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
 
 					// sub 1
 					execBroadcastDouble(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
@@ -1728,8 +1728,8 @@ void   NativeOps::execTransformDouble(
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = nullptr;
-                    tempPointers[13] = nullptr;
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
 
 
 					// divide 3
@@ -1794,7 +1794,7 @@ void   NativeOps::execTransformDouble(
 					break;
 				}
 				default: {
-					printf("Bad case for transformFloat\n");
+					printf("Bad case for transformDouble\n");
 					break;
 				}
 			}
@@ -4409,8 +4409,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = nullptr;
-                    tempPointers[13] = nullptr;
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
 
 
 					// sub 1
@@ -4443,8 +4443,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[9] = extraPointers[9];
 					tempPointers[10] = extraPointers[10];
 					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = nullptr;
-                    tempPointers[13] = nullptr;
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
 
 					// divide 3
 					execBroadcastHalf(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
@@ -4523,7 +4523,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					break;
 				}
 				default: {
-					printf("Bad case for transformFloat\n");
+					printf("Bad case for transformHalf\n");
 					break;
 				}
 			}
