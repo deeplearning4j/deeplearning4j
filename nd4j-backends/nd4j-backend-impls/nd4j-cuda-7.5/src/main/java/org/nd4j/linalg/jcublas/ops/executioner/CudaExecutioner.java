@@ -1379,7 +1379,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return  null;
     }
 
-    protected CudaContext invoke(TransformOp op) {
+    protected synchronized CudaContext invoke(TransformOp op) {
         checkForCompression(op);
 
         if (extraz.get() == null)

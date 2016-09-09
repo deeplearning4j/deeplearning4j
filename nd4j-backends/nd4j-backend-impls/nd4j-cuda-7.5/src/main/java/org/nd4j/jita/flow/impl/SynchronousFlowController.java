@@ -181,15 +181,18 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
 
+
         eventsProvider.storeEvent(result.getLastWriteEvent());
         result.setLastWriteEvent(eventsProvider.getEvent());
         result.getLastWriteEvent().register(context.getOldStream());
+        result.releaseLock();
 
 
         for(AllocationPoint operand: operands) {
             eventsProvider.storeEvent(operand.getLastReadEvent());
             operand.setLastReadEvent(eventsProvider.getEvent());
             operand.getLastReadEvent().register(context.getOldStream());
+            operand.releaseLock();
         }
      //   context.syncOldStream();
     }
@@ -219,13 +222,15 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        if (result != null)
+        if (result != null) {
+            result.acquireLock();
             result.setCurrentContext(context);
+        }
 
         for (AllocationPoint operand: operands) {
             if (operand == null)
                 continue;
-
+            operand.acquireLock();
             operand.setCurrentContext(context);
         }
 
