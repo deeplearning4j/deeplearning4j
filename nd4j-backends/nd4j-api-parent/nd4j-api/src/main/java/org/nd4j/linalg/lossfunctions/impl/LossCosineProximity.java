@@ -3,15 +3,14 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 
 /**
  * Created by susaneraly on 9/9/16.
  */
 @EqualsAndHashCode
-public class LossCosineProximity {
+public class LossCosineProximity implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         /*
