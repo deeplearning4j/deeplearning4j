@@ -28,6 +28,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1386,13 +1387,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         // this is special case for assign
-        if (op.opNum() == 16 && op.y() != null && !op.y().isView() && !op.x().isView() && !op.z().isView() && op.z().ordering() == op.y().ordering() && op.y().ordering() == op.x().ordering() ) {
-            AllocationPoint point = allocator.getAllocationPoint(op.y().data());
+
+        if (op.opNum() == 16 && op.y() != null && !op.y().isView() && !op.x().isView() && !op.z().isView()
+                && op.z().ordering() == op.y().ordering() && op.y().ordering() == op.x().ordering()
+                && Arrays.equals(op.y().shape(), op.z().shape()) && Arrays.equals(op.y().stride(), op.z().stride())
+                ) {
+            AllocationPoint point = allocator.getAllocationPoint(op.y());
+            AllocationPoint pointDst = allocator.getAllocationPoint(op.z());
             synchronized (point) {
+//                if (Nd4j.getExecutioner() instanceof GridExecutioner)
+//                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+//                log.info("X: {}; Y: {}, Z: {}", op.x().ordering(), op.y().ordering(), op.z().ordering());
                 CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-                allocator.memcpyDevice(op.z().data(), point.getDevicePointer(), op.y().length() * op.y().data().getElementSize(), 0, context);
+                allocator.memcpyDevice(op.z().data(), allocator.getPointer(op.y(), context), op.y().length() * op.y().data().getElementSize(), 0, context);
                 context.syncOldStream();
+
                 return null;
             }
         }
