@@ -454,7 +454,7 @@ public class WordVectorSerializer {
         zipfile.putNextEntry(syn0);
 
         // writing out syn0
-        File tempFileSyn0 = File.createTempFile("pv","0");
+        File tempFileSyn0 = File.createTempFile("paravec","0");
         tempFileSyn0.deleteOnExit();
 
         writeWordVectors(vectors.lookupTable(), tempFileSyn0);
@@ -464,7 +464,7 @@ public class WordVectorSerializer {
         fis.close();
 
         // writing out syn1
-        File tempFileSyn1 = File.createTempFile("pv","1");
+        File tempFileSyn1 = File.createTempFile("paravec","1");
         tempFileSyn1.deleteOnExit();
 
         INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
@@ -487,7 +487,7 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
-        File tempFileHuffman = File.createTempFile("pv","h");
+        File tempFileHuffman = File.createTempFile("paravec","h");
         tempFileHuffman.deleteOnExit();
 
         ZipEntry hP = new ZipEntry("huffman.txt");
@@ -540,6 +540,9 @@ public class WordVectorSerializer {
         File tmpFileSyn0 = File.createTempFile("paravec", "0");
         File tmpFileSyn1 = File.createTempFile("paravec", "1");
         File tmpFileH = File.createTempFile("paravec", "h");
+        tmpFileSyn0.deleteOnExit();
+        tmpFileSyn1.deleteOnExit();
+        tmpFileH.deleteOnExit();
 
         ZipFile zipFile = new ZipFile(file);
         ZipEntry syn0 = zipFile.getEntry("syn0.txt");

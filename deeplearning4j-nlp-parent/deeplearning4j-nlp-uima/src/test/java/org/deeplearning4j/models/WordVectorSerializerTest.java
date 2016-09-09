@@ -24,10 +24,14 @@ import org.apache.commons.lang.ArrayUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -51,6 +55,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -433,6 +438,66 @@ public class WordVectorSerializerTest {
         assertEquals(day1, day2);
     }
 
+    @Test
+    public void testParaVecSerialization1() throws Exception {
+        VectorsConfiguration configuration = new VectorsConfiguration();
+        configuration.setIterations(14123);
+        configuration.setLayersSize(156);
+
+        INDArray syn0 = Nd4j.rand(100, configuration.getLayersSize());
+        INDArray syn1 = Nd4j.rand(100, configuration.getLayersSize());
+
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        for (int i = 0; i < 100; i++) {
+            VocabWord word = new VocabWord(1.0f, "word_" + i);
+            List<Integer> points = new ArrayList<>();
+            for (int x = 0; x < 10; x++ ){
+                points.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
+            }
+            word.setIndex(i);
+            word.setPoints(points);
+            cache.addToken(word);
+            cache.addWordToIndex(i, word.getLabel());
+        }
+
+        InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                .vectorLength(configuration.getLayersSize())
+                .cache(cache)
+                .build();
+
+        lookupTable.setSyn0(syn0);
+        lookupTable.setSyn1(syn1);
+
+        ParagraphVectors originalVectors = new ParagraphVectors.Builder(configuration)
+                .vocabCache(cache)
+                .lookupTable(lookupTable)
+                .build();
+
+        File tempFile = File.createTempFile("paravec", "tests");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeParagraphVectors(originalVectors, tempFile);
+
+        ParagraphVectors restoredVectors = WordVectorSerializer.readParagraphVectors(tempFile);
+
+        InMemoryLookupTable<VocabWord> restoredLookupTable = (InMemoryLookupTable<VocabWord>) restoredVectors.getLookupTable();
+        AbstractCache<VocabWord> restoredVocab = (AbstractCache<VocabWord>) restoredVectors.getVocab();
+
+        assertEquals(restoredLookupTable.getSyn0(), lookupTable.getSyn0());
+        assertEquals(restoredLookupTable.getSyn1(), lookupTable.getSyn1());
+
+        for (int i = 0; i < cache.numWords(); i++) {
+            assertEquals(cache.wordAtIndex(i), restoredVocab.wordAtIndex(i));
+            List<Integer> originalPoints = cache.elementAtIndex(i).getPoints();
+            List<Integer> restoredPoints = restoredVocab.elementAtIndex(i).getPoints();
+            assertEquals(originalPoints.size(), restoredPoints.size());
+            for (int x = 0; x < originalPoints.size(); x++) {
+                assertEquals(originalPoints.get(x), restoredPoints.get(x));
+            }
+        }
+    }
+
     private double arraysSimilarity(INDArray array1, INDArray array2) {
         if (array1.equals(array2)) return 1.0;
 
@@ -443,5 +508,4 @@ public class WordVectorSerializerTest {
         return  Nd4j.getBlasWrapper().dot(vector, vector2);
 
     }
-
 }
