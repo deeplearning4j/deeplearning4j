@@ -68,9 +68,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
-  //      for(int i = 0; i < sequence.getElements().size(); i++) {
+//        for(int i = 0; i < sequence.getElements().size(); i++) {
             dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
-     //   }
+//        }
 
         return 0;
     }

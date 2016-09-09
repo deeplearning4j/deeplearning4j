@@ -90,13 +90,13 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays);
+            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays, false);
         }
 
         return 0;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<INDArray> labels) {
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<INDArray> labels, boolean isInference) {
         int end =  window * 2 + 1 - b;
         int cw = 0;
         INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
@@ -126,7 +126,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         neu1.divi(cw);
 
-        INDArray neu1e = cbow.iterateSample(currentWord, neu1, nextRandom, alpha);
+        INDArray neu1e = cbow.iterateSample(currentWord, neu1, nextRandom, alpha, isInference);
 
         for (INDArray label: labels) {
             Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, label);
@@ -150,12 +150,12 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate) {
         AtomicLong nextRandom = new AtomicLong(nr);
-        Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
+      //  Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
 
-        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+//        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
-        if(seq.isEmpty())
+        if(sequence.isEmpty())
             return null;
 
         List<INDArray> labelArrays = new ArrayList<>();
@@ -164,9 +164,11 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         labelArrays.add(ret);
 
-        for (int i = 0; i < seq.size(); i++) {
-            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays);
+        for (int iter = 0; iter < configuration.getIterations(); iter++) {
+            for (int i = 0; i < sequence.size(); i++) {
+                nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, labelArrays, true);
+            }
         }
 
 
