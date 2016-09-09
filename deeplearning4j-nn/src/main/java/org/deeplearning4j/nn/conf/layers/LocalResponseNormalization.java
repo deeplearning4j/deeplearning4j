@@ -20,11 +20,12 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LocalResponseNormalization extends Layer {
-    // hyper-parameters defined using a validation set
-    protected double n; // # adjacent kernal maps
-    protected double k; // constant (e.g. scale)
-    protected double beta; // decay rate
-    protected double alpha; // decay rate
+    // Defaults as per http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
+    //Set defaults here as well as in builder, in case users use no-arg constructor instead of builder
+    protected double n = 5; // # adjacent kernal maps
+    protected double k = 2; // constant (e.g. scale)
+    protected double beta = 0.75; // decay rate
+    protected double alpha = 1e-4; // decay rate
 
     private LocalResponseNormalization(Builder builder) {
         super(builder);
@@ -116,21 +117,41 @@ public class LocalResponseNormalization extends Layer {
         public Builder() {
         }
 
+        /**
+         * LRN scaling constant k. Default: 2
+         *
+         * @param k
+         */
         public Builder k(double k) {
             this.k = k;
             return this;
         }
 
+        /**
+         * Number of adjacent kernel maps to use when doing LRN. default: 5
+         *
+         * @param n    Number of adjacent kernel maps
+         */
         public Builder n(double n) {
             this.n = n;
             return this;
         }
 
+        /**
+         * LRN scaling constant alpha. Default: 1e-4
+         *
+         * @param alpha    Scaling constant
+         */
         public Builder alpha(double alpha) {
             this.alpha = alpha;
             return this;
         }
 
+        /**
+         * Scaling constant beta. Default: 0.75
+         *
+         * @param beta    Scaling constant
+         */
         public Builder beta(double beta) {
             this.beta = beta;
             return this;
