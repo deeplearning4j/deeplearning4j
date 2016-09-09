@@ -25,6 +25,7 @@ import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.linalg.cache.TADManager;
@@ -1379,8 +1380,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return  null;
     }
 
-    protected synchronized CudaContext invoke(TransformOp op) {
+    protected CudaContext invoke(TransformOp op) {
         checkForCompression(op);
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        // this is special case for assign
+        if (op.opNum() == 16 && op.y() != null && !op.y().isView() && !op.x().isView() && !op.z().isView() && op.z().ordering() == op.y().ordering() && op.y().ordering() == op.x().ordering() ) {
+            AllocationPoint point = allocator.getAllocationPoint(op.y().data());
+            synchronized (point) {
+                CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+                allocator.memcpyDevice(op.z().data(), point.getDevicePointer(), op.y().length() * op.y().data().getElementSize(), 0, context);
+                context.syncOldStream();
+                return null;
+            }
+        }
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));

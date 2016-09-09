@@ -20,6 +20,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -358,4 +359,12 @@ public class NDArray extends BaseNDArray {
         return new BaseNDArrayProxy(this);
     }
 
+    @Override
+    public INDArray unsafeDuplication() {
+        INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
+
+        Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().getElementSize());
+
+        return ret;
+    }
 }

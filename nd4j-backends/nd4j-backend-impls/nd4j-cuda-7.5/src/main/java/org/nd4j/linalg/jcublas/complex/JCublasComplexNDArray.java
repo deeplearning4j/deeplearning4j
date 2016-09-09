@@ -407,4 +407,9 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
         super(data, order);
     }
 
+
+    @Override
+    public INDArray unsafeDuplication() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
