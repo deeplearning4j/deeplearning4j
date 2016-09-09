@@ -28,6 +28,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.lang.reflect.Field;
 import java.util.Random;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -42,8 +43,6 @@ public class CuDNNGradientChecks {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-9;
 
     static {
-        //Force Nd4j initialization, then set data type to double:
-        Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
@@ -59,8 +58,8 @@ public class CuDNNGradientChecks {
         boolean[] characteristic = {false, true};    //If true: run some backprop steps first
 
         int[] minibatchSizes = {1, 4};
-        int width = 5;
-        int height = 5;
+        int width = 6;
+        int height = 6;
         int inputDepth = 2;
         int nOut = 3;
 
@@ -72,7 +71,7 @@ public class CuDNNGradientChecks {
             for (boolean doLearningFirst : characteristic) {
                 for (int minibatchSize : minibatchSizes) {
 
-                    INDArray input = Nd4j.rand(minibatchSize, inputDepth, height, width);
+                    INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(i, r.nextInt(nOut), 1.0);
@@ -86,22 +85,22 @@ public class CuDNNGradientChecks {
                             .seed(12345L)
                             .list()
                             .layer(0, new ConvolutionLayer.Builder(2, 2)
-                                    .stride(1, 1)
+                                    .stride(2, 2)
                                     .padding(1, 1)
                                     .nOut(3)
                                     .activation(afn)
                                     .build())
-                            .layer(0, new ConvolutionLayer.Builder(2, 2)
+                            .layer(1, new ConvolutionLayer.Builder(2, 2)
                                     .stride(2, 2)
                                     .padding(0, 0)
                                     .nOut(3)
                                     .activation(afn)
                                     .build())
-                            .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation("softmax")
                                     .nOut(nOut)
                                     .build())
-                            .setInputType(InputType.convolutionalFlat(1, 4, 1))
+                            .setInputType(InputType.convolutional(height, width, inputDepth))
                             .pretrain(false).backprop(true);
 
                     MultiLayerConfiguration conf = builder.build();
@@ -118,6 +117,14 @@ public class CuDNNGradientChecks {
                             = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(1);
                     ConvolutionHelper ch1 = (ConvolutionHelper) f.get(c1);
                     assertTrue(ch1 instanceof CudnnConvolutionHelper);
+
+                    //-------------------------------
+                    //For debugging/comparison to no-cudnn case: set helper field to null
+//                    f.set(c0, null);
+//                    f.set(c1, null);
+//                    assertNull(f.get(c0));
+//                    assertNull(f.get(c1));
+                    //-------------------------------
 
 
                     String name = new Object() {
@@ -252,6 +259,12 @@ public class CuDNNGradientChecks {
         BatchNormalizationHelper bn = (BatchNormalizationHelper) f.get(b);
         assertTrue(bn instanceof CudnnBatchNormalizationHelper);
 
+        //-------------------------------
+        //For debugging/comparison to no-cudnn case: set helper field to null
+//        f.set(b, null);
+//        assertNull(f.get(b));
+        //-------------------------------
+
         if (PRINT_RESULTS) {
             for (int j = 0; j < mln.getnLayers(); j++)
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
@@ -300,10 +313,16 @@ public class CuDNNGradientChecks {
         Field f = org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class.getDeclaredField("helper");
         f.setAccessible(true);
 
-        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization b
+        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization l
                 = (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) mln.getLayer(1);
-        LocalResponseNormalizationHelper lrn = (LocalResponseNormalizationHelper) f.get(b);
+        LocalResponseNormalizationHelper lrn = (LocalResponseNormalizationHelper) f.get(l);
         assertTrue(lrn instanceof CudnnLocalResponseNormalizationHelper);
+
+        //-------------------------------
+        //For debugging/comparison to no-cudnn case: set helper field to null
+//        f.set(l, null);
+//        assertNull(f.get(l));
+        //-------------------------------
 
         if (PRINT_RESULTS) {
             for (int j = 0; j < mln.getnLayers(); j++)
