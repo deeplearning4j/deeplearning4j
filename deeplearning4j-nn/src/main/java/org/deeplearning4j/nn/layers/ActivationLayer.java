@@ -83,7 +83,14 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(training);
 
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input));
+        INDArray in;
+        if(training){
+            //dup required: need to keep original input for backprop
+            in = input.dup();
+        } else {
+            in = input;
+        }
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
 
     }
 

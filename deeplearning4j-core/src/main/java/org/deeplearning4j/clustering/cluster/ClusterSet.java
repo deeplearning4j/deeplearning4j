@@ -103,7 +103,7 @@ public class ClusterSet implements Serializable {
 	}
 
 	public double getDistance(Point m1, Point m2) {
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,m1.getArray(),m2.getArray())).currentResult().doubleValue();
+		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,m1.getArray(),m2.getArray())).getFinalResult().doubleValue();
     }
 
 	public double getDistanceFromNearestCluster(Point point) {

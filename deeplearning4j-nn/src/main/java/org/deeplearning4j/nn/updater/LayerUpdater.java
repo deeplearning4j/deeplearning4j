@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.updater;
 
-import com.google.common.base.Function;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -13,9 +12,9 @@ import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.*;
-import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.NoOpUpdater;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
@@ -24,10 +23,8 @@ import java.util.Map;
 
 /**
  * @author Adam Gibson
- * @deprecated As of 0.6.0. Use {@link LayerUpdater instead}
  */
-@Deprecated
-public abstract class BaseUpdater implements Updater {
+public class LayerUpdater implements Updater {
     protected Map<String, GradientUpdater> updaterForVariable = new LinkedHashMap<>();
     protected INDArray viewArray;
 
@@ -41,10 +38,15 @@ public abstract class BaseUpdater implements Updater {
             INDArray paramsArray = entry.getValue();
             GradientUpdater gu = init(entry.getKey(), layer);
             int thisSize = gu.stateSizeForInputSize(entry.getValue().length());
+            if(thisSize == 0) continue;
             INDArray subset = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(count, count+thisSize));
             gu.setStateViewArray(subset, paramsArray.shape(), paramsArray.ordering(), initialize);
             count += thisSize;
         }
+    }
+
+    public Map<String,GradientUpdater> getUpdaterForVariable(){
+        return updaterForVariable;
     }
 
     @Override
@@ -222,14 +224,52 @@ public abstract class BaseUpdater implements Updater {
     }
 
 
-    public abstract void init();
+    public void init(){
+        //No op
+    }
 
-    public abstract GradientUpdater init(String variable, Layer layer);
+    public GradientUpdater init(String variable, Layer layer){
+        GradientUpdater updater = updaterForVariable.get(variable);
+        if(updater == null){
+            org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
+            switch (u){
+                case SGD:
+                    updater = new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
+                    break;
+                case ADAM:
+                    updater = new Adam(layer.conf().getLearningRateByParam(variable),
+                            layer.conf().getLayer().getAdamMeanDecay(),
+                            layer.conf().getLayer().getAdamVarDecay());
+                    break;
+                case ADADELTA:
+                    updater = new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
+                    break;
+                case NESTEROVS:
+                    updater = new Nesterovs(layer.conf().getLayer().getMomentum(), layer.conf().getLearningRateByParam(variable));
+                    break;
+                case ADAGRAD:
+                    updater = new AdaGrad(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
+                    break;
+                case RMSPROP:
+                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getRmsDecay());
+                    break;
+                case NONE:
+                    updater = new NoOpUpdater();
+                    break;
+                case CUSTOM:
+                    throw new UnsupportedOperationException("Custom updaters: not yet implemented");
+                default:
+                    throw new IllegalArgumentException("Unknown updater: " + u);
+            }
+            updaterForVariable.put(variable, updater);
+        }
+        return updater;
+    }
 
     @Override
     public boolean equals(Object other){
-        if(!(other instanceof BaseUpdater)) return false;
-        return updaterForVariable.equals(((BaseUpdater)other).updaterForVariable);
+        if(!(other instanceof LayerUpdater)) return false;
+        return updaterForVariable.equals(((LayerUpdater)other).updaterForVariable);
     }
 
     @Override
@@ -246,7 +286,7 @@ public abstract class BaseUpdater implements Updater {
             newMap.put(entry.getKey(), entry.getValue().getAggregator(true).getUpdater());
         }
 
-        BaseUpdater updater;
+        LayerUpdater updater;
         try{
             updater = this.getClass().getConstructor().newInstance();
         }catch (Exception e){
