@@ -30,6 +30,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -58,10 +59,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 // FIXME: remove that
 
@@ -387,6 +393,7 @@ public class WordVectorSerializer {
      * @param vectors
      * @param path
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull File path) {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             writeWordVectors(vectors, fos);
@@ -402,11 +409,134 @@ public class WordVectorSerializer {
      * @param vectors
      * @param path
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull String path) {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             writeWordVectors(vectors, fos);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file
+     *
+     * @param file
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, File file) {
+        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+            writeParagraphVectors(vectors, stream);
+            stream.flush();
+            stream.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file located at path
+     *
+     * @param path
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, String path) {
+        writeParagraphVectors(vectors, new File(path));
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file and sends it to output stream
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, OutputStream stream) throws IOException {
+        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+
+        ZipEntry syn0 = new ZipEntry("syn0.txt");
+        zipfile.putNextEntry(syn0);
+
+        // writing out syn0
+        File tempFileSyn0 = File.createTempFile("pv","0");
+        tempFileSyn0.deleteOnExit();
+
+        writeWordVectors(vectors.lookupTable(), tempFileSyn0);
+
+        FileInputStream fis = new FileInputStream(tempFileSyn0);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        // writing out syn1
+        File tempFileSyn1 = File.createTempFile("pv","1");
+        tempFileSyn1.deleteOnExit();
+
+        INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+            for (int x = 0; x < syn1.rows(); x++) {
+                INDArray row = syn1.getRow(x);
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < row.length(); i++) {
+                    builder.append(row.getDouble(i)).append(" ");
+                }
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        ZipEntry zSyn1 = new ZipEntry("syn1.txt");
+        zipfile.putNextEntry(zSyn1);
+
+        fis = new FileInputStream(tempFileSyn1);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        File tempFileHuffman = File.createTempFile("pv","h");
+        tempFileHuffman.deleteOnExit();
+
+        ZipEntry hP = new ZipEntry("huffman.txt");
+        zipfile.putNextEntry(hP);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int point: word.getPoints()) {
+                    builder.append(point).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileHuffman);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        zipfile.flush();
+        zipfile.close();
+    }
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(File file) throws IOException {
+        return null;
+    }
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(InputStream stream) throws IOException {
+        File tmpFile = File.createTempFile("restore", "paravec");
+        Files.copy(stream, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return readParagraphVectors(tmpFile);
+    }
+
+    private static void writeEntry(InputStream inputStream, ZipOutputStream zipStream) throws IOException {
+        byte[] bytes = new byte[1024];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(bytes)) != -1) {
+            zipStream.write(bytes, 0, bytesRead);
         }
     }
 
@@ -446,12 +576,12 @@ public class WordVectorSerializer {
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
             VocabWord word = vocab.wordFor(split[0]);
-            List<Integer> codes = new ArrayList<>();
+            List<Integer> points = new ArrayList<>();
             for (int i = 1; i < split.length; i++ ){
-                codes.add(Integer.parseInt(split[i]));
+                points.add(Integer.parseInt(split[i]));
             }
 
-            word.setCodes(codes);
+            word.setPoints(points);
 
         }
         reader.close();
@@ -628,6 +758,7 @@ public class WordVectorSerializer {
      * @param vectors
      * @param stream
      */
+    @Deprecated
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
 
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"))) {
