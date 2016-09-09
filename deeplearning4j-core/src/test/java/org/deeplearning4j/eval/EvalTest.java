@@ -422,4 +422,59 @@ public class EvalTest {
         assertEquals(2, (int)eval.truePositives().get(1));
         assertEquals(1, (int)eval.falseNegatives().get(1));
     }
+
+    @Test
+    public void testEvalInvalid(){
+        Evaluation e = new Evaluation(5);
+        e.eval(0,1);
+        e.eval(1,0);
+        e.eval(1,1);
+
+        System.out.println(e.stats());
+
+        char c = "\uFFFD".toCharArray()[0];
+        System.out.println(c);
+
+        assertFalse(e.stats().contains("\uFFFD"));
+    }
+
+    @Test
+    public void testEvalMethods(){
+        //Check eval(int,int) vs. eval(INDArray,INDArray)
+
+        Evaluation e1 = new Evaluation(4);
+        Evaluation e2 = new Evaluation(4);
+
+        INDArray i0 = Nd4j.create(new double[]{1,0,0,0});
+        INDArray i1 = Nd4j.create(new double[]{0,1,0,0});
+        INDArray i2 = Nd4j.create(new double[]{0,0,1,0});
+        INDArray i3 = Nd4j.create(new double[]{0,0,0,1});
+
+        e1.eval(i0,i0); //order: actual, predicted
+        e2.eval(0,0);   //order: predicted, actual
+        e1.eval(i0,i2);
+        e2.eval(2,0);
+        e1.eval(i0,i2);
+        e2.eval(2,0);
+        e1.eval(i1,i2);
+        e2.eval(2,1);
+        e1.eval(i3,i3);
+        e2.eval(3,3);
+        e1.eval(i3,i0);
+        e2.eval(0,3);
+        e1.eval(i3,i0);
+        e2.eval(0,3);
+
+        ConfusionMatrix<Integer> cm = e1.getConfusionMatrix();
+        assertEquals(1,cm.getCount(0,0));   //Order: actual, predicted
+        assertEquals(2,cm.getCount(0,2));
+        assertEquals(1,cm.getCount(1,2));
+        assertEquals(1,cm.getCount(3,3));
+        assertEquals(2,cm.getCount(3,0));
+
+        System.out.println(e1.stats());
+        System.out.println(e2.stats());
+
+        assertEquals(e1.stats(),e2.stats());
+    }
 }
