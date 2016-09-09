@@ -400,7 +400,7 @@ public class ParagraphVectors extends Word2Vec {
          * @return
          */
         @Override
-        protected Builder useExistingWordVectors(@NonNull WordVectors vec) {
+        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
             this.existingVectors = vec;
             return this;
         }
@@ -547,6 +547,9 @@ public class ParagraphVectors extends Word2Vec {
             if (this.existingVectors != null) {
                 this.trainElementsVectors = false;
                 this.elementsLearningAlgorithm = null;
+
+                this.lookupTable = this.existingVectors.lookupTable();
+                this.vocabCache = this.existingVectors.vocab();
             }
 
             if (this.labelsSource == null) this.labelsSource = new LabelsSource();
@@ -568,7 +571,7 @@ public class ParagraphVectors extends Word2Vec {
                  this.labelsSource = labelAwareIterator.getLabelsSource();
             } else  {
                 // we have nothing, probably that's restored model building. ignore iterator for now.
-                // probably there's few reasons to move iterator initialization code into ParagraphVectors methos. Like protected setLabelAwareIterator method.
+                // probably there's few reasons to move iterator initialization code into ParagraphVectors methods. Like protected setLabelAwareIterator method.
             }
 
             if (labelAwareIterator != null) {

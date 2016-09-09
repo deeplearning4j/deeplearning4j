@@ -944,6 +944,7 @@ public class WordVectorSerializer {
      * @param vec - The Word2Vec instance to be saved
      * @param path - the path for json to be saved
      */
+    @Deprecated
     public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
         /*
             Basically we need to save:
@@ -1059,6 +1060,7 @@ public class WordVectorSerializer {
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
      */
+    @Deprecated
     public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
         /*
             // TODO: implementation is in process
