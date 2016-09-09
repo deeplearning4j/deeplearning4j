@@ -185,9 +185,49 @@ public class LocalResponseTest {
         DataSet next = iter.next();
 
         network.fit(next);
-
-
     }
 
+
+    @Test
+    public void testLrnManual(){
+        int wh = 5;
+        int depth = 6;
+        int minibatch = 3;
+
+        int n = 4;
+        double k = 2.0;
+        double alpha = 1e-4;
+        double beta = 0.75;
+
+        INDArray in = Nd4j.rand(new int[]{minibatch,depth,wh,wh});
+        INDArray outExp = Nd4j.zeros(minibatch,depth,wh,wh);
+
+        for( int m=0; m<minibatch; m++){
+            for( int x=0; x<wh; x++ ){
+                for( int y=0; y<wh; y++ ){
+                    for( int i=0; i<depth; i++ ){
+                        int jFrom = Math.max(0,i-n/2);
+                        int jTo = Math.min(depth-1,i+n/2);
+                        double sum = 0.0;
+                        for( int j=jFrom; j<=jTo; j++ ){
+                            double d = in.getDouble(m,j,x,y);
+                            sum += d*d;
+                        }
+                        double out = in.getDouble(m,i,x,y) / Math.pow(k + alpha * sum, beta);
+                        outExp.putScalar(m,i,x,y,out);
+                    }
+                }
+            }
+        }
+
+        LocalResponseNormalization lrn = new LocalResponseNormalization.Builder().build();
+        NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
+        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
+                (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization)lrn.instantiate(nnc,null,0,null,false);
+
+        INDArray outAct = layer.activate(in,true);
+
+        assertEquals(outExp, outAct);
+    }
 
 }

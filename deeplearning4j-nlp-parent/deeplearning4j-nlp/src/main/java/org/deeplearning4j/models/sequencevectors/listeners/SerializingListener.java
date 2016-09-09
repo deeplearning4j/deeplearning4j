@@ -103,7 +103,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
          * @param reallyUse
          * @return
          */
-        public Builder<T> setFilenamePrefix(@NonNull boolean reallyUse) {
+        public Builder<T> setFilenamePrefix(boolean reallyUse) {
             this.useBinarySerialization = reallyUse;
             return this;
         }
