@@ -625,6 +625,47 @@ public class ParagraphVectorsTest {
         assertEquals("Zhealth", topPrediction);
     }
 
+    @Test
+    @Ignore
+    public void testParagraphVectorsNearestLabels() throws Exception{
+        ClassPathResource resource = new ClassPathResource("paravec/labeled");
+        File file = resource.getFile();
+
+        LabelAwareIterator iter = new FileLabelAwareIterator.Builder()
+                .addSourceFolder(file)
+                .build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+
+        /**
+         * Please note: text corpus is REALLY small, and some kind of "results" could be received with HIGH epochs number, like 30.
+         * But there's no reason to keep at that high
+         */
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1)
+                .epochs(3)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .windowSize(5)
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
+
+        vec.fit();
+        vec.extractLabels();
+
+        INDArray array0 =vec.getWordVectorMatrix("company");
+        //INDArray array1 =vec.getWordVectorMatrix("technologies");
+        INDArray array1 =vec.getWordVectorMatrix("bid");
+
+        log.info("\tarr0 :" +array0 +
+                "\n\tarr1 :"+array1);
+        INDArray result = array0.addi(array1);
+        //should be looking for the result
+        log.info(vec.nearestLabels(result,5).toString());
+
+    }
     /*
         Left as reference implementation, before stuff was changed in w2v
      */

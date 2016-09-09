@@ -29,12 +29,9 @@ import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
@@ -44,6 +41,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ParagraphVectors extends Word2Vec {
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
+    //protected int[] indexArray;
+    protected INDArray pulledArray;
+    protected List<VocabWord> vocabWordList = new ArrayList<>();
+
 
 
     /**
@@ -307,6 +308,28 @@ public class ParagraphVectors extends Word2Vec {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    public void extractLabels(){
+        Collection<VocabWord> vocabWordCollection = vocab.vocabWords();
+        //List<VocabWord> vocabWordList = new ArrayList<>();
+        int[] indexArray;
+
+        //INDArray pulledArray;
+        //Check if word has label and build a list out of the collection
+        for(VocabWord vWord:vocabWordCollection){
+            if (vWord.isLabel()){
+                vocabWordList.add(vWord);
+            }
+        }
+        //Build array of indexes in the order of the vocablist
+        indexArray = new int[vocabWordList.size()];
+        int i = 0;
+        for (VocabWord vWord:vocabWordList){
+            indexArray[i] = vWord.getIndex();
+            i++;
+        }
+        //pull the label rows and create new matrix
+        pulledArray = Nd4j.pullRows(lookupTable.getWeights(),1,indexArray);
+    }
     /**
      * This method returns top N labels nearest to specified features vector
      *
@@ -315,8 +338,31 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public Collection<String> nearestLabels(INDArray labelVector, int topN) {
-        // TODO: to be implemented
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //treemap to sort distances
+        TreeMap<Double,String> tm = new TreeMap<Double,String>(Collections.reverseOrder());
+        //for (int n=0;n<indexArray.length;n++){
+        for (int n=0;n<vocabWordList.size();n++){
+            tm.put(pulledArray.getRow(n).distance1(labelVector),vocabWordList.get(n).getLabel());
+        }
+
+        List<String> resultLabelList = new ArrayList<>();
+        //log.info("TreeMap: "+ tm);
+        //create list with nearest label at the beginning
+        Set set = tm.entrySet();
+        Iterator iterator = set.iterator();
+
+        while(iterator.hasNext()){
+            Map.Entry me = (Map.Entry)iterator.next();
+            resultLabelList.add((String) me.getValue());
+        }
+
+        //return whole list if there are less labels than topN
+        if (topN>resultLabelList.size()) {
+            return resultLabelList;
+        }else {
+            return resultLabelList.subList(0, topN);
+        }
     }
 
     /**
