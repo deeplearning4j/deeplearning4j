@@ -487,6 +487,30 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
+        File tempFileCodes = File.createTempFile("paravec","h");
+        tempFileCodes.deleteOnExit();
+
+        ZipEntry hC = new ZipEntry("codes.txt");
+        zipfile.putNextEntry(hC);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int code: word.getCodes()) {
+                    builder.append(code).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileCodes);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+
         File tempFileHuffman = File.createTempFile("paravec","h");
         tempFileHuffman.deleteOnExit();
 
@@ -539,10 +563,12 @@ public class WordVectorSerializer {
 
         File tmpFileSyn0 = File.createTempFile("paravec", "0");
         File tmpFileSyn1 = File.createTempFile("paravec", "1");
+        File tmpFileC = File.createTempFile("paravec", "c");
         File tmpFileH = File.createTempFile("paravec", "h");
         tmpFileSyn0.deleteOnExit();
         tmpFileSyn1.deleteOnExit();
         tmpFileH.deleteOnExit();
+        tmpFileC.deleteOnExit();
 
         ZipFile zipFile = new ZipFile(file);
         ZipEntry syn0 = zipFile.getEntry("syn0.txt");
@@ -554,6 +580,11 @@ public class WordVectorSerializer {
         stream = zipFile.getInputStream(syn1);
 
         Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry codes = zipFile.getEntry("codes.txt");
+        stream = zipFile.getInputStream(codes);
+
+        Files.copy(stream, Paths.get(tmpFileC.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
         ZipEntry huffman = zipFile.getEntry("huffman.txt");
         stream = zipFile.getInputStream(huffman);
@@ -572,7 +603,7 @@ public class WordVectorSerializer {
 
         VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
 
-        return readParagraphVectorsFromText(tmpFileSyn0, tmpFileSyn1, tmpFileH, configuration);
+        return readParagraphVectorsFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
     }
 
     /**
@@ -598,11 +629,13 @@ public class WordVectorSerializer {
      * This method allows you to read ParagraphVectors from externaly originated vectors and syn1.
      * I.e. Gensim uses 3 files per model.
      *
-     * @param vectors
-     * @param hs
+     * @param vectors   text file with words and their wieghts, aka Syn0
+     * @param hs    text file HS layers, aka Syn1
+     * @param h_codes   text file with Huffman tree codes
+     * @param h_points  text file with Huffman tree points
      * @return
      */
-    public static ParagraphVectors readParagraphVectorsFromText(@NonNull File vectors, @NonNull File hs, @NonNull File hs_mapping,  @NonNull VectorsConfiguration configuration) throws IOException  {
+    public static ParagraphVectors readParagraphVectorsFromText(@NonNull File vectors, @NonNull File hs, @NonNull File h_codes, @NonNull File h_points,  @NonNull VectorsConfiguration configuration) throws IOException  {
         // first we load syn0
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
         InMemoryLookupTable lookupTable = pair.getFirst();
@@ -625,8 +658,8 @@ public class WordVectorSerializer {
         INDArray syn1 = Nd4j.vstack(rows);
         lookupTable.setSyn1(syn1);
 
-        // now we transform mappings into huffman tree codes
-        reader = new BufferedReader(new FileReader(hs_mapping));
+        // now we transform mappings into huffman tree points
+        reader = new BufferedReader(new FileReader(h_points));
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
             VocabWord word = vocab.wordFor(split[0]);
@@ -634,9 +667,21 @@ public class WordVectorSerializer {
             for (int i = 1; i < split.length; i++ ){
                 points.add(Integer.parseInt(split[i]));
             }
-
             word.setPoints(points);
+        }
+        reader.close();
 
+
+        // now we transform mappings into huffman tree codes
+        reader = new BufferedReader(new FileReader(h_codes));
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            VocabWord word = vocab.wordFor(split[0]);
+            List<Integer> codes = new ArrayList<>();
+            for (int i = 1; i < split.length; i++ ){
+                codes.add(Integer.parseInt(split[i]));
+            }
+            word.setCodes(codes);
         }
         reader.close();
 
