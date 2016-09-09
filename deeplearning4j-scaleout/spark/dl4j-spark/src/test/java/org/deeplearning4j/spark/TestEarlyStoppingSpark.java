@@ -24,7 +24,9 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.earlystopping.SparkDataSetLossCalculator;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingTrainer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -39,6 +41,11 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class TestEarlyStoppingSpark extends BaseSparkTest {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).allowMultiGPU(true);
+    }
 
     @Test
     public void testEarlyStoppingIris() {
