@@ -18,12 +18,12 @@ public class LossCosineProximity implements ILossFunction {
          */
         INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
-        double yhatmag = postOutput.norm2Number().doubleValue();
-        double ymag = labels.norm2Number().doubleValue();
+        INDArray yhatmag = postOutput.norm2(1);
+        INDArray ymag = labels.norm2(1);
 
         INDArray scoreArr = postOutput.mul(labels);
-        scoreArr.divi(yhatmag);
-        scoreArr.divi(ymag);
+        scoreArr.diviColumnVector(yhatmag);
+        scoreArr.diviColumnVector(ymag);
 
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr.muli(-1);
@@ -48,24 +48,27 @@ public class LossCosineProximity implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+
         INDArray yhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
         /*
 
         */
-        double yL2norm = labels.norm2Number().doubleValue();
-        double yL2normSq = yL2norm * yL2norm;
+        INDArray yL2norm = labels.norm2(1);
+        INDArray yL2normSq = yL2norm.mul(yL2norm);
 
-        double yhatL2norm = yhat.norm2Number().doubleValue();
-        double yhatL2normSq = yhatL2norm * yhatL2norm;
+        INDArray yhatL2norm = yhat.norm2(1);
+        INDArray yhatL2normSq = yhatL2norm.mul(yhatL2norm);
 
-        double yhatDotyL1norm = labels.mul(yhat).norm1Number().doubleValue();
+        //Note: This is not really the L1 norm since I am not taking abs values
+        INDArray yhatDotyL1norm = labels.mul(yhat).sum(1);
 
-        INDArray gradients = labels.mul(yhatL2normSq);
-        gradients.subi(yhat.mul(yhatDotyL1norm));
-        gradients.divi(yL2normSq);
-        gradients.divi(yhatL2norm*yhatL2normSq);
+        INDArray gradients = labels.mulColumnVector(yhatL2normSq);
+        gradients.subi(yhat.mulColumnVector(yhatDotyL1norm));
+        gradients.diviColumnVector(yL2norm);
+        gradients.diviColumnVector(yhatL2norm.mul(yhatL2normSq));
         gradients.muli(postOutDer);
+        gradients.muli(-1);
         return gradients;
     }
 
