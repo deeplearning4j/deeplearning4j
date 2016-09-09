@@ -163,57 +163,8 @@ public class CuDNNGradientChecks {
     }
 
     @Test
-    public void testBatchNorm2d() throws Exception {
-        DataSet ds = new IrisDataSetIterator(150,150).next();
-        ds.normalizeZeroMeanZeroUnitVariance();
-        INDArray input = ds.getFeatureMatrix();
-        INDArray labels = ds.getLabels();
-
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .learningRate(1.0)
-                .regularization(false)
-                .updater(Updater.NONE)
-                .seed(12345L)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
-                        .activation("identity")
-                        .build())
-                .layer(1, new BatchNormalization.Builder()
-                        .nOut(3)
-                        .build())
-                .layer(2, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax")
-                        .nIn(3).nOut(3)
-                        .build())
-                .pretrain(false).backprop(true);
-
-        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
-        mln.init();
-
-        Field f = org.deeplearning4j.nn.layers.normalization.BatchNormalization.class.getDeclaredField("helper");
-        f.setAccessible(true);
-
-        org.deeplearning4j.nn.layers.normalization.BatchNormalization b
-                = (org.deeplearning4j.nn.layers.normalization.BatchNormalization) mln.getLayer(1);
-        BatchNormalizationHelper bn = (BatchNormalizationHelper) f.get(b);
-        assertTrue(bn instanceof CudnnBatchNormalizationHelper);
-
-        if (PRINT_RESULTS) {
-            for (int j = 0; j < mln.getnLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-        }
-
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-        assertTrue(gradOK);
-    }
-
-    @Test
     public void testBatchNormCnn() throws Exception {
+        //Note: CuDNN batch norm supports 4d only, as per 5.1 (according to api reference documentation)
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;
         int depth = 1;
