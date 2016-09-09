@@ -310,7 +310,7 @@ public class Evaluation implements Serializable {
             throw new UnsupportedOperationException("Cannot evaluate single example without initializing confusion matrix first");
         }
 
-        addToConfusion(predictedIdx, actualIdx);
+        addToConfusion(actualIdx, predictedIdx);
 
         // If they are equal
         if (predictedIdx == actualIdx) {
