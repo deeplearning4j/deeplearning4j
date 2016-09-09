@@ -906,7 +906,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         CudaContext context = null;
 
-        for (int x = 1; x < arrays.size(); x++ ){
+        for (int x = 0; x < arrays.size(); x++ ){
             context = allocator.getFlowController().prepareAction(arrays.get(x));
         }
 
