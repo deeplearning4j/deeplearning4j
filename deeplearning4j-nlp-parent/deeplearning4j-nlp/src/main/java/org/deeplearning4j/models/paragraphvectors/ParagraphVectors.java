@@ -122,9 +122,10 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
-        if (sequenceLearningAlgorithm == null) {
-            sequenceLearningAlgorithm = new DM<>();
-            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+        SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
+        if (learner == null || !learner.getCodeName().equals("PV-DM")) {
+            learner = new DM<VocabWord>();
+            learner.configure(vocab, lookupTable, configuration);
         }
         Sequence<VocabWord> sequence = new Sequence<>();
         sequence.addElements(document);
@@ -135,7 +136,7 @@ public class ParagraphVectors extends Word2Vec {
             sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
         }*/
 
-        INDArray inf = sequenceLearningAlgorithm.inferSequence(sequence, 119, learningRate);
+        INDArray inf = learner.inferSequence(sequence, 119, learningRate);
 
         return inf;
     }
