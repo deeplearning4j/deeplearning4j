@@ -452,11 +452,15 @@ public class WordVectorSerializerTest {
         for (int i = 0; i < 100; i++) {
             VocabWord word = new VocabWord(1.0f, "word_" + i);
             List<Integer> points = new ArrayList<>();
-            for (int x = 0; x < 10; x++ ){
+            List<Integer> codes = new ArrayList<>();
+            int num = org.apache.commons.lang3.RandomUtils.nextInt(1,20);
+            for (int x = 0; x < num; x++ ){
                 points.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
+                codes.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
             }
             word.setIndex(i);
             word.setPoints(points);
+            word.setCodes(codes);
             cache.addToken(word);
             cache.addWordToIndex(i, word.getLabel());
         }
@@ -494,6 +498,13 @@ public class WordVectorSerializerTest {
             assertEquals(originalPoints.size(), restoredPoints.size());
             for (int x = 0; x < originalPoints.size(); x++) {
                 assertEquals(originalPoints.get(x), restoredPoints.get(x));
+            }
+
+            List<Integer> originalCodes = cache.elementAtIndex(i).getCodes();
+            List<Integer> restoredCodes = restoredVocab.elementAtIndex(i).getCodes();
+            assertEquals(originalCodes.size(), restoredCodes.size());
+            for (int x = 0; x < originalCodes.size(); x++) {
+                assertEquals(originalCodes.get(x), restoredCodes.get(x));
             }
         }
     }
