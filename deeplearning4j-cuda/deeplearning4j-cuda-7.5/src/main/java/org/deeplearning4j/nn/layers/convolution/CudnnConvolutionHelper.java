@@ -32,6 +32,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -186,6 +187,11 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int[] deltaStride = delta.stride();
         int[] algo1 = new int[1];
         int[] algo2 = new int[1];
+
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
@@ -253,6 +259,10 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int kW = weights.size(3);
 
         int[] srcStride = input.stride();
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH, kW));
@@ -297,6 +307,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     @Override
     public INDArray activate(INDArray z, String afn) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         INDArray activation = z;
 
         Allocator allocator = AtomicAllocator.getInstance();
