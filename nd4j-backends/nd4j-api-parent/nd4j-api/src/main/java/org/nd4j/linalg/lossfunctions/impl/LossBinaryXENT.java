@@ -23,14 +23,15 @@ public class LossBinaryXENT implements ILossFunction {
         if("softmax".equals(activationFn)){
             //Use LogSoftMax op to avoid numerical issues when calculating score
             INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
-            scoreArr = labels.mul(logsoftmax);
+            scoreArr = logsoftmax.muli(labels);
 
         } else {
-            logger.info("API_USE_INFO: In the case of classification where the labels are a one hot vector, please use a softmax function for activation.");
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-            scoreArr = labels.mul(Transforms.log(output, false));
+            scoreArr = Transforms.log(output, false).muli(labels);
         }
-        if(mask != null) scoreArr.muliColumnVector(mask);
+        if(mask != null){
+            scoreArr.muliColumnVector(mask);
+        }
         return scoreArr;
     }
 
@@ -50,7 +51,7 @@ public class LossBinaryXENT implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1).mul(-1);
+        return scoreArr.sum(1).muli(-1);
     }
 
     @Override
@@ -59,11 +60,11 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         if("softmax".equals(activationFn)) {
-            grad = output.sub(labels);
+            grad = output.subi(labels);
         }
         else {
             INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            grad = labels.mul(outputder);
+            grad = outputder.muli(labels);
             grad.divi(output).muli(-1);
         }
 
