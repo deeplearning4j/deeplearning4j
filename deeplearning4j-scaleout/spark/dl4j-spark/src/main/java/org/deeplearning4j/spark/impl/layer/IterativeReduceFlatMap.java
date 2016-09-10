@@ -76,7 +76,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         INDArray thisParams = Nd4j.create(1, numParams);
         Layer network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
         network.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
-        INDArray val = params.value().dup();
+        INDArray val = params.value().unsafeDuplication();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParams(val);
