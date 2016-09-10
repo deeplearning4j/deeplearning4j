@@ -19,27 +19,27 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Deep neural net normalization approach normalizes activations between layers
  * "brightness normalization"
  * Used for nets like AlexNet
- *
+ * <p>
  * For a^i_{x,y} the activity of a neuron computed by applying kernel i
- *    at position (x,y) and applying ReLU nonlinearity, the response
- *    normalized activation b^i_{x,y} is given by:
-
- *  x^2 = (a^j_{x,y})^2
- *  unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
- *  y = b^i_{x,y} = x * unitScale**-beta
- *
- *  gy = epsilon (aka deltas from previous layer)
- *  sumPart = sum(a^j_{x,y} * gb^j_{x,y})
- *  gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
- *
+ * at position (x,y) and applying ReLU nonlinearity, the response
+ * normalized activation b^i_{x,y} is given by:
+ * <p>
+ * x^2 = (a^j_{x,y})^2
+ * unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
+ * y = b^i_{x,y} = x * unitScale**-beta
+ * <p>
+ * gy = epsilon (aka deltas from previous layer)
+ * sumPart = sum(a^j_{x,y} * gb^j_{x,y})
+ * gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
+ * <p>
  * Reference:
  * http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
  * https://github.com/vlfeat/matconvnet/issues/10
  * Chainer
- *
+ * <p>
  * Created by nyghtowl on 10/29/15.
  */
-public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization>{
+public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
     protected static final Logger log = LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
     LocalResponseNormalizationHelper helper = null;
@@ -89,7 +89,8 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public void fit(INDArray input) {
+    }
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (helper != null) {
@@ -99,14 +100,14 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
             }
         }
 
-        int channel = input.shape()[1];
+        int channel = input.size(1);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
         INDArray sumPart = reverse.dup();
 
         // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
-        for (int i = 1; i < halfN+1; i++){
+        for (int i = 1; i < halfN + 1; i++) {
             tmp = sumPart.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
@@ -116,7 +117,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
             addVal = reverse.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
-                            interval(0, channel-i),
+                            interval(0, channel - i),
                             NDArrayIndex.all(),
                             NDArrayIndex.all()});
             sumPart.put(new INDArrayIndex[]{
@@ -128,7 +129,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
             tmp = sumPart.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
-                            interval(0, channel-i),
+                            interval(0, channel - i),
                             NDArrayIndex.all(),
                             NDArrayIndex.all()});
             addVal = reverse.get(
@@ -139,16 +140,14 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
                             NDArrayIndex.all()});
             sumPart.put(new INDArrayIndex[]{
                     NDArrayIndex.all(),
-                    interval(0, channel-i),
+                    interval(0, channel - i),
                     NDArrayIndex.all(),
                     NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
-        //TODO: make sure returned gradients are using the view arrays...
-
-        // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
-        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(sumPart.div(unitScale)));
-        return new Pair<>(retGradient,nextEpsilon);
+        // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
+        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
+        return new Pair<>(retGradient, nextEpsilon);
     }
 
     @Override
@@ -157,7 +156,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         n = layerConf().getN();
         alpha = layerConf().getAlpha();
         beta = layerConf().getBeta();
-        halfN = (int) n/2;
+        halfN = (int) n / 2;
 
         if (helper != null) {
             activations = helper.activate(input, training, k, n, alpha, beta);
@@ -166,62 +165,41 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
             }
         }
 
-        int channel = input.shape()[1];
+        int channel = input.size(1);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
         INDArray activitySqr = input.mul(input);
         INDArray sumPart = activitySqr.dup();
 
         //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
-        for (int i = 1; i < halfN+1; i++){
-            tmp = sumPart.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(i, channel),
-                            NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = activitySqr.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(0, channel-i),
-                            NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+        for (int i = 1; i < halfN + 1; i++) {
+            tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = activitySqr.get( NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[]{
                     NDArrayIndex.all(),
                     interval(i, channel),
                     NDArrayIndex.all(),
                     NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(0, channel-i),
-                            NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = activitySqr.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(i, channel),
-                            NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+            tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = activitySqr.get(  NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[]{
                     NDArrayIndex.all(),
-                    interval(0, channel-i),
+                    interval(0, channel - i),
                     NDArrayIndex.all(),
                     NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
-        unitScale = sumPart.mul(alpha).add(k);
+        unitScale = sumPart.mul(alpha).addi(k);
         // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta);
         activations = input.mul(scale);
         return activations;
-
     }
 
     @Override
-    public Layer transpose(){
+    public Layer transpose() {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
