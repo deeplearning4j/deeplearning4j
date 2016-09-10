@@ -121,7 +121,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      * @param learningRate
      */
     @Override
-    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, @NonNull double learningRate) {
+    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
 

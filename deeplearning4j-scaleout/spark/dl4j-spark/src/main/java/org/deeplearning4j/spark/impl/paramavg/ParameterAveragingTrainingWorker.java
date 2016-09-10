@@ -14,8 +14,10 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * ParameterAveragingTrainingWorker implements standard parameter averaging every m iterations.
@@ -45,13 +47,16 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
         MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters(), true);
+        net.init(tuple.getParameters().unsafeDuplication(), true);
 
         if(tuple.getUpdaterState() != null){
-            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().dup()));  //Can't have shared updater state
+            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication()));  //Can't have shared updater state
         }
 
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         return net;
     }
@@ -66,11 +71,14 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
         ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters(), true);
+        net.init(tuple.getParameters().unsafeDuplication(), true);
 
         if(tuple.getUpdaterState() != null){
-            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().dup())); //Again: can't have shared updater state
+            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
 
@@ -82,6 +90,9 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
         network.fit(dataSet);
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         if(isLast) return getFinalResult(network);
 
@@ -98,6 +109,9 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
         graph.fit(dataSet);
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         if(isLast) return getFinalResult(graph);
 
@@ -136,6 +150,10 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             Updater u = network.getUpdater();
             if(u != null) updaterState = u.getStateViewArray();
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
         return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
     }
 
@@ -146,6 +164,10 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             ComputationGraphUpdater u = network.getUpdater();
             if(u != null) updaterState = u.getStateViewArray();
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
         return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
     }
 

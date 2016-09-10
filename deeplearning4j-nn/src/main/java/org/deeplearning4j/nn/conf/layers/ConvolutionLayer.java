@@ -26,6 +26,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
 
+    public enum AlgoMode { NO_WORKSPACE, PREFER_FASTEST }
+
+    /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+    protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+
     /**
     * ConvolutionLayer
     * nIn in the input layer is the number of channels
@@ -45,6 +50,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         if(builder.padding.length != 2)
             throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
+        this.cudnnAlgoMode = builder.cudnnAlgoMode;
     }
 
     @Override
@@ -104,12 +110,54 @@ public class ConvolutionLayer extends FeedForwardLayer {
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return l1;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return l2;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch (paramName){
+            case ConvolutionParamInitializer.WEIGHT_KEY:
+                return learningRate;
+            case ConvolutionParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
+        private AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
@@ -153,6 +201,12 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder padding(int... padding){
             this.padding = padding;
+            return this;
+        }
+
+        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode){
+            this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
 

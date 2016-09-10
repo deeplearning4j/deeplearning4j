@@ -143,7 +143,7 @@ public class ConvolutionLayerSetupTest {
 
         RecordReader reader = new ImageRecordReader(28,28,3);
         reader.initialize(new FileSplit(new File(rootDir)));
-        DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,1,labels.size());
+        DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,10,1,labels.size());
         labels.remove("lfwtest");
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLRN();
         builder.setInputType(InputType.convolutional(28,28,3));
@@ -277,6 +277,7 @@ public class ConvolutionLayerSetupTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns,nChannels))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6))
                 .backprop(true).pretrain(false);
 
@@ -324,9 +325,9 @@ public class ConvolutionLayerSetupTest {
                 .layer(3, new DenseLayer.Builder().nIn(28*28*6).nOut(10).activation("identity").build())
                 .layer(4, new BatchNormalization.Builder().nOut(10).build())
                 .layer(5, new ActivationLayer.Builder().activation("relu").build())
-                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(10).nOut(10).build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(10).build())
                 .backprop(true).pretrain(false)
-                .setInputType(InputType.convolutionalFlat(28,28,1))
+                .cnnInputSize(28,28,1)
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -49,8 +50,37 @@ public class ActivationLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: null");
+        if(inputType == null) throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
         return inputType;
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        //No input preprocessor required for any input
+        return null;
+    }
+
+    @Override
+    public double getL1ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        //No op
     }
 
     @AllArgsConstructor
