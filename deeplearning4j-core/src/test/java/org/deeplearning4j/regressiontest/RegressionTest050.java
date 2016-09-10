@@ -14,6 +14,8 @@ import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.io.File;
 
@@ -54,6 +56,7 @@ public class RegressionTest050 {
         OutputLayer l1 = (OutputLayer)conf.getConf(1).getLayer();
         assertEquals("softmax", l1.getActivationFunction());
         assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
+        assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.XAVIER, l1.getWeightInit());
@@ -96,6 +99,7 @@ public class RegressionTest050 {
         OutputLayer l1 = (OutputLayer)conf.getConf(1).getLayer();
         assertEquals("identity", l1.getActivationFunction());
         assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
+        assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
@@ -147,6 +151,7 @@ public class RegressionTest050 {
         OutputLayer l2 = (OutputLayer)conf.getConf(2).getLayer();
         assertEquals("sigmoid", l1.getActivationFunction());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
+        assertTrue(l2.getLossFn() instanceof LossMCXENT);   //TODO
         assertEquals(26*26*3, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
