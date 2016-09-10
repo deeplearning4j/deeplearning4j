@@ -75,7 +75,7 @@ public class OutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder(LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
+            super.lossFunction(lossFunction);
         }
         
         @Override
