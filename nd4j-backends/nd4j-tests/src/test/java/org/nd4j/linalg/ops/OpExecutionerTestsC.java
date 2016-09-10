@@ -666,6 +666,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testVarianceSingleVsMultipleDimensions(){
+        // this test should always run in double
+        DataBuffer.Type type = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
 
         //Generate C order random numbers. Strides: [500,100,10,1]
@@ -700,6 +703,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertArrayEquals(var2.data().asDouble(), var4.data().asDouble(), 1e-5);
         assertArrayEquals(manualVariance, var2.data().asDouble(), 1e-5);
         assertArrayEquals(var2bias.data().asDouble(), var4bias.data().asDouble(), 1e-5);
+
+        DataTypeUtil.setDTypeForContext(type);
     }
 
     @Override
