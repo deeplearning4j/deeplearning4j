@@ -180,7 +180,7 @@ public class ClusterUtils {
 							Cluster toCluster = clusterSet.getClusters().get(k);
 							double distance =
 									Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(clusterSet.getAccumulation(),
-											fromCluster.getCenter().getArray(),toCluster.getCenter().getArray())).currentResult().doubleValue();
+											fromCluster.getCenter().getArray(),toCluster.getCenter().getArray())).getFinalResult().doubleValue();
 							info.getDistancesBetweenClustersCenters().put(fromCluster.getId(), toCluster.getId(), distance);
 						}
 					} catch (Exception e) {
@@ -203,7 +203,7 @@ public class ClusterUtils {
 			double distance =
 					Nd4j.getExecutioner().execAndReturn(
 							Nd4j.getOpFactory().createAccum(distanceFunction,cluster.getCenter().getArray(),
-							point.getArray())).currentResult().doubleValue();
+							point.getArray())).getFinalResult().doubleValue();
 			info.getPointDistancesFromCenter().put(point.getId(), distance);
 			info.setTotalPointDistanceFromCenter(info.getTotalPointDistanceFromCenter() + distance);
 		}

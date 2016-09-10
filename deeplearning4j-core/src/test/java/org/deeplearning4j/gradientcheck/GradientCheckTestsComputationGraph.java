@@ -37,6 +37,7 @@ public class GradientCheckTestsComputationGraph {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -81,7 +82,7 @@ public class GradientCheckTestsComputationGraph {
             for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testBasicIris()";
@@ -130,7 +131,7 @@ public class GradientCheckTestsComputationGraph {
             for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testBasicIrisWithMerging()";
@@ -185,7 +186,7 @@ public class GradientCheckTestsComputationGraph {
                     System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
@@ -232,7 +233,7 @@ public class GradientCheckTestsComputationGraph {
                 System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testCnnDepthMerge()";
@@ -279,7 +280,7 @@ public class GradientCheckTestsComputationGraph {
                 System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testLSTMWithMerging()";
@@ -320,7 +321,7 @@ public class GradientCheckTestsComputationGraph {
                 System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testLSTMWithSubset()";
@@ -362,7 +363,7 @@ public class GradientCheckTestsComputationGraph {
         }
 
         //First: test with no input mask array
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testLSTMWithLastTimeStepVertex()";
@@ -374,7 +375,7 @@ public class GradientCheckTestsComputationGraph {
         inMask.putRow(1,Nd4j.create(new double[]{1,1,1,1,0}));
         inMask.putRow(2,Nd4j.create(new double[]{1,1,1,1,1}));
         graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
-        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         assertTrue(msg, gradOK);
@@ -419,7 +420,7 @@ public class GradientCheckTestsComputationGraph {
                 System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input1,input2}, new INDArray[]{labels});
 
         String msg = "testLSTMWithDuplicateToTimeSeries()";
