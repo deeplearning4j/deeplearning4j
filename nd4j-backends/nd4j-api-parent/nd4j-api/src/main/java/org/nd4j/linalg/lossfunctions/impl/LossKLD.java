@@ -54,7 +54,13 @@ public class LossKLD implements ILossFunction {
         INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
         grad = labels.div(output);
         grad.muli(outputder);
-        return grad.muli(-1);
+        grad.muli(-1);
+
+        if(mask != null){
+            grad.muliColumnVector(mask);
+        }
+
+        return grad;
     }
 
     @Override

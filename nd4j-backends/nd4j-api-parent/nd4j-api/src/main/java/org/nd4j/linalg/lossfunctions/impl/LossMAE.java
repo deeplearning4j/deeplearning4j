@@ -48,6 +48,11 @@ public class LossMAE implements ILossFunction {
         if (gradients.maxNumber().doubleValue() < Nd4j.EPS_THRESHOLD) return gradients;
         gradients.divi(postOutput.sub(labels));
         gradients.muli(postOutDer);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

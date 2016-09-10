@@ -70,6 +70,11 @@ public class LossSquaredHinge implements ILossFunction {
         //now calc gradient of squared hinge loss
         gradients.muli(2);
         gradients.muli(score);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

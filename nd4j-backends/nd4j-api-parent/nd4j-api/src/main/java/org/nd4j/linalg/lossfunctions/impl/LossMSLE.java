@@ -49,6 +49,11 @@ public class LossMSLE implements ILossFunction {
         gradients.muli(2);
         gradients.muli(postOutDer);
         gradients.divi(postOutput.addi(Nd4j.EPS_THRESHOLD));
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

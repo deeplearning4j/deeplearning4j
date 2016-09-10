@@ -50,6 +50,11 @@ public class LossMAPE implements ILossFunction {
         gradients.divi(postOutput.sub(labels)); //this gets me the sign +/- of the difference
         gradients.muli(postOutDer);
         gradients.divi(labels.addi(Nd4j.EPS_THRESHOLD)); //workaround for division by zero -> can be cleaner
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

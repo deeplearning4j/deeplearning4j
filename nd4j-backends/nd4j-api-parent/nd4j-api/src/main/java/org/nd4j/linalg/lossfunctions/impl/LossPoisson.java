@@ -56,6 +56,11 @@ public class LossPoisson implements ILossFunction{
         INDArray gradients = yDivyhat.muli(-1);
         gradients.addi(1);
         gradients.muli(postOutDer);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

@@ -69,6 +69,11 @@ public class LossCosineProximity implements ILossFunction {
         gradients.diviColumnVector(yhatL2norm.mul(yhatL2normSq));
         gradients.muli(postOutDer);
         gradients.muli(-1);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

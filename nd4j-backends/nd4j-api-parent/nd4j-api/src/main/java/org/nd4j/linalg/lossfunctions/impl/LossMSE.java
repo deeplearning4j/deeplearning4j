@@ -45,6 +45,11 @@ public class LossMSE implements ILossFunction {
 
         INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
         gradients.muli(postOutDer);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return  gradients;
     }
 

@@ -53,7 +53,7 @@ public class LossMCXENT implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1).mul(-1);
+        return scoreArr.sum(1).muli(-1);
     }
 
     @Override
@@ -68,6 +68,10 @@ public class LossMCXENT implements ILossFunction {
             INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             grad = labels.mul(outputder);
             grad.divi(output).muli(-1);
+        }
+
+        if(mask != null){
+            grad.muliColumnVector(mask);
         }
 
         return grad;

@@ -62,6 +62,11 @@ public class LossHinge implements ILossFunction {
         INDArray gradients = scoreAsFilter.mul(labels);
         gradients.muli(-1);
         gradients.muli(postOutDer);
+
+        if(mask != null){
+            gradients.muliColumnVector(mask);
+        }
+
         return gradients;
     }
 

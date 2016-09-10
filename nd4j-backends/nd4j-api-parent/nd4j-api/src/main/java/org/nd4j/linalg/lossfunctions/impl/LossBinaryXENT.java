@@ -67,6 +67,10 @@ public class LossBinaryXENT implements ILossFunction {
             grad.divi(output).muli(-1);
         }
 
+        if(mask != null){
+            grad.muliColumnVector(mask);
+        }
+
         return grad;
     }
 
