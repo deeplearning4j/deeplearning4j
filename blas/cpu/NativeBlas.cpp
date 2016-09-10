@@ -134,36 +134,28 @@ CBLAS_SIDE convertSide(int from) {
  */
 
 float Nd4jBlas::sdsdot(Nd4jPointer *extraParams,int N, float alpha,
-                       Nd4jPointer X, int incX,
-                       Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    return cblas_sdsdot(N,alpha,xPointer,incX,yPointer,incY);
+                       float *X, int incX,
+                       float *Y, int incY) {
+    return cblas_sdsdot(N,alpha,X,incX,Y,incY);
 
 }
 
 double Nd4jBlas::dsdot(Nd4jPointer *extraParams,int N,
-                       Nd4jPointer X, int incX,
-                       Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    return cblas_dsdot(N,xPointer,incX,yPointer,incY);
+                       float *X, int incX,
+                       float *Y, int incY) {
+    return cblas_dsdot(N,X,incX,Y,incY);
 }
 
 double Nd4jBlas::ddot(Nd4jPointer *extraParams,int N,
-                      Nd4jPointer X, int incX,
-                      Nd4jPointer Y, int incY) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    return cblas_ddot(N,xPointer,incX,yPointer,incY);
+                      double *X, int incX,
+                      double *Y, int incY) {
+    return cblas_ddot(N,X,incX,Y,incY);
 }
 
 float Nd4jBlas::sdot(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    return cblas_sdot(N,xPointer,incX,yPointer,incY);
+                     float *X, int incX,
+                     float *Y, int incY) {
+    return cblas_sdot(N,X,incX,Y,incY);
 }
 
 /*
@@ -172,15 +164,13 @@ float Nd4jBlas::sdot(Nd4jPointer *extraParams,int N,
  * ------------------------------------------------------
  */
 
-float Nd4jBlas::snrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    return cblas_snrm2(N,xPointer,incX);
+float Nd4jBlas::snrm2(Nd4jPointer *extraParams,int N, float *X, int incX) {
+    return cblas_snrm2(N,X,incX);
 
 }
 
-double Nd4jBlas::dnrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    return cblas_dnrm2(N,xPointer,incX);
+double Nd4jBlas::dnrm2(Nd4jPointer *extraParams,int N, double *X, int incX) {
+    return cblas_dnrm2(N,X,incX);
 }
 
 /*
@@ -189,15 +179,13 @@ double Nd4jBlas::dnrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) 
  * ------------------------------------------------------
  */
 
-float Nd4jBlas::sasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    return cblas_sasum(N,xPointer,incX);
+float Nd4jBlas::sasum(Nd4jPointer *extraParams,int N, float *X, int incX) {
+    return cblas_sasum(N,X,incX);
 
 }
 
-double Nd4jBlas::dasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    return cblas_dasum(N,xPointer,incX);
+double Nd4jBlas::dasum(Nd4jPointer *extraParams,int N, double *X, int incX) {
+    return cblas_dasum(N,X,incX);
 
 }
 
@@ -207,15 +195,13 @@ double Nd4jBlas::dasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) 
  * ------------------------------------------------------
  */
 
-int Nd4jBlas::isamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX){
-    float *xPointer = reinterpret_cast<float *>(X);
-    return cblas_isamax(N,xPointer,incX);
+int Nd4jBlas::isamax(Nd4jPointer *extraParams,int N, float *X, int incX){
+    return cblas_isamax(N,X,incX);
 
 }
 
-int Nd4jBlas::idamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    return cblas_idamax(N,xPointer,incX);
+int Nd4jBlas::idamax(Nd4jPointer *extraParams,int N, double *X, int incX) {
+    return cblas_idamax(N,X,incX);
 
 }
 
@@ -232,22 +218,18 @@ int Nd4jBlas::idamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX) {
  */
 
 void Nd4jBlas::srot(Nd4jPointer *extraParams,int N,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer Y, int incY,
+                    float *X, int incX,
+                    float *Y, int incY,
                     float c, float s) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_srot(N,xPointer,incX,yPointer,incY,c,s);
+    cblas_srot(N,X,incX,Y,incY,c,s);
 
 }
 
 void Nd4jBlas::drot(Nd4jPointer *extraParams,int N,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer Y, int incY,
+                    double *X, int incX,
+                    double *Y, int incY,
                     double c, double s) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_drot(N,xPointer,incX,yPointer,incY,c,s);
+    cblas_drot(N,X,incX,Y,incY,c,s);
 }
 
 /*
@@ -256,14 +238,12 @@ void Nd4jBlas::drot(Nd4jPointer *extraParams,int N,
  * ------------------------------------------------------
  */
 
-void Nd4jBlas::srotg(Nd4jPointer *extraParams,Nd4jPointer args) {
-    float *argsPointers = reinterpret_cast<float *>(args);
-    return cblas_srotg(&argsPointers[0],&argsPointers[1],&argsPointers[2],&argsPointers[3]);
+void Nd4jBlas::srotg(Nd4jPointer *extraParams,float *args) {
+    return cblas_srotg(&args[0],&args[1],&args[2],&args[3]);
 }
 
-void Nd4jBlas::drotg(Nd4jPointer *extraParams,Nd4jPointer args) {
-    double *argsPointers = reinterpret_cast<double *>(args);
-    cblas_drotg(&argsPointers[0],&argsPointers[1],&argsPointers[2],&argsPointers[3]);
+void Nd4jBlas::drotg(Nd4jPointer *extraParams,double *args) {
+    cblas_drotg(&args[0],&args[1],&args[2],&args[3]);
 
 }
 
@@ -273,19 +253,15 @@ void Nd4jBlas::drotg(Nd4jPointer *extraParams,Nd4jPointer args) {
  * ------------------------------------------------------
  */
 
-void Nd4jBlas::srotmg(Nd4jPointer *extraParams,Nd4jPointer args,
-                      Nd4jPointer P) {
-    float *argsPointers = reinterpret_cast<float *>(args);
-    float *pPointers = reinterpret_cast<float *>(P);
-    return cblas_srotmg(&argsPointers[0],&argsPointers[1],&argsPointers[2],argsPointers[3],pPointers);
+void Nd4jBlas::srotmg(Nd4jPointer *extraParams,float *args,
+                      float *P) {
+    return cblas_srotmg(&args[0],&args[1],&args[2],args[3],P);
 
 }
 
-void Nd4jBlas::drotmg(Nd4jPointer *extraParams,Nd4jPointer args,
-                      Nd4jPointer P) {
-    double *argsPointers = reinterpret_cast<double *>(args);
-    double *pPointers = reinterpret_cast<double *>(P);
-    cblas_drotmg(&argsPointers[0],&argsPointers[1],&argsPointers[2],argsPointers[3],pPointers);
+void Nd4jBlas::drotmg(Nd4jPointer *extraParams,double *args,
+                      double *P) {
+    cblas_drotmg(&args[0],&args[1],&args[2],args[3],P);
 
 }
 
@@ -296,24 +272,18 @@ void Nd4jBlas::drotmg(Nd4jPointer *extraParams,Nd4jPointer args,
  */
 
 void Nd4jBlas::srotm(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer P) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    float *pPointer = reinterpret_cast<float *>(P);
-    cblas_srotm(N,xPointer,incX,yPointer,incY,pPointer);
+                     float *X, int incX,
+                     float *Y, int incY,
+                     float *P) {
+    cblas_srotm(N,X,incX,Y,incY,P);
 
 }
 
 void Nd4jBlas::drotm(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer P) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    double *pPointer = reinterpret_cast<double *>(P);
-    cblas_drotm(N,xPointer,incX,yPointer,incY,pPointer);
+                     double *X, int incX,
+                     double *Y, int incY,
+                     double *P) {
+    cblas_drotm(N,X,incX,Y,incY,P);
 
 }
 
@@ -324,19 +294,15 @@ void Nd4jBlas::drotm(Nd4jPointer *extraParams,int N,
  */
 
 void Nd4jBlas::sswap(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_sswap(N,xPointer,incX,yPointer,incY);
+                     float *X, int incX,
+                     float *Y, int incY) {
+    cblas_sswap(N,X,incX,Y,incY);
 }
 
 void Nd4jBlas::dswap(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dswap(N,xPointer,incX,yPointer,incY);
+                     double *X, int incX,
+                     double *Y, int incY) {
+    cblas_dswap(N,X,incX,Y,incY);
 }
 
 /*
@@ -346,16 +312,14 @@ void Nd4jBlas::dswap(Nd4jPointer *extraParams,int N,
  */
 
 void Nd4jBlas::sscal(Nd4jPointer *extraParams,int N, float alpha,
-                     Nd4jPointer X, int incX){
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_sscal(N,alpha,xPointer,incX);
+                     float *X, int incX){
+    cblas_sscal(N,alpha,X,incX);
 
 }
 
 void Nd4jBlas::dscal(Nd4jPointer *extraParams,int N, double alpha,
-                     Nd4jPointer X, int incX){
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dscal(N,alpha,xPointer,incX);
+                     double *X, int incX){
+    cblas_dscal(N,alpha,X,incX);
 
 }
 
@@ -366,19 +330,15 @@ void Nd4jBlas::dscal(Nd4jPointer *extraParams,int N, double alpha,
  */
 
 void Nd4jBlas::scopy(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_scopy(N,xPointer,incX,yPointer,incY);
+                     float *X, int incX,
+                     float *Y, int incY) {
+    cblas_scopy(N,X,incX,Y,incY);
 }
 
 void Nd4jBlas::dcopy(Nd4jPointer *extraParams,int N,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY){
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dcopy(N,xPointer,incX,yPointer,incY);
+                     double *X, int incX,
+                     double *Y, int incY){
+    cblas_dcopy(N,X,incX,Y,incY);
 }
 
 /*
@@ -388,19 +348,15 @@ void Nd4jBlas::dcopy(Nd4jPointer *extraParams,int N,
  */
 
 void Nd4jBlas::saxpy(Nd4jPointer *extraParams,int N, float alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_saxpy(N,alpha,xPointer,incX,yPointer,incY);
+                     float *X, int incX,
+                     float *Y, int incY) {
+    cblas_saxpy(N,alpha,X,incX,Y,incY);
 }
 
 void Nd4jBlas::daxpy(Nd4jPointer *extraParams,int N, double alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_daxpy(N,alpha,xPointer,incX,yPointer,incY);
+                     double *X, int incX,
+                     double *Y, int incY) {
+    cblas_daxpy(N,alpha,X,incX,Y,incY);
 }
 
 /*
@@ -419,28 +375,22 @@ void Nd4jBlas::daxpy(Nd4jPointer *extraParams,int N, double alpha,
 void Nd4jBlas::sgemv(Nd4jPointer *extraParams,int Order, int TransA,
                      int M, int N,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     float *A, int lda,
+                     float *X, int incX,
                      float beta,
-                     Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    float *aPointer = reinterpret_cast<float *>(A);
-    cblas_sgemv(convertOrder(Order),convertTranspose(TransA),M,N,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     float *Y, int incY) {
+    cblas_sgemv(convertOrder(Order),convertTranspose(TransA),M,N,alpha,A,lda,X,incX,beta,Y,incY);
 
 }
 
 void Nd4jBlas::dgemv(Nd4jPointer *extraParams,int Order, int TransA,
                      int M, int N,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     double *A, int lda,
+                     double *X, int incX,
                      double beta,
-                     Nd4jPointer Y, int incY) {
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    double *aPointer = reinterpret_cast<double *>(A);
-    cblas_dgemv(convertOrder(Order),convertTranspose(TransA),M,N,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     double *Y, int incY) {
+    cblas_dgemv(convertOrder(Order),convertTranspose(TransA),M,N,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 /*
@@ -453,29 +403,22 @@ void Nd4jBlas::sgbmv(Nd4jPointer *extraParams,int Order, int TransA,
                      int M, int N,
                      int KL, int KU,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     float *A, int lda,
+                     float *X, int incX,
                      float beta,
-                     Nd4jPointer Y, int incY) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_sgbmv(convertOrder(Order),convertTranspose(TransA),N,N,KL,KU,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     float *Y, int incY) {
+    cblas_sgbmv(convertOrder(Order),convertTranspose(TransA),N,N,KL,KU,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 void Nd4jBlas::dgbmv(Nd4jPointer *extraParams,int Order, int TransA,
                      int M, int N,
                      int KL, int KU,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     double *A, int lda,
+                     double *X, int incX,
                      double beta,
-                     Nd4jPointer Y, int incY) {
-
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dgbmv(convertOrder(Order),convertTranspose(TransA),M,N,KL,KU,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     double *Y, int incY) {
+    cblas_dgbmv(convertOrder(Order),convertTranspose(TransA),M,N,KL,KU,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 /*
@@ -487,27 +430,21 @@ void Nd4jBlas::dgbmv(Nd4jPointer *extraParams,int Order, int TransA,
 void Nd4jBlas::ssymv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     float *A, int lda,
+                     float *X, int incX,
                      float beta,
-                     Nd4jPointer Y, int incY) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_ssymv(convertOrder(Order),convertUplo(Uplo),N,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     float *Y, int incY) {
+    cblas_ssymv(convertOrder(Order),convertUplo(Uplo),N,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 void Nd4jBlas::dsymv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     double *A, int lda,
+                     double *X, int incX,
                      double beta,
-                     Nd4jPointer Y, int incY) {
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dsymv(convertOrder(Order),convertUplo(Uplo),N,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     double *Y, int incY) {
+    cblas_dsymv(convertOrder(Order),convertUplo(Uplo),N,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 /*
@@ -519,27 +456,21 @@ void Nd4jBlas::dsymv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::ssbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N, int K,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     float *A, int lda,
+                     float *X, int incX,
                      float beta,
-                     Nd4jPointer Y, int incY) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_ssbmv(convertOrder(Order),convertUplo(Uplo),N,K,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     float *Y, int incY) {
+    cblas_ssbmv(convertOrder(Order),convertUplo(Uplo),N,K,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 void Nd4jBlas::dsbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N, int K,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX,
+                     double *A, int lda,
+                     double *X, int incX,
                      double beta,
-                     Nd4jPointer Y, int incY){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dsbmv(convertOrder(Order),convertUplo(Uplo),N,K,alpha,aPointer,lda,xPointer,incX,beta,yPointer,incY);
+                     double *Y, int incY){
+    cblas_dsbmv(convertOrder(Order),convertUplo(Uplo),N,K,alpha,A,lda,X,incX,beta,Y,incY);
 }
 
 /*
@@ -551,27 +482,21 @@ void Nd4jBlas::dsbmv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::sspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      float alpha,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX,
+                     float *Ap,
+                     float *X, int incX,
                      float beta,
-                     Nd4jPointer Y, int incY){
-    float *apPointer = reinterpret_cast<float *>(Ap);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_sspmv(convertOrder(Order),convertUplo(Uplo),N,alpha,apPointer,xPointer,incX,beta,yPointer,incY);
+                     float *Y, int incY){
+    cblas_sspmv(convertOrder(Order),convertUplo(Uplo),N,alpha,Ap,X,incX,beta,Y,incY);
 }
 
 void Nd4jBlas::dspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      double alpha,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX,
+                     double *Ap,
+                     double *X, int incX,
                      double beta,
-                     Nd4jPointer Y, int incY){
-    double *apPointer = reinterpret_cast<double *>(Ap);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dspmv(convertOrder(Order),convertUplo(Uplo),N,alpha,apPointer,xPointer,incX,beta,yPointer,incY);
+                     double *Y, int incY){
+    cblas_dspmv(convertOrder(Order),convertUplo(Uplo),N,alpha,Ap,X,incX,beta,Y,incY);
 }
 
 /*
@@ -583,20 +508,16 @@ void Nd4jBlas::dspmv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::strmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,
                      int Diag,
                      int N, float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_strmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,aPointer,lda,xPointer,incX);
+                     float *A, int lda,
+                     float *X, int incX){
+    cblas_strmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,A,lda,X,incX);
 }
 
 void Nd4jBlas::dtrmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,int Diag,
                      int N, double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtrmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,aPointer,lda,xPointer,incX);
+                     double *A, int lda,
+                     double *X, int incX){
+    cblas_dtrmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,A,lda,X,incX);
 }
 
 /*
@@ -608,21 +529,17 @@ void Nd4jBlas::dtrmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,in
 void Nd4jBlas::stbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N, int K,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_stbmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,aPointer,lda,xPointer,incX);
+                     float *A, int lda,
+                     float *X, int incX){
+    cblas_stbmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,A,lda,X,incX);
 }
 
 void Nd4jBlas::dtbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N, int K,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtbmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,aPointer,lda,xPointer,incX);
+                     double *A, int lda,
+                     double *X, int incX){
+    cblas_dtbmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,A,lda,X,incX);
 }
 
 /*
@@ -634,21 +551,17 @@ void Nd4jBlas::dtbmv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::stpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX){
-    float *apPointer = reinterpret_cast<float *>(Ap);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_stpmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,apPointer,xPointer,incX);
+                     float *Ap,
+                     float *X, int incX){
+    cblas_stpmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,Ap,X,incX);
 }
 
 void Nd4jBlas::dtpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX) {
-    double *apPointer = reinterpret_cast<double *>(Ap);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtpmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,apPointer,xPointer,incX);
+                     double *Ap,
+                     double *X, int incX) {
+    cblas_dtpmv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,Ap,X,incX);
 
 }
 
@@ -661,21 +574,17 @@ void Nd4jBlas::dtpmv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::strsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_strsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,aPointer,lda,xPointer,incX);
+                     float *A, int lda,
+                     float *X, int incX){
+    cblas_strsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,A,lda,X,incX);
 }
 
 void Nd4jBlas::dtrsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtrsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,aPointer,lda,xPointer,incX);
+                     double *A, int lda,
+                     double *X, int incX){
+    cblas_dtrsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,A,lda,X,incX);
 
 }
 
@@ -688,22 +597,18 @@ void Nd4jBlas::dtrsv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::stbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N, int K,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_stbsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,aPointer,lda,xPointer,incX);
+                     float *A, int lda,
+                     float *X, int incX) {
+    cblas_stbsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,A,lda,X,incX);
 
 }
 
 void Nd4jBlas::dtbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N, int K,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer X, int incX){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtbsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,aPointer,lda,xPointer,incX);
+                     double *A, int lda,
+                     double *X, int incX){
+    cblas_dtbsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,A,lda,X,incX);
 
 }
 
@@ -716,21 +621,17 @@ void Nd4jBlas::dtbsv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::stpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX){
-    float *apPointer = reinterpret_cast<float *>(Ap);
-    float *xPointer = reinterpret_cast<float *>(X);
-    cblas_stpsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,apPointer,xPointer,incX);
+                     float *Ap,
+                     float *X, int incX){
+    cblas_stpsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,Ap,X,incX);
 }
 
 void Nd4jBlas::dtpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                      int TransA, int Diag,
                      int N,
-                     Nd4jPointer Ap,
-                     Nd4jPointer X, int incX){
-    double *apPointer = reinterpret_cast<double *>(Ap);
-    double *xPointer = reinterpret_cast<double *>(X);
-    cblas_dtpsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,apPointer,xPointer,incX);
+                     double *Ap,
+                     double *X, int incX){
+    cblas_dtpsv(convertOrder(Order),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,Ap,X,incX);
 
 }
 
@@ -743,25 +644,19 @@ void Nd4jBlas::dtpsv(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::sger(Nd4jPointer *extraParams,int Order,
                     int M, int N,
                     float alpha,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer Y, int incY,
-                    Nd4jPointer A, int lda){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_sger(convertOrder(Order),M,N,alpha,xPointer,incX,yPointer,incY,aPointer,lda);
+                    float *X, int incX,
+                    float *Y, int incY,
+                    float *A, int lda){
+    cblas_sger(convertOrder(Order),M,N,alpha,X,incX,Y,incY,A,lda);
 }
 
 void Nd4jBlas::dger(Nd4jPointer *extraParams,int Order,
                     int M, int N,
                     double alpha,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer Y, int incY,
-                    Nd4jPointer A, int lda){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dger(convertOrder(Order),M,N,alpha,xPointer,incX,yPointer,incY,aPointer,lda);
+                    double *X, int incX,
+                    double *Y, int incY,
+                    double *A, int lda){
+    cblas_dger(convertOrder(Order),M,N,alpha,X,incX,Y,incY,A,lda);
 }
 
 /*
@@ -773,21 +668,17 @@ void Nd4jBlas::dger(Nd4jPointer *extraParams,int Order,
 void Nd4jBlas::ssyr(Nd4jPointer *extraParams,int Order, int Uplo,
                     int N,
                     float alpha,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer A, int lda){
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *aPointer = reinterpret_cast<float *>(A);
-    cblas_ssyr(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,aPointer,lda);
+                    float *X, int incX,
+                    float *A, int lda){
+    cblas_ssyr(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,A,lda);
 }
 
 void Nd4jBlas::dsyr(Nd4jPointer *extraParams,int Order, int Uplo,
                     int N,
                     double alpha,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer A, int lda){
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *aPointer = reinterpret_cast<double *>(A);
-    cblas_dsyr(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,aPointer,lda);
+                    double *X, int incX,
+                    double *A, int lda){
+    cblas_dsyr(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,A,lda);
 
 }
 
@@ -802,22 +693,18 @@ void Nd4jBlas::sspr(Nd4jPointer *extraParams,
                     int Uplo,
                     int N,
                     float alpha,
-                    Nd4jPointer X,
+                    float *X,
                     int incX,
-                    Nd4jPointer Ap){
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *apPointer = reinterpret_cast<float *>(Ap);
-    cblas_sspr(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,apPointer);
+                    float *Ap){
+    cblas_sspr(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Ap);
 }
 
 void Nd4jBlas::dspr(Nd4jPointer *extraParams,int Order, int Uplo,
                     int N,
                     double alpha,
-                    Nd4jPointer X, int incX,
-                    Nd4jPointer Ap){
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *apPointer = reinterpret_cast<double *>(Ap);
-    cblas_dspr(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,apPointer);
+                    double *X, int incX,
+                    double *Ap){
+    cblas_dspr(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Ap);
 
 }
 
@@ -830,25 +717,19 @@ void Nd4jBlas::dspr(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::ssyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      float alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer A, int lda) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_ssyr2(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,yPointer,incY,aPointer,lda);
+                     float *X, int incX,
+                     float *Y, int incY,
+                     float *A, int lda) {
+    cblas_ssyr2(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Y,incY,A,lda);
 }
 
 void Nd4jBlas::dsyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      double alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer A, int lda){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dsyr2(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,yPointer,incY,aPointer,lda);
+                     double *X, int incX,
+                     double *Y, int incY,
+                     double *A, int lda){
+    cblas_dsyr2(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Y,incY,A,lda);
 }
 
 /*
@@ -860,25 +741,19 @@ void Nd4jBlas::dsyr2(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::sspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      float alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer Ap){
-    float *apPointer = reinterpret_cast<float *>(Ap);
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cblas_sspr2(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,yPointer,incY,apPointer);
+                     float *X, int incX,
+                     float *Y, int incY,
+                     float *Ap){
+    cblas_sspr2(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Y,incY,Ap);
 }
 
 void Nd4jBlas::dspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                      int N,
                      double alpha,
-                     Nd4jPointer X, int incX,
-                     Nd4jPointer Y, int incY,
-                     Nd4jPointer Ap){
-    double *apPointer = reinterpret_cast<double *>(Ap);
-    double *xPointer = reinterpret_cast<double *>(X);
-    double *yPointer = reinterpret_cast<double *>(Y);
-    cblas_dspr2(convertOrder(Order),convertUplo(Uplo),N,alpha,xPointer,incX,yPointer,incY,apPointer);
+                     double *X, int incX,
+                     double *Y, int incY,
+                     double *Ap){
+    cblas_dspr2(convertOrder(Order),convertUplo(Uplo),N,alpha,X,incX,Y,incY,Ap);
 }
 
 /*
@@ -896,37 +771,31 @@ void Nd4jBlas::dspr2(Nd4jPointer *extraParams,int Order, int Uplo,
 void Nd4jBlas::hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      int M, int N, int K,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb,
+                     float16 *A, int lda,
+                     float16 *B, int ldb,
                      float beta,
-                     Nd4jPointer C, int ldc) {
+                     float16 *C, int ldc) {
     // no-op
 }
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      int M, int N, int K,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb,
+                     float *A, int lda,
+                     float *B, int ldb,
                      float beta,
-                     Nd4jPointer C, int ldc) {
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *bPointer = reinterpret_cast<float *>(B);
-    float *cPointer = reinterpret_cast<float *>(C);
-    cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                     float *C, int ldc) {
+    cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      int M, int N, int K,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb,
+                     double *A, int lda,
+                     double *B, int ldb,
                      double beta,
-                     Nd4jPointer C, int ldc){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *bPointer = reinterpret_cast<double *>(B);
-    double *cPointer = reinterpret_cast<double *>(C);
-    cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                     double *C, int ldc){
+    cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 /*
@@ -938,27 +807,21 @@ void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
 void Nd4jBlas::ssymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                      int M, int N,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb,
+                     float *A, int lda,
+                     float *B, int ldb,
                      float beta,
-                     Nd4jPointer C, int ldc){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *bPointer = reinterpret_cast<float *>(B);
-    float *cPointer = reinterpret_cast<float *>(C);
-    cblas_ssymm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),M,N,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                     float *C, int ldc){
+    cblas_ssymm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),M,N,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 void Nd4jBlas::dsymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                      int M, int N,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb,
+                     double *A, int lda,
+                     double *B, int ldb,
                      double beta,
-                     Nd4jPointer C, int ldc){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *bPointer = reinterpret_cast<double *>(B);
-    double *cPointer = reinterpret_cast<double *>(C);
-    cblas_dsymm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),M,N,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                     double *C, int ldc){
+    cblas_dsymm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),M,N,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 /*
@@ -970,23 +833,19 @@ void Nd4jBlas::dsymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
 void Nd4jBlas::ssyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                      int N, int K,
                      float alpha,
-                     Nd4jPointer A, int lda,
+                     float *A, int lda,
                      float beta,
-                     Nd4jPointer C, int ldc){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *cPointer = reinterpret_cast<float *>(C);
-    cblas_ssyrk(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,aPointer,lda,beta,cPointer,ldc);
+                     float *C, int ldc){
+    cblas_ssyrk(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,A,lda,beta,C,ldc);
 }
 
 void Nd4jBlas::dsyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                      int N, int K,
                      double alpha,
-                     Nd4jPointer A, int lda,
+                     double *A, int lda,
                      double beta,
-                     Nd4jPointer C, int ldc){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *cPointer = reinterpret_cast<double *>(C);
-    cblas_dsyrk(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,aPointer,lda,beta,cPointer,ldc);
+                     double *C, int ldc){
+    cblas_dsyrk(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,A,lda,beta,C,ldc);
 }
 
 /*
@@ -998,27 +857,21 @@ void Nd4jBlas::dsyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
 void Nd4jBlas::ssyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                       int N, int K,
                       float alpha,
-                      Nd4jPointer A, int lda,
-                      Nd4jPointer B, int ldb,
+                      float *A, int lda,
+                      float *B, int ldb,
                       float beta,
-                      Nd4jPointer C, int ldc){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *bPointer = reinterpret_cast<float *>(B);
-    float *cPointer = reinterpret_cast<float *>(C);
-    cblas_ssyr2k(convertOrder(Trans),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                      float *C, int ldc){
+    cblas_ssyr2k(convertOrder(Trans),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 void Nd4jBlas::dsyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                       int N, int K,
                       double alpha,
-                      Nd4jPointer A, int lda,
-                      Nd4jPointer B, int ldb,
+                      double *A, int lda,
+                      double *B, int ldb,
                       double beta,
-                      Nd4jPointer C, int ldc) {
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *bPointer = reinterpret_cast<double *>(B);
-    double *cPointer = reinterpret_cast<double *>(C);
-    cblas_dsyr2k(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,aPointer,lda,bPointer,ldb,beta,cPointer,ldc);
+                      double *C, int ldc) {
+    cblas_dsyr2k(convertOrder(Order),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
 /*
@@ -1031,22 +884,18 @@ void Nd4jBlas::strmm(Nd4jPointer *extraParams,int Order, int Side,
                      int Uplo, int TransA, int Diag,
                      int M, int N,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *bPointer = reinterpret_cast<float *>(B);
-    cblas_strmm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,aPointer,lda,bPointer,ldb);
+                     float *A, int lda,
+                     float *B, int ldb){
+    cblas_strmm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,A,lda,B,ldb);
 }
 
 void Nd4jBlas::dtrmm(Nd4jPointer *extraParams,int Order, int Side,
                      int Uplo, int TransA, int Diag,
                      int M, int N,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *bPointer = reinterpret_cast<double *>(B);
-    cblas_dtrmm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,aPointer,lda,bPointer,ldb);
+                     double *A, int lda,
+                     double *B, int ldb){
+    cblas_dtrmm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,A,lda,B,ldb);
 }
 
 /*
@@ -1059,21 +908,17 @@ void Nd4jBlas::strsm(Nd4jPointer *extraParams,int Order, int Side,
                      int Uplo, int TransA, int Diag,
                      int M, int N,
                      float alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb){
-    float *aPointer = reinterpret_cast<float *>(A);
-    float *bPointer = reinterpret_cast<float *>(B);
-    cblas_strsm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,aPointer,lda,bPointer,ldb);
+                     float *A, int lda,
+                     float *B, int ldb){
+    cblas_strsm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,A,lda,B,ldb);
 }
 
 void Nd4jBlas::dtrsm(Nd4jPointer *extraParams,int Order, int Side,
                      int Uplo, int TransA, int Diag,
                      int M, int N,
                      double alpha,
-                     Nd4jPointer A, int lda,
-                     Nd4jPointer B, int ldb){
-    double *aPointer = reinterpret_cast<double *>(A);
-    double *bPointer = reinterpret_cast<double *>(B);
-    cblas_dtrsm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,aPointer,lda,bPointer,ldb);
+                     double *A, int lda,
+                     double *B, int ldb){
+    cblas_dtrsm(convertOrder(Order),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),M,N,alpha,A,lda,B,ldb);
 }
 

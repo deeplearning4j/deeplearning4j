@@ -17,6 +17,7 @@
 #define ND4J_EXPORT
 #endif
 #include <dll.h>
+#include <types/float16.h>
 
 class ND4J_EXPORT Nd4jBlas {
 public:
@@ -35,20 +36,20 @@ public:
      */
 
     float sdsdot(Nd4jPointer *extraParams,int N, float alpha,
-                 Nd4jPointer X, int incX,
-                 Nd4jPointer Y, int incY);
+                 float *X, int incX,
+                 float *Y, int incY);
 
     double dsdot(Nd4jPointer *extraParams,int N,
-                 Nd4jPointer X, int incX,
-                 Nd4jPointer Y, int incY);
+                 float *X, int incX,
+                 float *Y, int incY);
 
     double ddot(Nd4jPointer *extraParams,int N,
-                Nd4jPointer X, int incX,
-                Nd4jPointer Y, int incY);
+                double *X, int incX,
+                double *Y, int incY);
 
     float sdot(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               float *X, int incX,
+               float *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -56,9 +57,9 @@ public:
      * ------------------------------------------------------
      */
 
-    float snrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    float snrm2(Nd4jPointer *extraParams,int N, float *X, int incX);
 
-    double dnrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    double dnrm2(Nd4jPointer *extraParams,int N, double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -66,9 +67,9 @@ public:
      * ------------------------------------------------------
      */
 
-    float sasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    float sasum(Nd4jPointer *extraParams,int N, float *X, int incX);
 
-    double dasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    double dasum(Nd4jPointer *extraParams,int N, double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -76,9 +77,9 @@ public:
      * ------------------------------------------------------
      */
 
-    int isamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    int isamax(Nd4jPointer *extraParams,int N, float *X, int incX);
 
-    int idamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
+    int idamax(Nd4jPointer *extraParams,int N, double *X, int incX);
 
     /*
      * ======================================================
@@ -93,13 +94,13 @@ public:
      */
 
     void srot(Nd4jPointer *extraParams,int N,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Y, int incY,
+              float *X, int incX,
+              float *Y, int incY,
               float c, float s);
 
     void drot(Nd4jPointer *extraParams,int N,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Y, int incY,
+              double *X, int incX,
+              double *Y, int incY,
               double c, double s);
 
     /*
@@ -108,9 +109,9 @@ public:
      * ------------------------------------------------------
      */
 
-    void srotg(Nd4jPointer *extraParams,Nd4jPointer args);
+    void srotg(Nd4jPointer *extraParams,float *args);
 
-    void drotg(Nd4jPointer *extraParams,Nd4jPointer args);
+    void drotg(Nd4jPointer *extraParams,double *args);
 
     /*
      * ------------------------------------------------------
@@ -118,11 +119,11 @@ public:
      * ------------------------------------------------------
      */
 
-    void srotmg(Nd4jPointer *extraParams,Nd4jPointer args,
-                Nd4jPointer P);
+    void srotmg(Nd4jPointer *extraParams,float *args,
+                float *P);
 
-    void drotmg(Nd4jPointer *extraParams,Nd4jPointer args,
-                Nd4jPointer P);
+    void drotmg(Nd4jPointer *extraParams,double *args,
+                double *P);
 
     /*
      * ------------------------------------------------------
@@ -131,14 +132,14 @@ public:
      */
 
     void srotm(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer P);
+               float *X, int incX,
+               float *Y, int incY,
+               float *P);
 
     void drotm(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer P);
+               double *X, int incX,
+               double *Y, int incY,
+               double *P);
 
     /*
      * ------------------------------------------------------
@@ -147,12 +148,12 @@ public:
      */
 
     void sswap(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               float *X, int incX,
+               float *Y, int incY);
 
     void dswap(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               double *X, int incX,
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -161,10 +162,10 @@ public:
      */
 
     void sscal(Nd4jPointer *extraParams,int N, float alpha,
-               Nd4jPointer X, int incX);
+               float *X, int incX);
 
     void dscal(Nd4jPointer *extraParams,int N, double alpha,
-               Nd4jPointer X, int incX);
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -173,12 +174,12 @@ public:
      */
 
     void scopy(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               float *X, int incX,
+               float *Y, int incY);
 
     void dcopy(Nd4jPointer *extraParams,int N,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               double *X, int incX,
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -187,12 +188,12 @@ public:
      */
 
     void saxpy(Nd4jPointer *extraParams,int N, float alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               float *X, int incX,
+               float *Y, int incY);
 
     void daxpy(Nd4jPointer *extraParams,int N, double alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY);
+               double *X, int incX,
+               double *Y, int incY);
 
     /*
      * ======================================================
@@ -210,18 +211,18 @@ public:
     void sgemv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               float *A, int lda,
+               float *X, int incX,
                float beta,
-               Nd4jPointer Y, int incY);
+               float *Y, int incY);
 
     void dgemv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               double *A, int lda,
+               double *X, int incX,
                double beta,
-               Nd4jPointer Y, int incY);
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -233,19 +234,19 @@ public:
                int M, int N,
                int KL, int KU,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               float *A, int lda,
+               float *X, int incX,
                float beta,
-               Nd4jPointer Y, int incY);
+               float *Y, int incY);
 
     void dgbmv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
                int KL, int KU,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               double *A, int lda,
+               double *X, int incX,
                double beta,
-               Nd4jPointer Y, int incY);
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -256,18 +257,18 @@ public:
     void ssymv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               float *A, int lda,
+               float *X, int incX,
                float beta,
-               Nd4jPointer Y, int incY);
+               float *Y, int incY);
 
     void dsymv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               double *A, int lda,
+               double *X, int incX,
                double beta,
-               Nd4jPointer Y, int incY);
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -278,18 +279,18 @@ public:
     void ssbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N, int K,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               float *A, int lda,
+               float *X, int incX,
                float beta,
-               Nd4jPointer Y, int incY);
+               float *Y, int incY);
 
     void dsbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N, int K,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX,
+               double *A, int lda,
+               double *X, int incX,
                double beta,
-               Nd4jPointer Y, int incY);
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -300,18 +301,18 @@ public:
     void sspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX,
+               float *Ap,
+               float *X, int incX,
                float beta,
-               Nd4jPointer Y, int incY);
+               float *Y, int incY);
 
     void dspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX,
+               double *Ap,
+               double *X, int incX,
                double beta,
-               Nd4jPointer Y, int incY);
+               double *Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -322,13 +323,13 @@ public:
     void strmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               float *A, int lda,
+               float *X, int incX);
     void dtrmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               double *A, int lda,
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -339,14 +340,14 @@ public:
     void stbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               float *A, int lda,
+               float *X, int incX);
 
     void dtbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               double *A, int lda,
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -357,14 +358,14 @@ public:
     void stpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX);
+               float *Ap,
+               float *X, int incX);
 
     void dtpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX);
+               double *Ap,
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -375,14 +376,14 @@ public:
     void strsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               float *A, int lda,
+               float *X, int incX);
 
     void dtrsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               double *A, int lda,
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -393,14 +394,14 @@ public:
     void stbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               float *A, int lda,
+               float *X, int incX);
 
     void dtbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               Nd4jPointer A, int lda,
-               Nd4jPointer X, int incX);
+               double *A, int lda,
+               double *X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -411,14 +412,14 @@ public:
     void stpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX);
+               float *Ap,
+               float *X, int incX);
 
     void dtpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               Nd4jPointer Ap,
-               Nd4jPointer X, int incX);
+               double *Ap,
+               double *X, int incX);
     /*
      * ------------------------------------------------------
      * GER
@@ -428,16 +429,16 @@ public:
     void sger(Nd4jPointer *extraParams,int Order,
               int M, int N,
               float alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Y, int incY,
-              Nd4jPointer A, int lda);
+              float *X, int incX,
+              float *Y, int incY,
+              float *A, int lda);
 
     void dger(Nd4jPointer *extraParams,int Order,
               int M, int N,
               double alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Y, int incY,
-              Nd4jPointer A, int lda);
+              double *X, int incX,
+              double *Y, int incY,
+              double *A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -448,14 +449,14 @@ public:
     void ssyr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               float alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer A, int lda);
+              float *X, int incX,
+              float *A, int lda);
 
     void dsyr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               double alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer A, int lda);
+              double *X, int incX,
+              double *A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -466,14 +467,14 @@ public:
     void sspr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               float alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Ap);
+              float *X, int incX,
+              float *Ap);
 
     void dspr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               double alpha,
-              Nd4jPointer X, int incX,
-              Nd4jPointer Ap);
+              double *X, int incX,
+              double *Ap);
 
     /*
      * ------------------------------------------------------
@@ -484,16 +485,16 @@ public:
     void ssyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer A, int lda);
+               float *X, int incX,
+               float *Y, int incY,
+               float *A, int lda);
 
     void dsyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer A, int lda);
+               double *X, int incX,
+               double *Y, int incY,
+               double *A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -504,16 +505,16 @@ public:
     void sspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer Ap);
+               float *X, int incX,
+               float *Y, int incY,
+               float *Ap);
 
     void dspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               Nd4jPointer X, int incX,
-               Nd4jPointer Y, int incY,
-               Nd4jPointer Ap);
+               double *X, int incX,
+               double *Y, int incY,
+               double *Ap);
 
     /*
      * ======================================================
@@ -530,27 +531,27 @@ public:
     void hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb,
+               float16 *A, int lda,
+               float16 *B, int ldb,
                float beta,
-               Nd4jPointer C, int ldc);
+               float16 *C, int ldc);
 
 
     void sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb,
+               float *A, int lda,
+               float *B, int ldb,
                float beta,
-               Nd4jPointer C, int ldc);
+               float *C, int ldc);
 
     void dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb,
+               double *A, int lda,
+               double *B, int ldb,
                double beta,
-               Nd4jPointer C, int ldc);
+               double *C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -561,18 +562,18 @@ public:
     void ssymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                int M, int N,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb,
+               float *A, int lda,
+               float *B, int ldb,
                float beta,
-               Nd4jPointer C, int ldc);
+               float *C, int ldc);
 
     void dsymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                int M, int N,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb,
+               double *A, int lda,
+               double *B, int ldb,
                double beta,
-               Nd4jPointer C, int ldc);
+               double *C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -583,16 +584,16 @@ public:
     void ssyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
                float alpha,
-               Nd4jPointer A, int lda,
+               float *A, int lda,
                float beta,
-               Nd4jPointer C, int ldc);
+               float *C, int ldc);
 
     void dsyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
                double alpha,
-               Nd4jPointer A, int lda,
+               double *A, int lda,
                double beta,
-               Nd4jPointer C, int ldc);
+               double *C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -603,18 +604,18 @@ public:
     void ssyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
                 float alpha,
-                Nd4jPointer A, int lda,
-                Nd4jPointer B, int ldb,
+                float *A, int lda,
+                float *B, int ldb,
                 float beta,
-                Nd4jPointer C, int ldc);
+                float *C, int ldc);
 
     void dsyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
                 double alpha,
-                Nd4jPointer A, int lda,
-                Nd4jPointer B, int ldb,
+                double *A, int lda,
+                double *B, int ldb,
                 double beta,
-                Nd4jPointer C, int ldc);
+                double *C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -626,15 +627,15 @@ public:
                int Uplo, int TransA, int Diag,
                int M, int N,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb);
+               float *A, int lda,
+               float *B, int ldb);
 
     void dtrmm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb);
+               double *A, int lda,
+               double *B, int ldb);
 
     /*
      * ------------------------------------------------------
@@ -646,15 +647,15 @@ public:
                int Uplo, int TransA, int Diag,
                int M, int N,
                float alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb);
+               float *A, int lda,
+               float *B, int ldb);
 
     void dtrsm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                double alpha,
-               Nd4jPointer A, int lda,
-               Nd4jPointer B, int ldb);
+               double *A, int lda,
+               double *B, int ldb);
 
 };
 
