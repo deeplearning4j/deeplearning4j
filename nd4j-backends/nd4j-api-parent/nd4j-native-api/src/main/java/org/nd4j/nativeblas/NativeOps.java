@@ -59,6 +59,9 @@ public class NativeOps extends Pointer {
 
 
     private static int getCores(int totals) {
+        // that's special case for Xeon Phi
+        if (totals >= 256) return  64;
+
         int ht_off = totals / 2; // we count off HyperThreading without any excuses
 
         if (ht_off > 24) {
