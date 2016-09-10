@@ -2,6 +2,7 @@ package org.nd4j.linalg.dataset;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -59,6 +60,10 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         this.labels = labels;
         this.featuresMaskArrays = featuresMaskArrays;
         this.labelsMaskArrays = labelsMaskArrays;
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
     }
 
 
