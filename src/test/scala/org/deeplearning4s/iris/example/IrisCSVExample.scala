@@ -54,7 +54,7 @@ object IrisCSVExample extends App {
 
   // Reading in the Dataset
   val recordReader = new CSVRecordReader(numLinesToSkip, delimiter)
-  recordReader.initialize(new FileSplit(new ClassPathResource("iris.csv").getFile))
+  recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile))
   val iterator: DataSetIterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses)
 
   // Preparing the Dataset for Training
@@ -81,6 +81,7 @@ object IrisCSVExample extends App {
   val evaluator = new Evaluation(3)
   val output: INDArray = model.predict(test_data.getFeatureMatrix)
   evaluator.eval(test_data.getLabels, output)
+  log.info("Number of Test Examples: " + test_data.getLabels.rows().toString)
   log.info(evaluator.stats())
 
   log.info("**************** CSV example finished ********************")
