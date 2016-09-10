@@ -426,7 +426,7 @@ template<typename OpType>
 
                     // tad-oriented rotation technically
 
-                    int tadsPerThread = xShape[0] / 32;
+                    int tadsPerThread = xShape[0] / TAD_THRESHOLD;
                     int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
@@ -507,14 +507,16 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     int *yStride = shape::stride(yShapeBuffer);
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
+
+                    int elementsPerThread = n / ELEMENT_THRESHOLD;
+                    int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                    num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
                     if(dx == result) {
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
-
-
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
-                            shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
                             Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -523,7 +525,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
                         for (Nd4jIndex i = 0; i < len; i++) {
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
@@ -549,7 +551,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                              Nd4jIndex resultStride,
                              T *extraParams,
                              const Nd4jIndex n) {
-                int elementsPerThread = n / 8192;
+                int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
