@@ -103,6 +103,7 @@ public class SynchronousFlowController implements FlowController {
             AllocationPoint pointData = allocator.getAllocationPoint(result);
             AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
 
+            pointData.acquireLock();
 
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
@@ -139,6 +140,8 @@ public class SynchronousFlowController implements FlowController {
 
             AllocationPoint pointData = allocator.getAllocationPoint(operand);
             AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
+
+            pointData.acquireLock();
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
 //                log.info("currentDevice: {}, pointDevice: {}, pointer: {}", cId, pointData.getDeviceId(), pointData.getPointers().getDevicePointer().address());
@@ -178,15 +181,18 @@ public class SynchronousFlowController implements FlowController {
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
 
+
         eventsProvider.storeEvent(result.getLastWriteEvent());
         result.setLastWriteEvent(eventsProvider.getEvent());
         result.getLastWriteEvent().register(context.getOldStream());
+        result.releaseLock();
 
 
         for(AllocationPoint operand: operands) {
             eventsProvider.storeEvent(operand.getLastReadEvent());
             operand.setLastReadEvent(eventsProvider.getEvent());
             operand.getLastReadEvent().register(context.getOldStream());
+            operand.releaseLock();
         }
      //   context.syncOldStream();
     }
@@ -198,12 +204,14 @@ public class SynchronousFlowController implements FlowController {
         eventsProvider.storeEvent(point.getLastWriteEvent());
         point.setLastWriteEvent(eventsProvider.getEvent());
         point.getLastWriteEvent().register(context.getOldStream());
+        point.releaseLock();
 
         for (INDArray operand: operands) {
             if (operand == null)
                 continue;
 
             AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            pointOperand.releaseLock();
             eventsProvider.storeEvent(pointOperand.getLastReadEvent());
             pointOperand.setLastReadEvent(eventsProvider.getEvent());
             pointOperand.getLastReadEvent().register(context.getOldStream());
@@ -214,13 +222,15 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        if (result != null)
+        if (result != null) {
+            result.acquireLock();
             result.setCurrentContext(context);
+        }
 
         for (AllocationPoint operand: operands) {
             if (operand == null)
                 continue;
-
+            operand.acquireLock();
             operand.setCurrentContext(context);
         }
 

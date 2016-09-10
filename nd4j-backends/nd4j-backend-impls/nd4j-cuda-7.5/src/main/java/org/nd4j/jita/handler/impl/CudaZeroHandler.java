@@ -781,60 +781,48 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
     @Override
-    public void relocateObject(DataBuffer buffer) {
-        AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+    public synchronized void relocateObject(DataBuffer buffer) {
+            AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
 
-        // we don't relocate non-DEVICE buffers (i.e HOST or CONSTANT)
-        if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
-            return;
-
-
-        int deviceId = getDeviceId();
+            // we don't relocate non-DEVICE buffers (i.e HOST or CONSTANT)
+            if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
+                return;
 
 
-        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId) {
-//            log.info("Skipped relocation");
-            return;
-        }
+            int deviceId = getDeviceId();
 
-     //   StringBuilder builder = new StringBuilder("Relocating for threadId: ").append(Thread.currentThread().getId()).append("; ODP: ").append(dstPoint.getPointers().getDevicePointer().address());
 
-    //    long odp = dstPoint.getPointers().getDevicePointer().address();
+            if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId) {
+                return;
+            }
 
-        // FIXME: cross-thread access, might cause problems
-        if (!dstPoint.isActualOnHostSide())
-            AtomicAllocator.getInstance().synchronizeHostData(buffer);
+            // FIXME: cross-thread access, might cause problems
+            if (!dstPoint.isActualOnHostSide())
+                AtomicAllocator.getInstance().synchronizeHostData(buffer);
 
-        if (!dstPoint.isActualOnHostSide())
-            throw new RuntimeException("Buffer synchronization failed");
+            if (!dstPoint.isActualOnHostSide())
+                throw new RuntimeException("Buffer synchronization failed");
 
-        if (buffer.isConstant()) {
-            // we can't relocate or modify buffers
-            throw new RuntimeException("Can't relocateObject() for constant buffer");
-        } else {
-            //log.info("Freeing memory pointer: {}", dstPoint.getPointers().getDevicePointer().address());
-            memoryProvider.free(dstPoint);
-            deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
+            if (buffer.isConstant()) {
+                // we can't relocate or modify buffers
+                throw new RuntimeException("Can't relocateObject() for constant buffer");
+            } else {
+//                log.info("Free relocateObject: deviceId: {}, pointer: {}", deviceId, dstPoint.getPointers().getDevicePointer().address());
+                memoryProvider.free(dstPoint);
+                deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
 
-            // we replace original device pointer with new one
-            alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+                // we replace original device pointer with new one
+                alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
 
-         //   log.info("Pointer after alloc: {}", dstPoint.getPointers().getDevicePointer().address());
+                //   log.info("Pointer after alloc: {}", dstPoint.getPointers().getDevicePointer().address());
 
-            CudaContext context = getCudaContext();
-            nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(), buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
-            context.syncSpecialStream();
+                CudaContext context = getCudaContext();
+                nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(), buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
+                context.syncSpecialStream();
 
-            dstPoint.tickDeviceRead();
-            dstPoint.tickHostRead();
-        }
-
-     //   builder.append("; NDP: ").append(dstPoint.getDevicePointer().address());
-    //    long ndp = dstPoint.getPointers().getDevicePointer().address();
-     //   log.info(builder.toString());
-
-    //    if (odp == ndp)
-    //        throw new RuntimeException("ODP equals to NDP");
+                dstPoint.tickDeviceRead();
+                dstPoint.tickHostRead();
+            }
     }
 
     /**
@@ -1047,43 +1035,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     public Integer getDeviceId() {
-        /*
-        Long threadId = Thread.currentThread().getId();
-
-        if (!devicesAffinity.containsKey(threadId)) {
-            try {
-                deviceLock.writeLock().lock();
-
-                if (!devicesAffinity.containsKey(threadId)) {
-                    wasInitialised.compareAndSet(false, true);
-
-                    // sequental device selection for better balance
-                    List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
-                    Integer device = null;
-                    if (!configuration.isForcedSingleGPU()) {
-                        device = devices.get(devPtr.getAndIncrement());
-                        if (devPtr.get() >= devices.size())
-                            devPtr.set(0);
-                    } else device = new Integer(0);
-
-
-                    devicesAffinity.put(threadId, device);
-
-                    if (!deviceAllocations.containsKey(device)) {
-                        deviceAllocations.put(device, new ConcurrentHashMap<Long, Long>());
-                    }
-
-                    log.debug("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
-                }
-                return devicesAffinity.get(threadId);
-            } finally {
-                deviceLock.writeLock().unlock();
-            }
-        };
-
-        return devicesAffinity.get(threadId);
-        */
-        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         if (!deviceAllocations.containsKey(deviceId)) {
             deviceAllocations.put(deviceId, new ConcurrentHashMap<Long, Long>());

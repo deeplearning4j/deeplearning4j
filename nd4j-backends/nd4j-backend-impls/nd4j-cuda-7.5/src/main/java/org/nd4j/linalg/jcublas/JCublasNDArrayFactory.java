@@ -785,7 +785,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        CudaContext context =  allocator.getFlowController().prepareAction(target);
+        CudaContext context =  allocator.getFlowController().prepareAction(target, arrays);
 
         PointerPointer extras = new PointerPointer(
                 null, // not used
@@ -822,7 +822,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             nativeOps.averageHalf(extras, x, z, arrays.length, len, true);
         }
 
-        allocator.getFlowController().registerAction(context, target);
+        allocator.getFlowController().registerAction(context, target, arrays);
 
         tempX.address();
 
@@ -904,10 +904,10 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        CudaContext context =  allocator.getFlowController().prepareAction(arrays.get(0));
+        CudaContext context = null;
 
-        for (int x = 1; x < arrays.size(); x++ ){
-            allocator.getFlowController().prepareAction(arrays.get(x));
+        for (int x = 0; x < arrays.size(); x++ ){
+            context = allocator.getFlowController().prepareAction(arrays.get(x));
         }
 
         int tadLength = 1;

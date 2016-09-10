@@ -48,8 +48,8 @@ public class NormalizerMinMaxScaler implements DataNormalization {
 
     @Override
     public void fit(DataSet dataSet) {
-        min = dataSet.getFeatureMatrix().min(0);
-        max = dataSet.getFeatureMatrix().max(0);
+        min = dataSet.getFeatures().min(0);
+        max = dataSet.getFeatures().max(0);
         maxMinusMin = max.sub(min);
         maxMinusMin.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
@@ -69,10 +69,10 @@ public class NormalizerMinMaxScaler implements DataNormalization {
                 this.fit(next);
             }
             else {
-                nextMin =  next.getFeatureMatrix().min(0);;
+                nextMin =  next.getFeatures().min(0);;
                 min = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,min,min,min.length()));
 
-                nextMax =  next.getFeatureMatrix().max(0);
+                nextMax =  next.getFeatures().max(0);
                 max = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,max,max,max.length()));
             }
         }
