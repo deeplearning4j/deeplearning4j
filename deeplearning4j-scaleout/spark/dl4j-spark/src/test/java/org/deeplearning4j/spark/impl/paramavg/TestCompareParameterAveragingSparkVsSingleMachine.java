@@ -73,11 +73,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 .iterations(1)
                 .seed(seed)
                 .list()
-//                .layer(0, new LocalResponseNormalization.Builder().build())
                 .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build())
-//                .layer(2, new BatchNormalization.Builder().build())
+                .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build())
                 .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build())
-                .setInputType(InputType.convolutional(28,28,3))
+                .setInputType(InputType.convolutional(10,10,3))
                 .pretrain(false).backprop(true)
                 .build();
         return conf;
@@ -95,7 +94,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build(), "0")
+                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build(), "0")
                 .setOutputs("1")
                 .pretrain(false).backprop(true)
                 .build();
@@ -113,15 +112,11 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 .seed(seed)
                 .graphBuilder()
                 .addInputs("in")
-//                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-//                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-//                        .nIn(10).nOut(10).build(), "0")
-                .addLayer("0", new LocalResponseNormalization.Builder().build(), "in")
+                .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build(), "in")
                 .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build(), "0")
-                .addLayer("2", new BatchNormalization.Builder().build(), "1")
-                .addLayer("3", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).build(),"2")
-                .setOutputs("3")
+                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build(),"1")
+                .setOutputs("2")
+                .setInputTypes(InputType.convolutional(10,10,3))
                 .pretrain(false).backprop(true)
                 .build();
         return conf;
@@ -166,7 +161,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < totalExamples; i++) {
-            INDArray f = Nd4j.rand(new int[]{1, 3, 28, 28});
+            INDArray f = Nd4j.rand(new int[]{1, 3, 10, 10});
             INDArray l = Nd4j.rand(1, 10);
             DataSet ds = new DataSet(f, l);
             list.add(ds);
@@ -418,9 +413,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
                 System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
-                assertEquals(initialParams, initialSparkParams);
-                assertNotEquals(initialParams, finalParams);
-                assertEquals(finalParams, finalSparkParams);
+                assertArrayEquals(initialParams.data().asFloat(), initialSparkParams.data().asFloat(), 1e-8f);
+                assertArrayEquals(finalParams.data().asFloat(), finalSparkParams.data().asFloat(), 1e-6f);
 
                 double sparkScore = sparkNet.getScore();
                 assertTrue(sparkScore > 0.0);
@@ -497,6 +491,71 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
                 assertArrayEquals(fp, fps, 1e-5f);
+
+                double sparkScore = sparkNet.getScore();
+                assertTrue(sparkScore > 0.0);
+
+                assertEquals(net.score(), sparkScore, 1e-3);
+            } finally {
+                sc.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testAverageEveryStepGraphCNN() {
+        //Idea: averaging every step with SGD (SGD updater + optimizer) is mathematically identical to doing the learning
+        // on a single machine for synchronous distributed training
+        //BUT: This is *ONLY* the case if all workers get an identical number of examples. This won't be the case if
+        // we use RDD.randomSplit (which is what occurs if we use .fit(JavaRDD<DataSet> on a data set that needs splitting),
+        // which might give a number of examples that isn't divisible by number of workers (like 39 examples on 4 executors)
+        //This is also ONLY the case using SGD updater
+
+        int miniBatchSizePerWorker = 10;
+        int nWorkers = 4;
+
+
+        for (boolean saveUpdater : new boolean[]{true, false}) {
+            JavaSparkContext sc = getContext(nWorkers);
+
+            try {
+                //Do training locally, for 3 minibatches
+                int[] seeds = {1, 2, 3};
+
+                ComputationGraph net = new ComputationGraph(getGraphConfCNN(12345, Updater.SGD));
+                net.init();
+                INDArray initialParams = net.params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    DataSet ds = getOneDataSetCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    if (!saveUpdater) net.setUpdater(null);
+                    net.fit(ds);
+                }
+                INDArray finalParams = net.params().dup();
+
+                //Do training on Spark with one executor, for 3 separate minibatches
+                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConfCNN(12345, Updater.SGD), tm);
+                sparkNet.setCollectTrainingStats(true);
+                INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
+
+                for (int i = 0; i < seeds.length; i++) {
+                    List<DataSet> list = getOneDataSetAsIndividalExamplesCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+                    sparkNet.fit(rdd);
+                }
+
+                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+
+                INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
+
+                System.out.println("Initial (Local) params:  " + Arrays.toString(initialParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:  " + Arrays.toString(initialSparkParams.data().asFloat()));
+                System.out.println("Final (Local) params:    " + Arrays.toString(finalParams.data().asFloat()));
+                System.out.println("Final (Spark) params:    " + Arrays.toString(finalSparkParams.data().asFloat()));
+                assertArrayEquals(initialParams.data().asFloat(), initialSparkParams.data().asFloat(), 1e-8f);
+                assertArrayEquals(finalParams.data().asFloat(), finalSparkParams.data().asFloat(), 1e-6f);
 
                 double sparkScore = sparkNet.getScore();
                 assertTrue(sparkScore > 0.0);
