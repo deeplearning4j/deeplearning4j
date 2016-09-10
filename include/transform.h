@@ -271,8 +271,8 @@ template<typename OpType>
 				T *result,
 				int *resultShapeInfo,
 				T *extraParams,
-				Nd4jIndex *indexes,
-				Nd4jIndex *resultIndexes) {
+				int *indexes,
+				int *resultIndexes) {
                             DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes), TRANSFORM_OPS);
 			}
 
@@ -359,8 +359,8 @@ template<typename OpType>
 				T *result,
 				int *resultShapeInfo,
 				T *extraParams,
-				Nd4jIndex *indexes,
-				Nd4jIndex *resultIndexes) {
+				int *indexes,
+				int *resultIndexes) {
 
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY)
