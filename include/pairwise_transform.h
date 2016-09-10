@@ -359,7 +359,7 @@ template<typename OpType>
                     int *resultIndexes) {
                 Nd4jIndex n = shape::length(xShapeBuffer);
 
-#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = OpType::op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
@@ -430,7 +430,7 @@ template<typename OpType>
                     int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
 for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     T *dxLocal = dx + xStride[0] * i;
                     T *yLocal = y + yStride[0] * i;
@@ -513,7 +513,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                     if(dx == result) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord) proc_bind(AFFINITY)
                         for (Nd4jIndex i = 0; i < len; i++) {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
@@ -525,7 +525,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord) proc_bind(AFFINITY)
                         for (Nd4jIndex i = 0; i < len; i++) {
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
@@ -559,7 +559,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;
@@ -573,7 +573,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     }
                 }
                 else {
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;

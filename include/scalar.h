@@ -282,7 +282,7 @@ template<typename OpType>
                            int *indexes,
                            int *resultIndexes) {
                 const Nd4jIndex n = shape::length(xShapeInfo);
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
+#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = OpType::op(x[indexes[i]], scalar,extraParams);
                 }
@@ -372,7 +372,7 @@ template<typename OpType>
                         int xOffset = shape::offset(xShapeInfo);
                         int resultOffset = shape::offset(resultShapeInfo);
 
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
+#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
@@ -418,7 +418,7 @@ template<typename OpType>
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;
@@ -432,7 +432,7 @@ template<typename OpType>
                 }
 
                 else {
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
                     {
                         tid = omp_get_thread_num();
                         start = span * tid;

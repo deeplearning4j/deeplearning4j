@@ -724,7 +724,7 @@ template<typename OpType>
 													 yStridesIter);
 
 
-#pragma  omp parallel for
+#pragma  omp parallel for proc_bind(AFFINITY)
 						for(Nd4jIndex i = 0; i < resultLength ;i++) {
 							result[i] = OpType::postProcess(result[i],tadLength, extraParamsVals);
 						}
@@ -753,7 +753,7 @@ template<typename OpType>
                      */
 					int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
 					int tadLength = shape::length(xTad.tadOnlyShapeInfo);
-#pragma omp parallel for
+#pragma omp parallel for proc_bind(AFFINITY)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						T *localExtraParams = nullptr;
 						if(OpType::extraParamsLen > 0)

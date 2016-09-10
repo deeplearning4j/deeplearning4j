@@ -222,7 +222,7 @@ template<typename OpType>
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
 				if (true) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
@@ -260,7 +260,7 @@ template<typename OpType>
 				}
 				else {
 /*
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
 						T *xIter = x + offset;
