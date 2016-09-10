@@ -61,6 +61,7 @@ import static org.junit.Assert.*;
 
 /**
  * @author jeffreytang
+ * @author raver119@gmail.com
  */
 public class WordVectorSerializerTest {
 
@@ -458,6 +459,9 @@ public class WordVectorSerializerTest {
                 points.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
                 codes.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
             }
+            if (RandomUtils.nextInt(10) < 3) {
+                word.markAsLabel(true);
+            }
             word.setIndex(i);
             word.setPoints(points);
             word.setCodes(codes);
@@ -492,6 +496,7 @@ public class WordVectorSerializerTest {
         assertEquals(restoredLookupTable.getSyn1(), lookupTable.getSyn1());
 
         for (int i = 0; i < cache.numWords(); i++) {
+            assertEquals(cache.elementAtIndex(i).isLabel(), restoredVocab.elementAtIndex(i).isLabel());
             assertEquals(cache.wordAtIndex(i), restoredVocab.wordAtIndex(i));
             List<Integer> originalPoints = cache.elementAtIndex(i).getPoints();
             List<Integer> restoredPoints = restoredVocab.elementAtIndex(i).getPoints();

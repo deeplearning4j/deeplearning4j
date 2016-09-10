@@ -539,6 +539,15 @@ public class WordVectorSerializer {
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
 
 
+        ZipEntry labels = new ZipEntry("labels.txt");
+        zipfile.putNextEntry(labels);
+        StringBuilder builder = new StringBuilder();
+        for (VocabWord word: vectors.getVocab().tokens()) {
+            if (word.isLabel())
+                builder.append(word.getLabel()).append("\n");
+        }
+        writeEntry(new ByteArrayInputStream(builder.toString().trim().getBytes()), zipfile);
+
         zipfile.flush();
         zipfile.close();
     }
@@ -565,10 +574,12 @@ public class WordVectorSerializer {
         File tmpFileSyn1 = File.createTempFile("paravec", "1");
         File tmpFileC = File.createTempFile("paravec", "c");
         File tmpFileH = File.createTempFile("paravec", "h");
+        File tmpFileL = File.createTempFile("paravec", "l");
         tmpFileSyn0.deleteOnExit();
         tmpFileSyn1.deleteOnExit();
         tmpFileH.deleteOnExit();
         tmpFileC.deleteOnExit();
+        tmpFileL.deleteOnExit();
 
         ZipFile zipFile = new ZipFile(file);
         ZipEntry syn0 = zipFile.getEntry("syn0.txt");
@@ -603,7 +614,28 @@ public class WordVectorSerializer {
 
         VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
 
-        return readParagraphVectorsFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
+        ParagraphVectors vectors = readParagraphVectorsFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
+
+        // now we try to restore labels information
+        ZipEntry labels = zipFile.getEntry("labels.txt");
+        if (labels != null) {
+            stream = zipFile.getInputStream(labels);
+
+            Files.copy(stream, Paths.get(tmpFileL.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            try(BufferedReader reader = new BufferedReader(new FileReader(tmpFileL))) {
+                String line;
+                while((line = reader.readLine()) != null) {
+                    VocabWord word = vectors.getVocab().tokenFor(line.trim());
+                    if (word != null) {
+                        word.markAsLabel(true);
+                    }
+                }
+            }
+        }
+
+
+
+        return vectors;
     }
 
     /**
