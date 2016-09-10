@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -105,9 +107,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret = nd4jBlas.sdot(new PointerPointer(new Pointer[] {handle}),
                     N,
-                    xCPointer.getDevicePointer(),
+                    (FloatPointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (FloatPointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -146,9 +148,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret = nd4jBlas.ddot(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
-                    xCPointer.getDevicePointer(),
+                    (DoublePointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (DoublePointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -205,7 +207,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret = nd4jBlas.snrm2(new PointerPointer(new Pointer[] {ctx.getHandle()})
                     , N,
-                    cAPointer.getDevicePointer(),
+                    (FloatPointer)cAPointer.getDevicePointer(),
                     incX);
         }
 
@@ -288,7 +290,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret = nd4jBlas.dnrm2(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
-                    cAPointer.getDevicePointer(),
+                    (DoublePointer)cAPointer.getDevicePointer(),
                     incX);
         }
 
@@ -411,7 +413,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret2 = nd4jBlas.isamax(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
-                    xCPointer.getDevicePointer(),
+                    (FloatPointer)xCPointer.getDevicePointer(),
                     incX);
 
         }
@@ -444,7 +446,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             ret2 = nd4jBlas.idamax(new PointerPointer(new Pointer[] {ctx.getHandle()})
                     , N,
-                    xCPointer.getDevicePointer(),
+                    (DoublePointer)xCPointer.getDevicePointer(),
                     incX);
 
         }
@@ -488,9 +490,9 @@ public class JcublasLevel1 extends BaseLevel1 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.sswap(new PointerPointer(new Pointer[] {ctx.getHandle()}),
-                    N, xCPointer.getDevicePointer(),
+                    N, (FloatPointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (FloatPointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -517,9 +519,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             nd4jBlas.scopy(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
-                    xCPointer.getDevicePointer(),
+                    (FloatPointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (FloatPointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -618,9 +620,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             nd4jBlas.dswap(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
-                    xCPointer.getDevicePointer(),
+                    (DoublePointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (DoublePointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -645,9 +647,9 @@ public class JcublasLevel1 extends BaseLevel1 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.dcopy(new PointerPointer(new Pointer[] {ctx.getHandle()}),
-                    N, xCPointer.getDevicePointer(),
+                    N, (DoublePointer)xCPointer.getDevicePointer(),
                     incX,
-                    yCPointer.getDevicePointer(),
+                    (DoublePointer)yCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -795,7 +797,7 @@ public class JcublasLevel1 extends BaseLevel1 {
             nd4jBlas.sscal(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
                     alpha,
-                    xCPointer.getDevicePointer(),
+                    (FloatPointer)xCPointer.getDevicePointer(),
                     incX);
         }
 
@@ -821,7 +823,7 @@ public class JcublasLevel1 extends BaseLevel1 {
             nd4jBlas.dscal(new PointerPointer(new Pointer[] {ctx.getHandle()}),
                     N,
                     alpha,
-                    xCPointer.getDevicePointer(),
+                    (DoublePointer)xCPointer.getDevicePointer(),
                     incX);
         }
 

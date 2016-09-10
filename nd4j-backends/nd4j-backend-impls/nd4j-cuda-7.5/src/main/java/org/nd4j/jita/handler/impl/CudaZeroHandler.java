@@ -751,7 +751,14 @@ public class CudaZeroHandler implements MemoryHandler {
         dstPoint.tickDeviceRead();
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes
-        return new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),  (buffer.offset() * buffer.getElementSize()));
+        CudaPointer p = new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),  (buffer.offset() * buffer.getElementSize()));
+        switch (buffer.dataType()) {
+            case DOUBLE: return p.asDoublePointer();
+            case FLOAT:  return p.asFloatPointer();
+            case INT:    return p.asIntPointer();
+            case HALF:   return p.asShortPointer();
+            default:     return p;
+        }
     }
 
     /**
@@ -777,7 +784,14 @@ public class CudaZeroHandler implements MemoryHandler {
         //getCudaContext().syncOldStream();
         synchronizeThreadDevice(Thread.currentThread().getId(), dstPoint.getDeviceId(), dstPoint);
 
-        return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
+        CudaPointer p = new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
+        switch (buffer.dataType()) {
+            case DOUBLE: return p.asDoublePointer();
+            case FLOAT:  return p.asFloatPointer();
+            case INT:    return p.asIntPointer();
+            case HALF:   return p.asShortPointer();
+            default:     return p;
+        }
     }
 
     @Override
