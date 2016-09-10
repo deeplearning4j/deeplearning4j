@@ -114,20 +114,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             throw new IllegalStateException("Cannot calculate score without input and labels");
         INDArray preOut = preOutput2d(false);
 
-//        NOTE: So this should now call what is in ILossFunction
-//        But what about regularization??
-
-//        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-//        return LossCalculation.builder()
-//                .l1(fullNetworkL1).l2(fullNetworkL2)
-//                .labels(getLabels2d()).z(output)
-//                .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
-//                .lossFunction(layerConf().getLossFunction())
-//                .useRegularization(conf.isUseRegularization())
-//                .mask(maskArray).build().scoreExamples();
-
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray scoreArray = lossFunction.computeScoreArray(labels,preOut,layerConf().getActivationFunction(),maskArray);
+        INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if(l1l2 != 0.0){
             scoreArray.addi(l1l2);
@@ -143,7 +131,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray preOut = preOutput2d(true);
         Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
-//        setScore(triple.getThird(), preOut);
 
         score = computeScore(fullNetworkL1,fullNetworkL2,true);
     }
@@ -153,28 +140,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 //        setScore(z, null);
         throw new RuntimeException("Not yet implemented");
     }
-
-//    private void setScore(INDArray z, INDArray preOut ){
-//        /*
-//        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-//            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
-//            create.exec();
-//            score = create.getFinalResult().doubleValue();
-//        }
-//        else {
-//            score = LossCalculation.builder()
-//                    .l1(fullNetworkL1).l2(fullNetworkL2)
-//                    .labels(getLabels2d()).z(z)
-//                    .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
-//                    .lossFunction(layerConf().getLossFunction())
-//                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-//                    .useRegularization(conf.isUseRegularization())
-//                    .mask(maskArray).build().score();
-//        }
-//        NOTE: Should now be
-//        score = lossfunction.computeScore(blahbalh..
-//        */
-//    }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
@@ -201,25 +166,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
-//        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-//        INDArray outSubLabels = output.sub(getLabels2d());
-
-
-
-        Triple<Gradient,INDArray,INDArray> triple;
-        //NOTE: For the gradient I need to have dL/dw and dL/db
-        //dL/dW = dL/dZ * dZ/dW
-        //dL/db = dL/dZ * dZ/db
-        //Z is preoutput
-        //Z = W.X + b
-        //So calculate dZ/dW and dZ/db first then get delta
-        // delta is what is called the gradient in the ILossFunctions, so that would just lossFunction.computeGradient
-        // multiply dZ/dW and dz/db by delta
-
-//        return triple;
-
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(labels,preOut,layerConf().getActivationFunction(),maskArray);
+        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));    //TODO: do we need dup here?
 
         Gradient gradient = new DefaultGradient();
@@ -307,7 +255,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
         return  eval.f1();
-
     }
 
     /**
@@ -454,9 +401,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return preOutput(training);
     }
 
-    protected INDArray output2d(INDArray input){
-        return output(input);
-    }
 
     protected INDArray getLabels2d(){
         if(labels.rank() > 2) {
