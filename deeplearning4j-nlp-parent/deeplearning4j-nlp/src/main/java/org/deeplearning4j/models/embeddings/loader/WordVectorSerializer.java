@@ -30,6 +30,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.output.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -58,10 +59,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 // FIXME: remove that
 
@@ -387,6 +395,7 @@ public class WordVectorSerializer {
      * @param vectors
      * @param path
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull File path) {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             writeWordVectors(vectors, fos);
@@ -402,12 +411,470 @@ public class WordVectorSerializer {
      * @param vectors
      * @param path
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull String path) {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             writeWordVectors(vectors, fos);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file
+     *
+     * @param file
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, File file) {
+        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+            writeParagraphVectors(vectors, stream);
+            stream.flush();
+            stream.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file located at path
+     *
+     * @param path
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, String path) {
+        writeParagraphVectors(vectors, new File(path));
+    }
+
+    /**
+     * This method saves Word2Vec model into compressed zip file and sends it to output stream
+     * PLEASE NOTE: This method saves FULL model, including syn0 AND syn1
+     *
+     */
+    public static void writeWord2Vec(Word2Vec vectors, File file) {
+        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+            writeWord2Vec(vectors, stream);
+            stream.flush();
+            stream.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves Word2Vec model into compressed zip file and sends it to output stream
+     * PLEASE NOTE: This method saves FULL model, including syn0 AND syn1
+     *
+     */
+    public static void writeWord2Vec(Word2Vec vectors, String path) {
+        writeWord2Vec(vectors, new File(path));
+    }
+
+    /**
+     * This method saves Word2Vec model into compressed zip file and sends it to output stream
+     * PLEASE NOTE: This method saves FULL model, including syn0 AND syn1
+     *
+     */
+    public static void writeWord2Vec(Word2Vec vectors, OutputStream stream) throws IOException {
+        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+
+        ZipEntry syn0 = new ZipEntry("syn0.txt");
+        zipfile.putNextEntry(syn0);
+
+        // writing out syn0
+        File tempFileSyn0 = File.createTempFile("word2vec","0");
+        tempFileSyn0.deleteOnExit();
+
+        writeWordVectors(vectors.lookupTable(), tempFileSyn0);
+
+        FileInputStream fis = new FileInputStream(tempFileSyn0);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        // writing out syn1
+        File tempFileSyn1 = File.createTempFile("word2vec","1");
+        tempFileSyn1.deleteOnExit();
+
+        INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+            for (int x = 0; x < syn1.rows(); x++) {
+                INDArray row = syn1.getRow(x);
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < row.length(); i++) {
+                    builder.append(row.getDouble(i)).append(" ");
+                }
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        ZipEntry zSyn1 = new ZipEntry("syn1.txt");
+        zipfile.putNextEntry(zSyn1);
+
+        fis = new FileInputStream(tempFileSyn1);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        File tempFileCodes = File.createTempFile("word2vec","h");
+        tempFileCodes.deleteOnExit();
+
+        ZipEntry hC = new ZipEntry("codes.txt");
+        zipfile.putNextEntry(hC);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int code: word.getCodes()) {
+                    builder.append(code).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileCodes);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+
+        File tempFileHuffman = File.createTempFile("word2vec","h");
+        tempFileHuffman.deleteOnExit();
+
+        ZipEntry hP = new ZipEntry("huffman.txt");
+        zipfile.putNextEntry(hP);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int point: word.getPoints()) {
+                    builder.append(point).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileHuffman);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        ZipEntry config = new ZipEntry("config.json");
+        zipfile.putNextEntry(config);
+        writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
+
+        zipfile.flush();
+        zipfile.close();
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file and sends it to output stream
+     */
+    public static void writeParagraphVectors(ParagraphVectors vectors, OutputStream stream) throws IOException {
+        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+
+        ZipEntry syn0 = new ZipEntry("syn0.txt");
+        zipfile.putNextEntry(syn0);
+
+        // writing out syn0
+        File tempFileSyn0 = File.createTempFile("paravec","0");
+        tempFileSyn0.deleteOnExit();
+
+        writeWordVectors(vectors.lookupTable(), tempFileSyn0);
+
+        FileInputStream fis = new FileInputStream(tempFileSyn0);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        // writing out syn1
+        File tempFileSyn1 = File.createTempFile("paravec","1");
+        tempFileSyn1.deleteOnExit();
+
+        INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+            for (int x = 0; x < syn1.rows(); x++) {
+                INDArray row = syn1.getRow(x);
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < row.length(); i++) {
+                    builder.append(row.getDouble(i)).append(" ");
+                }
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        ZipEntry zSyn1 = new ZipEntry("syn1.txt");
+        zipfile.putNextEntry(zSyn1);
+
+        fis = new FileInputStream(tempFileSyn1);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        File tempFileCodes = File.createTempFile("paravec","h");
+        tempFileCodes.deleteOnExit();
+
+        ZipEntry hC = new ZipEntry("codes.txt");
+        zipfile.putNextEntry(hC);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int code: word.getCodes()) {
+                    builder.append(code).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileCodes);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+
+        File tempFileHuffman = File.createTempFile("paravec","h");
+        tempFileHuffman.deleteOnExit();
+
+        ZipEntry hP = new ZipEntry("huffman.txt");
+        zipfile.putNextEntry(hP);
+
+        // writing out huffman tree
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                for (int point: word.getPoints()) {
+                    builder.append(point).append(" ");
+                }
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new FileInputStream(tempFileHuffman);
+        writeEntry(fis, zipfile);
+        fis.close();
+
+        ZipEntry config = new ZipEntry("config.json");
+        zipfile.putNextEntry(config);
+        writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
+
+
+        ZipEntry labels = new ZipEntry("labels.txt");
+        zipfile.putNextEntry(labels);
+        StringBuilder builder = new StringBuilder();
+        for (VocabWord word: vectors.getVocab().tokens()) {
+            if (word.isLabel())
+                builder.append(word.getLabel()).append("\n");
+        }
+        writeEntry(new ByteArrayInputStream(builder.toString().trim().getBytes()), zipfile);
+
+        zipfile.flush();
+        zipfile.close();
+    }
+
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(String path) throws IOException {
+        return readParagraphVectors(new File(path));
+    }
+
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(File file) throws IOException {
+        File tmpFileL = File.createTempFile("paravec", "l");
+        tmpFileL.deleteOnExit();
+
+        Word2Vec w2v = readWord2Vec(file);
+
+        // and "convert" it to ParaVec model + optionally trying to restore labels information
+        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration())
+                .vocabCache(w2v.getVocab())
+                .lookupTable(w2v.getLookupTable())
+                .resetModel(false)
+                .build();
+
+        ZipFile zipFile = new ZipFile(file);
+
+        // now we try to restore labels information
+        ZipEntry labels = zipFile.getEntry("labels.txt");
+        if (labels != null) {
+            InputStream stream = zipFile.getInputStream(labels);
+
+            Files.copy(stream, Paths.get(tmpFileL.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            try(BufferedReader reader = new BufferedReader(new FileReader(tmpFileL))) {
+                String line;
+                while((line = reader.readLine()) != null) {
+                    VocabWord word = vectors.getVocab().tokenFor(line.trim());
+                    if (word != null) {
+                        word.markAsLabel(true);
+                    }
+                }
+            }
+        }
+
+        return vectors;
+    }
+
+    /**
+     * This method restores Word2Vec model previously saved with writeWord2Vec
+     *
+     * PLEASE NOTE: This method loads FULL model, so don't use it if you're only going to use weights.
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Word2Vec readWord2Vec(File file) throws IOException {
+        File tmpFileSyn0 = File.createTempFile("word2vec", "0");
+        File tmpFileSyn1 = File.createTempFile("word2vec", "1");
+        File tmpFileC = File.createTempFile("word2vec", "c");
+        File tmpFileH = File.createTempFile("word2vec", "h");
+
+        tmpFileSyn0.deleteOnExit();
+        tmpFileSyn1.deleteOnExit();
+        tmpFileH.deleteOnExit();
+        tmpFileC.deleteOnExit();
+
+
+        ZipFile zipFile = new ZipFile(file);
+        ZipEntry syn0 = zipFile.getEntry("syn0.txt");
+        InputStream stream = zipFile.getInputStream(syn0);
+
+        Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry syn1 = zipFile.getEntry("syn1.txt");
+        stream = zipFile.getInputStream(syn1);
+
+        Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry codes = zipFile.getEntry("codes.txt");
+        stream = zipFile.getInputStream(codes);
+
+        Files.copy(stream, Paths.get(tmpFileC.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry huffman = zipFile.getEntry("huffman.txt");
+        stream = zipFile.getInputStream(huffman);
+
+        Files.copy(stream, Paths.get(tmpFileH.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+        ZipEntry config = zipFile.getEntry("config.json");
+        stream = zipFile.getInputStream(config);
+        StringBuilder builder = new StringBuilder();
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+        }
+
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
+
+        // we read first 4 files as w2v model
+        Word2Vec w2v = readWord2VecFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
+
+        return w2v;
+    }
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectors(InputStream stream) throws IOException {
+        File tmpFile = File.createTempFile("restore", "paravec");
+        Files.copy(stream, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return readParagraphVectors(tmpFile);
+    }
+
+    private static void writeEntry(InputStream inputStream, ZipOutputStream zipStream) throws IOException {
+        byte[] bytes = new byte[1024];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(bytes)) != -1) {
+            zipStream.write(bytes, 0, bytesRead);
+        }
+    }
+
+    /**
+     * This method allows you to read ParagraphVectors from externaly originated vectors and syn1.
+     * I.e. Gensim uses 3 files per model.
+     *
+     * @param vectors   text file with words and their wieghts, aka Syn0
+     * @param hs    text file HS layers, aka Syn1
+     * @param h_codes   text file with Huffman tree codes
+     * @param h_points  text file with Huffman tree points
+     * @return
+     */
+    public static Word2Vec readWord2VecFromText(@NonNull File vectors, @NonNull File hs, @NonNull File h_codes, @NonNull File h_points,  @NonNull VectorsConfiguration configuration) throws IOException  {
+        // first we load syn0
+        Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
+        InMemoryLookupTable lookupTable = pair.getFirst();
+        VocabCache<VocabWord> vocab = (VocabCache<VocabWord>) pair.getSecond();
+
+        // now we load syn1
+        BufferedReader reader = new BufferedReader(new FileReader(hs));
+        String line = null;
+        List<INDArray> rows = new ArrayList<>();
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            double array[] = new double[split.length];
+            for (int i = 0; i < split.length; i++) {
+                array[i] = Double.parseDouble(split[i]);
+            }
+            rows.add(Nd4j.create(array));
+        }
+        reader.close();
+
+        INDArray syn1 = Nd4j.vstack(rows);
+        lookupTable.setSyn1(syn1);
+
+        // now we transform mappings into huffman tree points
+        reader = new BufferedReader(new FileReader(h_points));
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            VocabWord word = vocab.wordFor(split[0]);
+            List<Integer> points = new ArrayList<>();
+            for (int i = 1; i < split.length; i++ ){
+                points.add(Integer.parseInt(split[i]));
+            }
+            word.setPoints(points);
+        }
+        reader.close();
+
+
+        // now we transform mappings into huffman tree codes
+        reader = new BufferedReader(new FileReader(h_codes));
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            VocabWord word = vocab.wordFor(split[0]);
+            List<Integer> codes = new ArrayList<>();
+            for (int i = 1; i < split.length; i++ ){
+                codes.add(Integer.parseInt(split[i]));
+            }
+            word.setCodes(codes);
+            word.setCodeLength(codes.size());
+        }
+        reader.close();
+
+
+        Word2Vec w2v = new Word2Vec.Builder(configuration)
+                .vocabCache(vocab)
+                .lookupTable(lookupTable)
+                .resetModel(false)
+                .build();
+
+        return w2v;
     }
 
 
@@ -572,6 +1039,7 @@ public class WordVectorSerializer {
      * @param vectors
      * @param stream
      */
+    @Deprecated
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
 
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"))) {
@@ -657,6 +1125,7 @@ public class WordVectorSerializer {
      * @param vec - The Word2Vec instance to be saved
      * @param path - the path for json to be saved
      */
+    @Deprecated
     public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
         /*
             Basically we need to save:
@@ -772,6 +1241,7 @@ public class WordVectorSerializer {
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
      */
+    @Deprecated
     public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
         /*
             // TODO: implementation is in process
