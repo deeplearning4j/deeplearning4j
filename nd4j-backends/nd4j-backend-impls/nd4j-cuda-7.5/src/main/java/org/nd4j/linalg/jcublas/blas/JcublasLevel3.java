@@ -1,8 +1,11 @@
 package org.nd4j.linalg.jcublas.blas;
 
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.ShortPointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
@@ -61,12 +64,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     alpha,
-                    cAPointer.getDevicePointer(),
+                    (ShortPointer)cAPointer.getDevicePointer(),
                     lda,
-                    cBPointer.getDevicePointer(),
+                    (ShortPointer)cBPointer.getDevicePointer(),
                     ldb,
                     beta,
-                    cCPointer.getDevicePointer(),
+                    (ShortPointer)cCPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -103,12 +106,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     alpha,
-                    cAPointer.getDevicePointer(),
+                    (FloatPointer)cAPointer.getDevicePointer(),
                     lda,
-                    cBPointer.getDevicePointer(),
+                    (FloatPointer)cBPointer.getDevicePointer(),
                     ldb,
                     beta,
-                    cCPointer.getDevicePointer(),
+                    (FloatPointer)cCPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -139,11 +142,11 @@ public class JcublasLevel3 extends BaseLevel3 {
                     Uplo,
                     M, N,
                     alpha,
-                    aPointer.getDevicePointer(),
-                    lda, bPointer.getDevicePointer(),
+                    (FloatPointer)aPointer.getDevicePointer(),
+                    lda, (FloatPointer)bPointer.getDevicePointer(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer(),
+                    (FloatPointer)cPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -168,7 +171,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
-            nd4jBlas.ssyrk(new PointerPointer(new Pointer[] {ctx.getHandle()}), Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer(), lda, beta, cPointer.getDevicePointer(), ldc);
+            nd4jBlas.ssyrk(new PointerPointer(new Pointer[] {ctx.getHandle()}), Order, Uplo, Trans, N, K, alpha, (FloatPointer)aPointer.getDevicePointer(), lda, beta, (FloatPointer)cPointer.getDevicePointer(), ldc);
         }
 
         allocator.registerAction(ctx, C, A);
@@ -210,9 +213,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (FloatPointer)aPointer.getDevicePointer(),
                     lda,
-                    bPointer.getDevicePointer(),
+                    (FloatPointer)bPointer.getDevicePointer(),
                     ldb);
         }
 
@@ -241,7 +244,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         synchronized (handle) {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dgemm(new PointerPointer(new Pointer[] {ctx.getHandle()}), Order, TransA, TransB, M, N, K, alpha, cAPointer.getDevicePointer(), lda, cBPointer.getDevicePointer(), ldb, beta, cCPointer.getDevicePointer(), ldc);
+            nd4jBlas.dgemm(new PointerPointer(new Pointer[] {ctx.getHandle()}), Order, TransA, TransB, M, N, K, alpha, (DoublePointer)cAPointer.getDevicePointer(), lda, (DoublePointer)cBPointer.getDevicePointer(), ldb, beta, (DoublePointer)cCPointer.getDevicePointer(), ldc);
             ctx.syncOldStream();
         }
 
@@ -273,12 +276,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (DoublePointer)aPointer.getDevicePointer(),
                     lda,
-                    bPointer.getDevicePointer(),
+                    (DoublePointer)bPointer.getDevicePointer(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer(),
+                    (DoublePointer)cPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -309,9 +312,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (DoublePointer)aPointer.getDevicePointer(),
                     lda,
-                    beta, cPointer.getDevicePointer(),
+                    beta, (DoublePointer)cPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -343,12 +346,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (DoublePointer)aPointer.getDevicePointer(),
                     lda,
-                    bPointer.getDevicePointer(),
+                    (DoublePointer)bPointer.getDevicePointer(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer(),
+                    (DoublePointer)cPointer.getDevicePointer(),
                     ldc);
         }
 
@@ -381,9 +384,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (DoublePointer)aPointer.getDevicePointer(),
                     lda,
-                    bPointer.getDevicePointer(),
+                    (DoublePointer)bPointer.getDevicePointer(),
                     ldb);
         }
 
@@ -416,9 +419,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer(),
+                    (DoublePointer)aPointer.getDevicePointer(),
                     lda,
-                    bPointer.getDevicePointer(),
+                    (DoublePointer)bPointer.getDevicePointer(),
                     ldb);
         }
 
