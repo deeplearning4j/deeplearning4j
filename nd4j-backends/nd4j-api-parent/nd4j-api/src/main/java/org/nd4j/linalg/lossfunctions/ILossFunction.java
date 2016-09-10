@@ -6,6 +6,8 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
+import java.io.Serializable;
+
 /**
  * Interface for loss functions
  */
@@ -20,7 +22,7 @@ import org.nd4j.linalg.lossfunctions.impl.*;
         @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
         @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE")
 })
-public interface ILossFunction {
+public interface ILossFunction extends Serializable {
 
     /**
      * Compute the score (loss function value) for the given inputs.
