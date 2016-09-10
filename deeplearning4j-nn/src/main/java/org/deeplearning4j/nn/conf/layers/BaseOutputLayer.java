@@ -14,7 +14,6 @@ import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
-	protected LossFunction lossFunction;
     protected ILossFunction lossFn;
     @Deprecated
     protected String customLossFunction;
@@ -23,6 +22,25 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     	super(builder);
         this.lossFn = builder.lossFn;
         this.customLossFunction = builder.customLossFunction;
+    }
+
+    /**
+     *
+     * @deprecated As of 0.6.0. Use {@link #getLossFn()} instead
+     */
+    @Deprecated
+    public LossFunction getLossFunction(){
+        //To maintain backward compatibility only (as much as possible)
+        if(lossFn instanceof LossMCXENT){
+            return LossFunction.MCXENT;
+        } else if(lossFn instanceof LossMSE){
+            return LossFunction.MSE;
+        } else if(lossFn instanceof LossBinaryXENT){
+            return LossFunction.XENT;
+        } else {
+            //TODO: are there any others??
+            return null;
+        }
     }
     
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
