@@ -1,8 +1,11 @@
 package org.deeplearning4j.spark.util;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -21,6 +24,8 @@ import scala.Tuple2;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -339,5 +344,26 @@ public class SparkUtils {
             }
         }
         return splits;
+    }
+
+    /**
+     * List of the files in the given directory (path), as a {@code JavaRDD<String>}
+     *
+     * @param sc      Spark context
+     * @param path    Path to list files in
+     * @return        Paths in the directory
+     * @throws IOException If error occurs getting directory contents
+     */
+    public static JavaRDD<String> listPaths(JavaSparkContext sc, String path) throws IOException {
+        List<String> paths = new ArrayList<>();
+        Configuration config = new Configuration();
+        FileSystem hdfs = FileSystem.get(URI.create(path), config);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(path), false);
+
+        while (fileIter.hasNext()) {
+            String filePath = fileIter.next().getPath().toString();
+            paths.add(filePath);
+        }
+        return sc.parallelize(paths);
     }
 }
