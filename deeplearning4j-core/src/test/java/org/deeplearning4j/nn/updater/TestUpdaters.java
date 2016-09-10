@@ -16,9 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaDelta;
-import org.nd4j.linalg.learning.AdaGrad;
-import org.nd4j.linalg.learning.Adam;
+import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Field;
@@ -369,20 +367,47 @@ public class TestUpdaters {
         Updater[] updaters = (Updater[]) f.get(updater);
         assertNotNull(updaters);
         assertTrue(updaters.length == net.getnLayers());
-        assertTrue(updaters[0] instanceof SgdUpdater);
-        assertTrue(updaters[1] instanceof NoOpUpdater);
-        assertTrue(updaters[2] instanceof AdaGradUpdater);
-        assertTrue(updaters[3] instanceof NesterovsUpdater);
+        assertTrue(updaters[0] instanceof LayerUpdater);
+        assertTrue(updaters[1] instanceof LayerUpdater);
+        assertTrue(updaters[2] instanceof LayerUpdater);
+        assertTrue(updaters[3] instanceof LayerUpdater);
+
+        int count = 0;
+        for(Updater u : updaters){
+            LayerUpdater lu = (LayerUpdater)u;
+            for(GradientUpdater gu : lu.updaterForVariable.values()){
+                switch(count){
+                    case 0:
+                        assertTrue(gu instanceof Sgd);
+                        break;
+                    case 1:
+                        assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
+                        break;
+                    case 2:
+                        assertTrue(gu instanceof AdaGrad);
+                        break;
+                    case 3:
+                        assertTrue(gu instanceof Nesterovs);
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+            }
+            count++;
+        }
+
+        LayerUpdater u = (LayerUpdater)updaters[0];
+
 
         Updater[] uArr = new Updater[4];
-        uArr[0] = new SgdUpdater();
-        uArr[1] = new NoOpUpdater();
-        uArr[2] = new AdaGradUpdater();
+        uArr[0] = new LayerUpdater();
+        uArr[1] = new LayerUpdater();
+        uArr[2] = new LayerUpdater();
         int updaterStateSize = uArr[2].stateSizeForLayer(net.getLayer(2));
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
 
-        uArr[3] = new NesterovsUpdater();
+        uArr[3] = new LayerUpdater();
         updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
         updaterState = Nd4j.create(1, updaterStateSize);
         uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
@@ -502,15 +527,15 @@ public class TestUpdaters {
         MultiLayerUpdater updater = (MultiLayerUpdater)net.getUpdater();
         Updater[] updaters = updater.getLayerUpdaters();
 
-        AdaGradUpdater u0 = (AdaGradUpdater)updaters[0];
+        LayerUpdater u0 = (LayerUpdater)updaters[0];
         AdaGrad adaGrad = (AdaGrad)u0.updaterForVariable.get("W");
         assertEquals(1e-6, adaGrad.getEpsilon(), 0.0);
 
-        AdaGradUpdater u1 = (AdaGradUpdater)updaters[1];
+        LayerUpdater u1 = (LayerUpdater)updaters[1];
         AdaGrad adaGrad1 = (AdaGrad)u1.updaterForVariable.get("W");
         assertEquals(0.123, adaGrad1.getEpsilon(), 0.0);
 
-        AdaGradUpdater u2 = (AdaGradUpdater)updaters[2];
+        LayerUpdater u2 = (LayerUpdater)updaters[2];
         AdaGrad adaGrad2 = (AdaGrad)u2.updaterForVariable.get("W");
         assertEquals(0.456, adaGrad2.getEpsilon(), 0.0);
 
@@ -534,15 +559,15 @@ public class TestUpdaters {
         updater = (MultiLayerUpdater)net.getUpdater();
         updaters = updater.getLayerUpdaters();
 
-        AdaDeltaUpdater u0_2 = (AdaDeltaUpdater) updaters[0];
+        LayerUpdater u0_2 = (LayerUpdater) updaters[0];
         AdaDelta adaDelta = (AdaDelta) u0_2.updaterForVariable.get("W");
         assertEquals(1e-6, adaDelta.getEpsilon(), 0.0);
 
-        AdaDeltaUpdater u1_2 = (AdaDeltaUpdater) updaters[1];
+        LayerUpdater u1_2 = (LayerUpdater) updaters[1];
         AdaDelta adaDelta1 = (AdaDelta)u1_2.updaterForVariable.get("W");
         assertEquals(0.123, adaDelta1.getEpsilon(), 0.0);
 
-        AdaDeltaUpdater u2_2 = (AdaDeltaUpdater)updaters[2];
+        LayerUpdater u2_2 = (LayerUpdater) updaters[2];
         AdaDelta adaDelta2 = (AdaDelta) u2_2.updaterForVariable.get("W");
         assertEquals(0.456, adaDelta2.getEpsilon(), 0.0);
 

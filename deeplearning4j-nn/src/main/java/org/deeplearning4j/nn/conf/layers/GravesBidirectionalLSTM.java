@@ -63,6 +63,59 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         return GravesBidirectionalLSTMParamInitializer.getInstance();
     }
 
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch(paramName){
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS:
+                return l1;
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch(paramName){
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS:
+                return l2;
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
+                return 0.0;
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch(paramName){
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
+            case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS:
+                return learningRate;
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
+            case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            default:
+                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
+        }
+    }
+
     @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 

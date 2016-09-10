@@ -82,7 +82,7 @@ public class DataSetIteratorTest {
 		ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
 		CSVRecordReader rr = new CSVRecordReader(0,",");
 		rr.initialize(new FileSplit(cpr.getTempFileFromArchive()));
-		RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr,0,10);
+		RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr,10,0,10);
 
 		MnistDataSetIterator iter = new MnistDataSetIterator(10,200,false,true,false,0);
 

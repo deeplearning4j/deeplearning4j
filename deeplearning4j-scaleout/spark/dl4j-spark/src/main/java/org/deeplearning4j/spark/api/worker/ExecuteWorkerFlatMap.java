@@ -11,8 +11,10 @@ import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.StatsCalculationHelper;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -119,6 +121,9 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
             if(batchedIterator instanceof AsyncDataSetIterator){
                 ((AsyncDataSetIterator)batchedIterator).shutdown();
             }
+
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
         }
     }
 }
