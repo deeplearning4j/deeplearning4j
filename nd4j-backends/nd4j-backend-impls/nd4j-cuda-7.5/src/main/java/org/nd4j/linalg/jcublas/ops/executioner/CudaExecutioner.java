@@ -1387,7 +1387,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         // this is special case for assign
-/*
+
         if (op.opNum() == 16 && op.y() != null && !op.y().isView() && !op.x().isView() && !op.z().isView()
                 && op.z().ordering() == op.y().ordering() && op.y().ordering() == op.x().ordering()
                 && Arrays.equals(op.y().shape(), op.z().shape()) && Arrays.equals(op.y().stride(), op.z().stride())
@@ -1395,9 +1395,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             AllocationPoint point = allocator.getAllocationPoint(op.y());
             AllocationPoint pointDst = allocator.getAllocationPoint(op.z());
             synchronized (point) {
-//                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-//                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
-
 //                log.info("X: {}; Y: {}, Z: {}", op.x().ordering(), op.y().ordering(), op.z().ordering());
                 CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -1407,7 +1404,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 return null;
             }
         }
-        */
+
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
