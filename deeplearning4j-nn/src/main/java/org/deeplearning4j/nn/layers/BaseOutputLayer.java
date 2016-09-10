@@ -90,19 +90,15 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
-        /*
-        NOTE: Instead of what is below have??
-        setScore(preOut)
 
-        LossFunctions.LossFunction lf = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)conf.getLayer()).getLossFunction();
-        if ( (lf == LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD || lf == LossFunctions.LossFunction.MCXENT) && layerConf().getActivationFunction().equals("softmax")) {
-            //special case: softmax + NLL or MCXENT: use log softmax to avoid numerical underflow
-            setScore(null,preOut);
-        } else {
-            INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
-            setScoreWithZ(output);
-        }
-        */
+        ILossFunction lossFunction = layerConf().getLossFn();
+
+        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
+        score += fullNetworkL1 + fullNetworkL2;
+        score /= getInputMiniBatchSize();
+
+        this.score = score;
+
         return score;
     }
 
@@ -121,15 +117,22 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 //        NOTE: So this should now call what is in ILossFunction
 //        But what about regularization??
 
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-        return LossCalculation.builder()
-                .l1(fullNetworkL1).l2(fullNetworkL2)
-                .labels(getLabels2d()).z(output)
-                .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
-                .lossFunction(layerConf().getLossFunction())
-                .useRegularization(conf.isUseRegularization())
-                .mask(maskArray).build().scoreExamples();
+//        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+//        return LossCalculation.builder()
+//                .l1(fullNetworkL1).l2(fullNetworkL2)
+//                .labels(getLabels2d()).z(output)
+//                .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
+//                .lossFunction(layerConf().getLossFunction())
+//                .useRegularization(conf.isUseRegularization())
+//                .mask(maskArray).build().scoreExamples();
 
+        ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray scoreArray = lossFunction.computeScoreArray(labels,preOut,layerConf().getActivationFunction(),maskArray);
+        double l1l2 = fullNetworkL1 + fullNetworkL2;
+        if(l1l2 != 0.0){
+            scoreArray.addi(l1l2);
+        }
+        return scoreArray;
     }
 
     @Override
@@ -140,35 +143,38 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray preOut = preOutput2d(true);
         Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
-        setScore(triple.getThird(), preOut);
+//        setScore(triple.getThird(), preOut);
+
+        score = computeScore(fullNetworkL1,fullNetworkL2,true);
     }
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        setScore(z, null);
+//        setScore(z, null);
+        throw new RuntimeException("Not yet implemented");
     }
 
-    private void setScore(INDArray z, INDArray preOut ){
-        /*
-        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
-            create.exec();
-            score = create.getFinalResult().doubleValue();
-        }
-        else {
-            score = LossCalculation.builder()
-                    .l1(fullNetworkL1).l2(fullNetworkL2)
-                    .labels(getLabels2d()).z(z)
-                    .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
-                    .lossFunction(layerConf().getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization())
-                    .mask(maskArray).build().score();
-        }
-        NOTE: Should now be
-        score = lossfunction.computeScore(blahbalh..
-        */
-    }
+//    private void setScore(INDArray z, INDArray preOut ){
+//        /*
+//        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+//            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
+//            create.exec();
+//            score = create.getFinalResult().doubleValue();
+//        }
+//        else {
+//            score = LossCalculation.builder()
+//                    .l1(fullNetworkL1).l2(fullNetworkL2)
+//                    .labels(getLabels2d()).z(z)
+//                    .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
+//                    .lossFunction(layerConf().getLossFunction())
+//                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
+//                    .useRegularization(conf.isUseRegularization())
+//                    .mask(maskArray).build().score();
+//        }
+//        NOTE: Should now be
+//        score = lossfunction.computeScore(blahbalh..
+//        */
+//    }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
@@ -190,22 +196,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public Gradient gradient() {
-        LinAlgExceptions.assertRows(input, getLabels2d());
         return gradient;
-
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-        INDArray outSubLabels = output.sub(getLabels2d());
-        Gradient gradient = new DefaultGradient();
+//        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+//        INDArray outSubLabels = output.sub(getLabels2d());
 
-        INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
 
 
         Triple<Gradient,INDArray,INDArray> triple;
@@ -219,7 +217,23 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         // multiply dZ/dW and dz/db by delta
 
 //        return triple;
-        return null;    //TODO
+
+        ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray delta = lossFunction.computeGradient(labels,preOut,layerConf().getActivationFunction(),maskArray);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));    //TODO: do we need dup here?
+
+        Gradient gradient = new DefaultGradient();
+
+        INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+
+        Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
+        biasGradView.assign(delta.sum(0));
+
+        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
+        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
+
+        return new Triple<>(gradient, delta, output);
     }
 
 
