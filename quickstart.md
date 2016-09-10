@@ -50,7 +50,7 @@ Once you've configured your net, you train the model with `model.fit`.
 ## Prerequisites
 
 * [Java (developer version)](#Java) 1.7 or later (**Only 64-Bit versions supported**)
-* [Apache Maven](#Maven) 
+* [Apache Maven](#Maven) (automated build and dependency manager)
 * [IntelliJ IDEA](#IntelliJ) or Eclipse
 * [Git](#Git)
 
