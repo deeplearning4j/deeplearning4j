@@ -117,9 +117,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
         INDArray preOut = preOutput2d(false);
-        /*
-        NOTE: So this should now call what is in ILossFunction
-        But what about regularization??
+
+//        NOTE: So this should now call what is in ILossFunction
+//        But what about regularization??
 
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
         return LossCalculation.builder()
@@ -129,7 +129,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                 .lossFunction(layerConf().getLossFunction())
                 .useRegularization(conf.isUseRegularization())
                 .mask(maskArray).build().scoreExamples();
-         */
+
     }
 
     @Override
@@ -218,7 +218,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         // delta is what is called the gradient in the ILossFunctions, so that would just lossFunction.computeGradient
         // multiply dZ/dW and dz/db by delta
 
-        return triple;
+//        return triple;
+        return null;    //TODO
     }
 
 
