@@ -191,7 +191,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1, 1, CUDNN_CROSS_CORRELATION));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH, kW));
         checkCudnn(cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc, cudnnContext.deltaTensorDesc,
-                cudnnContext.convDesc, cudnnContext.filterDesc, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, algo));
+                cudnnContext.convDesc, cudnnContext.filterDesc, CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE, 0, algo));
 
         INDArray epsNext = Nd4j.create(new int[]{miniBatch,inDepth,inH,inW},'c');
         int[] dstStride = epsNext.stride();
