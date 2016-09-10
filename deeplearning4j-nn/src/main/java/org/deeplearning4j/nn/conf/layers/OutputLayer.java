@@ -57,12 +57,6 @@ public class OutputLayer extends BaseOutputLayer {
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
         ret.setConf(conf);
-        /*
-
-         So here I am confused about the builder pattern
-         the builder.getLossFunction should now give an instance of the loss function?
-
-         */
         return ret;
     }
 
