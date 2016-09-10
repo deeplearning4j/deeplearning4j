@@ -359,11 +359,18 @@ public class NDArray extends BaseNDArray {
         return new BaseNDArrayProxy(this);
     }
 
+    /**
+     * This method does direct array copy. Impossible to use on views or mixed orders.
+     *
+     * PLEASE NOTE: YOU SHOULD NEVER USE THIS METHOD, UNLESS YOU 100% CLEAR ABOUT IT
+     *
+     * @return
+     */
     @Override
-    public INDArray unsafeDuplication() {
+    public synchronized INDArray unsafeDuplication() {
         INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
 
-        Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().getElementSize());
+        Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().length() * this.data().getElementSize());
 
         return ret;
     }
