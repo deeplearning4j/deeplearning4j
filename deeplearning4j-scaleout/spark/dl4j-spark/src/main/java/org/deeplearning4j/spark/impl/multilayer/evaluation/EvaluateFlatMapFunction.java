@@ -70,7 +70,7 @@ public class EvaluateFlatMapFunction implements FlatMapFunction<Iterator<DataSet
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json.getValue()));
         network.init();
-        INDArray val = params.value();
+        INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
