@@ -22,6 +22,7 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -95,6 +96,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labels = labels;
         this.featuresMask = featuresMask;
         this.labelsMask = labelsMask;
+
+        // we want this dataset to be fully committed to device
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
     }
 
     public boolean isPreProcessed() {
