@@ -74,11 +74,11 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder() {
-            this.lossFunction = LossFunction.MCXENT;
+
         }
 
         public Builder(LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
+            lossFunction(lossFunction);
         }
 
         @Override
