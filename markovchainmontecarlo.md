@@ -19,13 +19,13 @@ It's time to prepare the invasion.
 
 That's Monte Carlo: A mathematical method used to predict the probability of future events, an unknown distribution of states. 
 
-With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method goes by the name "Monte Carlo", because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. This is James Bond math. 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes of a given system. The method goes by the name "Monte Carlo", because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. In a word, it's James Bond math. 
 
 You can drop a sock on anything. It's called *sampling*. And randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
 
-Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. 
+Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. So we sample. 
 
-Let's say you're really a gambler and you roll a die without knowing if it is fair or loaded. You roll that mysterious, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
+Or forget aliens. You're a gambler in the saloon of a Gold Rush town and you roll a die without knowing if it is fair or loaded. You roll that mysterious, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
 Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is inductive method that draws from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
 
@@ -41,7 +41,7 @@ While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It,
 
 At the most abstract level, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
-* Cities on a map are states. A road trip strings them together in transitions.
+* Cities on a map are states. A road trip strings them together in transitions. The map is the system.
 * Words in a language are states. A sentence is a series of transitions.
 * Genes on a chromosome are states. 
 * Web pages on the Internet are states. Links are the transitions. 
@@ -50,21 +50,33 @@ At the most abstract level, a system is a set of things connected together. You 
 * Social media profiles are states in the network. Follows, likes and friending are the transitions. 
 * Ocean and land are states in geography. Only amphibians know the transitions. 
 
-So states are an abstraction used to describe all these discrete, or separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others (we are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby). A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. 
+So states are an abstraction used to describe all these discrete, separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others. 
+
+We are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby. 
+
+A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. 
 
 ## Markov Chains
 
-Since states occur one after another, it can make sense to traverse the state space, moving from one to the next rather than sampling them independently. That's where Markov chains come in. 
+Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next rather than sampling them independently from an alien ship. That's where Markov chains come in. 
 
-Now, a Markov chain is one way to traverse a system of states. It traces a series of transitions from one state to another. And each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are always in a corridor of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, while others close behind us. 
+A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are always in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others closing behind us. 
 
 While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
+
+## Markovian Time
 
 Markov chains have a particular property, and that is oblivion, or forgetting. 
 
 That is, they have no memory; they know nothing beyond the present, which means that the only factor determining the transition to a future state is a chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/).
 
 So imagine the current state as the input data, and the distribution of future states as the dependent data, or the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
+
+## MCMCL Markov Chain Monte Carlo and Marco Polo
+
+Markov Chains allow us to traverse a space, sampling as we go, which each new sample dependent on the one before. 
+
+Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows. He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the country they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. 
 
 ## Neural Networks Mapping Transitions
 
