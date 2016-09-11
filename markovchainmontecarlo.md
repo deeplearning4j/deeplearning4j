@@ -11,17 +11,21 @@ You have been instructed by a distant galactic empress to find a tolerable globe
 
 That's where the socks come in. 
 
-You have no way of calculating precisely how much of the Earth's surface is water, and how much is dirt, because you can't see all of it. So instead of attempting to plot the geometry of the oceans and continents, you decide you're just going to drop a bunch of socks randomly all over the planet and haul them back up. The ratio of salty, wet socks to dry socks will represent the ratio of sea water to land, and give you a rough approximation of the total surface area of land and water. You drop 100,000 socks, and you get 70,573 sopping, salty socks back. 
+You have no way of calculating precisely how much of the Earth's surface is water, and how much is dirt, because you can't see all of it. So instead of attempting to plot the geometry of the oceans and continents, you decide you're just going to drop a bunch of socks randomly all over the planet and haul them back up. The ratio of wet, salty socks to dry will represent the ratio of sea water to land, and give you a rough approximation of the total surface area of each. You drop 100,000 socks, and you get 70,573 sopping, salty socks back. 
 
 It's time to prepare the invasion. 
 
 ## Monte Carlo 
 
-That's a Monte Carlo simulation. With a little more jargon, you might say it's a mathematical simulation using a pseudo-random number generator that will produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method is called Monte Carlo, because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning is a matter of probabilities. This is James Bond math. 
+That's Monte Carlo. A mathematical method used to predict the probability of future events, unknown distributions of states. 
 
-You can drop a sock on anything. It's called *sampling*. And randomly distributing those socks over a limited, pre-ordained set of possibilities, which together add up to 100% of the earth's surface, is called the Monte Carlo method. 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method goes by the name "Monte Carlo", because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. This is James Bond math. 
 
-We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable to gauge reality around us with much precision. You gamble and you roll the die, not knowing if the die is fair or loaded. Monte Carlo looks at the results of rolling the die many times. It is an inductive method; it draws from experience.  
+You can drop a sock on anything. It's called *sampling*. And randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
+
+We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable to gauge reality around us with much precision. 
+
+Let's say you're really a gambler and you roll the die, not knowing if it is fair or loaded. You roll that six-sided die a thousand times, count the number of times you roll a four, and divide by 1000. That gives you the probability of four in the total distribution. Monte Carlo looks at the results of rolling the die many times and tallies the results. It is inductive method that draws from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
 
 Another example: Perhaps during your conquest you stumble across the quaint language of English, and wonder if any particular letters are more important that others. By randomly sampling letters from the works of an infinite library, you would soon discover that "e" is in fact the [most commonly used letter](https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language) in the alphabet. (Unless you are sampling from the works of the novelist Georges Perec, who wrote [a fairly long novel](https://en.wikipedia.org/wiki/A_Void) without our hardest-working vowel.) You order your team of alien linguists to produce a report on "e" to better communicate with the natives. 
 
