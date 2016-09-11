@@ -21,6 +21,9 @@ package org.deeplearning4j.models.paragraphvectors;
 
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -169,6 +172,8 @@ public class ParagraphVectorsTest {
                 .learningRate(0.025)
                 .labelsSource(source)
                 .windowSize(5)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .sequenceLearningAlgorithm(new DBOW<VocabWord>())
                 .iterate(iter)
                 .trainWordVectors(true)
                 .vocabCache(cache)
@@ -178,6 +183,10 @@ public class ParagraphVectorsTest {
 
         vec.fit();
 
+        File fullFile = File.createTempFile("paravec", "tests");
+        fullFile.deleteOnExit();
+
+        WordVectorSerializer.writeParagraphVectors(vec, fullFile);
 
         int cnt1 = cache.wordFrequency("day");
         int cnt2 = cache.wordFrequency("me");
@@ -281,6 +290,43 @@ public class ParagraphVectorsTest {
 
 
         assertEquals(labelsOriginal.size(), labelsBinary.size());
+
+        INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
+        INDArray inferredA1 = vec.inferVector("This is my world .");
+        INDArray inferredB1 = vec.inferVector("This is my world .");
+
+        double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
+        double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
+
+        log.info("Cos O/A: {}", cosAO1);
+        log.info("Cos A/B: {}", cosAB1);
+        assertTrue(cosAO1 > 0.7);
+        assertTrue(cosAB1 > 0.95);
+
+        //assertArrayEquals(inferredA.data().asDouble(), inferredB.data().asDouble(), 0.01);
+
+        ParagraphVectors restoredVectors = WordVectorSerializer.readParagraphVectors(fullFile);
+        restoredVectors.setTokenizerFactory(t);
+
+        INDArray inferredA2 = restoredVectors.inferVector("This is my world .");
+        INDArray inferredB2 = restoredVectors.inferVector("This is my world .");
+        INDArray inferredC2 = restoredVectors.inferVector("world way case .");
+
+        double cosAO2 = Transforms.cosineSim(inferredA2.dup(), original.dup());
+        double cosAB2 = Transforms.cosineSim(inferredA2.dup(), inferredB2.dup());
+        double cosAAX = Transforms.cosineSim(inferredA1.dup(), inferredA2.dup());
+        double cosAC2 = Transforms.cosineSim(inferredC2.dup(), inferredA2.dup());
+
+        log.info("Cos A2/B2: {}", cosAB2);
+        log.info("Cos A1/A2: {}", cosAAX);
+        log.info("Cos O/A2: {}", cosAO2);
+        log.info("Cos C2/A2: {}", cosAC2);
+
+        log.info("Vector: {}", Arrays.toString(inferredA1.data().asFloat()));
+
+        assertTrue(cosAO2 > 0.7);
+        assertTrue(cosAB2 > 0.95);
+        assertTrue(cosAAX > 0.95);
     }
 
 
@@ -310,6 +356,7 @@ public class ParagraphVectorsTest {
                 .trainWordVectors(true)
                 .vocabCache(cache)
                 .tokenizerFactory(t)
+                .negativeSample(0)
                 .sampling(0)
                 .sequenceLearningAlgorithm(new DM<VocabWord>())
                 .build();
