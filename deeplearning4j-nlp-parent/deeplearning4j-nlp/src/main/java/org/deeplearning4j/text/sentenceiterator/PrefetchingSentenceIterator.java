@@ -114,7 +114,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         private AtomicBoolean isRunning = new AtomicBoolean(true);
         private ArrayBlockingQueue<String> buffer;
 
-        public AsyncIteratorReader(@NonNull SentenceIterator iterator, @NonNull int fetchSize, SentencePreProcessor preProcessor) {
+        public AsyncIteratorReader(@NonNull SentenceIterator iterator, int fetchSize, SentencePreProcessor preProcessor) {
             this.iterator = iterator;
             this.fetchSize = fetchSize;
             this.preProcessor = preProcessor;

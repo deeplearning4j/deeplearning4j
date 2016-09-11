@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.custom.testlayers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,7 +34,7 @@ import java.util.Map;
 /**
  * Created by Alex on 26/08/2016.
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=true)
 public class CustomLayer extends FeedForwardLayer {
 
     private final double someCustomParameter;
