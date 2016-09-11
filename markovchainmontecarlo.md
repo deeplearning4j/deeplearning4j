@@ -37,9 +37,7 @@ The states in question can vary. Instead of surf and turf, they might be letters
 While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It, then, occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation.
 ```
 
-Since states occur one after another, it can make sense to traverse the state space, moving from one to the next rather than sampling them independently. That's where Markov chains come in. 
-
-## Systems, States and Markov Chains
+## Systems and States
 
 At the most abstract level, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
@@ -54,6 +52,10 @@ At the most abstract level, a system is a set of things connected together. You 
 
 So states are an abstraction used to describe all these discrete, or separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others (we are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby). A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. 
 
+## Markov Chains
+
+Since states occur one after another, it can make sense to traverse the state space, moving from one to the next rather than sampling them independently. That's where Markov chains come in. 
+
 Now, a Markov chain is one way to traverse a system of states. It traces a series of transitions from one state to another. And each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are always in a corridor of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, while others close behind us. 
 
 While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
@@ -64,7 +66,7 @@ That is, they have no memory; they know nothing beyond the present, which means 
 
 So imagine the current state as the input data, and the distribution of future states as the dependent data, or the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
 
-## Markov Chains and Neural Networks
+## Neural Networks Mapping Transitions
 
 Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transition from one layer to the next, or from raw data to the final results of a classifier.
 
@@ -74,7 +76,7 @@ Remember, the output layer of a classifier, for example, might be image labels l
 
 You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states. 
 
-## Probability as space
+## Probability as Space
 
 When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, each one of them a prbability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line of the letters by their frequency for 11 different languages, and you get 11 different state spaces:
 
