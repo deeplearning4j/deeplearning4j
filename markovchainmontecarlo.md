@@ -104,7 +104,7 @@ That is, the nodes of a neural network are states in a system, and the weights b
 
 Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
 
-You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by step, through a Markov Chain. 
+You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
 
 ## Further Deeplearning4j Tutorials
 
