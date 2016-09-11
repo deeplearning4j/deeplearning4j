@@ -296,7 +296,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public double f1Score(DataSet data) {
-        return f1Score(data.getFeatureMatrix(), data.getLabels());
+        return f1Score(data.getFeatures(), data.getLabels());
     }
 
     /**
@@ -355,7 +355,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public List<String> predict(DataSet dataSet) {
-        int[] intRet = predict(dataSet.getFeatureMatrix());
+        int[] intRet = predict(dataSet.getFeatures());
         List<String> ret = new ArrayList<>();
         for(int i: intRet) {
             ret.add(i,dataSet.getLabelName(i));
@@ -406,7 +406,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatureMatrix(), data.getLabels());
+        fit(data.getFeatures(), data.getLabels());
     }
 
     /**

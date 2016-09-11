@@ -1,0 +1,35 @@
+<configuration>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application.log</file>
+        <encoder>
+            <pattern>%date - [%level] - from %logger in %thread
+                %n%message%n%xException%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern> %logger{15} - %message%n%xException{5}
+            </pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.apache.catalina.core" level="DEBUG" />
+    <logger name="org.springframework" level="DEBUG" />
+    <logger name="org.deeplearning4j" level="INFO" />
+    <logger name="org.canova" level="INFO" />
+    <logger name="org.datavec" level="INFO" />
+    <logger name="org.nd4j" level="INFO" />
+    <logger name="opennlp.uima.util" level="OFF" />
+    <logger name="org.apache.uima" level="OFF" />
+    <logger name="org.cleartk" level="OFF" />
+
+
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>

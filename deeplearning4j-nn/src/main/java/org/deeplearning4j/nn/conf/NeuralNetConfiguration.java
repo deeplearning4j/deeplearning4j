@@ -25,17 +25,20 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
+import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +111,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new ArrayList<>(variables);
     }
 
+    public List<String> variables(boolean copy){
+        if(copy) return variables();
+        return variables;
+    }
+
     public void addVariable(String variable) {
         if(!variables.contains(variable)) {
             variables.add(variable);
@@ -121,13 +129,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
     public void setLayerParamLR(String variable){
-        double lr = (variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
-        double l1 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL1();
-        double l2 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL2();
+        double lr = layer.getLearningRateByParam(variable);
+        double l1 = layer.getL1ByParam(variable);
+        if(Double.isNaN(l1)) l1 = 0.0;  //Not set
+        double l2 = layer.getL2ByParam(variable);
+        if(Double.isNaN(l2)) l2 = 0.0;  //Not set
         learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
-
     }
 
     public double getLearningRateByParam(String variable){
@@ -208,7 +217,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
-                    .redistributeParams(redistributeParams)
                     .cnnInputSize(this.cnnInputSize)
                     .setInputType(this.inputType)
                     .confs(list).build();
@@ -329,23 +337,37 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
 
-        //Custom layer support
-        // First: scan the classpath and find all instances of Layer configuration; register them
-        Reflections reflections = new Reflections();
-        Set<Class<? extends Layer>> subTypes = reflections.getSubTypesOf(Layer.class);
+        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class /*, ILossFunction.class*/ );
+    }
 
-        //Second: get all of the currently registered Layer subtypes
-        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, ret.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = ret.getSubtypeResolver().collectAndResolveSubtypes(ac, ret.getSerializationConfig(), ret.getSerializationConfig().getAnnotationIntrospector());
+    private static void registerSubtypes(ObjectMapper mapper, Class<?>... baseClasses){
+        //Register concrete subtypes for JSON serialization
+
+        // First: scan the classpath and find all instances of the 'baseClasses' classes
+        Reflections reflections = new Reflections();
+        org.reflections.Store store = reflections.getStore();
+        List<String> classNames = new ArrayList<>();
+        for(Class<?> c : baseClasses){
+            classNames.add(c.getName());
+        }
+
+        Iterable<String> subtypesByName = store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
+        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+
+        //Second: get all currently registered subtypes for this mapper
         Set<Class<?>> registeredSubtypes = new HashSet<>();
-        for (NamedType nt : types) {
-            registeredSubtypes.add(nt.getType());
+        for (Class<?> c : baseClasses) {
+            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+            Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+            for (NamedType nt : types) {
+                registeredSubtypes.add(nt.getType());
+            }
         }
 
         //Third: register all _concrete_ subtypes that are not already registered
         List<NamedType> toRegister = new ArrayList<>();
-        for (Class<? extends Layer> c : subTypes) {
-            //First: check if it's concrete or abstract
+        for (Class<?> c : subtypeClasses) {
+            //Check if it's concrete or abstract...
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
                 //log.info("Skipping abstract/interface: {}",c);
                 continue;
@@ -360,12 +382,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     name = c.getSimpleName();
                 }
                 toRegister.add(new NamedType(c, name));
-
-                log.debug("Registering custom Layer class for JSON serialization: {}",c);
+                if(log.isDebugEnabled()){
+                    for(Class<?> baseClass : baseClasses){
+                        if(baseClass.isAssignableFrom(c)){
+                            log.debug("Registering class for JSON serialization: {} as subtype of {}",c.getName(),baseClass.getName());
+                            break;
+                        }
+                    }
+                }
             }
         }
 
-        ret.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
+        mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
 
     public Object[] getExtraArgs() {

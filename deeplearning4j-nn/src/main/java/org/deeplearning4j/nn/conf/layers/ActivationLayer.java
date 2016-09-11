@@ -61,6 +61,24 @@ public class ActivationLayer extends FeedForwardLayer {
     }
 
     @Override
+    public double getL1ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        //Not applicable
+        return 0;
+    }
+
+    @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op
     }
