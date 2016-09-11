@@ -228,6 +228,7 @@ You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob
 
 * [Regression & Neural Networks](./linear-regression.html)
 * [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Convolutional Networks](./convolutionalnets)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
 
