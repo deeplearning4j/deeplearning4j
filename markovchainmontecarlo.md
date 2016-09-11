@@ -68,39 +68,43 @@ While our journeys across a state space may seem unique, like road trips across 
 
 Markov chains have a particular property, and that is oblivion, or forgetting. 
 
-That is, they have no memory; they know nothing beyond the present, which means that the only factor determining the transition to a future state is a chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/).
+That is, they have no memory; they know nothing beyond the present, which means that the only factor determining the transition to a future state is a chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. You might say that Markov Chains assume the entirety of the past is encoded in the present, so we don't need to know anything more than where we are to infer where we will be next. 
+
+For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/). 
 
 So imagine the current state as the input data, and the distribution of future states as the dependent data, or the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
 
 ## MCMCL Markov Chain Monte Carlo and Marco Polo
 
-Markov Chains allow us to traverse a space, sampling as we go, which each new sample dependent on the one before. 
+Markov Chains allow us to traverse a space, sampling as we go, with each new sample *dependent* on the one before. 
 
-Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows, bordered by rival Khans whose strength he needs to assess. 
+Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows, bordered by rival Khans whose strength he needs to assess. 
 
-He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the Khanate they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. Given that they explorers, uncertain of their destination, the direction they take each day is somewhat random. They are taking a random walk across Asia, and recording it for their emperor. 
+He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the Khanate they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. Given that they are explorers uncertain of their destination, the direction they take each day is somewhat random. They are taking a random walk across 13th-century Asia, and recording it for their emperor, so that he may know the size of his lands as opposed to his neighbors. 
 
 ![Alt text](./img/Mongol_Empire.jpg) 
 
 ## Probability as Space
 
-When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, each one of them a prbability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line of the letters by their frequency for 11 different languages, and you get 11 different state spaces:
+When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, or khanates, each one of them a probability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line up the letters by their frequency for 11 different languages, and you get 11 different state spaces:
 
 ![Alt text](./img/letter_frequency_multilang.png) 
 
-Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. Or if you wanted to look at the English language alone, you would get this set of histograms. Here, probabilities are defined by a line traced across the top, and the area under the line can be measured with a calculus operation called integration, the opposite of a derivative.  
+Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. 
+
+If you wanted to look at the English language alone, you would get this set of histograms. Here, probabilities are defined by a line traced across the top, and the area under the line can be measured with a calculus operation called integration, the opposite of a derivative.  
 
 ![Alt text](./img/english_letter_dist.png) 
 
 ## Neural Networks Mapping Transitions
 
-Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transition from one layer to the next, or from raw data to the final results of a classifier.
+Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transitions from one set of states to the next, or from raw data to the final results of a classifier.
 
-That is, the nodes of a neural network are states in a system, and the weights between those nodes are the transitions, continuing all the way through to the output layer. 
+That is, the nodes of a neural network are states in a system, and the weights between those nodes affect the transitions as information passes through the net, continuing all the way through to the output layer, where it is crystallized in a decision about the data. 
 
 Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
 
-You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states. 
+You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by step, through a Markov Chain. 
 
 ## Further Deeplearning4j Tutorials
 
