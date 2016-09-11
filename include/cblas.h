@@ -27,7 +27,14 @@ enum CBLAS_SIDE  {CblasLeft=141, CblasRight=142};
 int cblas_errprn(int ierr, int info, char *form, ...);
 void cblas_xerbla(int p,  char *rout,  char *form, ...);
 
+#ifdef __MKL
+//void mkl_set_num_threads(int num);
+#elif __OPENBLAS
 void openblas_set_num_threads(int num);
+#else
+// do nothing
+#endif
+
 
 /*
  * ===========================================================================

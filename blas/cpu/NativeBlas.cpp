@@ -117,8 +117,20 @@ CBLAS_SIDE convertSide(int from) {
     }
 }
 
+void blas_set_num_threads(int num) {
+#ifdef __MKL
+    //
+#elif __OPENBLAS
+    openblas_set_num_threads(num);
+#else
+    //
+#endif
+}
 
 
+void Nd4jBlas::setMaxThreads(int num) {
+    blas_set_num_threads(num);
+}
 
 /*
  * ======================================================
