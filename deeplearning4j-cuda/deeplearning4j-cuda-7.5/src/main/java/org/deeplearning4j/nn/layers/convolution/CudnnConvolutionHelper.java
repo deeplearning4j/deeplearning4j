@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.SizeTPointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -31,6 +32,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -163,7 +165,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta,
-            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn) {
+            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn, AlgoMode mode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -183,7 +185,13 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
         int[] srcStride = input.stride();
         int[] deltaStride = delta.stride();
-        int[] algo = new int[1];
+        int[] algo1 = new int[1];
+        int[] algo2 = new int[1];
+
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
@@ -191,7 +199,11 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1, 1, CUDNN_CROSS_CORRELATION));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH, kW));
         checkCudnn(cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc, cudnnContext.deltaTensorDesc,
-                cudnnContext.convDesc, cudnnContext.filterDesc, CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE, 0, algo));
+                cudnnContext.convDesc, cudnnContext.filterDesc, mode == AlgoMode.NO_WORKSPACE ?
+                        CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE : CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, algo1));
+        checkCudnn(cudnnGetConvolutionBackwardDataAlgorithm(cudnnContext, cudnnContext.filterDesc, cudnnContext.deltaTensorDesc,
+                cudnnContext.convDesc, cudnnContext.srcTensorDesc, mode == AlgoMode.NO_WORKSPACE ?
+                        CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE : CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, algo2));
 
         INDArray epsNext = Nd4j.create(new int[]{miniBatch,inDepth,inH,inW},'c');
         int[] dstStride = epsNext.stride();
@@ -209,10 +221,10 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         checkCudnn(cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
-                cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc, algo[0], sizeInBytes));
+                cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc, algo1[0], sizeInBytes));
         long sizeInBytes1 = sizeInBytes.get(0);
         checkCudnn(cudnnGetConvolutionBackwardDataWorkspaceSize(cudnnContext, cudnnContext.filterDesc,
-                cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, algo[0], sizeInBytes));
+                cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, algo2[0], sizeInBytes));
         long sizeInBytes2 = sizeInBytes.get(0);
         if (sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
             workSpace.deallocate();
@@ -222,9 +234,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
         checkCudnn(cudnnConvolutionBackwardBias(cudnnContext, alpha, cudnnContext.deltaTensorDesc, deltaData, beta, cudnnContext.biasTensorDesc, biasGradData));
         checkCudnn(cudnnConvolutionBackwardFilter(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData, cudnnContext.deltaTensorDesc, deltaData,
-                cudnnContext.convDesc, algo[0], workSpace, workSpace.capacity(), beta, cudnnContext.filterDesc, filterGradData));
+                cudnnContext.convDesc, algo1[0], workSpace, workSpace.capacity(), beta, cudnnContext.filterDesc, filterGradData));
         checkCudnn(cudnnConvolutionBackwardData(cudnnContext, alpha, cudnnContext.filterDesc, filterData, cudnnContext.deltaTensorDesc, deltaData, cudnnContext.convDesc,
-                algo[0], workSpace, workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData));
+                algo2[0], workSpace, workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData));
 
         allocator.registerAction(context, input, weights, weightGradView, biasGradView, delta, epsNext);
 
@@ -236,7 +248,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
     }
 
     @Override
-    public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad) {
+    public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad, AlgoMode mode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -247,6 +259,10 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int kW = weights.size(3);
 
         int[] srcStride = input.stride();
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH, kW));
@@ -260,7 +276,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, n[0], c[0], h[0], w[0],
                 dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         checkCudnn(cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, cudnnContext.convDesc,
-                cudnnContext.dstTensorDesc, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, algo));
+                cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE ?
+                        CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, algo));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, weights, bias, z);
@@ -290,6 +307,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     @Override
     public INDArray activate(INDArray z, String afn) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
         INDArray activation = z;
 
         Allocator allocator = AtomicAllocator.getInstance();

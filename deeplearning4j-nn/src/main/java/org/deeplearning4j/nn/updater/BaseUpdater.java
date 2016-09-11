@@ -24,7 +24,9 @@ import java.util.Map;
 
 /**
  * @author Adam Gibson
+ * @deprecated As of 0.6.0. Use {@link LayerUpdater instead}
  */
+@Deprecated
 public abstract class BaseUpdater implements Updater {
     protected Map<String, GradientUpdater> updaterForVariable = new LinkedHashMap<>();
     protected INDArray viewArray;

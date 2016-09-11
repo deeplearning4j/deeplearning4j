@@ -30,8 +30,10 @@ import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMa
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.spark.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
     private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
     private String exportDirectory = null;
+    private Random rng;
 
     private int lastExportedRDDId = Integer.MIN_VALUE;
     private String lastRDDExportPath;
@@ -89,6 +92,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.storageLevelStreams = builder.storageLevelStreams;
         this.rddTrainingApproach = builder.rddTrainingApproach;
         this.exportDirectory = builder.exportDirectory;
+        if(builder.rngSeed == null){
+            this.rng = new Random();
+        } else {
+            this.rng = new Random(builder.rngSeed);
+        }
+
 
         String jvmuid = UIDProvider.getJVMUID();
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
@@ -139,6 +148,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         String jvmuid = UIDProvider.getJVMUID();
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
+        this.rng = new Random();
     }
 
     @Override
@@ -216,7 +226,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
 
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<DataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        JavaRDD<DataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -246,7 +256,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logCountEnd();
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
         if (collectTrainingStats) stats.logSplitStart();
-        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -275,7 +285,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(dataSetObjectsNumExamples);
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths);
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
 
@@ -322,7 +332,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
 
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<MultiDataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData);
+        JavaRDD<MultiDataSet>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -355,7 +365,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
 
         if (collectTrainingStats) stats.logSplitStart();
-        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -380,7 +390,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
 
         if (collectTrainingStats) stats.logSplitStart();
-        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, new Random().nextLong());
+        JavaPairRDD<String, PortableDataStream>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingData, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
@@ -409,7 +419,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths);
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingDataPaths, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
 
@@ -438,7 +448,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(dataSetObjectsNumExamples);
         if (collectTrainingStats) stats.logSplitStart();
-        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingMultiDataPaths);
+        JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit((int) totalDataSetObjectCount, dataSetObjectsPerSplit, trainingMultiDataPaths, rng.nextLong());
         if (collectTrainingStats) stats.logSplitEnd();
 
 
@@ -534,7 +544,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(dataSetObjectNumExamples), numWorkers);
         int nPartitions = splitData.partitions().size();
         if (collectTrainingStats && repartition != Repartition.Never) stats.logRepartitionEnd();
-
 
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
         if (network != null) function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network));
@@ -641,6 +650,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             stats.logProcessParamsUpdaterEnd();
             stats.addWorkerStats(aggregatedStats);
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
 
@@ -805,6 +817,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
         private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
         private String exportDirectory = null;
+        private Long rngSeed;
 
 
         /**
@@ -976,6 +989,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder exportDirectory(String exportDirectory) {
             this.exportDirectory = exportDirectory;
+            return this;
+        }
+
+        /**
+         * Random number generator seed, used mainly for enforcing repeatable splitting on RDDs
+         * Default: no seed set (i.e., random seed)
+         *
+         * @param rngSeed    RNG seed
+         * @return
+         */
+        public Builder rngSeed(long rngSeed){
+            this.rngSeed = rngSeed;
             return this;
         }
 
