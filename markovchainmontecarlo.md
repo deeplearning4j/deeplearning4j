@@ -15,7 +15,7 @@ You have no way of calculating precisely how much of the Earth's surface is wate
 
 It's time to prepare the invasion. 
 
-## Monte Carlo 
+## Monte Carlo Methods
 
 That's Monte Carlo: A mathematical method used to predict the probability of future events, an unknown distribution of states. 
 
@@ -85,3 +85,10 @@ When they call it a state space, they're not joking. You can picture it, just li
 Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. Or if you wanted to look at the English language alone, you would get this set of histograms. Here, probabilities are defined by a line traced across the top, and the area under the line can be measured with a calculus operation called integration, the opposite of a derivative.  
 
 ![Alt text](./img/english_letter_dist.png) 
+
+## Further Deeplearning4j Tutorials
+
+* [Regression & Neural Networks](./linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
