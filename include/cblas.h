@@ -27,6 +27,8 @@ enum CBLAS_SIDE  {CblasLeft=141, CblasRight=142};
 int cblas_errprn(int ierr, int info, char *form, ...);
 void cblas_xerbla(int p,  char *rout,  char *form, ...);
 
+void openblas_set_num_threads(int num);
+
 /*
  * ===========================================================================
  * Prototypes for level 1 BLAS functions (complex are recast as routines)

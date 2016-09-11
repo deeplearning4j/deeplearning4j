@@ -18,9 +18,17 @@
 #endif
 #include <dll.h>
 #include <types/float16.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "cblas.h"
 
 class ND4J_EXPORT Nd4jBlas {
 public:
+
+    Nd4jBlas() {
+        openblas_set_num_threads(8);
+        printf("init called");
+    }
 
     /*
      * ======================================================
