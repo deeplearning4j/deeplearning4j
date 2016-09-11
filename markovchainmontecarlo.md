@@ -11,25 +11,25 @@ You have been instructed by a distant galactic empress to find a tolerable globe
 
 That's where the socks come in. 
 
-You have no way of calculating precisely how much of the Earth's surface is water, and how much is dirt, because you can't see all of it. So instead of attempting to plot the geometry of the oceans and continents, you decide you're just going to drop a bunch of socks randomly all over the planet and haul them back up. The ratio of wet, salty socks to dry will represent the ratio of sea water to land, and give you a rough approximation of the total surface area of each. You drop 100,000 socks, and you get 70,573 sopping, salty socks back. 
+You have no way of calculating precisely how much of the Earth's surface is water, and how much is dirt, because you can't see all of it. So instead of attempting to plot the geometry of the oceans and continents, you decide you're just going to drop a bunch of socks randomly all over the planet and haul them back up. The ratio of wet, salty socks to dry will represent the ratio of sea water to land, and give you a rough approximation of the total surface area of each. You drop 100,000 socks, randomly zipping your space ship around the earth, and you get 70,573 sopping, salty socks back. 
 
 It's time to prepare the invasion. 
 
 ## Monte Carlo Methods
 
-That's Monte Carlo: A mathematical method used to predict the probability of future events, an unknown distribution of states. 
+That's Monte Carlo: A mathematical method used to predict the probability of future events or an unknown distribution of states. (In this case, the distribution of land and water.)
 
-With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes of a given system. The method goes by the name "Monte Carlo", because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. In a word, it's James Bond math. 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator (for the placement of socks) to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. In a word, it's James Bond math. 
 
-You can drop a sock on anything. It's called *sampling*. And randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
+You can drop a sock on anything. It's also called *sampling*. Sampling permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large to compute. Randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
 
 Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. So we sample. 
 
 Or forget aliens. You're a gambler in the saloon of a Gold Rush town and you roll a die without knowing if it is fair or loaded. You roll that mysterious, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
-Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is inductive method that draws from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
+Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
 
-The states in question can vary. Instead of surf and turf, they might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, or the weather (rainy, sunny, overcast), or notes on a scale. These are all systems of discrete states that occur in seriatim, one after another.
+The states in question can vary. Instead of surf and turf, they might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, or the weather (rainy, sunny, overcast), or notes on a scale. These are all systems of discrete states that occur in seriatim, one after another. 
 
 [An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
 
@@ -39,16 +39,16 @@ While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It,
 
 ## Systems and States
 
-At the most abstract level, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
+At a more abstract level, where words hardly mean anything at all, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
-* Cities on a map are states. A road trip strings them together in transitions. The map is the system.
+* Cities on a map are states. A road trip strings them together in transitions. The map represents the system.
 * Words in a language are states. A sentence is a series of transitions.
-* Genes on a chromosome are states. 
+* Genes on a chromosome are states. To read them and create amino acids is to go through their transitions. 
 * Web pages on the Internet are states. Links are the transitions. 
 * Bank accounts in a financial system are states. Transactions are the transitions.
 * Emotions are states in the system of the psyche. Mood swings are the transitions. 
 * Social media profiles are states in the network. Follows, likes and friending are the transitions. 
-* Ocean and land are states in geography. Only amphibians know the transitions. 
+* Ocean and land are states in geography. The shoreline is the transition. 
 
 So states are an abstraction used to describe all these discrete, separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others. 
 
