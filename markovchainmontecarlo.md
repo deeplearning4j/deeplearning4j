@@ -82,5 +82,6 @@ When they call it a state space, they're not joking. You can picture it, just li
 
 ![Alt text](./img/letter_frequency_multilang.png) 
 
-Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. 
+Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. Or if you wanted to look at the English language alone, you would get this set of histograms. Here, probabilities are defined by a line traced across the top, and the area under the line can be measured with a calculus operation called integration, the opposite of a derivative.  
 
+![Alt text](./img/english_letter_dist.png) 
