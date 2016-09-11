@@ -17,23 +17,27 @@ It's time to prepare the invasion.
 
 ## Monte Carlo 
 
-That's Monte Carlo. A mathematical method used to predict the probability of future events, unknown distributions of states. 
+That's Monte Carlo: A mathematical method used to predict the probability of future events, an unknown distribution of states. 
 
 With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes. The method goes by the name "Monte Carlo", because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. This is James Bond math. 
 
 You can drop a sock on anything. It's called *sampling*. And randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
 
-We're stuck behind a veil of ignorance (the clouds) everywhere we turn, unable to gauge reality around us with much precision. 
+Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. 
 
-Let's say you're really a gambler and you roll the die, not knowing if it is fair or loaded. You roll that six-sided die a thousand times, count the number of times you roll a four, and divide by 1000. That gives you the probability of four in the total distribution. Monte Carlo looks at the results of rolling the die many times and tallies the results. It is inductive method that draws from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
+Let's say you're really a gambler and you roll a die without knowing if it is fair or loaded. You roll that mysterious, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
-Another example: Perhaps during your conquest you stumble across the quaint language of English, and wonder if any particular letters are more important that others. By randomly sampling letters from the works of an infinite library, you would soon discover that "e" is in fact the [most commonly used letter](https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language) in the alphabet. (Unless you are sampling from the works of the novelist Georges Perec, who wrote [a fairly long novel](https://en.wikipedia.org/wiki/A_Void) without our hardest-working vowel.) You order your team of alien linguists to produce a report on "e" to better communicate with the natives. 
+Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is inductive method that draws from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
+
+The states in question can vary. Instead of surf and turf, they might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, or the weather (rainy, sunny, overcast), or notes on a scale. These are all systems of discrete states that occur in seriatim, one after another.
 
 [An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
 
 ```
 While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It, then, occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation.
 ```
+
+Since states occur one after another, it can make sense to traverse the state space, moving from one to the next rather than sampling them independently. That's where Markov chains come in. 
 
 ## Markov Chains
 
@@ -58,6 +62,10 @@ So imagine the current state as the input data, and the distribution of future s
 
 ## Markov Chains and Neural Networks
 
-Now the nodes of a neural network are states in a system, and the weights between those nodes are the transitions, continuing all the way through to the output layer. Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
+Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transition from one layer to the next, or from raw data to the final results of a classifier.
+
+That is, the nodes of a neural network are states in a system, and the weights between those nodes are the transitions, continuing all the way through to the output layer. 
+
+Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
 
 You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states. 
