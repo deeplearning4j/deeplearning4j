@@ -29,6 +29,15 @@ public class Nd4jBlas extends Pointer {
         boolean pathsFirst = s.equals("true") || s.equals("t") || s.equals("");
         try {
             Loader.load(Nd4jBlas.class, properties, pathsFirst);
+
+            int numThreads;
+            String numThreadsString = System.getenv("OMP_NUM_THREADS");
+            if(numThreadsString != null && !numThreadsString.isEmpty()) {
+                numThreads = Integer.parseInt(numThreadsString);
+                setMaxThreads(numThreads);
+            }
+            else
+                setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
         } catch (UnsatisfiedLinkError e) {
             throw new RuntimeException("ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html", e);
         }
@@ -36,9 +45,49 @@ public class Nd4jBlas extends Pointer {
 
     public Nd4jBlas() {
         allocate();
+
+    }
+
+    private static int getCores(int totals) {
+        // that's special case for Xeon Phi
+        if (totals >= 256) return  64;
+
+        int ht_off = totals / 2; // we count off HyperThreading without any excuses
+
+        if (ht_off > 24) {
+            int rounds = 0;
+            while (ht_off > 24) { // we loop until final value gets below 24 cores, since that's reasonable threshold as of 2016
+                if (ht_off > 24) {
+                    ht_off /= 2; // we dont' have any cpus that has higher number then 24 physical cores
+                    rounds++;
+                }
+            }
+            // 20 threads is special case in this branch
+            if (ht_off == 20 && rounds < 2)
+                ht_off /= 2;
+        } else { // low-core models are known, but there's a gap, between consumer cpus and xeons
+            if (ht_off <= 6) {
+                // that's more likely consumer-grade cpu, so leave this value alone
+                return ht_off;
+            } else {
+                if (isOdd(ht_off)) // if that's odd number, it's final result
+                    return ht_off;
+
+                // 20 threads & 16 threads are special case in this branch, where we go min value
+                if (ht_off == 20 || ht_off == 16)
+                    ht_off /= 2;
+            }
+        }
+        return ht_off;
+    }
+
+    private static boolean isOdd(int value) {
+        return (value % 2 != 0);
     }
 
     private native void allocate();
+
+    public static native void setMaxThreads(int num);
 
 /*
      * ======================================================
