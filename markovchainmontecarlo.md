@@ -76,7 +76,9 @@ So imagine the current state as the input data, and the distribution of future s
 
 Markov Chains allow us to traverse a space, sampling as we go, which each new sample dependent on the one before. 
 
-Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows. He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the country they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. 
+Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows, bordered by rival Khans whose strength he needs to assess. 
+
+He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the Khanate they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. Given that they explorers, uncertain of their destination, the direction they take each day is somewhat random. They are taking a random walk across Asia, and recording it for their emperor. 
 
 ![Alt text](./img/Mongol_Empire.jpg) 
 
