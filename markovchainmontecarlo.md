@@ -75,3 +75,10 @@ Remember, the output layer of a classifier, for example, might be image labels l
 You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states. 
 
 ## Probability as space
+
+When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, each one of them a prbability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line of the letters by their frequency for 11 different languages, and you get 11 different state spaces:
+
+![Alt text](./img/letter_frequency_multilang.png) 
+
+Five letters account for half of all characters occurring in Italian, but only a third of Swedish, if you're just dropping socks from the sky. 
+
