@@ -78,6 +78,8 @@ Markov Chains allow us to traverse a space, sampling as we go, which each new sa
 
 Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows. He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the country they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. 
 
+![Alt text](./img/Mongol_Empire.png) 
+
 ## Neural Networks Mapping Transitions
 
 Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transition from one layer to the next, or from raw data to the final results of a classifier.
