@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -48,11 +50,11 @@ public class JcublasLevel2 extends BaseLevel2 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.sgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer(),
-                    lda, cBPointer.getDevicePointer(),
+                    order, TransA, M, N, alpha, (FloatPointer)cAPointer.getDevicePointer(),
+                    lda, (FloatPointer)cBPointer.getDevicePointer(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer(),
+                    (FloatPointer)cCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -119,11 +121,11 @@ public class JcublasLevel2 extends BaseLevel2 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.dgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer(),
-                    lda, cBPointer.getDevicePointer(),
+                    order, TransA, M, N, alpha, (DoublePointer)cAPointer.getDevicePointer(),
+                    lda, (DoublePointer)cBPointer.getDevicePointer(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer(),
+                    (DoublePointer)cCPointer.getDevicePointer(),
                     incY);
         }
 
