@@ -24,7 +24,6 @@ import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -54,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -183,32 +183,26 @@ public class SparkComputationGraph implements Serializable {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
 
-        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        trainingMaster.executeTraining(this, serializedDataSets);
-        return network;
+        JavaRDD<String> paths;
+        try{
+            paths = SparkUtils.listPaths(sc, path);
+        }catch(IOException e){
+            throw new RuntimeException("Error listing paths in directory",e);
+        }
+
+        return fitPaths(paths);
     }
 
     /**
-     * Fit the SparkComputationGraph network using a directory of serialized DataSet objects
-     * The assumption here is that the directory contains a number of {@link DataSet} objects, each serialized using
-     * {@link DataSet#save(OutputStream)}
-     *
-     * @param path          Path to the directory containing the serialized DataSet objcets
-     * @param minPartitions The minimum number of partitions initially (passed to {@link JavaSparkContext#binaryFiles(String, int)}
-     * @return The MultiLayerNetwork after training
+     * @deprecated Use {@link #fit(String)}
      */
+    @Deprecated
     public ComputationGraph fit(String path, int minPartitions) {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
-
-        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        trainingMaster.executeTraining(this, serializedDataSets);
-        return network;
+        return fit(path);
     }
 
     /**
      * Fit the network using a list of paths for serialized DataSet objects.
-     * Similar to {@link #fit(String)} but without the PortableDataStream objects
      *
      * @param paths    List of paths
      * @return trained network
@@ -250,14 +244,21 @@ public class SparkComputationGraph implements Serializable {
      * @return The MultiLayerNetwork after training
      */
     public ComputationGraph fitMultiDataSet(String path) {
-        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path);
-        trainingMaster.executeTrainingMDS(this, serializedDataSets);
-        return network;
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+
+        JavaRDD<String> paths;
+        try{
+            paths = SparkUtils.listPaths(sc, path);
+        }catch(IOException e){
+            throw new RuntimeException("Error listing paths in directory",e);
+        }
+
+        return fitPathsMultiDataSet(paths);
     }
 
     /**
      * Fit the network using a list of paths for serialized MultiDataSet objects.
-     * Similar to {@link #fitMultiDataSet(String)} but without the PortableDataStream objects
      *
      * @param paths    List of paths
      * @return trained network
@@ -268,17 +269,11 @@ public class SparkComputationGraph implements Serializable {
     }
 
     /**
-     * Fit the SparkComputationGraph network using a directory of serialized MultiDataSet objects
-     * The assumption here is that the directory contains a number of serialized {@link MultiDataSet} objects
-     *
-     * @param path          Path to the directory containing the serialized MultiDataSet objcets
-     * @param minPartitions The minimum number of partitions initially (passed to {@link JavaSparkContext#binaryFiles(String, int)}
-     * @return The MultiLayerNetwork after training
+     * @deprecated use {@link #fitMultiDataSet(String)}
      */
+    @Deprecated
     public ComputationGraph fitMultiDataSet(String path, int minPartitions) {
-        JavaPairRDD<String, PortableDataStream> serializedDataSets = sc.binaryFiles(path, minPartitions);
-        trainingMaster.executeTrainingMDS(this, serializedDataSets);
-        return network;
+        return fitMultiDataSet(path);
     }
 
     /**
