@@ -41,20 +41,20 @@ Since states occur one after another, it can make sense to traverse the state sp
 
 ## Markov Chains
 
-A system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
+At the most abstract level, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
 * Cities on a map are states. A road trip strings them together in transitions.
 * Words in a language are states. A sentence is a series of transitions.
 * Genes on a chromosome are states. 
 * Web pages on the Internet are states. Links are the transitions. 
-* Bank accounts are states. Transactions are the transitions.
-* Emotions are states. Mood swings are the transitions. 
+* Bank accounts in a financial system are states. Transactions are the transitions.
+* Emotions are states in the system of the psyche. Mood swings are the transitions. 
 * Social media profiles are states in the network. Follows, likes and friending are the transitions. 
 * Ocean and land are states in geography. Only amphibians know the transitions. 
 
 So states are an abstraction used to describe all these discrete, or separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others (we are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby). A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. 
 
-Now, a Markov chain is just a system of states that tells you how to transition between them. Markov chains have a particular property, and that is oblivion, or forgetting. 
+Now, a Markov chain is one way to traverse a system of states that traces a series of transitions between them. Markov chains have a particular property, and that is oblivion, or forgetting. 
 
 That is, they have no memory; they know nothing beyond the present, which means that the only factor determining the transition to a future state is a chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/).
 
