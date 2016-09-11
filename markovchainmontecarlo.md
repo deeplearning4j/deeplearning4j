@@ -78,7 +78,7 @@ Markov Chains allow us to traverse a space, sampling as we go, which each new sa
 
 Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace, in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows. He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the country they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. 
 
-![Alt text](./img/Mongol_Empire.png) 
+![Alt text](./img/Mongol_Empire.jpg) 
 
 ## Probability as Space
 
