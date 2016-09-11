@@ -29,15 +29,6 @@ public class Nd4jBlas extends Pointer {
         boolean pathsFirst = s.equals("true") || s.equals("t") || s.equals("");
         try {
             Loader.load(Nd4jBlas.class, properties, pathsFirst);
-
-            int numThreads;
-            String numThreadsString = System.getenv("OMP_NUM_THREADS");
-            if(numThreadsString != null && !numThreadsString.isEmpty()) {
-                numThreads = Integer.parseInt(numThreadsString);
-                setMaxThreads(numThreads);
-            }
-            else
-                setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
         } catch (UnsatisfiedLinkError e) {
             throw new RuntimeException("ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html", e);
         }
@@ -46,9 +37,17 @@ public class Nd4jBlas extends Pointer {
     public Nd4jBlas() {
         allocate();
 
+        int numThreads;
+        String numThreadsString = System.getenv("OMP_NUM_THREADS");
+        if(numThreadsString != null && !numThreadsString.isEmpty()) {
+            numThreads = Integer.parseInt(numThreadsString);
+            setMaxThreads(numThreads);
+        }
+        else
+            setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
     }
 
-    private static int getCores(int totals) {
+    private int getCores(int totals) {
         // that's special case for Xeon Phi
         if (totals >= 256) return  64;
 
@@ -81,13 +80,13 @@ public class Nd4jBlas extends Pointer {
         return ht_off;
     }
 
-    private static boolean isOdd(int value) {
+    private boolean isOdd(int value) {
         return (value % 2 != 0);
     }
 
     private native void allocate();
 
-    public static native void setMaxThreads(int num);
+    public native void setMaxThreads(int num);
 
 /*
      * ======================================================
