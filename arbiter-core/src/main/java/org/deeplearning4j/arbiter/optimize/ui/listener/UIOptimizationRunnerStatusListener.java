@@ -206,7 +206,8 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         for( int i=0; i<completedStatuses.size(); i++ ){
             CandidateStatus cs = completedStatuses.get(i);
             time[i] = (cs.getEndTime() - startTime) / 60000.0;  //minutes since start
-            score[i] = cs.getScore();
+            Double temp = cs.getScore();
+            score[i] = (temp == null ? Double.NaN : temp);
         }
 
         ChartScatter allCandidateScores = new ChartScatter.Builder("All Candidate Scores",sc)
