@@ -14,10 +14,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class LossMSLE implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        scoreArr = Transforms.log(postOutput);
-        scoreArr.subi(Transforms.log(labels));
-        scoreArr = scoreArr.mul(scoreArr);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)),false);
+        scoreArr = scoreArr.muli(scoreArr).divi(labels.size(1));
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
     }
@@ -41,14 +40,13 @@ public class LossMSLE implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
 
-        INDArray logyHat = Transforms.log(postOutput);
-        INDArray gradients = logyHat.sub(Transforms.log(labels));
-        gradients.muli(2);
-        gradients.muli(postOutDer);
-        gradients.divi(postOutput.addi(Nd4j.EPS_THRESHOLD));
+        INDArray p1 = output.add(1.0);
+        INDArray gradients = sigmaPrimeZ.divi(p1).muli(2.0/labels.size(1));
+        INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
+        gradients.muli(logRatio);
 
         if(mask != null){
             gradients.muliColumnVector(mask);
