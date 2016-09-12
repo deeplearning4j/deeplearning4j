@@ -33,6 +33,8 @@ import java.util.Map;
 
 /**
  * This is an abstract ParameterSpace for both MultiLayerNetworks (MultiLayerSpace) and ComputationGraph (ComputationGraphSpace)
+ * <p>
+ * Functionality here should match {@link org.deeplearning4j.nn.conf.NeuralNetConfiguration.Builder}
  *
  * @param <T> Type of network (MultiLayerNetwork or ComputationGraph)
  * @author Alex Black
@@ -68,13 +70,15 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     protected ParameterSpace<Double> momentum;
     protected ParameterSpace<Map<Integer, Double>> momentumAfter;
     protected ParameterSpace<Updater> updater;
+    protected ParameterSpace<Double> epsilon;
     protected ParameterSpace<Double> rho;
     protected ParameterSpace<Double> rmsDecay;
+    protected ParameterSpace<Double> adamMeanDecay;
+    protected ParameterSpace<Double> adamVarDecay;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
     protected ParameterSpace<int[]> cnnInputSize;
-    private ParameterSpace<Double> adamMeanDecay;
-    private ParameterSpace<Double> adamVarDecay;
+
 
     protected List<LayerConf> layerSpaces = new ArrayList<>();
 
@@ -118,6 +122,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         this.momentum = builder.momentum;
         this.momentumAfter = builder.momentumAfter;
         this.updater = builder.updater;
+        this.epsilon = builder.epsilon;
         this.rho = builder.rho;
         this.rmsDecay = builder.rmsDecay;
         this.gradientNormalization = builder.gradientNormalization;
@@ -170,6 +175,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (momentum != null) builder.momentum(momentum.getValue(values));
         if (momentumAfter != null) builder.momentumAfter(momentumAfter.getValue(values));
         if (updater != null) builder.updater(updater.getValue(values));
+        if (epsilon != null) builder.epsilon(epsilon.getValue(values));
         if (rho != null) builder.rho(rho.getValue(values));
         if (rmsDecay != null) builder.rmsDecay(rmsDecay.getValue(values));
         if (gradientNormalization != null) builder.gradientNormalization(gradientNormalization.getValue(values));
@@ -212,6 +218,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (momentum != null) list.addAll(momentum.collectLeaves());
         if (momentumAfter != null) list.addAll(momentumAfter.collectLeaves());
         if (updater != null) list.addAll(updater.collectLeaves());
+        if (epsilon != null) list.addAll(epsilon.collectLeaves());
         if (rho != null) list.addAll(rho.collectLeaves());
         if (rmsDecay != null) list.addAll(rmsDecay.collectLeaves());
         if (gradientNormalization != null) list.addAll(gradientNormalization.collectLeaves());
@@ -266,6 +273,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (momentum != null) sb.append("momentum: ").append(momentum).append("\n");
         if (momentumAfter != null) sb.append("momentumAfter: ").append(momentumAfter).append("\n");
         if (updater != null) sb.append("updater: ").append(updater).append("\n");
+        if (epsilon != null) sb.append("epsilon: ").append(epsilon).append("\n");
         if (rho != null) sb.append("rho: ").append(rho).append("\n");
         if (rmsDecay != null) sb.append("rmsDecay: ").append(rmsDecay).append("\n");
         if (gradientNormalization != null)
@@ -333,6 +341,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         private ParameterSpace<Double> momentum;
         private ParameterSpace<Map<Integer, Double>> momentumAfter;
         private ParameterSpace<Updater> updater;
+        private ParameterSpace<Double> epsilon;
         private ParameterSpace<Double> rho;
         private ParameterSpace<Double> rmsDecay;
         private ParameterSpace<GradientNormalization> gradientNormalization;
@@ -598,6 +607,15 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
         public T updater(ParameterSpace<Updater> updater) {
             this.updater = updater;
+            return (T) this;
+        }
+
+        public T epsilon(double epsilon){
+            return epsilon(new FixedValue<>(epsilon));
+        }
+
+        public T epsilon(ParameterSpace<Double> epsilon){
+            this.epsilon = epsilon;
             return (T) this;
         }
 

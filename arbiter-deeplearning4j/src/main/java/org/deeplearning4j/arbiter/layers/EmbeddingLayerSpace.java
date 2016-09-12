@@ -18,28 +18,41 @@
 package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.arbiter.util.CollectionUtils;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 
 /**
- * Layer hyperparametor configuration space for RnnOutputLayer
+ * Layer hyperparameter configuration space for {@link org.deeplearning4j.nn.conf.layers.EmbeddingLayer}
+ *
+ * @author Alex Black
  */
-public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
+public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
 
-    private RnnOutputLayerSpace(Builder builder) {
+    private EmbeddingLayerSpace(Builder builder) {
         super(builder);
 
         this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override
-    public RnnOutputLayer getValue(double[] values) {
-        RnnOutputLayer.Builder b = new RnnOutputLayer.Builder();
+    public EmbeddingLayer getValue(double[] values) {
+        //Using the builder here, to get default options
+        EmbeddingLayer.Builder b = new EmbeddingLayer.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(RnnOutputLayer.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
+    }
+
+    public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public EmbeddingLayerSpace build() {
+            return new EmbeddingLayerSpace(this);
+        }
     }
 
     @Override
@@ -49,17 +62,6 @@ public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
 
     @Override
     public String toString(String delim) {
-        return "RnnOutputLayerSpace(" + super.toString(delim) + ")";
+        return "EmbeddingLayerSpace(" + super.toString(delim) + ")";
     }
-
-    public static class Builder extends BaseOutputLayerSpace.Builder<RnnOutputLayer> {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public RnnOutputLayerSpace build() {
-            return new RnnOutputLayerSpace(this);
-        }
-    }
-
-
 }

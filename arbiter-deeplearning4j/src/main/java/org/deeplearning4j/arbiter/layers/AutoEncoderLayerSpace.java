@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 
 import java.util.List;
@@ -35,6 +36,8 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override

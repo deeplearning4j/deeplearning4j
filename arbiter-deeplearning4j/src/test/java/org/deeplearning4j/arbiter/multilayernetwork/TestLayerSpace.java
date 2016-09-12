@@ -18,11 +18,16 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
+import org.deeplearning4j.arbiter.layers.*;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,6 +54,7 @@ public class TestLayerSpace {
     public void testBasic2(){
 
         String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Random r = new Random(12345);
 
         for( int i=0; i<20; i++ ) {
 
@@ -61,10 +67,21 @@ public class TestLayerSpace {
                     .activation(new DiscreteParameterSpace<>(actFns))
                     .build();
 
+            //Set the parameter numbers...
+            List<ParameterSpace> list = ls.collectLeaves();
+            for( int j=0; j<list.size(); j++ ){
+                list.get(j).setIndices(j);
+            }
+
             int nParam = ls.numParameters();
             assertEquals(3,nParam);
 
-            DenseLayer l = ls.getValue(new double[nParam]);
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            DenseLayer l = ls.getValue(d);
 
             assertEquals(20, l.getNOut());
             double lr = l.getLearningRate();
@@ -79,4 +96,137 @@ public class TestLayerSpace {
         }
     }
 
+    @Test
+    public void testBatchNorm(){
+        BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder()
+                .gamma(1.5)
+                .beta(new ContinuousParameterSpace(2,3))
+                .lockGammaBeta(true)
+                .build();
+
+        //Set the parameter numbers...
+        List<ParameterSpace> list = sp.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        assertTrue(bn.isLockGammaBeta());
+        assertEquals(1.5, bn.getGamma(), 0.0);
+        assertEquals(0.6*(3-2)+2, bn.getBeta(), 1e-4);
+    }
+
+    @Test
+    public void testActivationLayer(){
+
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        ActivationLayerSpace als = new ActivationLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = als.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = als.numParameters();
+        assertEquals(1, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            ActivationLayer al = als.getValue(d);
+            String activation = al.getActivationFunction();
+
+            System.out.println(activation);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+        }
+    }
+
+    @Test
+    public void testEmbeddingLayer(){
+
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .nIn(10).nOut(new IntegerParameterSpace(10,20))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = els.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = els.numParameters();
+        assertEquals(2, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            EmbeddingLayer el = els.getValue(d);
+            String activation = el.getActivationFunction();
+            int nOut = el.getNOut();
+
+            System.out.println(activation + "\t" + nOut);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(nOut >= 10 && nOut <= 20);
+        }
+    }
+
+    @Test
+    public void testGravesBidirectionalLayer(){
+
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        GravesBidirectionalLSTMLayerSpace ls = new GravesBidirectionalLSTMLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .forgetGateBiasInit(new ContinuousParameterSpace(0.5,0.8))
+                .nIn(10).nOut(new IntegerParameterSpace(10,20))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = ls.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = ls.numParameters();
+        assertEquals(3, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            GravesBidirectionalLSTM el = ls.getValue(d);
+            String activation = el.getActivationFunction();
+            int nOut = el.getNOut();
+            double forgetGate = el.getForgetGateBiasInit();
+
+            System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(nOut >= 10 && nOut <= 20);
+            assertTrue(forgetGate >= 0.5 && forgetGate <= 0.8);
+        }
+    }
 }

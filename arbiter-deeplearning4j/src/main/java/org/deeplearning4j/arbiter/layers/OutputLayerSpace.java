@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 
 /**
@@ -28,6 +29,8 @@ public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
 
     private OutputLayerSpace(Builder builder) {
         super(builder);
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override

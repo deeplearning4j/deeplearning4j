@@ -17,23 +17,25 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+
 
 import java.util.List;
 
 /**
- * Layer space for LSTM layers
+ * Layer space for Bidirectional LSTM layers
  *
  * @author Alex Black
  */
-public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
+public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<GravesBidirectionalLSTM> {
 
     private ParameterSpace<Double> forgetGateBiasInit;
 
-    private GravesLSTMLayerSpace(Builder builder) {
+    private GravesBidirectionalLSTMLayerSpace(Builder builder) {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
 
@@ -42,13 +44,13 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
 
     @Override
-    public GravesLSTM getValue(double[] values) {
-        GravesLSTM.Builder b = new GravesLSTM.Builder();
+    public GravesBidirectionalLSTM getValue(double[] values) {
+        GravesBidirectionalLSTM.Builder b = new GravesBidirectionalLSTM.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(GravesBidirectionalLSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
     }
@@ -67,7 +69,7 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
     @Override
     public String toString(String delim) {
-        StringBuilder sb = new StringBuilder("GravesLSTMLayerSpace(");
+        StringBuilder sb = new StringBuilder("GravesBidirectionalLSTMLayerSpace(");
         if (forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
@@ -88,8 +90,8 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public GravesLSTMLayerSpace build() {
-            return new GravesLSTMLayerSpace(this);
+        public GravesBidirectionalLSTMLayerSpace build() {
+            return new GravesBidirectionalLSTMLayerSpace(this);
         }
     }
 }

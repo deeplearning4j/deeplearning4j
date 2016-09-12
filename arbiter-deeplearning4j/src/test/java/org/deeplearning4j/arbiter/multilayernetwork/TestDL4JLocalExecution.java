@@ -163,9 +163,8 @@ public class TestDL4JLocalExecution {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
-//        ArbiterUIServer server = ArbiterUIServer.getInstance();
-//        runner.addListeners(new UIOptimizationRunnerStatusListener(server), new LoggingOptimizationRunnerStatusListener());
-        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
+        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 
