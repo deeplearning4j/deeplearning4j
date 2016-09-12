@@ -3,7 +3,7 @@ title: Markov Chain Monte Carlo and Deep Learning
 layout: default
 ---
 
-# Monte Carlo Methods, Markov Chains and Neural Nets
+# Monte Carlo Methods, Markov Chains and Deep Learning
 
 Let's say you're a horrific alien looking for the perfect planet to colonize. 
 
@@ -62,6 +62,8 @@ Since states can occur one after another, it may make sense to traverse the stat
 
 A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are always in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others closing behind us. 
 
+You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
+
 While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
 
 ## Markovian Time
@@ -104,7 +106,9 @@ That is, the nodes of a neural network are states in a system, and the weights b
 
 Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
 
-You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
+## MCMC and Deep Reinforcement Learning
+
+Work in Progress.
 
 ## Further Deeplearning4j Tutorials
 
@@ -112,3 +116,8 @@ You're not sampling with a God's-eye view any more, like a conquering alien. You
 * [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
+* [Reinforcement Learning](./reinforcementlearning.html)
+
+## Further Reading on Markov Chain Monte Carlo 
+
+* [Markov Chain Monte Carlo Without all the Bullshit](https://jeremykun.com/2015/04/06/markov-chain-monte-carlo-without-all-the-bullshit/)
