@@ -3,6 +3,8 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Abs;
+import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
@@ -13,11 +15,10 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 public class LossMAPE implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        scoreArr = postOutput.sub(labels);
-        scoreArr.divi(labels);
-        scoreArr.muli(100);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        scoreArr = output.rsubi(labels).divi(labels);
         Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
+        scoreArr.muli(100.0/labels.size(1));
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
     }
@@ -41,21 +42,19 @@ public class LossMAPE implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
 
-        INDArray gradients = postOutput.sub(labels);
-        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", gradients));
-        if (gradients.maxNumber().doubleValue() < Nd4j.EPS_THRESHOLD) return gradients;
-        gradients.divi(postOutput.sub(labels)); //this gets me the sign +/- of the difference
-        gradients.muli(postOutDer);
-        gradients.divi(labels.addi(Nd4j.EPS_THRESHOLD)); //workaround for division by zero -> can be cleaner
+        INDArray actSubPredicted = labels.sub(output);
+        INDArray gradient = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
+        INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
+        gradient.muli(sigmaPrimeZ).divi(absLabels).muli(-100.0/labels.size(1));
 
         if(mask != null){
-            gradients.muliColumnVector(mask);
+            gradient.muliColumnVector(mask);
         }
 
-        return gradients;
+        return gradient;
     }
 
     @Override
