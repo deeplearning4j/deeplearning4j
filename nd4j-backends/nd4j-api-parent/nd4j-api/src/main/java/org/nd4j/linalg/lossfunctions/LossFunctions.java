@@ -57,26 +57,35 @@ public class LossFunctions {
     }
 
     /**
-     * MSE: Mean Squared Error: Linear Regression
-     * EXPLL: Exponential log likelihood: Poisson Regression
-     * XENT: Cross Entropy: Binary Classification
-     * MCXENT: Multiclass Cross Entropy
-     * RMSE_XENT: RMSE Cross Entropy
-     * SQUARED_LOSS: Squared Loss
-     * RECONSTRUCTION_CROSSENTROPY: Reconstruction Cross Entropy
-     * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
-     * CUSTOM: Define your own loss function
+     * MSE: Mean Squared Error: Linear Regression<br>
+     * EXPLL: Exponential log likelihood: Poisson Regression<br>
+     * XENT: Cross Entropy: Binary Classification<br>
+     * MCXENT: Multiclass Cross Entropy<br>
+     * RMSE_XENT: RMSE Cross Entropy<br>
+     * SQUARED_LOSS: Squared Loss<br>
+     * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood<br>
      */
     public  enum LossFunction {
         MSE,
+        @Deprecated
         EXPLL,
         XENT,
         MCXENT,
+        @Deprecated
         RMSE_XENT,
         SQUARED_LOSS,
         RECONSTRUCTION_CROSSENTROPY,
         NEGATIVELOGLIKELIHOOD,
-        CUSTOM
+        @Deprecated
+        CUSTOM,
+        COSINE_PROXIMITY,
+        HINGE,
+        SQUARED_HINGE,
+        KL_DIVERGENCE,
+        MEAN_ABSOLUTE_ERROR,
+        MEAN_ABSOLUTE_PERCENTAGE_ERROR,
+        MEAN_SQUARED_LOGARITHMIC_ERROR,
+        POISSON
     }
 
 
