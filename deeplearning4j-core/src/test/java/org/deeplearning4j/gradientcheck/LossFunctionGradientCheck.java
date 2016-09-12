@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -87,7 +89,8 @@ public class LossFunctionGradientCheck {
                 3          //squared hinge
         };
 
-        int[] minibatchSizes = new int[]{1, 4};
+//        int[] minibatchSizes = new int[]{1, 4};
+        int[] minibatchSizes = new int[]{3};
 
 
         List<String> passed = new ArrayList<>();
@@ -97,15 +100,17 @@ public class LossFunctionGradientCheck {
             for( int j=0; j<minibatchSizes.length; j++ ) {
                 String testName = lossFunctions[i] + " - minibatchSize = " + minibatchSizes[j];
 
-                if (nOut[i] <= 0) {
-                    //DEBUGGING ONLY
-                    System.out.println("SKIPPING TEST: " + lossFunctions[i]);
-                    failed.add(testName + "\t" + "SKIPPED");
-                    continue;
-                }
+//                if (nOut[i] <= 0) {
+//                    //DEBUGGING ONLY
+//                    System.out.println("SKIPPING TEST: " + lossFunctions[i]);
+//                    failed.add(testName + "\t" + "SKIPPED");
+//                    continue;
+//                }
 
+                Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .seed(12345)
                         .updater(Updater.NONE)
                         .regularization(false)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2))
@@ -135,6 +140,10 @@ public class LossFunctionGradientCheck {
 //                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
 //                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 //                assertTrue(testName, gradOK);
+
+                System.out.println(Arrays.toString(labels.data().asDouble()));
+                System.out.println(Arrays.toString(net.output(input,false).data().asDouble()));
+                System.out.println(net.score(new DataSet(input,labels)));
 
                 boolean gradOK;
                 try{
@@ -167,7 +176,7 @@ public class LossFunctionGradientCheck {
             System.out.println(s);
         }
 
-        assertEquals(0, failed.size());
+        assertEquals("Tests failed", 0, failed.size());
     }
 
     private static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed){
@@ -203,6 +212,9 @@ public class LossFunctionGradientCheck {
                 }
                 break;
             case "LossMAPE":
+                //requires non-zero values for actual...
+                ret[1] = Nd4j.rand(minibatch, nOut).addi(1.0);      //1 to 2
+                break;
             case "LossMAE":
             case "LossMSE":
                 ret[1] = Nd4j.rand(minibatch, nOut).muli(2).subi(1);
