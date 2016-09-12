@@ -4,8 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.ShortPointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -722,14 +726,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
+                            (FloatPointer)first.getX(),
                             first.getXStride(),
-                            yGrid.getY(), // can be null
+                            (FloatPointer)yGrid.getY(), // can be null
                             yGrid.getYStride(), // cane be -1
-                            second.getZ(),
+                            (FloatPointer)second.getZ(),
                             second.getZStride(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (FloatPointer)first.getExtraArgs(),
+                            (FloatPointer)second.getExtraArgs(),
                             (float) scalarA,
                             (float) scalarB
                     );
@@ -740,14 +744,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
-                            first.getXShapeInfo(),
-                            yGrid.getY(), // can be null
-                            yGrid.getYShapeInfo(), // cane be -1
-                            second.getZ(),
-                            second.getZShapeInfo(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (FloatPointer)first.getX(),
+                            (IntPointer)first.getXShapeInfo(),
+                            (FloatPointer)yGrid.getY(), // can be null
+                            (IntPointer)yGrid.getYShapeInfo(), // cane be -1
+                            (FloatPointer)second.getZ(),
+                            (IntPointer)second.getZShapeInfo(),
+                            (FloatPointer)first.getExtraArgs(),
+                            (FloatPointer)second.getExtraArgs(),
                             (float) scalarA,
                             (float) scalarB
                     );
@@ -760,14 +764,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
+                            (DoublePointer)first.getX(),
                             first.getXStride(),
-                            yGrid.getY(), // can be null
+                            (DoublePointer)yGrid.getY(), // can be null
                             yGrid.getYStride(), // cane be -1
-                            second.getZ(),
+                            (DoublePointer)second.getZ(),
                             second.getZStride(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (DoublePointer)first.getExtraArgs(),
+                            (DoublePointer)second.getExtraArgs(),
                             scalarA,
                             scalarB
                     );
@@ -778,14 +782,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
-                            first.getXShapeInfo(),
-                            yGrid.getY(), // can be null
-                            yGrid.getYShapeInfo(), // cane be -1
-                            second.getZ(),
-                            second.getZShapeInfo(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (DoublePointer)first.getX(),
+                            (IntPointer)first.getXShapeInfo(),
+                            (DoublePointer)yGrid.getY(), // can be null
+                            (IntPointer)yGrid.getYShapeInfo(), // cane be -1
+                            (DoublePointer)second.getZ(),
+                            (IntPointer)second.getZShapeInfo(),
+                            (DoublePointer)first.getExtraArgs(),
+                            (DoublePointer)second.getExtraArgs(),
                             scalarA,
                             scalarB
                     );
@@ -798,14 +802,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
+                            (ShortPointer)first.getX(),
                             first.getXStride(),
-                            yGrid.getY(), // can be null
+                            (ShortPointer)yGrid.getY(), // can be null
                             yGrid.getYStride(), // cane be -1
-                            second.getZ(),
+                            (ShortPointer)second.getZ(),
                             second.getZStride(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (ShortPointer)first.getExtraArgs(),
+                            (ShortPointer)second.getExtraArgs(),
                             (float) scalarA,
                             (float) scalarB
                     );
@@ -816,14 +820,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             second.getType().ordinal(),
                             second.getOpNum(),
                             first.getXLength(),
-                            first.getX(),
-                            first.getXShapeInfo(),
-                            yGrid.getY(), // can be null
-                            yGrid.getYShapeInfo(), // cane be -1
-                            second.getZ(),
-                            second.getZShapeInfo(),
-                            first.getExtraArgs(),
-                            second.getExtraArgs(),
+                            (ShortPointer)first.getX(),
+                            (IntPointer)first.getXShapeInfo(),
+                            (ShortPointer)yGrid.getY(), // can be null
+                            (IntPointer)yGrid.getYShapeInfo(), // cane be -1
+                            (ShortPointer)second.getZ(),
+                            (IntPointer)second.getZShapeInfo(),
+                            (ShortPointer)first.getExtraArgs(),
+                            (ShortPointer)second.getExtraArgs(),
                             (float) scalarA,
                             (float) scalarB
                     );
@@ -837,18 +841,18 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         first.getOpNum(),
                         second.getType().ordinal(),
                         second.getOpNum(),
-                        first.getX(),
-                        first.getXShapeInfo(),
-                        second.getY(),
-                        second.getYShapeInfo(),
-                        second.getZ(),
-                        second.getZShapeInfo(),
-                        second.getDimensions(),
+                        (FloatPointer)first.getX(),
+                        (IntPointer)first.getXShapeInfo(),
+                        (FloatPointer)second.getY(),
+                        (IntPointer)second.getYShapeInfo(),
+                        (FloatPointer)second.getZ(),
+                        (IntPointer)second.getZShapeInfo(),
+                        (IntPointer)second.getDimensions(),
                         second.getDimensionsLength(),
-                        second.getTadShape(),
-                        second.getTadOffsets(),
-                        first.getExtraArgs(),
-                        second.getExtraArgs(),
+                        (IntPointer)second.getTadShape(),
+                        (IntPointer)second.getTadOffsets(),
+                        (FloatPointer)first.getExtraArgs(),
+                        (FloatPointer)second.getExtraArgs(),
                         (float) scalarA,
                         0.0f,
                         false

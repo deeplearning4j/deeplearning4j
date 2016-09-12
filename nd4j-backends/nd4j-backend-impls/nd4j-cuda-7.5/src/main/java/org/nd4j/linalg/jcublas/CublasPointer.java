@@ -22,7 +22,6 @@ package org.nd4j.linalg.jcublas;
 import lombok.Getter;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -125,7 +124,7 @@ public class CublasPointer  implements AutoCloseable {
         //vector based striding won't work with an array that looks like this
 
         this.cudaContext = context;
-        this.devicePointer = new CudaPointer(AtomicAllocator.getInstance().getPointer(array, context).address());
+        this.devicePointer = AtomicAllocator.getInstance().getPointer(array, context);
 
         /*
         if(array instanceof IComplexNDArray) {

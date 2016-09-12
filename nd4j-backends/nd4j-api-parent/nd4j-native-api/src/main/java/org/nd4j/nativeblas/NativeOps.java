@@ -2,9 +2,14 @@ package org.nd4j.nativeblas;
 
 
 import java.util.Properties;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
 
 
@@ -45,13 +50,50 @@ public class NativeOps extends Pointer {
             setOmpNumThreads(numThreads);
         }
         else
-            setOmpNumThreads(Runtime.getRuntime().availableProcessors());
+            setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
 
-        log.debug("Number of threads used for linear algebra " + ompGetMaxThreads());
+        log.info("Number of threads used for linear algebra " + ompGetMaxThreads());
 
     }
     private native void allocate();
 
+
+    private static int getCores(int totals) {
+        // that's special case for Xeon Phi
+        if (totals >= 256) return  64;
+
+        int ht_off = totals / 2; // we count off HyperThreading without any excuses
+
+        if (ht_off > 24) {
+            int rounds = 0;
+            while (ht_off > 24) { // we loop until final value gets below 24 cores, since that's reasonable threshold as of 2016
+                if (ht_off > 24) {
+                    ht_off /= 2; // we dont' have any cpus that has higher number then 24 physical cores
+                    rounds++;
+                }
+            }
+            // 20 threads is special case in this branch
+            if (ht_off == 20 && rounds < 2)
+                ht_off /= 2;
+        } else { // low-core models are known, but there's a gap, between consumer cpus and xeons
+            if (ht_off <= 6) {
+                // that's more likely consumer-grade cpu, so leave this value alone
+                return ht_off;
+            } else {
+                if (isOdd(ht_off)) // if that's odd number, it's final result
+                    return ht_off;
+
+                // 20 threads & 16 threads are special case in this branch, where we go min value
+                if (ht_off == 20 || ht_off == 16)
+                    ht_off /= 2;
+            }
+        }
+        return ht_off;
+    }
+
+    private static boolean isOdd(int value) {
+        return (value % 2 != 0);
+    }
 
     /**
      *
@@ -61,9 +103,9 @@ public class NativeOps extends Pointer {
      * @param extraParams
      */
     public native double   execIndexReduceScalarDouble(PointerPointer extraPointers, int opNum,
-                                                       Pointer x,
-                                                       Pointer xShapeInfo,
-                                                       Pointer extraParams);
+                                                       DoublePointer x,
+                                                       IntPointer xShapeInfo,
+                                                       DoublePointer extraParams);
 
     /**
      *
@@ -77,12 +119,12 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execIndexReduceDouble(PointerPointer extraPointers, int opNum,
-                                               Pointer x,
-                                               Pointer xShapeInfo,
-                                               Pointer extraParams,
-                                               Pointer result,
-                                               Pointer resultShapeInfoBuffer,
-                                               Pointer dimension, int dimensionLength);
+                                               DoublePointer x,
+                                               IntPointer xShapeInfo,
+                                               DoublePointer extraParams,
+                                               DoublePointer result,
+                                               IntPointer resultShapeInfoBuffer,
+                                               IntPointer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -97,13 +139,13 @@ public class NativeOps extends Pointer {
      */
     public native void   execBroadcastDouble(PointerPointer extraPointers,
                                              int opNum,
-                                             Pointer x,
-                                             Pointer xShapeInfo,
-                                             Pointer y,
-                                             Pointer yShapeInfo,
-                                             Pointer result,
-                                             Pointer resultShapeInfo,
-                                             Pointer dimension, int dimensionLength);
+                                             DoublePointer x,
+                                             IntPointer xShapeInfo,
+                                             DoublePointer y,
+                                             IntPointer yShapeInfo,
+                                             DoublePointer result,
+                                             IntPointer resultShapeInfo,
+                                             IntPointer dimension, int dimensionLength);
 
 
 
@@ -120,13 +162,13 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execPairwiseTransformDouble(PointerPointer extraPointers, int opNum,
-                                                     Pointer dx,
+                                                     DoublePointer dx,
                                                      int xStride,
-                                                     Pointer y,
+                                                     DoublePointer y,
                                                      int yStride,
-                                                     Pointer result,
+                                                     DoublePointer result,
                                                      int resultStride,
-                                                     Pointer extraParams, long n);
+                                                     DoublePointer extraParams, long n);
 
     /**
      *
@@ -144,16 +186,16 @@ public class NativeOps extends Pointer {
      */
     public native void execPairwiseTransformDouble(PointerPointer extraPointers,
                                                    int opNum,
-                                                   Pointer dx,
-                                                   Pointer xShapeInfo,
-                                                   Pointer y,
-                                                   Pointer yShapeInfo,
-                                                   Pointer result,
-                                                   Pointer resultShapeInfo,
-                                                   Pointer extraParams,
-                                                   Pointer xIndexes,
-                                                   Pointer yIndexes,
-                                                   Pointer resultIndexes);
+                                                   DoublePointer dx,
+                                                   IntPointer xShapeInfo,
+                                                   DoublePointer y,
+                                                   IntPointer yShapeInfo,
+                                                   DoublePointer result,
+                                                   IntPointer resultShapeInfo,
+                                                   DoublePointer extraParams,
+                                                   IntPointer xIndexes,
+                                                   IntPointer yIndexes,
+                                                   IntPointer resultIndexes);
 
     /**
      *
@@ -169,13 +211,13 @@ public class NativeOps extends Pointer {
     public native void execPairwiseTransformDouble(
             PointerPointer extraPointers,
             int opNum,
-            Pointer dx,
-            Pointer xShapeInfo,
-            Pointer y,
-            Pointer yShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
-            Pointer extraParams);
+            DoublePointer dx,
+            IntPointer xShapeInfo,
+            DoublePointer y,
+            IntPointer yShapeInfo,
+            DoublePointer result,
+            IntPointer resultShapeInfo,
+            DoublePointer extraParams);
 
     /**
      *
@@ -187,11 +229,11 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduceDouble(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParams,
-                                          Pointer result,
-                                          Pointer resultShapeInfo);
+                                          DoublePointer x,
+                                          IntPointer xShapeInfo,
+                                          DoublePointer extraParams,
+                                          DoublePointer result,
+                                          IntPointer resultShapeInfo);
 
     /**
      *
@@ -203,12 +245,12 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduceDouble(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParams,
-                                          Pointer result,
-                                          Pointer resultShapeInfo,
-                                          Pointer dimension,int dimensionLength);
+                                          DoublePointer x,
+                                          IntPointer xShapeInfo,
+                                          DoublePointer extraParams,
+                                          DoublePointer result,
+                                          IntPointer resultShapeInfo,
+                                          IntPointer dimension,int dimensionLength);
 
     /**
      *
@@ -219,9 +261,9 @@ public class NativeOps extends Pointer {
      * @return
      */
     public native  double execReduceScalarDouble(PointerPointer extraPointers, int opNum,
-                                                 Pointer x,
-                                                 Pointer xShapeInfo,
-                                                 Pointer extraParams);
+                                                 DoublePointer x,
+                                                 IntPointer xShapeInfo,
+                                                 DoublePointer extraParams);
 
     /**
      *
@@ -235,13 +277,13 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduce3Double(PointerPointer extraPointers, int opNum,
-                                           Pointer x,
-                                           Pointer xShapeInfo,
-                                           Pointer extraParamsVals,
-                                           Pointer y,
-                                           Pointer yShapeInfo,
-                                           Pointer result,
-                                           Pointer resultShapeInfo);
+                                           DoublePointer x,
+                                           IntPointer xShapeInfo,
+                                           DoublePointer extraParamsVals,
+                                           DoublePointer y,
+                                           IntPointer yShapeInfo,
+                                           DoublePointer result,
+                                           IntPointer resultShapeInfo);
 
     /**
      *
@@ -253,11 +295,11 @@ public class NativeOps extends Pointer {
      * @param yShapeInfo
      */
     public native double   execReduce3ScalarDouble(PointerPointer extraPointers, int opNum,
-                                                   Pointer x,
-                                                   Pointer xShapeInfo,
-                                                   Pointer extraParamsVals,
-                                                   Pointer y,
-                                                   Pointer yShapeInfo);
+                                                   DoublePointer x,
+                                                   IntPointer xShapeInfo,
+                                                   DoublePointer extraParamsVals,
+                                                   DoublePointer y,
+                                                   IntPointer yShapeInfo);
     /**
      *
      * @param opNum
@@ -272,14 +314,14 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execReduce3Double(PointerPointer extraPointers, int opNum,
-                                           Pointer x,
-                                           Pointer xShapeInfo,
-                                           Pointer extraParamsVals,
-                                           Pointer y,
-                                           Pointer yShapeInfo,
-                                           Pointer result,
-                                           Pointer resultShapeInfoBuffer,
-                                           Pointer dimension,
+                                           DoublePointer x,
+                                           IntPointer xShapeInfo,
+                                           DoublePointer extraParamsVals,
+                                           DoublePointer y,
+                                           IntPointer yShapeInfo,
+                                           DoublePointer result,
+                                           IntPointer resultShapeInfoBuffer,
+                                           IntPointer dimension,
                                            int dimensionLength);
     /**
      *
@@ -293,12 +335,12 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execScalarDouble(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
+                                          DoublePointer x,
                                           int xStride,
-                                          Pointer result,
+                                          DoublePointer result,
                                           int resultStride,
                                           double scalar,
-                                          Pointer extraParams,
+                                          DoublePointer extraParams,
                                           long n);
 
     /**
@@ -312,12 +354,12 @@ public class NativeOps extends Pointer {
      * @param extraParams
      */
     public native void execScalarDouble(PointerPointer extraPointers, int opNum,
-                                        Pointer x,
-                                        Pointer xShapeInfo,
-                                        Pointer result,
-                                        Pointer resultShapeInfo,
+                                        DoublePointer x,
+                                        IntPointer xShapeInfo,
+                                        DoublePointer result,
+                                        IntPointer resultShapeInfo,
                                         double scalar,
-                                        Pointer extraParams);
+                                        DoublePointer extraParams);
 
     /**
      *
@@ -333,15 +375,15 @@ public class NativeOps extends Pointer {
      * @param resultIndexes
      */
     public native void execScalarDouble(PointerPointer extraPointers, int opNum,
-                                        Pointer x,
-                                        Pointer xShapeInfo,
-                                        Pointer result,
-                                        Pointer resultShapeInfo,
+                                        DoublePointer x,
+                                        IntPointer xShapeInfo,
+                                        DoublePointer result,
+                                        IntPointer resultShapeInfo,
                                         double scalar,
-                                        Pointer extraParams,
+                                        DoublePointer extraParams,
                                         long n,
-                                        Pointer xIndexes,
-                                        Pointer resultIndexes);
+                                        IntPointer xIndexes,
+                                        IntPointer resultIndexes);
     /**
      *  @param opNum
      * @param x
@@ -349,9 +391,9 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param biasCorrected
      */
-    public native double   execSummaryStatsScalarDouble(PointerPointer extraPointers,  int opNum, Pointer x,
-                                                        Pointer xShapeInfo,
-                                                        Pointer extraParams, boolean biasCorrected);
+    public native double   execSummaryStatsScalarDouble(PointerPointer extraPointers,  int opNum, DoublePointer x,
+                                                        IntPointer xShapeInfo,
+                                                        DoublePointer extraParams, boolean biasCorrected);
     /**
      *  @param opNum
      * @param x
@@ -362,11 +404,11 @@ public class NativeOps extends Pointer {
      * @param biasCorrected
      */
     public native void   execSummaryStatsDouble(PointerPointer extraPointers,  int opNum,
-                                                Pointer x,
-                                                Pointer xShapeInfo,
-                                                Pointer extraParams,
-                                                Pointer result,
-                                                Pointer resultShapeInfo, boolean biasCorrected);
+                                                DoublePointer x,
+                                                IntPointer xShapeInfo,
+                                                DoublePointer extraParams,
+                                                DoublePointer result,
+                                                IntPointer resultShapeInfo, boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -378,12 +420,12 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStatsDouble(PointerPointer extraPointers, int opNum,Pointer x,
-                                                Pointer xShapeInfo,
-                                                Pointer extraParams,
-                                                Pointer result,
-                                                Pointer resultShapeInfoBuffer,
-                                                Pointer dimension, int dimensionLength,boolean biasCorrected);
+    public native void   execSummaryStatsDouble(PointerPointer extraPointers, int opNum, DoublePointer x,
+                                                IntPointer xShapeInfo,
+                                                DoublePointer extraParams,
+                                                DoublePointer result,
+                                                IntPointer resultShapeInfoBuffer,
+                                                IntPointer dimension, int dimensionLength,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -395,11 +437,11 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execTransformDouble(PointerPointer extraPointers, int opNum,
-                                             Pointer dx,
+                                             DoublePointer dx,
                                              int xStride,
-                                             Pointer result,
+                                             DoublePointer result,
                                              int resultStride,
-                                             Pointer extraParams, long n);
+                                             DoublePointer extraParams, long n);
 
     /**
      *
@@ -412,11 +454,11 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execTransformDouble(PointerPointer extraPointers, int opNum,
-                                             Pointer dx,
-                                             Pointer xShapeInfo,
-                                             Pointer result,
-                                             Pointer resultShapeInfo,
-                                             Pointer extraParams);
+                                             DoublePointer dx,
+                                             IntPointer xShapeInfo,
+                                             DoublePointer result,
+                                             IntPointer resultShapeInfo,
+                                             DoublePointer extraParams);
 
     /**
      *
@@ -429,13 +471,13 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execTransformDouble(PointerPointer extraPointers, int opNum,
-                                             Pointer dx,
-                                             Pointer xShapeInfo,
-                                             Pointer result,
-                                             Pointer resultShapeInfo,
-                                             Pointer extraParams,
-                                             Pointer xIndexes,
-                                             Pointer resultIndexes);
+                                             DoublePointer dx,
+                                             IntPointer xShapeInfo,
+                                             DoublePointer result,
+                                             IntPointer resultShapeInfo,
+                                             DoublePointer extraParams,
+                                             IntPointer xIndexes,
+                                             IntPointer resultIndexes);
 
     /**
      *
@@ -446,15 +488,15 @@ public class NativeOps extends Pointer {
      */
     public native float   execIndexReduceScalarFloat(PointerPointer extraPointers,
                                                      int opNum,
-                                                     Pointer x,
-                                                     Pointer xShapeInfo,
-                                                     Pointer extraParams);
+                                                     FloatPointer x,
+                                                     IntPointer xShapeInfo,
+                                                     FloatPointer extraParams);
 
     public native float   execIndexReduceScalarHalf(PointerPointer extraPointers,
                                                      int opNum,
-                                                     Pointer x,
-                                                     Pointer xShapeInfo,
-                                                     Pointer extraParams);
+                                                     @Cast("float16*") ShortPointer x,
+                                                     IntPointer xShapeInfo,
+                                                     @Cast("float16*") ShortPointer extraParams);
 
     /**
      *
@@ -468,20 +510,20 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execIndexReduceFloat(PointerPointer extraPointers, int opNum,
-                                              Pointer x,
-                                              Pointer xShapeInfo,
-                                              Pointer extraParams,
-                                              Pointer result,
-                                              Pointer resultShapeInfoBuffer,
-                                              Pointer dimension, int dimensionLength);
+                                              FloatPointer x,
+                                              IntPointer xShapeInfo,
+                                              FloatPointer extraParams,
+                                              FloatPointer results,
+                                              IntPointer resultShapeInfoBuffer,
+                                              IntPointer dimension, int dimensionLength);
 
     public native void   execIndexReduceHalf(PointerPointer extraPointers, int opNum,
-                                              Pointer x,
-                                              Pointer xShapeInfo,
-                                              Pointer extraParams,
-                                              Pointer result,
-                                              Pointer resultShapeInfoBuffer,
-                                              Pointer dimension, int dimensionLength);
+                                              @Cast("float16*") ShortPointer x,
+                                              IntPointer xShapeInfo,
+                                              @Cast("float16*") ShortPointer extraParams,
+                                              @Cast("float16*") ShortPointer results,
+                                              IntPointer resultShapeInfoBuffer,
+                                              IntPointer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -496,24 +538,24 @@ public class NativeOps extends Pointer {
      */
     public native void   execBroadcastFloat(PointerPointer extraPointers,
                                             int opNum,
-                                            Pointer x,
-                                            Pointer xShapeInfo,
-                                            Pointer y,
-                                            Pointer yShapeInfo,
-                                            Pointer result,
-                                            Pointer resultShapeInfo,
-                                            Pointer dimension,
+                                            FloatPointer x,
+                                            IntPointer xShapeInfo,
+                                            FloatPointer y,
+                                            IntPointer yShapeInfo,
+                                            FloatPointer results,
+                                            IntPointer resultShapeInfo,
+                                            IntPointer dimension,
                                             int dimensionLength);
 
     public native void   execBroadcastHalf(PointerPointer extraPointers,
                                             int opNum,
-                                            Pointer x,
-                                            Pointer xShapeInfo,
-                                            Pointer y,
-                                            Pointer yShapeInfo,
-                                            Pointer result,
-                                            Pointer resultShapeInfo,
-                                            Pointer dimension,
+                                            @Cast("float16*") ShortPointer x,
+                                            IntPointer xShapeInfo,
+                                            @Cast("float16*") ShortPointer y,
+                                            IntPointer yShapeInfo,
+                                            @Cast("float16*") ShortPointer results,
+                                            IntPointer resultShapeInfo,
+                                            IntPointer dimension,
                                             int dimensionLength);
 
     /**
@@ -529,22 +571,22 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execPairwiseTransformFloat(PointerPointer extraPointers, int opNum,
-                                                    Pointer dx,
+                                                    FloatPointer dx,
                                                     int xStride,
-                                                    Pointer y,
+                                                    FloatPointer y,
                                                     int yStride,
-                                                    Pointer result,
+                                                    FloatPointer results,
                                                     int resultStride,
-                                                    Pointer extraParams, long n);
+                                                    FloatPointer extraParams, long n);
 
     public native void   execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
-                                                    Pointer dx,
+                                                    @Cast("float16*") ShortPointer dx,
                                                     int xStride,
-                                                    Pointer y,
+                                                    @Cast("float16*") ShortPointer y,
                                                     int yStride,
-                                                    Pointer result,
+                                                    @Cast("float16*") ShortPointer results,
                                                     int resultStride,
-                                                    Pointer extraParams, long n);
+                                                    @Cast("float16*") ShortPointer extraParams, long n);
 
     /**
      *
@@ -561,28 +603,28 @@ public class NativeOps extends Pointer {
      * @param resultIndexes
      */
     public native void execPairwiseTransformFloat(PointerPointer extraPointers, int opNum,
-                                                  Pointer dx,
-                                                  Pointer xShapeInfo,
-                                                  Pointer y,
-                                                  Pointer yShapeInfo,
-                                                  Pointer result,
-                                                  Pointer resultShapeInfo,
-                                                  Pointer extraParams,
-                                                  Pointer xIndexes,
-                                                  Pointer yIndexes,
-                                                  Pointer resultIndexes);
+                                                  FloatPointer dx,
+                                                  IntPointer xShapeInfo,
+                                                  FloatPointer y,
+                                                  IntPointer yShapeInfo,
+                                                  FloatPointer results,
+                                                  IntPointer resultShapeInfo,
+                                                  FloatPointer extraParams,
+                                                  IntPointer xIndexes,
+                                                  IntPointer yIndexes,
+                                                  IntPointer resultIndexes);
 
     public native void execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
-                                                  Pointer dx,
-                                                  Pointer xShapeInfo,
-                                                  Pointer y,
-                                                  Pointer yShapeInfo,
-                                                  Pointer result,
-                                                  Pointer resultShapeInfo,
-                                                  Pointer extraParams,
-                                                  Pointer xIndexes,
-                                                  Pointer yIndexes,
-                                                  Pointer resultIndexes);
+                                                  @Cast("float16*") ShortPointer dx,
+                                                  IntPointer xShapeInfo,
+                                                  @Cast("float16*") ShortPointer y,
+                                                  IntPointer yShapeInfo,
+                                                  @Cast("float16*") ShortPointer results,
+                                                  IntPointer resultShapeInfo,
+                                                  @Cast("float16*") ShortPointer extraParams,
+                                                  IntPointer xIndexes,
+                                                  IntPointer yIndexes,
+                                                  IntPointer resultIndexes);
 
     /**
      *
@@ -596,22 +638,22 @@ public class NativeOps extends Pointer {
      * @param extraParams
      */
     public native void execPairwiseTransformFloat(PointerPointer extraPointers, int opNum,
-                                                  Pointer dx,
-                                                  Pointer xShapeInfo,
-                                                  Pointer y,
-                                                  Pointer yShapeInfo,
-                                                  Pointer result,
-                                                  Pointer resultShapeInfo,
-                                                  Pointer extraParams);
+                                                  FloatPointer dx,
+                                                  IntPointer xShapeInfo,
+                                                  FloatPointer y,
+                                                  IntPointer yShapeInfo,
+                                                  FloatPointer results,
+                                                  IntPointer resultShapeInfo,
+                                                  FloatPointer extraParams);
 
     public native void execPairwiseTransformHalf(PointerPointer extraPointers, int opNum,
-                                                  Pointer dx,
-                                                  Pointer xShapeInfo,
-                                                  Pointer y,
-                                                  Pointer yShapeInfo,
-                                                  Pointer result,
-                                                  Pointer resultShapeInfo,
-                                                  Pointer extraParams);
+                                                  @Cast("float16*") ShortPointer dx,
+                                                  IntPointer xShapeInfo,
+                                                  @Cast("float16*") ShortPointer y,
+                                                  IntPointer yShapeInfo,
+                                                  @Cast("float16*") ShortPointer results,
+                                                  IntPointer resultShapeInfo,
+                                                  @Cast("float16*") ShortPointer extraParams);
 
     /**
      *
@@ -623,18 +665,18 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduceFloat(PointerPointer extraPointers, int opNum,
-                                         Pointer x,
-                                         Pointer xShapeInfo,
-                                         Pointer extraParams,
-                                         Pointer result,
-                                         Pointer resultShapeInfo);
+                                         FloatPointer x,
+                                         IntPointer xShapeInfo,
+                                         FloatPointer extraParams,
+                                         FloatPointer results,
+                                         IntPointer resultShapeInfo);
 
     public native void   execReduceHalf(PointerPointer extraPointers, int opNum,
-                                         Pointer x,
-                                         Pointer xShapeInfo,
-                                         Pointer extraParams,
-                                         Pointer result,
-                                         Pointer resultShapeInfo);
+                                         @Cast("float16*") ShortPointer x,
+                                         IntPointer xShapeInfo,
+                                         @Cast("float16*") ShortPointer extraParams,
+                                         @Cast("float16*") ShortPointer results,
+                                         IntPointer resultShapeInfo);
 
     /**
      *
@@ -646,20 +688,20 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduceFloat(PointerPointer extraPointers, int opNum,
-                                         Pointer x,
-                                         Pointer xShapeInfo,
-                                         Pointer extraParams,
-                                         Pointer result,
-                                         Pointer resultShapeInfo,
-                                         Pointer dimension,int dimensionLength);
+                                         FloatPointer x,
+                                         IntPointer xShapeInfo,
+                                         FloatPointer extraParams,
+                                         FloatPointer results,
+                                         IntPointer resultShapeInfo,
+                                         IntPointer dimension,int dimensionLength);
 
     public native void   execReduceHalf(PointerPointer extraPointers, int opNum,
-                                         Pointer x,
-                                         Pointer xShapeInfo,
-                                         Pointer extraParams,
-                                         Pointer result,
-                                         Pointer resultShapeInfo,
-                                         Pointer dimension,int dimensionLength);
+                                         @Cast("float16*") ShortPointer x,
+                                         IntPointer xShapeInfo,
+                                         @Cast("float16*") ShortPointer extraParams,
+                                         @Cast("float16*") ShortPointer results,
+                                         IntPointer resultShapeInfo,
+                                         IntPointer dimension,int dimensionLength);
 
     /**
      *
@@ -670,15 +712,15 @@ public class NativeOps extends Pointer {
      * @return
      */
     public native float execReduceScalarFloat(PointerPointer extraPointers, int opNum,
-                                              Pointer x,
-                                              Pointer xShapeInfo,
-                                              Pointer extraParams);
+                                              FloatPointer x,
+                                              IntPointer xShapeInfo,
+                                              FloatPointer extraParams);
 
 
     public native float execReduceScalarHalf(PointerPointer extraPointers, int opNum,
-                                              Pointer x,
-                                              Pointer xShapeInfo,
-                                              Pointer extraParams);
+                                              @Cast("float16*") ShortPointer x,
+                                              IntPointer xShapeInfo,
+                                              @Cast("float16*") ShortPointer extraParams);
 
     /**
      *
@@ -692,22 +734,22 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execReduce3Float(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParamsVals,
-                                          Pointer y,
-                                          Pointer yShapeInfo,
-                                          Pointer result,
-                                          Pointer resultShapeInfo);
+                                          FloatPointer x,
+                                          IntPointer xShapeInfo,
+                                          FloatPointer extraParamsVals,
+                                          FloatPointer y,
+                                          IntPointer yShapeInfo,
+                                          FloatPointer results,
+                                          IntPointer resultShapeInfo);
 
     public native void   execReduce3Half(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParamsVals,
-                                          Pointer y,
-                                          Pointer yShapeInfo,
-                                          Pointer result,
-                                          Pointer resultShapeInfo);
+                                          @Cast("float16*") ShortPointer x,
+                                          IntPointer xShapeInfo,
+                                          @Cast("float16*") ShortPointer extraParamsVals,
+                                          @Cast("float16*") ShortPointer y,
+                                          IntPointer yShapeInfo,
+                                          @Cast("float16*") ShortPointer results,
+                                          IntPointer resultShapeInfo);
 
     /**
      *
@@ -719,18 +761,18 @@ public class NativeOps extends Pointer {
      * @param yShapeInfo
      */
     public native float   execReduce3ScalarFloat(PointerPointer extraPointers, int opNum,
-                                                 Pointer x,
-                                                 Pointer xShapeInfo,
-                                                 Pointer extraParamsVals,
-                                                 Pointer y,
-                                                 Pointer yShapeInfo);
+                                                 FloatPointer x,
+                                                 IntPointer xShapeInfo,
+                                                 FloatPointer extraParamsVals,
+                                                 FloatPointer y,
+                                                 IntPointer yShapeInfo);
 
     public native float   execReduce3ScalarHalf(PointerPointer extraPointers, int opNum,
-                                                 Pointer x,
-                                                 Pointer xShapeInfo,
-                                                 Pointer extraParamsVals,
-                                                 Pointer y,
-                                                 Pointer yShapeInfo);
+                                                 @Cast("float16*") ShortPointer x,
+                                                 IntPointer xShapeInfo,
+                                                 @Cast("float16*") ShortPointer extraParamsVals,
+                                                 @Cast("float16*") ShortPointer y,
+                                                 IntPointer yShapeInfo);
     /**
      *
      * @param opNum
@@ -745,25 +787,25 @@ public class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public native void   execReduce3Float(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParamsVals,
-                                          Pointer y,
-                                          Pointer yShapeInfo,
-                                          Pointer result,
-                                          Pointer resultShapeInfoBuffer,
-                                          Pointer dimension,
+                                          FloatPointer x,
+                                          IntPointer xShapeInfo,
+                                          FloatPointer extraParamsVals,
+                                          FloatPointer y,
+                                          IntPointer yShapeInfo,
+                                          FloatPointer results,
+                                          IntPointer resultShapeInfoBuffer,
+                                          IntPointer dimension,
                                           int dimensionLength);
 
     public native void   execReduce3Half(PointerPointer extraPointers, int opNum,
-                                          Pointer x,
-                                          Pointer xShapeInfo,
-                                          Pointer extraParamsVals,
-                                          Pointer y,
-                                          Pointer yShapeInfo,
-                                          Pointer result,
-                                          Pointer resultShapeInfoBuffer,
-                                          Pointer dimension,
+                                          @Cast("float16*") ShortPointer x,
+                                          IntPointer xShapeInfo,
+                                          @Cast("float16*") ShortPointer extraParamsVals,
+                                          @Cast("float16*") ShortPointer y,
+                                          IntPointer yShapeInfo,
+                                          @Cast("float16*") ShortPointer results,
+                                          IntPointer resultShapeInfoBuffer,
+                                          IntPointer dimension,
                                           int dimensionLength);
     /**
      *
@@ -777,12 +819,12 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execScalarFloat(PointerPointer extraPointers, int opNum,
-                                         Pointer x,
+                                         FloatPointer x,
                                          int xStride,
-                                         Pointer result,
+                                         FloatPointer results,
                                          int resultStride,
                                          double scalar,
-                                         Pointer extraParams,
+                                         FloatPointer extraParams,
                                          long n);
 
     /**
@@ -797,20 +839,20 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void execScalarFloat(PointerPointer extraPointers, int opNum,
-                                       Pointer x,
-                                       Pointer xShapeInfo,
-                                       Pointer result,
-                                       Pointer resultShapeInfo,
+                                       FloatPointer x,
+                                       IntPointer xShapeInfo,
+                                       FloatPointer results,
+                                       IntPointer resultShapeInfo,
                                        float scalar,
-                                       Pointer extraParams);
+                                       FloatPointer extraParams);
 
     public native void execScalarHalf(PointerPointer extraPointers, int opNum,
-                                       Pointer x,
-                                       Pointer xShapeInfo,
-                                       Pointer result,
-                                       Pointer resultShapeInfo,
+                                       @Cast("float16*") ShortPointer x,
+                                       IntPointer xShapeInfo,
+                                       @Cast("float16*") ShortPointer results,
+                                       IntPointer resultShapeInfo,
                                        float scalar,
-                                       Pointer extraParams);
+                                       @Cast("float16*") ShortPointer extraParams);
 
 
     /**
@@ -826,14 +868,14 @@ public class NativeOps extends Pointer {
      * @param resultIndexes
      */
     public native void execScalarFloat(PointerPointer extraPointers, int opNum,
-                                       Pointer x,
-                                       Pointer xShapeInfo,
-                                       Pointer result,
-                                       Pointer resultShapeInfo,
+                                       FloatPointer x,
+                                       IntPointer xShapeInfo,
+                                       FloatPointer results,
+                                       IntPointer resultShapeInfo,
                                        double scalar,
-                                       Pointer extraParams,
-                                       Pointer xIndexes,
-                                       Pointer resultIndexes);
+                                       FloatPointer extraParams,
+                                       IntPointer xIndexes,
+                                       IntPointer resultIndexes);
     /**
      *
      * @param opNum
@@ -841,13 +883,13 @@ public class NativeOps extends Pointer {
      * @param xShapeInfo
      * @param extraParams
      */
-    public native float   execSummaryStatsScalarFloat(PointerPointer extraPointers, int opNum,Pointer x,
-                                                      Pointer xShapeInfo,
-                                                      Pointer extraParams,boolean biasCorrected);
+    public native float   execSummaryStatsScalarFloat(PointerPointer extraPointers, int opNum,FloatPointer x,
+                                                      IntPointer xShapeInfo,
+                                                      FloatPointer extraParams,boolean biasCorrected);
 
-    public native float   execSummaryStatsScalarHalf(PointerPointer extraPointers, int opNum,Pointer x,
-                                                      Pointer xShapeInfo,
-                                                      Pointer extraParams,boolean biasCorrected);
+    public native float   execSummaryStatsScalarHalf(PointerPointer extraPointers, int opNum,@Cast("float16*") ShortPointer x,
+                                                      IntPointer xShapeInfo,
+                                                      @Cast("float16*") ShortPointer extraParams,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -858,18 +900,18 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void   execSummaryStatsFloat(PointerPointer extraPointers, int opNum,
-                                               Pointer x,
-                                               Pointer xShapeInfo,
-                                               Pointer extraParams,
-                                               Pointer result,
-                                               Pointer resultShapeInfo,boolean biasCorrected);
+                                               FloatPointer x,
+                                               IntPointer xShapeInfo,
+                                               FloatPointer extraParams,
+                                               FloatPointer results,
+                                               IntPointer resultShapeInfo,boolean biasCorrected);
 
     public native void   execSummaryStatsHalf(PointerPointer extraPointers, int opNum,
-                                               Pointer x,
-                                               Pointer xShapeInfo,
-                                               Pointer extraParams,
-                                               Pointer result,
-                                               Pointer resultShapeInfo,boolean biasCorrected);
+                                               @Cast("float16*") ShortPointer x,
+                                               IntPointer xShapeInfo,
+                                               @Cast("float16*") ShortPointer extraParams,
+                                               @Cast("float16*") ShortPointer results,
+                                               IntPointer resultShapeInfo,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -881,19 +923,19 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStatsFloat(PointerPointer extraPointers, int opNum,Pointer x,
-                                               Pointer xShapeInfo,
-                                               Pointer extraParams,
-                                               Pointer result,
-                                               Pointer resultShapeInfoBuffer,
-                                               Pointer dimension, int dimensionLength,boolean biasCorrected);
+    public native void   execSummaryStatsFloat(PointerPointer extraPointers, int opNum,FloatPointer x,
+                                               IntPointer xShapeInfo,
+                                               FloatPointer extraParams,
+                                               FloatPointer results,
+                                               IntPointer resultShapeInfoBuffer,
+                                               IntPointer dimension, int dimensionLength,boolean biasCorrected);
 
-    public native void   execSummaryStatsHalf(PointerPointer extraPointers, int opNum,Pointer x,
-                                               Pointer xShapeInfo,
-                                               Pointer extraParams,
-                                               Pointer result,
-                                               Pointer resultShapeInfoBuffer,
-                                               Pointer dimension, int dimensionLength,boolean biasCorrected);
+    public native void   execSummaryStatsHalf(PointerPointer extraPointers, int opNum,@Cast("float16*") ShortPointer x,
+                                               IntPointer xShapeInfo,
+                                               @Cast("float16*") ShortPointer extraParams,
+                                               @Cast("float16*") ShortPointer results,
+                                               IntPointer resultShapeInfoBuffer,
+                                               IntPointer dimension, int dimensionLength,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -905,18 +947,18 @@ public class NativeOps extends Pointer {
      * @param n
      */
     public native void   execTransformFloat(PointerPointer extraPointers, int opNum,
-                                            Pointer dx,
+                                            FloatPointer dx,
                                             int xStride,
-                                            Pointer result,
+                                            FloatPointer results,
                                             int resultStride,
-                                            Pointer extraParams, long n);
+                                            FloatPointer extraParams, long n);
 
     public native void   execTransformHalf(PointerPointer extraPointers, int opNum,
-                                            Pointer dx,
+                                            @Cast("float16*") ShortPointer dx,
                                             int xStride,
-                                            Pointer result,
+                                            @Cast("float16*") ShortPointer results,
                                             int resultStride,
-                                            Pointer extraParams, long n);
+                                            @Cast("float16*") ShortPointer extraParams, long n);
 
     /**
      *
@@ -931,20 +973,20 @@ public class NativeOps extends Pointer {
     public native void   execTransformFloat(
             PointerPointer extraPointers,
             int opNum,
-            Pointer dx,
-            Pointer xShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
-            Pointer extraParams);
+            FloatPointer dx,
+            IntPointer xShapeInfo,
+            FloatPointer results,
+            IntPointer resultShapeInfo,
+            FloatPointer extraParams);
 
     public native void   execTransformHalf(
             PointerPointer extraPointers,
             int opNum,
-            Pointer dx,
-            Pointer xShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
-            Pointer extraParams);
+            @Cast("float16*") ShortPointer dx,
+            IntPointer xShapeInfo,
+            @Cast("float16*") ShortPointer results,
+            IntPointer resultShapeInfo,
+            @Cast("float16*") ShortPointer extraParams);
 
     /**
      *
@@ -960,23 +1002,23 @@ public class NativeOps extends Pointer {
      */
     public native void   execTransformFloat(PointerPointer extraPointers,
                                             int opNum,
-                                            Pointer dx,
-                                            Pointer xShapeInfo,
-                                            Pointer result,
-                                            Pointer resultShapeInfo,
-                                            Pointer extraParams,
-                                            Pointer xIndexes,
-                                            Pointer resultIndexes);
+                                            FloatPointer dx,
+                                            IntPointer xShapeInfo,
+                                            FloatPointer results,
+                                            IntPointer resultShapeInfo,
+                                            FloatPointer extraParams,
+                                            IntPointer xIndexes,
+                                            IntPointer resultIndexes);
 
     public native void   execTransformHalf(PointerPointer extraPointers,
                                             int opNum,
-                                            Pointer dx,
-                                            Pointer xShapeInfo,
-                                            Pointer result,
-                                            Pointer resultShapeInfo,
-                                            Pointer extraParams,
-                                            Pointer xIndexes,
-                                            Pointer resultIndexes);
+                                            @Cast("float16*") ShortPointer dx,
+                                            IntPointer xShapeInfo,
+                                            @Cast("float16*") ShortPointer results,
+                                            IntPointer resultShapeInfo,
+                                            @Cast("float16*") ShortPointer extraParams,
+                                            IntPointer xIndexes,
+                                            IntPointer resultIndexes);
 
 
     /**
@@ -994,19 +1036,19 @@ public class NativeOps extends Pointer {
             PointerPointer extraPointers,
             int offset,
             char order,
-            Pointer result,
-            Pointer resultShapeInfo,
-            Pointer input,
-            Pointer inputShapeInfo);
+            FloatPointer results,
+            IntPointer resultShapeInfo,
+            FloatPointer input,
+            IntPointer inputShapeInfo);
 
     public native void flattenHalf(
             PointerPointer extraPointers,
             int offset,
             char order,
-            Pointer result,
-            Pointer resultShapeInfo,
-            Pointer input,
-            Pointer inputShapeInfo);
+            @Cast("float16*") ShortPointer results,
+            IntPointer resultShapeInfo,
+            @Cast("float16*") ShortPointer input,
+            IntPointer inputShapeInfo);
 
 
     /**
@@ -1023,10 +1065,10 @@ public class NativeOps extends Pointer {
     public native void flattenDouble(PointerPointer extraPointers,
                                      int offset,
                                      char order,
-                                     Pointer result,
-                                     Pointer resultShapeInfo,
-                                     Pointer input,
-                                     Pointer inputShapeInfo);
+                                     DoublePointer results,
+                                     IntPointer resultShapeInfo,
+                                     DoublePointer input,
+                                     IntPointer inputShapeInfo);
 
     /**
      *
@@ -1042,8 +1084,8 @@ public class NativeOps extends Pointer {
             int numArrays,
             PointerPointer data,
             PointerPointer inputShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
+            DoublePointer results,
+            IntPointer resultShapeInfo,
             PointerPointer tadPointers,
             PointerPointer tadOffsets);
 
@@ -1061,8 +1103,8 @@ public class NativeOps extends Pointer {
             int numArrays,
             PointerPointer data,
             PointerPointer inputShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
+            FloatPointer results,
+            IntPointer resultShapeInfo,
             PointerPointer tadPointers,
             PointerPointer tadOffsets);
 
@@ -1072,8 +1114,8 @@ public class NativeOps extends Pointer {
             int numArrays,
             PointerPointer data,
             PointerPointer inputShapeInfo,
-            Pointer result,
-            Pointer resultShapeInfo,
+            @Cast("float16*") ShortPointer results,
+            IntPointer resultShapeInfo,
             PointerPointer tadPointers,
             PointerPointer tadOffsets);
 
@@ -1160,24 +1202,24 @@ public class NativeOps extends Pointer {
 
     public native void setGridLimit(int gridSize);
 
-    public native void tadOnlyShapeInfo(Pointer shapeInfo, Pointer dimension, int dimensionLength, Pointer targetBuffer, Pointer offsetsBuffer);
+    public native void tadOnlyShapeInfo(IntPointer shapeInfo, IntPointer dimension, int dimensionLength, IntPointer targetBuffer, IntPointer offsetsBuffer);
 
     ///////////////
 
-    public native void pullRowsFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void pullRowsFloat(PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, FloatPointer z, IntPointer zShapeInfo, int n, IntPointer indexes, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
-    public native void pullRowsDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void pullRowsDouble(PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, DoublePointer z, IntPointer zShapeInfo, int n, IntPointer indexes, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
-    public native void pullRowsHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int n, Pointer indexes,  Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void pullRowsHalf(PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("float16*") ShortPointer z, IntPointer zShapeInfo, int n, IntPointer indexes, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
 
     ///////////////////////
 
-    public native void averageHalf(PointerPointer extraPointers, Pointer x, Pointer z, int n, long length, boolean propagate);
+    public native void averageHalf(PointerPointer extraPointers, PointerPointer x, @Cast("float16*") ShortPointer z, int n, long length, boolean propagate);
 
-    public native void averageFloat(PointerPointer extraPointers, Pointer x, Pointer z, int n, long length, boolean propagate);
+    public native void averageFloat(PointerPointer extraPointers, PointerPointer x, FloatPointer z, int n, long length, boolean propagate);
 
-    public native void averageDouble(PointerPointer extraPointers, Pointer x, Pointer z, int n, long length, boolean propagate);
+    public native void averageDouble(PointerPointer extraPointers, PointerPointer x, DoublePointer z, int n, long length, boolean propagate);
 
     ///////////////////////
 
@@ -1189,11 +1231,11 @@ public class NativeOps extends Pointer {
 
     //
 
-    public native void shuffleDouble(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleDouble(PointerPointer extraPointers, PointerPointer x, PointerPointer xShapeInfo, PointerPointer z, PointerPointer zShapeInfo, int N, IntPointer shuffleMap, PointerPointer tadShapeInfo, PointerPointer tadOffsets);
 
-    public native void shuffleFloat(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleFloat(PointerPointer extraPointers, PointerPointer x, PointerPointer xShapeInfo, PointerPointer z, PointerPointer zShapeInfo, int N, IntPointer shuffleMap, PointerPointer tadShapeInfo, PointerPointer tadOffsets);
 
-    public native void shuffleHalf(PointerPointer extraPointers, Pointer x, Pointer xShapeInfo, Pointer z, Pointer zShapeInfo, int N, Pointer shuffleMap, Pointer tadShapeInfo, Pointer tadOffsets);
+    public native void shuffleHalf(PointerPointer extraPointers, PointerPointer x, PointerPointer xShapeInfo, PointerPointer z, PointerPointer zShapeInfo, int N, IntPointer shuffleMap, PointerPointer tadShapeInfo, PointerPointer tadOffsets);
 
     // type conversion
 
@@ -1208,95 +1250,95 @@ public class NativeOps extends Pointer {
     // MetaOps
     public native void execMetaPredicateStridedFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                          long N,
-                                                         Pointer dx,
+                                                         FloatPointer dx,
                                                          int xStride,
-                                                         Pointer dy,
+                                                         FloatPointer dy,
                                                          int yStride,
-                                                         Pointer dz,
+                                                         FloatPointer dz,
                                                          int zStride,
-                                                         Pointer extraA,
-                                                         Pointer extraB,
+                                                         FloatPointer extraA,
+                                                         FloatPointer extraB,
                                                          float scalarA,
                                                          float scalarB);
 
     public native void execMetaPredicateStridedDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                      long N,
-                                                     Pointer dx,
+                                                     DoublePointer dx,
                                                      int xStride,
-                                                     Pointer dy,
+                                                     DoublePointer dy,
                                                      int yStride,
-                                                     Pointer dz,
+                                                     DoublePointer dz,
                                                      int zStride,
-                                                     Pointer extraA,
-                                                     Pointer extraB,
+                                                     DoublePointer extraA,
+                                                     DoublePointer extraB,
                                                      double scalarA,
                                                      double scalarB);
 
     public native void execMetaPredicateStridedHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                      long N,
-                                                     Pointer dx,
+                                                     @Cast("float16*") ShortPointer dx,
                                                      int xStride,
-                                                     Pointer dy,
+                                                     @Cast("float16*") ShortPointer dy,
                                                      int yStride,
-                                                     Pointer dz,
+                                                     @Cast("float16*") ShortPointer dz,
                                                      int zStride,
-                                                     Pointer extraA,
-                                                     Pointer extraB,
+                                                     @Cast("float16*") ShortPointer extraA,
+                                                     @Cast("float16*") ShortPointer extraB,
                                                      float scalarA,
                                                      float scalarB);
 
     public native void execMetaPredicateShapeFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                      long N,
-                                                     Pointer dx,
-                                                     Pointer xShape,
-                                                     Pointer dy,
-                                                     Pointer yShape,
-                                                     Pointer dz,
-                                                     Pointer zShape,
-                                                     Pointer extraA,
-                                                     Pointer extraB,
+                                                     FloatPointer dx,
+                                                     IntPointer xShape,
+                                                     FloatPointer dy,
+                                                     IntPointer yShape,
+                                                     FloatPointer dz,
+                                                     IntPointer zShape,
+                                                     FloatPointer extraA,
+                                                     FloatPointer extraB,
                                                      float scalarA,
                                                      float scalarB);
 
     public native void execMetaPredicateShapeDouble(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                    long N,
-                                                   Pointer dx,
-                                                   Pointer xShape,
-                                                   Pointer dy,
-                                                   Pointer yShape,
-                                                   Pointer dz,
-                                                   Pointer zShape,
-                                                   Pointer extraA,
-                                                   Pointer extraB,
+                                                   DoublePointer dx,
+                                                   IntPointer xShape,
+                                                   DoublePointer dy,
+                                                   IntPointer yShape,
+                                                   DoublePointer dz,
+                                                   IntPointer zShape,
+                                                   DoublePointer extraA,
+                                                   DoublePointer extraB,
                                                    double scalarA,
                                                    double scalarB);
 
     public native void execMetaPredicateShapeHalf(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
                                                    long N,
-                                                   Pointer dx,
-                                                   Pointer xShape,
-                                                   Pointer dy,
-                                                   Pointer yShape,
-                                                   Pointer dz,
-                                                   Pointer zShape,
-                                                   Pointer extraA,
-                                                   Pointer extraB,
+                                                   @Cast("float16*") ShortPointer dx,
+                                                   IntPointer xShape,
+                                                   @Cast("float16*") ShortPointer dy,
+                                                   IntPointer yShape,
+                                                   @Cast("float16*") ShortPointer dz,
+                                                   IntPointer zShape,
+                                                   @Cast("float16*") ShortPointer extraA,
+                                                   @Cast("float16*") ShortPointer extraB,
                                                    float scalarA,
                                                    float scalarB);
 
     public native void execMetaPredicateReduceFloat(PointerPointer extras, int opTypeA, int opNumA, int opTypeB, int opNumB,
-                                                    Pointer dx,
-                                                    Pointer xShapeInfo,
-                                                    Pointer dy,
-                                                    Pointer yShapeInfo,
-                                                    Pointer dz,
-                                                    Pointer zShapeInfo,
-                                                    Pointer dimension,
+                                                    FloatPointer dx,
+                                                    IntPointer xShapeInfo,
+                                                    FloatPointer dy,
+                                                    IntPointer yShapeInfo,
+                                                    FloatPointer dz,
+                                                    IntPointer zShapeInfo,
+                                                    IntPointer dimension,
                                                     int dimensionLength,
-                                                    Pointer tadShapeInfo,
-                                                    Pointer tadOffsets,
-                                                    Pointer extraA,
-                                                    Pointer extraB,
+                                                    IntPointer tadShapeInfo,
+                                                    IntPointer tadOffsets,
+                                                    FloatPointer extraA,
+                                                    FloatPointer extraB,
                                                     float scalarA,
                                                     float scalarB,
                                                     boolean scalarReturned);

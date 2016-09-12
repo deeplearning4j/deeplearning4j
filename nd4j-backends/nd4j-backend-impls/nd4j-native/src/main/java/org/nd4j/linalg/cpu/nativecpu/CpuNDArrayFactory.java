@@ -528,20 +528,20 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                             dummy,
                             linearIndex,
                             order,
-                            ret.data().addressPointer(),
-                            ret.shapeInfoDataBuffer().addressPointer(),
-                            m.data().addressPointer(),
-                            m.shapeInfoDataBuffer().addressPointer());
+                            (DoublePointer)ret.data().addressPointer(),
+                            (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)m.data().addressPointer(),
+                            (IntPointer)m.shapeInfoDataBuffer().addressPointer());
                 }
                 else if(m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
                             dummy,
                             linearIndex,
                             order,
-                            ret.data().addressPointer(),
-                            ret.shapeInfoDataBuffer().addressPointer(),
-                            m.data().addressPointer(),
-                            m.shapeInfoDataBuffer().addressPointer());
+                            (FloatPointer)ret.data().addressPointer(),
+                            (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)m.data().addressPointer(),
+                            (IntPointer)m.shapeInfoDataBuffer().addressPointer());
 
                 }
                 else {
@@ -605,8 +605,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     toConcat.length,
                     dataPointers,
                     shapeInfoPointers,
-                    ret.data().addressPointer(),
-                    ret.shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer)ret.data().addressPointer(),
+                    (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}),
                     new PointerPointer(new Pointer[] {null})
             );
@@ -618,8 +618,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     toConcat.length,
                     dataPointers,
                     shapeInfoPointers,
-                    ret.data().addressPointer(),
-                    ret.shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer)ret.data().addressPointer(),
+                    (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}),
                     new PointerPointer(new Pointer[] {null})
             );
@@ -660,40 +660,40 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.pullRowsDouble(
                     dummy,
-                    source.data().addressPointer(),
-                    source.shapeInfoDataBuffer().addressPointer(),
-                    ret.data().addressPointer(),
-                    ret.shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer)source.data().addressPointer(),
+                    (IntPointer)source.shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer)ret.data().addressPointer(),
+                    (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
                     indexes.length,
                     pIndex,
-                    hostTadShapeInfo,
-                    hostTadOffsets
+                    (IntPointer)hostTadShapeInfo,
+                    (IntPointer)hostTadOffsets
             );
         }
         else if (ret.data().dataType() == DataBuffer.Type.FLOAT){
             nativeOps.pullRowsFloat(
                     dummy,
-                    source.data().addressPointer(),
-                    source.shapeInfoDataBuffer().addressPointer(),
-                    ret.data().addressPointer(),
-                    ret.shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer)source.data().addressPointer(),
+                    (IntPointer)source.shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer)ret.data().addressPointer(),
+                    (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
                     indexes.length,
                     pIndex,
-                    hostTadShapeInfo,
-                    hostTadOffsets
+                    (IntPointer)hostTadShapeInfo,
+                    (IntPointer)hostTadOffsets
             );
 
         } else {
             nativeOps.pullRowsHalf(
                     dummy,
-                    source.data().addressPointer(),
-                    source.shapeInfoDataBuffer().addressPointer(),
-                    ret.data().addressPointer(),
-                    ret.shapeInfoDataBuffer().addressPointer(),
+                    (ShortPointer)source.data().addressPointer(),
+                    (IntPointer)source.shapeInfoDataBuffer().addressPointer(),
+                    (ShortPointer)ret.data().addressPointer(),
+                    (IntPointer)ret.shapeInfoDataBuffer().addressPointer(),
                     indexes.length,
                     pIndex,
-                    hostTadShapeInfo,
-                    hostTadOffsets
+                    (IntPointer)hostTadShapeInfo,
+                    (IntPointer)hostTadOffsets
             );
         }
 
@@ -729,11 +729,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
 
         if(target.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.averageDouble(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
+            nativeOps.averageDouble(null, dataPointers, (DoublePointer)target.data().addressPointer(), arrays.length, len, true);
         } else if (target.data().dataType() == DataBuffer.Type.FLOAT){
-            nativeOps.averageFloat(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
+            nativeOps.averageFloat(null, dataPointers, (FloatPointer)target.data().addressPointer(), arrays.length, len, true);
         } else {
-            nativeOps.averageHalf(null, dataPointers, target.data().addressPointer(), arrays.length, len, true);
+            nativeOps.averageHalf(null, dataPointers, (ShortPointer)target.data().addressPointer(), arrays.length, len, true);
         }
 
         return target;

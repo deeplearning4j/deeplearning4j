@@ -83,11 +83,11 @@ public class AllocationPoint {
     private volatile ReentrantLock lock = new ReentrantLock();
 
     public void acquireLock() {
-        lock.lock();
+        //lock.lock();
     }
 
     public void releaseLock() {
-        lock.unlock();
+        //lock.unlock();
     }
 
     public int getDeviceId() {
