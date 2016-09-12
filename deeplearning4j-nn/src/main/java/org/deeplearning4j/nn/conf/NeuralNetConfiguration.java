@@ -432,7 +432,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected Layer layer;
         protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
-        protected int numIterations = 5;
+        protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
         protected boolean useRegularization = false;
@@ -498,15 +498,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
-        }
-
-        /** <b>Deprecated</b><br>
-         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified number of layers, not including input.
-         * @param size number of layers in the network
-         * @deprecated Manually specifying number of layers in  is not necessary. Use {@link #list()} or {@link #list(Layer...)} methods.
-         * */
-        public ListBuilder list(int size) {
-            return list();
         }
 
         /**Create a ListBuilder (for creating a MultiLayerConfiguration)<br>

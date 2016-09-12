@@ -16,6 +16,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 import java.io.File;
 
@@ -151,7 +152,7 @@ public class RegressionTest050 {
         OutputLayer l2 = (OutputLayer)conf.getConf(2).getLayer();
         assertEquals("sigmoid", l1.getActivationFunction());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
-        assertTrue(l2.getLossFn() instanceof LossMCXENT);   //TODO
+        assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood);   //TODO
         assertEquals(26*26*3, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
