@@ -50,7 +50,8 @@ public class NativeOps extends Pointer {
             setOmpNumThreads(numThreads);
         }
         else
-            setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            //setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            setOmpNumThreads(4);
 
         log.info("Number of threads used for linear algebra " + ompGetMaxThreads());
 

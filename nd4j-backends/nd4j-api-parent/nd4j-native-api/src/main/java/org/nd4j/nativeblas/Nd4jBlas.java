@@ -44,7 +44,8 @@ public class Nd4jBlas extends Pointer {
             setMaxThreads(numThreads);
         }
         else
-            setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            //setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            setMaxThreads(4);
     }
 
     private int getCores(int totals) {
