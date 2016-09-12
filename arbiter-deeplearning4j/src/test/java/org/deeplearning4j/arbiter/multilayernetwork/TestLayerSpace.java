@@ -18,11 +18,13 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.arbiter.layers.ActivationLayerSpace;
 import org.deeplearning4j.arbiter.layers.BatchNormalizationSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
+import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.junit.Test;
@@ -115,5 +117,42 @@ public class TestLayerSpace {
         assertTrue(bn.isLockGammaBeta());
         assertEquals(1.5, bn.getGamma(), 0.0);
         assertEquals(0.6*(3-2)+2, bn.getBeta(), 1e-4);
+    }
+
+    @Test
+    public void testActivationLayer(){
+
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        ActivationLayerSpace als = new ActivationLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = als.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = als.numParameters();
+        assertEquals(1, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            ActivationLayer al = als.getValue(d);
+            String activation = al.getActivationFunction();
+
+            System.out.println(activation);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+        }
+
+
     }
 }
