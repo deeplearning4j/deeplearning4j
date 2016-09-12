@@ -18,11 +18,17 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.arbiter.layers.BatchNormalizationSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,6 +55,7 @@ public class TestLayerSpace {
     public void testBasic2(){
 
         String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Random r = new Random(12345);
 
         for( int i=0; i<20; i++ ) {
 
@@ -61,10 +68,21 @@ public class TestLayerSpace {
                     .activation(new DiscreteParameterSpace<>(actFns))
                     .build();
 
+            //Set the parameter numbers...
+            List<ParameterSpace> list = ls.collectLeaves();
+            for( int j=0; j<list.size(); j++ ){
+                list.get(j).setIndices(j);
+            }
+
             int nParam = ls.numParameters();
             assertEquals(3,nParam);
 
-            DenseLayer l = ls.getValue(new double[nParam]);
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            DenseLayer l = ls.getValue(d);
 
             assertEquals(20, l.getNOut());
             double lr = l.getLearningRate();
@@ -79,4 +97,23 @@ public class TestLayerSpace {
         }
     }
 
+    @Test
+    public void testBatchNorm(){
+        BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder()
+                .gamma(1.5)
+                .beta(new ContinuousParameterSpace(2,3))
+                .lockGammaBeta(true)
+                .build();
+
+        //Set the parameter numbers...
+        List<ParameterSpace> list = sp.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        assertTrue(bn.isLockGammaBeta());
+        assertEquals(1.5, bn.getGamma(), 0.0);
+        assertEquals(0.6*(3-2)+2, bn.getBeta(), 1e-4);
+    }
 }
