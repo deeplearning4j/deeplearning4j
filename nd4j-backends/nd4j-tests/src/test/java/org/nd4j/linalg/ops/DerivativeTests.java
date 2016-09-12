@@ -1,38 +1,51 @@
-package org.nd4j.linalg.ops.impl.transform;
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ *
+ */
 
-import static org.junit.Assert.*;
 
-import java.util.Arrays;
-import java.util.Random;
+package org.nd4j.linalg.ops;
 
 import org.apache.commons.math3.util.FastMath;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.Arrays;
+import java.util.Random;
+
+import static org.junit.Assert.*;
+
+
 @RunWith(Parameterized.class)
-public class TestDerivatives extends BaseNd4jTest {
+public class DerivativeTests extends BaseNd4jTest {
 
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
-    public TestDerivatives(Nd4jBackend backend) {
+    public DerivativeTests(Nd4jBackend backend) {
         super(backend);
     }
 
-
-    static {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
-    }
 
     @Test
     public void testHardTanhDerivative() {
@@ -277,6 +290,7 @@ public class TestDerivatives extends BaseNd4jTest {
             assertTrue(relError2 < REL_ERROR_TOLERANCE);
         }
     }
+
 
     @Override
     public char ordering() {
