@@ -18,18 +18,12 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.arbiter.layers.ActivationLayerSpace;
-import org.deeplearning4j.arbiter.layers.BatchNormalizationSpace;
-import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
-import org.deeplearning4j.arbiter.layers.EmbeddingLayerSpace;
+import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.deeplearning4j.nn.conf.layers.ActivationLayer;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 
 import java.util.List;
@@ -192,6 +186,47 @@ public class TestLayerSpace {
 
             assertTrue(ArrayUtils.contains(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
+        }
+    }
+
+    @Test
+    public void testGravesBidirectionalLayer(){
+
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        GravesBidirectionalLSTMLayerSpace ls = new GravesBidirectionalLSTMLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .forgetGateBiasInit(new ContinuousParameterSpace(0.5,0.8))
+                .nIn(10).nOut(new IntegerParameterSpace(10,20))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = ls.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = ls.numParameters();
+        assertEquals(3, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            GravesBidirectionalLSTM el = ls.getValue(d);
+            String activation = el.getActivationFunction();
+            int nOut = el.getNOut();
+            double forgetGate = el.getForgetGateBiasInit();
+
+            System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(nOut >= 10 && nOut <= 20);
+            assertTrue(forgetGate >= 0.5 && forgetGate <= 0.8);
         }
     }
 }
