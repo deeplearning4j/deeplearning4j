@@ -120,6 +120,9 @@ CBLAS_SIDE convertSide(int from) {
 void blas_set_num_threads(int num) {
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
+    MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
+    MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
+    MKL_Set_Num_Threads_Local(num);
 #elif __OPENBLAS
     openblas_set_num_threads(num);
 #else

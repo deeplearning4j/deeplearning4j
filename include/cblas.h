@@ -29,6 +29,8 @@ void cblas_xerbla(int p,  char *rout,  char *form, ...);
 
 #ifdef __MKL
 void MKL_Set_Num_Threads(int num);
+int MKL_Domain_Set_Num_Threads(int num, int domain);
+int MKL_Set_Num_Threads_Local(int num);
 #elif __OPENBLAS
 void openblas_set_num_threads(int num);
 #else
