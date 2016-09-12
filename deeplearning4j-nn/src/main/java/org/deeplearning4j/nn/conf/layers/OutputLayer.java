@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Collection;
@@ -70,6 +71,10 @@ public class OutputLayer extends BaseOutputLayer {
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
+        }
+
+        public Builder(ILossFunction lossFunction){
+            this.lossFn = lossFunction;
         }
         
         @Override
