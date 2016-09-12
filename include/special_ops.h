@@ -1086,13 +1086,16 @@ namespace simdOps {
 						sum += result[i];
 					}
 
-#pragma omp parallel for simd schedule(guided)
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 					}
 
-				}
-				else {
+#pragma omp simd
+                    for (int i = 0; i < length; i++) {
+                        result[i] = result[i] * (1 - result[i]);
+                    }
+                } else {
 
 #pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
 					for (int i = 0; i < length; i++) {
@@ -1112,6 +1115,22 @@ namespace simdOps {
 						result[i * elementWiseStride] /= sum;
 					}
 
+					if (elementWiseStride >= 1) {
+						if (elementWiseStride == 1) {
+#pragma omp simd
+							for (int i = 0; i < length; i++) {
+								result[i] = result[i] * (1 - result[i]);
+							}
+
+						} else {
+#pragma omp simd
+							for (int i = 0; i < length; i++) {
+								result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
+							}
+						}
+					} else {
+						printf("Non element wise stride not supported right now\n");
+					}
 				}
 			}
 		}
