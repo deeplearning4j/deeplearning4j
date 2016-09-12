@@ -40,6 +40,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -168,7 +169,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                     case XENT:
                                         ol.setLossFn(new LossBinaryXENT());
                                         break;
-                                    case NEGATIVELOGLIKELIHOOD: //TODO
+                                    case NEGATIVELOGLIKELIHOOD:
+                                        ol.setLossFn(new LossNegativeLogLikelihood());
+                                        break;
                                     case MCXENT:
                                         ol.setLossFn(new LossMCXENT());
                                         break;

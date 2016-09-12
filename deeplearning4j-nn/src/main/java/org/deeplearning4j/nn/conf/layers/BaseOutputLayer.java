@@ -9,6 +9,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
@@ -31,11 +32,13 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     @Deprecated
     public LossFunction getLossFunction(){
         //To maintain backward compatibility only (as much as possible)
-        if(lossFn instanceof LossMCXENT){
+        if(lossFn instanceof LossNegativeLogLikelihood) {
+            return LossFunction.NEGATIVELOGLIKELIHOOD;
+        } else if(lossFn instanceof LossMCXENT){
             return LossFunction.MCXENT;
         } else if(lossFn instanceof LossMSE){
             return LossFunction.MSE;
-        } else if(lossFn instanceof LossBinaryXENT){
+        } else if(lossFn instanceof LossBinaryXENT) {
             return LossFunction.XENT;
         } else {
             //TODO: are there any others??
@@ -75,7 +78,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
                 case RECONSTRUCTION_CROSSENTROPY:
                     throw new UnsupportedOperationException("Not yet implemented");
                 case NEGATIVELOGLIKELIHOOD:
-                    return lossFunction(new LossMCXENT());  //TODO have a separate NLL class??
+                    return lossFunction(new LossNegativeLogLikelihood());
                 case CUSTOM:
                     throw new UnsupportedOperationException("Not yet implemented");
                 default:
