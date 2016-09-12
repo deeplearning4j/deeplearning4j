@@ -59,7 +59,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
 
-    private int numParameters;
+    protected int numParameters;
 
     @SuppressWarnings("unchecked")
     protected LayerSpace(Builder builder) {
@@ -84,8 +84,6 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         this.adamVarDecay = builder.adamVarDecay;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
-
-        numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
 //    public abstract L randomLayer();

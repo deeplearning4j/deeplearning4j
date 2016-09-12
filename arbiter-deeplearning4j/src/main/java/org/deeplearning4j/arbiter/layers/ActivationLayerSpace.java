@@ -1,5 +1,6 @@
 package org.deeplearning4j.arbiter.layers;
 
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 
 /**
@@ -10,6 +11,8 @@ import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 public class ActivationLayerSpace extends FeedForwardLayerSpace<ActivationLayer> {
     protected ActivationLayerSpace(Builder builder) {
         super(builder);
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override
@@ -25,5 +28,15 @@ public class ActivationLayerSpace extends FeedForwardLayerSpace<ActivationLayer>
         public ActivationLayerSpace build(){
             return new ActivationLayerSpace(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return toString(", ");
+    }
+
+    @Override
+    public String toString(String delim) {
+        return "ActivationLayerSpace(" + super.toString(delim) + ")";
     }
 }

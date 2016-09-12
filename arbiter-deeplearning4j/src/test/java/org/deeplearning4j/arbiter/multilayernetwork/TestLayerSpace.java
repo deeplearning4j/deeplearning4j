@@ -21,12 +21,15 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.arbiter.layers.ActivationLayerSpace;
 import org.deeplearning4j.arbiter.layers.BatchNormalizationSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
+import org.deeplearning4j.arbiter.layers.EmbeddingLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.junit.Test;
 
 import java.util.List;
@@ -152,7 +155,43 @@ public class TestLayerSpace {
 
             assertTrue(ArrayUtils.contains(actFns, activation));
         }
+    }
 
+    @Test
+    public void testEmbeddingLayer(){
 
+        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+
+        EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder()
+                .activation(new DiscreteParameterSpace<>(actFns))
+                .nIn(10).nOut(new IntegerParameterSpace(10,20))
+                .build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = els.collectLeaves();
+        for( int j=0; j<list.size(); j++ ){
+            list.get(j).setIndices(j);
+        }
+
+        int nParam = els.numParameters();
+        assertEquals(2, nParam);
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<20; i++ ) {
+
+            double[] d = new double[nParam];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            EmbeddingLayer el = els.getValue(d);
+            String activation = el.getActivationFunction();
+            int nOut = el.getNOut();
+
+            System.out.println(activation + "\t" + nOut);
+
+            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(nOut >= 10 && nOut <= 20);
+        }
     }
 }

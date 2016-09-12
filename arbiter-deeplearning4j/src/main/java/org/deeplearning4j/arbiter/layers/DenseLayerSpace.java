@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 
 /**
@@ -28,6 +29,8 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
 
     private DenseLayerSpace(Builder builder) {
         super(builder);
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override

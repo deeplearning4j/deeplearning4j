@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 
 import java.util.List;
@@ -28,6 +29,8 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         this.lockGammaBeta = builder.lockGammaBeta;
         this.gamma = builder.gamma;
         this.beta = builder.beta;
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override
@@ -60,6 +63,24 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         if (beta != null) builder.beta(beta.getValue(values));
     }
 
+    @Override
+    public String toString() {
+        return toString(", ");
+    }
+
+    @Override
+    public String toString(String delim) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("BatchNormalizationSpace(").append(super.toString(delim));
+        if(decay != null) sb.append("decay: ").append(decay).append(delim);
+        if(eps != null) sb.append("eps: ").append(eps).append(delim);
+        if(isMinibatch != null) sb.append("isMinibatch: ").append(isMinibatch).append(delim);
+        if(lockGammaBeta != null) sb.append("lockGammaBeta: ").append(lockGammaBeta).append(delim);
+        if(gamma != null) sb.append("gamma: ").append(gamma).append(delim);
+        if(beta != null) sb.append("beta: ").append(beta).append(delim);
+        sb.append(")");
+        return sb.toString();
+    }
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
 

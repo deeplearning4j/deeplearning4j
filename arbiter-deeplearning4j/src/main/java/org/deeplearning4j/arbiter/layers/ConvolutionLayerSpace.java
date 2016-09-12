@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -42,6 +43,8 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
         this.padding = builder.padding;
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
     @Override

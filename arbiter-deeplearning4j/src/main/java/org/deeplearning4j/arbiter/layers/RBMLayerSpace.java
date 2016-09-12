@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.RBM;
 
 import java.util.List;
@@ -36,6 +37,8 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
         this.sparsity = builder.sparsity;
+
+        this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
     
     @Override
