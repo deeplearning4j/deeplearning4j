@@ -119,7 +119,7 @@ CBLAS_SIDE convertSide(int from) {
 
 void blas_set_num_threads(int num) {
 #ifdef __MKL
-    mkl_set_num_threads(num);
+    MKL_Set_Num_Threads(num);
 #elif __OPENBLAS
     openblas_set_num_threads(num);
 #else
