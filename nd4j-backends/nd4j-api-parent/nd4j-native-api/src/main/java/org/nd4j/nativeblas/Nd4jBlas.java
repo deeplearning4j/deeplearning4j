@@ -44,8 +44,8 @@ public class Nd4jBlas extends Pointer {
             setMaxThreads(numThreads);
         }
         else
-            //setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
-            setMaxThreads(4);
+            setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            //setMaxThreads(4);
     }
 
     private int getCores(int totals) {
@@ -53,6 +53,7 @@ public class Nd4jBlas extends Pointer {
         if (totals >= 256) return  64;
 
         int ht_off = totals / 2; // we count off HyperThreading without any excuses
+        if (ht_off <= 4) return 4; // special case for Intel i5. and nobody likes i3 anyway
 
         if (ht_off > 24) {
             int rounds = 0;

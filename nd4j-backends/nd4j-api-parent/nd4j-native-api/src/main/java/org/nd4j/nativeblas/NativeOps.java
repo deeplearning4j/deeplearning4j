@@ -50,8 +50,8 @@ public class NativeOps extends Pointer {
             setOmpNumThreads(numThreads);
         }
         else
-            //setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
-            setOmpNumThreads(4);
+            setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
+            //setOmpNumThreads(4);
 
         log.info("NativeOps: Number of threads used for linear algebra " + ompGetMaxThreads());
 
@@ -64,6 +64,7 @@ public class NativeOps extends Pointer {
         if (totals >= 256) return  64;
 
         int ht_off = totals / 2; // we count off HyperThreading without any excuses
+        if (ht_off <= 4) return 4; // special case for Intel i5. and nobody likes i3 anyway
 
         if (ht_off > 24) {
             int rounds = 0;
