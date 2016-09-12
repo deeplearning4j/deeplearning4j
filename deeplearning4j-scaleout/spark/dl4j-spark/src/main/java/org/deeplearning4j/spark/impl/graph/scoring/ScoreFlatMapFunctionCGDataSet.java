@@ -24,8 +24,10 @@ import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -60,7 +62,7 @@ public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<D
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value();  //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
+        INDArray val = params.value().unsafeDuplication();  //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
         if(val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
@@ -72,6 +74,9 @@ public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<D
             int numExamples = ds.getFeatureMatrix().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         return out;
     }
