@@ -25,6 +25,7 @@ import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
+
 /**
   * Abstract base class for neural net architectures.
   *
@@ -62,4 +63,8 @@ abstract class Model {
     * @param x    input represented as DataSet
     */
   def predict(x: DataSet): INDArray = predict(x.getFeatureMatrix)
+
+  def toString: String
+  def toJson: String
+  def toYaml: String
 }
