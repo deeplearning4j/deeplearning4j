@@ -62,8 +62,8 @@ public class LossFunctionGradientCheck {
         String[] outputActivationFn = new String[]{
                 "sigmoid",  //xent
                 "tanh",     //cosine
-                "softmax",  //hinge
-                "softmax",  //kld
+                "tanh",  //hinge -> trying to predict 1 or -1
+                "sigmoid",  //kld -> probab so should be between 0 and 1
                 "identity", //mae
                 "identity", //mape
                 "softmax",  //mcxent
@@ -71,7 +71,7 @@ public class LossFunctionGradientCheck {
                 "sigmoid",  //msle  -   requires positive labels/activations due to log
                 "softmax",  //nll
                 "sigmoid",  //poisson - requires positive predictions due to log... not sure if this is the best option
-                "softmax"   //squared hinge
+                "tanh"   //squared hinge
         };
 
         int[] nOut = new int[]{
@@ -204,11 +204,16 @@ public class LossFunctionGradientCheck {
                 break;
             case "LossMCXENT":
             case "LossNegativeLogLikelihood":
-            case "LossHinge":
-            case "LossSquaredHinge":
                 ret[1] = Nd4j.zeros(minibatch, nOut);
                 for( int i=0; i<minibatch; i++ ){
                     ret[1].putScalar(i, r.nextInt(nOut), 1.0);
+                }
+                break;
+            case "LossHinge":
+            case "LossSquaredHinge":
+                ret[1] = Nd4j.ones(minibatch, nOut);
+                for( int i=0; i<minibatch; i++ ){
+                    ret[1].putScalar(i, r.nextInt(nOut), -1.0);
                 }
                 break;
             case "LossMAPE":
