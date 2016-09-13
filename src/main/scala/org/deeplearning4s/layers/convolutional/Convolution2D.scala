@@ -24,6 +24,13 @@ import org.deeplearning4s.layers.Layer
 import org.deeplearning4s.regularizers.{NoRegularizer, WeightRegularizer}
 
 
+/**
+  * 2D convolution for structured image-like inputs. Input should have
+  * three dimensions: height (number of rows), width (number of columns),
+  * and number of channels. Convolution is over height and width.
+  *
+  * @author David Kale
+  */
 class Convolution2D(
     nFilter: Int,
     kernelSize: List[Int],
@@ -35,19 +42,15 @@ class Convolution2D(
     val regularizer: WeightRegularizer = NoRegularizer(),
     val dropOut: Double = 0.0,
     override val name: String = null)
-  extends Convolution(kernelSize, stride, padding, nFilter)
-  with Layer {
-  inputShape = if (nChannels > 0) List(nChannels) else List()
+  extends Convolution(kernelSize, stride, padding, nChannels, nFilter)
+    with Layer {
 
-  override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
-    if (inputShape.isEmpty)
-      throw new IllegalArgumentException("Input shape must be nonempty.")
-
+  override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new ConvolutionLayer.Builder(kernelSize.head, kernelSize.last)
       .nIn(inputShape.last)
+      .nOut(outputShape.last)
       .stride(stride.head, stride.last)
       .padding(padding.head, padding.last)
-      .nOut(outputShape.last)
       .weightInit(weightInit)
       .activation(activation)
       .l1(regularizer.l1)
@@ -55,5 +58,4 @@ class Convolution2D(
       .dropOut(dropOut)
       .name(name)
       .build()
-  }
 }

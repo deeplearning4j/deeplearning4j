@@ -22,25 +22,32 @@ import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil
 import org.deeplearning4s.layers.Node
 
 
+/**
+  * Base class for convolutional layers.
+  *
+  * @author David Kale
+  */
 abstract class Convolution(
-  protected val kernelSize: List[Int],
-  protected val stride: List[Int],
-  protected val padding: List[Int],
-  protected val nFilter: Int = 0)
+    protected val kernelSize: List[Int],
+    protected val stride: List[Int],
+    protected val padding: List[Int],
+    nChannels: Int = 0,
+    protected val nFilter: Int = 0)
   extends Node {
-
+  inputShape = List(nChannels)
   if (kernelSize.length != stride.length || kernelSize.length != padding.length)
     throw new IllegalArgumentException("Kernel, stride, and padding must all have same shape.")
 
   override def outputShape: List[Int] = {
-    if (inputShape.isEmpty)
-      throw new IllegalStateException("Input shape has not been initialized.")
+    val nOutChannels: Int = if (nFilter > 0) nFilter else if (inputShape.nonEmpty) inputShape.last else 0
+    if (inputShape.length == 3) {
+      KernelValidationUtil.validateShapes(inputShape.head, inputShape.tail.head, kernelSize.head, kernelSize.tail.head,
+                                          stride.head, stride.tail.head, padding.head, padding.tail.head)
+      return List[List[Int]](inputShape.init, kernelSize, padding, stride)
+        .transpose.map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
+    } else if (nOutChannels > 0)
+      return List(nOutChannels)
 
-    KernelValidationUtil.validateShapes(inputShape.head, inputShape(1), kernelSize.head, kernelSize(1),
-      stride.head, stride(1), padding.head, padding(1))
-
-    var nOutChannels: Int = if (nFilter > 0) nFilter else inputShape.last
-    List[List[Int]](inputShape.init, kernelSize, padding, stride)
-      .transpose.map(x => (x(0)-x(1) + 2*x(2)) / x(3) + 1) :+ nOutChannels
+    List()
   }
 }
