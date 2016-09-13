@@ -36,7 +36,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
-  * Two-layer MLP for MNIST.
+  * Simple LeNet convolutional neural net for MNIST, using
+  * DL4J-style NeuralNet model construction pattern.
   *
   * @author David Kale
   */

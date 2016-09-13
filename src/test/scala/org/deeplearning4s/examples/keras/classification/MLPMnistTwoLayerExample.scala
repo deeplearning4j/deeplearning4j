@@ -22,9 +22,6 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4s.layers.convolutional.Convolution2D
-import org.deeplearning4s.layers.pooling.MaxPooling2D
-import org.deeplearning4s.layers.reshaping.{Flatten3D, Unflatten3D}
 import org.deeplearning4s.layers.{Dense, DenseOutput}
 import org.deeplearning4s.models.Sequential
 import org.deeplearning4s.optimizers.SGD
@@ -36,48 +33,40 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
-  * Simple LeNet convolutional neural net for MNIST, using
-  * keras-style Sequential model construction pattern.
+  * Two-layer MLP for MNIST using keras-style Sequential
+  * model construction pattern.
   *
   * @author David Kale
   */
-object LeNetMnistExample extends App {
+object MLPMnistTwoLayerExample extends App {
   private val log: Logger = LoggerFactory.getLogger("yay")
 
-  private val nbRows: Int = 28
-  private val nbColumns: Int = 28
-  private val nbChannels: Int = 1
-  private val nbOutput: Int = 10
+  private val numRows: Int = 28
+  private val numColumns: Int = 28
+  private val outputNum: Int = 10
   private val batchSize: Int = 64
-  private val nbEpochs: Int = 1
   private val rngSeed: Int = 123
-  private val weightDecay: Double = 0.0005
-  private val momentum: Double = 0.9
-  private val learningRate: Double = 0.01
+  private val numEpochs: Int = 1
+  private val learningRate: Double = 0.0015
+  private val momentum: Double = 0.98
 
-  private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, 12345)
-  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, 12345)
+  private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
+  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
   private val model: Sequential = new Sequential(rngSeed = rngSeed)
-  model.add(new Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
-  model.add(new Convolution2D(20, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
-  model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
-  model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(new Flatten3D())
-  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
-  model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax",
-                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
+  model.add(new Dense(500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = "relu",
+                      regularizer = l2(learningRate * 0.005)))
+  model.add(new Dense(100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new DenseOutput(outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
+                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD, regularizer = l2(learningRate * 0.005)))
   model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
-  model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))
+  model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(5)))
 
   log.info("Evaluate model....")
-  val evaluator: Evaluation = new Evaluation(nbOutput)
+  val evaluator: Evaluation = new Evaluation(outputNum)
   while(mnistTest.hasNext){
     val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)

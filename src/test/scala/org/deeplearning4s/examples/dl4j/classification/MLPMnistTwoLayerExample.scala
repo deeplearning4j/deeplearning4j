@@ -33,7 +33,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
-  * Two-layer MLP for MNIST.
+  * Two-layer MLP for MNIST using DL4J-style NeuralNet
+  * model construction pattern.
   *
   * @author David Kale
   */
