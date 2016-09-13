@@ -1190,11 +1190,11 @@ namespace simdOps {
 			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
 			char xOrder = shape::order(xShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
-
+/*
 			int tadsPerThread = tads / TAD_THRESHOLD;
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
+*/
 			if (xOrder == resultOrder && xOrder == 'c') {
 				if (eleStride == 1 && resultEleStride == 1) {
 					if (length < ELEMENT_THRESHOLD) {
