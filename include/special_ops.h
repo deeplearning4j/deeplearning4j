@@ -168,7 +168,12 @@ namespace simdOps {
 
 			T *dIn = dx;
 			T *dOut = result;
-#pragma omp parallel for collapse(2)
+
+			int tadsPerThread = (exampleTo - exampleFrom) / 4;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[6];
@@ -453,9 +458,13 @@ namespace simdOps {
 			int *outStride = shape::stride(resultShapeBuffer);
 
 
+			int tadsPerThread = (exampleTo - exampleFrom) / 4;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
 			T *fIn = dx;
 			T *fOut = result;
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[4];
