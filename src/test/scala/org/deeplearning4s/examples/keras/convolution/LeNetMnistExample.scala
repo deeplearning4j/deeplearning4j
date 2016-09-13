@@ -42,7 +42,7 @@ import org.slf4j.{Logger, LoggerFactory}
   * @author David Kale
   */
 object LeNetMnistExample extends App {
-  private val log: Logger = LoggerFactory.getLogger("yay")
+  private val log: Logger = LoggerFactory.getLogger(LeNetMnistExample.getClass)
 
   private val nbRows: Int = 28
   private val nbColumns: Int = 28

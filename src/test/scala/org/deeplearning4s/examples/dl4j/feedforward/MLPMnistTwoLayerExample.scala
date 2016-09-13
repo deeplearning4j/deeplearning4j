@@ -39,7 +39,7 @@ import org.slf4j.{Logger, LoggerFactory}
   * @author David Kale
   */
 object MLPMnistTwoLayerExample extends App {
-  private val log: Logger = LoggerFactory.getLogger("yay")
+  private val log: Logger = LoggerFactory.getLogger(MLPMnistTwoLayerExample.getClass)
 
   private val numRows: Int = 28
   private val numColumns: Int = 28

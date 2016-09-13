@@ -40,7 +40,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 object IrisCSVExample extends App {
 
-  val log: Logger = LoggerFactory.getLogger("Iris")
+  val log: Logger = LoggerFactory.getLogger(IrisCSVExample.getClass)
 
   // input parameters:
   val numLinesToSkip = 0
