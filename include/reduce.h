@@ -551,7 +551,7 @@ template<typename OpType>
 
 				if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 					for (int i = 0; i < resultLength; i++) {
 						T *iter = x + tadOffsets[i];
 						T start = OpType::startingValue(iter);
@@ -657,7 +657,7 @@ template<typename OpType>
 						T finalVal = startingVal;
 						BlockInformation info(length);
 						T *blocks = new T[info.chunks];
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 						{
 							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
@@ -698,7 +698,7 @@ template<typename OpType>
 				}
 
 				else {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						T local = OpType::startingValue(x);
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
@@ -717,7 +717,7 @@ template<typename OpType>
 					T *blocks = new T[info.chunks];
 
 
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 					{
 						T local = OpType::startingValue(x);
 						for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {

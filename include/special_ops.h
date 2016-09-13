@@ -168,7 +168,12 @@ namespace simdOps {
 
 			T *dIn = dx;
 			T *dOut = result;
-#pragma omp parallel for collapse(2)
+
+			int tadsPerThread = (exampleTo - exampleFrom) / 4;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[6];
@@ -453,9 +458,13 @@ namespace simdOps {
 			int *outStride = shape::stride(resultShapeBuffer);
 
 
+			int tadsPerThread = (exampleTo - exampleFrom) / 4;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
 			T *fIn = dx;
 			T *fOut = result;
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[4];
@@ -1209,9 +1218,14 @@ namespace simdOps {
 			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
 			char xOrder = shape::order(xShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
+/*
+			int tadsPerThread = tads / TAD_THRESHOLD;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+*/
 			if (xOrder == resultOrder && xOrder == 'c') {
 				if (eleStride == 1 && resultEleStride == 1) {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
 #pragma omp simd
@@ -1231,7 +1245,8 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel
+
+#pragma omp parallel proc_bind(AFFINITY)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
@@ -1257,7 +1272,7 @@ namespace simdOps {
 
 				}
 				else {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
 #pragma omp simd
@@ -1275,7 +1290,8 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel
+
+#pragma omp parallel proc_bind(AFFINITY)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
@@ -1409,7 +1425,8 @@ namespace simdOps {
 					if (eleStride == 1) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-						if (length < 8000) {
+						if (length < ELEMENT_THRESHOLD) {
+
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
@@ -1422,7 +1439,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
@@ -1454,7 +1471,7 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-						if (length < 8000) {
+						if (length < ELEMENT_THRESHOLD) {
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
@@ -1467,7 +1484,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
@@ -1517,7 +1534,12 @@ namespace simdOps {
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-#pragma omp  parallel  for
+
+				int tadsPerThread = tads / TAD_THRESHOLD;
+				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 				for (int i = 0; i < tads; i++) {
 					int offset = tad.tadOffsets[i];
 					int shapeIter[MAX_RANK];

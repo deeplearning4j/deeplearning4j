@@ -18,9 +18,20 @@
 #endif
 #include <dll.h>
 #include <types/float16.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 
 class ND4J_EXPORT Nd4jBlas {
 public:
+
+    /*
+     * ======================================================
+     * ND4j service functions
+     * ======================================================
+     */
+
+    void setMaxThreads(int num);
 
     /*
      * ======================================================

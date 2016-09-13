@@ -79,6 +79,9 @@ cublasSideMode_t convertSideMode(int sideMode) {
     }
 }
 
+void Nd4jBlas::setMaxThreads(int num) {
+    // no-op
+}
 
 /*
  * ======================================================
