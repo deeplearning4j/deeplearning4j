@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class DataTypeUtil {
 
-    private static DataBuffer.Type dtype;
+    private volatile transient static DataBuffer.Type dtype;
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
