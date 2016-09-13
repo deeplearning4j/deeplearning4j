@@ -18,13 +18,12 @@
 
 package org.deeplearning4s.layers
 
-import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer}
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4s.regularizers.{NoRegularizer, WeightRegularizer}
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
-  * Dense fully connected output layer in neural net architectures.
+  * Fully connected output neural net layer.
   *
   * @author David Kale
   */
