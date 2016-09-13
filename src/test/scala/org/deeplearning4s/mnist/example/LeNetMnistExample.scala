@@ -20,12 +20,13 @@ package org.deeplearning4s.mnist.example
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
+import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4s.layers.convolutional.Convolution2D
 import org.deeplearning4s.layers.pooling.MaxPooling2D
 import org.deeplearning4s.layers.{Dense, DenseOutput}
-import org.deeplearning4s.models.Sequential
+import org.deeplearning4s.models.{NeuralNet, Sequential}
 import org.deeplearning4s.optimizers.SGD
 import org.deeplearning4s.regularizers.l2
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -57,15 +58,17 @@ object LeNetMnistExample extends App {
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, 12345)
 
   log.info("Build model....")
-  private val model: Sequential = new Sequential(inputShape = List(nbRows, nbColumns, nbChannels), rngSeed = rngSeed)
+  private val model: NeuralNet = new NeuralNet(inputType = InputType.convolutionalFlat(nbRows, nbColumns, nbChannels),
+                                               rngSeed = rngSeed)
   model.add(new Convolution2D(20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
                               weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
                               weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(new Dense(500, nbRows*nbColumns, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
-  model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax", lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
+  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
+  model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax",
+                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
   model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
@@ -80,4 +83,5 @@ object LeNetMnistExample extends App {
   }
   log.info(evaluator.stats())
   log.info("****************Example finished********************")
+  println(evaluator.stats())
 }

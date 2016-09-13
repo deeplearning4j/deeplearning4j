@@ -28,7 +28,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4s.layers.{Dense, DenseOutput}
-import org.deeplearning4s.models.Sequential
+import org.deeplearning4s.models.{NeuralNet, Sequential}
 import org.deeplearning4s.optimizers.SGD
 import org.deeplearning4s.regularizers.l2
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -66,10 +66,10 @@ object IrisCSVExample extends App {
   val training_data = new ListDataSetIterator(training_, training_.size)
 
   log.info("Build model....")
-  val model: Sequential = new Sequential(addReshapersAutomatically = false)
+  val model: NeuralNet = new NeuralNet
   model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = l2(learningRate * 0.005)))
-  model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = l2(learningRate * 0.005)))
-  model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new Dense(128, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new Dense(128, activation = "relu", regularizer = l2(learningRate * 0.005)))
   model.add(new DenseOutput(outputNum, activation = "softmax", lossFunction = LossFunction.MCXENT,
     regularizer = l2(learningRate * 0.005)))
   model.compile(optimizer = SGD(learningRate))
