@@ -2,8 +2,9 @@ package org.deeplearning4s.regularizers
 
 /**
   * Weight regularizers.
+  *
+  * @author David Kale
   */
-
 sealed class WeightRegularizer(val l1: Double = Double.NaN, val l2: Double = Double.NaN)
 
 case class NoRegularizer() extends WeightRegularizer()
