@@ -75,7 +75,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 Nd4j.rand(1,3),
                 Nd4j.randn(3,3).add(10),
                 */
-                //Nd4j.rand(3,3),
+                Nd4j.rand(3,3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
                 Nd4j.rand(3,3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
                // Nd4j.rand(3,3),
                 //Nd4j.randn(3,3)
@@ -86,7 +86,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 /*new LossMCXENT(), new LossMCXENT(),
                 new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD(), new LossMAE(), new LossMAE(),
                 new LossMAE(), new LossMAE(), new LossMSLE(), new LossMSLE(),*/
-                //new LossSquaredHinge(),
+                new LossSquaredHinge(),
                 new LossHinge(),
                 //new LossPoisson(),
                 //new LossCosineProximity()
@@ -97,7 +97,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 /*"softmax","tanh","identity","tanh",
                 "tanh","identity","identity","identity","identity",
                  "identity", "identity", "identity", "identity",*/
-                // "identity",
+                "identity",
                 "identity",
                 //"relu",
                 //"identity"
