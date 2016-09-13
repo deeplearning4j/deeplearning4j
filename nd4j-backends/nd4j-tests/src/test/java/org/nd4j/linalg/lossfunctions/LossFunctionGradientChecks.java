@@ -54,10 +54,10 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 Nd4j.create(new double[]{1,2,1}),
                 Nd4j.create(new double[][]{{101,21,110},{10.1,1,0.5},{200,30,0.001}}),
                 */
-                Nd4j.create(new double[][] {{-1,-1,1},{-1,1,1},{-1,1,1}}),
-                Nd4j.create(new double[][] {{-1,-1,1},{-1,1,1},{-1,1,1}}),
-                Nd4j.create(new double[][] {{10,1,3},{1,10,1},{1,2,5}}),
-                Nd4j.create(new double[][] {{10,-1,3},{1,10,1},{1,2,-5}}),
+                //Nd4j.create(new double[][] {{-1,-1,1},{-1,1,1},{-1,1,1}}),
+                Nd4j.create(new double[][] {{-1,1,-1},{1,1,-1},{-1,1,1}}),
+                //Nd4j.create(new double[][] {{10,1,3},{1,10,1},{1,2,5}}),
+                //Nd4j.create(new double[][] {{10,-1,3},{1,10,1},{1,2,-5}}),
         };
 
         INDArray[] preOut = new INDArray[]{
@@ -75,24 +75,33 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 Nd4j.rand(1,3),
                 Nd4j.randn(3,3).add(10),
                 */
-                Nd4j.rand(3,3),
-                Nd4j.rand(3,3),
-                Nd4j.rand(3,3),
-                Nd4j.randn(3,3)};
+                //Nd4j.rand(3,3),
+                Nd4j.rand(3,3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
+               // Nd4j.rand(3,3),
+                //Nd4j.randn(3,3)
+        };
 
         ILossFunction[] lossFn = new ILossFunction[]{
                 new LossMCXENT(),
                 /*new LossMCXENT(), new LossMCXENT(),
                 new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD(), new LossMAE(), new LossMAE(),
                 new LossMAE(), new LossMAE(), new LossMSLE(), new LossMSLE(),*/
-                new LossSquaredHinge(), new LossHinge(), new LossPoisson(), new LossCosineProximity()};
+                //new LossSquaredHinge(),
+                new LossHinge(),
+                //new LossPoisson(),
+                //new LossCosineProximity()
+        };
 
         String[] activationFns = new String[]{
                 "softmax",
                 /*"softmax","tanh","identity","tanh",
                 "tanh","identity","identity","identity","identity",
                  "identity", "identity", "identity", "identity",*/
-                 "identity","identity","relu","identity"};
+                // "identity",
+                "identity",
+                //"relu",
+                //"identity"
+        };
 
 
         for(int i=0; i<labels.length; i++ ){
