@@ -698,7 +698,7 @@ template<typename OpType>
 				}
 
 				else {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						T local = OpType::startingValue(x);
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {

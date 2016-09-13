@@ -1190,9 +1190,15 @@ namespace simdOps {
 			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
 			char xOrder = shape::order(xShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
+
+			int tadsPerThread = tads / TAD_THRESHOLD;
+			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
 			if (xOrder == resultOrder && xOrder == 'c') {
 				if (eleStride == 1 && resultEleStride == 1) {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
+						printf("Branch A\n");
 						int maxIdx = 0;
 						T currMax = dx[0];
 #pragma omp simd
@@ -1212,7 +1218,11 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel
+
+						printf("Branch B\n");
+
+
+#pragma omp parallel proc_bind(AFFINITY)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
@@ -1238,9 +1248,10 @@ namespace simdOps {
 
 				}
 				else {
-					if (length < 8000) {
+					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
+						printf("Branch C\n");
 #pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
@@ -1256,7 +1267,10 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp parallel
+
+						printf("Branch D\n");
+
+#pragma omp parallel proc_bind(AFFINITY)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
@@ -1390,7 +1404,7 @@ namespace simdOps {
 					if (eleStride == 1) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-						if (length < 8000) {
+						if (length < ELEMENT_THRESHOLD) {
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
@@ -1403,7 +1417,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
@@ -1435,7 +1449,7 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-						if (length < 8000) {
+						if (length < ELEMENT_THRESHOLD) {
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
@@ -1448,7 +1462,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel
+#pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
