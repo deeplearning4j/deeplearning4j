@@ -1299,6 +1299,7 @@ namespace simdOps {
 
 
 			else {
+				printf("Branch E\n");
 				int shapeIter[MAX_RANK];
 				int coord[MAX_RANK];
 				int dim;
@@ -1405,6 +1406,8 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
+							printf("Branch 2 A\n");
+
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
@@ -1417,6 +1420,7 @@ namespace simdOps {
 							}
 						}
 						else {
+							printf("Branch 2 B\n");
 #pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
@@ -1450,6 +1454,7 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
+							printf("Branch 2 C\n");
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
@@ -1462,6 +1467,7 @@ namespace simdOps {
 							}
 						}
 						else {
+							printf("Branch 2 D\n");
 #pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
@@ -1494,6 +1500,7 @@ namespace simdOps {
 
 			}
 			else {
+				printf("Branch 2 E\n");
 				int dimensionLength = (int)extraParams[0];
 				int *dimension = new int[dimensionLength];
 				for (int i = 0; i < dimensionLength; i++) {
