@@ -17,7 +17,7 @@
  *  * Dan Dixey - Implemented a working CSV Example using the New Scala Interface for DL4J
  */
 
-package org.deeplearning4s.examples.dl4j.classification
+package org.deeplearning4s.examples.dl4j.feedforward
 
 import java.util
 

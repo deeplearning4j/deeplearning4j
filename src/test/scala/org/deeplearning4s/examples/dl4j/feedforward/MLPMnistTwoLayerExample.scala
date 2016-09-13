@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4s.examples.dl4j.classification
+package org.deeplearning4s.examples.dl4j.feedforward
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation

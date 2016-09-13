@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4s.examples.keras.classification
+package org.deeplearning4s.examples.keras.convolution
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
