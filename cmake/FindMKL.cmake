@@ -19,7 +19,6 @@ endif (NOT MKLROOT_PATH)
 
 
 # Stage 2: find include path and libraries
-
 if (MKLROOT_PATH)
     # root-path found
 
@@ -38,6 +37,14 @@ if (MKLROOT_PATH)
             set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}/lib/ia32")
         endif (CMAKE_SIZEOF_VOID_P MATCHES 8)
     endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+	
+	 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+        if (CMAKE_SIZEOF_VOID_P MATCHES 8)
+            set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}\\lib\\intel64")
+        else (CMAKE_SIZEOF_VOID_P MATCHES 8)
+            set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}\\lib\\ia32")
+        endif (CMAKE_SIZEOF_VOID_P MATCHES 8)
+    endif (CMAKE_SYSTEM_NAME MATCHES "Windows")
 
     # set include
 
