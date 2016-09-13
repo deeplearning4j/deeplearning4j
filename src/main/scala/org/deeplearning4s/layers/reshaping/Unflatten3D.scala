@@ -23,23 +23,30 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor
 import org.deeplearning4s.layers.{Node, Preprocessor}
 
 
-class Unflatten2D(
-  nOut: List[Int],
-  nIn: Int = 0)
+/**
+  * Unflattens vector into structured image-like output. Input must be a
+  * vector while output should have three dimensions: height (number of rows),
+  * width (number of columns), and number of channels.
+  *
+  * @author David Kale
+  */
+class Unflatten3D(
+    newOutputShape: List[Int],
+    nIn: Int = 0)
   extends Node with Preprocessor {
-  _outputShape = nOut
-  if (nIn > 0)
-    inputShape = List(nIn)
+  if (newOutputShape.length != 3)
+    throw new IllegalArgumentException("New output shape must be length 3.")
+  _outputShape = newOutputShape
+  inputShape = List(nIn)
 
   override def outputShape: List[Int] = _outputShape
 
   override def compile: InputPreProcessor = {
-    if (inputShape.isEmpty)
-      throw new IllegalArgumentException("Input shape must be nonempty.")
-
+    if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))
+      throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     if (inputShape.last != outputShape.product)
       throw new IllegalStateException("Overall output shape must be equal to original input shape.")
 
-    new FeedForwardToCnnPreProcessor(outputShape.head, outputShape(1), outputShape(2))
+    new FeedForwardToCnnPreProcessor(outputShape.head, outputShape.tail.head, outputShape.last)
   }
 }

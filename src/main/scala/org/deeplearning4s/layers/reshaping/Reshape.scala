@@ -23,19 +23,25 @@ import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor
 import org.deeplearning4s.layers.{Node, Preprocessor}
 
 
+/**
+  * Generic reshaping layer.
+  *
+  * @author David Kale
+  */
 class Reshape(
-  nOut: List[Int],
-  nIn: List[Int] = List())
+    newOutputShape: List[Int],
+    oldInputShape: List[Int] = List())
   extends Node with Preprocessor {
-  inputShape = nIn
-  _outputShape = nOut
+  inputShape = oldInputShape
+  _outputShape = newOutputShape
 
   override def outputShape: List[Int] = _outputShape
 
   override def compile: InputPreProcessor = {
+    if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))
+      throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     if (inputShape.product != outputShape.product)
       throw new IllegalArgumentException("Overall input shape must equal overall output shape.")
-
-    new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
+    return new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
   }
 }
