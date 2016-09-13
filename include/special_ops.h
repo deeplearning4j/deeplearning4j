@@ -1396,7 +1396,7 @@ namespace simdOps {
 					dimension[i] = (int)extraParams[i + 1];
 				}
 				if (shape::shapeOf(xShapeBuffer)[dimension[0]] == 1) {
-					printf("Branch 2 X\n);
+					printf("Branch 2 X\n");
 
 					for (int i = 0; i < length; i++) {
 						result[i] = 1.0;
