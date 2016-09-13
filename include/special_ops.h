@@ -1198,7 +1198,6 @@ namespace simdOps {
 			if (xOrder == resultOrder && xOrder == 'c') {
 				if (eleStride == 1 && resultEleStride == 1) {
 					if (length < ELEMENT_THRESHOLD) {
-						printf("Branch A\n");
 						int maxIdx = 0;
 						T currMax = dx[0];
 #pragma omp simd
@@ -1218,9 +1217,6 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-
-						printf("Branch B\n");
-
 
 #pragma omp parallel proc_bind(AFFINITY)
 {
@@ -1251,7 +1247,6 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-						printf("Branch C\n");
 #pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
@@ -1267,8 +1262,6 @@ namespace simdOps {
 					else {
 						int maxIdx = 0;
 						T currMax = dx[0];
-
-						printf("Branch D\n");
 
 #pragma omp parallel proc_bind(AFFINITY)
 {
@@ -1299,7 +1292,6 @@ namespace simdOps {
 
 
 			else {
-				printf("Branch E\n");
 				int shapeIter[MAX_RANK];
 				int coord[MAX_RANK];
 				int dim;
@@ -1396,8 +1388,6 @@ namespace simdOps {
 					dimension[i] = (int)extraParams[i + 1];
 				}
 				if (shape::shapeOf(xShapeBuffer)[dimension[0]] == 1) {
-					printf("Branch 2 X\n");
-
 					for (int i = 0; i < length; i++) {
 						result[i] = 1.0;
 					}
@@ -1408,7 +1398,6 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-							printf("Branch 2 A\n");
 
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
@@ -1422,7 +1411,6 @@ namespace simdOps {
 							}
 						}
 						else {
-							printf("Branch 2 B\n");
 #pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
@@ -1456,7 +1444,6 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-							printf("Branch 2 C\n");
 #pragma omp simd
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
@@ -1469,7 +1456,6 @@ namespace simdOps {
 							}
 						}
 						else {
-							printf("Branch 2 D\n");
 #pragma omp parallel proc_bind(AFFINITY)
 {
 							int maxIdxLocal = maxIdx;
@@ -1502,7 +1488,6 @@ namespace simdOps {
 
 			}
 			else {
-				printf("Branch 2 E\n");
 				int dimensionLength = (int)extraParams[0];
 				int *dimension = new int[dimensionLength];
 				for (int i = 0; i < dimensionLength; i++) {
@@ -1521,7 +1506,12 @@ namespace simdOps {
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-#pragma omp  parallel  for
+
+				int tadsPerThread = tads / TAD_THRESHOLD;
+				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 				for (int i = 0; i < tads; i++) {
 					int offset = tad.tadOffsets[i];
 					int shapeIter[MAX_RANK];
