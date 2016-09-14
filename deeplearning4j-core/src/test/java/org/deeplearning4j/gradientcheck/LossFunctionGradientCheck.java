@@ -49,11 +49,17 @@ public class LossFunctionGradientCheck {
                 new LossCosineProximity(),
                 new LossHinge(),
                 new LossKLD(),
+                new LossKLD(),
                 new LossMAE(),
+                new LossMAE(),
+                new LossMAPE(),
                 new LossMAPE(),
                 new LossMCXENT(),
                 new LossMSE(),
+                new LossMSE(),
                 new LossMSLE(),
+                new LossMSLE(),
+                new LossNegativeLogLikelihood(),
                 new LossNegativeLogLikelihood(),
                 new LossPoisson(),
                 new LossSquaredHinge()
@@ -62,14 +68,20 @@ public class LossFunctionGradientCheck {
         String[] outputActivationFn = new String[]{
                 "sigmoid",  //xent
                 "tanh",     //cosine
-                "tanh",  //hinge -> trying to predict 1 or -1
+                "tanh",     //hinge -> trying to predict 1 or -1
                 "sigmoid",  //kld -> probab so should be between 0 and 1
+                "softmax",  //kld + softmax
                 "identity", //mae
+                "softmax",  //mae + softmax
                 "identity", //mape
+                "softmax",  //mape + softmax
                 "softmax",  //mcxent
                 "identity", //mse
+                "softmax",  //mse + softmax
                 "sigmoid",  //msle  -   requires positive labels/activations due to log
-                "softmax",  //nll
+                "softmax",  //msle + softmax
+                "sigmoid",  //nll
+                "softmax",  //nll + softmax
                 "sigmoid",  //poisson - requires positive predictions due to log... not sure if this is the best option
                 "tanh"   //squared hinge
         };
@@ -77,20 +89,26 @@ public class LossFunctionGradientCheck {
         int[] nOut = new int[]{
                 1,          //xent
                 5,          //cosine
-                3,         //hinge
-                3,         //kld
+                3,          //hinge
+                3,          //kld
+                3,          //kld + softmax
                 3,          //mae
+                3,          //mae + softmax
                 3,          //mape
+                3,          //mape + softmax
                 3,          //mcxent
                 3,          //mse
+                3,          //mse + softmax
                 3,          //msle
+                3,          //msle + softmax
                 3,          //nll
-                3,         //poisson
-                3          //squared hinge
+                3,          //nll + softmax
+                3,          //poisson
+                3           //squared hinge
         };
 
-//        int[] minibatchSizes = new int[]{1, 4};
-        int[] minibatchSizes = new int[]{3};
+        int[] minibatchSizes = new int[]{1, 4};
+//        int[] minibatchSizes = new int[]{3};
 
 
         List<String> passed = new ArrayList<>();
@@ -98,7 +116,7 @@ public class LossFunctionGradientCheck {
 
         for( int i=0; i<lossFunctions.length; i++ ){
             for( int j=0; j<minibatchSizes.length; j++ ) {
-                String testName = lossFunctions[i] + " - minibatchSize = " + minibatchSizes[j];
+                String testName = lossFunctions[i] + " - " + outputActivationFn[i] + " - minibatchSize = " + minibatchSizes[j];
 
 //                if (nOut[i] <= 0) {
 //                    //DEBUGGING ONLY
