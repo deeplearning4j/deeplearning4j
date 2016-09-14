@@ -23,7 +23,9 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +67,7 @@ public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<Dat
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value();
+        INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
@@ -95,6 +97,9 @@ public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<Dat
                 ret.add(doubleScore);
             }
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);
