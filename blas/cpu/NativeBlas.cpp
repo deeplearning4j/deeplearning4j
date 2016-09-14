@@ -130,6 +130,7 @@ CBLAS_SIDE convertSide(int from) {
  * @param length
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
+/*
 #ifdef _WIN32
 HMODULE checkLibrary(char *name, int length) {
     HMODULE handle = LoadLibrary(name);
@@ -158,8 +159,10 @@ void* checkLibrary(char *name, int length) {
 }
 
 #endif
+*/
 
 void blas_set_num_threads(int num) {
+    /*
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
@@ -180,11 +183,11 @@ void blas_set_num_threads(int num) {
     void *handle = checkLibrary("libmkl_rt", 9);
     if (handle == NULL) {
         // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
-/*        handle = checkLibrary("libopenblas", 9);
-        if (handle != NULL) {
-            void *func = dlsym(handle, "openblas_set_num_threads");
-            if (func != NULL) {
-                dlclose(handle);*/
+//        handle = checkLibrary("libopenblas", 9);
+//        if (handle != NULL) {
+//            void *func = dlsym(handle, "openblas_set_num_threads");
+//            if (func != NULL) {
+//                dlclose(handle);
                 openblas_set_num_threads(num);
 //            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
 //        }
@@ -197,6 +200,7 @@ void blas_set_num_threads(int num) {
 #else
     // do nothing
 #endif
+    */
 }
 
 
