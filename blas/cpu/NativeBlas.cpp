@@ -180,14 +180,14 @@ void blas_set_num_threads(int num) {
     void *handle = checkLibrary("libmkl_rt", 9);
     if (handle == NULL) {
         // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
-        handle = checkLibrary("libopenblas", 9);
+/*        handle = checkLibrary("libopenblas", 9);
         if (handle != NULL) {
             void *func = dlsym(handle, "openblas_set_num_threads");
             if (func != NULL) {
-                dlclose(handle);
+                dlclose(handle);*/
                 openblas_set_num_threads(num);
-            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
-        }
+//            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
+//        }
     } else {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
         dlclose(handle);
