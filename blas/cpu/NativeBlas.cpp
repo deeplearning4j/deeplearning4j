@@ -8,7 +8,7 @@
 #include <pointercast.h>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <files.h>
 #else
 #include <dlfcn.h>
 #endif
@@ -131,19 +131,11 @@ CBLAS_SIDE convertSide(int from) {
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
 
-bool file_exists(char *name)
-{
-    FILE *file;
-    if (file = fopen(name, "r")) {
-        fclose(file);
-        return true;
-    }
-    return false;
-}
+
 
 #ifdef _WIN32
 bool checkLibrary(char *name, int length) {
-    return file_exists(name);
+    return checkFileInPath(name);
 }
 #else
 void* checkLibrary(char *name, int length) {
