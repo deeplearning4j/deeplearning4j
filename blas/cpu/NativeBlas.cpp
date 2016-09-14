@@ -130,11 +130,12 @@ CBLAS_SIDE convertSide(int from) {
  * @param length
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
-/*
+
 #ifdef _WIN32
-HMODULE checkLibrary(char *name, int length) {
-    HMODULE handle = LoadLibrary(name);
-    return handle;
+bool checkLibrary(char *name, int length) {
+    //HMODULE handle = LoadLibrary(name);
+    //return handle;
+    return true;
 }
 #else
 void* checkLibrary(char *name, int length) {
@@ -159,10 +160,10 @@ void* checkLibrary(char *name, int length) {
 }
 
 #endif
-*/
+
 
 void blas_set_num_threads(int num) {
-    /*
+
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
@@ -171,8 +172,8 @@ void blas_set_num_threads(int num) {
 #elif __OPENBLAS
 #ifdef _WIN32
     // for win32 we just check for libmkl_rt
-    HMODULE handle = checkLibrary("libmkl_rt.dll", 9);
-    if (handle == NULL) {
+    bool val = checkLibrary("libmkl_rt.dll", 9);
+    if (!val) {
         // if it's not found - just call for statically linked openblas
         openblas_set_num_threads(num);
     } else {
@@ -200,7 +201,7 @@ void blas_set_num_threads(int num) {
 #else
     // do nothing
 #endif
-    */
+
 }
 
 
