@@ -385,7 +385,7 @@ public class DerivativeTests extends BaseNd4jTest {
             Read comments in earlier test for length = 2
          */
         //random array represeting preout
-        int someLength = 5;
+        int someLength = 7;
 
         INDArray X = Nd4j.rand(1,someLength);
         //preout transformed to y_hat with softmax
