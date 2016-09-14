@@ -21,6 +21,7 @@ package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.impl.*;
 
 import java.util.Arrays;
 
@@ -85,7 +86,42 @@ public class LossFunctions {
         MEAN_ABSOLUTE_ERROR,
         MEAN_ABSOLUTE_PERCENTAGE_ERROR,
         MEAN_SQUARED_LOGARITHMIC_ERROR,
-        POISSON
+        POISSON;
+
+        public ILossFunction getILossFunction(){
+            switch(this){
+                case MSE:
+                case SQUARED_LOSS:
+                    return new LossMSE();
+                case XENT:
+                    return new LossBinaryXENT();
+                case MCXENT:
+                    return new LossMCXENT();
+                case KL_DIVERGENCE:
+                case RECONSTRUCTION_CROSSENTROPY:
+                    return new LossKLD();
+                case NEGATIVELOGLIKELIHOOD:
+                    return new LossNegativeLogLikelihood();
+                case COSINE_PROXIMITY:
+                    return new LossCosineProximity();
+                case HINGE:
+                    return new LossHinge();
+                case SQUARED_HINGE:
+                    return new LossSquaredHinge();
+                case MEAN_ABSOLUTE_ERROR:
+                    return new LossMAE();
+                case MEAN_ABSOLUTE_PERCENTAGE_ERROR:
+                    return new LossMAPE();
+                case MEAN_SQUARED_LOGARITHMIC_ERROR:
+                    return new LossMSLE();
+                case POISSON:
+                case EXPLL:
+                    return new LossPoisson();
+                default:
+                    //Custom, RMSE_XENT
+                    throw new UnsupportedOperationException("Unknown or not supported loss function: " + this);
+            }
+        }
     }
 
 
