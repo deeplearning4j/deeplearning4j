@@ -163,7 +163,7 @@ void* checkLibrary(char *name, int length) {
 
 
 void blas_set_num_threads(int num) {
-
+    printf("Starting blas_set_num_threads\n");
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
@@ -182,6 +182,7 @@ void blas_set_num_threads(int num) {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
     }
 #else
+    printf("Linux code branch\n");
     // it's possible to have MKL being loaded at runtime
     void *handle = checkLibrary("libmkl_rt", 9);
     if (handle == NULL) {
@@ -201,6 +202,7 @@ void blas_set_num_threads(int num) {
 #endif
 
 #else
+    printf("Unknown code branch\n");
     // do nothing
 #endif
 
