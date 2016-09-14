@@ -131,7 +131,7 @@ CBLAS_SIDE convertSide(int from) {
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
 
-
+/*
 
 #ifdef _WIN32
 bool checkLibrary(char *name, int length) {
@@ -161,7 +161,6 @@ void* checkLibrary(char *name, int length) {
 
 #endif
 
-
 void blas_set_num_threads(int num) {
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
@@ -171,7 +170,7 @@ void blas_set_num_threads(int num) {
 #elif __OPENBLAS
 #ifdef _WIN32
     // for win32 we just check for libmkl_rt
-    bool val = checkLibrary("libmkl_rt.dll", 9);
+    bool val = checkLibrary("mkl_rt.dll", 9);
     if (val == false) {
         // if it's not found - just call for statically linked openblas
         printf("Using openblas switch\n");
@@ -205,10 +204,10 @@ void blas_set_num_threads(int num) {
 #endif
     fflush(stdout);
 }
-
+*/
 
 void Nd4jBlas::setMaxThreads(int num) {
-    blas_set_num_threads(num);
+    //blas_set_num_threads(num);
 }
 
 /*

@@ -74,6 +74,7 @@ unsigned maxpathlen(char *path[], const char *base) {
     return blen+n+1;
 }
 bool file_exists(char *name){
+    printf("Trying file: [%s]\n", name);
     FILE *file;
     if (file = fopen(name, "r")) {
         fclose(file);
@@ -87,6 +88,7 @@ bool checkFileInPath(const char *file) {
     char **listed = shellpath();
     size_t maxlen = maxpathlen(listed, file)+1;
     char *buf = (char *) malloc_check("hold path", maxlen);
+    bool found = false;
     for (int i = 0; listed[i]; i++) {
         if (strlen(listed[i]) > 0) {
 #ifdef _WIN32
@@ -94,13 +96,16 @@ bool checkFileInPath(const char *file) {
 #else
             snprintf(buf, maxlen, "%s/%s", listed[i], file);
 #endif
-            if (file_exists(buf)) return true;
+            if (file_exists(buf)) {
+                found = true;
+                break;
+            }
         }
     }
     free(buf);
     freeshellpath(listed);
 
-    return false;
+    return found;
 }
 
 
