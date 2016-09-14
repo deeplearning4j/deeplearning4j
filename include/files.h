@@ -94,11 +94,13 @@ bool checkFileInPath(const char *file) {
 #else
             snprintf(buf, maxlen, "%s/%s", listed[i], file);
 #endif
-            file_exists(buf);
+            if (file_exists(buf)) return true;
         }
     }
     free(buf);
     freeshellpath(listed);
+
+    return false;
 }
 
 

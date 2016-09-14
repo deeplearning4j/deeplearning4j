@@ -174,7 +174,10 @@ void blas_set_num_threads(int num) {
     bool val = checkLibrary("libmkl_rt.dll", 9);
     if (val == false) {
         // if it's not found - just call for statically linked openblas
+        printf("Using openblas switch\n");
+        fflush(stdout);
         openblas_set_num_threads(num);
+
     } else {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
     }
