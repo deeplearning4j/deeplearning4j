@@ -22,7 +22,7 @@ import lombok.NonNull;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.DefaultStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
-import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.InputStream;
 import java.util.ArrayList;
