@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 
 /**
  * Created by susaneraly on 8/15/16.
@@ -43,12 +44,19 @@ public class LossMAPE implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
 
         INDArray actSubPredicted = labels.sub(output);
-        INDArray gradient = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
+        INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
         INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
-        gradient.muli(sigmaPrimeZ).divi(absLabels).muli(-100.0/labels.size(1));
+        dlda.divi(absLabels).muli(-100.0/labels.size(1));
+
+        INDArray gradient;
+        if("softmax".equals(activationFn)){
+            gradient = LossUtil.dLdZsoftmaxi(dlda, output);
+        } else {
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            gradient = dlda.muli(sigmaPrimeZ);
+        }
 
         if(mask != null){
             gradient.muliColumnVector(mask);

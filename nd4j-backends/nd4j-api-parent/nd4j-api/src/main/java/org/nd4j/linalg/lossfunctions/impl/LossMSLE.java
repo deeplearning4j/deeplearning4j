@@ -5,6 +5,7 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -41,12 +42,21 @@ public class LossMSLE implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
 
-        INDArray p1 = output.add(1.0);
-        INDArray gradients = sigmaPrimeZ.divi(p1).muli(2.0/labels.size(1));
-        INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
-        gradients.muli(logRatio);
+        INDArray gradients;
+        if("softmax".equals(activationFn)){
+            INDArray p1 = output.add(1.0);
+            INDArray dlda = p1.rdiv(2.0/labels.size(1));
+            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
+            dlda.muli(logRatio);
+            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
+        } else {
+            INDArray p1 = output.addi(1.0);
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+            gradients = sigmaPrimeZ.divi(p1).muli(2.0/labels.size(1));
+            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
+            gradients.muli(logRatio);
+        }
 
         if(mask != null){
             gradients.muliColumnVector(mask);

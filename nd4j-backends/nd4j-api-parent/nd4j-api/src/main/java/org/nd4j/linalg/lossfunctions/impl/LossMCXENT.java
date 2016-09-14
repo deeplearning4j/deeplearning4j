@@ -66,8 +66,8 @@ public class LossMCXENT implements ILossFunction {
             grad = output.subi(labels);
         }
         else {
-            INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            grad = outputder.muli(labels);
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            grad = sigmaPrimeZ.muli(labels);
             grad.divi(output).muli(-1);
         }
 

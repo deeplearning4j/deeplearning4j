@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +20,10 @@ public class LossKLD implements ILossFunction {
     private static Logger logger = LoggerFactory.getLogger(LossKLD.class);
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask){
-        INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray logoutput = Transforms.log(output);
-        INDArray loglabels = Transforms.log(labels);
-        scoreArr = loglabels.sub(logoutput).mul(labels);
+        INDArray logRatio = Transforms.log(output.rdivi(labels),false);
+
+        INDArray scoreArr = logRatio.muli(labels);
         if(mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
     }
@@ -49,12 +49,16 @@ public class LossKLD implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray grad;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-        grad = labels.div(output);
-        grad.muli(outputder);
-        grad.muli(-1);
+        INDArray grad;
+        if("softmax".equals(activationFn)){
+            INDArray dlda = labels.div(output);
+            grad = LossUtil.dLdZsoftmaxi(dlda, output);
+        } else {
+            INDArray dlda = output.rdivi(labels).negi();
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            grad = dlda.muli(sigmaPrimeZ);
+        }
 
         if(mask != null){
             grad.muliColumnVector(mask);

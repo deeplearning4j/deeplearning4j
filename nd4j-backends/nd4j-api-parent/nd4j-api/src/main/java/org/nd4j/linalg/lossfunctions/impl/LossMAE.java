@@ -3,8 +3,10 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 
 /**
  * Created by susaneraly on 8/15/16.
@@ -14,10 +16,13 @@ public class LossMAE implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        scoreArr = postOutput.sub(labels);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        scoreArr = output.subi(labels);
         Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs",scoreArr));
-        if (mask != null) scoreArr.muliColumnVector(mask);
+        scoreArr.muli(1.0/labels.size(1));
+        if (mask != null){
+            scoreArr.muliColumnVector(mask);
+        }
         return scoreArr;
     }
 
@@ -40,14 +45,18 @@ public class LossMAE implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
-        INDArray gradients = postOutput.sub(labels);
-        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs",gradients));
-        if (gradients.maxNumber().doubleValue() < Nd4j.EPS_THRESHOLD) return gradients;
-        gradients.divi(postOutput.sub(labels));
-        gradients.muli(postOutDer);
+        INDArray outSubLabels = output.sub(labels);
+        INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels)).muli(1.0/labels.size(1));
+
+        INDArray gradients;
+        if("softmax".equals(activationFn)){
+            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
+        } else {
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+            gradients = dlda.muli(sigmaPrimeZ);
+        }
 
         if(mask != null){
             gradients.muliColumnVector(mask);
