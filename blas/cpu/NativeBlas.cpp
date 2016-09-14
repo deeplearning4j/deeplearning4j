@@ -6,7 +6,12 @@
 #include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <dlfcn.h>
+#endif
 
 
 
@@ -125,7 +130,13 @@ CBLAS_SIDE convertSide(int from) {
  * @param length
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
-bool checkLibrary(char *name, int length) {
+#ifdef _WIN32
+HMODULE checkLibrary(char *name, int length) {
+    HMODULE handle = LoadLibrary(name);
+    return handle;
+}
+#else
+void* checkLibrary(char *name, int length) {
     // we don't need huge buffer or malloc here, because we know all possible usecases in advance
     char buffer[64];
 
@@ -146,6 +157,8 @@ bool checkLibrary(char *name, int length) {
     } else return handle;
 }
 
+#endif
+
 void blas_set_num_threads(int num) {
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
@@ -153,6 +166,16 @@ void blas_set_num_threads(int num) {
     MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
     MKL_Set_Num_Threads_Local(num);
 #elif __OPENBLAS
+#ifdef _WIN32
+    // for win32 we just check for libmkl_rt
+    HMODULE handle = checkLibrary("libmkl_rt.dll", 9);
+    if (handle == NULL) {
+        // if it's not found - just call for statically linked openblas
+        openblas_set_num_threads(num);
+    } else {
+        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+    }
+#else
     // it's possible to have MKL being loaded at runtime
     void *handle = checkLibrary("libmkl_rt", 9);
     if (handle == NULL) {
@@ -169,6 +192,7 @@ void blas_set_num_threads(int num) {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
         dlclose(handle);
     }
+#endif
 
 #else
     // do nothing
