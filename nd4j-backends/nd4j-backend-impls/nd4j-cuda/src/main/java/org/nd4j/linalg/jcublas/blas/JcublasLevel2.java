@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public class JcublasLevel2 extends BaseLevel2 {
     private Allocator allocator = AtomicAllocator.getInstance();
-    private Nd4jBlas nd4jBlas = new Nd4jBlas();
+    private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private static Logger logger = LoggerFactory.getLogger(JcublasLevel2.class);
 

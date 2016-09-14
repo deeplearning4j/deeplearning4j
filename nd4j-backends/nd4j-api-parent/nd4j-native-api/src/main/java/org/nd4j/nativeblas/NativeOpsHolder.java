@@ -8,10 +8,13 @@ import lombok.Getter;
 public class NativeOpsHolder {
     private static final NativeOpsHolder INSTANCE = new NativeOpsHolder();
 
-    @Getter private NativeOps deviceNativeOps;
+    @Getter private final NativeOps deviceNativeOps;
+
+    @Getter private final Nd4jBlas deviceNativeBlas;
 
     private NativeOpsHolder() {
         deviceNativeOps = new NativeOps();
+        deviceNativeBlas = new Nd4jBlas();
     }
 
     public static NativeOpsHolder getInstance() {

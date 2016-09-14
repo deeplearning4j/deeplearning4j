@@ -53,7 +53,7 @@ public class NativeOps extends Pointer {
             setOmpNumThreads(getCores(Runtime.getRuntime().availableProcessors()));
             //setOmpNumThreads(4);
 
-        log.debug("NativeOps: Number of threads used for linear algebra " + ompGetMaxThreads());
+        log.info("Number of threads used for NativeOps: {}", ompGetMaxThreads());
 
     }
     private native void allocate();
