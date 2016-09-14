@@ -99,7 +99,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-    public INDArray iterateSample(T currentWord, INDArray neu1, AtomicLong nextRandom, double alpha) {
+    public INDArray iterateSample(T currentWord, INDArray neu1, AtomicLong nextRandom, double alpha, boolean isInference) {
         INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
 
         for (int p = 0; p < currentWord.getCodeLength(); p++) {
@@ -124,10 +124,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             double g = useAdaGrad ?  currentWord.getGradient(p, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, syn1row, neu1e);
-            Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
+            if (!isInference)
+                Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
+            else
+                Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row.dup());
         }
 
-        if (negative > 0) {
+        if (negative > 0 && !isInference) {
             int target = currentWord.getIndex();
             int label;
 
@@ -199,7 +202,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         neu1.divi(cw);
 
-        INDArray neu1e = iterateSample(currentWord, neu1, nextRandom, alpha);
+        INDArray neu1e = iterateSample(currentWord, neu1, nextRandom, alpha, false);
 
         for(int a = b; a < end; a++) {
             if(a != window) {
