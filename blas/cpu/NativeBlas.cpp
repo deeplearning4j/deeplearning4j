@@ -6,6 +6,7 @@
 #include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
+#include <dlfcn.h>
 
 
 
@@ -117,6 +118,34 @@ CBLAS_SIDE convertSide(int from) {
     }
 }
 
+/**
+ * This method checks for availability of specified runtime library with respect to platform file extensions
+ *
+ * @param name
+ * @param length
+ * @return handle to library, if it exists and loaded successfully, NULL otherwise
+ */
+bool checkLibrary(char *name, int length) {
+    // we don't need huge buffer or malloc here, because we know all possible usecases in advance
+    char buffer[64];
+
+    // we check libraries in incremental length order, to avoid overlaps
+    snprintf(buffer, length, ".so");
+
+    void *handle = dlopen(buffer);
+    if (handle == NULL) {
+        snprintf(buffer, length, ".dll");
+        handle = dlopen(buffer);
+        if (handle == NULL) {
+            snprintf(buffer, length, ".dylib");
+            handle = dlopen(buffer);
+            if (handle == NULL) {
+                return handle;
+            } else return handle;
+        } else return handle;
+    } else return handle;
+}
+
 void blas_set_num_threads(int num) {
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
@@ -124,9 +153,20 @@ void blas_set_num_threads(int num) {
     MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
     MKL_Set_Num_Threads_Local(num);
 #elif __OPENBLAS
-    openblas_set_num_threads(num);
+    // it's possible to have MKL being loaded at runtime
+    void *handle = checkLibrary("libmkl_rt", 9);
+    if (handle == NULL) {
+        // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
+        handle = checkLibrary("libopenblas", 9);
+        if (handle != null) {
+            void *func = dlsym(handle, "openblas_set_num_threads");
+            if (func != null) {
+                openblas_set_num_threads(num);
+            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
+        }
+    } else printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
 #else
-    //
+    // do nothing
 #endif
 }
 
