@@ -181,9 +181,9 @@ void blas_set_num_threads(int num) {
     if (handle == NULL) {
         // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
         handle = checkLibrary("libopenblas", 9);
-        if (handle != null) {
+        if (handle != NULL) {
             void *func = dlsym(handle, "openblas_set_num_threads");
-            if (func != null) {
+            if (func != NULL) {
                 dlclose(handle);
                 openblas_set_num_threads(num);
             } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
