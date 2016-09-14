@@ -170,10 +170,10 @@ public class TestEarlyStopping {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
+                .updater(Updater.SGD).learningRate(5.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -294,7 +294,7 @@ public class TestEarlyStopping {
                 .seed(123)
                 .iterations(10)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.001)
+                .learningRate(0.0)
                 .updater(Updater.NESTEROVS).momentum(0.9)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
@@ -332,10 +332,7 @@ public class TestEarlyStopping {
         IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,training);
         EarlyStoppingResult result = trainer.fit();
 
-        //The test ends at 28 epochs (Nothing is random, so it will always end the same)
-        assertEquals(28, result.getTotalEpochs());
-        //The last epoch (27) has the best data so far
-        assertEquals(27, result.getBestModelEpoch());
+        assertEquals(6, result.getTotalEpochs());
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5, minImprovement).toString();
         assertEquals(expDetails, result.getTerminationDetails());
