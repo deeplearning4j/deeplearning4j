@@ -6,10 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
-import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
-import org.nd4j.linalg.lossfunctions.impl.LossMSE;
-import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.linalg.lossfunctions.impl.*;
 
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
@@ -62,28 +59,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         }
 
         public T lossFunction(LossFunction lossFunction) {
-            switch(lossFunction){
-                case MSE:
-                    return lossFunction(new LossMSE());
-                case EXPLL:
-                    throw new UnsupportedOperationException("Not yet implemented");
-                case XENT:
-                    return lossFunction(new LossBinaryXENT());
-                case MCXENT:
-                    return lossFunction(new LossMCXENT());
-                case RMSE_XENT:
-                    throw new UnsupportedOperationException("Not yet implemented");
-                case SQUARED_LOSS:
-                    throw new UnsupportedOperationException("Not yet implemented");
-                case RECONSTRUCTION_CROSSENTROPY:
-                    throw new UnsupportedOperationException("Not yet implemented");
-                case NEGATIVELOGLIKELIHOOD:
-                    return lossFunction(new LossNegativeLogLikelihood());
-                case CUSTOM:
-                    throw new UnsupportedOperationException("Not yet implemented");
-                default:
-                    throw new IllegalStateException("Unknown loss function: " + lossFunction);
-            }
+            return lossFunction(lossFunction.getILossFunction());
         }
 
         public T lossFunction(ILossFunction lossFunction) {

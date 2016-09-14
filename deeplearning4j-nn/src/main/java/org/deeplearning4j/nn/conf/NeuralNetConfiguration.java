@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -337,7 +338,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
 
-        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class /*, ILossFunction.class*/ );
+        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class, ILossFunction.class );
     }
 
     private static void registerSubtypes(ObjectMapper mapper, Class<?>... baseClasses){
