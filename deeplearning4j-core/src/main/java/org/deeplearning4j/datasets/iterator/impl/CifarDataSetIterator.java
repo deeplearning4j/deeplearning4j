@@ -1,24 +1,13 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.datavec.image.data.ImageWritable;
 import org.datavec.image.loader.CifarLoader;
 import org.datavec.image.transform.ImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.FeatureUtil;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
-
-import static org.bytedeco.javacpp.opencv_core.CV_8UC;
-import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
  * Created by nyghtowl on 12/18/15.
@@ -36,7 +25,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected int numExamples = totalExamples;
     protected int exampleCount = 0;
     protected boolean overshot = false;
-    protected int normalizeValue = 255;
+    protected boolean preProcessCifar = false;
     protected ImageTransform imageTransform;
     /**
      * Loads images with given  batchSize, numExamples, & version returned by the generator.
@@ -92,7 +81,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables, ImageTransform imageTransform, DataSetPreProcessor preProcessor, boolean train) {
         super(null, batchSize, 1, numExamples);
-        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, normalizeValue, train);
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, train, preProcessCifar);
         this.totalExamples = train ? totalExamples : CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples ? totalExamples : numExamples;
         this.numPossibleLabels = numPossibleLables;
@@ -101,68 +90,36 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.imageTransform = imageTransform;
     }
 
-    // TODO add random flip when loading batches during next - pass that in as transform
-
+    // TODO add transform  - random flip when loading batches
 
     @Override
-    // TODO stream load vs dataset load - confirm what you have
-    public DataSet next(int num) {
+    public DataSet next(int batchSize) {
         if(useCurrent) {
             useCurrent = false;
             return last;
         }
-
-//        int batchNumCount = 0;
-//        byte[] byteFeature = new byte[numPixels];
-//        List<DataSet> dataSets = new ArrayList<>();
-//        INDArray label; // first value in the 3073 byte array
-//        Mat image = new Mat(height, width, CV_8UC(channels)); // feature are 3072
-//        ByteBuffer imageData = image.createBuffer();
-//
-//        try {
-//            while((inputStream.read(byteFeature)) != -1 && batchNumCount != num) {
-//                label = FeatureUtil.toOutcomeVector(byteFeature[0], numPossibleLabels);
-//                for (int i = 0; i < height * width; i++) {
-//                    imageData.put(3 * i,     byteFeature[i + 1 + 2 * height * width]); // blue
-//                    imageData.put(3 * i + 1, byteFeature[i + 1 +     height * width]); // green
-//                    imageData.put(3 * i + 2, byteFeature[i + 1                     ]); // red
-//                }
-//                try {
-//                    // TODO asMatrix and skip ravel to 2D - keep 4D to pass into CNN
-//                    dataSets.add(new DataSet(loader.asRowVector(image), label));
-//                    batchNumCount++;
-//                } catch(Exception e){
-//                    break;
-//                }
-//            }
-//            exampleCount += batchNumCount;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        List<INDArray> inputs = new ArrayList<>();
-//        List<INDArray> labels = new ArrayList<>();
-//
-//        for (DataSet data : dataSets) {
-//            inputs.add(data.getFeatureMatrix());
-//            labels.add(data.getLabels());
-//        }
-
-        DataSet ret =  CifarLoader.convertDataSet(num);
-        exampleCount += num;
+        DataSet result = null;
+        if (preProcessCifar) {
+            if (batchNum == 0) {
+                for (int i = 1; i <= CifarLoader.TRAINFILENAMES.length; i++) {
+                    result = loader.next(batchSize, i, batchNum);
+                }
+            }
+        }
+        else
+            result =  loader.next(batchSize);
+        exampleCount += batchSize;
         batchNum++;
 
-        if(ret.getFeatureMatrix() == null || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
+        if(result.getFeatureMatrix() == null || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
             overshot = true;
             return last;
         }
 
-        ret.shuffle(); //Change up order of data in batch - TODO pass in seed from user
-
-        if(preProcessor != null) preProcessor.preProcess(ret);
-        last = ret;
-        if ( loader.getLabels() != null) ret.setLabelNames(loader.getLabels());
-        return ret;
+        if(preProcessor != null) preProcessor.preProcess(result);
+        last = result;
+        if ( loader.getLabels() != null) result.setLabelNames(loader.getLabels());
+        return result;
     }
 
     @Override
