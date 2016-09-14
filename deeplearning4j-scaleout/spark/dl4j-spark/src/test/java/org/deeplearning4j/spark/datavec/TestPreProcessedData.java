@@ -82,10 +82,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                         .build());
         sparkNet.setCollectTrainingStats(true);
 
-        JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(path);
-        assertEquals(150/dataSetObjSize, pds.count());
-
-        sparkNet.fit(path);
+        sparkNet.fit("file:///" + path.replaceAll("\\\\","/"));
 
         SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
         int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12
@@ -136,10 +133,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                         .build());
         sparkNet.setCollectTrainingStats(true);
 
-        JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(path);
-        assertEquals(150/dataSetObjSize, pds.count());
-
-        sparkNet.fit(path);
+        sparkNet.fit("file:///" + path.replaceAll("\\\\","/"));
 
         SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
         int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12
@@ -192,10 +186,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                         .build());
         sparkNet.setCollectTrainingStats(true);
 
-        JavaPairRDD<String,PortableDataStream> pds = sc.binaryFiles(path);
-        assertEquals(150/dataSetObjSize, pds.count());
-
-        sparkNet.fitMultiDataSet(path);
+        sparkNet.fitMultiDataSet("file:///" + path.replaceAll("\\\\","/"));
 
         SparkTrainingStats sts = sparkNet.getSparkTrainingStats();
         int expNumFits = 12; //4 'fits' per averaging (4 executors, 1 averaging freq); 10 examples each -> 40 examples per fit. 150/40 = 3 averagings (round down); 3*4 = 12

@@ -23,7 +23,9 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -74,7 +76,7 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value();
+        INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
@@ -110,6 +112,9 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
                 ret.add(new Tuple2<>(collectKey.get(i),doubleScores[i]));
             }
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);

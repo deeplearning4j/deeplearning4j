@@ -6,8 +6,10 @@ import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -40,7 +42,7 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>,T
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value();  //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
+        INDArray val = params.value().unsafeDuplication();  //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
         if(val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
@@ -52,6 +54,9 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>,T
             int numExamples = ds.getFeatureMatrix().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
         return out;
     }

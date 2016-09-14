@@ -310,7 +310,7 @@ public class Evaluation implements Serializable {
             throw new UnsupportedOperationException("Cannot evaluate single example without initializing confusion matrix first");
         }
 
-        addToConfusion(predictedIdx, actualIdx);
+        addToConfusion(actualIdx, predictedIdx);
 
         // If they are equal
         if (predictedIdx == actualIdx) {
@@ -378,13 +378,22 @@ public class Evaluation implements Serializable {
         builder.append(warnings);
 
         DecimalFormat df = new DecimalFormat("#.####");
+        double acc = accuracy();
+        double prec = precision();
+        double rec = recall();
+        double f1 = f1();
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:  ").append(df.format(accuracy()));
-        builder.append("\n Precision: ").append(df.format(precision()));
-        builder.append("\n Recall:    ").append(df.format(recall()));
-        builder.append("\n F1 Score:  ").append(df.format(f1()));
+        builder.append("\n Accuracy:  ").append(format(df,acc));
+        builder.append("\n Precision: ").append(format(df,prec));
+        builder.append("\n Recall:    ").append(format(df,rec));
+        builder.append("\n F1 Score:  ").append(format(df,f1));
         builder.append("\n========================================================================");
         return builder.toString();
+    }
+
+    private static String format(DecimalFormat f, double num){
+        if(Double.isNaN(num) || Double.isInfinite(num)) return String.valueOf(num);
+        return f.format(num);
     }
 
     private String resolveLabelForClass(Integer clazz) {
