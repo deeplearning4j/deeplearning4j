@@ -40,7 +40,7 @@ public class HalfOpsTests {
     @Before
     public void setUp() {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true).setAllocationModel(Configuration.AllocationModel.DIRECT);
+        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true).setAllocationModel(Configuration.AllocationModel.CACHE_ALL);
     }
 
     @Test
@@ -229,6 +229,7 @@ public class HalfOpsTests {
         assertEquals(2.5, result, 0.01);
     }
 
+    @Ignore
     @Test
     public void testReduce3_2() throws Exception {
         INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
@@ -240,4 +241,37 @@ public class HalfOpsTests {
         System.out.println("Cosine similarity: " + similarity);
         assertEquals(0.95f, similarity, 0.01f);
     }
+
+
+    @Test
+    public void testMetaOp1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{3f, 3f, 3f, 3f, 3f, 3f, 3f});
+
+        INDArray res = array1.dup().addi(2f);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testMetaOp2() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f, 2f});
+
+        INDArray res = array1.dup().muli(2f);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testMetaOp3() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f});
+
+        INDArray res = array1.dup().divi(2f);
+
+        assertEquals(exp, res);
+    }
+
+
 }

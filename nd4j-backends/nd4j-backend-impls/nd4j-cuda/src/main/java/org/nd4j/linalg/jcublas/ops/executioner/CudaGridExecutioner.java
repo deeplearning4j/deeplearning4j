@@ -700,7 +700,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
 
-        //logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
+        logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
 
         /*
             TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.
