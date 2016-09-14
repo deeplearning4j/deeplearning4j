@@ -4,7 +4,7 @@
 
     <groupId>org.deeplearning4j.rl4j</groupId>
     <artifactId>rl4j</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
     <modules>
         <module>rl4j-api</module>
         <module>rl4j-core</module>
@@ -48,11 +48,6 @@
             <version>1.16.10</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
+   
     </dependencies>
 </project>
