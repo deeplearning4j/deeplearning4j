@@ -7,8 +7,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-native</artifactId>
-    <packaging>jar</packaging>
-
     <name>nd4j-native</name>
 
     <dependencies>
