@@ -132,13 +132,13 @@ bool checkLibrary(char *name, int length) {
     // we check libraries in incremental length order, to avoid overlaps
     snprintf(buffer, length, ".so");
 
-    void *handle = dlopen(buffer);
+    void *handle = dlopen(buffer, RTLD_NOW);
     if (handle == NULL) {
         snprintf(buffer, length, ".dll");
-        handle = dlopen(buffer);
+        handle = dlopen(buffer, RTLD_NOW);
         if (handle == NULL) {
             snprintf(buffer, length, ".dylib");
-            handle = dlopen(buffer);
+            handle = dlopen(buffer, RTLD_NOW);
             if (handle == NULL) {
                 return handle;
             } else return handle;
@@ -161,10 +161,15 @@ void blas_set_num_threads(int num) {
         if (handle != null) {
             void *func = dlsym(handle, "openblas_set_num_threads");
             if (func != null) {
+                dlclose(handle);
                 openblas_set_num_threads(num);
             } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
         }
-    } else printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+    } else {
+        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+        dlclose(handle);
+    }
+
 #else
     // do nothing
 #endif
