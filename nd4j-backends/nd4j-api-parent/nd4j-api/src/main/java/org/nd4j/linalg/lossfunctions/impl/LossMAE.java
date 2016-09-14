@@ -18,9 +18,9 @@ public class LossMAE implements ILossFunction {
         INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = output.subi(labels);
-        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs",scoreArr));
-        scoreArr.muli(1.0/labels.size(1));
-        if (mask != null){
+        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
+        scoreArr.muli(1.0 / labels.size(1));
+        if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
         return scoreArr;
@@ -32,7 +32,7 @@ public class LossMAE implements ILossFunction {
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if(average) score /= scoreArr.size(0);
+        if (average) score /= scoreArr.size(0);
 
         return score;
     }
@@ -48,17 +48,17 @@ public class LossMAE implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         INDArray outSubLabels = output.sub(labels);
-        INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels)).muli(1.0/labels.size(1));
+        INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels)).muli(1.0 / labels.size(1));
 
         INDArray gradients;
-        if("softmax".equals(activationFn)){
+        if ("softmax".equals(activationFn)) {
             gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradients = dlda.muli(sigmaPrimeZ);
         }
 
-        if(mask != null){
+        if (mask != null) {
             gradients.muliColumnVector(mask);
         }
 
@@ -76,7 +76,7 @@ public class LossMAE implements ILossFunction {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossMAE()";
     }
 }

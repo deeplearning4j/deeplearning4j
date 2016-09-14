@@ -16,7 +16,7 @@ public class LossMSLE implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)),false);
+        scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)), false);
         scoreArr = scoreArr.muli(scoreArr).divi(labels.size(1));
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
@@ -28,7 +28,7 @@ public class LossMSLE implements ILossFunction {
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if(average) score /= scoreArr.size(0);
+        if (average) score /= scoreArr.size(0);
 
         return score;
     }
@@ -44,21 +44,21 @@ public class LossMSLE implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         INDArray gradients;
-        if("softmax".equals(activationFn)){
+        if ("softmax".equals(activationFn)) {
             INDArray p1 = output.add(1.0);
-            INDArray dlda = p1.rdiv(2.0/labels.size(1));
-            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
+            INDArray dlda = p1.rdiv(2.0 / labels.size(1));
+            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             dlda.muli(logRatio);
             gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray p1 = output.addi(1.0);
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
-            gradients = sigmaPrimeZ.divi(p1).muli(2.0/labels.size(1));
-            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)),false);
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
+            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             gradients.muli(logRatio);
         }
 
-        if(mask != null){
+        if (mask != null) {
             gradients.muliColumnVector(mask);
         }
 
@@ -76,7 +76,7 @@ public class LossMSLE implements ILossFunction {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossMSLE()";
     }
 

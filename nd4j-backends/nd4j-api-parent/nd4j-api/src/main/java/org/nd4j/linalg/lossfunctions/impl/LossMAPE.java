@@ -19,7 +19,7 @@ public class LossMAPE implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = output.rsubi(labels).divi(labels);
         Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
-        scoreArr.muli(100.0/labels.size(1));
+        scoreArr.muli(100.0 / labels.size(1));
         if (mask != null) scoreArr.muliColumnVector(mask);
         return scoreArr;
     }
@@ -48,17 +48,17 @@ public class LossMAPE implements ILossFunction {
         INDArray actSubPredicted = labels.sub(output);
         INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
         INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
-        dlda.divi(absLabels).muli(-100.0/labels.size(1));
+        dlda.divi(absLabels).muli(-100.0 / labels.size(1));
 
         INDArray gradient;
-        if("softmax".equals(activationFn)){
+        if ("softmax".equals(activationFn)) {
             gradient = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradient = dlda.muli(sigmaPrimeZ);
         }
 
-        if(mask != null){
+        if (mask != null) {
             gradient.muliColumnVector(mask);
         }
 

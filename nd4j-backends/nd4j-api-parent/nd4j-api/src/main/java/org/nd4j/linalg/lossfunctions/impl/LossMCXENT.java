@@ -21,9 +21,9 @@ public class LossMCXENT implements ILossFunction {
 
     private static Logger logger = LoggerFactory.getLogger(LossMCXENT.class);
 
-    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask){
+    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
-        if("softmax".equals(activationFn)){
+        if ("softmax".equals(activationFn)) {
             //Use LogSoftMax op to avoid numerical issues when calculating score
             INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
             scoreArr = logsoftmax.muli(labels);
@@ -32,7 +32,7 @@ public class LossMCXENT implements ILossFunction {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             scoreArr = Transforms.log(output, false).muli(labels);
         }
-        if(mask != null){
+        if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
         return scoreArr;
@@ -44,7 +44,7 @@ public class LossMCXENT implements ILossFunction {
 
         double score = -scoreArr.sumNumber().doubleValue();
 
-        if(average){
+        if (average) {
             score /= scoreArr.size(0);
         }
 
@@ -62,16 +62,15 @@ public class LossMCXENT implements ILossFunction {
         INDArray grad;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
-        if("softmax".equals(activationFn)) {
+        if ("softmax".equals(activationFn)) {
             grad = output.subi(labels);
-        }
-        else {
+        } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             grad = sigmaPrimeZ.muli(labels);
             grad.divi(output).muli(-1);
         }
 
-        if(mask != null){
+        if (mask != null) {
             grad.muliColumnVector(mask);
         }
 
@@ -89,7 +88,7 @@ public class LossMCXENT implements ILossFunction {
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossMCXENT()";
     }
 }

@@ -17,14 +17,14 @@ import org.slf4j.LoggerFactory;
 @EqualsAndHashCode
 public class LossKLD implements ILossFunction {
 
-    private static Logger logger = LoggerFactory.getLogger(LossKLD.class);
-
-    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask){
+    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray logRatio = Transforms.log(output.rdivi(labels),false);
+        INDArray logRatio = Transforms.log(output.rdivi(labels), false);
 
         INDArray scoreArr = logRatio.muli(labels);
-        if(mask != null) scoreArr.muliColumnVector(mask);
+        if (mask != null) {
+            scoreArr.muliColumnVector(mask);
+        }
         return scoreArr;
     }
 
@@ -34,7 +34,7 @@ public class LossKLD implements ILossFunction {
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if(average){
+        if (average) {
             score /= scoreArr.size(0);
         }
 
@@ -51,8 +51,8 @@ public class LossKLD implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray grad;
-        if("softmax".equals(activationFn)){
-            INDArray dlda = labels.div(output);
+        if ("softmax".equals(activationFn)) {
+            INDArray dlda = labels.div(output).negi();
             grad = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray dlda = output.rdivi(labels).negi();
@@ -60,7 +60,7 @@ public class LossKLD implements ILossFunction {
             grad = dlda.muli(sigmaPrimeZ);
         }
 
-        if(mask != null){
+        if (mask != null) {
             grad.muliColumnVector(mask);
         }
 
@@ -78,7 +78,7 @@ public class LossKLD implements ILossFunction {
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossKLD()";
     }
 }

@@ -11,7 +11,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * Created by susaneraly on 9/9/16.
  */
 @EqualsAndHashCode
-public class LossPoisson implements ILossFunction{
+public class LossPoisson implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         /*
@@ -33,7 +33,7 @@ public class LossPoisson implements ILossFunction{
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if(average) score /= scoreArr.size(0);
+        if (average) score /= scoreArr.size(0);
 
         return score;
     }
@@ -46,7 +46,7 @@ public class LossPoisson implements ILossFunction{
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
         /*
         gradient of loss function wrt yhat = (1 - y/yhat)
         */
@@ -57,7 +57,7 @@ public class LossPoisson implements ILossFunction{
         gradients.addi(1);
         gradients.muli(postOutDer);
 
-        if(mask != null){
+        if (mask != null) {
             gradients.muliColumnVector(mask);
         }
 
@@ -75,7 +75,7 @@ public class LossPoisson implements ILossFunction{
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossPoisson()";
     }
 }

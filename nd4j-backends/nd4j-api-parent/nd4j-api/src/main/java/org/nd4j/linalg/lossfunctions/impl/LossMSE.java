@@ -18,7 +18,7 @@ public class LossMSE implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = output.rsubi(labels);
         scoreArr = scoreArr.muli(scoreArr);
-        if (mask != null){
+        if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
         return scoreArr;
@@ -30,7 +30,7 @@ public class LossMSE implements ILossFunction {
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if(average) score /= scoreArr.size(0);
+        if (average) score /= scoreArr.size(0);
 
         return score;
     }
@@ -46,18 +46,18 @@ public class LossMSE implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         INDArray gradients;
-        if("softmax".equals(activationFn)){
-            gradients = LossUtil.dLdZsoftmaxi(output.sub(labels).muli(2),output);
+        if ("softmax".equals(activationFn)) {
+            gradients = LossUtil.dLdZsoftmaxi(output.sub(labels).muli(2), output);
         } else {
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
         }
 
-        if(mask != null){
+        if (mask != null) {
             gradients.muliColumnVector(mask);
         }
 
-        return  gradients;
+        return gradients;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class LossMSE implements ILossFunction {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossMSE()";
     }
 }
