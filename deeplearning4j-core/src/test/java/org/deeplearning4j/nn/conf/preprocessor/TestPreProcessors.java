@@ -442,7 +442,7 @@ public class TestPreProcessors {
                         .build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().activation("relu")
                         .nOut(200).build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT)
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(200)
                         .nOut(5)
                         .weightInit(WeightInit.RELU)
