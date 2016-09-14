@@ -57,7 +57,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.numEpochs = numEpochs;
         this.iter = iter;
         this.queueSize = queueSize;
-        this.async = queueSize == 1? false: true;
+        this.async = queueSize != 1 && iter.asyncSupported();
     }
 
     public MultipleEpochsIterator(int numEpochs,DataSet ds) {
@@ -159,7 +159,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-        return iter.asyncSupported();
+        return false;
     }
 
     /**
