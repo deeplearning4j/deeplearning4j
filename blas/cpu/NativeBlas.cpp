@@ -169,13 +169,15 @@ void blas_set_num_threads(int num) {
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
     MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
     MKL_Set_Num_Threads_Local(num);
+    printf("MKL params called\n");
 #elif __OPENBLAS
 #ifdef _WIN32
     // for win32 we just check for libmkl_rt
     bool val = checkLibrary("libmkl_rt.dll", 9);
-    if (!val) {
+    if (val == false) {
         // if it's not found - just call for statically linked openblas
         openblas_set_num_threads(num);
+        printf("Setting OpenBLAS max threads to %i\n", num);
     } else {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
     }
