@@ -7,9 +7,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-cuda-7.5</artifactId>
-    <packaging>jar</packaging>
+    <name>nd4j-cuda</name>
 
-    <name>nd4j-cuda-7.5</name>
+    <properties>
+        <cuda.version>7.5</cuda.version>
+    </properties>
+
     <build>
 		<testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
         <testResources>
@@ -83,7 +86,10 @@
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
-                    <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda/blas</linkPath>
+                    <linkPaths>
+                        <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda-${cuda.version}/blas</linkPath>
+                        <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda/blas</linkPath>
+                    </linkPaths>
                 </configuration>
                 <executions>
                     <execution>
