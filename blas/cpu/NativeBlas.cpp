@@ -131,11 +131,19 @@ CBLAS_SIDE convertSide(int from) {
  * @return handle to library, if it exists and loaded successfully, NULL otherwise
  */
 
+bool file_exists(char *name)
+{
+    FILE *file;
+    if (file = fopen(name, "r")) {
+        fclose(file);
+        return true;
+    }
+    return false;
+}
+
 #ifdef _WIN32
 bool checkLibrary(char *name, int length) {
-    //HMODULE handle = LoadLibrary(name);
-    //return handle;
-    return true;
+    return file_exists(name);
 }
 #else
 void* checkLibrary(char *name, int length) {
@@ -163,13 +171,11 @@ void* checkLibrary(char *name, int length) {
 
 
 void blas_set_num_threads(int num) {
-    printf("Starting blas_set_num_threads\n");
 #ifdef __MKL
     MKL_Set_Num_Threads(num);
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
     MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
     MKL_Set_Num_Threads_Local(num);
-    printf("MKL params called\n");
 #elif __OPENBLAS
 #ifdef _WIN32
     // for win32 we just check for libmkl_rt
@@ -177,12 +183,10 @@ void blas_set_num_threads(int num) {
     if (val == false) {
         // if it's not found - just call for statically linked openblas
         openblas_set_num_threads(num);
-        printf("Setting OpenBLAS max threads to %i\n", num);
     } else {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
     }
 #else
-    printf("Linux code branch\n");
     // it's possible to have MKL being loaded at runtime
     void *handle = checkLibrary("libmkl_rt", 9);
     if (handle == NULL) {
@@ -202,10 +206,9 @@ void blas_set_num_threads(int num) {
 #endif
 
 #else
-    printf("Unknown code branch\n");
     // do nothing
 #endif
-
+    fflush(stdout);
 }
 
 
