@@ -14,13 +14,17 @@ import java.io.Serializable;
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),
+        @JsonSubTypes.Type(value = LossCosineProximity.class, name = "CosineProximity"),
         @JsonSubTypes.Type(value = LossHinge.class, name = "Hinge"),
         @JsonSubTypes.Type(value = LossKLD.class, name = "KLD"),
         @JsonSubTypes.Type(value = LossMAE.class, name = "MAE"),
         @JsonSubTypes.Type(value = LossMAPE.class, name = "MAPE"),
         @JsonSubTypes.Type(value = LossMCXENT.class, name = "MCXENT"),
         @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
-        @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE")
+        @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE"),
+        @JsonSubTypes.Type(value = LossNegativeLogLikelihood.class, name = "NegativeLogLikelihood"),
+        @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
+        @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge")
 })
 public interface ILossFunction extends Serializable {
 
