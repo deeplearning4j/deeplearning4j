@@ -83,7 +83,7 @@ public class LossFunctionGradientCheck {
                 "sigmoid",  //nll
                 "softmax",  //nll + softmax
                 "sigmoid",  //poisson - requires positive predictions due to log... not sure if this is the best option
-                "tanh"   //squared hinge
+                "tanh"      //squared hinge
         };
 
         int[] nOut = new int[]{
@@ -107,7 +107,7 @@ public class LossFunctionGradientCheck {
                 3           //squared hinge
         };
 
-        int[] minibatchSizes = new int[]{1, 4};
+        int[] minibatchSizes = new int[]{1, 3};
 //        int[] minibatchSizes = new int[]{3};
 
 
@@ -117,13 +117,6 @@ public class LossFunctionGradientCheck {
         for( int i=0; i<lossFunctions.length; i++ ){
             for( int j=0; j<minibatchSizes.length; j++ ) {
                 String testName = lossFunctions[i] + " - " + outputActivationFn[i] + " - minibatchSize = " + minibatchSizes[j];
-
-//                if (nOut[i] <= 0) {
-//                    //DEBUGGING ONLY
-//                    System.out.println("SKIPPING TEST: " + lossFunctions[i]);
-//                    failed.add(testName + "\t" + "SKIPPED");
-//                    continue;
-//                }
 
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -148,20 +141,10 @@ public class LossFunctionGradientCheck {
                 INDArray input = inOut[0];
                 INDArray labels = inOut[1];
 
-                if (labels == null) {
-                    //DEBUGGING ONLY
-                    System.out.println("SKIPPING TEST: " + lossFunctions[i]);
-                    continue;
-                }
-
                 log.info(" ***** Starting test: {} *****", testName);
-//                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-//                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-//                assertTrue(testName, gradOK);
-
-                System.out.println(Arrays.toString(labels.data().asDouble()));
-                System.out.println(Arrays.toString(net.output(input,false).data().asDouble()));
-                System.out.println(net.score(new DataSet(input,labels)));
+//                System.out.println(Arrays.toString(labels.data().asDouble()));
+//                System.out.println(Arrays.toString(net.output(input,false).data().asDouble()));
+//                System.out.println(net.score(new DataSet(input,labels)));
 
                 boolean gradOK;
                 try{
