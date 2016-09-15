@@ -313,7 +313,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            if ((op instanceof TransformOp && op.y() != null )) {
+            //&& Nd4j.dataType() != DataBuffer.Type.HALF
+            if ((op instanceof TransformOp && op.y() != null ) ) {
                 enqueueOp(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
@@ -700,7 +701,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
 
-        logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
+        //logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
 
         /*
             TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.

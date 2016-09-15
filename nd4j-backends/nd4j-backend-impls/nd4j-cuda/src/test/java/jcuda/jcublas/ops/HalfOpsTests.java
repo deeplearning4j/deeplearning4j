@@ -18,12 +18,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -271,6 +273,35 @@ public class HalfOpsTests {
         INDArray res = array1.dup().divi(2f);
 
         assertEquals(exp, res);
+    }
+
+    @Test
+    public void testMetaOp4() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f, 2f});
+
+        INDArray res = array1.dup().divi(0.5f);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testMetaOp5() throws Exception {
+        INDArray exp1 = Nd4j.create(500, 500).assign(3.0f);
+        INDArray exp2 = Nd4j.create(500, 500).assign(6.0f);
+        INDArray exp3 = Nd4j.create(500, 500).assign(2.0f);
+        INDArray array = Nd4j.ones(500, 500);
+        INDArray param = Nd4j.ones(500, 500);//.reshape('f',500, 500);
+
+        INDArray am = param.mul(2);
+        assertEquals(0, ((CudaGridExecutioner) Nd4j.getExecutioner()).getQueueLength());
+        array.addi(am);
+
+        //array.divi(0.5f);
+
+        assertArrayEquals(exp3.data().asFloat(), am.data().asFloat(), 0.001f);
+
+        assertArrayEquals(exp1.data().asFloat(), array.data().asFloat(), 0.001f);
     }
 
 
