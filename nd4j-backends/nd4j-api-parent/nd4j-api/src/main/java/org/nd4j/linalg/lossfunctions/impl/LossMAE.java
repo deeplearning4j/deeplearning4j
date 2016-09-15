@@ -20,14 +20,14 @@ public class LossMAE extends LossL1 {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr = super.computeScoreArray(labels,preOutput,activationFn,mask);
-        scoreArr.muli(1/scoreArr.size(1));
+        scoreArr.divi(scoreArr.size(1));
         return scoreArr;
     }
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray gradients = super.computeGradient(labels,preOutput,activationFn,mask);
-        gradients.muli(1.0/labels.size(1));
+        gradients.divi(labels.size(1));
         return gradients;
     }
 
