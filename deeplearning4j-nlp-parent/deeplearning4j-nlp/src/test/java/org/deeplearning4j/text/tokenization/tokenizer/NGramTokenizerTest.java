@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenizerfactory.NGramTokenizerFactory;
-import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 
 import java.util.List;
