@@ -20,17 +20,27 @@
 
 package org.deeplearning4j.nn.conf;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -47,6 +57,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
+@Slf4j
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
@@ -105,12 +116,90 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @return {@link MultiLayerConfiguration}
      */
     public static MultiLayerConfiguration fromJson(String json) {
+        MultiLayerConfiguration conf;
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
-            return mapper.readValue(json, MultiLayerConfiguration.class);
+            conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+
+        //To maintain backward compatibility after loss function refactoring (configs generated with v0.5.0 or earlier)
+        // Previously: enumeration used for loss functions. Now: use classes
+        // IN the past, could have only been an OutputLayer or RnnOutputLayer using these enums
+        int layerCount = 0;
+        for(NeuralNetConfiguration nnc : conf.getConfs()){
+            Layer l = nnc.getLayer();
+            if(l instanceof BaseOutputLayer && ((BaseOutputLayer)l).getLossFn() == null){
+                //lossFn field null -> may be an old config format, with lossFunction field being for the enum
+                //if so, try walking the JSON graph to extract out the appropriate enum value
+
+                BaseOutputLayer ol = (BaseOutputLayer)l;
+                try{
+                    JsonNode jsonNode = mapper.readTree(json);
+                    JsonNode confs = jsonNode.get("confs");
+                    if(confs instanceof ArrayNode){
+                        ArrayNode layerConfs = (ArrayNode)confs;
+                        JsonNode outputLayerNNCNode = layerConfs.get(layerCount);
+                        if(outputLayerNNCNode == null) return conf; //Should never happen...
+                        JsonNode outputLayerNode = outputLayerNNCNode.get("layer");
+
+                        JsonNode lossFunctionNode = null;
+                        if(outputLayerNode.has("output")){
+                            lossFunctionNode = outputLayerNode.get("output").get("lossFunction");
+                        } else if(outputLayerNode.has("rnnoutput")){
+                            lossFunctionNode = outputLayerNode.get("rnnoutput").get("lossFunction");
+                        }
+
+                        if(lossFunctionNode != null){
+                            String lossFunctionEnumStr = lossFunctionNode.asText();
+                            LossFunctions.LossFunction lossFunction = null;
+                            try{
+                                lossFunction = LossFunctions.LossFunction.valueOf(lossFunctionEnumStr);
+                            } catch (Exception e){
+                                log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON",e);
+                            }
+
+                            if(lossFunction != null) {
+                                switch (lossFunction) {
+                                    case MSE:
+                                        ol.setLossFn(new LossMSE());
+                                        break;
+                                    case XENT:
+                                        ol.setLossFn(new LossBinaryXENT());
+                                        break;
+                                    case NEGATIVELOGLIKELIHOOD:
+                                        ol.setLossFn(new LossNegativeLogLikelihood());
+                                        break;
+                                    case MCXENT:
+                                        ol.setLossFn(new LossMCXENT());
+                                        break;
+
+                                    //Remaining: TODO
+                                    case EXPLL:
+                                    case RMSE_XENT:
+                                    case SQUARED_LOSS:
+                                    case RECONSTRUCTION_CROSSENTROPY:
+                                    case CUSTOM:
+                                    default:
+                                        log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not set loss function for {}",lossFunction);
+                                        break;
+                                }
+                            }
+                        }
+                    } else {
+                        log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON: layer 'confs' field is not an ArrayNode (is: {})",
+                                (confs != null ? confs.getClass() : null));
+                    }
+                } catch(IOException e){
+                    log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON",e);
+                    break;
+                }
+            }
+            layerCount++;
+        }
+        return conf;
     }
 
     @Override
