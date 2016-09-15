@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
 
 
@@ -20,7 +21,7 @@ import org.nd4j.nativeblas.Nd4jBlas;
  * @author Adam Gibson
  */
 public class CpuLevel3 extends BaseLevel3 {
-    private Nd4jBlas nd4jBlas = new Nd4jBlas();
+    private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
     private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
 
     @Override

@@ -20,6 +20,7 @@ import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
 
@@ -33,7 +34,7 @@ import java.util.Arrays;
  */
 
 public class NativeOpExecutioner extends DefaultOpExecutioner {
-    private NativeOps loop = new NativeOps();
+    private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter private CpuTADManager tadManager = new CpuTADManager();
 
