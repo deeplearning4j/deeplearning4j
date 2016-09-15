@@ -7,12 +7,18 @@ if which cmake3 &> /dev/null; then
 fi
 export MAKE_COMMAND="make"
 echo eval $CMAKE_COMMAND
+
+OS="generic"
 if [ "$(uname)" == "Darwin" ]; then
+    OS="macosx"
+
     echo "RUNNING OSX CLANG"
     # Do something under Mac OS X platform
     export CC=clang-omp
     export CXX=clang-omp++
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
+    OS="windows"
+
     # Do something under Windows NT platform
     if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
@@ -52,6 +58,7 @@ BUILD=
 COMPUTE=
 LIBTYPE=
 PACKAGING=
+CHIP_VERSION=
 EXPERIMENTAL=
 while [[ $# > 1 ]]
 do
@@ -76,6 +83,10 @@ case $key in
     ;;
     -l|--libtype)
     LIBTYPE="$2"
+    shift # past argument
+    ;;
+    -v|--chip-version)
+    CHIP_VERSION="$2"
     shift # past argument
     ;;
     -x|--experimental)
@@ -160,23 +171,41 @@ fi
 
 CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
-mkbuilddir() {
-if [ "$CHIP" == "cpu" ]; then
-     rm -rf blasbuild/cpu
-     mkdir -p blasbuild/cpu
-     cd blasbuild/cpu
-  else
-        rm -rf blasbuild/cuda
-        mkdir -p blasbuild/cuda
-        cd blasbuild/cuda
+if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
+    case $OS in
+        generic)
+        export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
+        ;;
+        macosx)
+        export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
+        ;;
+        windows)
+        export CUDA_PATH="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$CHIP_VERSION/"
+        ;;
+    esac
 fi
 
+mkbuilddir() {
+    mkdir -p blasbuild
+    cd blasbuild
+    if [ -n "$CHIP_VERSION" ]; then
+        rm -rf "$CHIP-$CHIP_VERSION" "$CHIP"
+        mkdir -p "$CHIP-$CHIP_VERSION"
+        ln -s "$CHIP-$CHIP_VERSION" "$CHIP"
+        mkdir -p "$CHIP/blas"
+        cd "$CHIP-$CHIP_VERSION"
+    else
+        rm -rf "$CHIP"
+        mkdir -p "$CHIP"
+        cd "$CHIP"
+    fi
 }
 
 
 echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
+echo CHIP_VERSION    = "${CHIP_VERSION}"
 echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
