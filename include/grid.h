@@ -16,20 +16,16 @@ __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, cons
                                                          T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, T *reductionBuffer, T *extraA, T *extraB, T scalarA, T scalarB, bool scalarReturned) {
 
     __shared__ UnifiedSharedMemory *manager;
-    __shared__ T realScalarA;
-    __shared__ T realScalarB;
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            realScalarA = (T) scalarA;
-            params[0] = (Nd4jPointer *) &realScalarA;
+            params[0] = (Nd4jPointer *) &scalarA;
         }
         else params[0] = (Nd4jPointer *) extraA;
 
         if (opTypeB == 0) {
-            realScalarB = (T) scalarB;
-            params[1] = (Nd4jPointer *) &realScalarB;
+            params[1] = (Nd4jPointer *) &scalarB;
         }
         else params[1] = (Nd4jPointer *) extraB;
 
@@ -57,20 +53,16 @@ __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, cons
 template <typename T>
 __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
                                                         long N, T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
-    __shared__ T realScalarA;
-    __shared__ T realScalarB;
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            realScalarA = (T) scalarA;
-            params[0] = (Nd4jPointer *) &realScalarA;
+            params[0] = (Nd4jPointer *) &scalarA;
         }
         else params[0] = (Nd4jPointer *) extraA;
 
         if (opTypeB == 0) {
-            realScalarB = (T) scalarB;
-            params[1] = (Nd4jPointer *) &realScalarB;
+            params[1] = (Nd4jPointer *) &scalarB;
         }
         else params[1] = (Nd4jPointer *) extraB;
 
@@ -90,21 +82,16 @@ template <typename T>
 __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
                                                           long N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
     ) {
-
-    __shared__ T realScalarA;
-    __shared__ T realScalarB;
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            realScalarA = (T) scalarA;
-            params[0] = (Nd4jPointer *) &realScalarA;
+            params[0] = (Nd4jPointer *) &scalarA;
         }
         else params[0] = (Nd4jPointer *) extraA;
 
         if (opTypeB == 0) {
-            realScalarB = (T) scalarB;
-            params[1] = (Nd4jPointer *) &realScalarB;
+            params[1] = (Nd4jPointer *) &scalarB;
         }
         else params[1] = (Nd4jPointer *) extraB;
 
@@ -154,20 +141,16 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
 
 template<typename T, typename OpClass>
 __device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTypeA, const int opTypeB, long N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
-    __shared__ T realScalarA;
-    __shared__ T realScalarB;
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            realScalarA = (T) scalarA;
-            params[0] = (Nd4jPointer *) &realScalarA;
+            params[0] = (Nd4jPointer *) &scalarA;
         }
         else params[0] = (Nd4jPointer *) extraA;
 
         if (opTypeB == 0) {
-            realScalarB = (T) scalarB;
-            params[1] = (Nd4jPointer *) &realScalarB;
+            params[1] = (Nd4jPointer *) &scalarB;
         }
         else params[1] = (Nd4jPointer *) extraB;
 
@@ -180,20 +163,16 @@ __device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTyp
 
 template<typename T, typename OpClass>
 __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, long N, T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
-    __shared__ T realScalarA;
-    __shared__ T realScalarB;
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            realScalarA = (T) scalarA;
-            params[0] = (Nd4jPointer *) &realScalarA;
+            params[0] = (Nd4jPointer *) &scalarA;
         }
         else params[0] = (Nd4jPointer *) extraA;
 
         if (opTypeB == 0) {
-            realScalarB = (T) scalarB;
-            params[1] = (Nd4jPointer *) &realScalarB;
+            params[1] = (Nd4jPointer *) &scalarB;
         }
         else params[1] = (Nd4jPointer *) extraB;
 
