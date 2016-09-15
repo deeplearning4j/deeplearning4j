@@ -50,6 +50,10 @@ public class LossFunctionGradientCheck {
                 new LossHinge(),
                 new LossKLD(),
                 new LossKLD(),
+                new LossL1(),
+                new LossL1(),
+                new LossL2(),
+                new LossL2(),
                 new LossMAE(),
                 new LossMAE(),
                 new LossMAPE(),
@@ -71,6 +75,10 @@ public class LossFunctionGradientCheck {
                 "tanh",     //hinge -> trying to predict 1 or -1
                 "sigmoid",  //kld -> probab so should be between 0 and 1
                 "softmax",  //kld + softmax
+                "tanh",     //l1
+                "softmax",  //l1 + softmax
+                "tanh",     //l2
+                "softmax",  //l2 + softmax
                 "identity", //mae
                 "softmax",  //mae + softmax
                 "identity", //mape
@@ -92,6 +100,10 @@ public class LossFunctionGradientCheck {
                 3,          //hinge
                 3,          //kld
                 3,          //kld + softmax
+                3,          //l1
+                3,          //l1 + softmax
+                3,          //l2
+                3,          //l2 + softmax
                 3,          //mae
                 3,          //mae + softmax
                 3,          //mape
@@ -223,6 +235,8 @@ public class LossFunctionGradientCheck {
                 break;
             case "LossMAE":
             case "LossMSE":
+            case "LossL1":
+            case "LossL2":
                 ret[1] = Nd4j.rand(minibatch, nOut).muli(2).subi(1);
                 break;
             case "LossMSLE":
