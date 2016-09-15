@@ -55,9 +55,9 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     public MultipleEpochsIterator(int numEpochs,DataSetIterator iter, int queueSize) {
         this.numEpochs = numEpochs;
-        this.iter = iter;
         this.queueSize = queueSize;
         this.async = queueSize != 1 && iter.asyncSupported();
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
     }
 
     public MultipleEpochsIterator(int numEpochs,DataSet ds) {
@@ -95,7 +95,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
                 }
             }
         } else {
-            iter = async? new AsyncDataSetIterator(iter, queueSize): iter;
             next = num == -1? iter.next(): iter.next(num);
             if(!iter.hasNext()) {
                 trackEpochs();
@@ -159,7 +158,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-        return false;
+            return false;
     }
 
     /**
