@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class ParallelWrapper {
+public class ParallelWrapper implements AutoCloseable {
     private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
     private int workers = 2;
@@ -61,12 +61,41 @@ public class ParallelWrapper {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        if (zoo != null) {
+            for (int i = 0; i < zoo.length; i++) {
+                if (zoo[i] != null)
+                    zoo[i].shutdown();
+            }
+            zoo = null;
+        }
+    }
+
+    /**
+     * This method
+     */
+    public synchronized void shutdown() {
+        try {
+            close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors
      *
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        if (zoo == null) {
+            zoo = new Trainer[workers];
+            for (int cnt = 0; cnt < workers; cnt++) {
+                zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt].start();
+            }
+        }
         source.reset();
 
         DataSetIterator iterator;
@@ -329,6 +358,7 @@ public class ParallelWrapper {
         private AtomicInteger running = new AtomicInteger(0);
         private int threadId;
         private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
+        private AtomicBoolean shouldStop = new AtomicBoolean(false);
 
         public Trainer(int threadId, Model model) {
             this.threadId = threadId;
@@ -387,6 +417,10 @@ public class ParallelWrapper {
             return running.get() == 0;
         }
 
+        public void shutdown() {
+            shouldStop.set(true);
+        }
+
         @Override
         public void run() {
             try {
@@ -403,8 +437,8 @@ public class ParallelWrapper {
                     ((ComputationGraph) this.replicatedModel).init();
                 }
 
-                while (true) {
-                    DataSet dataSet = queue.poll(1, TimeUnit.SECONDS);
+                while (!shouldStop.get()) {
+                    DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                     if (dataSet != null) {
                         if (replicatedModel instanceof MultiLayerNetwork) {
                             ((MultiLayerNetwork) replicatedModel).fit(dataSet);
