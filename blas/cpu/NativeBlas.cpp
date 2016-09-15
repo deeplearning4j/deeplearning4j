@@ -7,6 +7,12 @@
 #include <cblas.h>
 #include <pointercast.h>
 
+#ifdef _WIN32
+#include <files.h>
+#else
+#include <dlfcn.h>
+#endif
+
 
 
 /**
@@ -117,13 +123,91 @@ CBLAS_SIDE convertSide(int from) {
     }
 }
 
-void blas_set_num_threads(int num) {
- // temporary disabled
+/**
+ * This method checks for availability of specified runtime library with respect to platform file extensions
+ *
+ * @param name
+ * @param length
+ * @return handle to library, if it exists and loaded successfully, NULL otherwise
+ */
+
+/*
+
+#ifdef _WIN32
+bool checkLibrary(char *name, int length) {
+    return checkFileInPath(name);
+}
+#else
+void* checkLibrary(char *name, int length) {
+    // we don't need huge buffer or malloc here, because we know all possible usecases in advance
+    char buffer[64];
+
+    // we check libraries in incremental length order, to avoid overlaps
+    snprintf(buffer, length, ".so");
+
+    void *handle = dlopen(buffer, RTLD_NOW);
+    if (handle == NULL) {
+        snprintf(buffer, length, ".dll");
+        handle = dlopen(buffer, RTLD_NOW);
+        if (handle == NULL) {
+            snprintf(buffer, length, ".dylib");
+            handle = dlopen(buffer, RTLD_NOW);
+            if (handle == NULL) {
+                return handle;
+            } else return handle;
+        } else return handle;
+    } else return handle;
 }
 
+#endif
+
+void blas_set_num_threads(int num) {
+#ifdef __MKL
+    MKL_Set_Num_Threads(num);
+    MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
+    MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
+    MKL_Set_Num_Threads_Local(num);
+#elif __OPENBLAS
+#ifdef _WIN32
+    // for win32 we just check for libmkl_rt
+    bool val = checkLibrary("mkl_rt.dll", 9);
+    if (val == false) {
+        // if it's not found - just call for statically linked openblas
+        printf("Using openblas switch\n");
+        fflush(stdout);
+        openblas_set_num_threads(num);
+
+    } else {
+        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+    }
+#else
+    // it's possible to have MKL being loaded at runtime
+    void *handle = checkLibrary("libmkl_rt", 9);
+    if (handle == NULL) {
+        // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
+//        handle = checkLibrary("libopenblas", 9);
+//        if (handle != NULL) {
+//            void *func = dlsym(handle, "openblas_set_num_threads");
+//            if (func != NULL) {
+//                dlclose(handle);
+                openblas_set_num_threads(num);
+//            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
+//        }
+    } else {
+        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+        dlclose(handle);
+    }
+#endif
+
+#else
+    // do nothing
+#endif
+    fflush(stdout);
+}
+*/
 
 void Nd4jBlas::setMaxThreads(int num) {
-    blas_set_num_threads(num);
+    //blas_set_num_threads(num);
 }
 
 /*

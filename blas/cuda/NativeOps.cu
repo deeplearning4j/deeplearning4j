@@ -2948,7 +2948,7 @@ float   NativeOps::execReduce3ScalarHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH11 opNum:[%i]\n", opNum);
 
-	reduce3ScalarHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarHalf<<<launchDims.x,launchDims.y,launchDims.z + 2048, *stream>>>(
 			opNum,
 					x,
 					xShapeInfo,
@@ -3980,7 +3980,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 			// if that's vector, we just go directly to op in 1 block
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(length, 256);
-			transformHalf<<< 1, block, launchDims.z + (block * sizeof(float) * 4), *stream >> > (
+			transformHalf<<< 1, block, launchDims.z + (block * sizeof(float16) * 4), *stream >> > (
 					opNum,
 							dx,
 							xShapeInfo,  shape::rank(hostXShapeInfo),
@@ -5504,9 +5504,12 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
 
 //    metaPredicateStridedHalf<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 
+    float16 scalA = (float16) scalarA;
+    float16 scalB = (float16) scalarB;
+
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 
@@ -5553,9 +5556,12 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
+    float16 scalA = (float16) scalarA;
+    float16 scalB = (float16) scalarB;
+
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
-			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
     if (debug)
