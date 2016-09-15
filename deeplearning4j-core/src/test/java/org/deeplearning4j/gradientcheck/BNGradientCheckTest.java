@@ -216,7 +216,7 @@ public class BNGradientCheckTest {
                             String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
                                     + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst= " + doLearningFirst
                                     + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                            assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                            assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                         }
 
                         if (PRINT_RESULTS) {
