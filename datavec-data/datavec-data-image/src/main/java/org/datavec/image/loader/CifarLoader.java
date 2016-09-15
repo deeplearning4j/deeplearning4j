@@ -19,15 +19,17 @@ package org.datavec.image.loader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.ImageTransformer;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ColorConversionTransform;
-import org.datavec.image.transform.HistEqualizationTransform;
+import org.datavec.image.transform.EqualizeHistTransform;
 import org.datavec.image.transform.ImageTransform;
+import org.datavec.image.transform.ShowImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.*;
@@ -35,6 +37,8 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.bytedeco.javacpp.opencv_core.CV_8UC;
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
 
 /**
  * Reference: Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009.
@@ -63,17 +67,26 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     public static String[] TRAINFILENAMES = {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
     public static String TESTFILENAME = "test_batch.bin";
-    protected static String trainFilesSerialized = fullDir + "cifar_train_serialized";
-    protected static String testFilesSerialized = fullDir + "cifar_test_serialized.ser";
+    protected static String trainFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_train_serialized");
+    protected static String testFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_test_serialized.ser");
 
     protected static boolean train = true;
-    public static boolean preProcessCifar = true;
+    public static boolean preProcessCifar = false;
     public static Map<String, String> cifarTrainData = new HashMap<>();
 
     protected static int height = HEIGHT;
     protected static int width = WIDTH;
     protected static int channels = CHANNELS;
-    protected static int exampleCount = 0;
+    protected static long seed = System.currentTimeMillis();
+    protected static boolean shuffle = true;
+    protected int numExamples = 0;
+    protected static int numToConvertDS = 10; // TODO put  at 10000
+    protected static int numToShowExamples = 10; // TODO put at 50000 not to show
+    protected double uMean = 0;
+    protected double uStd = 0;
+    protected double vMean = 0;
+    protected double vStd = 0;
+    protected boolean meanStdCalc = false;
 
     // Using this in spark to reference where to load data from
 //    static {
@@ -81,32 +94,40 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 //    }
 
     public CifarLoader() {
-        load();
+        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
     }
 
     public CifarLoader(boolean train) {
-        this.train = train;
+        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
     }
 
     public CifarLoader(int height, int width, int channels, boolean train, boolean preProcessCifar) {
-        this(height, width, channels, null, train, preProcessCifar);
-        load();
+        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
+    }
+
+    public CifarLoader(boolean train, File fullPath) {
+        this(height, width, channels, null, train, preProcessCifar, fullPath, seed, shuffle);
     }
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar) {
+        this(height, width, channels, imgTransform, train, preProcessCifar, fullDir, seed, shuffle);
+    }
+
+    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar, boolean shuffle) {
+        this(height, width, channels, imgTransform, train, preProcessCifar, fullDir, seed, shuffle);
+    }
+
+    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar, File fullPath, long seed, boolean shuffle) {
         super(height, width, channels, imgTransform);
         this.train = train;
         this.preProcessCifar = preProcessCifar;
+        this.fullDir = fullPath;
+        this.seed = seed;
+        this.shuffle = shuffle;
         load();
     }
 
-    public CifarLoader(boolean train, String localDir) {
-        this.localDir = localDir;
-        this.fullDir = new File(localDir);
-        this.train = train;
-        load();
-    }
-
+    // TODO preload train and test
 
     @Override
     public INDArray asRowVector(File f) throws IOException {
@@ -136,7 +157,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     private void defineLabels() {
         try {
-            File path = new File(fullDir, FilenameUtils.concat(dataBinFile, labelFileName));
+            File path = new File(fullDir, labelFileName);
             BufferedReader br = new BufferedReader(new FileReader(path));
             String line;
 
@@ -160,7 +181,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         try {
             // Create inputStream
             if (train) {
-                Collection<File> subFiles = FileUtils.listFiles(new File(fullDir, dataBinFile), new String[]{"bin"}, true);
+                Collection<File> subFiles = FileUtils.listFiles(fullDir, new String[]{"bin"}, true);
                 Iterator trainIter = subFiles.iterator();
                 inputStream = new SequenceInputStream(new FileInputStream((File) trainIter.next()), new FileInputStream((File) trainIter.next()));
                 while (trainIter.hasNext()) {
@@ -169,62 +190,73 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                         inputStream = new SequenceInputStream(inputStream, new FileInputStream(nextFile));
                 }
             } else
-                inputStream = new FileInputStream(new File(fullDir, FilenameUtils.concat(dataBinFile, TESTFILENAME)));
+                inputStream = new FileInputStream(new File(fullDir, TESTFILENAME));
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         defineLabels();
 
-        if (!cifarProcessedFilesExists() && preProcessCifar) {
-            for (int i = 1; i <= TRAINFILENAMES.length; i++) {
-                DataSet result = convertDataSet(10000);
+        if (preProcessCifar) {
+            for (int i = 1; i <= (TRAINFILENAMES.length); i++) {
+                DataSet result = convertDataSet(numToConvertDS);
+                // TODO need to trigger whether it exists or not
                 result.save(new File(trainFilesSerialized + i + ".ser"));
             }
         }
     }
 
     public boolean cifarRawFilesExist() {
-        File f = new File(fullDir, FilenameUtils.concat(dataBinFile, TESTFILENAME));
+        File f = new File(fullDir, TESTFILENAME);
         if (!f.exists()) return false;
 
         for (String name : TRAINFILENAMES) {
-            f = new File(fullDir, FilenameUtils.concat(dataBinFile, name));
+            f = new File(fullDir, name);
             if (!f.exists()) return false;
         }
         return true;
     }
 
     private boolean cifarProcessedFilesExists() {
-        File f = new File(trainFilesSerialized + 1 + ".ser");
-        if (!f.exists()) return false;
-        f = new File(trainFilesSerialized + 1 + ".ser");
-        if (!f.exists()) return false;
-        f = new File(testFilesSerialized);
-        if (!f.exists()) return false;
+        File f;
+        if(train) {
+            f = new File(trainFilesSerialized + 1 + ".ser");
+            if (!f.exists()) return false;
+        } else {
+            f = new File(testFilesSerialized);
+            if (!f.exists()) return false;
+        }
         return true;
     }
 
     /**
      * Preprocess and store cifar data if it does not exist
      */
-    public opencv_core.Mat preProcessCifar(opencv_core.Mat image) {
+    public opencv_core.Mat preProcessCifar(Mat orgImage) {
+        numExamples ++;
+        Mat resImage = new Mat();
         OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
-        ImageTransform yuvTransform = new ColorConversionTransform();
-        ImageTransform histEqualization = new HistEqualizationTransform();
+        ImageTransform yuvTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2Luv);
+        ImageTransform histEqualization = new EqualizeHistTransform(new Random(seed), COLOR_BGR2Luv);
 
-        if (imageTransform != null && converter != null) {
-            ImageWritable writable = new ImageWritable(converter.convert(image));
+        if (converter != null) {
+            ImageWritable writable = new ImageWritable(converter.convert(orgImage));
+//            if(numExamples % 1000 == 0){
+//        ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
+//                showOrig.transform(writable);
+//            }
             writable = yuvTransform.transform(writable);
             // TODO confirm this works and does sparse contrast ...
             writable = histEqualization.transform(writable);
-            // TODO normalize u and v?
-            image = converter.convert(writable.getFrame());
+            if(numExamples % numToShowExamples == 0){
+                ImageTransform showTrans = new ShowImageTransform("Transform Image", 50);
+                showTrans.transform(writable);
+            }
+            resImage = converter.convert(writable.getFrame());
         }
-        image = scalingIfNeed(image);
+        resImage = scalingIfNeed(resImage);
 
-        // TODO optional show images while preprocessing to see how the look
-
-        return image;
+        return resImage;
     }
 
     public Pair<INDArray, opencv_core.Mat> convertMat(byte[] byteFeature) {
@@ -238,7 +270,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             imageData.put(3 * i + 1, byteFeature[i + 1 + height * width]); // green
             imageData.put(3 * i + 2, byteFeature[i + 1]); // red
         }
-        if (preProcessCifar) preProcessCifar(image);
+        if (preProcessCifar) {
+            image = preProcessCifar(image);
+        }
         return new Pair<>(label, image);
     }
 
@@ -250,11 +284,10 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         byte[] byteFeature = new byte[BYTEFILELEN];
 
         try {
-            while ((inputStream.read(byteFeature)) != -1 && batchNumCount != num) {
+            while (inputStream.read(byteFeature) != -1 && batchNumCount != num) {
                 matConversion = convertMat(byteFeature);
                 try {
-                    // TODO don't ravel - just bring back 4D
-                    dataSets.add(new DataSet(asRowVector(matConversion.getSecond()), matConversion.getFirst()));
+                    dataSets.add(new DataSet(asMatrix(matConversion.getSecond()), matConversion.getFirst()));
                     batchNumCount++;
                 } catch (Exception e) {
                     break;
@@ -264,36 +297,78 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             e.printStackTrace();
         }
 
-//        List<INDArray> inputs = new ArrayList<>();
-//        List<INDArray> labels = new ArrayList<>();
-//
-//        for (DataSet data : dataSets) {
-//            inputs.add(data.getFeatureMatrix());
-//            labels.add(data.getLabels());
-//        }
-//        // TODO shuffle here?
         DataSet result = null;
-        result.merge(dataSets);
+        try {
+            result = result.merge(dataSets);
+        } catch (IllegalArgumentException e) {
+            return result;
+        }
+        double uTempMean, vTempMean;
+        for (DataSet data :result) {
+            if (preProcessCifar) {
+                INDArray uChannel = data.getFeatures().tensorAlongDimension(1, new int[] {0,2,3});
+                INDArray vChannel = data.getFeatures().tensorAlongDimension(2, new int[] {0,2,3});
+                uTempMean = uChannel.mean(new int[] {0,2,3}).getDouble(0);
+                uStd += varTemp(uChannel, uTempMean);
+                uMean += uTempMean;
+                vTempMean = vChannel.mean(new int[] {0,2,3}).getDouble(0);
+                vStd += varTemp(vChannel, vTempMean);
+                vMean += vTempMean;
+                // TODO add this to test?
+                double totalLen = data.getFeatureMatrix().ravel().length();
+                double uLen = uChannel.ravel().length();
+                double vLen = vChannel.ravel().length();
+            }
+            // TODO don't ravel - just bring back 4D - once Alex's changes fully covers cnnsetup
+            data.setFeatures(data.getFeatureMatrix().ravel());
+        }
+        if(shuffle) result.shuffle(seed); // TODO confirm shuffle not same on mult epochs with set seed...
         return result;
     }
+
+    public double varTemp(INDArray x, double mean) {
+        // TODO variance result is incorrect based on dimensions passed in - log issue and test example
+        INDArray xSubMean = x.sub(mean);
+        INDArray squared = xSubMean.muli(xSubMean);
+        double accum = Nd4j.getExecutioner().execAndReturn(new Sum(squared)).getFinalResult().doubleValue();
+        return accum/x.ravel().length();
+    }
+
     public DataSet next(int batchSize) {
-        return next(batchSize, 0, 0);
+        return next(batchSize, 1, 0);
     }
 
     public DataSet next(int batchSize, int fileNum, int batchNum) {
-        load();
-        DataSet result = null;
+        DataSet result =  new DataSet();
         if (cifarProcessedFilesExists()) {
             if (batchNum == 0) {
                 result.load(new File(trainFilesSerialized + fileNum + ".ser"));
+                if (train) {
+                    if(!meanStdCalc) {
+                        uMean = Math.abs(uMean/numExamples);
+                        uStd = Math.sqrt(uStd);
+                        vMean = Math.abs(vMean/numExamples);
+                        vStd = Math.sqrt(vStd);
+                        // TODO store mean and variance
+                        meanStdCalc = true;
+                        int t = result.numExamples();
+                        for (int i = 0; i < result.numExamples(); i++) {
+                            INDArray newFeatures = result.get(i).getFeatureMatrix();
+                            // TODO numbers don't appear to be applied right - confirm dim
+                            newFeatures.tensorAlongDimension(1, new int[] {0,2,3}).subi(uMean).divi(uStd);
+                            newFeatures.tensorAlongDimension(2, new int[] {0,2,3}).subi(vMean).divi(vStd);
+                            result.get(i).setFeatures(newFeatures);
+                        }
+                        result.save(new File(trainFilesSerialized + fileNum + ".ser"));
+                    }
+                }
+                if(shuffle) result.shuffle(seed);
                 inputBatched = result.batchBy(batchSize);
             }
             result = inputBatched.get(batchNum);
         } else {
             result = convertDataSet(batchSize);
         }
-        result.shuffle(); //Change up order of data in batch - TODO pass in seed from user
-
         return result;
     }
 
@@ -303,6 +378,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     public List<String> getLabels(){
         return labels;
+    }
+
+    public void reset(){
+        numExamples = 0;
+        load();
     }
 
 

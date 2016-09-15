@@ -24,25 +24,23 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
 import static org.bytedeco.javacpp.opencv_core.MatVector;
 import static org.bytedeco.javacpp.opencv_core.split;
 import static org.bytedeco.javacpp.opencv_core.merge;
-import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
-import static org.bytedeco.javacpp.opencv_imgproc.CV_BGR2GRAY;
-import static org.bytedeco.javacpp.opencv_imgproc.CV_BGR2YCrCb;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
- * Basically used to improve the contrast of an image."
+ * Used to improve the contrast of an image."
  *
  */
-public class HistEqualizationTransform extends BaseImageTransform {
+public class EqualizeHistTransform extends BaseImageTransform {
 
-    int conversionCode = CV_BGR2GRAY;
-    MatVector splitChannels;
+    int conversionCode;
+    MatVector splitChannels = new MatVector();
 
     /**
      * Default transforms histogram equalization for CV_BGR2GRAY (grayscale)
      */
 
-    public HistEqualizationTransform() {
+    public EqualizeHistTransform() {
         this(new Random(1234), CV_BGR2GRAY);
     }
 
@@ -52,7 +50,7 @@ public class HistEqualizationTransform extends BaseImageTransform {
      * @param random Random
      * @param conversionCode  to transform,
      */
-    public HistEqualizationTransform(Random random, int conversionCode) {
+    public EqualizeHistTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
         converter = new OpenCVFrameConverter.ToMat();
@@ -77,8 +75,8 @@ public class HistEqualizationTransform extends BaseImageTransform {
         try {
             if (conversionCode == CV_BGR2GRAY) {
                 equalizeHist(mat, result);
-            } else if (conversionCode == CV_BGR2YCrCb) {
-                split(result, splitChannels);
+            } else if (conversionCode == CV_BGR2YCrCb || conversionCode == COLOR_BGR2Luv) {
+                split(mat, splitChannels);
                 equalizeHist(splitChannels.get(0), splitChannels.get(0)); //equalize histogram on the 1st channel (Y)
                 merge(splitChannels,result);
             }

@@ -22,7 +22,9 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.*;
 import java.util.List;
@@ -54,11 +56,9 @@ public class LoaderTests {
 
     @Test
     public void testCifarLoader() {
-        File dir = new File(FilenameUtils.concat(System.getProperty("user.home"), "cifar"));
-        CifarLoader cifar = new CifarLoader(false, dir.toString());
+        File dir = new File(FilenameUtils.concat(System.getProperty("user.home"), "cifar/cifar-10-batches-bin"));
+        CifarLoader cifar = new CifarLoader(false, dir);
         assertTrue(dir.exists());
-
-        cifar.load();
         assertTrue(cifar.getLabels() != null);
     }
 
@@ -76,4 +76,52 @@ public class LoaderTests {
         inActual.read(fullDataActual);
         assertEquals(fullDataExpected[0], fullDataActual[0]);
     }
+
+    @Test
+    public void testCifarLoaderNext() throws Exception {
+        int numExamples = 10;
+        int row = 28;
+        int col = 28;
+        int channels = 1;
+        CifarLoader loader = new CifarLoader(row,col,channels, true, false);
+        DataSet data = loader.next(numExamples);
+        assertEquals(numExamples, data.getLabels().size(0));
+        assertEquals(channels*row*col, data.getFeatureMatrix().size(1));
+    }
+
+    @Test
+    public void testCifarLoaderReset() throws Exception {
+        int numExamples = 50;
+        int row = 28;
+        int col = 28;
+        int channels = 3;
+        CifarLoader loader = new CifarLoader(row,col,channels, null, false, false, false);
+        DataSet data;
+        for (int i =0; i < loader.NUM_TEST_IMAGES/numExamples; i++) {
+            loader.next(numExamples);
+        }
+        data = loader.next(numExamples);
+        assertEquals(null, data);
+        loader.reset();
+        data = loader.next(numExamples);
+        assertEquals(numExamples, data.getLabels().size(0));
+    }
+
+
+    //@Ignore // Use when confirming data is getting stored
+    @Test
+    public void testProcessCifar() {
+        int row = 28;
+        int col = 28;
+        int channels = 3;
+        File dir1 = new File(CifarLoader.trainFilesSerialized + "1.ser");
+//        File dir5 = new File(CifarLoader.trainFilesSerialized + "5.ser");
+        CifarLoader cifar = new CifarLoader(row,col,channels, null, true, true, false);
+        assertTrue(dir1.exists());
+        DataSet result = cifar.next(2);
+//        assertTrue(dir5.exists());
+    }
+
+    //TODO more tests on preprocess and norm
+
 }
