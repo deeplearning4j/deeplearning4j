@@ -141,8 +141,6 @@ void blas_set_num_threads(int num) {
     if (handle != NULL) {
         void_int mkl_global = (void_int) GetProcAddress(handle, "MKL_Set_Num_Threads");
         if (mkl_global != NULL) {
-            printf("Calling MKL\n");
-
             mkl_global(num);
 
             int_int_int mkl_domain = (int_int_int) GetProcAddress(handle, "MKL_Domain_Set_Num_Threads");
@@ -156,7 +154,7 @@ void blas_set_num_threads(int num) {
                 mkl_local(num);
             }
         } else {
-            printf("MKL Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+            printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
         }
         //FreeLibrary(handle);
     } else {
@@ -165,16 +163,18 @@ void blas_set_num_threads(int num) {
       if (handle != NULL) {
         void_int oblas = (void_int) GetProcAddress(handle, "openblas_set_num_threads");
         if (oblas != NULL) {
-            printf("Calling OpenBLAS\n");
             oblas(num);
         } else {
-            printf("OpenBLAS Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+            printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
         }
         //FreeLibrary(handle);
       } else {
-        printf("OpenBLAS Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
       }
     }
+#elif __APPLE__
+   // do nothing for MacOS
+   printf("Unable to guess runtime. Please set OMP_NUM_THREADS or equivalent manually.\n");
 #else
     // it's possible to have MKL being loaded at runtime
     void *handle = dlopen("libmkl_rt.so", RTLD_NOW|RTLD_GLOBAL);
@@ -219,7 +219,7 @@ void blas_set_num_threads(int num) {
 #endif
 
 #else
-    // do nothing
+    printf("Unable to guess runtime. Please set OMP_NUM_THREADS or equivalent manually.\n");
 #endif
     fflush(stdout);
 }
