@@ -160,9 +160,10 @@ void* checkLibrary(char *name, int length) {
 }
 
 #endif
-
+*/
 void blas_set_num_threads(int num) {
 #ifdef __MKL
+    // if we're linked against mkl - just go for it
     MKL_Set_Num_Threads(num);
     MKL_Domain_Set_Num_Threads(num, 0); // MKL_DOMAIN_ALL
     MKL_Domain_Set_Num_Threads(num, 1); // MKL_DOMAIN_BLAS
@@ -170,32 +171,28 @@ void blas_set_num_threads(int num) {
 #elif __OPENBLAS
 #ifdef _WIN32
     // for win32 we just check for libmkl_rt
-    bool val = checkLibrary("mkl_rt.dll", 9);
-    if (val == false) {
-        // if it's not found - just call for statically linked openblas
-        printf("Using openblas switch\n");
-        fflush(stdout);
-        openblas_set_num_threads(num);
-
-    } else {
-        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
-    }
+    printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
 #else
     // it's possible to have MKL being loaded at runtime
-    void *handle = checkLibrary("libmkl_rt", 9);
-    if (handle == NULL) {
+    void *handle = dlopen(NULL, RTLD_LOCAL);
+    if (handle != NULL) {
         // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
-//        handle = checkLibrary("libopenblas", 9);
-//        if (handle != NULL) {
-//            void *func = dlsym(handle, "openblas_set_num_threads");
-//            if (func != NULL) {
-//                dlclose(handle);
-                openblas_set_num_threads(num);
-//            } else printf("Unable to find OpenBLAS library. Please set OMP_NUM_THREADS manually\n");
-//        }
+        *(void**)(&mkl_global) = dlsym(handle, "MKL_Set_Num_Threads");
+        if (func != NULL) {
+            // we're running against mkl
+            (void) mkl_global((int) num);
+        } else {
+            *(void**)(&oblas) = dlsym(handle, "openblas_set_num_threads");
+            if (oblas != NULL) {
+                // we're running against openblas
+                (void) oblas((int) num);
+            } else {
+                printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+            }
+        }
+        dlclose(handle);
     } else {
         printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
-        dlclose(handle);
     }
 #endif
 
@@ -204,10 +201,10 @@ void blas_set_num_threads(int num) {
 #endif
     fflush(stdout);
 }
-*/
+
 
 void Nd4jBlas::setMaxThreads(int num) {
-    //blas_set_num_threads(num);
+    blas_set_num_threads(num);
 }
 
 /*
