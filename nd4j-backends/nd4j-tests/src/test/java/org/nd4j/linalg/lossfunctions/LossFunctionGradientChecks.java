@@ -96,7 +96,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                 /*new LossMCXENT(), new LossMCXENT(),
                 new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD(), new LossMAE(), new LossMAE(),*/
                 new LossMAE(), new LossMAE(), new LossMSE(), new LossMSE(),
-                new LossL1norm(), new LossL1norm(), new LossL2normSq(), new LossL2normSq(),
+                new LossL1(), new LossL1(), new LossL2(), new LossL2(),
                 new LossSquaredHinge(),
                 new LossHinge(),
                 //new LossPoisson(),

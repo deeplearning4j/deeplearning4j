@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Created by susaneraly on 8/15/16.
  */
 @EqualsAndHashCode
-public class LossMAE extends LossL1norm {
+public class LossMAE extends LossL1 {
 
     @Override
     public double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
