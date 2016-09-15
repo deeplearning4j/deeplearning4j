@@ -161,6 +161,11 @@ void* checkLibrary(char *name, int length) {
 
 #endif
 */
+
+typedef void* (*void_int)(int);
+typedef int* (*int_int)(int);
+typedef int* (*int_int_int)(int, int);
+
 void blas_set_num_threads(int num) {
 #ifdef __MKL
     // if we're linked against mkl - just go for it
@@ -174,25 +179,45 @@ void blas_set_num_threads(int num) {
     printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
 #else
     // it's possible to have MKL being loaded at runtime
-    void *handle = dlopen(NULL, RTLD_LOCAL);
+    void *handle = dlopen("libmkl_rt.so", RTLD_NOW|RTLD_GLOBAL);
     if (handle != NULL) {
+
         // we call for openblas only if libmkl isn't loaded, and openblas_set_num_threads exists
-        *(void**)(&mkl_global) = dlsym(handle, "MKL_Set_Num_Threads");
-        if (func != NULL) {
+        void_int mkl_global = (void_int) dlsym(handle, "MKL_Set_Num_Threads");
+        if (mkl_global != NULL) {
             // we're running against mkl
-            (void) mkl_global((int) num);
-        } else {
-            *(void**)(&oblas) = dlsym(handle, "openblas_set_num_threads");
-            if (oblas != NULL) {
-                // we're running against openblas
-                (void) oblas((int) num);
-            } else {
-                printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+            mkl_global((int) num);
+
+            int_int_int mkl_domain = (int_int_int) dlsym(handle, "MKL_Domain_Set_Num_Threads");
+            if (mkl_domain != NULL) {
+                mkl_domain(num, 0);
+                mkl_domain(num, 1);
             }
+
+            int_int mkl_local = (int_int) dlsym(handle, "MKL_Set_Num_Threads_Local");
+            if (mkl_local != NULL) {
+                mkl_local(num);
+            }
+        } else {
+
+            printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
         }
         dlclose(handle);
     } else {
-        printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+        // we're falling back to bundled OpenBLAS opening libnd4j.so
+        handle = dlopen("libnd4j.so", RTLD_NOW|RTLD_GLOBAL);
+
+        if (handle != NULL) {
+            void_int oblas = (void_int) dlsym(handle, "openblas_set_num_threads");
+            if (oblas != NULL) {
+                // we're running against openblas
+                oblas((int) num);
+            } else {
+                printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+            }
+
+            dlclose(handle);
+        } else printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
     }
 #endif
 
