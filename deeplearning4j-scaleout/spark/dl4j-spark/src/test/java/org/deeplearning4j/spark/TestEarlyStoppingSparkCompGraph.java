@@ -123,7 +123,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation("identity").lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
                 .setOutputs("0")
                 .pretrain(false).backprop(true)
                 .build();
