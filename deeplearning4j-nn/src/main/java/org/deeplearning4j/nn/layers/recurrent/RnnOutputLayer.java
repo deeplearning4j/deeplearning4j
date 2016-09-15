@@ -120,11 +120,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
     
     @Override
-    protected INDArray output2d(INDArray input){
-    	return reshape3dTo2d(output(input));
-    }
-    
-    @Override
     protected INDArray getLabels2d(){
     	if(labels.rank()==3) return reshape3dTo2d(labels);
     	return labels;

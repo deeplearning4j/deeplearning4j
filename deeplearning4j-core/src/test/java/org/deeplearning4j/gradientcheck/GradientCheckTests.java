@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -759,8 +760,8 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.2, 0.0, 0.2};
+        double[] l1vals = {0.0, 0.3, 0.3};    //i.e., use l2vals[i] with l1vals[i]
 
         for (String afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
@@ -776,17 +777,15 @@ public class GradientCheckTests {
                                 .l2(l2).l1(l1)
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
+                                .weightInit(WeightInit.XAVIER)
+                                .updater(Updater.NONE)
                                 .list()
                                 .layer(0, new AutoEncoder.Builder()
                                         .nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE)
                                         .activation(afn)
                                         .build())
                                 .layer(1, new OutputLayer.Builder(lf)
                                         .nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE)
                                         .activation(outputActivation)
                                         .build())
                                 .pretrain(true).backprop(true)
@@ -809,7 +808,7 @@ public class GradientCheckTests {
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
                                     + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst
                                     + ", l2=" + l2 + ", l1=" + l1 + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                            assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                            assertTrue(msg, scoreAfter < scoreBefore);
                         }
 
                         if (PRINT_RESULTS) {
