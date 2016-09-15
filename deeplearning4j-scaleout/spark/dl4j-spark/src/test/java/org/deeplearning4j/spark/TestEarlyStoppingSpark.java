@@ -102,7 +102,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .updater(Updater.SGD).learningRate(10.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("identity").lossFunction(LossFunctions.LossFunction.MSE).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
