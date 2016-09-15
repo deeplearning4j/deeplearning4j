@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -21,6 +22,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -105,5 +108,61 @@ public class MultipleEpochsIteratorTest {
         net.fit(ds);
         assertEquals(epochs, ds.epochs);
         assertEquals(2, ds.batch);
+    }
+
+
+    @Test
+    public void testMEDIWithLoad1() throws Exception {
+        ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(100));
+        MultipleEpochsIterator iterator = new MultipleEpochsIterator(10, iter, 24);
+        TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 1);
+        long num = consumer.consumeWhileHasNext(true);
+        assertEquals(10 * 100, num);
+    }
+
+    @Test
+    public void testMEDIWithLoa2() throws Exception {
+        ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(100));
+        MultipleEpochsIterator iterator = new MultipleEpochsIterator(10, iter, 24);
+        TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 2);
+        long num1 = 0;
+
+        for (; num1 < 150; num1++) {
+            consumer.consumeOnce(iterator.next(), true);
+        }
+        iterator.reset();
+
+        long num2 = consumer.consumeWhileHasNext(true);
+        assertEquals((10 * 100) + 150, num1+num2);
+    }
+
+    private class IterableWithoutException implements Iterable<DataSet> {
+        private final AtomicLong counter = new AtomicLong(0);
+        private final int datasets;
+        public IterableWithoutException(int datasets) {
+            this.datasets = datasets;
+        }
+
+        @Override
+        public Iterator<DataSet> iterator() {
+            counter.set(0);
+            return new Iterator<DataSet>() {
+                @Override
+                public boolean hasNext() {
+                    return counter.get() < datasets;
+                }
+
+                @Override
+                public DataSet next() {
+                    counter.incrementAndGet();
+                    return new DataSet(Nd4j.create(100), Nd4j.create(10));
+                }
+
+                @Override
+                public void remove() {
+
+                }
+            };
+        }
     }
 }

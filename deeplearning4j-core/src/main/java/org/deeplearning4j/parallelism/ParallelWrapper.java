@@ -63,11 +63,13 @@ public class ParallelWrapper implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        if (zoo != null)
+        if (zoo != null) {
             for (int i = 0; i < zoo.length; i++) {
                 if (zoo[i] != null)
                     zoo[i].shutdown();
             }
+            zoo = null;
+        }
     }
 
     /**
@@ -87,6 +89,13 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        if (zoo == null) {
+            zoo = new Trainer[workers];
+            for (int cnt = 0; cnt < workers; cnt++) {
+                zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt].start();
+            }
+        }
         source.reset();
 
         DataSetIterator iterator;
