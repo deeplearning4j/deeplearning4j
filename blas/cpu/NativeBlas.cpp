@@ -8,7 +8,7 @@
 #include <pointercast.h>
 
 #ifdef _WIN32
-#include <files.h>
+#include <Windows.h>
 #else
 #include <dlfcn.h>
 #endif
@@ -123,45 +123,6 @@ CBLAS_SIDE convertSide(int from) {
     }
 }
 
-/**
- * This method checks for availability of specified runtime library with respect to platform file extensions
- *
- * @param name
- * @param length
- * @return handle to library, if it exists and loaded successfully, NULL otherwise
- */
-
-/*
-
-#ifdef _WIN32
-bool checkLibrary(char *name, int length) {
-    return checkFileInPath(name);
-}
-#else
-void* checkLibrary(char *name, int length) {
-    // we don't need huge buffer or malloc here, because we know all possible usecases in advance
-    char buffer[64];
-
-    // we check libraries in incremental length order, to avoid overlaps
-    snprintf(buffer, length, ".so");
-
-    void *handle = dlopen(buffer, RTLD_NOW);
-    if (handle == NULL) {
-        snprintf(buffer, length, ".dll");
-        handle = dlopen(buffer, RTLD_NOW);
-        if (handle == NULL) {
-            snprintf(buffer, length, ".dylib");
-            handle = dlopen(buffer, RTLD_NOW);
-            if (handle == NULL) {
-                return handle;
-            } else return handle;
-        } else return handle;
-    } else return handle;
-}
-
-#endif
-*/
-
 typedef void* (*void_int)(int);
 typedef int* (*int_int)(int);
 typedef int* (*int_int_int)(int, int);
@@ -175,8 +136,45 @@ void blas_set_num_threads(int num) {
     MKL_Set_Num_Threads_Local(num);
 #elif __OPENBLAS
 #ifdef _WIN32
-    // for win32 we just check for libmkl_rt
-    printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+    // for win32 we just check for mkl_rt.dll
+    HMODULE handle = LoadLibrary("mkl_rt.dll");
+    if (handle != NULL) {
+        void_int mkl_global = (void_int) GetProcAddress(handle, "MKL_Set_Num_Threads");
+        if (mkl_global != NULL) {
+            printf("Calling MKL\n");
+
+            mkl_global(num);
+
+            int_int_int mkl_domain = (int_int_int) GetProcAddress(handle, "MKL_Domain_Set_Num_Threads");
+            if (mkl_domain != NULL) {
+                mkl_domain(num, 0); // DOMAIN_ALL
+                mkl_domain(num, 1); // DOMAIN_BLAS
+            }
+
+            int_int mkl_local = (int_int) GetProcAddress(handle, "MKL_Set_Num_Threads_Local");
+            if (mkl_local != NULL) {
+                mkl_local(num);
+            }
+        } else {
+            printf("MKL Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+        }
+        //FreeLibrary(handle);
+    } else {
+      // OpenBLAS path
+      handle = LoadLibrary("libopenblas.dll");
+      if (handle != NULL) {
+        void_int oblas = (void_int) GetProcAddress(handle, "openblas_set_num_threads");
+        if (oblas != NULL) {
+            printf("Calling OpenBLAS\n");
+            oblas(num);
+        } else {
+            printf("OpenBLAS Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+        }
+        //FreeLibrary(handle);
+      } else {
+        printf("OpenBLAS Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
+      }
+    }
 #else
     // it's possible to have MKL being loaded at runtime
     void *handle = dlopen("libmkl_rt.so", RTLD_NOW|RTLD_GLOBAL);
@@ -190,8 +188,8 @@ void blas_set_num_threads(int num) {
 
             int_int_int mkl_domain = (int_int_int) dlsym(handle, "MKL_Domain_Set_Num_Threads");
             if (mkl_domain != NULL) {
-                mkl_domain(num, 0);
-                mkl_domain(num, 1);
+                mkl_domain(num, 0); // DOMAIN_ALL
+                mkl_domain(num, 1); // DOMAIN_BLAS
             }
 
             int_int mkl_local = (int_int) dlsym(handle, "MKL_Set_Num_Threads_Local");
@@ -199,7 +197,6 @@ void blas_set_num_threads(int num) {
                 mkl_local(num);
             }
         } else {
-
             printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
         }
         dlclose(handle);
@@ -217,7 +214,7 @@ void blas_set_num_threads(int num) {
             }
 
             dlclose(handle);
-        } else printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
+        } else printf("Unable to guess runtime. Please set OMP_NUM_THREADS manually.\n");
     }
 #endif
 
