@@ -68,6 +68,7 @@ public class LossFunctions {
      */
     public  enum LossFunction {
         MSE,
+        L1,
         @Deprecated
         EXPLL,
         XENT,
@@ -84,6 +85,7 @@ public class LossFunctions {
         SQUARED_HINGE,
         KL_DIVERGENCE,
         MEAN_ABSOLUTE_ERROR,
+        L2,
         MEAN_ABSOLUTE_PERCENTAGE_ERROR,
         MEAN_SQUARED_LOGARITHMIC_ERROR,
         POISSON;
@@ -93,6 +95,8 @@ public class LossFunctions {
                 case MSE:
                 case SQUARED_LOSS:
                     return new LossMSE();
+                case L1:
+                    return new LossL1();
                 case XENT:
                     return new LossBinaryXENT();
                 case MCXENT:
@@ -110,6 +114,8 @@ public class LossFunctions {
                     return new LossSquaredHinge();
                 case MEAN_ABSOLUTE_ERROR:
                     return new LossMAE();
+                case L2:
+                    return new LossL2();
                 case MEAN_ABSOLUTE_PERCENTAGE_ERROR:
                     return new LossMAPE();
                 case MEAN_SQUARED_LOGARITHMIC_ERROR:
