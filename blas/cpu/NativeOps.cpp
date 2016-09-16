@@ -9,6 +9,11 @@
 #include <templatemath.h>
 #include <types/float8.h>
 #include <type_conversions.h>
+#define ELEMENT_THRESHOLD element_threshold
+#define TAD_THRESHOLD tad_threshold
+
+int tad_threshold = 64;
+int element_threshold = 8192;
 
 #ifdef __EXPERIMENTAL__
 bool experimentalSupport = true;
