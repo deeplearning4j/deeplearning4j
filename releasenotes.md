@@ -6,6 +6,7 @@ layout: default
 # <a name="six">Release Notes for Version 6.0</a> 
 
 1) Support for compressed INDArrays, for memory saving on huge data
+
 2) Native support for BooleanIndexing where applicable
 3) Initial support for combined operations on CUDA
 4) Significant performance improvements on CPU & CUDA backends
