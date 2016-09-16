@@ -1597,7 +1597,12 @@ namespace simdOps {
 	template<typename T>
 	class SummaryStatsStandardDeviation {
 	public:
-		op_def static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
 				if (ret < 0)
