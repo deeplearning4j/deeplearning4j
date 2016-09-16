@@ -3,6 +3,9 @@ package org.nd4j.linalg.api.buffer.util;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 /**
  * Manipulates the data type
  * for the nd4j context
@@ -10,6 +13,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public class DataTypeUtil {
 
+    private volatile transient static DataBuffer.Type dtype;
+    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
      * Get the allocation mode from the context
@@ -45,7 +50,24 @@ public class DataTypeUtil {
      * @return
      */
     public static DataBuffer.Type getDtypeFromContext() {
-        return getDtypeFromContext(Nd4jContext.getInstance().getConf().getProperty("dtype"));
+        try {
+            lock.readLock().lock();
+
+            if (dtype == null) {
+                lock.readLock().unlock();
+                lock.writeLock().lock();
+
+                if (dtype == null)
+                    dtype = getDtypeFromContext(Nd4jContext.getInstance().getConf().getProperty("dtype"));
+
+                lock.writeLock().unlock();
+                lock.readLock().lock();
+            }
+
+            return dtype;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -55,7 +77,15 @@ public class DataTypeUtil {
      * @param allocationModeForContext
      */
     public static void setDTypeForContext(DataBuffer.Type allocationModeForContext) {
-        setDTypeForContext(getDTypeForName(allocationModeForContext));
+        try {
+            lock.writeLock().lock();
+
+            dtype = allocationModeForContext;
+
+            setDTypeForContext(getDTypeForName(allocationModeForContext));
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**

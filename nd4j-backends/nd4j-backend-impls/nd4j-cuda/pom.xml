@@ -6,69 +6,49 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-native</artifactId>
-    <name>nd4j-native</name>
+    <artifactId>nd4j-cuda-7.5</artifactId>
+    <name>nd4j-cuda</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <properties>
+        <cuda.version>7.5</cuda.version>
+    </properties>
 
     <build>
-        <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
-
+		<testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../../nd4j-tests/src/test/resources</directory>
+            </testResource>
+		</testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>2.19.1</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
+                    <argLine>-Xmx8G</argLine>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
                     </environmentVariables>
+                    <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
                     <includes>
                         <include>*.java</include>
-                        <include>**/Test*.java</include>
-                        <include>**/*Test.java</include>
-                        <include>**/*TestCase.java</include>
                     </includes>
-                    <junitArtifactName>junit:junit</junitArtifactName>
                     <systemPropertyVariables>
-                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.bytedeco</groupId>
@@ -82,12 +62,12 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <copyLibs>true</copyLibs>
                     <compilerOptions>
                         <compilerOption>
                             -std=c++11
                         </compilerOption>
                     </compilerOptions>
+                    <copyLibs>true</copyLibs>
                     <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
@@ -106,7 +86,10 @@
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
-                    <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
+                    <linkPaths>
+                        <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda-${cuda.version}/blas</linkPath>
+                        <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda/blas</linkPath>
+                    </linkPaths>
                 </configuration>
                 <executions>
                     <execution>
@@ -124,12 +107,10 @@
                                 <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                             </classOrPackageNames>
                             <copyLibs>true</copyLibs>
+
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -152,9 +133,9 @@
                                 <requireFilesExist>
                                     <files>
                                         <file>${env.LIBND4J_HOME}/blas/NativeBlas.h</file>
-                                        <file>${env.LIBND4J_HOME}/blasbuild/cpu/blas</file>
+                                        <file>${env.LIBND4J_HOME}/blasbuild/cuda/blas</file>
                                     </files>
-                                    <message>!!! You have to compile libnd4j with cpu support first!</message>
+                                    <message>!!! You have to compile libnd4j with cuda support first!</message>
                                 </requireFilesExist>
                             </rules>
                             <fail>true</fail>
@@ -165,4 +146,69 @@
         </plugins>
     </build>
 
+
+    <dependencies>
+        <dependency>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-base64</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jackson</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>2.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+    </dependencies>
 </project>

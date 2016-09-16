@@ -1,111 +1,184 @@
-package org.nd4j.linalg.cpu.nativecpu.blas;
-
+package org.nd4j.linalg.jcublas.blas;
 
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.Nd4jBlas;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * @author Adam Gibson
  */
-public class CpuLevel2 extends BaseLevel2 {
+public class JcublasLevel2 extends BaseLevel2 {
+    private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
-    private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private static Logger logger = LoggerFactory.getLogger(JcublasLevel2.class);
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sgemv(DUMMY,'f',TransA,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT gemv called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
+
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
+
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
+
+            nd4jBlas.sgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    order, TransA, M, N, alpha, (FloatPointer)cAPointer.getDevicePointer(),
+                    lda, (FloatPointer)cBPointer.getDevicePointer(),
+                    incX,
+                    beta,
+                    (FloatPointer)cCPointer.getDevicePointer(),
+                    incY);
+        }
+
+        allocator.registerAction(ctx, Y, A, X);
     }
 
     @Override
     protected void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sgbmv(DUMMY,'f',TransA,M,N,KL,KU,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected void strmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
         throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.stbmv(DUMMY,'f',Uplo,TransA,Diag,N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.stpmv(DUMMY,'f',Uplo,TransA,Diag,N,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void strsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.strsv(DUMMY,'f',Uplo,TransA,Diag,N,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void stbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.stbsv(DUMMY,'f',Uplo,TransA,Diag,N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void stpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.stpsv(DUMMY,'f',Uplo,TransA,Diag,N, (FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dgemv(DUMMY,'f',TransA,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("DOUBLE gemv called");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
+
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
+
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
+
+            nd4jBlas.dgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    order, TransA, M, N, alpha, (DoublePointer)cAPointer.getDevicePointer(),
+                    lda, (DoublePointer)cBPointer.getDevicePointer(),
+                    incX,
+                    beta,
+                    (DoublePointer)cCPointer.getDevicePointer(),
+                    incY);
+        }
+
+        allocator.registerAction(ctx, Y, A, X);
     }
 
     @Override
     protected void dgbmv(char order, char TransA, int M, int N, int KL, int KU, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dgbmv(DUMMY,'f',TransA,M,N,KL,KU,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void dtrmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtrmv(DUMMY,'f',Uplo,TransA,Diag,N,0.0,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtbmv(DUMMY,'f',Uplo,TransA,Diag,N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dtpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.dtpmv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtrsv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtbsv(DUMMY,'f',Uplo,TransA,Diag,N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.dtpsv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
+
+
     }
 
     @Override
@@ -153,6 +226,8 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
+
+
     }
 
     @Override
@@ -199,84 +274,98 @@ public class CpuLevel2 extends BaseLevel2 {
 
     @Override
     protected void ssymv(char order, char Uplo, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.ssymv(DUMMY,'f',Uplo,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void ssbmv(char order, char Uplo, int N, int K, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-      nd4jBlas.ssbmv(DUMMY,'f',Uplo,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void sspmv(char order, char Uplo, int N, float alpha, INDArray Ap, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sspmv(DUMMY,'f',Uplo,N,alpha,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.sger(DUMMY,'f',M,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void ssyr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray A, int lda) {
-        nd4jBlas.ssyr(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)A.data().addressPointer(),lda);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void sspr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Ap) {
-        nd4jBlas.sspr(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Ap.data().addressPointer());
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void ssyr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.ssyr2(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void sspr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A) {
-        nd4jBlas.sspr2(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer());
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dsymv(char order, char Uplo, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dsymv(DUMMY,'f',Uplo,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dsbmv(char order, char Uplo, int N, int K, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dsbmv(DUMMY,'f',Uplo,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dspmv(char order, char Uplo, int N, double alpha, INDArray Ap, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dspmv(DUMMY,'f',Uplo,N,alpha,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.dger(DUMMY,'f',M,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
-        
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dsyr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray A, int lda) {
-        nd4jBlas.dsyr(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)A.data().addressPointer(),lda);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dspr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Ap) {
-        nd4jBlas.dspr(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Ap.data().addressPointer());
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dsyr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.dsyr2(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A) {
-        nd4jBlas.dspr2(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer());
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -300,12 +389,12 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void cgeru(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         throw new UnsupportedOperationException();
+
     }
 
     @Override
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override

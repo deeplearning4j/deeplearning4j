@@ -47,6 +47,7 @@ import org.nd4j.linalg.cpu.nativecpu.complex.ComplexFloat;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
@@ -56,7 +57,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class CpuNDArrayFactory extends BaseNDArrayFactory {
-    private NativeOps nativeOps = new NativeOps();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public CpuNDArrayFactory() {
     }

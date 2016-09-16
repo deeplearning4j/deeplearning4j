@@ -10,6 +10,8 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CBlas bindings
@@ -19,6 +21,7 @@ import org.bytedeco.javacpp.annotation.Platform;
  */
 @Platform(include = "NativeBlas.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class Nd4jBlas extends Pointer {
+    private static Logger logger = LoggerFactory.getLogger(Nd4jBlas.class);
     static {
         // using our custom platform properties from resources, and on user request,
         // load in priority libraries found in the library path over bundled ones
@@ -38,14 +41,18 @@ public class Nd4jBlas extends Pointer {
         allocate();
 
         int numThreads;
-        String numThreadsString = System.getenv("OMP_NUM_THREADS");
-        if(numThreadsString != null && !numThreadsString.isEmpty()) {
-            numThreads = Integer.parseInt(numThreadsString);
-            setMaxThreads(numThreads);
+        String skipper = System.getenv("ND4J_SKIP_BLAS_THREADS");
+        if (skipper == null || skipper.isEmpty()) {
+            String numThreadsString = System.getenv("OMP_NUM_THREADS");
+            if (numThreadsString != null && !numThreadsString.isEmpty()) {
+                numThreads = Integer.parseInt(numThreadsString);
+                setMaxThreads(numThreads);
+            } else {
+                numThreads = getCores(Runtime.getRuntime().availableProcessors());
+                setMaxThreads(numThreads);
+            }
+            logger.info("Number of threads used for BLAS: {}", numThreads);
         }
-        else
-            setMaxThreads(getCores(Runtime.getRuntime().availableProcessors()));
-            //setMaxThreads(4);
     }
 
     private int getCores(int totals) {
