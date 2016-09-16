@@ -66,6 +66,11 @@ Please note: manual compilation requires some skills & understanding in C/C++ fi
 
 This is generic compilation optimization, which enables code compilation for your current hardware architecture. On modern processors that usually gives better vectorization.
 
+## Further Reading
+
+* [Optimizing Deeplearning4j on Multiple GPUs](./gpu)
+* [Distributed Deep Learning on Spark With DL4J](./spark)
+
 ## Troubleshooting the CPU backend
 
 ### ND4J_SKIP_BLAS_THREADS
