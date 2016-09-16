@@ -41,8 +41,8 @@ class Dense(
   inputShape = List(nIn)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
-    if (isOutput)
-      return new OutputLayer.Builder(_lossFunction)
+    if (isOutput){
+      new OutputLayer.Builder(_lossFunction)
         .nIn(inputShape.last)
         .nOut(outputShape.last)
         .weightInit(weightInit)
@@ -52,16 +52,18 @@ class Dense(
         .dropOut(dropOut)
         .name(name)
         .build()
-
-    new DenseLayer.Builder()
-      .nIn(inputShape.last)
-      .nOut(outputShape.last)
-      .weightInit(weightInit)
-      .activation(activation)
-      .l1(regularizer.l1)
-      .l2(regularizer.l2)
-      .dropOut(dropOut)
-      .name(name)
-      .build()
+    }
+    else {
+      new DenseLayer.Builder()
+        .nIn(inputShape.last)
+        .nOut(outputShape.last)
+        .weightInit(weightInit)
+        .activation(activation)
+        .l1(regularizer.l1)
+        .l2(regularizer.l2)
+        .dropOut(dropOut)
+        .name(name)
+        .build()
+    }
   }
 }

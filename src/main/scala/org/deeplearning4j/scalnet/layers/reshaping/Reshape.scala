@@ -41,6 +41,6 @@ class Reshape(
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     if (inputShape.product != outputShape.product)
       throw new IllegalArgumentException("Overall input shape must equal overall output shape.")
-    return new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
+    new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
   }
 }
