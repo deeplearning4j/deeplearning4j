@@ -86,7 +86,7 @@ public class ExistingDataSetIterator implements DataSetIterator {
     @Override
     public boolean asyncSupported() {
         //No need to asynchronously prefetch here: already in memory
-        return false;
+        return true;
     }
 
     @Override

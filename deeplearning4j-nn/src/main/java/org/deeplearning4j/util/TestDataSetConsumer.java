@@ -36,6 +36,7 @@ public class TestDataSetConsumer {
      * @return
      */
     public long consumeWhileHasNext(boolean consumeWithSleep) {
+        count.set(0);
         if (iterator == null)
             throw new RuntimeException("Can't use consumeWhileHasNext() if iterator isn't set");
 
