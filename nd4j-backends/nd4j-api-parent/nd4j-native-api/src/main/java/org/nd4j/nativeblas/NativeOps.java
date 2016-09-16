@@ -98,6 +98,22 @@ public class NativeOps extends Pointer {
     }
 
     /**
+     * This method allows you to specify minimal number of elements per thread/block during op call
+     * PLEASE NOTE: Changing this value might and will affect performance.
+     *
+     * @param value
+     */
+    public native void setElementThreshold(int value);
+
+    /**
+     * This method allows you to specify minimal number of TADs per thread/block during op call
+     * PLEASE NOTE: Changing this value might and will affect performance.
+     *
+     * @param value
+     */
+    public native void setTADThreshold(int value);
+
+    /**
      *
      * @param opNum
      * @param x
