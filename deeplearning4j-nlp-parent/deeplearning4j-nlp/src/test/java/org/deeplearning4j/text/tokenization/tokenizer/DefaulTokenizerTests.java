@@ -20,8 +20,8 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

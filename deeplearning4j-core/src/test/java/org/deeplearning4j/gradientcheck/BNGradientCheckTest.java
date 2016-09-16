@@ -171,12 +171,12 @@ public class BNGradientCheckTest {
                         String outputActivation = outputActivations[i];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                                .seed(12345)
                                 .regularization(l1vals[j] > 0 || l2vals[j] > 0)
                                 .l1(l1vals[j]).l2(l2vals[j])
-                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                 .updater(Updater.NONE)
-//                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2))
                                 .seed(12345L)
                                 .list()
                                 .layer(0, new ConvolutionLayer.Builder(2, 2)
@@ -208,7 +208,7 @@ public class BNGradientCheckTest {
                             mln.setLabels(ds.getLabels());
                             mln.computeGradientAndScore();
                             double scoreBefore = mln.score();
-                            for (int k = 0; k < 10; k++)
+                            for (int k = 0; k < 5; k++)
                                 mln.fit(ds);
                             mln.computeGradientAndScore();
                             double scoreAfter = mln.score();
@@ -216,7 +216,7 @@ public class BNGradientCheckTest {
                             String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
                                     + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst= " + doLearningFirst
                                     + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                            assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                            assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                         }
 
                         if (PRINT_RESULTS) {
