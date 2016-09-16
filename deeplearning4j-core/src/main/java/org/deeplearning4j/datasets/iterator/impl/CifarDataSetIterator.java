@@ -6,20 +6,18 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-import java.io.InputStream;
 import java.util.List;
 
 /**
- * Created by nyghtowl on 12/18/15.
+ *
  */
+
 public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     protected static int height = 32;
     protected static int width = 32;
     protected static int channels = 3;
-    protected static int numPixels = 3073;
     protected static CifarLoader loader;
-    protected static InputStream inputStream = null;
     protected int totalExamples = CifarLoader.NUM_TRAIN_IMAGES;
     // TODO use maxNumBatches and batchNum instead
     protected int numExamples = totalExamples;
@@ -27,6 +25,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected boolean overshot = false;
     protected boolean preProcessCifar = false;
     protected ImageTransform imageTransform;
+
     /**
      * Loads images with given  batchSize, numExamples, & version returned by the generator.
      */
@@ -85,7 +84,6 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.totalExamples = train ? totalExamples : CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples ? totalExamples : numExamples;
         this.numPossibleLabels = numPossibleLables;
-        this.inputStream = loader.getInputStream();
         this.preProcessor = preProcessor;
         this.imageTransform = imageTransform;
     }
@@ -111,7 +109,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         exampleCount += batchSize;
         batchNum++;
 
-        if(result.getFeatureMatrix() == null || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
+        if(result == null || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
             overshot = true;
             return last;
         }
@@ -137,7 +135,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         exampleCount = 0;
         overshot = false;
         batchNum = 0;
-        inputStream = loader.getInputStream();
+        loader.reset();
     }
 
     @Override
