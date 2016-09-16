@@ -777,7 +777,8 @@ template<typename OpType>
                             int baseOffset = tad.tadOffsets[i];
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[baseOffset]);
-#pragma omp simd
+// FIXME: reduction to be used here
+//#pragma omp simd
                             for (int j = 1; j < tadLength; j++) {
                                 SummaryStatsData<T> comp2;
                                 comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
@@ -803,7 +804,8 @@ template<typename OpType>
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[tadOffsetForBlock]);
 
-#pragma omp simd private(xCoord)
+// FIXME: reduction should be fixed
+//#pragma omp simd private(xCoord)
                             for (int i = 1; i < tadLength; i ++) {
                                 shape::ind2subC(tadRank, tadShape, i, xCoord);
                                 int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);

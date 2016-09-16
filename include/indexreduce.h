@@ -644,7 +644,8 @@ template<typename OpType>
 						indexValue.index = 0;
 						indexValue.value = x[baseOffset];
 
-#pragma omp simd
+// FIXME: proper reduction required here
+//#pragma omp simd
 						for(int j = 1; j < tadLength; j++) {
 							IndexValue<T> comp;
 							comp.index = j;

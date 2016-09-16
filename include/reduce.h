@@ -557,14 +557,16 @@ template<typename OpType>
 						T start = OpType::startingValue(iter);
 						if (tadEWS == 1) {
 
-#pragma omp simd
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
 								start = OpType::update(start, OpType::op(iter[j], extraParams), extraParams);
 
 							}
 						}
 						else {
-#pragma omp simd
+// FIXME: proper reduction to be used here
+//#pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
 								start = OpType::update(start, OpType::op(iter[j * tadEWS], extraParams), extraParams);
 							}
@@ -642,7 +644,9 @@ template<typename OpType>
 				if (xElementWiseStride == 1) {
 					if (length < ELEMENT_THRESHOLD) {
 						T local = OpType::startingValue(x);
-#pragma omp simd
+
+// FIXME: proper reduction to be used here
+// #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
 							T curr = OpType::op(x[i], extraParams);
 							local = OpType::update(local, curr, extraParams);
@@ -672,7 +676,8 @@ template<typename OpType>
 								if (newOffset + info.items >= length) {
 									itemsToLoop = length - newOffset;
 								}
-#pragma omp simd
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 								for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
 									T curr = OpType::op(chunk[j], extraParams);
 									local = OpType::update(local, curr, extraParams);
@@ -683,7 +688,8 @@ template<typename OpType>
 							blocks[omp_get_thread_num()] = local;
 						}
 
-#pragma omp simd
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 						for (int i = 0; i < info.threads; i++) {
 							finalVal = OpType::update(finalVal, blocks[i], extraParams);
 						}
@@ -700,7 +706,9 @@ template<typename OpType>
 				else {
 					if (length < ELEMENT_THRESHOLD) {
 						T local = OpType::startingValue(x);
-#pragma omp simd
+
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
 							T curr = OpType::op(x[i * xElementWiseStride], extraParams);
 							local = OpType::update(local, curr, extraParams);
@@ -724,7 +732,9 @@ template<typename OpType>
 							Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
 							const T *chunk = x + newOffset;
 							Nd4jIndex itemsToLoop = info.items;
-#pragma omp simd
+
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 
 							for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
 								T curr = OpType::op(chunk[i * xElementWiseStride], extraParams);
@@ -739,7 +749,8 @@ template<typename OpType>
 
 					}
 
-#pragma omp simd
+// FIXME: proper reduction should be used here
+//#pragma omp simd
 					for (int i = 0; i < info.threads; i++) {
 						finalVal = OpType::update(finalVal, blocks[i], extraParams);
 					}
