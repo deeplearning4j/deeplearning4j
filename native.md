@@ -66,13 +66,15 @@ Please note: manual compilation requires some skills & understanding in C/C++ fi
 
 This is generic compilation optimization, which enables code compilation for your current hardware architecture. On modern processors that usually gives better vectorization.
 
-## Further Reading
-
-* [Optimizing Deeplearning4j on Multiple GPUs](./gpu)
-* [Distributed Deep Learning on Spark With DL4J](./spark)
-
 ## Troubleshooting the CPU backend
 
 ### ND4J_SKIP_BLAS_THREADS
 
 If you have an unusual BLAS environment, or you have troubles around the `Nd4jBlas.setMaxThreads()` call - set the environment variable  `ND4J_SKIP_BLAS_THREADS` to any value. In this case, the method won’t be triggered. But in this case you’ll also have to set the  `OMP_NUM_THREADS` variable manually as well.
+
+*By Vyacheslav Kokorin*
+
+## Further Reading
+
+* [Optimizing Deeplearning4j on Multiple GPUs](./gpu)
+* [Distributed Deep Learning on Spark With DL4J](./spark)
