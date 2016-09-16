@@ -5,6 +5,7 @@ layout: default
 
 # <a name="six">Release Notes for Version 6.0</a> 
 
+* Support for custom loss functions
 * Support for compressed INDArrays, for memory saving on huge data
 * Native support for BooleanIndexing where applicable
 * Initial support for combined operations on CUDA
@@ -13,7 +14,6 @@ layout: default
 * New UI tools: FlowIterationListener and ConvolutionIterationListener, for better insights of processes within NN.
 * Special IterationListener implementation for performance tracking: PerformanceListener
 * Inference implementation added for ParagraphVectors, together with option to use existing Word2Vec model
-* Support for custom loss functions
 * Severely decreased file size on the deeplearnning4j api
 * `nd4j-cuda-8.0` backend is available now for cuda 8 RC
 
