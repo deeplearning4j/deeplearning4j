@@ -31,7 +31,7 @@ Tuning help/beginners:
 https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp
 
 Casual conversation:
-https://gitter.im/eeplearning4j/deeplearning4jconvos
+https://gitter.im/deeplearning4j/deeplearning4jconvos
 
 
 
