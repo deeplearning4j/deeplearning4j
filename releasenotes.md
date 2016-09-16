@@ -5,18 +5,17 @@ layout: default
 
 # <a name="six">Release Notes for Version 6.0</a> 
 
-1) Support for compressed INDArrays, for memory saving on huge data
-
-2) Native support for BooleanIndexing where applicable
-3) Initial support for combined operations on CUDA
-4) Significant performance improvements on CPU & CUDA backends
-5) Better support for Spark environments using CUDA & cuDNN with multi-gpu clusters
-6) New UI tools: FlowIterationListener and ConvolutionIterationListener, for better insights of processes within NN.
-7) Special IterationListener implementation for performance tracking: PerformanceListener
-8) Inference implementation added for ParagraphVectors, together with option to use existing Word2Vec model
-9) Support for custom loss functions
-10) Severely decreased file size on the deeplearnning4j api
-11) `nd4j-cuda-8.0` backend is available now for cuda 8 RC
+* Support for compressed INDArrays, for memory saving on huge data
+* Native support for BooleanIndexing where applicable
+* Initial support for combined operations on CUDA
+* Significant performance improvements on CPU & CUDA backends
+* Better support for Spark environments using CUDA & cuDNN with multi-gpu clusters
+* New UI tools: FlowIterationListener and ConvolutionIterationListener, for better insights of processes within NN.
+* Special IterationListener implementation for performance tracking: PerformanceListener
+* Inference implementation added for ParagraphVectors, together with option to use existing Word2Vec model
+* Support for custom loss functions
+* Severely decreased file size on the deeplearnning4j api
+* `nd4j-cuda-8.0` backend is available now for cuda 8 RC
 
 <p align="center">
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
