@@ -40,8 +40,6 @@ class Dense(
   _outputShape = List(nOut)
   inputShape = List(nIn)
 
-  override def outputShape = _outputShape
-
   override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
     if (isOutput)
       return new OutputLayer.Builder(_lossFunction)

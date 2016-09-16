@@ -36,8 +36,6 @@ class Reshape(
   inputShape = oldInputShape
   _outputShape = newOutputShape
 
-  override def outputShape: List[Int] = _outputShape
-
   override def compile: InputPreProcessor = {
     if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")

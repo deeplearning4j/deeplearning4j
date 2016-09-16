@@ -40,8 +40,6 @@ class Unflatten3D(
   _outputShape = newOutputShape
   inputShape = List(nIn)
 
-  override def outputShape: List[Int] = _outputShape
-
   override def compile: InputPreProcessor = {
     if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
