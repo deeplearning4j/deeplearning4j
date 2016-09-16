@@ -26,8 +26,8 @@ package org.deeplearning4j.scalnet.layers
   */
 trait Node {
   val name: String = null
-  var inputShape: List[Int] = List[Int]()
-  protected var _outputShape: List[Int] = List[Int]()
+  var inputShape: List[Int] = List.empty[Int]
+  protected var _outputShape: List[Int] = List.empty[Int]
 
-  def outputShape: List[Int]
+  def outputShape: List[Int] = _outputShape
 }

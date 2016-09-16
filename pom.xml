@@ -6,10 +6,10 @@
   <properties>
     <scala.binary.version>2.11</scala.binary.version>
     <scala.version>2.11.8</scala.version>
-    <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
-    <dl4j.version>0.5.1-SNAPSHOT</dl4j.version>
-    <slf4j.version>1.7.12</slf4j.version>
-    <logback.version>1.1.2</logback.version>
+    <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
+    <dl4j.version>0.6.1-SNAPSHOT</dl4j.version>
+    <slf4j.version>1.7.21</slf4j.version>
+    <logback.version>1.1.7</logback.version>
   </properties>
 
   <repositories>
@@ -100,6 +100,29 @@
             <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
           </classpathContainers>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.scalastyle</groupId>
+        <artifactId>scalastyle-maven-plugin</artifactId>
+        <version>0.8.0</version>
+        <configuration>
+          <verbose>false</verbose>
+          <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <failOnWarning>false</failOnWarning>
+          <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+          <configLocation>${basedir}/scalastyle_config.xml</configLocation>
+          <outputFile>${project.basedir}/scalastyle-output.xml</outputFile>
+          <outputEncoding>UTF-8</outputEncoding>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

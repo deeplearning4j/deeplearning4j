@@ -42,12 +42,10 @@ abstract class Convolution(
     val nOutChannels: Int = if (nFilter > 0) nFilter else if (inputShape.nonEmpty) inputShape.last else 0
     if (inputShape.length == 3) {
       KernelValidationUtil.validateShapes(inputShape.head, inputShape.tail.head, kernelSize.head, kernelSize.tail.head,
-                                          stride.head, stride.tail.head, padding.head, padding.tail.head)
-      return List[List[Int]](inputShape.init, kernelSize, padding, stride)
+        stride.head, stride.tail.head, padding.head, padding.tail.head)
+      List[List[Int]](inputShape.init, kernelSize, padding, stride)
         .transpose.map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
-    } else if (nOutChannels > 0)
-      return List(nOutChannels)
-
-    List()
+    } else if (nOutChannels > 0) List(nOutChannels)
+    else List()
   }
 }

@@ -36,13 +36,11 @@ class Reshape(
   inputShape = oldInputShape
   _outputShape = newOutputShape
 
-  override def outputShape: List[Int] = _outputShape
-
   override def compile: InputPreProcessor = {
     if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     if (inputShape.product != outputShape.product)
       throw new IllegalArgumentException("Overall input shape must equal overall output shape.")
-    return new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
+    new ReshapePreProcessor(inputShape.toArray, outputShape.toArray)
   }
 }
