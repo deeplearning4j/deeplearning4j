@@ -3,7 +3,25 @@ title: Release Notes
 layout: default
 ---
 
-# Release Notes for Version 5.0
+# <a name="six">Release Notes for Version 6.0</a> 
+
+1) Support for compressed INDArrays, for memory saving on huge data
+2) Native support for BooleanIndexing where applicable
+3) Initial support for combined operations on CUDA
+4) Significant performance improvements on CPU & CUDA backends
+5) Better support for Spark environments using CUDA & cuDNN with multi-gpu clusters
+6) New UI tools: FlowIterationListener and ConvolutionIterationListener, for better insights of processes within NN.
+7) Special IterationListener implementation for performance tracking: PerformanceListener
+8) Inference implementation added for ParagraphVectors, together with option to use existing Word2Vec model
+9) Support for custom loss functions
+10) Severely decreased file size on the deeplearnning4j api
+11) `nd4j-cuda-8.0` backend is available now for cuda 8 RC
+
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
+
+# <a name="five">Release Notes for Version 5.0</a> 
 
 * FP16 support for CUDA
 * [Better performance for multi-gpu}(http://deeplearning4j.org/gpu)
@@ -14,11 +32,7 @@ layout: default
 * Numerous bug fixes
 * Spark improvements
 
-<p align="center">
-<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
-</p>
-
-## Release Notes for version 4.0
+## <a name="four">Release Notes for version 4.0</a> 
 
 * Initial multi-GPU support viable for standalone and Spark. 
 * Refactored the Spark API significantly
@@ -38,8 +52,9 @@ layout: default
 * [ND4J Source Code](https://github.com/deeplearning4j/nd4j/)
 * [libnd4j Source Code](https://github.com/deeplearning4j/libnd4j/)
 
-## Roadmap for Summer 2016
+## Roadmap for Fall 2016
 
-* Deep Q Learning, integration with Open AI's Gym
-* Deeplearning4s Scala API
+* [ScalNet Scala API](https://github.com/deeplearning4j/scalnet) (WIP!)
 * Standard NN configuration file shared with Keras
+* CGANs
+* Model interpretability
