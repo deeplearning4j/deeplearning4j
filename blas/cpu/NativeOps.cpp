@@ -2,6 +2,9 @@
 // Created by agibsonccc on 2/21/16.
 //
 
+int tad_threshold = 64;
+int element_threshold = 8192;
+
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
 #include <pointercast.h>
@@ -9,11 +12,10 @@
 #include <templatemath.h>
 #include <types/float8.h>
 #include <type_conversions.h>
-#define ELEMENT_THRESHOLD element_threshold
-#define TAD_THRESHOLD tad_threshold
 
-int tad_threshold = 64;
-int element_threshold = 8192;
+
+
+
 
 #ifdef __EXPERIMENTAL__
 bool experimentalSupport = true;
@@ -21,6 +23,16 @@ bool experimentalSupport = true;
 bool experimentalSupport = false;
 #endif
 
+
+void NativeOps::setElementThreshold(int num) {
+	if (num > 0)
+		element_threshold = num;
+}
+
+void NativeOps::setTADThreshold(int num) {
+	if (num > 0)
+		tad_threshold = num;
+}
 
 /**
  *

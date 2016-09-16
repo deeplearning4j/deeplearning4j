@@ -41,6 +41,12 @@ class ND4J_EXPORT NativeOps {
 
 
 public:
+
+
+    void setElementThreshold(int num);
+
+    void setTADThreshold(int num);
+
     /**
        *
        * @param opNum

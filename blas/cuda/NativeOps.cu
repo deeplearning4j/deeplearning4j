@@ -5599,3 +5599,11 @@ int NativeOps::getDevice() {
 
     return curDevice;
 }
+
+void NativeOps::setElementThreshold(int num) {
+    // TODO: to be implemented
+}
+
+void NativeOps::setTADThreshold(int num) {
+    // TODO: to be implemented
+}
