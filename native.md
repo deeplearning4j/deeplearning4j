@@ -43,7 +43,7 @@ If you have single cpu with 16 cores and HyperThreading enabled, total number of
 
 ## Intel MKL
 
-By default, OpenBLAS is used with ND4J, but there’s an option to use the first-class high-performance Intel MKL library together with ND4J/DL4J. That happens automatically, if you have MKL libraries on `$PATH`, they will be used for BLAS operations. Intel MKL is available for Linux, OSX and Windows. It’s also possible to compile ND4J with Intel MKL pre-linked, if you have Intel MKL installed.
+By default, OpenBLAS is used with ND4J, but there’s an option to use the first-class high-performance Intel MKL library together with ND4J/DL4J. That happens automatically, if you have MKL libraries on `$PATH`, they will be used for BLAS operations. [Intel MKL](https://software.intel.com/sites/campaigns/nest/) is available for Linux, OSX and Windows. It’s also possible to compile ND4J with Intel MKL pre-linked, if you have Intel MKL installed. MKL is available free of charge under community licensing Intel. 
 
 ## Spark environment
 
