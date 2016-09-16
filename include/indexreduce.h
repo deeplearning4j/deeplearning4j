@@ -442,8 +442,9 @@ template<typename OpType>
 				else {
 
 					if (xElementWiseStride == 1) {
-						if(length < 8000) {
-#pragma omp simd
+						if(length < ELEMENT_THRESHOLD) {
+// FIXME: proper reduction to be used here
+//#pragma omp simd
 							for (Nd4jIndex i = 0; i < length; i++) {
 								IndexValue<T> curr;
 								curr.value = x[i];
