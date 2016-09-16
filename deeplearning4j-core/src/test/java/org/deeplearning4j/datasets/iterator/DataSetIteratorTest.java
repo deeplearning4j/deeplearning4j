@@ -231,7 +231,7 @@ public class DataSetIteratorTest {
 			INDArray output = model.output(testDS.getFeatureMatrix());
 			eval.eval(testDS.getLabels(), output);
 		}
-		System.out.println(eval.stats());
+		System.out.println(eval.stats(true));
 	}
 
 
