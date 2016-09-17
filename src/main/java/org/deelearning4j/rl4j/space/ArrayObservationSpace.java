@@ -1,4 +1,4 @@
-package org.deeplearning4j.gym.space;
+package org.deelearning4j.rl4j.space;
 
 import lombok.Value;
 import org.nd4j.linalg.api.ndarray.INDArray;
