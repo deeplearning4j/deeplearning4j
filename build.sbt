@@ -4,10 +4,10 @@ lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.8",
   crossScalaVersions := Seq("2.10.6", "2.11.8"),
   name := "nd4s",
-  version := "0.6.0",
+  version := "0.6.1-SNAPSHOT",
   organization := "org.nd4j",
   resolvers += "Local Maven Repository" at "file:///" + Path.userHome.absolutePath + "/.m2/repository",
-  nd4jVersion := "0.6.0",
+  nd4jVersion := "0.6.1-SNAPSHOT",
   libraryDependencies ++= Seq(
     "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
