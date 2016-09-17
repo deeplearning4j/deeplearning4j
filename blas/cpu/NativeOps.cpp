@@ -3,7 +3,7 @@
 //
 
 int tad_threshold = 1;
-int element_threshold = 128;
+int element_threshold = 32;
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
