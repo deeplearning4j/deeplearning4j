@@ -5,6 +5,7 @@ layout: default
 
 # <a name="six">Release Notes for Version 6.0</a> 
 
+* Custom layer support
 * Support for custom loss functions
 * Support for compressed INDArrays, for memory saving on huge data
 * Native support for BooleanIndexing where applicable
@@ -16,6 +17,10 @@ layout: default
 * Inference implementation added for ParagraphVectors, together with option to use existing Word2Vec model
 * Severely decreased file size on the deeplearnning4j api
 * `nd4j-cuda-8.0` backend is available now for cuda 8 RC
+* Added multiple new built-in loss functions
+* Custom preprocessor support
+* Performance improvements to Spark training implementation
+* Improved network configuration validation using InputType functionality
 
 <p align="center">
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
