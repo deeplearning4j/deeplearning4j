@@ -5,28 +5,11 @@
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: org.deeplearning4j.rl4j:gym-java-client:0.5.0-SNAPSHOT" level="project" />
     <orderEntry type="module" module-name="rl4j-api" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-api:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-buffer:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-common:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.reflections:reflections:0.9.10" level="project" />
-    <orderEntry type="library" name="Maven: org.javassist:javassist:3.19.0-GA" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.findbugs:annotations:2.0.1" level="project" />
-    <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
-    <orderEntry type="library" name="Maven: commons-io:commons-io:2.4" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-math3:3.4.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.3.1" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-context:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-native:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-native:linux-x86_64:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.nd4j:nd4j-native-api:0.5.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.bytedeco:javacpp:1.2.3" level="project" />
     <orderEntry type="library" name="Maven: com.mashape.unirest:unirest-java:1.4.9" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.4" level="project" />
@@ -36,11 +19,24 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore-nio:4.4.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20160212" level="project" />
+    <orderEntry type="library" name="Maven: org.nd4j:nd4j-api:0.5.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.10" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.5.1" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.5.1" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.5.0" level="project" />
+    <orderEntry type="library" name="Maven: org.nd4j:nd4j-buffer:0.5.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.nd4j:nd4j-common:0.5.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.reflections:reflections:0.9.10" level="project" />
+    <orderEntry type="library" name="Maven: org.javassist:javassist:3.19.0-GA" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.findbugs:annotations:2.0.1" level="project" />
+    <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-io:commons-io:2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-math3:3.4.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.bytedeco:javacpp:1.2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.nd4j:nd4j-context:0.5.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.deeplearning4j.rl4j:gym-java-client:0.5.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.mockito:mockito-all:2.0.2-beta" level="project" />
-    <orderEntry type="library" name="Maven: ch.qos.logback:logback-classic:1.1.3" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.7" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
-    <orderEntry type="library" name="Maven: ch.qos.logback:logback-core:1.1.3" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.16.10" level="project" />
   </component>
 </module>

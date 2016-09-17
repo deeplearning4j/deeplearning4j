@@ -7,14 +7,13 @@
     <parent>
         <artifactId>rl4j</artifactId>
         <groupId>org.deeplearning4j.rl4j</groupId>
-        <version>0.5.0-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>rl4j-core</artifactId>
     <packaging>jar</packaging>
 
     <name>rl4j-core</name>
-    <url>http://maven.apache.org</url>
 
 
 
@@ -27,23 +26,18 @@
         <dependency>
             <groupId>org.deeplearning4j.rl4j</groupId>
             <artifactId>rl4j-api</artifactId>
-            <version>0.5.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>com.fasterxml.jackson.core</artifactId>
-                    <groupId>jackson-databind</groupId>
-                </exclusion>
-            </exclusions>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -51,29 +45,19 @@
             <version>4.1</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.8.1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.8.1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.8.1</version>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
 </project>
