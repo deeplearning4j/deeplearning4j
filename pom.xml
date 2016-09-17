@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j.rl4j</groupId>
     <artifactId>gym-java-client</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -25,19 +25,20 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.deeplearning4j.rl4j</groupId>
-            <artifactId>rl4j-api</artifactId>
-            <version>0.5.0-SNAPSHOT</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>0.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
-            <version>1.4.9</version>
+            <version>${unirest.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -66,11 +67,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.1.3</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>1.1.3</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -81,9 +84,9 @@
 
     </dependencies>
     <properties>
+        <unirest.version>1.4.9</unirest.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <nd4j.version>0.5.0</nd4j.version>
     </properties>
 
 </project>
