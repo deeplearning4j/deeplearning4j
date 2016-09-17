@@ -1,12 +1,12 @@
-package org.deeplearning4j.rl4j.test;
+package org.deeplearning4j.gym.test;
 
 import com.mashape.unirest.http.JsonNode;
-import org.deeplearning4j.rl4j.Client;
-import org.deeplearning4j.rl4j.ClientFactory;
-import org.deeplearning4j.rl4j.ClientUtils;
-import org.deeplearning4j.rl4j.StepReply;
-import org.deeplearning4j.rl4j.gym.space.Box;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.gym.Client;
+import org.deeplearning4j.gym.ClientFactory;
+import org.deeplearning4j.gym.ClientUtils;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.Box;
+import org.deeplearning4j.gym.space.DiscreteSpace;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;

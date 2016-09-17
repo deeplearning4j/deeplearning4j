@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j.space;
+package org.deeplearning4j.gym.space;
 
 /**
  * @param <A> the type of Action

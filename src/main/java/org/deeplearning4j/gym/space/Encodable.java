@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j.space;
+package org.deeplearning4j.gym.space;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/19/16.

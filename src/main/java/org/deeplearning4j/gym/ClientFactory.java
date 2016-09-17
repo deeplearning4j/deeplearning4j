@@ -1,8 +1,8 @@
-package org.deeplearning4j.rl4j;
+package org.deeplearning4j.gym;
 
-import org.deeplearning4j.rl4j.gym.space.GymObservationSpace;
-import org.deeplearning4j.rl4j.gym.space.HighLowDiscrete;
-import org.deeplearning4j.rl4j.space.*;
+import org.deeplearning4j.gym.space.GymObservationSpace;
+import org.deeplearning4j.gym.space.HighLowDiscrete;
+import org.deeplearning4j.gym.space.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

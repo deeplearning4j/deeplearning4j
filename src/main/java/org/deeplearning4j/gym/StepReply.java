@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j;
+package org.deeplearning4j.gym;
 
 import lombok.Value;
 import org.json.JSONObject;
