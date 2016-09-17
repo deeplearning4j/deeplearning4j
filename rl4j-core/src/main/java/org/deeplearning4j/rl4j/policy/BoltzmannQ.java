@@ -1,8 +1,8 @@
 package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Random;

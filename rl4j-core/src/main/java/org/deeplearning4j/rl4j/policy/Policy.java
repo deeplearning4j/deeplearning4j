@@ -1,12 +1,13 @@
 package org.deeplearning4j.rl4j.policy;
 
-import org.deeplearning4j.rl4j.StepReply;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.ActionSpace;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

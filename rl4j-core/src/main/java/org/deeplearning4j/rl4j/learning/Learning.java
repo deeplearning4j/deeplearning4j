@@ -3,11 +3,12 @@ package org.deeplearning4j.rl4j.learning;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
-import org.deeplearning4j.rl4j.StepReply;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.ActionSpace;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

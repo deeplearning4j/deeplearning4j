@@ -19,6 +19,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.deeplearning4j.rl4j</groupId>
+            <artifactId>gym-java-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv</artifactId>
             <version>1.2</version>

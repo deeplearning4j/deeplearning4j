@@ -1,12 +1,12 @@
 package org.deeplearning4j.rl4j.mdp.toy;
 
 import lombok.Getter;
-import org.deeplearning4j.rl4j.StepReply;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.ArrayObservationSpace;
+import org.deeplearning4j.gym.space.DiscreteSpace;
+import org.deeplearning4j.gym.space.ObservationSpace;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
-import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.json.JSONObject;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
