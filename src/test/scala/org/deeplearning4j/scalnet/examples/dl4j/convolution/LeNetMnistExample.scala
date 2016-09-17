@@ -28,7 +28,7 @@ import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
-import org.deeplearning4j.scalnet.regularizers.l2
+import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -62,12 +62,12 @@ object LeNetMnistExample extends App {
   private val model: NeuralNet = new NeuralNet(inputType = InputType.convolutionalFlat(nbRows, nbColumns, nbChannels),
                                                rngSeed = rngSeed)
   model.add(new Convolution2D(20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = L2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = L2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
+  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(weightDecay)))
   model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax",
                             lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
   model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))

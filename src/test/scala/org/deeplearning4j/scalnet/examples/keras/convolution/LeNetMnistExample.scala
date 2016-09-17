@@ -23,7 +23,7 @@ import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.{Dense, DenseOutput}
-import org.deeplearning4j.scalnet.regularizers.l2
+import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
@@ -62,13 +62,13 @@ object LeNetMnistExample extends App {
   private val model: Sequential = new Sequential(rngSeed = rngSeed)
   model.add(new Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
   model.add(new Convolution2D(20, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = L2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Convolution2D(50, kernelSize = List(5, 5), stride = List(1, 1),
-                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = l2(weightDecay)))
+                              weightInit = WeightInit.XAVIER, activation = "identity", regularizer = L2(weightDecay)))
   model.add(new MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(new Flatten3D())
-  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(weightDecay)))
+  model.add(new Dense(500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(weightDecay)))
   model.add(new DenseOutput(nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax",
                             lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD))
   model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))

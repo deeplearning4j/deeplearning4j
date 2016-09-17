@@ -23,7 +23,7 @@ import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.{Dense, DenseOutput}
-import org.deeplearning4j.scalnet.regularizers.l2
+import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -56,10 +56,10 @@ object MLPMnistTwoLayerExample extends App {
   log.info("Build model....")
   private val model: NeuralNet = new NeuralNet(rngSeed = rngSeed)
   model.add(new Dense(500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = "relu",
-                      regularizer = l2(learningRate * 0.005)))
-  model.add(new Dense(100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = l2(learningRate * 0.005)))
+                      regularizer = L2(learningRate * 0.005)))
+  model.add(new Dense(100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(learningRate * 0.005)))
   model.add(new DenseOutput(outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
-                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD, regularizer = l2(learningRate * 0.005)))
+                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD, regularizer = L2(learningRate * 0.005)))
   model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")

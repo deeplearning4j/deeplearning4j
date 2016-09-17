@@ -28,7 +28,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.{Dense, DenseOutput}
-import org.deeplearning4j.scalnet.regularizers.l2
+import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -67,11 +67,11 @@ object IrisCSVExample extends App {
 
   log.info("Build model....")
   val model: NeuralNet = new NeuralNet
-  model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = l2(learningRate * 0.005)))
-  model.add(new Dense(128, activation = "relu", regularizer = l2(learningRate * 0.005)))
-  model.add(new Dense(128, activation = "relu", regularizer = l2(learningRate * 0.005)))
+  model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = L2(learningRate * 0.005)))
+  model.add(new Dense(128, activation = "relu", regularizer = L2(learningRate * 0.005)))
+  model.add(new Dense(128, activation = "relu", regularizer = L2(learningRate * 0.005)))
   model.add(new DenseOutput(outputNum, activation = "softmax", lossFunction = LossFunction.MCXENT,
-    regularizer = l2(learningRate * 0.005)))
+    regularizer = L2(learningRate * 0.005)))
   model.compile(optimizer = SGD(learningRate))
 
   log.info("Train model....")
