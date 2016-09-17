@@ -1,7 +1,7 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
-import org.deeplearning4j.gym.space.DiscreteSpace;
-import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.mdp.MDP;

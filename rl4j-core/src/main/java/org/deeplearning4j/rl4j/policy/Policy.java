@@ -1,8 +1,8 @@
 package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.gym.space.ActionSpace;
-import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;

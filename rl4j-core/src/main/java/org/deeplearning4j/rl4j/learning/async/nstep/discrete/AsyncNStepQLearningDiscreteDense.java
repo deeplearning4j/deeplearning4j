@@ -1,7 +1,7 @@
 package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 
-import org.deeplearning4j.gym.space.DiscreteSpace;
-import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactory;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;

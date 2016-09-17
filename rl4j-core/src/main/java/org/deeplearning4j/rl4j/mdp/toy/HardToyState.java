@@ -1,7 +1,7 @@
 package org.deeplearning4j.rl4j.mdp.toy;
 
 import lombok.Value;
-import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.rl4j.space.Encodable;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.

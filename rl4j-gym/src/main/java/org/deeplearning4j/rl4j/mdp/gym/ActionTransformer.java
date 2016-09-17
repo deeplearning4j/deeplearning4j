@@ -1,8 +1,8 @@
 package org.deeplearning4j.rl4j.mdp.gym;
 
 
-import org.deeplearning4j.gym.space.DiscreteSpace;
-import org.deeplearning4j.gym.space.HighLowDiscrete;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.HighLowDiscrete;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/28/16.

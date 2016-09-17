@@ -1,6 +1,6 @@
 package org.deeplearning4j.rl4j.policy;
 
-import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

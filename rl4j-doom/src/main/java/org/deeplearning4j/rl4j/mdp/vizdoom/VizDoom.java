@@ -5,10 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.gym.space.ArrayObservationSpace;
-import org.deeplearning4j.gym.space.DiscreteSpace;
-import org.deeplearning4j.gym.space.Encodable;
-import org.deeplearning4j.gym.space.ObservationSpace;
+import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.deeplearning4j.rl4j.mdp.MDP;
 
 import org.slf4j.Logger;
