@@ -4,12 +4,13 @@ package org.deeplearning4j.rl4j.mdp.vizdoom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
-import org.deeplearning4j.rl4j.StepReply;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.ArrayObservationSpace;
+import org.deeplearning4j.gym.space.DiscreteSpace;
+import org.deeplearning4j.gym.space.Encodable;
+import org.deeplearning4j.gym.space.ObservationSpace;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.space.ObservationSpace;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
@@ -65,7 +66,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
         game = new DoomGame();
         setupGame();
         discreteSpace = new DiscreteSpace(getConfiguration().getButtons().size() + 1);
-        observationSpace = new ArrayObservationSpace<GameScreen>(new int[]{game.getScreenHeight(), game.getScreenWidth(), 3});
+        observationSpace = new ArrayObservationSpace<>(new int[]{game.getScreenHeight(), game.getScreenWidth(), 3});
     }
 
 

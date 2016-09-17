@@ -1,15 +1,16 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import lombok.*;
-import org.deeplearning4j.rl4j.StepReply;
+import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.gym.space.ActionSpace;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+
 import org.deeplearning4j.rl4j.util.DataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -69,10 +70,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     protected abstract QLStepReturn<O> trainStep(O obs);
 
     protected StatEntry trainEpoch() {
-
-        //REMOVE
-//        HardDeteministicToy.printTest(getCurrentDQN());
-
         InitMdp<O> initMdp = initMdp();
         O obs = initMdp.getLastObs();
 

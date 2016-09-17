@@ -1,9 +1,10 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
+import org.deeplearning4j.gym.space.ActionSpace;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
 

@@ -1,9 +1,9 @@
 package org.deeplearning4j.rl4j.learning.async;
 
+import org.deeplearning4j.gym.space.ActionSpace;
+import org.deeplearning4j.gym.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.

@@ -14,7 +14,6 @@
     <packaging>pom</packaging>
 
     <name>rl4j</name>
-    <url>http://maven.apache.org</url>
 
     <licenses>
         <license>
@@ -33,9 +32,11 @@
     </developers>
 
     <properties>
+        <unirest.version>1.4.9</unirest.version>
+        <jackson.version>2.8.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
-        <dl4j.version>0.5.1-SNAPSHOT</dl4j.version>
+        <nd4j.version>${project.version</nd4j.version>
+        <dl4j.version>${project.version</dl4j.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
     </properties>
