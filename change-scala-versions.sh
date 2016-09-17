@@ -75,6 +75,10 @@ BASEDIR=$(dirname $0)
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
 
+#Scala versions, like <scala.version>2.10</scala.version>
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(scala.version>\)'$FROM_VERSION'<\/scala.version>/\1'$TO_VERSION'<\/scala.version>/g' {}" \;
+
 #Scala versions, like <artifactId>scala-library</artifactId> <version>2.10.6</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(version>\)'$FROM_VERSION'<\/version>/\1'$TO_VERSION'<\/version>/g' {}" \;
