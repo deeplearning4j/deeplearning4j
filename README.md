@@ -4,8 +4,6 @@ A java http client for [gym-http-api](https://github.com/openai/gym-http-api).
 
 # Quickstart
 
-* You will need to install (mvn install -pl rl4j-api) rl4j-api first from [rl4j](https://github.com/deeplearning4j/rl4j)
-
 To create a new Client, use the ClientFactory. If the url is not localhost:5000, provide it as a second argument
 
 ```java
