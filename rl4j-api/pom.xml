@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>rl4j</artifactId>
-        <groupId>org.deeplearning4j.rl4j</groupId>
+        <groupId>org.deeplearning4j</groupId>
         <version>0.5.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -18,9 +18,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.deeplearning4j.rl4j</groupId>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>gym-java-client</artifactId>
-            <version>${project.version}</version>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
         </dependency>
     </dependencies>
 </project>

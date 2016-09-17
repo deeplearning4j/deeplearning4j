@@ -6,7 +6,7 @@
 
     <parent>
         <artifactId>rl4j</artifactId>
-        <groupId>org.deeplearning4j.rl4j</groupId>
+        <groupId>org.deeplearning4j</groupId>
         <version>0.5.1-SNAPSHOT</version>
     </parent>
 
@@ -19,29 +19,29 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.deeplearning4j.rl4j</groupId>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>gym-java-client</artifactId>
-            <version>${project.version}</version>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv</artifactId>
-            <version>1.2</version>
+            <version>${javacv.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j.rl4j</groupId>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>rl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
-            <version>${project.version}</version>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

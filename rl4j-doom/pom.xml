@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>rl4j</artifactId>
-        <groupId>org.deeplearning4j.rl4j</groupId>
+        <groupId>org.deeplearning4j</groupId>
         <version>0.5.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -35,7 +35,7 @@
             <version>1.0</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j.rl4j</groupId>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>rl4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
