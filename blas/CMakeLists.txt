@@ -29,7 +29,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 ")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
