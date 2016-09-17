@@ -26,6 +26,8 @@ layout: default
 <a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
 </p>
 
+* [Deeplearning4j on Github](https://github.com/deeplearning4j)
+
 # <a name="five">Release Notes for Version 5.0</a> 
 
 * FP16 support for CUDA
