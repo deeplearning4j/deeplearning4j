@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>gym-java-client</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.6.0</version>
 
     <name>gym-java-client</name>
     <description>A Java client for Open AI's Reinforcement Learning Gym</description>
@@ -110,7 +110,7 @@
         <unirest.version>1.4.9</unirest.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
+        <nd4j.version>0.6.0</nd4j.version>
     </properties>
 
     <build>
