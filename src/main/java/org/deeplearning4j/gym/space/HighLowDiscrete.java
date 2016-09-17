@@ -1,7 +1,7 @@
-package org.deeplearning4j.rl4j.gym.space;
+package org.deeplearning4j.gym.space;
 
 import lombok.Value;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.gym.space.DiscreteSpace;
 import org.json.JSONArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

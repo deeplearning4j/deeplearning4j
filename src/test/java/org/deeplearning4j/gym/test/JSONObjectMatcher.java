@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j.test;
+package org.deeplearning4j.gym.test;
 
 import org.hamcrest.Description;
 import org.json.JSONObject;

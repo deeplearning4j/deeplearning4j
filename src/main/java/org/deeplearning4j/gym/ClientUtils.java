@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j;
+package org.deeplearning4j.gym;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
