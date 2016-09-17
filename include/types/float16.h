@@ -42,8 +42,9 @@ typedef __half half;
 
 
 #ifdef __INTEL_COMPILER
-_Pragma("omp declare simd") inline float cpu_half2float(half h) {
-    return _cvtsh_ss(h.x, 0);
+//_Pragma("omp declare simd") inline
+local_def  float cpu_half2float(half h) {
+    return _cvtsh_ss(h.x);
 }
 #else
 local_def float cpu_half2float(half h) {
@@ -76,7 +77,8 @@ local_def float cpu_half2float(half h) {
 #endif
 
 #ifdef __INTEL_COMPILER
-_Pragma("omp declare simd") inline half cpu_float2half_rn(float f) {
+//_Pragma("omp declare simd") inline
+local_def half cpu_float2half_rn(float f) {
     half ret;
     ret.x = _cvtss_sh(f, 0);
     return ret;
