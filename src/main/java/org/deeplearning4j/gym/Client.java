@@ -3,8 +3,8 @@ package org.deeplearning4j.gym;
 
 import com.mashape.unirest.http.JsonNode;
 import lombok.Value;
-import org.deeplearning4j.gym.space.GymObservationSpace;
-import org.deeplearning4j.gym.space.ActionSpace;
+import org.deelearning4j.rl4j.space.GymObservationSpace;
+import org.deelearning4j.rl4j.space.ActionSpace;
 import org.json.JSONObject;
 
 import java.util.Set;
