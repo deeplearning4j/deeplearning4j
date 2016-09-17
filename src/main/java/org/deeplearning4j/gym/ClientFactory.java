@@ -4,7 +4,6 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.GymObservationSpace;
 import org.deeplearning4j.rl4j.space.HighLowDiscrete;
-import org.deelearning4j.rl4j.space.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
