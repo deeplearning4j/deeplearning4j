@@ -23,13 +23,13 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
 
     <properties>
         <cuda.version>7.5</cuda.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
-        <javacpp.version>1.2.3</javacpp.version>
+        <javacpp.version>1.2.4</javacpp.version>
     </properties>
 
     <dependencyManagement>
