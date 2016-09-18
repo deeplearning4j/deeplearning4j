@@ -837,6 +837,21 @@ public:
                          float *extraParams,
                          int *xIndexes,
                          int *resultIndexes);
+
+
+    /*
+     * Special case: scalarOp alang dimension
+     */
+    void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                         float *x,
+                         int *xShapeInfo,
+                         float *z,
+                         int *zShapeInfo,
+                         float *scalars,
+                         float *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
     /**
      *
      * @param opNum

@@ -187,6 +187,7 @@ template<typename OpType>
 				shape::TAD *tad = nullptr;
 
 				if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
+					printf("BC TAD creation\n");
 					tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
 					tad->createTadOnlyShapeInfo();
 					tad->createOffsets();
@@ -200,9 +201,9 @@ template<typename OpType>
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int *resultStride = shape::stride(tadShapeShapeInfo);
-				int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
-				int tadRank = shape::rank(tadShapeShapeInfo);
-				int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+                int tadRank = shape::rank(tadShapeShapeInfo);
+                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 				int yStride = shape::elementWiseStride(yShapeInfo);
 				int tads =shape::length(xShapeInfo) / tadLength;
 
@@ -220,30 +221,36 @@ template<typename OpType>
 				int tadsPerThread = tads / TAD_THRESHOLD;
 				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                num_threads = 1;
 
 				if (true) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+//#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
 
 
 						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
+
+
 							T *oRes = result + offsetZ;
 							T *oX = x + offset;
 
 							if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
+								printf("BC Branch A 1\n");
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
 									oRes[f] = OpType::op(oX[f], y[f]);
 								}
 							} else {
+								printf("BC Branch A 2: x: %i; y: %i; z: %i\n", tadEWS, yStride, zEWS);
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
 									oRes[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
 								}
 							}
 						} else {
+							printf("BC Branch B\n");
 							int xCoord[MAX_RANK];
                             int zCoord[MAX_RANK];
 

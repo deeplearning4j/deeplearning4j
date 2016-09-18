@@ -2353,3 +2353,30 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
 int NativeOps::getDevice() {
     return 0;
 }
+
+
+void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                                float *x,
+                                int *xShapeInfo,
+                                float *z,
+                                int *zShapeInfo,
+                                float *scalars,
+                                float *extraParams,
+                                int *dimension,
+                                int dimensionLength) {
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+
+    NativeOpExcutioner<float>::execScalar(
+            opNum,
+            x,
+            xShapeInfo,
+            extraParams,
+            z,
+            zShapeInfo,
+            scalars,
+            dimension,
+            dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+}

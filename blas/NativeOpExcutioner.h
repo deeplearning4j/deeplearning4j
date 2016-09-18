@@ -367,6 +367,34 @@ public:
 			resultIndexes);
     }
 
+	static void execScalar(int opNum,
+						   T *x,
+						   int *xShapeInfo,
+						   T *extraParams,
+						   T *z,
+						   int *zShapeInfo,
+						   T *scalars,
+						   int *dimension,
+						   int dimensionLength,
+						   int *tadShapeInfo,
+						   int *tadOffsets,
+						   int *tadShapeInfoZ,
+						   int *tadOffsetsZ) {
+		functions::scalar::ScalarTransform<T>::transform(opNum,
+														 x,
+														 xShapeInfo,
+														 extraParams,
+														 z,
+														 zShapeInfo,
+														 scalars,
+														 dimension,
+														 dimensionLength,
+														 tadShapeInfo,
+														 tadOffsets,
+														 tadShapeInfoZ,
+														 tadOffsetsZ);
+	}
+
     /**
      *
      * @param opNum

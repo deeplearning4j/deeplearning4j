@@ -233,6 +233,23 @@ template<typename OpType>
 		}
 #endif
 
+        static void transform(int opNum,
+                              T *x,
+                              int *xShapeInfo,
+                              T *extraParams,
+                              T *z,
+                              int *zShapeInfo,
+                              T *scalars,
+                              int *dimension,
+                              int dimensionLength,
+                              int *tadShapeInfo,
+                              int *tadOffsets,
+                              int *tadShapeInfoZ,
+                              int *tadOffsetsZ) {
+
+            DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
+        }
+
 		static void transform(const int opNum,
 			T *x,
 			int *xShapeInfo,
@@ -288,7 +305,69 @@ template<typename OpType>
                 }
             }
 
+            /*
+             * ScalarOp along dimension
+             */
+template<typename OpType>
+            static void transform(T *x,
+                                  int *xShapeInfo,
+                                  T *extraParams,
+                                  T *z,
+                                  int *zShapeInfo,
+                                  T *scalars,
+                                  int *dimension,
+                                  int dimensionLength,
+                                  int *tadShapeInfo,
+                                  int *tadOffsets,
+                                  int *tadShapeInfoZ,
+                                  int *tadOffsetsZ) {
 
+
+                if (tadShapeInfoZ == nullptr) {
+                    tadShapeInfoZ = tadShapeInfo;
+                    tadOffsetsZ = tadOffsets;
+                }
+
+                // tad preparation
+                int tadEWS = shape::elementWiseStride(tadShapeInfo);
+                int zEWS = shape::elementWiseStride(tadShapeInfo);
+                int tadRank = shape::rank(tadShapeInfo);
+                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int numTads =shape::length(xShapeInfo) / tadLength;
+
+                // main loop, rolling along tads
+                for (int r = 0; r < numTads; r++) {
+                    int offset = tadOffsets[r];
+                    int offsetZ = tadOffsetsZ[r];
+                    T scalar = scalars[r];
+
+                    if (tadEWS >= 1 && zEWS >= 1) {
+                        T *oZ = z + offsetZ;
+                        T *oX = x + offset;
+
+                        if (tadEWS == 1 && zEWS == 1) {
+                            printf("Cool loop visited\n");
+
+#pragma omp simd
+                            for (int f = 0; f < tadLength; f++) {
+                                oZ[f] = OpType::op(oX[f], scalar, extraParams);
+                            }
+                        } else {
+                            printf("Bad loop visited\n");
+// TODO: nested loop should be used here probably, instead of simd
+#pragma omp simd
+                            for (int f = 0; f < tadLength; f++) {
+                                oZ[f * zEWS] = OpType::op(oX[f * tadEWS], scalar, extraParams);
+                            }
+                        }
+
+                    } else {
+                        // ind2sub loop
+                        printf("Super-bad loop visited\n");
+                    }
+                }
+
+}
 
             /**
          * CPU implementation of scalar operation

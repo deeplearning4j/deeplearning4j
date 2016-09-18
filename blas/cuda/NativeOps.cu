@@ -5607,3 +5607,15 @@ void NativeOps::setElementThreshold(int num) {
 void NativeOps::setTADThreshold(int num) {
     // TODO: to be implemented
 }
+
+void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+					 float *x,
+					 int *xShapeInfo,
+					 float *z,
+					 int *zShapeInfo,
+					 float *scalars,
+					 float *extraParams,
+					 int *dimension,
+					 int dimensionLength) {
+	// TODO: to be implemented
+}
