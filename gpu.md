@@ -85,3 +85,8 @@ Something like this might be used:
 This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individually cached memory chunk for both host and GPU memory might be up to 1GB in size. 
 
 Since the cache in Nd4j works has a «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
+
+Further Reading
+
+* [Deeplearning4j on Spark (with GPUs)](./spark)
+* [Optimizing Deeplearning4j on Native With OpenMP and SIMD instructions](./native)
