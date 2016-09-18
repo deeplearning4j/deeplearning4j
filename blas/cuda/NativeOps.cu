@@ -5630,6 +5630,9 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
     DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
@@ -5650,6 +5653,9 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
     DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
@@ -5670,4 +5676,7 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
     DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
