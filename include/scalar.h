@@ -178,7 +178,7 @@ template<typename OpType>
                 int numTads =shape::length(xShapeInfo) / tadLength;
 
                 // main loop, rolling over tads
-                for (int r = blockIdx.x; r < numTads; r++) {
+                for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
                     int offset = tadOffsets[r];
                     int offsetZ = tadOffsetsZ[r];
                     T scalar = scalars[r];
@@ -187,7 +187,7 @@ template<typename OpType>
                         T *oZ = z + offsetZ;
                         T *oX = x + offset;
 
-                       for (int f = threadIdx.x; f < tadLength; f++) {
+                       for (int f = threadIdx.x; f < tadLength; f+= blockDim.x) {
                             oZ[f] = OpType::op(oX[f], scalar, extraParams);
                         }
                     } else {
