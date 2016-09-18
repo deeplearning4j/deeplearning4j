@@ -1453,8 +1453,8 @@ void   NativeOps::execTransformDouble(
 		int opNum,
 		double *dx,
 		int xStride,
-		double *result,
-		int resultStride,
+		double *z,
+		int zStride,
 		double *extraParams,
 		Nd4jIndex n) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -1469,6 +1469,9 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[16]);
 
+    DISPATCH_SIMPLE(transformStrided, double, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+    /*
 	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
@@ -1476,6 +1479,7 @@ void   NativeOps::execTransformDouble(
 			xStride,
 			extraParams,
 			result,resultStride, allocPointer, reductionPointer);
+    */
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1529,12 +1533,21 @@ void   NativeOps::execTransformDouble(
 			// if that's vector, we just go directly to op in 1 block
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(256, length);
+
+            launchDims.x = 1;
+            launchDims.y = block;
+            launchDims.z += (block * sizeof(double) * 4);
+
+            DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+
+            /*
 			transformDouble<<< 1, block,launchDims.z + (block * sizeof(double) * 8), *stream >>> (
 					opNum,
 							dx,
 							xShapeInfo,  shape::rank(hostXShapeInfo),
 							extraParams,
-							result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
+							result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
@@ -1680,12 +1693,17 @@ void   NativeOps::execTransformDouble(
 			}
 		}
 	} else {
+
+
+        DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+        /*
 		transformDouble<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 						dx,
 						xShapeInfo,  shape::rank(hostXShapeInfo),
 						extraParams,
-						result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
+						result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 	}
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3634,8 +3652,8 @@ void   NativeOps::execTransformFloat(
 		int opNum,
 		float *dx,
 		int xStride,
-		float *result,
-		int resultStride,
+		float *z,
+		int zStride,
 		float *extraParams,
 		Nd4jIndex n) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -3655,6 +3673,8 @@ void   NativeOps::execTransformFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
+    DISPATCH_SIMPLE(transformStrided, float, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+/*
 	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
@@ -3662,7 +3682,7 @@ void   NativeOps::execTransformFloat(
 			xStride,
 			extraParams,
 			result,resultStride, allocPointer, reductionPointer);
-
+*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3673,8 +3693,8 @@ void   NativeOps::execTransformHalf(
 		int opNum,
 		float16 *dx,
 		int xStride,
-		float16 *result,
-		int resultStride,
+		float16 *z,
+		int zStride,
 		float16 *extraParams,
 		Nd4jIndex n) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -3694,6 +3714,8 @@ void   NativeOps::execTransformHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
+    DISPATCH_SIMPLE(transformStrided, float16, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+/*
 	transformHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 					n,
@@ -3701,7 +3723,7 @@ void   NativeOps::execTransformHalf(
 					xStride,
 					extraParams,
 					result,resultStride, allocPointer, reductionPointer);
-
+*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3754,12 +3776,20 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			// if that's vector, we just go directly to op in 1 block
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(length, 256);
+
+            launchDims.x = 1;
+            launchDims.y = block;
+            launchDims.z += (block * sizeof(float) * 4);
+
+            DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+            /*
 			transformFloat <<< 1, block, launchDims.z + (block * sizeof(float) * 4), *stream >> > (
 					opNum,
 					dx,
 					xShapeInfo,  shape::rank(hostXShapeInfo),
 					extraParams,
-					result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);
+					result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
@@ -3933,12 +3963,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 //        if (opNum == 37)
 //            printf("Im2Col params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
 
-		transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
+        DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+	/*	transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				dx,
 				xShapeInfo,  shape::rank(hostXShapeInfo),
 				extraParams,
-				result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
+				result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 	}
 
 	if (debug)
@@ -3984,12 +4015,20 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 			// if that's vector, we just go directly to op in 1 block
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(length, 256);
-			transformHalf<<< 1, block, launchDims.z + (block * sizeof(float16) * 4), *stream >> > (
+
+            launchDims.x = 1;
+            launchDims.y = block;
+            launchDims.z += (block * sizeof(float16) * 4);
+
+            DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+
+            /*transformHalf<<< 1, block, launchDims.z + (block * sizeof(float16) * 4), *stream >> > (
 					opNum,
 							dx,
 							xShapeInfo,  shape::rank(hostXShapeInfo),
 							extraParams,
-							result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);
+							result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
@@ -4165,12 +4204,16 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
+
+        DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+        /*
 		transformHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 						dx,
 						xShapeInfo,  shape::rank(hostXShapeInfo),
 						extraParams,
-						result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
+						result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 	}
 
 	if (debug)
@@ -4633,11 +4676,13 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
-	void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, int xRank, float *params, float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) = transformFloat;
-	cudaFuncGetAttributes(&funcAttributes[1], transformFloatPointer1);
+	//void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, int xRank, float *params, float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) = transformFloat;
+	// FIXME
+    cudaFuncGetAttributes(&funcAttributes[1], transformFloatIndexes);
 
-	void (*transformFloatPointer2)(int opNum, Nd4jIndex n, float *dy, int incy, float *params, float *result,int resultStride, int *allocationPointer, float *reductionPointer) = transformFloat;
-	cudaFuncGetAttributes(&funcAttributes[2], transformFloatPointer2);
+	//void (*transformFloatPointer2)(int opNum, Nd4jIndex n, float *dy, int incy, float *params, float *result,int resultStride, int *allocationPointer, float *reductionPointer) = transformFloat;
+	// FIXME
+    cudaFuncGetAttributes(&funcAttributes[2], transformFloatIndexes);
 
 	cudaFuncGetAttributes(&funcAttributes[3], (void *)summaryStatsReduceFloat);
 
@@ -4678,11 +4723,13 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[14], transformDoubleIndexes);
 
-	void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, int xRank, double *params, double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) = transformDouble;
-	cudaFuncGetAttributes(&funcAttributes[15], transformDoublePointer1);
+//	void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, int xRank, double *params, double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) = transformDouble;
+	// FIXME
+    cudaFuncGetAttributes(&funcAttributes[15], transformDoubleIndexes);
 
-	void (*transformDoublePointer2)(int opNum, Nd4jIndex n, double *dy, int incy, double *params, double *result,int resultStride, int *allocationPointer, double *reductionPointer) = transformDouble;
-	cudaFuncGetAttributes(&funcAttributes[16], transformDoublePointer2);
+	//void (*transformDoublePointer2)(int opNum, Nd4jIndex n, double *dy, int incy, double *params, double *result,int resultStride, int *allocationPointer, double *reductionPointer) = transformDouble;
+	// FIXME
+    cudaFuncGetAttributes(&funcAttributes[16], transformDoubleIndexes);
 
 	cudaFuncGetAttributes(&funcAttributes[17], summaryStatsReduceDouble);
 
