@@ -422,14 +422,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     dimension.length
                     );
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            loop.execScalarFloat(dummy,
+            loop.execScalarDouble(dummy,
                     op.opNum(),
-                    (FloatPointer) op.x().data().addressPointer(),
+                    (DoublePointer) op.x().data().addressPointer(),
                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.z().data().addressPointer(),
+                    (DoublePointer) op.z().data().addressPointer(),
                     (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.y().data().addressPointer(),
-                    (FloatPointer) getPointerForExtraArgs(op),
+                    (DoublePointer) op.y().data().addressPointer(),
+                    (DoublePointer) getPointerForExtraArgs(op),
                     new IntPointer(dimension),
                     dimension.length
             );
