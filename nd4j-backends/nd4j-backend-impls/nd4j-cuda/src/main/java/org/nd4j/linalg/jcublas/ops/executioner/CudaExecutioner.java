@@ -1310,11 +1310,118 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
 
+    protected CudaContext intercept(ScalarOp op, int[] dimension) {
+
+        Arrays.sort(dimension);
+//      log.info("S3 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
+
+        //     if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
+        //         OpDashboard.getInstance().processOpCall(op);
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+
+
+        Pointer hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
+        Pointer hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
+
+        Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
+        Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
+        Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
+        Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
+        Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+
+        Pointer hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
+        Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        Pointer devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context);
+
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+        devTadShapeInfoZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getFirst(), context);
+        devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
+
+
+        PointerPointer extraPointers = extraz.get().put(
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
+                context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(),
+                context.getBufferAllocation(),
+                context.getBufferReduction(),
+                context.getBufferScalar(),
+                context.getBufferSpecial(),
+                hostYShapeInfo,
+                hostZShapeInfo,
+                hostTadShapeInfo,
+                devTadShapeInfo,
+                devTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
+        );
+
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
+
+        Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
+
+
+        if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+            nativeOps.execScalarHalf(extraPointers,
+                    op.opNum(),
+                    (ShortPointer) x,
+                    (IntPointer) xShapeInfo,
+                    (ShortPointer)z,
+                    (IntPointer)zShapeInfo,
+                    (ShortPointer) y,
+                    (ShortPointer) extraArgs,
+                    (IntPointer) dimensionPointer,
+                    dimension.length
+                    );
+        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.execScalarFloat(extraPointers,
+                    op.opNum(),
+                    (FloatPointer) x,
+                    (IntPointer) xShapeInfo,
+                    (FloatPointer)z,
+                    (IntPointer)zShapeInfo,
+                    (FloatPointer) y,
+                    (FloatPointer) extraArgs,
+                    (IntPointer) dimensionPointer,
+                    dimension.length
+            );
+        } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execScalarDouble(extraPointers,
+                    op.opNum(),
+                    (DoublePointer) x,
+                    (IntPointer) xShapeInfo,
+                    (DoublePointer)z,
+                    (IntPointer)zShapeInfo,
+                    (DoublePointer) y,
+                    (DoublePointer) extraArgs,
+                    (IntPointer) dimensionPointer,
+                    dimension.length
+            );
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
+
+        return null;
+    }
+
     protected CudaContext invoke(ScalarOp op) {
         checkForCompression(op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
+
+        if (op.getDimension() != null) {
+            intercept(op, op.getDimension());
+            return null;
+        }
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
