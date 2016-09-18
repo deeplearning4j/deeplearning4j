@@ -852,6 +852,26 @@ public:
                          int *dimension,
                          int dimensionLength);
 
+    void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                         double *x,
+                         int *xShapeInfo,
+                         double *z,
+                         int *zShapeInfo,
+                         double *scalars,
+                         double *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
+    void execScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                         float16 *x,
+                         int *xShapeInfo,
+                         float16 *z,
+                         int *zShapeInfo,
+                         float16 *scalars,
+                         float16 *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
     /**
      *
      * @param opNum

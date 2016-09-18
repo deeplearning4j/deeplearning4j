@@ -5619,3 +5619,27 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
 					 int dimensionLength) {
 	// TODO: to be implemented
 }
+
+void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                                double *x,
+                                int *xShapeInfo,
+                                double *z,
+                                int *zShapeInfo,
+                                double *scalars,
+                                double *extraParams,
+                                int *dimension,
+                                int dimensionLength) {
+    // TODO: to be implemented
+}
+
+void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                                float16 *x,
+                                int *xShapeInfo,
+                                float16 *z,
+                                int *zShapeInfo,
+                                float16 *scalars,
+                                float16 *extraParams,
+                                int *dimension,
+                                int dimensionLength) {
+    // TODO: to be implemented
+}

@@ -2380,3 +2380,45 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
             dimension,
             dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
+
+void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                                double *x,
+                                int *xShapeInfo,
+                                double *z,
+                                int *zShapeInfo,
+                                double *scalars,
+                                double *extraParams,
+                                int *dimension,
+                                int dimensionLength) {
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+
+    NativeOpExcutioner<double>::execScalar(
+            opNum,
+            x,
+            xShapeInfo,
+            extraParams,
+            z,
+            zShapeInfo,
+            scalars,
+            dimension,
+            dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+}
+
+void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                                float16 *x,
+                                int *xShapeInfo,
+                                float16 *z,
+                                int *zShapeInfo,
+                                float16 *scalars,
+                                float16 *extraParams,
+                                int *dimension,
+                                int dimensionLength) {
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+
+}

@@ -335,7 +335,12 @@ template<typename OpType>
                 int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 int numTads =shape::length(xShapeInfo) / tadLength;
 
+                int tadsPerThread = numTads / TAD_THRESHOLD;
+                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
                 // main loop, rolling along tads
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
                 for (int r = 0; r < numTads; r++) {
                     int offset = tadOffsets[r];
                     int offsetZ = tadOffsetsZ[r];
@@ -346,14 +351,13 @@ template<typename OpType>
                         T *oX = x + offset;
 
                         if (tadEWS == 1 && zEWS == 1) {
-                            printf("Cool loop visited\n");
 
 #pragma omp simd
                             for (int f = 0; f < tadLength; f++) {
                                 oZ[f] = OpType::op(oX[f], scalar, extraParams);
                             }
                         } else {
-                            printf("Bad loop visited\n");
+
 // TODO: nested loop should be used here probably, instead of simd
 #pragma omp simd
                             for (int f = 0; f < tadLength; f++) {
@@ -363,7 +367,7 @@ template<typename OpType>
 
                     } else {
                         // ind2sub loop
-                        printf("Super-bad loop visited\n");
+                        printf("Super-bad loop visited. Shouldn't ever happen\n");
                     }
                 }
 
