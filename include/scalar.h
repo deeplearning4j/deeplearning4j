@@ -147,8 +147,55 @@ template<typename OpType>
 			}
 		}
 	}
+/**
+  * ScalarOp along dimension
+**/
+template<typename OpType>
+    static inline __device__ void transformCuda(T *x,
+                                  int *xShapeInfo,
+                                  T *extraParams,
+                                  T *z,
+                                  int *zShapeInfo,
+                                  T *scalars,
+                                  int *dimension,
+                                  int dimensionLength,
+                                  int *tadShapeInfo,
+                                  int *tadOffsets,
+                                  int *tadShapeInfoZ,
+                                  int *tadOffsetsZ) {
 
 
+                if (tadShapeInfoZ == nullptr) {
+                    tadShapeInfoZ = tadShapeInfo;
+                    tadOffsetsZ = tadOffsets;
+                }
+
+                // tad preparation
+                int tadEWS = shape::elementWiseStride(tadShapeInfo);
+                int zEWS = shape::elementWiseStride(tadShapeInfo);
+                int tadRank = shape::rank(tadShapeInfo);
+                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int numTads =shape::length(xShapeInfo) / tadLength;
+
+                // main loop, rolling over tads
+                for (int r = blockIdx.x; r < numTads; r++) {
+                    int offset = tadOffsets[r];
+                    int offsetZ = tadOffsetsZ[r];
+                    T scalar = scalars[r];
+
+                    if (tadEWS >= 1 && zEWS >= 1) {
+                        T *oZ = z + offsetZ;
+                        T *oX = x + offset;
+
+                       for (int f = threadIdx.x; f < tadLength; f++) {
+                            oZ[f] = OpType::op(oX[f], scalar, extraParams);
+                        }
+                    } else {
+                        // ind2sub loop
+                        printf("Super-bad loop visited. Shouldn't ever happen\n");
+                    }
+                }
+    }
 	/**
 	 *
 	 * @param n
@@ -534,6 +581,23 @@ template<typename OpType>
 }
 #ifdef __CUDACC__
 
+template <typename T, typename OpType>
+__device__ void scalarAlongDimensionGeneric(T *x,
+                                  int *xShapeInfo,
+                                  T *extraParams,
+                                  T *z,
+                                  int *zShapeInfo,
+                                  T *scalars,
+                                  int *dimension,
+                                  int dimensionLength,
+                                  int *tadShapeInfo,
+                                  int *tadOffsets,
+                                  int *tadShapeInfoZ,
+                                  int *tadOffsetsZ) {
+
+    functions::scalar::ScalarTransform<T>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+}
+
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
@@ -746,6 +810,12 @@ extern "C" __global__ void scalarHalf(
 			params,
 			result,resultShapeInfo, zRank, allocationBuffer);
 }
+
+
+// ScalarOp Along Dimension kernels
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, float *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, double *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
 #endif
 #endif /* SCALAR_H_ */

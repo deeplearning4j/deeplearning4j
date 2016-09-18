@@ -1,3 +1,7 @@
+
+int tad_threshold = 1;
+int element_threshold = 32;
+
 #include "../NativeOps.h"
 #include <cuda.h>
 #include <cuda_launch_config.h>
@@ -5617,7 +5621,15 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
 					 float *extraParams,
 					 int *dimension,
 					 int dimensionLength) {
-	// TODO: to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims = dim3(256, 256, 1024);
+
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+
+    DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 }
 
 void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
@@ -5629,7 +5641,15 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
                                 double *extraParams,
                                 int *dimension,
                                 int dimensionLength) {
-    // TODO: to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims = dim3(256, 256, 1024);
+
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+
+    DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 }
 
 void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
@@ -5641,5 +5661,13 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                 float16 *extraParams,
                                 int *dimension,
                                 int dimensionLength) {
-    // TODO: to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims = dim3(256, 256, 1024);
+
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+
+    DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 }
