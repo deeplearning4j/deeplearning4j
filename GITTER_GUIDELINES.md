@@ -1,5 +1,7 @@
 # Gitter Guidelines
 
+Welcome, stranger. You probably just joined a Gitter channel for Deeplearning4j. There are a few things you should know that will help you use our deep-learning framework and engage our community.
+
 Many of the questions that asked on the Deeplearning4j Gitter support channel can be answered elsewhere. To respect the Skymind team's time, Deeplearning4j users are kindly asked to remember a few things:
 
 1. Please use Google before you ask a question. The Deeplearning4j Gitter channel should not be used as a human-enhanced search engine. (We promise that you'll end up with a better open-source framework if you only ask us the hard questions...)
@@ -23,8 +25,7 @@ Providing help for tuning neural networks can be quite time consuming for the de
 6. Upon entering the room, only saying "hi" gets you a ban. Please keep the content relevant.
  Please note the below channels for different parts of the conversation:
 
-7. 
-Due to the community growing, we have also added new channels:
+7. Due to the community growing, we have also added new channels:
 Contributors/building from source: https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters
 
 Tuning help/beginners:
@@ -33,6 +34,4 @@ https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp
 Casual conversation:
 https://gitter.im/deeplearning4j/deeplearning4jconvos
 
-
-
-If you require commercial support for tuning your neural network models, please contact us via http://www.skymind.io/contact/ or help@skymind.io
+We look forward to working with you, and if you are dedicated to building a deep learning solution with us, we will do our best to help you succeed. If you require commercial support for tuning your neural network models, please contact us via http://www.skymind.io/contact/ or help@skymind.io
