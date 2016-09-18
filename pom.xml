@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.deeplearning4j</groupId>
-  <artifactId>scalnet_2.10</artifactId>
+  <artifactId>scalnet_${scala.binary.version}</artifactId>
   <version>0.6.1-SNAPSHOT</version>
 
   <name>ScalNet</name>
@@ -24,27 +24,35 @@
   </developers>
 
   <scm>
-	<url>scm:git:git@github.com:deeplearning4j/ScalNet.git</url>
-	<connection>scm:git:git@github.com:deeplearning4j/ScalNet.git</connection>
-	<developerConnection>scm:git:git@github.com:deeplearning4j/ScalNet.git</developerConnection>
+    <url>scm:git:git@github.com:deeplearning4j/ScalNet.git</url>
+    <connection>scm:git:git@github.com:deeplearning4j/ScalNet.git</connection>
+    <developerConnection>scm:git:git@github.com:deeplearning4j/ScalNet.git</developerConnection>
   </scm>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus snapshot repository</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>nexus-releases</id>
+      <name>Nexus Release Repository</name>
+      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
-    <scala.binary.version>2.11</scala.binary.version>
-    <scala.version>2.10.6</scala.version>
+    <!-- base versions -->
+    <!-- Scala 2.10.x -->
+    <scala210.version>2.10.6</scala210.version>
+    <scala210.binary.version>2.10</scala210.binary.version>
+    <!-- Scala 2.11.x -->
+    <scala211.version>2.11.8</scala211.version>
+    <scala211.binary.version>2.11</scala211.binary.version>
+
+    <scala.binary.version>!!Specify a Scala version!!</scala.binary.version>
+    <scala.version>!!Specify a Scala version!!</scala.version>
     <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
     <dl4j.version>0.6.1-SNAPSHOT</dl4j.version>
     <slf4j.version>1.7.21</slf4j.version>
@@ -105,60 +113,60 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.3</version>
-                <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.6</version>
-                <executions>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>deploy</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>nexus-releases</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                </configuration>
-            </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.3</version>
+        <configuration>
+          <additionalparam>-Xdoclint:none</additionalparam>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.8.2</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.6</version>
+        <executions>
+          <execution>
+            <id>default-deploy</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>deploy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>nexus-releases</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>net.alchim31.maven</groupId>
@@ -173,10 +181,14 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.10</version>
         <configuration>
           <downloadSources>true</downloadSources>
           <buildcommands>
@@ -228,37 +240,64 @@
     </plugins>
   </reporting>
 
-    <profiles>
-        <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>release-sign-artifacts</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <configuration>
+              <passphrase>${gpg.passphrase}</passphrase>
+            </configuration>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>scala-2.10.x</id>
+      <activation>
+        <property>
+          <name>scalaVersion</name>
+          <value>2.10</value>
+        </property>
+      </activation>
+      <properties>
+        <scala.version>${scala210.version}</scala.version>
+        <scala.binary.version>${scala210.binary.version}</scala.binary.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>scala-2.11.x</id>
+      <activation>
+        <property>
+          <name>scalaVersion</name>
+          <value>2.11</value>
+        </property>
+      </activation>
+      <properties>
+        <scala.version>${scala211.version}</scala.version>
+        <scala.binary.version>${scala211.binary.version}</scala.binary.version>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
