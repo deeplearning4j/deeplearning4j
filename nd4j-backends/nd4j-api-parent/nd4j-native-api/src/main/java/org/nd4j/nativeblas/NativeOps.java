@@ -846,6 +846,53 @@ public class NativeOps extends Pointer {
                                          long n);
 
     /**
+     * ScalarOp along dimension
+     *
+     * @param extraPointers pointers to tadShapes and tadoffsets
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param z
+     * @param zShapeInfo
+     * @param scalars
+     * @param extraParams
+     * @param dimension
+     * @param dimensionLength
+     */
+    public native void execScalarFloat(PointerPointer extraPointers, int opNum,
+                                       FloatPointer x,
+                                       IntPointer xShapeInfo,
+                                       FloatPointer z,
+                                       IntPointer zShapeInfo,
+                                       FloatPointer scalars,
+                                       FloatPointer extraParams,
+                                       IntPointer dimension,
+                                       int dimensionLength
+                                       );
+
+    public native void execScalarDouble(PointerPointer extraPointers, int opNum,
+                                       DoublePointer x,
+                                       IntPointer xShapeInfo,
+                                       DoublePointer z,
+                                       IntPointer zShapeInfo,
+                                       DoublePointer scalars,
+                                       DoublePointer extraParams,
+                                       IntPointer dimension,
+                                       int dimensionLength
+    );
+
+    public native void execScalarHalf(PointerPointer extraPointers, int opNum,
+                                        @Cast("float16*") ShortPointer x,
+                                        IntPointer xShapeInfo,
+                                        @Cast("float16*") ShortPointer z,
+                                        IntPointer zShapeInfo,
+                                        @Cast("float16*") ShortPointer scalars,
+                                        @Cast("float16*") ShortPointer extraParams,
+                                        IntPointer dimension,
+                                        int dimensionLength
+    );
+
+    /**
      *
      * @param opNum
      * @param x

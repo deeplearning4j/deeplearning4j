@@ -377,11 +377,74 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return ret;
     }
 
+    /**
+     * ScalarOp along dimension
+     * @param op
+     * @param dimension
+     */
+    private void invoke(ScalarOp op, int[] dimension) {
+        Arrays.sort(dimension);
+        // do tad magic
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+
+        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+        Pointer hostTadOffsets = tadBuffers.getSecond().addressPointer();
+
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+//        if (!Arrays.equals(op.x().shape(),op.z().shape()) || !Arrays.equals(op.x().stride(),op.z().stride()) || op.x().ordering() != op.z().ordering()) {
+        // that's the place where we're going to have second TAD in place
+        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+        devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
+        devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
+
+        PointerPointer dummy = new PointerPointer(
+                hostTadShapeInfo,
+                hostTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
+        );
+
+
+        if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.execScalarFloat(dummy,
+                    op.opNum(),
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(),
+                    (FloatPointer) getPointerForExtraArgs(op),
+                    new IntPointer(dimension),
+                    dimension.length
+                    );
+        } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            loop.execScalarFloat(dummy,
+                    op.opNum(),
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(),
+                    (FloatPointer) getPointerForExtraArgs(op),
+                    new IntPointer(dimension),
+                    dimension.length
+            );
+        }
+    }
+
     private void exec(ScalarOp op) {
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
+            if (op.getDimension() != null) {
+                invoke(op, op.getDimension());
+                return;
+            }
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial()) {

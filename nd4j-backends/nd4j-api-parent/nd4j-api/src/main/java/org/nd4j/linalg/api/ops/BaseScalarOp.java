@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     protected Number num;
     protected IComplexNumber complexNumber;
+    public int[] opDimension;
 
 
     public BaseScalarOp() {
@@ -92,11 +95,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public int[] getDimension() {
-        return new int[0];
+        return opDimension;
     }
 
     @Override
     public void setDimension(int... dimension) {
-
+        this.opDimension = dimension;
     }
 }
