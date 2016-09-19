@@ -29,20 +29,28 @@ import java.util.NoSuchElementException;
  * A CSV Sequence record reader where:<br>
  * (a) all time series are in a single file<br>
  * (b) each time series is of the same length (specified in constructor)<br>
- * (c) no delimiter is used between time series
+ * (c) no delimiter is used between time series<br>
  *
- * For example, with N=10, lines 0 to 9 are the first time series, 10 to 19 are the second, and so on.
+ * For example, with nLinesPerSequence=10, lines 0 to 9 are the first time series, 10 to 19 are the second, and so on.
  *
  * @author Alex Black
  */
 public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
     private int nLinesPerSequence;
 
+    /**
+     * @param nLinesPerSequence    Number of lines in each sequence
+     */
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence){
-        super();
-        this.nLinesPerSequence = nLinesPerSequence;
+        this(nLinesPerSequence, 0, CSVRecordReader.DEFAULT_DELIMITER);
     }
 
+    /**
+     *
+     * @param nLinesPerSequence    Number of lines in each sequences
+     * @param skipNumLines         Number of lines to skip at the start of the file (only skipped once, not per sequence)
+     * @param delimiter            Delimiter between entries in the same line, for example ","
+     */
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence, int skipNumLines, String delimiter){
         super(skipNumLines, delimiter);
         this.nLinesPerSequence = nLinesPerSequence;
