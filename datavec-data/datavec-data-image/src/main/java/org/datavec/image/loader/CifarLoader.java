@@ -72,7 +72,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected static String cifarStats = FilenameUtils.concat(fullDir.toString(), "cifar_stats.csv");
     protected static boolean train = true;
     public static boolean preProcessCifar = false;
-    public static Map<String, String> cifarTrainData = new HashMap<>();
+    public static Map<String, String> cifarDataMap = new HashMap<>();
 
     protected static int height = HEIGHT;
     protected static int width = WIDTH;
@@ -89,7 +89,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected boolean meanStdStored = false;
 
     public CifarLoader() {
-        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
+        this(height,width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
     }
 
     public CifarLoader(boolean train) {
@@ -147,9 +147,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public void generateMaps() {
-        cifarTrainData.put("filesFilename", new File(dataBinUrl).getName());
-        cifarTrainData.put("filesURL", dataBinUrl);
-        cifarTrainData.put("filesFilenameUnzipped", dataBinFile);
+        cifarDataMap.put("filesFilename", new File(dataBinUrl).getName());
+        cifarDataMap.put("filesURL", dataBinUrl);
+        cifarDataMap.put("filesFilenameUnzipped", dataBinFile);
     }
 
     private void defineLabels() {
@@ -172,7 +172,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             fullDir.mkdir();
 
             log.info("Downloading {}...", localDir);
-            downloadAndUntar(cifarTrainData, fullDir);
+            downloadAndUntar(cifarDataMap, new File(BASE_DIR, localDir));
         }
         try {
             Collection<File> subFiles = FileUtils.listFiles(fullDir, new String[]{"bin"}, true);
@@ -192,17 +192,19 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
         if (preProcessCifar) { // TODO if file exists then not needed...
             for (int i = 1; i <= (TRAINFILENAMES.length); i++) {
+                inputStream = trainInputStream;
                 DataSet result = convertDataSet(numToConvertDS);
                 result.save(new File(trainFilesSerialized + i + ".ser"));
             }
             for (int i = 1; i <= (TRAINFILENAMES.length); i++){
                 normalizeCifar(new File(trainFilesSerialized + i + ".ser"));
             }
+            inputStream = testInputStream;
             DataSet result = convertDataSet(numToConvertDS);
             result.save(new File(testFilesSerialized));
             normalizeCifar(new File(testFilesSerialized));
-
         }
+        setInputStream();
     }
 
     public boolean cifarRawFilesExist() {
@@ -244,21 +246,21 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
         if (converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(orgImage));
-            if(numExamples % numToShowExamples == 0){
-                ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
-                showOrig.transform(writable);
-            }
+//            if(numExamples % numToShowExamples == 0){
+//                ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
+//                showOrig.transform(writable);
+//            }
             // TODO rec to normalize y before transform - currently doing after
             writable = yuvTransform.transform(writable); // Converts to chrome color to help emphasize image objects
-            if (numExamples % numToShowExamples == 0) {
-                ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
-                showTrans.transform(writable);
-            }
+//            if (numExamples % numToShowExamples == 0) {
+//                ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
+//                showTrans.transform(writable);
+//            }
             writable = histEqualization.transform(writable); // Normalizes values to further clarify object of interest
-            if (numExamples % numToShowExamples == 0) {
-                ImageTransform showTrans = new ShowImageTransform("Hist Image", 50);
-                showTrans.transform(writable);
-            }
+//            if (numExamples % numToShowExamples == 0) {
+//                ImageTransform showTrans = new ShowImageTransform("Hist Image", 50);
+//                showTrans.transform(writable);
+//            }
 
             resImage = converter.convert(writable.getFrame());
         }
@@ -389,6 +391,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     public InputStream getInputStream() {
         return inputStream;
+    }
+
+    public void setInputStream() {
+        if (train) inputStream = trainInputStream;
+        else inputStream = testInputStream;
     }
 
     public List<String> getLabels(){
