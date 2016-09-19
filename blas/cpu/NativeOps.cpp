@@ -1174,6 +1174,19 @@ float   NativeOps::execSummaryStatsScalarHalf(
     return 0.0;
 }
 
+void   NativeOps::execScalarHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        float16 *x,
+        int xStride,
+        float16 *result,
+        int resultStride,
+        float scalar,
+        float16 *extraParams,
+        Nd4jIndex n) {
+    // no-op
+}
+
 /**
  *
  * @param opNum

@@ -3255,6 +3255,47 @@ void   NativeOps::execScalarFloat(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+
+void   NativeOps::execScalarHalf(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        float16 *x,
+        int xStride,
+        float16 *result,
+        int resultStride,
+        float scalar,
+        float16 *extraParams,
+        Nd4jIndex n){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+    if (debug && verbose)
+        printf("F13 opNum:[%i]\n", opNum);
+
+    dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[6]);
+
+    if (verbose && launchDims.x == 1)
+        printf("AF13 opNum:[%i]\n", opNum);
+
+    DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+
+    /*
+	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			opNum,
+			n,
+			scalar,
+			x,
+			xStride,
+			extraParams,
+			result,resultStride, allocPointer);
+*/
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
 /**
  *
  * @param opNum

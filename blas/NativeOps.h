@@ -787,6 +787,16 @@ public:
                            float *extraParams,
                            Nd4jIndex n);
 
+    void   execScalarHalf(Nd4jPointer *extraPointers,
+            int opNum,
+            float16 *x,
+            int xStride,
+            float16 *result,
+            int resultStride,
+            float scalar,
+            float16 *extraParams,
+            Nd4jIndex n);
+
     /**
      *
      * @param opNum
