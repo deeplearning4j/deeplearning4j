@@ -111,15 +111,16 @@ public class LoaderTests {
     //@Ignore // Use when confirming data is getting stored
     @Test
     public void testProcessCifar() {
-        int row = 28;
-        int col = 28;
+        int row = 32;
+        int col = 32;
         int channels = 3;
         File dir1 = new File(CifarLoader.trainFilesSerialized + "1.ser");
 //        File dir5 = new File(CifarLoader.trainFilesSerialized + "5.ser");
         CifarLoader cifar = new CifarLoader(row,col,channels, null, true, true, false);
         assertTrue(dir1.exists());
-        DataSet result = cifar.next(2);
-//        assertTrue(dir5.exists());
+        DataSet result = cifar.next(1);
+        assertEquals(result.getFeatureMatrix().length(), 32*32*3, 0.0);
+
     }
 
     //TODO more tests on preprocess and norm
