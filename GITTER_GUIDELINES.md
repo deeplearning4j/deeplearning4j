@@ -5,10 +5,10 @@ Welcome, stranger. You probably just joined a Gitter channel for Deeplearning4j.
 1. The best place to start using DL4J is the Quickstart page: [http://deeplearning4j.org/quickstart](http://deeplearning4j.org/quickstart) Please try to follow those instructions before you ask us install questions.
 2. If you are new to deep learning or programming, you will want to check out this page: [http://deeplearning4j.org/deeplearningforbeginners](http://deeplearning4j.org/deeplearningforbeginners)
 3. We're doing our best to improve the documentation, but it's not perfect. We welcome ideas about how to improve it! Writing good docs is our responsibility; reading them is yours. Please consult the docs before you post in the channel. A little effort from you will earn a lot of respect from us. (DL4J is backed a startup, Skymind, and we are serving customers as well as the open-source community, which feels like a lot sometimes.)
-* [http://deeplearning4j.org/documentation.html](http://deeplearning4j.org/documentation.html)
-* [http://nd4j.org/userguide](http://nd4j.org/userguide)
-* [http://deeplearning4j.org/javadoc](http://deeplearning4j.org/javadoc)
-* [http://nd4j.org/doc](http://nd4j.org/doc)
+-- [http://deeplearning4j.org/documentation.html](http://deeplearning4j.org/documentation.html)
+-- [http://nd4j.org/userguide](http://nd4j.org/userguide)
+-- [http://deeplearning4j.org/javadoc](http://deeplearning4j.org/javadoc)
+-- [http://nd4j.org/doc](http://nd4j.org/doc)
 4. We welcome new contributors! Once you get familiar with the libs, if you see how our code can be improved, please file an issue or consider sending us a pull request with the new feature. [https://github.com/deeplearning4j/deeplearning4j/issues](https://github.com/deeplearning4j/deeplearning4j/issues)
 
 Many of the questions asked on the Deeplearning4j Gitter support channel have been answered already in our documentation or can be easily Googled. To respect the Skymind team's time, Deeplearning4j users are kindly asked to remember a few things:
@@ -30,7 +30,7 @@ Providing help for tuning neural networks can be quite time consuming for the de
 3. For some questions/issues, it may not be possible to provide a short/simple answer to your question. In these cases, we might decide to answer your question by improving our documentation, instead of answering your question directly in Gitter. Please understand that improving our documentation helps *everyone* and is a better use of the team's time than answering one-off questions.
 4. You should generally feel free to open issues ([https://github.com/deeplearning4j/deeplearning4j/issues](https://github.com/deeplearning4j/deeplearning4j/issues)) if you feel our documentation (troubleshooting/tuning) is lacking or doesn't answer common questions.
 5. Upon entering the room, please do more than say "hi". Information-rich questions and comments are appreciated. Please keep the content relevant. Please note the below channels for different parts of the conversation.
-* Contributors/building from source: [https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)
-* Casual conversation: [https://gitter.im/deeplearning4j/deeplearning4jconvos](https://gitter.im/deeplearning4j/deeplearning4jconvos)
+-- Contributors/building from source: [https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)
+-- Casual conversation: [https://gitter.im/deeplearning4j/deeplearning4jconvos](https://gitter.im/deeplearning4j/deeplearning4jconvos)
 
 We look forward to working with you, and if you are dedicated to building a deep learning solution with us, we will do our best to help you succeed. If you require commercial support for tuning your neural network models, please contact us via [http://www.skymind.io/contact/](http://www.skymind.io/contact/) or help@skymind.io
