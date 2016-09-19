@@ -841,8 +841,17 @@ public class NativeOps extends Pointer {
                                          int xStride,
                                          FloatPointer results,
                                          int resultStride,
-                                         double scalar,
+                                         float scalar,
                                          FloatPointer extraParams,
+                                         long n);
+
+    public native void   execScalarHalf(PointerPointer extraPointers, int opNum,
+                                         @Cast("float16*") ShortPointer x,
+                                         int xStride,
+                                         @Cast("float16*") ShortPointer results,
+                                         int resultStride,
+                                         float scalar,
+                                         @Cast("float16*") ShortPointer extraParams,
                                          long n);
 
     /**
@@ -937,7 +946,7 @@ public class NativeOps extends Pointer {
                                        IntPointer xShapeInfo,
                                        FloatPointer results,
                                        IntPointer resultShapeInfo,
-                                       double scalar,
+                                       float scalar,
                                        FloatPointer extraParams,
                                        IntPointer xIndexes,
                                        IntPointer resultIndexes);

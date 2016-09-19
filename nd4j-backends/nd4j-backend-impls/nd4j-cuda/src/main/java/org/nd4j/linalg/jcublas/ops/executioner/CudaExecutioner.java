@@ -1455,36 +1455,72 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         );
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.execScalarDouble(
-                    xShapeInfoHostPointer,
-                    op.opNum(),
-                    (DoublePointer)x,
-                    (IntPointer)xShapeInfo,
-                    (DoublePointer)z,
-                    (IntPointer)zShapeInfo,
-                    op.scalar().doubleValue(),
-                    (DoublePointer)extraArgs);
+            if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
+                nativeOps.execScalarDouble(xShapeInfoHostPointer,
+                        op.opNum(),
+                        (DoublePointer) x,
+                        op.x().elementWiseStride(),
+                        (DoublePointer) z,
+                        op.z().elementWiseStride(),
+                        op.scalar().doubleValue(),
+                        (DoublePointer) extraArgs,
+                        op.n());
+            } else {
+                nativeOps.execScalarDouble(
+                        xShapeInfoHostPointer,
+                        op.opNum(),
+                        (DoublePointer) x,
+                        (IntPointer) xShapeInfo,
+                        (DoublePointer) z,
+                        (IntPointer) zShapeInfo,
+                        op.scalar().doubleValue(),
+                        (DoublePointer) extraArgs);
+            }
         }
         else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.execScalarFloat(
-                    xShapeInfoHostPointer,
-                    op.opNum(),
-                    (FloatPointer)x,
-                    (IntPointer)xShapeInfo,
-                    (FloatPointer)z,
-                    (IntPointer)zShapeInfo,
-                    op.scalar().floatValue(),
-                    (FloatPointer)extraArgs);
+            if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
+                nativeOps.execScalarFloat(xShapeInfoHostPointer,
+                        op.opNum(),
+                        (FloatPointer) x,
+                        op.x().elementWiseStride(),
+                        (FloatPointer) z,
+                        op.z().elementWiseStride(),
+                        op.scalar().floatValue(),
+                        (FloatPointer) extraArgs,
+                        op.n());
+            } else {
+                nativeOps.execScalarFloat(
+                        xShapeInfoHostPointer,
+                        op.opNum(),
+                        (FloatPointer) x,
+                        (IntPointer) xShapeInfo,
+                        (FloatPointer) z,
+                        (IntPointer) zShapeInfo,
+                        op.scalar().floatValue(),
+                        (FloatPointer) extraArgs);
+            }
         } else {
-            nativeOps.execScalarHalf(
-                    xShapeInfoHostPointer,
-                    op.opNum(),
-                    (ShortPointer)x,
-                    (IntPointer)xShapeInfo,
-                    (ShortPointer)z,
-                    (IntPointer)zShapeInfo,
-                    op.scalar().floatValue(),
-                    (ShortPointer)extraArgs);
+            if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
+                nativeOps.execScalarHalf(xShapeInfoHostPointer,
+                        op.opNum(),
+                        (ShortPointer) x,
+                        op.x().elementWiseStride(),
+                        (ShortPointer) z,
+                        op.z().elementWiseStride(),
+                        op.scalar().floatValue(),
+                        (ShortPointer) extraArgs,
+                        op.n());
+            } else {
+                nativeOps.execScalarHalf(
+                        xShapeInfoHostPointer,
+                        op.opNum(),
+                        (ShortPointer) x,
+                        (IntPointer) xShapeInfo,
+                        (ShortPointer) z,
+                        (IntPointer) zShapeInfo,
+                        op.scalar().floatValue(),
+                        (ShortPointer) extraArgs);
+            }
         }
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
