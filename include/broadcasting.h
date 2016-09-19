@@ -82,38 +82,48 @@ template<typename OpType>
 
    	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-        tadRank = shape::rank(tadOnlyShapeInfo);
-        zRank = shape::rank(tadOnlyShapeInfoZ);
         numTads = shape::length(xShapeInfo) / tadLength;
-
-        tadShape = shape::shapeOf(tadOnlyShapeInfo);
-      	tadStride = shape::stride(tadOnlyShapeInfo);
-      	zShape = shape::shapeOf(tadOnlyShapeInfoZ);
-      	zStride = shape::stride(tadOnlyShapeInfoZ);
-
-      	yStride = shape::elementWiseStride(yShapeInfo);
-
+        yStride = shape::elementWiseStride(yShapeInfo);
       	zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
 
-
+        if (tadEWS < 1 || zEWS < 1) {
+            tadRank = shape::rank(tadOnlyShapeInfo);
+            zRank = shape::rank(tadOnlyShapeInfoZ);
+            tadShape = shape::shapeOf(tadOnlyShapeInfo);
+      	    tadStride = shape::stride(tadOnlyShapeInfo);
+      	    zShape = shape::shapeOf(tadOnlyShapeInfoZ);
+      	    zStride = shape::stride(tadOnlyShapeInfoZ);
+        }
       }
       __syncthreads();
 
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
-			int tadOffsetForBlock = tadOffsets[r];
-			int tadOffsetForBlockZ = tadOffsetsZ[r];
-            T *rR = result + tadOffsetForBlockZ;
-            T *rX = x + tadOffsetForBlock;
+
+            __shared__ int tadOffsetForBlock;
+            __shared__ int tadOffsetForBlockZ;
+            __shared__ T *rR;
+            __shared__ T *rX;
+            if (threadIdx.x == 0) {
+                tadOffsetForBlockZ = tadOffsetsZ[r];
+                if (result != x)
+                    tadOffsetForBlock = tadOffsets[r];
+                else
+                    tadOffsetForBlock = tadOffsetForBlockZ;
+
+                rR = result + tadOffsetForBlockZ;
+                rX = x + tadOffsetForBlock;
+            }
+            __syncthreads();
 
 
-            if(tadEWS > 0) {
+            if(tadEWS > 0 && zEWS > 0) {
             	if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
-                	for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
-					for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
@@ -133,19 +143,6 @@ template<typename OpType>
 		}
 	}
 
-
-            
-		static inline __device__ void transformCuda(const int opNum,
-				T *x,
-				int *xShapeInfo,
-				T *y,
-				int *yShapeInfo,
-				T *result,
-				int *resultShapeInfo,
-				int *dimension,
-				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
-                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset, tadOnlyShapeInfoZ, tadOffsetsZ), BROADCAST_OPS);
-			}
 #endif
 
 			static void exec(const int opNum, T *x,
@@ -334,32 +331,19 @@ template<typename OpType>
  * @param gpuInformation the gpu information such as blockdim,griddim and shared
  * memory size
  */
-template <typename T>
-__device__ void broadcastGeneric(
-		int opNum,
+template <typename T, typename OpClass>
+__device__ void broadcastSimpleGeneric(
 		T *x,
 		int *xShapeInfo,
-		int xRank,
 		T *y,
 		int *yShapeInfo,
-		int yRank,
 		T *result,
 		int *resultShapeInfo,
-		int zRank,
 		int *dimension,
 		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
 
-	__shared__ UnifiedSharedMemory *manager;
 
-     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
-    }
-    __syncthreads();
-
-	functions::broadcast::Broadcast<T>::transformCuda(
-			opNum,
+	functions::broadcast::Broadcast<T>::template transformCuda<OpClass>(
 			x,
 			xShapeInfo,
 			y,
@@ -368,104 +352,17 @@ __device__ void broadcastGeneric(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			manager,
+			NULL,
 			tadOnlyShapeInfo,
 			tadOffsets,
 			tadOnlyShapeInfoZ,
 			tadOffsetsZ);
 }
 
-/**
- * Meant to be called from an external interface
- * and the driver api
- * @param opNum the op number to execute
- * @param x the input data
- * @param xShapeInfo the x shape info for input
- * @param y the y to broadcast
- * @param yShapeInfo the shape information of the broadcast info
- * @param result the result buffer
- * @param resultShapeInfo the shape information for the result buffer
- * @param dimension the dimension(s) to do broadcast along long
- * @param dimensionLength the length of the dimension buffer
- * @param gpuInformation the gpu information such as blockdim,griddim and shared
- * memory size
- */
-extern "C" __global__ void broadcastDouble(
-		int opNum,
-		double *x, int *xShapeInfo, int xRank,
-		double *y, int *yShapeInfo, int yRank,
-		double *result, int *resultShapeInfo, int zRank,
-		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
-	broadcastGeneric<double>(
-			opNum,
-			x,
-			xShapeInfo, xRank,
-			y,
-			yShapeInfo, yRank,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-
-}
-
-
-/**
- * Meant to be called from an external interface
- * and the driver api
- * @param opNum the op number to execute
- * @param x the input data
- * @param xShapeInfo the x shape info for input
- * @param y the y to broadcast
- * @param yShapeInfo the shape information of the broadcast info
- * @param result the result buffer
- * @param resultShapeInfo the shape information for the result buffer
- * @param dimension the dimension(s) to do broadcast along long
- * @param dimensionLength the length of the dimension buffer
- * @param gpuInformation the gpu information such as blockdim,griddim and shared
- * memory size
- */
-extern "C" __global__ void broadcastFloat(
-		int opNum,
-		float *x, int *xShapeInfo, int xRank,
-		float *y, int *yShapeInfo, int yRank,
-		float *result, int *resultShapeInfo, int zRank,
-		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
-	broadcastGeneric<float>(
-			opNum,
-			x,
-			xShapeInfo, xRank,
-			y,
-			yShapeInfo, yRank,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-
-}
-
-
-extern "C" __global__ void broadcastHalf(
-		int opNum,
-		float16 *x, int *xShapeInfo, int xRank,
-		float16 *y, int *yShapeInfo, int yRank,
-		float16 *result, int *resultShapeInfo, int zRank,
-		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
-	broadcastGeneric<float16>(
-			opNum,
-			x,
-			xShapeInfo, xRank,
-			y,
-			yShapeInfo, yRank,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-
-}
+// broadcast kernel call
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float, INPUT(float *x, int *xShapeInfo, float *y, int *yShapeInfo, float *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, double, INPUT(double *x, int *xShapeInfo, double *y, int *yShapeInfo, double *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *y, int *yShapeInfo, float16 *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
 #endif
 

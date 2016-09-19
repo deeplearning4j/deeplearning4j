@@ -930,7 +930,6 @@ namespace simdOps {
 	class Mean {
 	public:
 		op_def static T startingValue(const T *input) {
-			(void)input;
 			return 0.0;
 		}
 
