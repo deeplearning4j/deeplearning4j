@@ -121,6 +121,7 @@ org.datavec.spark.transform.analysis.string
 org.datavec.spark.transform.filter
 org.datavec.spark.transform.join
 org.datavec.spark.transform.misc
+org.datavec.spark.transform.misc.comparator
 org.datavec.spark.transform.quality.categorical
 org.datavec.spark.transform.quality.integer
 org.datavec.spark.transform.quality.longq
