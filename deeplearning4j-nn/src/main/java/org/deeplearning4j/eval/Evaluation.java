@@ -895,6 +895,12 @@ public class Evaluation implements Serializable {
         }
         numRowCounter += other.numRowCounter;
         if (labelsList.isEmpty()) labelsList.addAll(other.labelsList);
+
+        if(topN != other.topN){
+            log.warn("Different topN values ({} vs {}) detected during Evaluation merging. Top N accuracy may not be accurate.",topN,other.topN);
+        }
+        this.topNCorrectCount += other.topNCorrectCount;
+        this.topNTotalCount += other.topNTotalCount;
     }
 
     /**

@@ -537,4 +537,53 @@ public class EvalTest {
 
         System.out.println(e.stats());
     }
+
+
+    @Test
+    public void testTopNAccuracyMerging(){
+
+        Evaluation e1 = new Evaluation(null,3);
+        Evaluation e2 = new Evaluation(null,3);
+
+        INDArray i0 = Nd4j.create(new double[]{1,0,0,0,0});
+        INDArray i1 = Nd4j.create(new double[]{0,1,0,0,0});
+
+        INDArray p0_0 = Nd4j.create(new double[]{0.8,0.05,0.05,0.05,0.05});     //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[]{0.4,0.45,0.05,0.05,0.05});     //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[]{0.1,0.45,0.35,0.05,0.05});     //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[]{0.1,0.40,0.30,0.15,0.05});     //class 0: 4th highest prob
+
+        INDArray p1_0 = Nd4j.create(new double[]{0.05,0.80,0.05,0.05,0.05});     //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[]{0.45,0.40,0.05,0.05,0.05});     //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[]{0.35,0.10,0.45,0.05,0.05});     //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[]{0.40,0.10,0.30,0.15,0.05});     //class 1: 4th highest prob
+
+
+        //                                              Correct     TopNCorrect     Total
+        e1.eval(i0, p0_0);                           //  1           1               1
+        e1.eval(i0, p0_1);                           //  1           2               2
+        e1.eval(i0, p0_2);                           //  1           3               3
+        e1.eval(i0, p0_3);                           //  1           3               4
+        assertEquals(0.25, e1.accuracy(), 1e-6);
+        assertEquals(0.75, e1.topNAccuracy(), 1e-6);
+        assertEquals(3, e1.getTopNCorrectCount());
+        assertEquals(4, e1.getTopNTotalCount());
+
+        e2.eval(i1, p1_0);                           //  1           1               1
+        e2.eval(i1, p1_1);                           //  1           2               2
+        e2.eval(i1, p1_2);                           //  1           3               3
+        e2.eval(i1, p1_3);                           //  1           3               4
+        assertEquals(1.0/4, e2.accuracy(), 1e-6);
+        assertEquals(3.0/4, e2.topNAccuracy(), 1e-6);
+        assertEquals(3, e2.getTopNCorrectCount());
+        assertEquals(4, e2.getTopNTotalCount());
+
+        e1.merge(e2);
+
+        assertEquals(8, e1.getNumRowCounter());
+        assertEquals(8, e1.getTopNTotalCount());
+        assertEquals(6, e1.getTopNCorrectCount());
+        assertEquals(2.0/8, e1.accuracy(), 1e-6);
+        assertEquals(6.0/8, e1.topNAccuracy(), 1e-6);
+    }
 }
