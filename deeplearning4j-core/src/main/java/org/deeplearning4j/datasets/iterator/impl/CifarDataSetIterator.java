@@ -25,6 +25,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected boolean overshot = false;
     protected boolean preProcessCifar = false;
     protected ImageTransform imageTransform;
+    protected static boolean train = true;
 
     /**
      * Loads images with given  batchSize, numExamples, & version returned by the generator.
@@ -37,7 +38,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * Loads images with given  batchSize, numExamples, & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, null, true);
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, null, train);
     }
 
     /**
@@ -51,14 +52,14 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * Loads images with given  batchSize & numExamples returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples) {
-        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, null, true);
+        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, null, train);
     }
 
     /**
      * Loads images with given  batchSize & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim) {
-        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, null, true);
+        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, null, train);
     }
 
     /**
@@ -86,6 +87,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.numPossibleLabels = numPossibleLables;
         this.preProcessor = preProcessor;
         this.imageTransform = imageTransform;
+        this.train = train;
     }
 
     // TODO add transform  - random flip when loading batches
@@ -96,13 +98,11 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
             useCurrent = false;
             return last;
         }
-        DataSet result = null;
+        DataSet result;
+        int i = 1;
         if (preProcessCifar) {
-            if (batchNum == 0) {
-                for (int i = 1; i <= CifarLoader.TRAINFILENAMES.length; i++) {
-                    result = loader.next(batchSize, i, batchNum);
-                }
-            }
+            if (train && batchNum == 0 && i <= CifarLoader.TRAINFILENAMES.length) i++;
+            result = loader.next(batchSize, i, batchNum);
         }
         else
             result =  loader.next(batchSize);
