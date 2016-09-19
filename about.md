@@ -5,21 +5,21 @@ layout: default
 
 # About Us
 
-Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots. 
+Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
 
-There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/). 
+There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/).
 
 <p align="center">
-<a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
 
 ## ND4J & ND4S
 
-[ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations. (See its [Github repo here](https://github.com/deeplearning4j/nd4j/).) [ND4S](https://github.com/deeplearning4j/nd4s) is its Scala wrapper. 
+[ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations. (See its [Github repo here](https://github.com/deeplearning4j/nd4j/).) [ND4S](https://github.com/deeplearning4j/nd4s) is its Scala wrapper.
 
 ## Media
 
-Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [Businessweek](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [Venturebeat](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/), [The Wall Street Journal](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/), [Fusion](http://fusion.net/story/177825/privacy-conscious-siris-that-dont-give-up-your-secrets-are-coming/) and [Java Magazine](oraclejavamagazine-digital.com/javamagazine/may_june_2015?sub_id=DJ9kzXBnuXELe#pg58). DL4J workshops are offered through [GalvanizeU](http://www.galvanizeu.com/) in San Francisco. 
+Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [Businessweek](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [Venturebeat](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/), [The Wall Street Journal](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/), [Fusion](http://fusion.net/story/177825/privacy-conscious-siris-that-dont-give-up-your-secrets-are-coming/) and [Java Magazine](oraclejavamagazine-digital.com/javamagazine/may_june_2015?sub_id=DJ9kzXBnuXELe#pg58). DL4J workshops are offered through [GalvanizeU](http://www.galvanizeu.com/) in San Francisco.
 
 ## Support
 
@@ -33,7 +33,7 @@ Without the engagement of Skymind customers and community, and the generous back
 | Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
 | Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
 
-## Major DL4J Contributors 
+## Major DL4J Contributors
 
 | Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
