@@ -16,7 +16,9 @@
 
 package org.datavec.api.records.reader.impl.csv;
 
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
@@ -36,7 +38,17 @@ import java.util.NoSuchElementException;
  * @author Alex Black
  */
 public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
+
+    public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";
+
     private int nLinesPerSequence;
+
+    /**
+     * No-arg constructor with the default number of lines per sequence (10)
+     */
+    public CSVNLinesSequenceRecordReader(){
+        this(10);
+    }
 
     /**
      * @param nLinesPerSequence    Number of lines in each sequence
@@ -54,6 +66,12 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence, int skipNumLines, String delimiter){
         super(skipNumLines, delimiter);
         this.nLinesPerSequence = nLinesPerSequence;
+    }
+
+    @Override
+    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        super.initialize(conf, split);
+        this.nLinesPerSequence = conf.getInt(LINES_PER_SEQUENCE,nLinesPerSequence);
     }
 
     @Override
