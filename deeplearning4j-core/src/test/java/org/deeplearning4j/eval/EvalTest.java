@@ -477,4 +477,64 @@ public class EvalTest {
 
         assertEquals(e1.stats(),e2.stats());
     }
+
+
+    @Test
+    public void testTopNAccuracy(){
+
+        Evaluation e = new Evaluation(null,3);
+
+        INDArray i0 = Nd4j.create(new double[]{1,0,0,0,0});
+        INDArray i1 = Nd4j.create(new double[]{0,1,0,0,0});
+
+        INDArray p0_0 = Nd4j.create(new double[]{0.8,0.05,0.05,0.05,0.05});     //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[]{0.4,0.45,0.05,0.05,0.05});     //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[]{0.1,0.45,0.35,0.05,0.05});     //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[]{0.1,0.40,0.30,0.15,0.05});     //class 0: 4th highest prob
+
+        INDArray p1_0 = Nd4j.create(new double[]{0.05,0.80,0.05,0.05,0.05});     //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[]{0.45,0.40,0.05,0.05,0.05});     //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[]{0.35,0.10,0.45,0.05,0.05});     //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[]{0.40,0.10,0.30,0.15,0.05});     //class 1: 4th highest prob
+
+
+        //                                              Correct     TopNCorrect     Total
+        e.eval(i0, p0_0);                           //  1           1               1
+        assertEquals(1.0, e.accuracy(), 1e-6);
+        assertEquals(1.0, e.topNAccuracy(), 1e-6);
+        assertEquals(1, e.getTopNCorrectCount());
+        assertEquals(1, e.getTopNTotalCount());
+        e.eval(i0, p0_1);                           //  1           2               2
+        assertEquals(0.5, e.accuracy(), 1e-6);
+        assertEquals(1.0, e.topNAccuracy(), 1e-6);
+        assertEquals(2, e.getTopNCorrectCount());
+        assertEquals(2, e.getTopNTotalCount());
+        e.eval(i0, p0_2);                           //  1           3               3
+        assertEquals(1.0/3, e.accuracy(), 1e-6);
+        assertEquals(1.0, e.topNAccuracy(), 1e-6);
+        assertEquals(3, e.getTopNCorrectCount());
+        assertEquals(3, e.getTopNTotalCount());
+        e.eval(i0, p0_3);                           //  1           3               4
+        assertEquals(0.25, e.accuracy(), 1e-6);
+        assertEquals(0.75, e.topNAccuracy(), 1e-6);
+        assertEquals(3, e.getTopNCorrectCount());
+        assertEquals(4, e.getTopNTotalCount());
+
+        e.eval(i1, p1_0);                           //  2           4               5
+        assertEquals(2.0/5, e.accuracy(), 1e-6);
+        assertEquals(4.0/5, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_1);                           //  2           5               6
+        assertEquals(2.0/6, e.accuracy(), 1e-6);
+        assertEquals(5.0/6, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_2);                           //  2           6               7
+        assertEquals(2.0/7, e.accuracy(), 1e-6);
+        assertEquals(6.0/7, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_3);                           //  2           6               8
+        assertEquals(2.0/8, e.accuracy(), 1e-6);
+        assertEquals(6.0/8, e.topNAccuracy(), 1e-6);
+        assertEquals(6, e.getTopNCorrectCount());
+        assertEquals(8, e.getTopNTotalCount());
+
+        System.out.println(e.stats());
+    }
 }
