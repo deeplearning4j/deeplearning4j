@@ -52,6 +52,7 @@ org.deeplearning4j.graph.models.deepwalk
 org.deeplearning4j.graph.models.embeddings
 org.deeplearning4j.graph.models.loader
 org.deeplearning4j.graph.vertexfactory
+org.deeplearning4j.models
 org.deeplearning4j.models.embeddings
 org.deeplearning4j.models.embeddings.inmemory
 org.deeplearning4j.models.embeddings.learning
@@ -85,6 +86,7 @@ org.deeplearning4j.models.word2vec.iterator
 org.deeplearning4j.models.word2vec.wordstore
 org.deeplearning4j.models.word2vec.wordstore.inmemory
 org.deeplearning4j.nn.api
+org.deeplearning4j.nn.api.layers
 org.deeplearning4j.nn.conf
 org.deeplearning4j.nn.conf.distribution
 org.deeplearning4j.nn.conf.graph
@@ -94,6 +96,7 @@ org.deeplearning4j.nn.conf.layers
 org.deeplearning4j.nn.conf.layers.setup
 org.deeplearning4j.nn.conf.misc
 org.deeplearning4j.nn.conf.preprocessor
+org.deeplearning4j.nn.conf.preprocessor.custom
 org.deeplearning4j.nn.conf.stepfunctions
 org.deeplearning4j.nn.gradient
 org.deeplearning4j.nn.graph
@@ -105,7 +108,8 @@ org.deeplearning4j.nn.graph.vertex.impl.rnn
 org.deeplearning4j.nn.layers
 org.deeplearning4j.nn.layers.convolution
 org.deeplearning4j.nn.layers.convolution.subsampling
-org.deeplearning4j.nn.layers.factory
+org.deeplearning4j.nn.layers.custom
+org.deeplearning4j.nn.layers.custom.testlayers
 org.deeplearning4j.nn.layers.feedforward.autoencoder
 org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive
 org.deeplearning4j.nn.layers.feedforward.dense
@@ -131,6 +135,7 @@ org.deeplearning4j.plot
 org.deeplearning4j.plot.dropwizard
 org.deeplearning4j.plot.dropwizard.nearestneighbors
 org.deeplearning4j.plot.iterationlistener
+org.deeplearning4j.regressiontest
 org.deeplearning4j.spark
 org.deeplearning4j.spark.api
 org.deeplearning4j.spark.api.stats
@@ -144,6 +149,8 @@ org.deeplearning4j.spark.impl
 org.deeplearning4j.spark.impl.common
 org.deeplearning4j.spark.impl.common.reduce
 org.deeplearning4j.spark.impl.common.repartition
+org.deeplearning4j.spark.impl.customlayer
+org.deeplearning4j.spark.impl.customlayer.layer
 org.deeplearning4j.spark.impl.graph
 org.deeplearning4j.spark.impl.graph.dataset
 org.deeplearning4j.spark.impl.graph.scoring
@@ -158,7 +165,6 @@ org.deeplearning4j.spark.impl.stats
 org.deeplearning4j.spark.iterator
 org.deeplearning4j.spark.models.embeddings.glove
 org.deeplearning4j.spark.models.embeddings.glove.cooccurrences
-org.deeplearning4j.spark.models.embeddings.sequencevectors
 org.deeplearning4j.spark.models.embeddings.word2vec
 org.deeplearning4j.spark.ordering
 org.deeplearning4j.spark.stats
@@ -195,6 +201,7 @@ org.deeplearning4j.text.tokenization.tokenizer
 org.deeplearning4j.text.tokenization.tokenizer.preprocessor
 org.deeplearning4j.text.tokenization.tokenizer.tokenprepreprocessor
 org.deeplearning4j.text.tokenization.tokenizerfactory
+org.deeplearning4j.text.treeparser
 org.deeplearning4j.text.uima
 org.deeplearning4j.ui
 org.deeplearning4j.ui.activation
