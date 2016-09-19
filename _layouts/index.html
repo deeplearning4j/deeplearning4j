@@ -1,0 +1,177 @@
+{% include header.html %}
+
+<!-- Top Navigation -->
+<header class="site-header navbar-fullwidth navbar-transparent">
+  {% include navigation.html %}
+<!-- Banner -->
+<div class="banner banner-full-height overlay-black" style="background-image: url(assets/themes/thedocs/img/home_hero.jpeg);">
+  <div class="container text-center">
+    <h1>Deep Learning for Java</h1>
+    <h3>Open-Source, Distributed, Deep Learning Library for the JVM</h3>
+    <br><br><br><br>
+    <p><a class="btn btn-white btn-xl btn-outline" href="quickstart" role="button"> GET STARTED </a></p>
+  </div>
+
+  <ul class="social-icons">
+    <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j" data-icon="octicon-star" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/stargazers" data-count-api="/repos/deeplearning4j/deeplearning4j#stargazers_count" data-count-aria-label="# stargazers on GitHub" aria-label="Star deeplearning4j/deeplearning4j on GitHub">Star</a></li>
+    <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j/fork" data-icon="octicon-repo-forked" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/network" data-count-api="/repos/deeplearning4j/deeplearning4j#forks_count" data-count-aria-label="# forks on GitHub" aria-label="Fork deeplearning4j/deeplearning4j on GitHub">Fork</a></li>
+    <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j" data-icon="octicon-eye" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/watchers" data-count-api="/repos/deeplearning4j/deeplearning4j#subscribers_count" data-count-aria-label="# watchers on GitHub" aria-label="Watch deeplearning4j/deeplearning4j on GitHub">Watch</a></li>
+<!-- End Banner -->
+</header>
+<!-- END Top Navigation -->
+
+<main class="container">
+  <div class="row">
+
+    <!-- Sidebar -->
+    <aside class="col-md-3 col-sm-3 sidebar">
+      {% include sidebar.html %}
+    </aside>
+    <!-- END Sidebar -->
+
+    <!-- Main content -->
+    <article class="col-md-9 col-sm-9 main-content" role="main">
+
+      <header>
+        <h1>What is Deeplearning4j?</h1>
+        <p>Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and Spark, DL4J is designed to be used in business environments on distributed GPUs and CPUs. <a href="https://www.skymind.io" target="_blank">Skymind</a> is its commercial support arm.</p>
+      </header>
+
+      <section>
+        <h2>Welcome to Deeplearning4j</h2>
+        <p>Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.</p>
+
+        <div class="row">
+          <div class="col-md-4 col-sm-6">
+            <div class="promo small-icon left">
+              <i class="fa fa-tv"></i>
+              <h3>Distributed</h3>
+              <p>DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to improve training.</p>
+            </div>
+          </div>
+
+          <div class="col-lg-4 col-sm-6">
+            <div class="promo small-icon left">
+              <i class="fa fa-wrench"></i>
+              <h3>Open-Source</h3>
+              <p>Completely open-source and is maintained by the community and its commercial arm, <a href="https://www.skymind.io">Skymind</a>.</p>
+            </div>
+          </div>
+
+          <div class="col-lg-4 col-sm-6">
+            <div class="promo small-icon left">
+              <i class="fa fa-cubes"></i>
+              <h3>Java/Scala/JVM</h3>
+              <p>Deeplearning4j is written in Java and is compatible with any JVM language. Import into Clojure, Scala & Kotlin projects.</p>
+            </div>
+          </div>
+
+      </section>
+
+      <section>
+
+        <h2>What's included</h2>
+        <p>Deep neural nets are capable of <a href="accuracy.html" target="_blank">record-breaking accuracy</a>. For a quick neural net introduction, please visit our <a href="neuralnet-overview.html" target="_blank">overview</a> page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a so-called `layer`. This flexibility lets you combine restricted Boltzmann machines, other autoencoders, convolutional nets or recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs.</p>
+        <p>There are a lot of parameters to adjust when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers.</p>
+        <br>
+        <div class="row">
+          <div class="col-md-6">
+            <h3>Features</h3>
+            <ul>
+              <li>Distributed CPUs and GPUs</li>
+              <li>Java, Scala and Clojure</li>
+              <li>Adapted for micro-service architecture</li>
+              <li>Parallel training via iterative reduce</li>
+              <li>Scalable on Hadoop</li>
+              <li>GPU support for scaling on AWS</li>
+            </ul>
+          </div>
+
+          <div class="col-md-6">
+            <h3>Libraries</h3>
+            <ul>
+              <li>Deeplearning4J: Neural Net Platform</li>
+              <li>ND4J: Numpy for the JVM</li>
+              <li>DataVec: Tool for Machine Learning ETL Operations</li>
+              <li>JavaCPP: The Bridge Between Java and Native C++</li>
+              <li>Arbiter: Evaluation Tool for Machine Learning Algorithms</li>
+              <li>RL4J: Deep Reinforcement Learning for the JVM</li>
+            </ul>
+          </div>
+        </div>
+
+      </section>
+
+      <section>
+
+        <h2>Learn More</h2>
+        <p>If you have any questions, please join us on <a href="https://gitter.im/deeplearning4j/deeplearning4j">Gitter</a>; for premium support, contact us at <a href="http://www.skymind.io/contact?__hstc=3042607.139894b8516df47642ec21f9bbc5370b.1470632449068.1473042323084.1473049097372.15&__hssc=3042607.1.1473049097372&__hsfp=1917721602">Skymind</a>. <a href="http://nd4j.org/">ND4J is the Java-based scientific computing engine</a> powering our matrix operations. On large matrices, our benchmarks show <a href="http://nd4j.org/benchmarking">it runs roughly twice as fast as Numpy</a>.</p>
+        <br>
+        <div class="faq">
+          <ul>
+            <li>
+              <h6>Use cases?</h6>
+              <div>DL4J is applied for <a href="http://www.skymind.io/finance" target="_blank">Fraud detection</a>, <a href="http://www.skymind.io/commerce" target="_blank">Recommender Systems (CRM, adtech, churn prevention)</a>, <a href="linear-regression.html" target="_blank">Regression and predictive analytics</a>, Face/image recognition, Voice search, Speech-to-text (transcription), and preventative hardware monitoring (anomaly detection).</div>
+            </li>
+            <li>
+              <h6>Why Deeplearning4j?</h6>
+              <div>With a versatile <a href="http://nd4j.org/" target="_blank">n-dimensional array</a> class for Java and Scala, DL4J is <a href="spark.html" target="_blank">Scalable on Hadoop</a>, utlizes GPU support for <a href="gpu.html" target="_blank">scaling on AWS</a>, includes <a href="canova.html" target="_blank">a general vectorization tool</a> for machine-learning libs, and most of all relies on <a href="http://nd4j.org/benchmarking" target="_blank">ND4J: A matrix library</a> much faster than Numpy and largely written in C++. We also built <a href="https://github.com/deeplearning4j/rl4j" target="_blank">RL4J: Reinforcement Learning for Java</a> with Deep Q learning and A3C.</div>
+            </li>
+            <li>
+              <h6>How can I contribute?</h6>
+              <div>Developers who would like to contribute to Deeplearning4j can get started by reading our <a href="devguide" target="_blank">Developer's Guide</a>.</div>
+            </li>
+            <li>
+              <h6>Is DL4J parallelized?</h6>
+              <div>Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via <a href="iterativereduce.html" target="_blank">iterative reduce</a>, and they are equally compatible with Java, <a href="http://nd4j.org/scala.html" target="_blank">Scala</a> and <a href="https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj" target="_blank">Clojure</a>. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a <a href="http://microservices.io/patterns/microservices.html" target="_blank">micro-service architecture</a>.</div>
+            </li>
+          </ul>
+        </div>
+
+      </section>
+
+
+      <section>
+
+        <h2>Continue reading</h2>
+
+        <ul class="categorized-view view-col-3">
+          <li>
+            <h5>Deep Learning Tutorials</h5>
+            <a href="neuralnet-overview.html">Introduction to Neural Networks</a>
+            <a href="word2vec.html">Word2vec: Extracting Relations From Raw Text</a>
+            <a href="eigenvector.html">Eigenvectors, PCA and Entropy</a>
+            <a href="linear-regression.html">Regression, Predictive Analytics and Neural Nets</a>
+            <a href="lstm.html">Long Short-Term Memory Networks and RNNs</a>
+            <a href="tutorials.html">DL4J Tutorials Index</a>
+            <a href="neuralnetworktable.html">How to Choose a Neural Net</a>
+          </li>
+
+          <li>
+            <h5>DL4J's Neural Networks</h5>
+            <a href="restrictedboltzmannmachine.html">Restricted Boltzmann machines</a>
+            <a href="convolutionalnets.html">Convolutional Nets (images)</a>
+              <a href="usingrnns.html">Recurrent Nets</a>
+            <a href="lstm.html">LSTMs (time series and sensor data)</a>
+            <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java">Recursive autoencoders</a>
+            <a href="deepbeliefnetwork.html">Deep-belief networks</a>
+            <a href="deepautoencoder.html">Deep Autoencoders (Question-Answer/data compression)</a>
+            <a href="stackeddenoisingautoencoder.html">Stacked Denoising Autoencoders</a>
+          </li>
+
+          <li>
+            <h5>Recent Research</h5>
+            <a href="http://arxiv.org/abs/1602.05931">University of Massachusets "RandomOut: Using a convolutional gradient norm to win The Filter Lottery"</a>
+            <a href="http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf">Stanford NLP: "Large-Scale Language Classification"</a>
+            <a href="https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit?pref=2&pli=1#slide=id.g11a4ba0c5c_0_6">Like2Vec: A New Technique for Recommender Algorithms</a>
+          </li>
+
+        </ul>
+      </section>
+
+    </article>
+    <!-- END Main content -->
+  </div>
+</main>
+
+{% include footer.html %}

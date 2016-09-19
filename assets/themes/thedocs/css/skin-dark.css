@@ -1,0 +1,64 @@
+.code-tabs .languages .btn.active,
+.code-tabs .languages .btn:active,
+.navbar-default.navbar-light .active>a,
+.navbar-default.navbar-light .active>a:focus,
+.navbar-default.navbar-light .active>a:hover,
+.navbar-default.navbar-light .open>a,
+.navbar-default.navbar-light .open>a:focus,
+.navbar-default.navbar-light .open>a:hover,
+.navbar-default.navbar-light li>a:focus,
+.navbar-default.navbar-light li>a:hover,
+.pager li>a:hover,
+.pagination>li>a:focus,
+.pagination>li>a:hover,
+.pagination>li>span:focus,
+.pagination>li>span:hover,
+.promo>.fa,
+.promo>.glyphicon,
+.sidebar-boxed .sidenav>li>a.open,
+.sidebar-boxed .sidenav>li>a:hover,
+.sidenav a.active,
+.sidenav a:hover,
+.sidenav li.active>a,
+.sidenav>li>a.active,
+.sidenav>li>a:hover,
+.tabs-btn .nav-tabs li.active a,
+.tabs-text .nav-tabs>li.active a,
+.toc a:active,
+.toc a:hover,
+a,
+a:focus,
+a:hover,
+h1 a:before,
+h2 a:before,
+h3 a:before {
+    color: #337ab7
+}
+.carousel.indicators-out .carousel-indicators .active,
+.pagination>.active>a,
+.pagination>.active>a:focus,
+.pagination>.active>a:hover,
+.pagination>.active>span,
+.pagination>.active>span:focus,
+.pagination>.active>span:hover,
+.sidebar-line .sidenav a.active:before,
+.sidebar-line .sidenav li.active>a:before,
+.sidenav>li>ul a.active:before,
+.sidenav>li>ul li.active a:before,
+.site-header .navbar {
+    background-color: #526069
+}
+.carousel.indicators-out .carousel-indicators li {
+    border-color: #526069
+}
+.tabs-text .nav-tabs>li.active {
+    border-bottom-color: #526069
+}
+.grid-view li {
+    border-top-color: #526069
+}
+@media screen and (max-width: 767px) {
+    .navbar {
+        background-color: #526069!important
+    }
+}
