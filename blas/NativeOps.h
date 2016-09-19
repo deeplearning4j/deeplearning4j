@@ -783,7 +783,7 @@ public:
                            int xStride,
                            float *result,
                            int resultStride,
-                           double scalar,
+                           float scalar,
                            float *extraParams,
                            Nd4jIndex n);
 

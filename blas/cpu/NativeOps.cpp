@@ -1064,7 +1064,7 @@ void   NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
                                   int xStride,
                                   float *result,
                                   int resultStride,
-                                  double scalar,
+                                  float scalar,
                                   float *extraParams,
                                   Nd4jIndex n) {
 	NativeOpExcutioner<float>::execScalar(opNum,x,xStride,result,resultStride,scalar,extraParams,n);
