@@ -64,13 +64,26 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private INDArray featuresMask;
     private INDArray labelsMask;
 
+    //TODO find a better way to do this...
+    private List<Object> exampleMetaData;
+
     private transient boolean preProcessed = false;
 
     public DataSet() {
         this(null,null);
     }
 
+    public List<Object> getExampleMetaData(){
+        return exampleMetaData;
+    }
 
+    public <T> List<T> getExampleMetaData(Class<T> metaDataType){
+        return (List<T>)exampleMetaData;
+    }
+
+    public void setExampleMetaData(List<Object> exampleMetaData){
+        this.exampleMetaData = exampleMetaData;
+    }
 
 
     /**
