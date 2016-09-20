@@ -14,44 +14,23 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.records.metadata;
+package org.datavec.api.records;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.writable.Writable;
 
-import java.net.URI;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by Alex on 20/09/2016.
  */
 @AllArgsConstructor @Data
-public class RecordMetaDataLine implements RecordMetaData {
+public class Record implements Serializable {
 
-    private int lineNumber;
-    private URI uri;
-    private Class<?> readerClass;
+    private List<Writable> record;
+    private RecordMetaData metaData;
 
-
-    @Override
-    public String getLocation() {
-        String filename;
-        if(uri != null){
-            String str = uri.toString();
-            filename = FilenameUtils.getBaseName(str) + "." + FilenameUtils.getExtension(str) + " ";
-        } else {
-            filename = "";
-        }
-        return filename + "line " + lineNumber;
-    }
-
-    @Override
-    public URI getURI() {
-        return uri;
-    }
-
-    @Override
-    public Class<?> getReaderClass() {
-        return readerClass;
-    }
 }

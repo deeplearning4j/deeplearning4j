@@ -16,6 +16,8 @@
 
 package org.datavec.api.records.metadata;
 
+import java.net.URI;
+
 /**
  * RecordMetaData includes details on the record itself - for example, the source file or line number.<br>
  * It is used in conjunction with {@link org.datavec.api.records.reader.RecordReaderMeta}.<br>
@@ -31,6 +33,13 @@ public interface RecordMetaData {
      * Get a human-readable location for the data
      */
     String getLocation();
+
+    /**
+     * Return the URI for the source of the record
+     *
+     * @return The URI for the record (file, etc) - or null otherwise
+     */
+    URI getURI();
 
     /**
      * Get the class that was used to generate the record

@@ -17,9 +17,11 @@
 package org.datavec.api.records.reader;
 
 import org.datavec.api.berkeley.Pair;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.Writable;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -32,6 +34,8 @@ import java.util.List;
  */
 public interface RecordReaderMeta extends RecordReader {
 
-    Pair<List<Writable>,RecordMetaData> nextMeta();
+    Record nextMeta();
+
+    List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

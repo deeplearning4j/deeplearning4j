@@ -22,7 +22,12 @@ package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.datavec.api.berkeley.Pair;
+import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
@@ -31,6 +36,7 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
 
@@ -173,5 +179,80 @@ public class LineRecordReader extends BaseRecordReader {
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
         String line = br.readLine();
         return Collections.singletonList((Writable)new Text(line));
+    }
+
+
+    //@Override //TODO
+    public List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException {
+        //First: create a sorted list of the RecordMetaData
+        List<Triple<Integer,RecordMetaDataLine,List<Writable>>> list = new ArrayList<>();
+        Iterator<RecordMetaData> iter = recordMetaDatas.iterator();
+        int count = 0;
+        while(iter.hasNext()){
+            RecordMetaData rmd = iter.next();
+            if(!(rmd instanceof RecordMetaDataLine)){
+                throw new IllegalArgumentException("Invalid metadata; expected RecordMetaDataLine instance; got: " + rmd);
+            }
+            list.add(new Triple<>(count++, (RecordMetaDataLine)rmd, (List<Writable>)null));
+        }
+
+//        Collections.sort(list, new Comparator<Pair<Integer,RecordMetaData>>(){
+//            @Override
+//            public int compare(Pair<Integer, RecordMetaData> o1, Pair<Integer, RecordMetaData> o2) {
+//                return Integer.compare(o1.getFirst(), o2.getFirst());
+//            }
+//        });
+        //Sort by line number:
+        Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){
+            @Override
+            public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1, Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
+                return Integer.compare(o1.getSecond().getLineNumber(), o2.getSecond().getLineNumber());
+            }
+        });
+
+        Iterator<String> iterator = null;
+        if(inputSplit instanceof StringSplit) {
+            StringSplit stringSplit = (StringSplit) inputSplit;
+            iterator = Collections.singletonList(stringSplit.getData()).listIterator();
+        } else if (inputSplit instanceof InputStreamInputSplit){
+            InputStream is = ((InputStreamInputSplit) inputSplit).getIs();
+            if(is != null){
+                iterator =  IOUtils.lineIterator(new InputStreamReader(is));
+            }
+        } else {
+            this.locations = inputSplit.locations();
+            if (locations != null && locations.length > 0) {
+                iterator =  IOUtils.lineIterator(new InputStreamReader(locations[0].toURL().openStream()));
+            }
+        }
+        if(iterator == null) throw new UnsupportedOperationException(); //TODO
+
+        Iterator<Triple<Integer,RecordMetaDataLine,List<Writable>>> metaIter = list.iterator();
+        int currentLineIdx = 0;
+        String line = iterator.next();
+        while(metaIter.hasNext()){
+            Triple<Integer,RecordMetaDataLine,List<Writable>> t = metaIter.next();
+            int nextLineIdx = t.getSecond().getLineNumber();
+            while(currentLineIdx < nextLineIdx && iterator.hasNext()){
+                line = iterator.next();
+                currentLineIdx++;
+            }
+            t.setThird(Collections.<Writable>singletonList(new Text(line)));
+        }
+
+        //Now, sort by the original order:
+        Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){
+            @Override
+            public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1, Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
+                return Integer.compare(o1.getFirst(), o2.getFirst());
+            }
+        });
+
+        //And return...
+        List<Record> out = new ArrayList<>();
+        for(Triple<Integer,RecordMetaDataLine,List<Writable>> t : list){
+            out.add(new Record(t.getThird(), t.getSecond()));
+        }
+        return out;
     }
 }

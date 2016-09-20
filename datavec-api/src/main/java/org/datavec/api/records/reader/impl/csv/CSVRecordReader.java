@@ -20,6 +20,7 @@ package org.datavec.api.records.reader.impl.csv;
 
 import org.datavec.api.berkeley.Pair;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.RecordReaderMeta;
@@ -100,11 +101,28 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
     }
 
     @Override
-    public Pair<List<Writable>,RecordMetaData> nextMeta(){
+    public Record nextMeta(){
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[0]);    //TODO: handle String splits etc
         RecordMetaData meta = new RecordMetaDataLine(this.currIndex-1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
-        return new Pair<>(next, meta);
+        return new Record(next, meta);
+    }
+
+    @Override
+    public List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> list = super.loadFromMeta(recordMetaDatas);
+
+        for(Record r : list ){
+            String line = r.getRecord().get(0).toString();
+            String[] split = line.split(delimiter, -1);
+            List<Writable> writables = new ArrayList<>();
+            for(String s : split) {
+                writables.add(new Text(s));
+            }
+            r.setRecord(writables);
+        }
+
+        return list;
     }
 
     @Override
