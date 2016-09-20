@@ -112,6 +112,7 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         this.preProcess(toPreProcess);
     }
 
+    @Override
     public void transform(INDArray theFeatures) {
         this.preProcess(theFeatures);
     }
