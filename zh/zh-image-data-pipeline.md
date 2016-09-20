@@ -1,6 +1,6 @@
 ---
 title:用定制的数据加工管道将图像载入深度神经网络
-layout: default
+layout: zh-default
 redirect_from: /zh-image-data-pipeline
 ---
 
