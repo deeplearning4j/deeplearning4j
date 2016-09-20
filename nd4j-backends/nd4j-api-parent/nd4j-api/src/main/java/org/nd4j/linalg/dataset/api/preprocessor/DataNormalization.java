@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -37,6 +38,12 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
      * @param toPreProcess the dataset to re process
      */
     void transform(DataSet toPreProcess);
+
+    /**
+     * Transform the dataset
+     * @param features the features to pre process
+     */
+    void transform(INDArray features);
 
     /**
      * Load the statistics
