@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.stats;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -19,7 +21,9 @@ import org.deeplearning4j.ui.standalone.StaticPageUtil;
 import scala.Tuple3;
 
 import java.awt.*;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 import java.util.List;
 
@@ -90,6 +94,32 @@ public class StatsUtils {
      * @throws Exception IO errors or error generating HTML file
      */
     public static void exportStatsAsHtml(SparkTrainingStats sparkTrainingStats, long maxTimelineSizeMs, String path, SparkContext sc) throws Exception {
+        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
+            exportStatsAsHTML(sparkTrainingStats, maxTimelineSizeMs, bos);
+        }
+    }
+
+    /**
+     * Generate and export a HTML representation (including charts, etc) of the Spark training statistics<br>
+     * This overload is for writing to an output stream
+     *
+     * @param sparkTrainingStats Stats to generate HTML page for
+     * @throws Exception IO errors or error generating HTML file
+     */
+    public static void exportStatsAsHTML(SparkTrainingStats sparkTrainingStats, OutputStream outputStream ) throws Exception {
+        exportStatsAsHTML(sparkTrainingStats,DEFAULT_MAX_TIMELINE_SIZE_MS, outputStream);
+    }
+
+    /**
+     * Generate and export a HTML representation (including charts, etc) of the Spark training statistics<br>
+     * This overload is for writing to an output stream
+     *
+     * @param sparkTrainingStats Stats to generate HTML page for
+     * @param maxTimelineSizeMs  maximum amount of activity to show in a single timeline plot (multiple plots will be used if training exceeds this amount of time)
+     * @throws Exception IO errors or error generating HTML file
+     */
+    public static void exportStatsAsHTML(SparkTrainingStats sparkTrainingStats, long maxTimelineSizeMs, OutputStream outputStream ) throws Exception {
         Set<String> keySet = sparkTrainingStats.getKeySet();
 
         List<Component> components = new ArrayList<>();
@@ -185,7 +215,7 @@ public class StatsUtils {
         }
 
         String html = StaticPageUtil.renderHTML(components);
-        SparkUtils.writeStringToFile(path, html, sc);
+        outputStream.write(html.getBytes("UTF-8"));
     }
 
 
