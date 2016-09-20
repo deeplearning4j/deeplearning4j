@@ -7,7 +7,7 @@ After you have setup Msys2 by following [their instructions](https://msys2.githu
 
     pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas mingw-w64-x86_64-lz4
 
-This will install the needed dependencies for use in the msys2 shell.
+This will install the needed dependencies for use in the msys2 shell. You will have to use the msys2 shell (especially `c:\msys64\mingw64.exe`) for the whole compilation process.
 
 You will also need to setup your PATH environment variable to include `C:\msys64\mingw64\bin` (or where ever you have decided to install msys2). If you have IntelliJ (or another IDE) open, you will have to restart it before this change takes effect for applications started through them. If you don't, you probably will see a "Can't find dependent libraries" error.
 
