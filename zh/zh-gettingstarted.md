@@ -1,5 +1,5 @@
 ---
-title:完全安装Deeplearning4j
+title: 完全安装Deeplearning4j
 layout: zh-default
 redirect_from: /zh-gettingstarted
 ---
