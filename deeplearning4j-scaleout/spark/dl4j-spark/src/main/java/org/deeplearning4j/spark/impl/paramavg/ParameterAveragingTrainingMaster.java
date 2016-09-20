@@ -1,6 +1,19 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -29,6 +42,8 @@ import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingEleme
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.spark.util.UIDProvider;
+import org.deeplearning4j.spark.util.serde.StorageLevelDeserializer;
+import org.deeplearning4j.spark.util.serde.StorageLevelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -51,10 +66,14 @@ import java.util.Random;
  * @author Alex Black
  */
 @Data
+@JsonIgnoreProperties({"stats","listeners","iterationCount","rng","lastExportedRDDId","lastRDDExportPath","trainingMasterUID"})
+@EqualsAndHashCode(exclude = {"stats","listeners","iterationCount","rng","lastExportedRDDId","lastRDDExportPath","trainingMasterUID"})
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
     private static final int COALESCE_THRESHOLD = 3;
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
 
     private boolean saveUpdater;
     private Integer numWorkers;
@@ -68,7 +87,11 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int iterationCount = 0;
     private Repartition repartition;
     private RepartitionStrategy repartitionStrategy;
+    @JsonSerialize(using = StorageLevelSerializer.class)
+    @JsonDeserialize(using = StorageLevelDeserializer.class)
     private StorageLevel storageLevel;
+    @JsonSerialize(using = StorageLevelSerializer.class)
+    @JsonDeserialize(using = StorageLevelDeserializer.class)
     private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
     private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
     private String exportDirectory = null;
@@ -78,6 +101,13 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private String lastRDDExportPath;
     private final String trainingMasterUID;
 
+    private ParameterAveragingTrainingMaster(){
+        // no-arg constructor for Jackson
+
+        String jvmuid = UIDProvider.getJVMUID();
+        this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
+        this.rng = new Random();
+    }
 
     private ParameterAveragingTrainingMaster(Builder builder) {
         this.saveUpdater = builder.saveUpdater;
@@ -97,7 +127,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         } else {
             this.rng = new Random(builder.rngSeed);
         }
-
 
         String jvmuid = UIDProvider.getJVMUID();
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
@@ -150,6 +179,85 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
         this.rng = new Random();
     }
+
+    private static synchronized ObjectMapper getJsonMapper(){
+        if(jsonMapper == null){
+            jsonMapper = getNewMapper(new JsonFactory());
+        }
+        return jsonMapper;
+    }
+
+    private static synchronized ObjectMapper getYamlMapper(){
+        if(yamlMapper == null){
+            yamlMapper = getNewMapper(new YAMLFactory());
+        }
+        return yamlMapper;
+    }
+
+    private static ObjectMapper getNewMapper(JsonFactory jsonFactory){
+        ObjectMapper om = new ObjectMapper(jsonFactory);
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        return om;
+    }
+
+    @Override
+    public String toJson(){
+        ObjectMapper om = getJsonMapper();
+
+        try{
+            return om.writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException("Error producing JSON representation for ParameterAveragingTrainingMaster",e);
+        }
+    }
+
+    @Override
+    public String toYaml(){
+        ObjectMapper om = getYamlMapper();
+
+        try{
+            return om.writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException("Error producing YAML representation for ParameterAveragingTrainingMaster",e);
+        }
+    }
+
+    /**
+     * Create a ParameterAveragingTrainingMaster instance by deserializing a JSON string that has been serialized with
+     * {@link #toJson()}
+     *
+     * @param jsonStr    ParameterAveragingTrainingMaster configuration serialized as JSON
+     */
+    public static ParameterAveragingTrainingMaster fromJson(String jsonStr){
+        ObjectMapper om = getJsonMapper();
+        try{
+            return om.readValue(jsonStr, ParameterAveragingTrainingMaster.class);
+        }catch(IOException e){
+            throw new RuntimeException("Could not parse JSON",e);
+        }
+    }
+
+    /**
+     * Create a ParameterAveragingTrainingMaster instance by deserializing a YAML string that has been serialized with
+     * {@link #toYaml()}
+     *
+     * @param yamlStr    ParameterAveragingTrainingMaster configuration serialized as YAML
+     */
+    public static ParameterAveragingTrainingMaster fromYaml(String yamlStr){
+        ObjectMapper om = getYamlMapper();
+        try{
+            return om.readValue(yamlStr, ParameterAveragingTrainingMaster.class);
+        }catch(IOException e){
+            throw new RuntimeException("Could not parse YAML",e);
+        }
+    }
+
+
 
     @Override
     public ParameterAveragingTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
@@ -963,7 +1071,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * @param storageLevelStreams Storage level to use
          */
         public Builder storageLevelStreams(StorageLevel storageLevelStreams) {
-            this.storageLevelStreams = storageLevel;
+            this.storageLevelStreams = storageLevelStreams;
             return this;
         }
 
