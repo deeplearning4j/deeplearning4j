@@ -43,8 +43,8 @@ public class LineRecordReader extends BaseRecordReader {
 
 
     private Iterator<String> iter;
-    private URI[] locations;
-    private int currIndex = 0;
+    protected URI[] locations;
+    protected int currIndex = 0;
     protected Configuration conf;
     protected InputSplit inputSplit;
 
@@ -80,6 +80,7 @@ public class LineRecordReader extends BaseRecordReader {
             String record = iter.next();
             invokeListeners(record);
             ret.add(new Text(record));
+            currIndex++;
             return ret;
         } else {
             if ( !(inputSplit instanceof StringSplit) && currIndex < locations.length-1 ) {

@@ -18,7 +18,11 @@ package org.datavec.api.records.reader.impl.csv;
 
 
 
+import org.datavec.api.berkeley.Pair;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
@@ -34,7 +38,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class CSVRecordReader extends LineRecordReader {
+public class CSVRecordReader extends LineRecordReader implements RecordReaderMeta {
     /** A regex delimiter that can parse quotes (string literals) that may have commas in them: http://stackoverflow.com/a/1757107/523744
      * Note: This adds considerable overhead compared to the default "," delimiter, and should only be used when necessary.
      * */
@@ -93,7 +97,14 @@ public class CSVRecordReader extends LineRecordReader {
         for(String s : split)
             ret.add(new Text(s));
         return ret;
+    }
 
+    @Override
+    public Pair<List<Writable>,RecordMetaData> nextMeta(){
+        List<Writable> next = next();
+        URI uri = (locations == null || locations.length < 1 ? null : locations[0]);    //TODO: handle String splits etc
+        RecordMetaData meta = new RecordMetaDataLine(this.currIndex-1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
+        return new Pair<>(next, meta);
     }
 
     @Override

@@ -17,6 +17,8 @@
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
+import org.datavec.api.berkeley.Pair;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -157,5 +159,26 @@ public class CSVRecordReaderTest {
             List<Writable> vals = reader.next();
             assertEquals("Entry count", 5, vals.size());
         }
+    }
+
+
+    @Test
+    public void testMeta() throws Exception {
+
+        CSVRecordReader rr = new CSVRecordReader(0,",");
+        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        int lineCount = 0;
+        while(rr.hasNext()){
+            Pair<List<Writable>,RecordMetaData> p = rr.nextMeta();
+            assertEquals(5, p.getFirst().size());
+            lineCount++;
+            RecordMetaData r = p.getSecond();
+            System.out.println(p.getFirst() + "\t" + r.getLocation());
+        }
+        assertFalse(rr.hasNext());
+        assertEquals(150, lineCount);
+        rr.reset();
+
     }
 }
