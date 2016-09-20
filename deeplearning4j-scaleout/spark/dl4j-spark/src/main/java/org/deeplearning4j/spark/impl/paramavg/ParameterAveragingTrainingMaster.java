@@ -1,5 +1,12 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -55,6 +62,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
     private static final int COALESCE_THRESHOLD = 3;
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
 
     private boolean saveUpdater;
     private Integer numWorkers;
@@ -150,6 +159,69 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.trainingMasterUID = System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
         this.rng = new Random();
     }
+
+    private static synchronized ObjectMapper getJsonMapper(){
+        if(jsonMapper == null){
+            jsonMapper = getNewMapper(new JsonFactory());
+        }
+        return jsonMapper;
+    }
+
+    private static synchronized ObjectMapper getYamlMapper(){
+        if(yamlMapper == null){
+            yamlMapper = getNewMapper(new YAMLFactory());
+        }
+        return yamlMapper;
+    }
+
+    private static ObjectMapper getNewMapper(JsonFactory jsonFactory){
+        ObjectMapper om = new ObjectMapper(new JsonFactory());
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        return om;
+    }
+
+    public String toJson(){
+        ObjectMapper om = getJsonMapper();
+
+        try{
+            return om.writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException("Error producing JSON representation for ParameterAveragingTrainingMaster",e);
+        }
+    }
+
+    public String toYaml(){
+        ObjectMapper om = getYamlMapper();
+
+        try{
+            return om.writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException("Error producing YAML representation for ParameterAveragingTrainingMaster",e);
+        }
+    }
+
+    public static ParameterAveragingTrainingMaster fromJson(String jsonStr){
+        ObjectMapper om = getJsonMapper();
+        try{
+            return om.readValue(jsonStr, ParameterAveragingTrainingMaster.class);
+        }catch(IOException e){
+            throw new RuntimeException("Could not parse JSON",e);
+        }
+    }
+
+    public static ParameterAveragingTrainingMaster fromYaml(String yamlStr){
+        ObjectMapper om = getYamlMapper();
+        try{
+            return om.readValue(yamlStr, ParameterAveragingTrainingMaster.class);
+        }catch(IOException e){
+            throw new RuntimeException("Could not parse YAML",e);
+        }
+    }
+
+
 
     @Override
     public ParameterAveragingTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
