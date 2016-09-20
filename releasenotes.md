@@ -3,7 +3,7 @@ title: Release Notes
 layout: default
 ---
 
-# <a name="six">Release Notes for Version 6.0</a> 
+# <a name="six">Release Notes for Version 0.6.0</a> 
 
 * Custom layer support
 * Support for custom loss functions
@@ -28,7 +28,7 @@ layout: default
 
 * [Deeplearning4j on Github](https://github.com/deeplearning4j)
 
-# <a name="five">Release Notes for Version 5.0</a> 
+# <a name="five">Release Notes for Version 0.5.0</a> 
 
 * FP16 support for CUDA
 * [Better performance for multi-gpu}(http://deeplearning4j.org/gpu)
@@ -39,7 +39,7 @@ layout: default
 * Numerous bug fixes
 * Spark improvements
 
-## <a name="four">Release Notes for version 4.0</a> 
+## <a name="four">Release Notes for version 0.4.0</a> 
 
 * Initial multi-GPU support viable for standalone and Spark. 
 * Refactored the Spark API significantly
