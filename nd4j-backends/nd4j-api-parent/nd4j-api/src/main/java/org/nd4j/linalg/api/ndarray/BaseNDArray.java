@@ -2074,7 +2074,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         else {
             // special optimization case, broadcast turns into ScalarOp Along Dimension
-            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'c') {
+            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'c' &&  columnVector.elementWiseStride() == 1) {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, columnVector, this, this.length(), 0.0);
@@ -2192,7 +2192,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         else {
             // special optimization case, broadcast turns into ScalarOp Along Dimension
-            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f') {
+            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f' && rowVector.elementWiseStride() == 1) {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, rowVector, this, this.length(), 0.0);

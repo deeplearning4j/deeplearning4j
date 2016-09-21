@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -315,5 +316,27 @@ public class NativeOpExecutionerTest {
         System.out.println(array2);
         assertEquals(array, array2);
 
+    }
+
+
+    @Test
+    public void testIsMaxC1() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'c');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 1));
+    }
+
+    @Test
+    public void testIsMaxC2() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'c');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 0));
+    }
+
+    @Test
+    public void testIsMaxF1() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 1));
     }
 }
