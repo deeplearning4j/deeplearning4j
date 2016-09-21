@@ -23,42 +23,42 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected int exampleCount = 0;
     protected boolean overshot = false;
     protected ImageTransform imageTransform;
-    protected static boolean preProcessCifar = false;
+    protected static boolean usePreProcessCifar = false;
     protected static boolean train = true;
 
     /**
      * Loads images with given  batchSize, numExamples, & version returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, boolean train) {
-        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize, numExamples, & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize, numExamples, imgDim & version returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize & numExamples returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples) {
-        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim) {
-        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
     }
 
     /**
@@ -84,8 +84,8 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.totalExamples = train ? totalExamples : CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples ? totalExamples : numExamples;
         this.numPossibleLabels = numPossibleLables;
-        this.preProcessCifar = preProcessCifar;
         this.imageTransform = imageTransform;
+        this.usePreProcessCifar = preProcessCifar;
         this.train = train;
     }
 
@@ -99,7 +99,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         }
         DataSet result;
         int i = 1;
-        if (preProcessCifar) {
+        if (usePreProcessCifar) {
             if (train && batchNum == 0 && i <= CifarLoader.TRAINFILENAMES.length) i++;
             result = loader.next(batchSize, i, batchNum);
         }
@@ -108,7 +108,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         exampleCount += batchSize;
         batchNum++;
 
-        if(result == null || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
+        if((result == null || result == new DataSet()) || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
             overshot = true;
             return last;
         }
@@ -140,6 +140,23 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     @Override
     public List<String> getLabels(){
         return loader.getLabels();
+    }
+
+    @Override
+    public boolean asyncSupported() {
+        return false;
+    }
+
+    public void train() {
+        this.train = true;
+        this.loader.train();
+        reset();
+    }
+
+    public void test() {
+        this.train = false;
+        this.loader.test();
+        reset();
     }
 
 
