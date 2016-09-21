@@ -1,9 +1,12 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -21,7 +24,10 @@ import java.io.IOException;
  */
 public class NormalizerMinMaxScaler implements DataNormalization {
     private static Logger logger = LoggerFactory.getLogger(NormalizerMinMaxScaler.class);
-    private INDArray min,max,maxMinusMin;
+    private int featureRank = 2;
+    private INDArray featureMaxMin, labelMaxMin;
+    private INDArray featureMin, featureMax, labelMax, labelMin;
+    private boolean fitLabels = false;
     private double minRange,maxRange;
 
     /**
@@ -48,12 +54,34 @@ public class NormalizerMinMaxScaler implements DataNormalization {
 
     @Override
     public void fit(DataSet dataSet) {
-        min = dataSet.getFeatures().min(0);
-        max = dataSet.getFeatures().max(0);
-        maxMinusMin = max.sub(min);
-        maxMinusMin.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+        featureRank = dataSet.getFeatures().rank();
+
+        INDArray theFeatures = dataSet.getFeatures();
+        if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet,true);
+        if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet,true);
+        featureMaxMin = fit(theFeatures);
+        featureMin = featureMaxMin.getRow(0).dup();
+        featureMax = featureMaxMin.getRow(1).dup();
+        featureMaxMin = featureMax.sub(featureMin);
+
+        if (fitLabels) {
+            INDArray theLabels = dataSet.getLabels();
+            if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
+            if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
+            labelMaxMin = fit(theLabels);
+            labelMin = labelMaxMin.getRow(0).dup();
+            labelMax = labelMaxMin.getRow(1).dup();
+            labelMaxMin = labelMax.sub(labelMin);
+        }
+    }
+
+    private INDArray fit(INDArray theArray) {
+        INDArray maxminhere = Nd4j.zeros(2,theArray.size(1));
+        maxminhere.putRow(0,theArray.min(0));
+        maxminhere.putRow(1,theArray.max(0));
+        if (maxminhere.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
+        return maxminhere;
     }
 
     /**
@@ -65,42 +93,85 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         INDArray nextMax, nextMin;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
-            if(min == null) {
+            featureRank = next.getFeatures().rank();
+            INDArray theFeatures = next.getFeatures();
+            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
+            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
+            if(featureMin == null) {
                 this.fit(next);
             }
             else {
-                nextMin =  next.getFeatures().min(0);;
-                min = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,min,min,min.length()));
+                nextMin =  theFeatures.min(0);;
+                featureMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,featureMin,featureMin,featureMin.length()));
 
-                nextMax =  next.getFeatures().max(0);
-                max = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,max,max,max.length()));
+                nextMax =  theFeatures.max(0);
+                featureMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,featureMax,featureMax,featureMax.length()));
+                if (fitLabels) {
+                    nextMin =  theFeatures.min(0);;
+                    labelMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,labelMin,labelMin,labelMin.length()));
+
+                    nextMax =  theFeatures.max(0);
+                    labelMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,labelMax,labelMax,labelMax.length()));
+                }
             }
         }
-        maxMinusMin = max.sub(min).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
-            logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
+        featureMaxMin= featureMax.sub(featureMin).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (featureMaxMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+            logger.info("API_INFO: Feature max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
+        if (fitLabels) {
+            labelMaxMin = labelMax.sub(labelMin).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+            if (labelMaxMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
+                logger.info("API_INFO: Labels max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
+        }
         iterator.reset();
+    }
+
+    /**
+     * Flag to specify if the labels/outputs in the dataset should be also normalized
+     * default value is false
+     * @param fitLabels
+     */
+
+    public void fitLabel(boolean fitLabels) {
+        this.fitLabels = fitLabels;
     }
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        if (min == null || max == null)
+        if (featureMin == null || featureMax == null)
             throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         if (maxRange - minRange < 0)
             throw new RuntimeException("API_USE_ERROR: The given max value minus min value has to be greater than 0");
         INDArray theFeatures = toPreProcess.getFeatures();
-        preProcess(theFeatures);
+        INDArray theLabels = toPreProcess.getLabels();
+        this.preProcess(theFeatures,true);
+        if (fitLabels) this.preProcess(theLabels,false);
     }
 
-    public void preProcess(INDArray theFeatures) {
-        // subtract by dataset min
-        theFeatures.subiRowVector(min);
-        // scale by dataset range
-        theFeatures.diviRowVector(maxMinusMin);
-        // scale by given or default feature range
-        theFeatures.muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
-        // offset by given min feature value
-        theFeatures.addi(minRange);
+    private void preProcess(INDArray theArray, boolean isFeatures) {
+        INDArray min, max, maxmin;
+        max = isFeatures ? featureMax : labelMax;
+        min = isFeatures ? featureMin : labelMin;
+        maxmin = max.sub(min);
+        if (theArray.rank() == 2) {
+            // subtract by dataset min
+            theArray.subiRowVector(featureMin);
+            // scale by dataset range
+            theArray.diviRowVector(featureMaxMin.add(Nd4j.EPS_THRESHOLD));
+            // scale by given or default feature range
+            theArray.muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+            // offset by given min feature value
+            theArray.addi(minRange);
+        }
+        // if feature Rank is 3 (time series) samplesxfeaturesxtimesteps
+        // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
+        // both cases operations should be carried out in dimension 1
+        else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(theArray,min,theArray,1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theArray,maxmin,theArray,1));
+            theArray.muli(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+            theArray.addi(minRange);
+        }
     }
 
     /**
@@ -114,16 +185,23 @@ public class NormalizerMinMaxScaler implements DataNormalization {
 
     @Override
     public void transform(INDArray theFeatures) {
-        this.preProcess(theFeatures);
+        this.preProcess(theFeatures,true);
     }
 
     public void revertPreProcess(DataSet toPreProcess) {
-        if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMin == null || featureMax== null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
 
         toPreProcess.getFeatures().subi(minRange);
         toPreProcess.getFeatures().divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
-        toPreProcess.getFeatures().muliRowVector(maxMinusMin);
-        toPreProcess.getFeatures().addiRowVector(min);
+        toPreProcess.getFeatures().muliRowVector(featureMaxMin);
+        toPreProcess.getFeatures().addiRowVector(featureMin);
+
+        if (fitLabels) {
+            toPreProcess.getLabels().subi(minRange);
+            toPreProcess.getLabels().divi(maxRange - minRange + Nd4j.EPS_THRESHOLD);
+            toPreProcess.getLabels().muliRowVector(featureMaxMin);
+            toPreProcess.getLabels().addiRowVector(featureMin);
+        }
     }
 
     /**
@@ -132,21 +210,25 @@ public class NormalizerMinMaxScaler implements DataNormalization {
      */
     public void revert(DataSet toPreProcess) {this.revertPreProcess(toPreProcess);}
 
-    public void revert(DataSetIterator toPreProcessIter) {
-        while (toPreProcessIter.hasNext()) {
-            this.revertPreProcess(toPreProcessIter.next());
-        }
-        toPreProcessIter.reset();
-    }
-
     public INDArray getMin() {
-        if (min == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        return min;
+        if (featureMin== null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return featureMin;
     }
 
     public INDArray getMax() {
-        if (max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-        return max;
+        if (featureMax == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return featureMax;
+    }
+
+    public INDArray getLabelMin() {
+        if (labelMin == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return labelMin;
+    }
+
+    public INDArray getLabelMax() {
+        if (labelMax == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return labelMax;
     }
 
     /**
@@ -156,9 +238,14 @@ public class NormalizerMinMaxScaler implements DataNormalization {
      */
     @Override
     public void load(File...statistics) throws IOException {
-        this.min = Nd4j.readBinary(statistics[0]);
-        this.max = Nd4j.readBinary(statistics[1]);
-        this.maxMinusMin = max.sub(min);
+        this.featureMin = Nd4j.readBinary(statistics[0]);
+        this.featureMax = Nd4j.readBinary(statistics[1]);
+        this.featureMaxMin = featureMax.sub(featureMin);
+        if (fitLabels) {
+            this.labelMin = Nd4j.readBinary(statistics[0]);
+            this.labelMax = Nd4j.readBinary(statistics[1]);
+            this.labelMaxMin = labelMax.sub(labelMin);
+        }
     }
 
     /**
@@ -168,7 +255,11 @@ public class NormalizerMinMaxScaler implements DataNormalization {
      */
     @Override
     public void save(File...files) throws IOException {
-        Nd4j.saveBinary(this.min,files[0]);
-        Nd4j.saveBinary(this.max,files[1]);
+        Nd4j.saveBinary(this.featureMin, files[0]);
+        Nd4j.saveBinary(this.featureMax, files[1]);
+        if (fitLabels) {
+            Nd4j.saveBinary(this.labelMin, files[2]);
+            Nd4j.saveBinary(this.labelMax, files[3]);
+        }
     }
 }
