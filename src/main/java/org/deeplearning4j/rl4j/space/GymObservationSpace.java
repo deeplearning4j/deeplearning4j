@@ -48,7 +48,7 @@ public class GymObservationSpace<O> implements ObservationSpace<O> {
 
         for (int i = 0; i < size; i++) {
             low.putScalar(i, lowJson.getDouble(i));
-            high.putScalar(i, lowJson.getDouble(i));
+            high.putScalar(i, highJson.getDouble(i));
         }
 
     }
