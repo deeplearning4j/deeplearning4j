@@ -558,13 +558,19 @@ void   NativeOps::execTransformDouble(
         double *result,
         int *resultShapeInfo,
         double *extraParams) {
+
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
 	NativeOpExcutioner<double>::execTransform(
             opNum,
             dx,
             xShapeInfo,
             result,
             resultShapeInfo,
-            extraParams);
+            extraParams,
+            tadShapeInfo,
+            tadOffsets);
 }
 
 /**
@@ -595,7 +601,7 @@ void   NativeOps::execTransformDouble(
             resultShapeInfo,
             extraParams,
             xIndexes,
-            resultIndexes);
+            resultIndexes, nullptr, nullptr);
 
 }
 
@@ -1314,13 +1320,17 @@ void   NativeOps::execTransformFloat(
         float *result,
         int *resultShapeInfo,
         float *extraParams) {
+
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
 	NativeOpExcutioner<float>::execTransform(
             opNum,
             dx,
             xShapeInfo,
             result,
             resultShapeInfo,
-            extraParams);
+            extraParams, tadShapeInfo, tadOffsets);
 }
 
 void   NativeOps::execTransformHalf(
@@ -1362,7 +1372,7 @@ void   NativeOps::execTransformFloat(
             resultShapeInfo,
             extraParams,
             xIndexes,
-            resultIndexes);
+            resultIndexes, nullptr, nullptr);
 }
 
 void   NativeOps::execTransformHalf(

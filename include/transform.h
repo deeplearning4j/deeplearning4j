@@ -272,8 +272,8 @@ template<typename OpType>
 				int *resultShapeInfo,
 				T *extraParams,
 				int *indexes,
-				int *resultIndexes) {
-                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes), TRANSFORM_OPS);
+				int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
+                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 			}
 
 
@@ -283,8 +283,8 @@ template<typename OpType>
 				int *xShapeInfo,
 				T *result,
 				int *resultShapeInfo,
-				T *extraParams) {
-                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams), TRANSFORM_OPS);
+				T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 			}
 
 
@@ -294,10 +294,10 @@ template<typename OpType>
                     int *xShapeInfo,
                     T *result,
                     int *resultShapeInfo,
-                    T *extraParams) {
+                    T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
+                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -360,7 +360,7 @@ template<typename OpType>
 				int *resultShapeInfo,
 				T *extraParams,
 				int *indexes,
-				int *resultIndexes) {
+				int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
 
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY)

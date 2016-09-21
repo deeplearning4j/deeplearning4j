@@ -130,7 +130,6 @@ template<typename T>
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__
-
 #endif
 		inline T nd4j_leakyrelu(T val,T alpha) {
 			if (val < 0.0) return alpha * val;

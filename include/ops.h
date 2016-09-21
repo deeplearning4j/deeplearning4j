@@ -16,7 +16,7 @@
 #define TAD_THRESHOLD tad_threshold
 #define AFFINITY close
 
-#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
+#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, int *tadOffsets) {}
 #ifdef __CUDACC__
 #define meta_def __noinline__ __device__
 #include <sharedmem.h>

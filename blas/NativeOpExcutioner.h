@@ -498,12 +498,12 @@ public:
                        int *xShapeInfo,
                        T *result,
                        int *resultShapeInfo,
-                       T *extraParams) {
+                       T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
-                        extraParams);
+                        extraParams, tadShapeInfo, tadOffsets);
     }
 
     /**
@@ -523,14 +523,14 @@ public:
                        int *resultShapeInfo,
                        T *extraParams,
                        int *xIndexes,
-                       int *resultIndexes) {
+                       int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
 		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
                         extraParams,
                         xIndexes,
-                        resultIndexes);
+                        resultIndexes, tadShapeInfo, tadOffsets);
 
     }
 

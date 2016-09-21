@@ -389,6 +389,7 @@ template<typename OpType>
                 // main loop, rolling along tads
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
                 for (int r = 0; r < numTads; r++) {
+
                     int offset = tadOffsets[r];
                     int offsetZ = tadOffsetsZ[r];
                     T scalar = scalars[r];
