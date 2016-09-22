@@ -81,6 +81,7 @@
                             <configuration>
                                 <excludes>
                                     <exclude>org/nd4j/nativeblas/${javacpp.platform}/*</exclude>
+                                    <exclude>lib/**</exclude>
                                 </excludes>
                             </configuration>
                         </execution>
@@ -95,6 +96,7 @@
                                 <skipIfEmpty>true</skipIfEmpty>
                                 <includes>
                                     <include>org/nd4j/nativeblas/${javacpp.platform}/*</include>
+                                    <include>lib/**</include>
                                 </includes>
                             </configuration>
                         </execution>
@@ -184,6 +186,37 @@
                 <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
             </properties>
         </profile>
+
+        <!-- Provide convenient profiles to set commonly used paths for Android -->
+        <profile>
+          <id>android-arm-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-arm</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-arm</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/arm-linux-androideabi-4.9/prebuilt/${os.name}-${os.arch}/bin/arm-linux-androideabi-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+        <profile>
+          <id>android-x86-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-x86</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-x86</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/x86-4.9/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+
     </profiles>
 
 </project>
