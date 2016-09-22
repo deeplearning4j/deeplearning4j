@@ -17,23 +17,30 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
     set(CMAKE_C_COMPILER clang-omp++)
     set(CMAKE_CXX_COMPILER clang-omp++)
 
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=${ARCH} -mtune=${ARCH}")
-
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -Wl,-rpath,$ORIGIN/ -march=${ARCH} -mtune=${ARCH}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast -march=${ARCH} -mtune=${ARCH}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast  -Wl,-rpath,$ORIGIN/ -march=${ARCH} -mtune=${ARCH}")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
+
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -march=${ARCH} -mtune=${ARCH}")
+
+    # we don't want $ORIGIN to be passed for MSVC when building CUDA on Windows
+    if (CPU_BLAS)
+        SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -Wl,-rpath,$ORIGIN/")
+    endif()
 endif()
 
 
