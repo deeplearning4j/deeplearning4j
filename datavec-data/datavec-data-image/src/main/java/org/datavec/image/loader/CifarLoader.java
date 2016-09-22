@@ -128,7 +128,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         else this.inputStream = testInputStream;
     }
 
-    // TODO preload train and test
+
 
     @Override
     public INDArray asRowVector(File f) throws IOException {
@@ -376,7 +376,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public DataSet next(int batchSize, int fileNum, int batchNum) {
-        DataSet result =  new DataSet();
+        DataSet result = new DataSet();
         if (cifarProcessedFilesExists() && usePreProcessCifar) {
             if (batchNum == 0) {
                 if(train) result.load(new File(trainFilesSerialized + fileNum + ".ser"));
@@ -411,11 +411,14 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public void train() {
-        this.train = true;
+        train = true;
+        setInputStream();
     }
 
     public void test() {
-        this.train = false;
+        train = false;
+        setInputStream();
+        shuffle = false;
     }
 
 }
