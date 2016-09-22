@@ -11,6 +11,25 @@ Native operations for nd4j. Build using cmake
 
 ## OS Specific Requirements
 
+### Android
+
+[Download the NDK](https://developer.android.com/ndk/downloads/), extract it somewhere, and execute the following commands, replacing `android-xxx` with either `android-arm` or `android-x86`:
+
+```bash
+git clone https://github.com/bytedeco/javacpp-presets
+git clone https://github.com/deeplearning4j/libnd4j
+git clone https://github.com/deeplearning4j/nd4j
+export ANDROID_NDK=/path/to/android-ndk/
+export LIBND4J_HOME=$PWD/libnd4j/
+export OpenBLAS_HOME=$PWD/javacpp-presets/openblas/cppbuild/android-xxx/
+cd javacpp-presets/openblas
+bash cppbuild.sh install -platform android-xxx
+cd ../../libnd4j
+bash buildnativeoperations.sh -platform android-xxx
+cd ../nd4j
+mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform'
+```
+
 ### OSX
 
 Run ./setuposx.sh (Please ensure you have brew installed)
