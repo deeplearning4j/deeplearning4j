@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
@@ -72,11 +73,16 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        toPreProcess.getFeatures().divi(this.maxPixelVal); //Scaled to 0->1
-        if (this.maxRange - this.minRange != 1) 
-            toPreProcess.getFeatures().muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
-        if (this.minRange != 0) 
-            toPreProcess.getFeatures().addi(this.minRange); //Offset by minRange
+        INDArray features = toPreProcess.getFeatures();
+        this.preProcess(features);
+    }
+
+    public void preProcess(INDArray features) {
+        features.divi(this.maxPixelVal); //Scaled to 0->1
+        if (this.maxRange - this.minRange != 1)
+            features.muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
+        if (this.minRange != 0)
+            features.addi(this.minRange); //Offset by minRange
     }
 
     /**
@@ -85,6 +91,10 @@ public class ImagePreProcessingScaler implements DataNormalization {
      */
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
+    }
+
+    public void transform(INDArray features) {
+        this.preProcess(features);
     }
 
     /**
