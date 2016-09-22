@@ -41,6 +41,12 @@ class ND4J_EXPORT NativeOps {
 
 
 public:
+
+
+    void setElementThreshold(int num);
+
+    void setTADThreshold(int num);
+
     /**
        *
        * @param opNum
@@ -777,9 +783,19 @@ public:
                            int xStride,
                            float *result,
                            int resultStride,
-                           double scalar,
+                           float scalar,
                            float *extraParams,
                            Nd4jIndex n);
+
+    void   execScalarHalf(Nd4jPointer *extraPointers,
+            int opNum,
+            float16 *x,
+            int xStride,
+            float16 *result,
+            int resultStride,
+            float scalar,
+            float16 *extraParams,
+            Nd4jIndex n);
 
     /**
      *
@@ -831,6 +847,41 @@ public:
                          float *extraParams,
                          int *xIndexes,
                          int *resultIndexes);
+
+
+    /*
+     * Special case: scalarOp alang dimension
+     */
+    void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                         float *x,
+                         int *xShapeInfo,
+                         float *z,
+                         int *zShapeInfo,
+                         float *scalars,
+                         float *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
+    void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                         double *x,
+                         int *xShapeInfo,
+                         double *z,
+                         int *zShapeInfo,
+                         double *scalars,
+                         double *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
+    void execScalarHalf(Nd4jPointer *extraPointers,int opNum,
+                         float16 *x,
+                         int *xShapeInfo,
+                         float16 *z,
+                         int *zShapeInfo,
+                         float16 *scalars,
+                         float16 *extraParams,
+                         int *dimension,
+                         int dimensionLength);
+
     /**
      *
      * @param opNum

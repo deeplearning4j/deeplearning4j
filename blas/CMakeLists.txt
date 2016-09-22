@@ -17,7 +17,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/ -march=${ARCH} -mtune=${ARCH}")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -29,7 +29,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -126,15 +126,15 @@ elseif(CPU_BLAS)
     FIND_PACKAGE(MKL)
     if(MKL_FOUND)
         message("USING MKL")
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__MKL")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__MKL")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__MKL ${VEC_MATH}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__MKL ${VEC_MATH}")
         target_link_libraries(nd4j ${MKL_LIBRARIES})
     else()
         find_package(OpenBLAS)
         if(OpenBLAS_FOUND)
             message("USING OPENBLAS")
-            set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__OPENBLAS")
-            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__OPENBLAS")
+            set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__OPENBLAS ${MVEC_INC}")
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__OPENBLAS ${MVEC_INC}")
             target_link_libraries(nd4j ${OpenBLAS_LIB})
         else()
             FIND_PACKAGE(BLAS)

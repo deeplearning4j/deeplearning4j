@@ -12,11 +12,11 @@
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 #define FLOAT_MAX_VALUE 3.4028235E38
 #define EPS 1e-5
-#define ELEMENT_THRESHOLD 8192
-#define TAD_THRESHOLD 64
+#define ELEMENT_THRESHOLD element_threshold
+#define TAD_THRESHOLD tad_threshold
 #define AFFINITY close
 
-#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
+#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, int *tadOffsets) {}
 #ifdef __CUDACC__
 #define meta_def __noinline__ __device__
 #include <sharedmem.h>
@@ -930,7 +930,6 @@ namespace simdOps {
 	class Mean {
 	public:
 		op_def static T startingValue(const T *input) {
-			(void)input;
 			return 0.0;
 		}
 
@@ -1414,11 +1413,21 @@ namespace simdOps {
 	template<typename T>
 	class IndexMax  {
 	public:
-		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> update(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 			if (opOutput.value > old.value)
@@ -1433,7 +1442,12 @@ namespace simdOps {
 			return old;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> merge(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (f1.value > f2.value)
@@ -1442,17 +1456,31 @@ namespace simdOps {
 		}
 
 
-		op_def static functions::indexreduce::IndexValue<T> postProcess(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-		op_def static T startingValue(T *input) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static T startingValue(T *input) {
 			return MIN_FLOAT;
 		}
-
-		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+#ifdef __INTEL_COMPILER
+        inline
+#else
+		op_def
+#endif
+        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1462,16 +1490,31 @@ namespace simdOps {
 	template<typename T>
 	class IndexMin {
 	public:
-		op_def static functions::indexreduce::IndexValue<T> op(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> op(
 				functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
-		op_def static T startingValue(T *input) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static T startingValue(T *input) {
 			return MAX_FLOAT;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> update(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 			if (opOutput.value < old.value)
@@ -1487,7 +1530,12 @@ namespace simdOps {
 			return old;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> merge(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (f1.value < f2.value)
@@ -1495,13 +1543,23 @@ namespace simdOps {
 			return f1;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> postProcess(
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1510,7 +1568,12 @@ namespace simdOps {
 	template<typename T>
 	class SummaryStatsVariance {
 	public:
-		op_def static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
 				if (ret < 0)
@@ -1520,7 +1583,12 @@ namespace simdOps {
 			return val.variance();
 		}
 
-		op_def static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
 			return d1;
 		}
 	};
@@ -1528,7 +1596,12 @@ namespace simdOps {
 	template<typename T>
 	class SummaryStatsStandardDeviation {
 	public:
-		op_def static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
 				if (ret < 0)
@@ -1539,7 +1612,12 @@ namespace simdOps {
 			return  nd4j::math::nd4j_sqrt(val.variance());
 		}
 
-		op_def static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+#ifdef __INTEL_COMPILER
+        inline
+#else
+        op_def
+#endif
+        static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
 			return d1;
 		}
 	};

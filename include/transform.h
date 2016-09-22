@@ -272,8 +272,8 @@ template<typename OpType>
 				int *resultShapeInfo,
 				T *extraParams,
 				int *indexes,
-				int *resultIndexes) {
-                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes), TRANSFORM_OPS);
+				int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
+                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 			}
 
 
@@ -283,8 +283,8 @@ template<typename OpType>
 				int *xShapeInfo,
 				T *result,
 				int *resultShapeInfo,
-				T *extraParams) {
-                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams), TRANSFORM_OPS);
+				T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 			}
 
 
@@ -294,10 +294,10 @@ template<typename OpType>
                     int *xShapeInfo,
                     T *result,
                     int *resultShapeInfo,
-                    T *extraParams) {
+                    T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
+                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -360,7 +360,7 @@ template<typename OpType>
 				int *resultShapeInfo,
 				T *extraParams,
 				int *indexes,
-				int *resultIndexes) {
+				int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
 
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY)
@@ -465,35 +465,34 @@ __device__ void transformGeneric(
 		manager);
 }
 
-/**
- * The c and driver interface
- *  for th kernels
- * @param opNum the op number
- * @param n the length of the problem
- * @param idx
- * the start index
- * @param dy the vector to transform
- * @param incy the stride for the vector
- * @param params the extra parameters for the problem
- * @param result the result storage
- * @param blockernelHeight the block size for the problem
- */
-__global__ void transformDouble(
-		int opNum,
+template <typename T, typename OpClass>
+__device__ void transformSimpleGeneric(
 		Nd4jIndex n,
-		double *dy,
+		T *dy,
 		int incy,
-		double *params,
-		double *result,int resultStride, int *allocationPointer, double *reductionPointer) {
+		T *params,
+		T *result,
+		int resultStride, int *allocationPointer, T *reductionPointer) {
 
-	transformGeneric<double>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result,
-			resultStride, allocationPointer, reductionPointer);
+	__shared__ UnifiedSharedMemory *manager;
+
+	if(threadIdx.x == 0) {
+	    extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), 0);
+	}
+	__syncthreads();
+
+	functions::transform::Transform<T>::template transformCuda<OpClass>(
+		n,
+		dy,
+		incy,
+		params,
+		result,
+		resultStride,
+		allocationPointer,
+		reductionPointer,
+		manager);
 }
 
 /**
@@ -509,55 +508,7 @@ __global__ void transformDouble(
  * @param result the result storage
  * @param blockernelHeight the block size for the problem
  */
-__global__ void transformFloat(
-		int opNum,
-		Nd4jIndex n,
-		float *dy,
-		int incy,
-		float *params,
-		float *result,int resultStride, int *allocationPointer, float *reductionPointer) {
-
-	transformGeneric<float>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result,resultStride, allocationPointer, reductionPointer);
-
-}
-
-__global__ void transformHalf(
-		int opNum,
-		Nd4jIndex n,
-		float16 *dy,
-		int incy,
-		float16 *params,
-		float16 *result,int resultStride, int *allocationPointer, float16 *reductionPointer) {
-
-	transformGeneric<float16>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result,resultStride, allocationPointer, reductionPointer);
-
-}
-
-/**
- * The c and driver interface
- *  for th kernels
- * @param opNum the op number
- * @param n the length of the problem
- * @param idx
- * the start index
- * @param dy the vector to transform
- * @param incy the stride for the vector
- * @param params the extra parameters for the problem
- * @param result the result storage
- * @param blockernelHeight the block size for the problem
- */
+/*
 template <typename T>
 __device__ void transformGeneric(
 		int opNum,
@@ -587,83 +538,38 @@ __device__ void transformGeneric(
 	    reductionPointer,
 	    manager);
 }
+*/
 
 
+template <typename T, typename OpClass>
+__device__ void transformSimpleGeneric(
+		T *dy,
+		int *xShapeInfo, int xRank,
+		T *params,
+		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
 
-/**
- * The c and driver interface
- *  for th kernels
- * @param opNum the op number
- * @param n the length of the problem
- * @param idx
- * the start index
- * @param dy the vector to transform
- * @param incy the stride for the vector
- * @param params the extra parameters for the problem
- * @param result the result storage
- * @param blockernelHeight the block size for the problem
- */
-extern "C" __global__ void transformDouble(
-		int opNum,
-		double *dy,
-		int *shapeInfo, int xRank,
-		double *params,
-		double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) {
+	__shared__ UnifiedSharedMemory *manager;
 
-	transformGeneric<double>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,resultShapeInfo, zRank, allocationPointer, reductionPointer);
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), xRank);
+	}
+	__syncthreads();
+
+
+	functions::transform::Transform<T>::template transformCuda<OpClass>(
+	    dy,
+	    xShapeInfo,
+	    params,
+	    result,
+	    resultShapeInfo,
+	    allocationPointer,
+	    reductionPointer,
+	    manager);
 }
 
-/**
- * The c and driver interface
- *  for th kernels
- * @param opNum the op number
- * @param n the length of the problem
- * @param idx
- * the start index
- * @param dy the vector to transform
- * @param incy the stride for the vector
- * @param params the extra parameters for the problem
- * @param result the result storage
- * @param blockernelHeight the block size for the problem
- */
-extern "C" __global__ void transformFloat(
-		int opNum,
-		float *dy,
-		int *shapeInfo, int xRank,
-		float *params,
-		float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) {
 
-	transformGeneric<float>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,
-			resultShapeInfo, zRank, allocationPointer, reductionPointer);
-
-}
-
-extern "C" __global__ void transformHalf(
-		int opNum,
-		float16 *dy,
-		int *shapeInfo, int xRank,
-		float16 *params,
-		float16 *result,int *resultShapeInfo, int zRank, int *allocationPointer, float16 *reductionPointer) {
-
-	transformGeneric<float16>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,
-			resultShapeInfo, zRank, allocationPointer, reductionPointer);
-
-}
 
 /**
  * The c and driver interface
@@ -1569,6 +1475,16 @@ extern "C" __global__ void shuffleKernelFloat(float **x, int **xShapeInfo, float
 extern "C" __global__ void shuffleKernelHalf(float16 **x, int **xShapeInfo, float16 **z, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
     shuffleKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
+
+// transform strided
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float, INPUT(Nd4jIndex n, float *x, int xStride, float *extraParams, float *z, int zStride, int *allocationPointer, float *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, double, INPUT(Nd4jIndex n, double *x, int xStride, double *extraParams, double *z, int zStride, int *allocationPointer, double *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float16, INPUT(Nd4jIndex n, float16 *x, int xStride, float16 *extraParams, float16 *z, int zStride, int *allocationPointer, float16 *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+
+// transform shaped
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, int *xShape, int xRank, float *extraParams, float *z, int *zShape, int zRank, int *allocationPointer, float *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, int *xShape, int xRank, double *extraParams, double *z, int *zShape, int zRank, int *allocationPointer, double *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, int *xShape, int xRank, float16 *extraParams, float16 *z, int *zShape, int zRank, int *allocationPointer, float16 *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 #endif
 

@@ -138,7 +138,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 			int kernelWidth = (int)extraParams[0];
 			int kernelHeight = (int)extraParams[1];
@@ -434,7 +434,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 			int inOffset = 0;
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
@@ -684,7 +684,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 			if (shape::isMatrix(xShapeBuffer)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
 				//iterate along rows
@@ -704,7 +704,7 @@ namespace simdOps {
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
@@ -846,7 +846,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
@@ -867,7 +867,7 @@ namespace simdOps {
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
@@ -877,7 +877,7 @@ namespace simdOps {
 				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
-				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 
 
@@ -1016,7 +1016,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
 
@@ -1041,7 +1041,7 @@ namespace simdOps {
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+				functions::transform::Transform<T>::template exec<simdOps::Exp<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
@@ -1228,7 +1228,8 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp simd
+// FIXME: proper reduction required here
+//#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							if (currMax < dx[i]) {
 								currMax = dx[i];
@@ -1275,7 +1276,8 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-#pragma omp simd
+// FIXME: proper reduction required here
+//#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
 							if (currMax < dx[i * eleStride]) {
@@ -1402,7 +1404,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 
 			if (extraParams == nullptr || extraParams[0] == 0 ||
 				(extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION)) {
@@ -1516,81 +1518,145 @@ namespace simdOps {
 
 			}
 			else {
-				int dimensionLength = (int)extraParams[0];
-				int *dimension = new int[dimensionLength];
-				for (int i = 0; i < dimensionLength; i++) {
-					dimension[i] = (int)extraParams[i + 1];
-				}
+                int dimensionLength = (int) extraParams[0];
+                int *dimension = new int[dimensionLength];
+                for (int i = 0; i < dimensionLength; i++) {
+                    dimension[i] = (int) extraParams[i + 1];
+                }
 
+/*
+                shape::TAD tad(xShapeBuffer, dimension, dimensionLength);
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+*/
+//                int tads = tad.numTads;
+                //decompose in to several sub tads after
+                //moving all dimensions (in sorted order)
+                //to the back.
+                //permuted version of the x shape info for setting up the tad problem
+                int *tadShapeShapeInfo = tadShapeInfo;
 
+                int tadLength = shape::tadLength(xShapeBuffer, dimension, dimensionLength);
+                int tads = shape::length(xShapeBuffer) / tadLength;
 
-				shape::TAD tad(xShapeBuffer, dimension, dimensionLength);
-				tad.createTadOnlyShapeInfo();
-				tad.createOffsets();
+                int tadsPerThread = tads / TAD_THRESHOLD;
+                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-				int tads = tad.numTads;
-				//decompose in to several sub tads after
-				//moving all dimensions (in sorted order)
-				//to the back.
-				//permuted version of the x shape info for setting up the tad problem
-				int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+                int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+                int zEWS = tadEWS;
 
-				int tadsPerThread = tads / TAD_THRESHOLD;
-				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+//                printf("numTads: %i; tadEWS: %i; tadLength: %i; num_threads: %i\n", tads, tadEWS, tadLength, num_threads);
+//                fflush(stdout);
+
+                int tid, start, end;
+                int span = (tads / num_threads) + 8;
+
+//#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+                {
+                    tid = omp_get_thread_num();
+                    start = span * tid;
+                    end = span * (tid + 1);
+                    if (end > tads) end = tads;
+
+                    for (int r = start; r < end; r++) {
+                        if (tadEWS > 0 && zEWS > 0) {
+                            T *rX = dx + tadOffsets[r];
+                            T *rZ = result + tadOffsets[r];
+
+                            T maxValue = rX[0];
+                            int maxIdx = 0;
+                            if (tadEWS == 1 && zEWS == 1) {
+                                for (int i = 0; i < tadLength; i++) {
+                                    T cValue = rX[i];
+                                    if (cValue > maxValue) {
+                                        maxIdx = i;
+                                        maxValue = cValue;
+                                    }
+                                }
+
+#pragma omp simd
+                                for (int i = 0; i < tadLength; i++) {
+                                    rZ[i] = maxIdx == i ? (T) 1.0 : (T) 0.0;
+                                }
+
+                            } else {
+                                for (int i = 0; i < tadLength; i++) {
+                                    T cValue = rX[i * tadEWS];
+                                    if (cValue > maxValue) {
+                                        maxIdx = i;
+                                        maxValue = cValue;
+                                    }
+                                }
+
+#pragma omp simd
+                                for (int i = 0; i < tadLength; i++) {
+                                    rZ[i * zEWS] = maxIdx == i ? (T) 1.0 : (T) 0.0;
+                                }
+                            }
+                        } else {
+                            int tadsPerThread = tads / TAD_THRESHOLD;
+                            int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
 #pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
-				for (int i = 0; i < tads; i++) {
-					int offset = tad.tadOffsets[i];
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int xStridesIter[MAX_RANK];
-					int resultStridesIter[MAX_RANK];
-					int *xShape = shape::shapeOf(tadShapeShapeInfo);
-					int *xStride = shape::stride(tadShapeShapeInfo);
-					int *resultStride = shape::stride(tadShapeShapeInfo);
-					int rank = shape::rank(tadShapeShapeInfo);
-					T *xPointer = dx + offset;
-					T *resultPointer = result + offset;
-					T maxValue = xPointer[0];
+                            for (int i = 0; i < tads; i++) {
+                                int offset = tadOffsets[i];
+                                int shapeIter[MAX_RANK];
+                                int coord[MAX_RANK];
+                                int dim;
+                                int xStridesIter[MAX_RANK];
+                                int resultStridesIter[MAX_RANK];
+                                int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                                int *xStride = shape::stride(tadShapeShapeInfo);
+                                int *resultStride = shape::stride(tadShapeShapeInfo);
+                                int rank = shape::rank(tadShapeShapeInfo);
+                                T *xPointer = dx + offset;
+                                T *resultPointer = result + offset;
+                                T maxValue = xPointer[0];
 
-					T *maxCursor = resultPointer;
-					Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
-					if (PrepareTwoRawArrayIter<T>(rank,
-						xShape,
-						xPointer,
-						xStride,
-						resultPointer,
-						resultStride,
-						&rank,
-						shapeIter,
-						&xPointer,
-						xStridesIter,
-						&resultPointer,
-						resultStridesIter) >= 0) {
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-							if (maxValue < xPointer[0]) {
-								maxCursor = resultPointer;
-								maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
-								maxValue = xPointer[0];
-							}
+                                T *maxCursor = resultPointer;
+                                Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
+                                if (PrepareTwoRawArrayIter<T>(rank,
+                                                              xShape,
+                                                              xPointer,
+                                                              xStride,
+                                                              resultPointer,
+                                                              resultStride,
+                                                              &rank,
+                                                              shapeIter,
+                                                              &xPointer,
+                                                              xStridesIter,
+                                                              &resultPointer,
+                                                              resultStridesIter) >= 0) {
+                                    ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                        if (maxValue < xPointer[0]) {
+                                            maxCursor = resultPointer;
+                                            maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
+                                            maxValue = xPointer[0];
+                                        }
 
-							resultPointer[0] = 0.0;
-						}
-						ND4J_RAW_ITER_TWO_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							xPointer,
-							xStridesIter,
-							resultPointer,
-							resultStridesIter);
-						maxCursor = reinterpret_cast<T *>(maxCursorLong);
-						maxCursor[0] = 1.0;
-					}
-				}
-			}
+                                        resultPointer[0] = 0.0;
+                                    }
+                                    ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                           rank,
+                                                           coord,
+                                                           shapeIter,
+                                                           xPointer,
+                                                           xStridesIter,
+                                                           resultPointer,
+                                                           resultStridesIter);
+                                    maxCursor = reinterpret_cast<T *>(maxCursorLong);
+                                    maxCursor[0] = 1.0;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                delete[] dimension;
+            }
 		}
 
 		op_def static T op(T d1, T *params) {

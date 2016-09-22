@@ -54,6 +54,18 @@ endif()
 FIND_PATH(OpenBLAS_INCLUDE_DIR NAMES cblas.h PATHS $ENV{OpenBLAS_HOME}/include ${Open_BLAS_INCLUDE_SEARCH_PATHS})
 FIND_LIBRARY(OpenBLAS_LIB NAMES openblas PATHS $ENV{OpenBLAS_HOME}/lib ${Open_BLAS_LIB_SEARCH_PATHS})
 
+
+# for "native" we can also go for libmvec, if it's available in system
+if ("${ARCH}" STREQUAL "native")
+    SET(MVEC_INC " -lmvec")
+    FIND_LIBRARY(MVEC_LIB NAMES mvec PATHS ${Open_BLAS_LIB_SEARCH_PATHS})
+
+    if(NOT MVEC_LIB)
+        SET(MVEC_INC " -lm")
+        MESSAGE(STATUS "Could not find MVEC lib. Falling back to generic math.")
+    endif()
+endif()
+
 SET(OpenBLAS_FOUND ON)
 
 #    Check include files
@@ -67,6 +79,8 @@ IF(NOT OpenBLAS_LIB)
     SET(OpenBLAS_FOUND OFF)
     MESSAGE(STATUS "Could not find OpenBLAS lib. Turning OpenBLAS_FOUND off")
 ENDIF()
+
+
 
 IF (OpenBLAS_FOUND)
     IF (NOT OpenBLAS_FIND_QUIETLY)

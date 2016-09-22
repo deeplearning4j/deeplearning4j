@@ -18,6 +18,7 @@ OS=
 CHIP=
 BUILD=
 COMPUTE=
+ARCH=
 LIBTYPE=
 PACKAGING=
 CHIP_VERSION=
@@ -45,6 +46,10 @@ case $key in
     ;;
     -cc|--compute)
     COMPUTE="$2"
+    shift # past argument
+    ;;
+    -a|--arch)
+    ARCH="$2"
     shift # past argument
     ;;
     -l|--libtype)
@@ -163,6 +168,10 @@ if [ -z "$COMPUTE" ]; then
  COMPUTE="all"
 fi
 
+if [ -z "$ARCH" ]; then
+ ARCH="x86-64"
+fi
+
 if [ -z "$EXPERIMENTAL" ]; then
  EXPERIMENTAL="no"
 fi
@@ -208,6 +217,8 @@ if [ "$EXPERIMENTAL" == "yes" ]; then
     EXPERIMENTAL_ARG="-DEXPERIMENTAL=yes"
 fi
 
+ARCH_ARG="-DARCH=$ARCH"
+
 CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
 if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
@@ -245,13 +256,14 @@ mkbuilddir() {
 echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
+echo ARCH    = "${ARCH}"
 echo CHIP_VERSION    = "${CHIP_VERSION}"
 echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 eval $MAKE_COMMAND && cd ../../..
 
 

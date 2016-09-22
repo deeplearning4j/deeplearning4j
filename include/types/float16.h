@@ -10,6 +10,10 @@
 #include <cfloat>
 #include <iosfwd>
 
+// support for half precision conversion
+#ifdef __INTEL_COMPILER
+#include <emmintrin.h>
+#endif
 
 
 #ifdef __CUDACC__
@@ -36,6 +40,13 @@ typedef __half half;
 
 #include <fp16_emu.h>
 
+
+#ifdef __INTEL_COMPILER
+//_Pragma("omp declare simd") inline
+local_def  float cpu_half2float(half h) {
+    return _cvtsh_ss(h.x);
+}
+#else
 local_def float cpu_half2float(half h) {
     unsigned sign = ((h.x >> 15) & 1);
     unsigned exponent = ((h.x >> 10) & 0x1f);
@@ -63,8 +74,17 @@ local_def float cpu_half2float(half h) {
 
     return *((float*)((void*)&temp));
 }
+#endif
 
+#ifdef __INTEL_COMPILER
+//_Pragma("omp declare simd") inline
+local_def half cpu_float2half_rn(float f) {
+    half ret;
+    ret.x = _cvtss_sh(f, 0);
+    return ret;
+}
 
+#else
 local_def half cpu_float2half_rn(float f)
 {
     half ret;
@@ -121,6 +141,7 @@ local_def half cpu_float2half_rn(float f)
 
     return ret;
 }
+#endif
 
 //namespace nd4j
 //{

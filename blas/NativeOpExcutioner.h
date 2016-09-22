@@ -367,6 +367,34 @@ public:
 			resultIndexes);
     }
 
+	static void execScalar(int opNum,
+						   T *x,
+						   int *xShapeInfo,
+						   T *extraParams,
+						   T *z,
+						   int *zShapeInfo,
+						   T *scalars,
+						   int *dimension,
+						   int dimensionLength,
+						   int *tadShapeInfo,
+						   int *tadOffsets,
+						   int *tadShapeInfoZ,
+						   int *tadOffsetsZ) {
+		functions::scalar::ScalarTransform<T>::transform(opNum,
+														 x,
+														 xShapeInfo,
+														 extraParams,
+														 z,
+														 zShapeInfo,
+														 scalars,
+														 dimension,
+														 dimensionLength,
+														 tadShapeInfo,
+														 tadOffsets,
+														 tadShapeInfoZ,
+														 tadOffsetsZ);
+	}
+
     /**
      *
      * @param opNum
@@ -470,12 +498,12 @@ public:
                        int *xShapeInfo,
                        T *result,
                        int *resultShapeInfo,
-                       T *extraParams) {
+                       T *extraParams, int *tadShapeInfo, int *tadOffsets) {
 		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
-                        extraParams);
+                        extraParams, tadShapeInfo, tadOffsets);
     }
 
     /**
@@ -495,14 +523,14 @@ public:
                        int *resultShapeInfo,
                        T *extraParams,
                        int *xIndexes,
-                       int *resultIndexes) {
+                       int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
 		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
                         extraParams,
                         xIndexes,
-                        resultIndexes);
+                        resultIndexes, tadShapeInfo, tadOffsets);
 
     }
 
