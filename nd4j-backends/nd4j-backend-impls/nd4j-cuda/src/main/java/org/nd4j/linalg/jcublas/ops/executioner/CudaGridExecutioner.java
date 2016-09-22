@@ -383,7 +383,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 // TODO: extend non-experimental support for MetaOps
                 // we enable this only for PairwisetTransforms.Set followed by scalar
                 if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
-                    if (op instanceof ScalarOp) {
+                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null) {
                         return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
                     }
                 }

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -2072,7 +2073,50 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             applyScalarOp(columnVector, operation);
         }
         else {
-            applyBroadcastOp(columnVector, operation);
+            // special optimization case, broadcast turns into ScalarOp Along Dimension
+            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'c' &&  columnVector.elementWiseStride() == 1) {
+                switch (operation) {
+                    case 'a': {
+                        ScalarAdd op = new ScalarAdd(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 's': {
+                        ScalarSubtraction op = new ScalarSubtraction(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'm': {
+                        ScalarMultiplication op = new ScalarMultiplication(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'd': {
+                        ScalarDivision op = new ScalarDivision(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'h': {
+                        ScalarReverseSubtraction op = new ScalarReverseSubtraction(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 't': {
+                        ScalarReverseDivision op = new ScalarReverseDivision(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+
+                }
+            } else {
+                applyBroadcastOp(columnVector, operation);
+            }
 
         }
 
@@ -2147,7 +2191,50 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
         else {
-            applyBroadcastOp(rowVector, operation);
+            // special optimization case, broadcast turns into ScalarOp Along Dimension
+            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f' && rowVector.elementWiseStride() == 1) {
+                switch (operation) {
+                    case 'a': {
+                        ScalarAdd op = new ScalarAdd(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 's': {
+                        ScalarSubtraction op = new ScalarSubtraction(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'm': {
+                        ScalarMultiplication op = new ScalarMultiplication(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'd': {
+                        ScalarDivision op = new ScalarDivision(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'h': {
+                        ScalarReverseSubtraction op = new ScalarReverseSubtraction(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 't': {
+                        ScalarReverseDivision op = new ScalarReverseDivision(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+
+                }
+            } else {
+                applyBroadcastOp(rowVector, operation);
+            }
         }
 
         return this;

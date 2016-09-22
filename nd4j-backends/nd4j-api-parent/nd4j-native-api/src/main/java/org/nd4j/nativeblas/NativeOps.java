@@ -98,6 +98,22 @@ public class NativeOps extends Pointer {
     }
 
     /**
+     * This method allows you to specify minimal number of elements per thread/block during op call
+     * PLEASE NOTE: Changing this value might and will affect performance.
+     *
+     * @param value
+     */
+    public native void setElementThreshold(int value);
+
+    /**
+     * This method allows you to specify minimal number of TADs per thread/block during op call
+     * PLEASE NOTE: Changing this value might and will affect performance.
+     *
+     * @param value
+     */
+    public native void setTADThreshold(int value);
+
+    /**
      *
      * @param opNum
      * @param x
@@ -825,9 +841,65 @@ public class NativeOps extends Pointer {
                                          int xStride,
                                          FloatPointer results,
                                          int resultStride,
-                                         double scalar,
+                                         float scalar,
                                          FloatPointer extraParams,
                                          long n);
+
+    public native void   execScalarHalf(PointerPointer extraPointers, int opNum,
+                                         @Cast("float16*") ShortPointer x,
+                                         int xStride,
+                                         @Cast("float16*") ShortPointer results,
+                                         int resultStride,
+                                         float scalar,
+                                         @Cast("float16*") ShortPointer extraParams,
+                                         long n);
+
+    /**
+     * ScalarOp along dimension
+     *
+     * @param extraPointers pointers to tadShapes and tadoffsets
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param z
+     * @param zShapeInfo
+     * @param scalars
+     * @param extraParams
+     * @param dimension
+     * @param dimensionLength
+     */
+    public native void execScalarFloat(PointerPointer extraPointers, int opNum,
+                                       FloatPointer x,
+                                       IntPointer xShapeInfo,
+                                       FloatPointer z,
+                                       IntPointer zShapeInfo,
+                                       FloatPointer scalars,
+                                       FloatPointer extraParams,
+                                       IntPointer dimension,
+                                       int dimensionLength
+                                       );
+
+    public native void execScalarDouble(PointerPointer extraPointers, int opNum,
+                                       DoublePointer x,
+                                       IntPointer xShapeInfo,
+                                       DoublePointer z,
+                                       IntPointer zShapeInfo,
+                                       DoublePointer scalars,
+                                       DoublePointer extraParams,
+                                       IntPointer dimension,
+                                       int dimensionLength
+    );
+
+    public native void execScalarHalf(PointerPointer extraPointers, int opNum,
+                                        @Cast("float16*") ShortPointer x,
+                                        IntPointer xShapeInfo,
+                                        @Cast("float16*") ShortPointer z,
+                                        IntPointer zShapeInfo,
+                                        @Cast("float16*") ShortPointer scalars,
+                                        @Cast("float16*") ShortPointer extraParams,
+                                        IntPointer dimension,
+                                        int dimensionLength
+    );
 
     /**
      *
@@ -874,7 +946,7 @@ public class NativeOps extends Pointer {
                                        IntPointer xShapeInfo,
                                        FloatPointer results,
                                        IntPointer resultShapeInfo,
-                                       double scalar,
+                                       float scalar,
                                        FloatPointer extraParams,
                                        IntPointer xIndexes,
                                        IntPointer resultIndexes);
