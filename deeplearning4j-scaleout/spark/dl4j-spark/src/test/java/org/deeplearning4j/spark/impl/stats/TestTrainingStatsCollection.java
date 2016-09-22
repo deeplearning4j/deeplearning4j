@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -232,6 +233,13 @@ public class TestTrainingStatsCollection {
 
             String htmlPlotsPath = FilenameUtils.concat(outDir, "AnalysisPlots.html");
             StatsUtils.exportStatsAsHtml(stats, htmlPlotsPath, sc);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            StatsUtils.exportStatsAsHTML(stats, baos);
+            baos.close();
+            byte[] bytes = baos.toByteArray();
+            String str = new String(bytes,"UTF-8");
+//            System.out.println(str);
         } finally {
             sc.stop();
         }
