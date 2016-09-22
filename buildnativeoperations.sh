@@ -8,51 +8,13 @@ fi
 export MAKE_COMMAND="make"
 echo eval $CMAKE_COMMAND
 
-OS="generic"
-if [ "$(uname)" == "Darwin" ]; then
-    OS="macosx"
-
-    echo "RUNNING OSX CLANG"
-    # Do something under Mac OS X platform
-    export CC=clang-omp
-    export CXX=clang-omp++
-elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
-    OS="windows"
-
-    # Do something under Windows NT platform
-    if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
-        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
-        export MAKE_COMMAND="nmake"
-    else
-        export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-        export MAKE_COMMAND="make"
-    fi
-    # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
-    if [ -z "${VCINSTALLDIR:-}" ]; then
-        export VisualStudioVersion=12.0
-        export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
-        export VCINSTALLDIR="$VSINSTALLDIR\\VC"
-        export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
-        export Platform=X64
-        export INCLUDE="$VCINSTALLDIR\\INCLUDE;$WindowsSdkDir\\include\\shared;$WindowsSdkDir\\include\\um"
-        export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
-        export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
-        export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
-    fi
-    # Make sure we are using 64-bit MinGW-w64
-    export PATH=/mingw64/bin/:$PATH
-    CC=/mingw64/bin/gcc
-    CXX=/mingw64/bin/g++
-    echo "Running windows"
-   # export GENERATOR="MSYS Makefiles"
-
-fi
 # Use > 1 to consume two arguments per pass in the loop (e.g. each
 # argument has a corresponding value to go with it).
 # Use > 0 to consume one or more arguments per pass in the loop (e.g.
 # some arguments don't have a corresponding value to go with it such
 # as in the --default example).
 # note: if this is set to > 0 the /etc/hosts part is not recognized ( may be a bug )
+OS=
 CHIP=
 BUILD=
 COMPUTE=
@@ -65,6 +27,10 @@ do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
 case $key in
+    -o|-platform|--platform)
+    OS="$2"
+    shift # past argument
+    ;;
     -b|--build-type)
     BUILD="$2"
     shift # past argument
@@ -102,6 +68,79 @@ case $key in
 esac
 shift # past argument or value
 done
+
+HOST="generic"
+KERNEL="linux-x86_64"
+if [ "$(uname)" == "Darwin" ]; then
+    HOST="macosx"
+    KERNEL="darwin-x86_64"
+    echo "RUNNING OSX CLANG"
+elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
+    HOST="windows"
+    KERNEL="windows-x86_64"
+    echo "Running windows"
+fi
+
+if [ -z "$OS" ]; then
+    OS="$HOST"
+fi
+
+if [[ -z ${ANDROID_NDK:-} ]]; then
+    ANDROID_NDK=~/Android/android-ndk/
+fi
+
+case "$OS" in
+    android-arm)
+    export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/bin/arm-linux-androideabi"
+    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
+    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
+    export CMAKE_COMMAND="cmake -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake"
+    ;;
+
+    android-x86)
+    export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/bin/i686-linux-android"
+    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
+    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
+    export CMAKE_COMMAND="cmake -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake"
+    ;;
+
+    generic)
+    ;;
+
+    macosx)
+    # Do something under Mac OS X platform
+    export CC=clang-omp
+    export CXX=clang-omp++
+    ;;
+
+    windows)
+    # Do something under Windows NT platform
+    if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
+        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
+        export MAKE_COMMAND="nmake"
+    else
+        export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
+        export MAKE_COMMAND="make"
+    fi
+    # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
+    if [ -z "${VCINSTALLDIR:-}" ]; then
+        export VisualStudioVersion=12.0
+        export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
+        export VCINSTALLDIR="$VSINSTALLDIR\\VC"
+        export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
+        export Platform=X64
+        export INCLUDE="$VCINSTALLDIR\\INCLUDE;$WindowsSdkDir\\include\\shared;$WindowsSdkDir\\include\\um"
+        export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
+        export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
+        export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
+    fi
+    # Make sure we are using 64-bit MinGW-w64
+    export PATH=/mingw64/bin/:$PATH
+    CC=/mingw64/bin/gcc
+    CXX=/mingw64/bin/g++
+    # export GENERATOR="MSYS Makefiles"
+    ;;
+esac
 
 if [ -z "$BUILD" ]; then
  BUILD="release"
@@ -188,6 +227,7 @@ fi
 mkbuilddir() {
     mkdir -p blasbuild
     cd blasbuild
+    # create appropriate directories and links here for ND4J
     if [ -n "$CHIP_VERSION" ]; then
         rm -rf "$CHIP-$CHIP_VERSION" "$CHIP"
         mkdir -p "$CHIP-$CHIP_VERSION"
