@@ -17,7 +17,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/ -march=${ARCH} -mtune=${ARCH}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -26,10 +26,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=${ARCH} -mtune=${ARCH}")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast -march=${ARCH} -mtune=${ARCH}")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
