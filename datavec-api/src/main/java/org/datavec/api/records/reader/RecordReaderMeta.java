@@ -36,6 +36,8 @@ public interface RecordReaderMeta extends RecordReader {
 
     Record nextMeta();
 
+    Record loadFromMeta(RecordMetaData recordMetaData) throws IOException;
+
     List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

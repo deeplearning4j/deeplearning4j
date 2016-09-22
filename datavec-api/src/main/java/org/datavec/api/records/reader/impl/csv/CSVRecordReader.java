@@ -23,6 +23,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
@@ -106,6 +107,11 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
         URI uri = (locations == null || locations.length < 1 ? null : locations[0]);    //TODO: handle String splits etc
         RecordMetaData meta = new RecordMetaDataLine(this.currIndex-1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
         return new Record(next, meta);
+    }
+
+    @Override
+    public Record loadFromMeta(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMeta(Collections.singletonList(recordMetaData)).get(0);
     }
 
     @Override
