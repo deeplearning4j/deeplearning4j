@@ -19,10 +19,15 @@
 package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -33,7 +38,9 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import javax.annotation.Generated;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,6 +64,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected boolean useCurrent = false;
     protected boolean regression = false;
     @Getter protected DataSetPreProcessor preProcessor;
+
+    @Getter @Setter
+    private boolean collectMetaData = false;
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -137,6 +147,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         List<DataSet> dataSets = new ArrayList<>();
+        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
         for (int i = 0; i < num; i++) {
             if (!hasNext())
                 break;
@@ -149,8 +160,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 List<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
             } else {
-                List<Writable> record = recordReader.next();
-                dataSets.add(getDataSet(record));
+                if(collectMetaData && (recordReader instanceof RecordReaderMeta)){
+                    Record record = ((RecordReaderMeta) recordReader).nextMeta();
+                    dataSets.add(getDataSet(record.getRecord()));
+                    meta.add(record.getMetaData());
+                } else {
+                    List<Writable> record = recordReader.next();
+                    dataSets.add(getDataSet(record));
+                }
             }
         }
         batchNum++;
@@ -159,6 +176,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return new DataSet();
 
         DataSet ret = DataSet.merge(dataSets);
+        if(collectMetaData){
+            ret.setExampleMetaData(meta);
+        }
         last = ret;
         if (preProcessor != null) preProcessor.preProcess(ret);
         //Add label name values to dataset
@@ -343,4 +363,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         return recordReader.getLabels();
     }
 
+
+    public DataSet loadFromMeta(RecordMetaData meta){
+        return loadFromMeta(Collections.singletonList(meta));
+    }
+
+    public DataSet loadFromMeta(List<RecordMetaData> list){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

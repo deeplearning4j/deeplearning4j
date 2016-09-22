@@ -18,7 +18,10 @@
 
 package org.deeplearning4j.eval;
 
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -26,7 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
@@ -57,6 +59,8 @@ public class Evaluation implements Serializable {
     protected List<String> labelsList = new ArrayList<>();
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
+
+    protected Map<Pair<Integer,Integer>,List<RecordMetaData>> confusionMatrixMeta;      //Pair: (Actual,Predicted)
 
     // Empty constructor
     public Evaluation() {
@@ -185,6 +189,10 @@ public class Evaluation implements Serializable {
      * @param guesses      the guesses/prediction (usually a probability vector)
      */
     public void eval(INDArray realOutcomes, INDArray guesses) {
+
+    }
+
+    public void eval(INDArray realOutcomes, INDArray guesses, List<RecordMetaData> meta ) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -234,7 +242,14 @@ public class Evaluation implements Serializable {
 
             int nExamples = guessIndex.length();
             for( int i=0; i<nExamples; i++ ){
-                confusion.add((int)realOutcomeIndex.getDouble(i),(int)guessIndex.getDouble(i));
+                int actual = (int)realOutcomeIndex.getDouble(i);
+                int predicted = (int)guessIndex.getDouble(i);
+                confusion.add(actual,predicted);
+
+                if(meta != null && meta.size() > i){
+                    RecordMetaData m = meta.get(i);
+                    addToMetaConfusionMatrix(actual,predicted,m);
+                }
             }
 
             for (int col = 0; col < nCols; col++) {
@@ -959,4 +974,75 @@ public class Evaluation implements Serializable {
         return out.toString();
     }
 
+
+    private void addToMetaConfusionMatrix(int actual, int predicted, RecordMetaData metaData){
+        if(confusionMatrixMeta == null){
+            confusionMatrixMeta = new HashMap<>();
+        }
+
+        Pair<Integer,Integer> p = new Pair<>(actual,predicted);
+        List<RecordMetaData> list = confusionMatrixMeta.get(p);
+        if(list == null){
+            list = new ArrayList<>();
+            confusionMatrixMeta.put(p,list);
+        }
+
+        list.add(metaData);
+    }
+
+    public void getRecordDataForConfusionMatrix(int actual, int predicted){
+
+    }
+
+//    public List<Triple<Integer,Integer,RecordMetaData>> getPredictionErrors(){
+//        if(this.confusionMatrixMeta == null) return null;
+//
+//        List<Triple<Integer,Integer,RecordMetaData>> list = new ArrayList<>();
+//        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : confusionMatrixMeta.entrySet()){
+//            Pair<Integer,Integer> p = entry.getKey();
+//            if(p.getFirst().equals(p.getSecond())){
+//                //predicted = actual -> not an error -> skip
+//                continue;
+//            }
+//            for(RecordMetaData m : entry.getValue()){
+//                list.add(new Triple<>(p.getFirst(),p.getSecond(),m));
+//            }
+//        }
+//
+//        return list;
+//    }
+
+    public List<Prediction> getPredictionErrors(){
+        if(this.confusionMatrixMeta == null) return null;
+
+        List<Prediction> list = new ArrayList<>();
+
+        List<Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>>> sorted = new ArrayList<>(confusionMatrixMeta.entrySet());
+        Collections.sort(sorted, new Comparator<Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>>>() {
+            @Override
+            public int compare(Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o1, Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o2) {
+                Pair<Integer,Integer> p1 = o1.getKey();
+                Pair<Integer,Integer> p2 = o2.getKey();
+                int order = Integer.compare(p1.getFirst(),p2.getFirst());
+                if(order != 0) return order;
+                order = Integer.compare(p1.getSecond(), p2.getSecond());
+                return order;
+            }
+        });
+
+//        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : confusionMatrixMeta.entrySet()){
+        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : sorted){
+            Pair<Integer,Integer> p = entry.getKey();
+            if(p.getFirst().equals(p.getSecond())){
+                //predicted = actual -> not an error -> skip
+                continue;
+            }
+            for(RecordMetaData m : entry.getValue()){
+//                list.add(new Triple<>(p.getFirst(),p.getSecond(),m));
+                list.add(new Prediction(p.getFirst(), p.getSecond(),m));
+            }
+        }
+
+        return list;
+    }
 }
