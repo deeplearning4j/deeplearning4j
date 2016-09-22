@@ -81,8 +81,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return (List<T>)exampleMetaData;
     }
 
-    public void setExampleMetaData(List<Object> exampleMetaData){
-        this.exampleMetaData = exampleMetaData;
+    public void setExampleMetaData(List<?> exampleMetaData){
+        this.exampleMetaData = (List<Object>)exampleMetaData;
     }
 
 
