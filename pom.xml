@@ -340,7 +340,11 @@
 
 
 
-
+            <!--
+            Maven Shade plugin is used here to rename dependencies (Jackson) to create a "private copy" for DL4J to use.
+            This stops dependency clashes with other libraries that use Jackson (Spark, Dropwizard, etc).
+            More generally, it allows users to add their own versions of these dependencies without impacting DL4J.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -352,7 +356,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>reference.conf</resource>
@@ -366,10 +369,12 @@
                 </executions>
 
                 <configuration>
-                    <!--<shadedArtifactAttached>true</shadedArtifactAttached>-->
+                    <!-- shadedArtifactAttached - False: main jar is shaded. True: main jar is unmodified, and separate '-shaded' jar also built -->
                     <shadedArtifactAttached>false</shadedArtifactAttached>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <shadeTestJar>true</shadeTestJar>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
 
+                    <!-- Specify the dependencies to include in the DL4J jar files (for install, package etc) -->
                     <artifactSet>
                         <includes>
                             <include>com.fasterxml.jackson:*</include>
@@ -377,10 +382,11 @@
                         </includes>
                     </artifactSet>
 
+                    <!-- Specify for which dependencies renaming should occur, and the new package names -->
                     <relocations>
                         <relocation>
                             <pattern>com.fasterxml.jackson</pattern>
-                            <shadedPattern>org.deeplearning4j.jackson</shadedPattern>
+                            <shadedPattern>org.deeplearning4j.shade.jackson</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>

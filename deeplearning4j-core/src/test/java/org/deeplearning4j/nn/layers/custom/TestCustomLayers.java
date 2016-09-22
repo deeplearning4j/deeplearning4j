@@ -16,14 +16,10 @@
 
 package org.deeplearning4j.nn.layers.custom;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.custom.testlayers.CustomLayer;
@@ -37,10 +33,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -52,16 +44,10 @@ public class TestCustomLayers {
     @Test
     public void testJsonMultiLayerNetwork() {
         //First: Ensure that the CustomLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
         boolean found = false;
-        for (NamedType nt : types) {
-            System.out.println(nt);
-//            registeredSubtypes.add(nt.getType());
-            if (nt.getType() == CustomLayer.class) found = true;
+        for(Class<?> c : NeuralNetConfiguration.getRegisteredSubtypes()){
+            System.out.println(c);
+            if (c == CustomLayer.class) found = true;
         }
 
         assertTrue("CustomLayer: not registered with NeuralNetConfiguration mapper", found);
@@ -144,16 +130,10 @@ public class TestCustomLayers {
     @Test
     public void testCustomOutputLayerMLN(){
         //First: Ensure that the CustomOutputLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
         boolean found = false;
-        for (NamedType nt : types) {
-            System.out.println(nt);
-//            registeredSubtypes.add(nt.getType());
-            if (nt.getType() == CustomOutputLayer.class) found = true;
+        for(Class<?> c : NeuralNetConfiguration.getRegisteredSubtypes()){
+            System.out.println(c);
+            if (c == CustomOutputLayer.class) found = true;
         }
 
         assertTrue("CustomOutputLayer: not registered with NeuralNetConfiguration mapper", found);
