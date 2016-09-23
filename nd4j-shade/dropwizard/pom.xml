@@ -56,7 +56,8 @@
                             <include>io.dropwizard:*</include>
                             <include>io.dropwizard.*:*</include>
                             <!-- Dropwizard key dependencies: glassfish, jersey, jetty, jackson -->
-                            <include>org.glassfish</include>
+                            <include>org.glassfish.*:*</include>
+                            <include>org.glassfish:*</include>
                             <include>com.sun.jersey:*</include>
                             <include>com.sun.jersey.*:*</include>
                             <include>org.eclipse.jetty:*</include>
@@ -91,7 +92,7 @@
                         <!-- Jetty (org.eclipse.jetty) -->
                         <relocation>
                             <pattern>org.eclipse.jetty</pattern>
-                            <shadedPattern>org.nd4j.shade.jetty</shadedPattern>
+                            <shadedPattern>org.nd4j.shade.eclipse.jetty</shadedPattern>
                         </relocation>
 
                         <!-- Jackson dependencies. We are shading Jackson for dropwizard separately to other ND4J dependencies to allow separate versions -->
