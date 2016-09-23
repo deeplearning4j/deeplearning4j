@@ -120,7 +120,7 @@ case "$OS" in
 
     windows)
     # Do something under Windows NT platform
-    if [ "$#" -gt 1 ] && [ "$2" == "cuda" ]; then
+    if [ "$CHIP" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
         export MAKE_COMMAND="nmake"
     else
