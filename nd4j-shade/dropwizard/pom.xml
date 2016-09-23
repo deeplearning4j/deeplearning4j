@@ -10,8 +10,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dropwizard</artifactId>
-    <packaging>pom</packaging>
-
 
     <build>
         <plugins>
@@ -33,14 +31,11 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>reference.conf</resource>
                                 </transformer>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -135,13 +130,13 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>jackson</artifactId>
-                </exclusion>
-            </exclusions>
+            <!--<scope>provided</scope>-->
+            <!--<exclusions>-->
+            <!--<exclusion>-->
+            <!--<groupId>org.nd4j</groupId>-->
+            <!--<artifactId>jackson</artifactId>-->
+            <!--</exclusion>-->
+            <!--</exclusions>-->
         </dependency>
 
 
@@ -188,9 +183,9 @@
         </dependency>
 
         <!--<dependency>-->
-            <!--<groupId>javax.ws.rs</groupId>-->
-            <!--<artifactId>javax.ws.rs-api</artifactId>-->
-            <!--<version>2.0.1</version>-->
+        <!--<groupId>javax.ws.rs</groupId>-->
+        <!--<artifactId>javax.ws.rs-api</artifactId>-->
+        <!--<version>2.0.1</version>-->
         <!--</dependency>-->
 
 

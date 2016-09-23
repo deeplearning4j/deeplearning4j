@@ -1,4 +1,4 @@
-package org.nd4j.shade.serde.dwjackson;
+package org.nd4j.serde.dwjackson;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
 
 import java.io.IOException;
 
