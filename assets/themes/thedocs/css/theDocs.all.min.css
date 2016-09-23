@@ -13035,8 +13035,8 @@ and (orientation : portrait)
   }
   .banner.overlay-black {
     background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
-    min-height: 100% !important;
-    min-width: 100%!important;
+    -webkit-background-size: 100% 100% !important;
+    background-size: 100% 100% !important;
   }
 }
 
