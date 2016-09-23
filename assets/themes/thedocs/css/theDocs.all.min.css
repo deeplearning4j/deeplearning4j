@@ -11666,6 +11666,7 @@ h1:hover a:before,h2:hover a:before,h3:hover a:before {
   background-color: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
+  margin-top: 100px;
 }
 
 .btn-outline.active,.btn-outline.focus,.btn-outline:active,.btn-outline:focus,.btn-outline:hover {
@@ -13020,9 +13021,43 @@ figcaption {
   color: #333;
 }
 
+/*Styles for Tablets*/
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px)
+and (orientation : landscape)
+{
+  .banner .container,.banner .container-fluid {
+    position: relative;
+    top: 55%;
+    -webkit-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+  }
+  .btn-outline {
+    margin-top: 0px;
+  }
+}
+
+/*Styles for Phone*/
+@media only screen
+and (min-device-width : 375px)
+and (max-device-width : 667px) {
+  .banner .container,.banner .container-fluid {
+    position: relative;
+    top: 48%;
+    -webkit-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+  }
+  .btn-outline {
+    margin-top: 0px;
+  }
+}
+
 .banner .container,.banner .container-fluid {
   position: relative;
-  top: 47%;
+  top: 50%;
   -webkit-transform: translateY(-50%);
   -o-transform: translateY(-50%);
   transform: translateY(-50%);
