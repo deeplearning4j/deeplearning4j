@@ -13021,7 +13021,27 @@ figcaption {
   color: #333;
 }
 
-/*Styles for Tablets*/
+/*Styles for Tablet*/
+@media only screen
+and (min-device-width : 668px)
+and (max-device-width : 1024px)
+and (orientation : portrait)
+{
+  .banner .container,.banner .container-fluid {
+    position: relative;
+    top: 55% !important;
+    -webkit-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+  }
+  .btn-outline {
+    margin-top: 0px;
+  }
+  .banner {
+    background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpeg) !important;
+  }
+}
+
 @media only screen
 and (min-device-width : 668px)
 and (max-device-width : 1024px)
@@ -13042,7 +13062,26 @@ and (orientation : landscape)
 /*Styles for Phone*/
 @media only screen
 and (min-device-width : 375px)
-and (max-device-width : 667px) {
+and (max-device-width : 667px)
+and (orientation : portrait)
+{
+  .banner .container,.banner .container-fluid {
+    position: relative;
+    top: 48% !important;
+    -webkit-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+  }
+  .btn-outline {
+    margin-top: 0px;
+  }
+}
+
+@media only screen
+and (min-device-width : 375px)
+and (max-device-width : 667px)
+and (orientation : landscape)
+{
   .banner .container,.banner .container-fluid {
     position: relative;
     top: 48% !important;
