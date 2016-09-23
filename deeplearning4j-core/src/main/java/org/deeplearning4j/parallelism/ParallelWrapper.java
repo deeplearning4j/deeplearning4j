@@ -73,7 +73,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     /**
-     * This method
+     * This method causes all threads used for parallel training to stop
      */
     public synchronized void shutdown() {
         try {
@@ -359,6 +359,7 @@ public class ParallelWrapper implements AutoCloseable {
         private int threadId;
         private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
+        private Exception thrownException;
 
         public Trainer(int threadId, Model model) {
             this.threadId = threadId;
@@ -414,6 +415,10 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         public boolean isRunning(){
+            // if Trainer thread got exception during training - rethrow it here
+            if (thrownException != null)
+                throw new RuntimeException(thrownException);
+
             return running.get() == 0;
         }
 
@@ -453,12 +458,17 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 }
             } catch (Exception e) {
-                //
+                this.thrownException = e;
             }
         }
 
         public void waitTillRunning() {
             while (running.get() != 0) {
+
+                // if Trainer thread got exception during training - rethrow it here
+                if (thrownException != null)
+                    throw new RuntimeException(thrownException);
+
                 try {
                     Thread.sleep(10);
                 } catch (Exception e) {
