@@ -107,8 +107,8 @@ public class LoaderTests {
 
         train = true;
         preProcessCifar = true;
-        row = 28;
-        col = 28;
+        row = 32;
+        col = 32;
         channels = 3;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(1);

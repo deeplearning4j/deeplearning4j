@@ -87,7 +87,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected double vMean = 0;
     protected double vStd = 0;
     protected boolean meanStdStored = false;
-    protected boolean usePreProcessCifar = false; // TODO setup so new class instance not needed for test and drop this
+    protected int idx = 0;
+    protected DataSet loadDS = new DataSet();
 
     public CifarLoader() {
         this(height,width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
@@ -124,8 +125,6 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         this.seed = seed;
         this.shuffle = shuffle;
         load();
-        if(train) this.inputStream = trainInputStream;
-        else this.inputStream = testInputStream;
     }
 
 
@@ -360,7 +359,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 throw new IllegalStateException("The number of channels must be 3 to special preProcess Cifar with.");
             }
         }
-        if(shuffle) result.shuffle(seed); // TODO confirm shuffle not same on mult epochs with set seed...
+        if(shuffle && num > 1) result.shuffle(seed); // TODO confirm shuffle not same on mult epochs with set seed...
         return result;
     }
 
@@ -376,16 +375,26 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public DataSet next(int batchSize, int fileNum, int batchNum) {
-        DataSet result = new DataSet();
-        if (cifarProcessedFilesExists() && usePreProcessCifar) {
+        List<DataSet> temp = new ArrayList<>();
+        DataSet result;
+        if (cifarProcessedFilesExists() && preProcessCifar) {
             if (batchNum == 0) {
-                if(train) result.load(new File(trainFilesSerialized + fileNum + ".ser"));
-                else result.load(new File(testFilesSerialized));
+                if(train) loadDS.load(new File(trainFilesSerialized + fileNum + ".ser"));
+                else loadDS.load(new File(testFilesSerialized));
                 // Shuffle all examples in file before batching happens also for each reset
-                if(shuffle) result.shuffle(seed);
-                inputBatched = result.batchBy(batchSize);
+                if(shuffle && batchSize > 1) loadDS.shuffle(seed);
+//                inputBatched = loadDS.batchBy(batchSize);
+                idx = 0;
             }
-            result = inputBatched.get(batchNum);
+//            result = inputBatched.get(batchNum);
+            // TODO find better way - loading full dataset using gpu throwing errors
+            for (int i = 0; i < batchSize; i++) {
+                temp.add(loadDS.get(idx));
+                idx ++;
+            }
+            if (temp.size() > 1 ) result = DataSet.merge(temp);
+            else result = temp.get(0);
+
         } else {
             result = convertDataSet(batchSize);
         }
