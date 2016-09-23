@@ -13037,7 +13037,7 @@ and (orientation : portrait)
   .btn-outline {
     margin-top: 0px;
   }
-  .banner {
+  .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
   }
 }
@@ -13057,7 +13057,7 @@ and (orientation : landscape)
   .btn-outline {
     margin-top: 0px;
   }
-  .banner {
+  .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
   }
 }
@@ -13078,7 +13078,7 @@ and (orientation : portrait)
   .btn-outline {
     margin-top: 0px;
   }
-  .banner {
+  .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
   }
 }
@@ -13098,7 +13098,7 @@ and (orientation : landscape)
   .btn-outline {
     margin-top: 0px;
   }
-  .banner {
+  .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
   }
 }
