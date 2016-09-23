@@ -236,6 +236,7 @@
     <name>nd4j</name>
     <url>http://nd4j.org/</url>
     <modules>
+        <module>nd4j-shade</module>
         <module>nd4j-jdbc</module>
         <module>nd4j-instrumentation</module>
         <module>nd4j-perf</module>
@@ -245,7 +246,6 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
-        <module>nd4j-shade</module>
     </modules>
 
     <properties>
