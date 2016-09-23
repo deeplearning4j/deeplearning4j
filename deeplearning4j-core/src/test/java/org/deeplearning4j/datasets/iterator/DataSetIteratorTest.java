@@ -197,11 +197,11 @@ public class DataSetIteratorTest {
 		int outputNum = CifarLoader.NUM_LABELS;
 		int numSamples = 110;
 		int batchSize = 5;
-		int iterations = 10;
+		int iterations = 1;
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, new int[] {height, width, channels}, true, preProcessCifar);
+		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, new int[] {height, width, channels}, preProcessCifar, true);
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
@@ -232,7 +232,7 @@ public class DataSetIteratorTest {
 
 		model.fit(cifar);
 
-		cifar.test();
+		cifar.test(numSamples);
 		Evaluation eval = new Evaluation(cifar.getLabels());
 		while(cifar.hasNext()) {
 			DataSet testDS = cifar.next(batchSize);
