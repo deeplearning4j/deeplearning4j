@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.paragraphvectors;
 
+import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -30,10 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
@@ -43,7 +42,8 @@ import java.util.Random;
 public class ParagraphVectors extends Word2Vec {
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
-
+    protected INDArray labelsMatrix;
+    protected List<VocabWord> labelsList = new ArrayList<>();
 
     /**
      * This method takes raw text, applies tokenizer, and returns most probable label
@@ -80,6 +80,28 @@ public class ParagraphVectors extends Word2Vec {
         else return predict(document.getContent());
     }
 
+    public void extractLabels(){
+        Collection<VocabWord> vocabWordCollection = vocab.vocabWords();
+        List<VocabWord> vocabWordList = new ArrayList<>();
+        int[] indexArray;
+
+        //INDArray pulledArray;
+        //Check if word has label and build a list out of the collection
+        for(VocabWord vWord:vocabWordCollection){
+            if (vWord.isLabel()){
+                vocabWordList.add(vWord);
+            }
+        }
+        //Build array of indexes in the order of the vocablist
+        indexArray = new int[vocabWordList.size()];
+        int i = 0;
+        for (VocabWord vWord:vocabWordList){
+            indexArray[i] = vWord.getIndex();
+            i++;
+        }
+        //pull the label rows and create new matrix
+        INDArray pulledArray = Nd4j.pullRows(lookupTable.getWeights(),1,indexArray);
+    }
 
     /**
      * This method calculates inferred vector for given text
@@ -319,8 +341,66 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public Collection<String> nearestLabels(INDArray labelVector, int topN) {
-        // TODO: to be implemented
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (labelsMatrix == null || labelsList == null || labelsList.isEmpty())
+            extractLabels();
+
+        List<BasicModelUtils.WordSimilarity> result = new ArrayList<>();
+
+        // if list still empty - return empty collection
+        if (labelsMatrix == null || labelsList == null || labelsList.isEmpty()) {
+            log.warn("Labels list is empty!");
+            return new ArrayList<>();
+        }
+
+        INDArray similarity = Transforms.unitVec(labelVector).mmul(labelsMatrix.transpose());
+        List<Double> highToLowSimList = getTopN(similarity, topN + 20);
+
+        for (int i = 0; i < highToLowSimList.size(); i++) {
+            String word = labelsList.get(highToLowSimList.get(i).intValue()).getLabel();
+            if (word != null && !word.equals("UNK") && !word.equals("STOP") ) {
+                INDArray otherVec = lookupTable.vector(word);
+                double sim = Transforms.cosineSim(labelVector, otherVec);
+
+                result.add(new BasicModelUtils.WordSimilarity(word, sim));
+            }
+        }
+
+        Collections.sort(result, new BasicModelUtils.SimilarityComparator());
+
+        return BasicModelUtils.getLabels(result, topN);
+    }
+
+    /**
+     * Get top N elements
+     *
+     * @param vec the vec to extract the top elements from
+     * @param N the number of elements to extract
+     * @return the indices and the sorted top N elements
+     */
+    private List<Double> getTopN(INDArray vec, int N) {
+        BasicModelUtils.ArrayComparator comparator = new BasicModelUtils.ArrayComparator();
+        PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
+
+        for (int j = 0; j < vec.length(); j++) {
+            final Double[] pair = new Double[]{vec.getDouble(j), (double) j};
+            if (queue.size() < N) {
+                queue.add(pair);
+            } else {
+                Double[] head = queue.peek();
+                if (comparator.compare(pair, head) > 0) {
+                    queue.poll();
+                    queue.add(pair);
+                }
+            }
+        }
+
+        List<Double> lowToHighSimLst = new ArrayList<>();
+
+        while (!queue.isEmpty()) {
+            double ind = queue.poll()[1];
+            lowToHighSimLst.add(ind);
+        }
+        return Lists.reverse(lowToHighSimLst);
     }
 
     /**
@@ -330,6 +410,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
+    @Deprecated
     public double similarityToLabel(String rawText, String label) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -350,6 +431,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
+    @Deprecated
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
@@ -363,6 +445,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
+    @Deprecated
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
 
