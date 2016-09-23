@@ -34,7 +34,7 @@ import org.deeplearning4j.scalnet.layers.Preprocessor
 class Flatten3D(nIn: Int = 0) extends Node with Preprocessor {
   inputShape = List(nIn)
 
-  override def outputShape = List(inputShape.product)
+  override def outputShape: List[Int] = List(inputShape.product)
 
   override def compile: InputPreProcessor = {
     if (inputShape.length != 3)
