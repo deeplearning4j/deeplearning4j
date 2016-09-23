@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.transform.schema.Schema;

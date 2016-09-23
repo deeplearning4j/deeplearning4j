@@ -16,8 +16,8 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.core.type.TypeReference;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Text;

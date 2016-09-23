@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.serde;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 /**
  * Serializer used for converting objects (Transforms, Conditions, etc) to JSON format

@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.filter;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
