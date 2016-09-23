@@ -13040,7 +13040,7 @@ and (orientation : portrait)
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
     background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100%;
+    -webkit-background-size: 100% 100% !important;
   }
 }
 
@@ -13062,7 +13062,7 @@ and (orientation : landscape)
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
     background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100%;
+    -webkit-background-size: 100% 100% !important;
   }
 }
 
@@ -13085,7 +13085,7 @@ and (orientation : portrait)
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
     background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100%;
+    -webkit-background-size: 100% 100% !important;
   }
 }
 
@@ -13107,7 +13107,7 @@ and (orientation : landscape)
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
     background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100%;
+    -webkit-background-size: 100% 100% !important;
   }
 }
 
