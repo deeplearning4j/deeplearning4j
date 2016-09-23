@@ -44,6 +44,7 @@ public class ParagraphVectors extends Word2Vec {
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
     protected INDArray labelsMatrix;
     protected List<VocabWord> labelsList = new ArrayList<>();
+    protected boolean normalizedLabels = false;
 
     /**
      * This method takes raw text, applies tokenizer, and returns most probable label
@@ -354,6 +355,15 @@ public class ParagraphVectors extends Word2Vec {
         if (labelsMatrix == null || labelsList == null || labelsList.isEmpty()) {
             log.warn("Labels list is empty!");
             return new ArrayList<>();
+        }
+
+        if (!normalizedLabels) {
+            synchronized (this) {
+                if (!normalizedLabels) {
+                    labelsMatrix.diviColumnVector(labelsMatrix.norm1(1));
+                    normalizedLabels = true;
+                }
+            }
         }
 
         INDArray similarity = Transforms.unitVec(labelVector).mmul(labelsMatrix.transpose());

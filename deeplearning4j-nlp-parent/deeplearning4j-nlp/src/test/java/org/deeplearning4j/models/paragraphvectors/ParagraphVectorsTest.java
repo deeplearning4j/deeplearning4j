@@ -205,8 +205,8 @@ public class ParagraphVectorsTest {
         for(String label: result) {
             System.out.println(label + "/DOC_16392: " + vec.similarity(label, "DOC_16392"));
         }
-        assertTrue(result.contains("DOC_10087"));
-        assertTrue(result.contains("DOC_8570"));
+        assertTrue(result.contains("DOC_16392"));
+        assertTrue(result.contains("DOC_21383"));
 
 
 
