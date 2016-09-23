@@ -13038,7 +13038,7 @@ and (orientation : portrait)
     margin-top: 0px;
   }
   .banner {
-    background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpeg) !important;
+    background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
   }
 }
 
@@ -13056,6 +13056,9 @@ and (orientation : landscape)
   }
   .btn-outline {
     margin-top: 0px;
+  }
+  .banner {
+    background-image: url(assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
   }
 }
 
@@ -13075,6 +13078,9 @@ and (orientation : portrait)
   .btn-outline {
     margin-top: 0px;
   }
+  .banner {
+    background-image: url(assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
+  }
 }
 
 @media only screen
@@ -13091,6 +13097,9 @@ and (orientation : landscape)
   }
   .btn-outline {
     margin-top: 0px;
+  }
+  .banner {
+    background-image: url(assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
   }
 }
 
