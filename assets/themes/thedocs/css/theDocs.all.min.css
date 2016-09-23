@@ -13028,19 +13028,15 @@ and (max-device-width : 1024px)
 and (orientation : portrait)
 {
   .banner .container,.banner .container-fluid {
-    position: relative;
     top: 55% !important;
-    -webkit-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-    transform: translateY(-50%);
   }
   .btn-outline {
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
-    background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100% !important;
+    min-height: 100% !important;
+    min-width: 100%!important;
   }
 }
 
@@ -13050,19 +13046,15 @@ and (max-device-width : 1024px)
 and (orientation : landscape)
 {
   .banner .container,.banner .container-fluid {
-    position: relative;
     top: 55% !important;
-    -webkit-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-    transform: translateY(-50%);
   }
   .btn-outline {
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
-    background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100% !important;
+    min-height: 100% !important;
+    min-width: 100%!important;
   }
 }
 
@@ -13073,19 +13065,15 @@ and (max-device-width : 667px)
 and (orientation : portrait)
 {
   .banner .container,.banner .container-fluid {
-    position: relative;
     top: 48% !important;
-    -webkit-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-    transform: translateY(-50%);
   }
   .btn-outline {
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
-    background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100% !important;
+    min-height: 100% !important;
+    min-width: 100%!important;
   }
 }
 
@@ -13095,19 +13083,15 @@ and (max-device-width : 667px)
 and (orientation : landscape)
 {
   .banner .container,.banner .container-fluid {
-    position: relative;
     top: 48% !important;
-    -webkit-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-    transform: translateY(-50%);
   }
   .btn-outline {
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
     background-image: url(assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
-    background-size: 100% 100% !important;
-    -webkit-background-size: 100% 100% !important;
+    min-height: 100% !important;
+    min-width: 100%!important;
   }
 }
 
