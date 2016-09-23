@@ -262,6 +262,7 @@
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
         <spark.version>1.5.2</spark.version>
         <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
+        <dropwizard.version>0.8.0</dropwizard.version>
     </properties>
 
     <developers>

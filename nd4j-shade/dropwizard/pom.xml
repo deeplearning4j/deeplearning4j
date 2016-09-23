@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-shade</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.6.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dropwizard</artifactId>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <shadedArtifactAttached>false</shadedArtifactAttached>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+
+                    <artifactSet>
+                        <includes>
+                            <include>io.dropwizard:*</include>
+                            <include>io.dropwizard.*:*</include>
+                            <!-- Dropwizard key dependencies: glassfish, jersey, jetty, jackson -->
+                            <include>org.glassfish</include>
+                        </includes>
+                    </artifactSet>
+
+                    <relocations>
+                        <!-- Dropwizard and its dependencies: glassfish, jersey, jetty (org.eclipse) -->
+                        <relocation>
+                            <pattern>io.dropwizard</pattern>
+                            <shadedPattern>org.deeplearning4j.shade.dropwizard</shadedPattern>
+                        </relocation>
+
+                        <!-- Glassfish -->
+                        <relocation>
+                            <pattern>org.glassfish</pattern>
+                            <shadedPattern>org.nd4j.shade.glassfish</shadedPattern>
+                        </relocation>
+
+                        <!-- Jersey -->
+                        <relocation>
+                            <pattern>com.sun.jersey</pattern>
+                            <shadedPattern>org.nd4j.shade.jersey</shadedPattern>
+                        </relocation>
+
+                        <!-- Jetty (org.eclipse.jetty) -->
+                        <relocation>
+                            <pattern>org.eclipse.jetty</pattern>
+                            <shadedPattern>org.nd4j.shade.jetty</shadedPattern>
+                        </relocation>
+
+                        <!-- Jackson dependencies. We are shading Jackson for dropwizard separately to other ND4J dependencies to allow separate versions -->
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>org.nd4j.shade.dwjackson</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-assets</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-client</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-forms</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-mustache</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-freemarker</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+    </dependencies>
+
+</project>

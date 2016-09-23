@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>jackson</module>
+        <module>dropwizard</module>
     </modules>
 
 
