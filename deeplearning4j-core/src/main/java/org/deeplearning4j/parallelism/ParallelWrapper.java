@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -13,7 +14,9 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +86,118 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
+    public synchronized void fit(@NonNull MultiDataSetIterator source) {
+        if (zoo == null) {
+            zoo = new Trainer[workers];
+            for (int cnt = 0; cnt < workers; cnt++) {
+                // we pass true here, to tell Trainer to use MultiDataSet queue for training
+                zoo[cnt] = new Trainer(cnt, model, true);
+                zoo[cnt].start();
+            }
+        }
+        source.reset();
+
+        MultiDataSetIterator iterator;
+        if (prefetchSize > 0 && source.asyncSupported()) {
+            iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+        } else iterator = source;
+
+        AtomicInteger locker = new AtomicInteger(0);
+
+        while (iterator.hasNext()) {
+            MultiDataSet dataSet = iterator.next();
+
+            /*
+             now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
+            */
+            int pos = locker.getAndIncrement();
+            zoo[pos].feedMultiDataSet(dataSet);
+
+            /*
+                if all workers are dispatched now, join till all are finished
+            */
+            if (pos + 1 == workers || !iterator.hasNext()) {
+                iterationsCounter.incrementAndGet();
+
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
+                    try {
+                        zoo[cnt].waitTillRunning();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                /*
+                    average model, and propagate it to whole
+                */
+                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                    double score = 0.0;
+                    if (!legacyAveraging) {
+                        List<INDArray> params = new ArrayList<>();
+                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                            params.add(zoo[cnt].getModel().params());
+                            score += zoo[cnt].getModel().score();
+                        }
+                        Nd4j.averageAndPropagate(model.params(), params);
+                    } else {
+                        INDArray params = Nd4j.zeros(model.params().shape());
+                        int cnt = 0;
+                        for (; cnt < workers && cnt < locker.get(); cnt++) {
+                            params.addi(zoo[cnt].getModel().params());
+                            score += zoo[cnt].getModel().score();
+                        }
+
+                        params.divi(workers);
+                        model.setParams(params);
+                    }
+
+                    score /= Math.min(workers, locker.get());
+
+                    // TODO: improve this
+                    if (reportScore)
+                        logger.info("Averaged score: " + score);
+
+                    // averaging updaters state
+                    if (model instanceof ComputationGraph) {
+                        if (averageUpdaters) {
+                            ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+
+                            if (updater != null && updater.getStateViewArray() != null) {
+                                if (!legacyAveraging) {
+                                    List<INDArray> updaters = new ArrayList<>();
+                                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                                } else {
+                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
+                                    int cnt = 0;
+                                    for (; cnt < workers && cnt < locker.get(); cnt++) {
+                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                    }
+                                    state.divi(cnt);
+                                    updater.setStateViewArray(state);
+                                }
+                            }
+                        }
+
+                        ((ComputationGraph) model).setScore(score);
+                    } else throw new RuntimeException("MultiDataSet might be used only with ComputationGraph model");
+
+                    if (legacyAveraging) {
+                        for (int cnt = 0; cnt < workers; cnt++) {
+                            zoo[cnt].updateModel(model);
+                        }
+                    }
+                }
+                locker.set(0);
+            }
+        }
+
+        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        iterationsCounter.set(0);
+    }
+
     /**
      * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors
      *
@@ -99,7 +214,7 @@ public class ParallelWrapper implements AutoCloseable {
         source.reset();
 
         DataSetIterator iterator;
-        if (prefetchSize > 0 && (!(source instanceof AsyncDataSetIterator) && !(source instanceof ListDataSetIterator))) {
+        if (prefetchSize > 0 && source.asyncSupported()) {
             iterator = new AsyncDataSetIterator(source, prefetchSize);
         } else iterator = source;
 
@@ -127,7 +242,6 @@ public class ParallelWrapper implements AutoCloseable {
                         throw new RuntimeException(e);
                     }
                 }
-
 
                 /*
                     average model, and propagate it to whole
@@ -355,11 +469,19 @@ public class ParallelWrapper implements AutoCloseable {
         private Model originalModel;
         private Model replicatedModel;
         private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+        private LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
         private AtomicInteger running = new AtomicInteger(0);
         private int threadId;
         private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
+        private boolean useMDS = false;
+
+
+        public Trainer(int threadId, Model model, boolean useMDS) {
+            this(threadId, model);
+            this.useMDS = useMDS;
+        }
 
         public Trainer(int threadId, Model model) {
             this.threadId = threadId;
@@ -377,6 +499,11 @@ public class ParallelWrapper implements AutoCloseable {
                 if (threadId != 0)
                     ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             }
+        }
+
+        public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+            running.incrementAndGet();
+            queueMDS.add(dataSet);
         }
 
         public void feedDataSet(@NonNull DataSet dataSet) {
@@ -442,14 +569,29 @@ public class ParallelWrapper implements AutoCloseable {
                     ((ComputationGraph) this.replicatedModel).init();
                 }
 
-                while (!shouldStop.get()) {
-                    DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
-                    if (dataSet != null) {
-                        if (replicatedModel instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) replicatedModel).fit(dataSet);
-                        } else if (replicatedModel instanceof ComputationGraph) {
-                            ((ComputationGraph) replicatedModel).fit(dataSet);
+                if (!useMDS) {
+                    while (!shouldStop.get()) {
+                        DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                        if (dataSet != null) {
+                            if (replicatedModel instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) replicatedModel).fit(dataSet);
+                            } else if (replicatedModel instanceof ComputationGraph) {
+                                ((ComputationGraph) replicatedModel).fit(dataSet);
+                            }
+
+                            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                            running.decrementAndGet();
                         }
+                    }
+                } else {
+                    // loop for MultiDataSet
+                    MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
+                    if (dataSet != null) {
+                        if (replicatedModel instanceof ComputationGraph) {
+                            ((ComputationGraph) replicatedModel).fit(dataSet);
+                        } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
                         if (Nd4j.getExecutioner() instanceof GridExecutioner)
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
