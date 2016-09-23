@@ -13057,6 +13057,8 @@ and (orientation : landscape)
     background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
     -webkit-background-size: 100% 100% !important;
     background-size: 100% 100% !important;
+    background-position: unset !important;
+    background-attachment: unset !important;
   }
 }
 
@@ -13076,6 +13078,8 @@ and (orientation : portrait)
     background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
     -webkit-background-size: 100% 100% !important;
     background-size: 100% 100% !important;
+    background-position: unset !important;
+    background-attachment: unset !important;
   }
 }
 
@@ -13094,6 +13098,8 @@ and (orientation : landscape)
     background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
     -webkit-background-size: 100% 100% !important;
     background-size: 100% 100% !important;
+    background-position: unset !important;
+    background-attachment: unset !important;    
   }
 }
 
