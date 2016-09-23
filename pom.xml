@@ -245,6 +245,7 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
+        <module>nd4j-shade</module>
     </modules>
 
     <properties>
@@ -260,6 +261,7 @@
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
         <spark.version>1.5.2</spark.version>
+        <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
     </properties>
 
     <developers>
