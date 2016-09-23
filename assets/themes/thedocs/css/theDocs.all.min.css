@@ -13034,7 +13034,7 @@ and (orientation : portrait)
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
-    background-image: url(assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
+    background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_tablet.jpg) !important;
     min-height: 100% !important;
     min-width: 100%!important;
   }
@@ -13052,7 +13052,7 @@ and (orientation : landscape)
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
-    background-image: url(assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
+    background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_tablet_landscape.jpg) !important;
     min-height: 100% !important;
     min-width: 100%!important;
   }
@@ -13071,7 +13071,7 @@ and (orientation : portrait)
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
-    background-image: url(assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
+    background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_mobile.jpg) !important;
     min-height: 100% !important;
     min-width: 100%!important;
   }
@@ -13089,7 +13089,7 @@ and (orientation : landscape)
     margin-top: 0px;
   }
   .banner .banner-full-height .overlay-black {
-    background-image: url(assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
+    background-image: url(http://deeplearning4j.org/assets/themes/thedocs/img/home_hero_mobile_landscape.jpg) !important;
     min-height: 100% !important;
     min-width: 100%!important;
   }
