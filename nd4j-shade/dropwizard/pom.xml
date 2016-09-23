@@ -63,6 +63,9 @@
                             <include>org.eclipse.jetty.*:*</include>
                             <include>com.fasterxml.jackson:*</include>
                             <include>com.fasterxml.jackson.*:*</include>
+                            <include>javax.*:*</include>
+                            <include>com.google.*:*</include>
+                            <include>com.google:*</include>
                         </includes>
                     </artifactSet>
 
@@ -70,7 +73,7 @@
                         <!-- Dropwizard and its dependencies: glassfish, jersey, jetty (org.eclipse) -->
                         <relocation>
                             <pattern>io.dropwizard</pattern>
-                            <shadedPattern>org.deeplearning4j.shade.dropwizard</shadedPattern>
+                            <shadedPattern>org.nd4j.shade.dropwizard</shadedPattern>
                         </relocation>
 
                         <!-- Glassfish -->
@@ -95,6 +98,18 @@
                         <relocation>
                             <pattern>com.fasterxml.jackson</pattern>
                             <shadedPattern>org.nd4j.shade.dwjackson</shadedPattern>
+                        </relocation>
+
+                        <!-- Guava dependencies -->
+                        <relocation>
+                            <pattern>com.google</pattern>
+                            <shadedPattern>org.nd4j.shade.google</shadedPattern>
+                        </relocation>
+
+                        <!-- JavaX etc -->
+                        <relocation>
+                            <pattern>javax</pattern>
+                            <shadedPattern>org.nd4j.shade.javax</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -154,6 +169,13 @@
             <version>${dropwizard.version}</version>
             <optional>true</optional>
         </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>javax.ws.rs</groupId>-->
+            <!--<artifactId>javax.ws.rs-api</artifactId>-->
+            <!--<version>2.0.1</version>-->
+        <!--</dependency>-->
+
 
     </dependencies>
 

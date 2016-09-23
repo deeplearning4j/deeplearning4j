@@ -19,8 +19,10 @@
 
 package org.nd4j.instrumentation.server;
 
-import io.dropwizard.Application;
-import io.dropwizard.setup.Environment;
+//import io.dropwizard.Application;
+//import io.dropwizard.setup.Environment;
+import org.nd4j.shade.dropwizard.Application;
+import org.nd4j.shade.dropwizard.setup.Environment;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.io.ClassPathResource;
 
