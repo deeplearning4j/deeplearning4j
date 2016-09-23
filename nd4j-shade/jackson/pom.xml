@@ -13,6 +13,11 @@
 
     <build>
         <plugins>
+            <!--
+            Use Maven Shade plugin to add a shaded version of the Jackson dependencies, that can be imported by
+            including this module (org.nd4j.jackson) as a dependency.
+            The standard com.fasterxml.jackson dependencies will be provided, though are prefixed by org.nd4j.shade.jackson
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -37,7 +42,6 @@
                 </executions>
 
                 <configuration>
-                    <!--<shadedArtifactAttached>true</shadedArtifactAttached>-->
                     <shadedArtifactAttached>false</shadedArtifactAttached>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
                     <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
@@ -61,31 +65,46 @@
         </plugins>
     </build>
 
+    <!--
+    Regarding dependencies here: Note the <optional>true</optional> configuration.
+    This allows 2 things:
+    (a) These dependencies to be shaded - i.e., are included in the org.nd4j:jackson JARs for install/release etc
+    (b) The original com.fasterxml dependencies will not appear as a transitive dependency
+
+    Other approaches, such as using scopes (provided, runtime, or import) seem to remove both shaded AND transitive dependencies,
+    or keep both. In the case of runtime scope, the original dependencies still show up as a transitive dependency (but
+    are not provided), which is not what we want here.
+    -->
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

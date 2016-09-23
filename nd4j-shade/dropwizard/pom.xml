@@ -14,6 +14,12 @@
 
     <build>
         <plugins>
+            <!--
+            Use Maven Shade plugin to add a shaded version of Dropwizard and its major dependencies, that can be imported by
+            including this module (org.nd4j.dropwizard) as a dependency.
+            The major dependenices (Jackson, Jersey, Jetty, Glassfish) are also shaded here, in addition to dropwizard
+            These dependenices are renamed and prefixed by the package org.nd4j.shade
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -26,11 +32,14 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>reference.conf</resource>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -48,6 +57,12 @@
                             <include>io.dropwizard.*:*</include>
                             <!-- Dropwizard key dependencies: glassfish, jersey, jetty, jackson -->
                             <include>org.glassfish</include>
+                            <include>com.sun.jersey:*</include>
+                            <include>com.sun.jersey.*:*</include>
+                            <include>org.eclipse.jetty:*</include>
+                            <include>org.eclipse.jetty.*:*</include>
+                            <include>com.fasterxml.jackson:*</include>
+                            <include>com.fasterxml.jackson.*:*</include>
                         </includes>
                     </artifactSet>
 
@@ -87,42 +102,57 @@
         </plugins>
     </build>
 
-    <dependencies>
+    <!--
+    Regarding dependencies here: Note the <optional>true</optional> configuration.
+    This allows 2 things:
+    (a) These dependencies to be shaded - i.e., are included in the org.nd4j:dropwizard JARs for install/release etc
+    (b) The original dependencies will not appear as a transitive dependency
 
+    Other approaches, such as using scopes (provided, runtime, or import) seem to remove both shaded AND transitive dependencies,
+    or keep both. In the case of runtime scope, the original dependencies still show up as a transitive dependency (but
+    are not provided), which
+    -->
+    <dependencies>
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-client</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-forms</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-views-mustache</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-views-freemarker</artifactId>
             <version>${dropwizard.version}</version>
+            <optional>true</optional>
         </dependency>
 
     </dependencies>
