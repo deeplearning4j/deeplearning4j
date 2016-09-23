@@ -13023,13 +13023,13 @@ figcaption {
 
 /*Styles for Tablets*/
 @media only screen
-and (min-device-width : 768px)
+and (min-device-width : 668px)
 and (max-device-width : 1024px)
 and (orientation : landscape)
 {
   .banner .container,.banner .container-fluid {
     position: relative;
-    top: 55%;
+    top: 55% !important;
     -webkit-transform: translateY(-50%);
     -o-transform: translateY(-50%);
     transform: translateY(-50%);
@@ -13045,7 +13045,7 @@ and (min-device-width : 375px)
 and (max-device-width : 667px) {
   .banner .container,.banner .container-fluid {
     position: relative;
-    top: 48%;
+    top: 48% !important;
     -webkit-transform: translateY(-50%);
     -o-transform: translateY(-50%);
     transform: translateY(-50%);
