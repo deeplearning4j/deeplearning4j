@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -198,6 +199,16 @@ public class ParagraphVectorsTest {
 
         assertTrue(vec.hasWord("DOC_16392"));
         assertTrue(vec.hasWord("DOC_3720"));
+
+        List<String> result = new ArrayList<>(vec.nearestLabels(vec.getWordVectorMatrix("DOC_16392"), 10));
+        System.out.println("nearest labels: " + result);
+        for(String label: result) {
+            System.out.println(label + "/DOC_16392: " + vec.similarity(label, "DOC_16392"));
+        }
+        assertTrue(result.contains("DOC_10087"));
+        assertTrue(result.contains("DOC_8570"));
+
+
 
         /*
             We have few lines that contain pretty close words invloved.

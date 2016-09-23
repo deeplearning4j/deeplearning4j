@@ -724,6 +724,8 @@ public class WordVectorSerializer {
             }
         }
 
+        vectors.extractLabels();
+
         return vectors;
     }
 
@@ -984,6 +986,8 @@ public class WordVectorSerializer {
                 reader.close();
             } catch (Exception e) {
             }
+
+            vectors.extractLabels();
 
             return vectors;
         } catch (Exception e) {

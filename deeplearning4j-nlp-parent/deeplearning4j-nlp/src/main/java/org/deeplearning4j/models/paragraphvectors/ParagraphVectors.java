@@ -100,7 +100,10 @@ public class ParagraphVectors extends Word2Vec {
             i++;
         }
         //pull the label rows and create new matrix
-        INDArray pulledArray = Nd4j.pullRows(lookupTable.getWeights(),1,indexArray);
+        if (i > 0) {
+            labelsMatrix = Nd4j.pullRows(lookupTable.getWeights(), 1, indexArray);
+            labelsList = vocabWordList;
+        }
     }
 
     /**
@@ -330,7 +333,8 @@ public class ParagraphVectors extends Word2Vec {
      */
     public Collection<String> nearestLabels(Collection<VocabWord> document, int topN) {
         // TODO: to be implemented
-        throw new UnsupportedOperationException("Not implemented yet");
+        INDArray vector = inferVector(new ArrayList<VocabWord>(document));
+        return nearestLabels(vector, topN);
     }
 
     /**
@@ -422,6 +426,13 @@ public class ParagraphVectors extends Word2Vec {
             }
         }
         return similarityToLabel(document, label);
+    }
+
+    @Override
+    public void fit() {
+        super.fit();
+
+        extractLabels();
     }
 
     /**
