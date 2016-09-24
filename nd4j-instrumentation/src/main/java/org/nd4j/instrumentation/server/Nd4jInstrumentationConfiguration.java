@@ -19,7 +19,7 @@
 
 package org.nd4j.instrumentation.server;
 
-import org.nd4j.shade.dropwizard.Configuration;
+import io.dropwizard.Configuration;
 
 /**
  * Empty configuration for dropwizard
