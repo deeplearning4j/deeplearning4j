@@ -73,16 +73,20 @@
                             <include>com.fasterxml:*</include>
                             <include>com.fasterxml.jackson:*</include>
                             <include>com.fasterxml.jackson.*:*</include>
-                            <include>org.glassfish.*:*</include>
-                            <include>org.glassfish:*</include>
+                            <!--<include>org.glassfish.*:*</include>-->
+                            <!--<include>org.glassfish:*</include>-->
                             <include>com.sun.jersey:*</include>
                             <include>com.sun.jersey.*:*</include>
                             <include>org.eclipse.jetty:*</include>
                             <include>org.eclipse.jetty.*:*</include>
-                            <include>javax.*:*</include>
+                            <!--<include>javax.*:*</include>-->
                             <include>com.google.*:*</include>
                             <include>com.google:*</include>
                             <include>com.codahale.*:*</include>   <!-- Additional dropwizard (metrics) deps with inconsistent package names-->
+
+                            <!--<exclude>io.dropwizard.logging.*:*</exclude>-->
+                            <!--<exclude>io.dropwizard.logging:*</exclude>-->
+
                         </includes>
                     </artifactSet>
 
@@ -91,6 +95,9 @@
                         <relocation>
                             <pattern>io.dropwizard</pattern>
                             <shadedPattern>org.nd4j.shade.dropwizard</shadedPattern>
+                            <excludes>
+                                <exclude>io.dropwizard.logging.*</exclude>
+                            </excludes>
                         </relocation>
 
                         <!-- Jackson dependencies - shaded separately to main ND4J Jackson deps -->
@@ -99,11 +106,11 @@
                             <shadedPattern>org.nd4j.shade.dwjackson</shadedPattern>
                         </relocation>
 
-                        <!-- Glassfish -->
-                        <relocation>
-                            <pattern>org.glassfish</pattern>
-                            <shadedPattern>org.nd4j.shade.glassfish</shadedPattern>
-                        </relocation>
+                        <!--&lt;!&ndash; Glassfish &ndash;&gt;-->
+                        <!--<relocation>-->
+                            <!--<pattern>org.glassfish</pattern>-->
+                            <!--<shadedPattern>org.nd4j.shade.glassfish</shadedPattern>-->
+                        <!--</relocation>-->
 
                         <!-- Jersey -->
                         <relocation>
@@ -123,11 +130,11 @@
                             <shadedPattern>org.nd4j.shade.google</shadedPattern>
                         </relocation>
 
-                        <!-- JavaX etc -->
-                        <relocation>
-                            <pattern>javax</pattern>
-                            <shadedPattern>org.nd4j.shade.javax</shadedPattern>
-                        </relocation>
+                        <!--&lt;!&ndash; JavaX etc &ndash;&gt;-->
+                        <!--<relocation>-->
+                            <!--<pattern>javax</pattern>-->
+                            <!--<shadedPattern>org.nd4j.shade.javax</shadedPattern>-->
+                        <!--</relocation>-->
                     </relocations>
                 </configuration>
             </plugin>

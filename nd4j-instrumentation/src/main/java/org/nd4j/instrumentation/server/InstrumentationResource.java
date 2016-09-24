@@ -22,19 +22,19 @@ package org.nd4j.instrumentation.server;
 import org.nd4j.linalg.api.instrumentation.LogEntry;
 import org.nd4j.linalg.factory.Nd4j;
 
-//import javax.ws.rs.GET;
-//import javax.ws.rs.Path;
-//import javax.ws.rs.Produces;
-//import javax.ws.rs.QueryParam;
-//import javax.ws.rs.core.MediaType;
-//import javax.ws.rs.core.Response;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-import org.nd4j.shade.javax.ws.rs.GET;
-import org.nd4j.shade.javax.ws.rs.Path;
-import org.nd4j.shade.javax.ws.rs.Produces;
-import org.nd4j.shade.javax.ws.rs.QueryParam;
-import org.nd4j.shade.javax.ws.rs.core.MediaType;
-import org.nd4j.shade.javax.ws.rs.core.Response;
+//import org.nd4j.shade.javax.ws.rs.GET;
+//import org.nd4j.shade.javax.ws.rs.Path;
+//import org.nd4j.shade.javax.ws.rs.Produces;
+//import org.nd4j.shade.javax.ws.rs.QueryParam;
+//import org.nd4j.shade.javax.ws.rs.core.MediaType;
+//import org.nd4j.shade.javax.ws.rs.core.Response;
 import java.util.Collection;
 
 /**
