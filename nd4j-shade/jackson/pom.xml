@@ -43,7 +43,7 @@
 
                 <configuration>
                     <!--
-                    Two important configuration options here:
+                    Important configuration options here:
                     createDependencyReducedPom: remove the shaded artifacts from the module dependencies. Without this, the
                                                 original dependencies will be shaded, AND still included as transitive deps
                                                 in the final POM. This is not what we want.

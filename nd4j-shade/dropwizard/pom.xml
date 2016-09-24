@@ -47,8 +47,23 @@
                 </executions>
 
                 <configuration>
+                    <!--
+                    Important configuration options here:
+                    createDependencyReducedPom: remove the shaded artifacts from the module dependencies. Without this, the
+                                                original dependencies will be shaded, AND still included as transitive deps
+                                                in the final POM. This is not what we want.
+                    shadedArtifactAttached:     If true, the shaded artifact will be a separate JAR file for install, with
+                                                the original un-shaded JAR being separate. With this being set to false,
+                                                the original JAR will be modified, and no extra jar will be produced.
+                    promoteTransitiveDependencies:  This will promote the transitive dependencies of the shaded dependencies
+                                                to direct dependencies. Without this, we need to manually manage the transitive
+                                                dependencies of the shaded artifacts.
+
+                    Note that using <optional>true</optional> in the dependencies also allows the deps to be shaded (and
+                    original dependencies to not be included), but does NOT work with promoteTransitiveDependencies
+                    -->
                     <shadedArtifactAttached>false</shadedArtifactAttached>
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
                     <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
 
                     <artifactSet>
@@ -118,16 +133,6 @@
         </plugins>
     </build>
 
-    <!--
-    Regarding dependencies here: Note the <optional>true</optional> configuration.
-    This allows 2 things:
-    (a) These dependencies to be shaded - i.e., are included in the org.nd4j:dropwizard JARs for install/release etc
-    (b) The original dependencies will not appear as a transitive dependency
-
-    Other approaches, such as using scopes (provided, runtime, or import) seem to remove both shaded AND transitive dependencies,
-    or keep both. In the case of runtime scope, the original dependencies still show up as a transitive dependency (but
-    are not provided), which is not what we want here.
-    -->
     <dependencies>
 
         <!-- ND4J API (provided scope) for NDArray Jackson serialization with dropwizard version of Jackson -->
@@ -142,42 +147,36 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-client</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-forms</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-views-mustache</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-views-freemarker</artifactId>
             <version>${dropwizard.version}</version>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
