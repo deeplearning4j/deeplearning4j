@@ -69,6 +69,8 @@
                     <artifactSet>
                         <includes>
                             <include>io.dropwizard:*</include>
+                            <include>io.dropwizard.*:*</include>
+                            <include>com.fasterxml:*</include>
                             <include>com.fasterxml.jackson:*</include>
                             <include>com.fasterxml.jackson.*:*</include>
                             <include>org.glassfish.*:*</include>
@@ -126,7 +128,6 @@
                             <pattern>javax</pattern>
                             <shadedPattern>org.nd4j.shade.javax</shadedPattern>
                         </relocation>
-
                     </relocations>
                 </configuration>
             </plugin>
