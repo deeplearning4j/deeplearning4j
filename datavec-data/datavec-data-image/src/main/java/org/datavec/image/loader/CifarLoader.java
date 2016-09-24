@@ -80,15 +80,15 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected static long seed = System.currentTimeMillis();
     protected static boolean shuffle = true;
     protected int numExamples = 0;
-    protected static int numToConvertDS = 1000; // TODO put  at 10000
-    protected static int numToShowExamples = 10000; // TODO put at 50000 not to show
+    protected static int numToConvertDS = 10000;
     protected double uMean = 0;
     protected double uStd = 0;
     protected double vMean = 0;
     protected double vStd = 0;
     protected boolean meanStdStored = false;
-    protected int idx = 0;
+    protected int loadDSIndex = 0;
     protected DataSet loadDS = new DataSet();
+    protected int fileNum = 0;
 
     public CifarLoader() {
         this(height,width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
@@ -194,7 +194,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         defineLabels();
 
         if (preProcessCifar && train && !cifarProcessedFilesExists()) {
-            for (int i = 1; i <= (TRAINFILENAMES.length); i++) {
+            for (int i = fileNum+1; i <= (TRAINFILENAMES.length); i++) {
                 inputStream = trainInputStream;
                 DataSet result = convertDataSet(numToConvertDS);
                 result.save(new File(trainFilesSerialized + i + ".ser"));
@@ -371,30 +371,31 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public DataSet next(int batchSize) {
-        return next(batchSize, 1, 0);
+        return next(batchSize, 0);
     }
 
-    public DataSet next(int batchSize, int fileNum, int batchNum) {
+    public DataSet next(int batchSize, int exampleNum) {
         List<DataSet> temp = new ArrayList<>();
         DataSet result;
         if (cifarProcessedFilesExists() && preProcessCifar) {
-            if (batchNum == 0) {
-                if(train) loadDS.load(new File(trainFilesSerialized + fileNum + ".ser"));
-                else loadDS.load(new File(testFilesSerialized));
+            if (exampleNum == 0 || ((exampleNum/fileNum) == numToConvertDS && train)) {
+                fileNum++;
+                if (train) loadDS.load(new File(trainFilesSerialized + fileNum + ".ser"));
+                loadDS.load(new File(testFilesSerialized));
                 // Shuffle all examples in file before batching happens also for each reset
                 if(shuffle && batchSize > 1) loadDS.shuffle(seed);
-//                inputBatched = loadDS.batchBy(batchSize);
-                idx = 0;
+    //          inputBatched = loadDS.batchBy(batchSize);
+                loadDSIndex = 0;
             }
 //            result = inputBatched.get(batchNum);
             // TODO find better way - loading full dataset using gpu throwing errors
             for (int i = 0; i < batchSize; i++) {
-                temp.add(loadDS.get(idx));
-                idx ++;
+                if (loadDS.get(loadDSIndex) != null) temp.add(loadDS.get(loadDSIndex));
+                else break;
+                loadDSIndex ++;
             }
             if (temp.size() > 1 ) result = DataSet.merge(temp);
             else result = temp.get(0);
-
         } else {
             result = convertDataSet(batchSize);
         }
@@ -416,6 +417,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     public void reset(){
         numExamples = 0;
+        fileNum = 0;
         load();
     }
 

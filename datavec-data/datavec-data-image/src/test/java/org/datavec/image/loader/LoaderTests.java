@@ -149,7 +149,7 @@ public class LoaderTests {
     }
 
 
-    //@Ignore // Use when confirming data is getting stored
+    @Ignore // Use when confirming data is getting stored
     @Test
     public void testProcessCifar() {
         int row = 32;
