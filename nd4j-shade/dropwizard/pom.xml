@@ -50,16 +50,14 @@
                     <artifactSet>
                         <includes>
                             <include>io.dropwizard:*</include>
-                            <include>io.dropwizard.*:*</include>
-                            <!-- Dropwizard key dependencies: glassfish, jersey, jetty, jackson -->
+                            <include>com.fasterxml.jackson:*</include>
+                            <include>com.fasterxml.jackson.*:*</include>
                             <include>org.glassfish.*:*</include>
                             <include>org.glassfish:*</include>
                             <include>com.sun.jersey:*</include>
                             <include>com.sun.jersey.*:*</include>
                             <include>org.eclipse.jetty:*</include>
                             <include>org.eclipse.jetty.*:*</include>
-                            <include>com.fasterxml.jackson:*</include>
-                            <include>com.fasterxml.jackson.*:*</include>
                             <include>javax.*:*</include>
                             <include>com.google.*:*</include>
                             <include>com.google:*</include>
@@ -67,10 +65,16 @@
                     </artifactSet>
 
                     <relocations>
-                        <!-- Dropwizard and its dependencies: glassfish, jersey, jetty (org.eclipse) -->
+                        <!-- Dropwizard -->
                         <relocation>
                             <pattern>io.dropwizard</pattern>
                             <shadedPattern>org.nd4j.shade.dropwizard</shadedPattern>
+                        </relocation>
+
+                        <!-- Jackson dependencies - shaded separately to main ND4J Jackson deps -->
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>org.nd4j.shade.dwjackson</shadedPattern>
                         </relocation>
 
                         <!-- Glassfish -->
@@ -91,12 +95,6 @@
                             <shadedPattern>org.nd4j.shade.eclipse.jetty</shadedPattern>
                         </relocation>
 
-                        <!-- Jackson dependencies. We are shading Jackson for dropwizard separately to other ND4J dependencies to allow separate versions -->
-                        <relocation>
-                            <pattern>com.fasterxml.jackson</pattern>
-                            <shadedPattern>org.nd4j.shade.dwjackson</shadedPattern>
-                        </relocation>
-
                         <!-- Guava dependencies -->
                         <relocation>
                             <pattern>com.google</pattern>
@@ -108,6 +106,7 @@
                             <pattern>javax</pattern>
                             <shadedPattern>org.nd4j.shade.javax</shadedPattern>
                         </relocation>
+
                     </relocations>
                 </configuration>
             </plugin>
@@ -122,24 +121,9 @@
 
     Other approaches, such as using scopes (provided, runtime, or import) seem to remove both shaded AND transitive dependencies,
     or keep both. In the case of runtime scope, the original dependencies still show up as a transitive dependency (but
-    are not provided), which
+    are not provided), which is not what we want here.
     -->
     <dependencies>
-        <!-- Need ND4J API for the jackson serde stuff -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
-            <!--<scope>provided</scope>-->
-            <!--<exclusions>-->
-            <!--<exclusion>-->
-            <!--<groupId>org.nd4j</groupId>-->
-            <!--<artifactId>jackson</artifactId>-->
-            <!--</exclusion>-->
-            <!--</exclusions>-->
-        </dependency>
-
-
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
@@ -181,13 +165,6 @@
             <version>${dropwizard.version}</version>
             <optional>true</optional>
         </dependency>
-
-        <!--<dependency>-->
-        <!--<groupId>javax.ws.rs</groupId>-->
-        <!--<artifactId>javax.ws.rs-api</artifactId>-->
-        <!--<version>2.0.1</version>-->
-        <!--</dependency>-->
-
 
     </dependencies>
 
