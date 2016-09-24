@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public class FlowIterationListenerTest {
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                     .graphBuilder()
                     .addInputs("inEn", "inFr")
-                    .setInputTypes(InputType.recurrent(VOCAB_SIZE+1), InputType.recurrent(VOCAB_SIZE+1))
+                    .setInputTypes(InputType.recurrent(1), InputType.recurrent(1))
                     .addLayer("embeddingEn", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inEn")
                     .addLayer("encoder", new GravesLSTM.Builder().nIn(128).nOut(256).activation("softsign").build(),"embeddingEn")
                     .addVertex("lastTimeStep", new LastTimeStepVertex("inEn"),"encoder")
@@ -68,6 +69,10 @@ public class FlowIterationListenerTest {
 
             graph = new ComputationGraph(configuration);
             graph.init();
+
+            INDArray zeros = Nd4j.zeros(1,1,20);
+            graph.setInputs(zeros, zeros);
+            graph.feedForward();
         }
 
         if (network == null) {
@@ -145,6 +150,8 @@ public class FlowIterationListenerTest {
 
             network = new MultiLayerNetwork(builder.build());
             network.init();
+            INDArray zeros = Nd4j.zeros(1,nChannels,numRows,numColumns);
+            network.setInput(zeros);
         }
     }
 

@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -115,7 +116,7 @@ public class ManualTests {
 
         UiServer server = UiServer.getInstance();
         UiConnectionInfo connectionInfo = server.getConnectionInfo();
-        connectionInfo.setSessionId("my session here");
+        connectionInfo.setSessionId("mySessionId");
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();

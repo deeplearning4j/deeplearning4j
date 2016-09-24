@@ -371,9 +371,10 @@ public class FlowIterationListener implements IterationListener {
             List<String> inputs = graph.getConfiguration().getNetworkInputs();
             // now we need to add inputs as y0 nodes
             int x = 0;
+            int inputNum = 0;
             for (String input: inputs) {
                 GraphVertex vertex = graph.getVertex(input);
-                INDArray gInput = vertex.getInputs()[0];
+                INDArray gInput = graph.getInput(inputNum++);
                 long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
 
                 long numSamples = gInput.lengthLong() / tadLength;
