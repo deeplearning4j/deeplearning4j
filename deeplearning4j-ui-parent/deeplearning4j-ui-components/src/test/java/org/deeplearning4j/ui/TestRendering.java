@@ -17,7 +17,7 @@
  */
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
