@@ -19,15 +19,12 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
         </dependency>
+
+        <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>

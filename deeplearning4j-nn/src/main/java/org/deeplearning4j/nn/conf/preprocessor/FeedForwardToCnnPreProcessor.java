@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;

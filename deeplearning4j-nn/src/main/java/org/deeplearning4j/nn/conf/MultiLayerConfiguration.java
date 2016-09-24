@@ -20,11 +20,11 @@
 
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.core.JsonParser;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -76,7 +76,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
         try {
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -105,7 +105,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }

@@ -67,6 +67,13 @@
 
     <dependencies>
 
+        <!-- ND4J Shaded Jackson Dependency -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.10</artifactId>

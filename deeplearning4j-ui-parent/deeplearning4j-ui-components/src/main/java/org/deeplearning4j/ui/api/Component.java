@@ -17,8 +17,8 @@
  */
 package org.deeplearning4j.ui.api;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import org.deeplearning4j.ui.components.chart.*;
 import org.deeplearning4j.ui.components.component.ComponentDiv;

@@ -1,10 +1,10 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
