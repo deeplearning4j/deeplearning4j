@@ -11,6 +11,10 @@
 
     <artifactId>dropwizard</artifactId>
 
+    <properties>
+        <dropwizard.version>0.8.0</dropwizard.version>
+    </properties>
+
     <build>
         <plugins>
             <!--
@@ -61,6 +65,7 @@
                             <include>javax.*:*</include>
                             <include>com.google.*:*</include>
                             <include>com.google:*</include>
+                            <include>com.codahale.*:*</include>   <!-- Additional dropwizard (metrics) deps with inconsistent package names-->
                         </includes>
                     </artifactSet>
 
@@ -124,6 +129,15 @@
     are not provided), which is not what we want here.
     -->
     <dependencies>
+
+        <!-- ND4J API (provided scope) for NDArray Jackson serialization with dropwizard version of Jackson -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
@@ -165,7 +179,6 @@
             <version>${dropwizard.version}</version>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
 
 </project>
