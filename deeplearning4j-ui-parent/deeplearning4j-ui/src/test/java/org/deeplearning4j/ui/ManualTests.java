@@ -26,6 +26,8 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.flow.FlowIterationListener;
+import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
+import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -117,7 +119,7 @@ public class ManualTests {
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new HistogramIterationListener(connectionInfo, listenerFreq), new FlowIterationListener(connectionInfo, listenerFreq)));
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new HistogramIterationListener(connectionInfo, listenerFreq), new FlowIterationListener(connectionInfo, listenerFreq)));
 
         log.info("Train model....");
         model.fit(iter); // achieves end to end pre-training
