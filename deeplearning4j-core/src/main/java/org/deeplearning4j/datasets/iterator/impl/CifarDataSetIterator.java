@@ -98,10 +98,8 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
             return last;
         }
         DataSet result;
-        int i = 1;
         if (usePreProcessCifar) {
-            if (train && batchNum == 0 && i <= CifarLoader.TRAINFILENAMES.length) i++;
-            result = loader.next(batchSize, i, batchNum);
+            result = loader.next(batchSize, exampleCount);
         }
         else
             result =  loader.next(batchSize);
