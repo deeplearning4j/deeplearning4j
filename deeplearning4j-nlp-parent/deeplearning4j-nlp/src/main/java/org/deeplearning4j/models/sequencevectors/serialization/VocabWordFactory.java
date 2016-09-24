@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;

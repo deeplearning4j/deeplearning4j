@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;

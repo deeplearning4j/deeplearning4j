@@ -1,9 +1,9 @@
 package org.deeplearning4j.ui.standalone;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
