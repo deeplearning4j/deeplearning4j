@@ -23,13 +23,6 @@ After following the steps in the [Quick Start Guide](http://deeplearning4j.org/q
 6. <a href="#results">Reproducible Results</a>
 7. <a href="#next">Next Steps</a>
 
-##  Native BLAS Libraries
-
-See the [libnd4j readme](https://github.com/deeplearning4j/libnd4j)
-
-for detailed OS specific instructions.
-
-You shouldn't need to do any setup unless you are installing cuda however.
 
 ## <a name="walk">DL4J Examples: A Detailed Walkthrough</a>
 
@@ -70,32 +63,6 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
-## <a name="cli">Command-Line Interface</a>
-
-`deeplearning4j-cli` can now be installed these three ways:
-
-On Centos/Redhat, you can do:
-
-		# install
-		sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/deeplearning4j-cli.rpm
-		# run
-		dl4j
-
-On OS X with Homebrew, do:
-
-		# install
-		brew install homebrew/science/deeplearning4j-cli
-		# run
-		dl4j
-
-On non-rpm systems, do:
-
-		# download
-		curl -O https://s3-us-west-2.amazonaws.com/skymind/bin/deeplearning4j-cli.tar.gz
-		# untar
-		tar -zxvf deeplearning4j-cli.tar.gz
-		# run
-		cd deeplearning4j-cli-0.4-rc3.9-SNAPSHOT ; ./bin/dl4j
 
 ## <a name="trouble">Troubleshooting</a>
 
@@ -134,7 +101,7 @@ Neural net weights are initialized randomly, which means the model begins learni
       
 ## Scala 
 
-A [Scala version of the examples is here](https://github.com/kogecoo/dl4j-0.4-examples-scala).
+Our  [Scala version](https://github.com/deeplearning4j/Scalnet) is here This is a port of keras to scala (a work in progress).
       
 ### Managed Environments
 
