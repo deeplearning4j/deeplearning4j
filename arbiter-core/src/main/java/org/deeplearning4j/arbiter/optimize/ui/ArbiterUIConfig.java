@@ -17,9 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import org.hibernate.validator.constraints.NotEmpty;
 
 /**
  * Dropwizard configuration for the Arbiter UI
