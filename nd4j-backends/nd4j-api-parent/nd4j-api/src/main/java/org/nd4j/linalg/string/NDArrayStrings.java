@@ -21,14 +21,19 @@ public class NDArrayStrings {
     private DecimalFormat decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
 
     public NDArrayStrings(String sep) {
-        this(", ",2);
+        this(", ",2,"#,###,##0");
     }
 
     public NDArrayStrings(int precision) {
-        this(", ",precision);
+        this(", ",precision, "#,###,##0");
     }
-    
+
     public NDArrayStrings(String sep, int precision) {
+        this(sep, precision, "#,###,##0");
+    }
+
+    public NDArrayStrings(String sep, int precision, String decFormat) {
+        this.decFormatNum = decFormat;
         this.sep = sep;
         if (precision != 0) {
             this.decFormatRest = ".";
@@ -45,7 +50,7 @@ public class NDArrayStrings {
     }
 
     public NDArrayStrings() {
-        this(", ",2);
+        this(", ",2,"#,###,##0");
     }
 
 
