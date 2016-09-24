@@ -107,6 +107,7 @@
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
+                    <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
                 </configuration>
                 <executions>
                     <execution>
@@ -117,7 +118,6 @@
                         </goals>
                         <configuration>
                             <propertyFile>${project.basedir}/src/main/resources/org/bytedeco/javacpp/properties/${javacpp.platform}-nd4j.properties</propertyFile>
-                            <outputDirectory>${project.build.outputDirectory}/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>
                                 <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>

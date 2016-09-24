@@ -2,6 +2,7 @@ package org.nd4j.linalg.lossfunctions;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 
 import java.util.Arrays;
 
@@ -22,9 +24,11 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
     public static final double epsilon = 1e-6;
     private static final double maxRelError = 5.0; //5% relative error
+    DataBuffer.Type initialType;
 
     public LossFunctionGradientChecks(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
     @Before
@@ -165,6 +169,12 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
             if(totalNFailures > 0) System.out.println("Gradient check failed for loss function " + lf + "; total num failures = " + totalNFailures);
             System.out.println("DONE");
         }
+    }
+
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(this.initialType);
+        System.out.println("AFTER DATATYPE HERE: "+ Nd4j.dataType());
     }
 
     @Override
