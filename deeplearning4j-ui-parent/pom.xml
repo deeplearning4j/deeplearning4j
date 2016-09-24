@@ -13,6 +13,7 @@
     <modules>
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
+        <module>deeplearning4j-ui-model</module>
     </modules>
 
 </project>
