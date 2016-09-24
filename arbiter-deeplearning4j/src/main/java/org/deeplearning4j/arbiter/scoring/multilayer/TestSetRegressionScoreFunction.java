@@ -31,9 +31,13 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
 
         DataSetIterator testSet = dataProvider.testData(dataParameters);
 
-        RegressionEvaluation eval = new RegressionEvaluation();
+        RegressionEvaluation eval = null;
         while (testSet.hasNext()) {
             DataSet next = testSet.next();
+
+            if (eval == null) {
+                eval = new RegressionEvaluation(next.getLabels().columns());
+            }
 
             INDArray out;
             if (next.hasMaskArrays()) {
@@ -52,6 +56,10 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
             } else {
                 eval.eval(next.getLabels(), out);
             }
+        }
+
+        if (eval == null) {
+            throw new IllegalStateException("test iterator is empty");
         }
 
         double sum = 0.0;
