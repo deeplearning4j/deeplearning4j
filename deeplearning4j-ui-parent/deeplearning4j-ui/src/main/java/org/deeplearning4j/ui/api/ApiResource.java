@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.ui.api;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.dwjackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;

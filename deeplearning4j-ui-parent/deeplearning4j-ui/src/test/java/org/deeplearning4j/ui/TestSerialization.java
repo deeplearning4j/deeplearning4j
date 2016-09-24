@@ -1,7 +1,9 @@
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.nd4j.serde.dwjackson.VectorDeSerializer;
+import org.nd4j.serde.dwjackson.VectorSerializer;
+import org.nd4j.shade.dwjackson.databind.ObjectMapper;
+import org.nd4j.shade.dwjackson.databind.module.SimpleModule;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -15,8 +17,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.serde.jackson.VectorDeSerializer;
-import org.nd4j.serde.jackson.VectorSerializer;
 
 import java.util.Arrays;
 

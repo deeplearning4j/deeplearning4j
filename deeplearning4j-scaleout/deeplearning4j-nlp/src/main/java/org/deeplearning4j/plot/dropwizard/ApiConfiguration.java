@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.plot.dropwizard;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dropwizard.Configuration;
+import org.nd4j.shade.dwjackson.annotation.JsonProperty;
+import org.nd4j.shade.dropwizard.Configuration;
 
 /**
  * Api Configuration

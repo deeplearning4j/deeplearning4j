@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui.weights;
 
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.dwjackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;

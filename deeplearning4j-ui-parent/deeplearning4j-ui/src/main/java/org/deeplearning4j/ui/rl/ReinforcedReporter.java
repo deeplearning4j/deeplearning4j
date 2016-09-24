@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.rl;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.dwjackson.jaxrs.json.JacksonJsonProvider;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.rl.beans.ReportBean;

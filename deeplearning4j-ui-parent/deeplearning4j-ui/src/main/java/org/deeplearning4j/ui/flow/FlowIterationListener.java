@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.flow;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.dwjackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;

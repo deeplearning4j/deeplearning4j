@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.dwjackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.plot.BarnesHutTsne;

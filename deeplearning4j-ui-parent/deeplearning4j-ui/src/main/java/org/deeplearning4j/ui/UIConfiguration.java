@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dropwizard.Configuration;
+import org.nd4j.shade.dwjackson.annotation.JsonProperty;
+import org.nd4j.shade.dropwizard.Configuration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;

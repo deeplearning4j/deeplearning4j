@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.ui.weights;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 import javax.ws.rs.GET;
 
