@@ -1,9 +1,9 @@
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.Data;
 import org.apache.commons.codec.binary.Base64;
 
@@ -73,7 +73,7 @@ public class VectorsConfiguration implements Serializable {
                 That's ugly method, but its way more memory-friendly then loading whole 10GB json file just to create another 10GB memory array.
             */
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
