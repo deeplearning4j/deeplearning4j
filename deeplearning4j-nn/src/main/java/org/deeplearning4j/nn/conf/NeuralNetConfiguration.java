@@ -313,6 +313,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapper;
     }
 
+    public static List<Class<?>> getRegisteredSubtypes(){
+        ObjectMapper mapper = mapper();
+        AnnotatedClass ac = AnnotatedClass.construct(Layer.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+
+        List<Class<?>> registeredSubtypes = new ArrayList<>();
+        for(NamedType nt : types){
+            registeredSubtypes.add(nt.getType());
+        }
+        return registeredSubtypes;
+    }
+
     /**Reinitialize and return the Jackson/json ObjectMapper with additional named types.
      * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
      * types defined outside of the main DL4J codebase)

@@ -1,21 +1,12 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.custom.MyCustomPreprocessor;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,17 +19,10 @@ public class CustomPreprocessorTest {
     @Test
     public void testCustomPreprocessor(){
         //First: Ensure that the CustomLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(InputPreProcessor.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
         boolean found = false;
-        for (NamedType nt : types) {
-//            System.out.println(nt);
-            if (nt.getType() == MyCustomPreprocessor.class){
-                found = true;
-                break;
-            }
+        for(Class<?> c : NeuralNetConfiguration.getRegisteredSubtypes()){
+            System.out.println(c);
+            if (c == MyCustomPreprocessor.class) found = true;
         }
 
         assertTrue("MyCustomPreprocessor: not registered with NeuralNetConfiguration mapper", found);
