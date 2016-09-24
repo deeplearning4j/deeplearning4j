@@ -16,10 +16,10 @@
 
 package org.datavec.api.util.jackson;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import org.nd4j.shade.jackson.core.JsonGenerator;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.JsonSerializer;
+import org.nd4j.shade.jackson.databind.SerializerProvider;
 import org.joda.time.DateTimeFieldType;
 
 import java.io.IOException;

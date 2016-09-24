@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
