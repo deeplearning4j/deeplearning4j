@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -139,7 +139,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
                 we need JSON as single line to save it at first line of the CSV model file
             */
 			return mapper.writeValueAsString(this);
-		} catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+		} catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
 	}
