@@ -18,13 +18,13 @@
 
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -234,7 +235,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             String ret =  mapper.writeValueAsString(this);
             return ret;
 
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -265,7 +266,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             String ret =  mapper.writeValueAsString(this);
             return ret;
 
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -337,7 +338,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
 
-        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class /*, ILossFunction.class*/ );
+        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class, ILossFunction.class );
     }
 
     private static void registerSubtypes(ObjectMapper mapper, Class<?>... baseClasses){
@@ -432,7 +433,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected Layer layer;
         protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
-        protected int numIterations = 5;
+        protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
         protected boolean useRegularization = false;
@@ -498,15 +499,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
-        }
-
-        /** <b>Deprecated</b><br>
-         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified number of layers, not including input.
-         * @param size number of layers in the network
-         * @deprecated Manually specifying number of layers in  is not necessary. Use {@link #list()} or {@link #list(Layer...)} methods.
-         * */
-        public ListBuilder list(int size) {
-            return list();
         }
 
         /**Create a ListBuilder (for creating a MultiLayerConfiguration)<br>

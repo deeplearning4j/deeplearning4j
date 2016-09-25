@@ -20,8 +20,8 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.text.movingwindow.ContextLabelRetriever;
-import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;

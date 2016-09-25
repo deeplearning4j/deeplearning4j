@@ -20,7 +20,7 @@
     <parent>
         <artifactId>spark</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -67,17 +67,11 @@
 
     <dependencies>
 
+        <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.4.4</version>    <!-- Force 2.4.4 for Spark local tests (to match Spark) -->
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.4.4</version> <!-- Force 2.4.4 for Spark local tests (to match Spark) -->
-            <scope>test</scope>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>

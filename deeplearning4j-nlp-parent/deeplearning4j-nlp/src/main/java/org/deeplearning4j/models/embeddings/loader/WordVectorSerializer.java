@@ -18,10 +18,10 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -724,6 +724,8 @@ public class WordVectorSerializer {
             }
         }
 
+        vectors.extractLabels();
+
         return vectors;
     }
 
@@ -984,6 +986,8 @@ public class WordVectorSerializer {
                 reader.close();
             } catch (Exception e) {
             }
+
+            vectors.extractLabels();
 
             return vectors;
         } catch (Exception e) {
