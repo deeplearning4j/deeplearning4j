@@ -264,7 +264,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public void normalizeCifar(File fileName) {
         DataSet result =  new DataSet();
         result.load(fileName);
-        if(!meanStdStored && train) { // TODO check for file with stats to load
+        if(!meanStdStored && train) {
             uMean = Math.abs(uMean/numExamples);
             uStd = Math.sqrt(uStd);
             vMean = Math.abs(vMean/numExamples);
@@ -359,7 +359,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 throw new IllegalStateException("The number of channels must be 3 to special preProcess Cifar with.");
             }
         }
-        if(shuffle && num > 1) result.shuffle(seed); // TODO confirm shuffle not same on mult epochs with set seed...
+        if(shuffle && num > 1) result.shuffle(seed);
         return result;
     }
 
@@ -384,11 +384,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 loadDS.load(new File(testFilesSerialized));
                 // Shuffle all examples in file before batching happens also for each reset
                 if(shuffle && batchSize > 1) loadDS.shuffle(seed);
-    //          inputBatched = loadDS.batchBy(batchSize);
                 loadDSIndex = 0;
+    //          inputBatched = loadDS.batchBy(batchSize);
             }
+            // TODO loading full train dataset when using cuda causes memory error - find way to load into list off gpu
 //            result = inputBatched.get(batchNum);
-            // TODO find better way - loading full dataset using gpu throwing errors
             for (int i = 0; i < batchSize; i++) {
                 if (loadDS.get(loadDSIndex) != null) temp.add(loadDS.get(loadDSIndex));
                 else break;
