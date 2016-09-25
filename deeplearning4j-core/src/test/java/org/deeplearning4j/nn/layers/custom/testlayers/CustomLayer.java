@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.layers.custom.testlayers;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.ParamInitializer;
