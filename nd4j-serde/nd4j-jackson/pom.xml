@@ -17,18 +17,27 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+            <scope>provided</scope>
         </dependency>
 
+        <!-- ND4J Jackson Shaded Dependency-->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

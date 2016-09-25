@@ -6,11 +6,14 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -272,5 +275,68 @@ public class NativeOpExecutionerTest {
 
        // assertEquals(second, third);    //Original and result w/ same strides: passes
        // assertEquals(first,second);     //Original and result w/ different strides: fails
+    }
+
+    @Test
+    public void testBroadcastEquality1() {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
+        INDArray array2 = Nd4j.zeros(new int[]{4, 5}, 'f');
+        INDArray row = Nd4j.create(new float[]{1, 2, 3, 4, 5});
+
+        array.addiRowVector(row);
+
+        System.out.println(array);
+
+        System.out.println("-------");
+
+        ScalarAdd add = new ScalarAdd(array2, row, array2, array2.length(), 0.0f);
+        add.setDimension(0);
+        Nd4j.getExecutioner().exec(add);
+
+        System.out.println(array2);
+        assertEquals(array, array2);
+    }
+
+    @Test
+    public void testBroadcastEquality2() {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'c');
+        INDArray array2 = Nd4j.zeros(new int[]{4, 5}, 'c');
+        INDArray column = Nd4j.create(new float[]{1, 2, 3, 4}).reshape(4,1);
+
+        array.addiColumnVector(column);
+
+        System.out.println(array);
+
+        System.out.println("-------");
+
+        ScalarAdd add = new ScalarAdd(array2, column, array2, array2.length(), 0.0f);
+        add.setDimension(1);
+        Nd4j.getExecutioner().exec(add);
+
+        System.out.println(array2);
+        assertEquals(array, array2);
+
+    }
+
+
+    @Test
+    public void testIsMaxC1() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'c');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 1));
+    }
+
+    @Test
+    public void testIsMaxC2() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'c');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 0));
+    }
+
+    @Test
+    public void testIsMaxF1() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
+
+        Nd4j.getExecutioner().exec(new IsMax(array, 1));
     }
 }

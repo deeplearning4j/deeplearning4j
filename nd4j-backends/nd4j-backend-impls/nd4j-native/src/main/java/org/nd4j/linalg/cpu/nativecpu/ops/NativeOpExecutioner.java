@@ -377,11 +377,72 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return ret;
     }
 
+    /**
+     * ScalarOp along dimension
+     * @param op
+     * @param dimension
+     */
+    private void invoke(ScalarOp op, int[] dimension) {
+        Arrays.sort(dimension);
+        // do tad magic
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+
+        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+        Pointer hostTadOffsets = tadBuffers.getSecond().addressPointer();
+
+        Pointer devTadShapeInfoZ = null;
+        Pointer devTadOffsetsZ = null;
+
+        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+        devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
+        devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
+
+        PointerPointer dummy = new PointerPointer(
+                hostTadShapeInfo,
+                hostTadOffsets,
+                devTadShapeInfoZ,
+                devTadOffsetsZ
+        );
+
+
+        if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.execScalarFloat(dummy,
+                    op.opNum(),
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(),
+                    (FloatPointer) getPointerForExtraArgs(op),
+                    new IntPointer(dimension),
+                    dimension.length
+                    );
+        } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            loop.execScalarDouble(dummy,
+                    op.opNum(),
+                    (DoublePointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.y().data().addressPointer(),
+                    (DoublePointer) getPointerForExtraArgs(op),
+                    new IntPointer(dimension),
+                    dimension.length
+            );
+        }
+    }
+
     private void exec(ScalarOp op) {
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
+            if (op.getDimension() != null) {
+                invoke(op, op.getDimension());
+                return;
+            }
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
@@ -442,7 +503,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-            PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+            PointerPointer dummy = new PointerPointer(4);
+
+        if(op.opNum() == 41 && op.extraArgs() != null) {
+            int[] dimension = new int[] {(int) op.extraArgs()[1] };
+
+            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+
+
+            Pointer tad = tadBuffers.getFirst().addressPointer();
+
+            DataBuffer offsets = tadBuffers.getSecond();
+            Pointer off = offsets == null ? null : offsets.addressPointer();
+            dummy.put(0, tad);
+            dummy.put(1, off);
+        }
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride()  && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {

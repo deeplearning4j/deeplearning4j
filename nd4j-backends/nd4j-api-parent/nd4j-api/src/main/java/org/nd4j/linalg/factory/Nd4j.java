@@ -5197,11 +5197,13 @@ public class Nd4j {
                 return;
             }
 
-            if (!System.getProperty("sun.arch.data.model").equals("64")) {
+            if (!System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
+                    && !System.getProperty("os.arch").toLowerCase().startsWith("arm")
+                    && !System.getProperty("sun.arch.data.model").equals("64")) {
                 System.out.println();
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.out.println();
-                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit JVM");
+                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit x86 JVM");
                 System.out.println("                 Please, consider running this on 64-bit JVM instead");
                 System.out.println();
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
