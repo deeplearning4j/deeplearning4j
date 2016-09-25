@@ -19,7 +19,7 @@
     <parent>
         <artifactId>datavec-parent</artifactId>
         <groupId>org.datavec</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
@@ -75,11 +75,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>

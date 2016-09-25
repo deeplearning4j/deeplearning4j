@@ -23,7 +23,7 @@
 
     <packaging>pom</packaging>
 
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
     <modules>
         <module>datavec-api</module>
         <module>datavec-data</module>
@@ -53,7 +53,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.7</slf4j.version>
-        <nd4j.version>0.5.1-SNAPSHOT</nd4j.version>
+        <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
         <junit.version>4.12</junit.version>
         <jackson.version>2.4.4</jackson.version>    <!-- To match spark -->
         <commons-compress.version>1.8.1</commons-compress.version>
@@ -64,8 +64,9 @@
         <lombok.version>1.16.6</lombok.version>
         <jodatime.version>2.9.2</jodatime.version>
         <freemarker.version>2.3.23</freemarker.version>
+        <logback.version>1.1.2</logback.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     </properties>
-
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -296,6 +297,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

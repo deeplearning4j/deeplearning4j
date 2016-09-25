@@ -17,7 +17,7 @@
 package org.datavec.api.transform.sequence;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;

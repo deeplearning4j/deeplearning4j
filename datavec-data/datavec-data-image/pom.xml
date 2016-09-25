@@ -19,7 +19,7 @@
     <parent>
         <artifactId>datavec-data</artifactId>
         <groupId>org.datavec</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -30,7 +30,7 @@
         <ffmpeg.version>3.0.2</ffmpeg.version>
         <leptonica.version>1.73</leptonica.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
-        <javacpp.version>1.2.3</javacpp.version>
+        <javacpp.version>1.2.5-SNAPSHOT</javacpp.version>
     </properties>
 
     <dependencies>

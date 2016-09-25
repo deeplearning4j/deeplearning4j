@@ -19,7 +19,7 @@
     <parent>
         <artifactId>datavec-parent</artifactId>
         <groupId>org.datavec</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
@@ -53,39 +53,17 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- Jackson Dependencies -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>${jodatime.version}</version>
+        </dependency>
+
+        <!-- ND4J Shaded Jackson Dependencies -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>
@@ -100,7 +78,6 @@
             <version>${freemarker.version}</version>
         </dependency>
 
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -111,6 +88,13 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>3.2.5.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

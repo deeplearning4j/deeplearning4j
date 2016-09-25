@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
