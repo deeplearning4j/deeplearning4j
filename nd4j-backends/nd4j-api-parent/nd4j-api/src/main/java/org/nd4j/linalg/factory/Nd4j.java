@@ -2293,7 +2293,7 @@ public class Nd4j {
         Nd4j.write(arr, dos);
         dos.flush();
         dos.close();
-
+        bos.close();
     }
 
 

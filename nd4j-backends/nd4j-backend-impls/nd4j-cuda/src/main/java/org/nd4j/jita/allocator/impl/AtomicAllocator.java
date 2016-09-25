@@ -578,6 +578,7 @@ public class AtomicAllocator implements Allocator {
         private int threadId;
         private int deviceId;
         private AtomicLong stopper = new AtomicLong(System.currentTimeMillis());
+        private AtomicLong lastGC = new AtomicLong(0);
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -609,8 +610,11 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            //if (useTracker.get() > System.currentTimeMillis() - 3000)
-                               // System.gc();
+                            //if (useTracker.get() > System.currentTimeMillis() - 3000 && lastGC.get() < System.currentTimeMillis() - 1000) {
+                            if (useTracker.get() > System.currentTimeMillis() - 3000) {
+                                //lastGC.set(System.currentTimeMillis());
+                                System.gc();
+                            }
                             Thread.sleep(50);
                         } else Thread.sleep(50);
                     } catch (Exception e) {
