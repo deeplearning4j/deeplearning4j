@@ -18,13 +18,13 @@
 
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -235,7 +235,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             String ret =  mapper.writeValueAsString(this);
             return ret;
 
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -266,7 +266,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             String ret =  mapper.writeValueAsString(this);
             return ret;
 
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
