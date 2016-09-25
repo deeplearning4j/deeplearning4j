@@ -232,7 +232,7 @@ public class DataSetIteratorTest {
 
 		model.fit(cifar);
 
-		cifar.test(10000);
+		cifar.test(100);
 		Evaluation eval = new Evaluation(cifar.getLabels());
 		while(cifar.hasNext()) {
 			DataSet testDS = cifar.next(batchSize);
