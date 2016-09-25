@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.weights;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

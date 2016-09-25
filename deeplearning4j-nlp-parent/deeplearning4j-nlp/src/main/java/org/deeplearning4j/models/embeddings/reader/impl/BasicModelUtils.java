@@ -349,7 +349,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     }
 
 
-    private static class SimilarityComparator implements Comparator<WordSimilarity> {
+    public static class SimilarityComparator implements Comparator<WordSimilarity> {
         @Override
         public int compare(WordSimilarity o1, WordSimilarity o2) {
             if (Double.isNaN(o1.getSimilarity()) && Double.isNaN(o2.getSimilarity())) {
@@ -363,7 +363,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         }
     }
 
-    private static class ArrayComparator implements Comparator<Double[]> {
+    public static class ArrayComparator implements Comparator<Double[]> {
         @Override
         public int compare(Double[] o1, Double[] o2) {
             if (Double.isNaN(o1[0]) && Double.isNaN(o2[0])) {
@@ -379,12 +379,12 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     @Data
     @AllArgsConstructor
-    private static class WordSimilarity {
+    public static class WordSimilarity {
         private String word;
         private double similarity;
     }
 
-    private List<String> getLabels(List<WordSimilarity> results, int limit) {
+    public static List<String> getLabels(List<WordSimilarity> results, int limit) {
         List<String> result = new ArrayList<>();
         for (int x = 0; x < results.size(); x++) {
             result.add(results.get(x).getWord());

@@ -33,4 +33,6 @@ Providing help for tuning neural networks can be quite time consuming for the de
  * Contributors/building from source: [https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)
  * Casual conversation: [https://gitter.im/deeplearning4j/deeplearning4jconvos](https://gitter.im/deeplearning4j/deeplearning4jconvos)
 
+We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html).
+
 We look forward to working with you, and if you are dedicated to building a deep learning solution with us, we will do our best to help you succeed. If you require commercial support for tuning your neural network models, please contact us via [http://www.skymind.io/contact/](http://www.skymind.io/contact/) or help@skymind.io
