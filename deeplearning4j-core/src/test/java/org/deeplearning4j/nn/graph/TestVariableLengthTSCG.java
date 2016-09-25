@@ -283,8 +283,8 @@ public class TestVariableLengthTSCG {
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
-                        //MSE loss function: 1/2n * sum(squaredErrors)
-                        double expScore = 0.5 * nOut * (tsLength-nToMask);  //Sum over minibatches, then divide by minibatch size
+                        //MSE loss function: 1/n * sum(squaredErrors)... but sum(squaredErrors) = n * (1-0) here -> sum(squaredErrors)
+                        double expScore = tsLength-nToMask;  //Sum over minibatches, then divide by minibatch size
 
                         net.setLayerMaskArrays(null, new INDArray[]{labelMaskArray});
                         net.setInput(0,input);

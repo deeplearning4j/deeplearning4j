@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.text.tokenizerfactory;
+package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;

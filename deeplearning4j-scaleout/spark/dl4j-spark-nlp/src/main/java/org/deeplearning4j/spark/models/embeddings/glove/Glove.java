@@ -35,7 +35,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCalculator;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
-import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;

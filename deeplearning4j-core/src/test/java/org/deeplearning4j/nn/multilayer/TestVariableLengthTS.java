@@ -283,8 +283,8 @@ public class TestVariableLengthTS {
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
-                        //MSE loss function: 1/2n * sum(squaredErrors)
-                        double expScore = 0.5 * nOut * (tsLength-nToMask);  //Sum over minibatches, then divide by minibatch size
+                        //MSE loss function: 1/n * sum(squaredErrors)... but sum(squaredErrors) = n * (1-0) here -> sum(squaredErrors)
+                        double expScore = (tsLength-nToMask);  //Sum over minibatches, then divide by minibatch size
 
                         mln.setLayerMaskArrays(null, labelMaskArray);
                         mln.setInput(input);

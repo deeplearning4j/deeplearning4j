@@ -70,7 +70,7 @@ public class CustomOutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<CustomOutputLayer.Builder> {
 
         public Builder(LossFunctions.LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
+            super.lossFunction(lossFunction);
         }
 
         @Override

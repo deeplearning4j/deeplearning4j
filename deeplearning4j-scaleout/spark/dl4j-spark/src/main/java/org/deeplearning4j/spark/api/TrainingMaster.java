@@ -28,6 +28,16 @@ import java.util.Collection;
 public interface TrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>> {
 
     /**
+     * Get the TrainingMaster configuration as JSON
+     */
+    String toJson();
+
+    /**
+     * Get the TrainingMaster configuration as YAML
+     */
+    String toYaml();
+
+    /**
      * Get the worker instance for this training master
      *
      * @param network Current SparkDl4jMultiLayer

@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.text.tokenizerfactory;
+package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 
 import org.apache.uima.analysis_engine.AnalysisEngine;

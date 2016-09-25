@@ -16,40 +16,49 @@
  *
  */
 
-package org.deeplearning4j.text.tokenizerfactory;
+package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
-import org.deeplearning4j.text.tokenization.tokenizer.DefaultStreamTokenizer;
-import org.deeplearning4j.text.tokenization.tokenizer.DefaultTokenizer;
+import org.deeplearning4j.text.tokenization.tokenizer.NGramTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 import java.io.InputStream;
 
 /**
- * Default tokenizer based on string tokenizer or stream tokenizer
- * @author Adam Gibson
+ * @author sonali
  */
-public class DefaultTokenizerFactory implements TokenizerFactory {
+public class NGramTokenizerFactory implements TokenizerFactory {
+    private TokenPreProcess preProcess;
+    private Integer minN = 1;
+    private Integer maxN = 1;
+    private TokenizerFactory tokenizerFactory;
 
-    private TokenPreProcess tokenPreProcess;
+    public NGramTokenizerFactory(TokenizerFactory tokenizerFactory,Integer minN, Integer maxN) {
+        this.tokenizerFactory = tokenizerFactory;
+        this.minN = minN;
+        this.maxN = maxN;
+    }
 
     @Override
     public Tokenizer create(String toTokenize) {
-        DefaultTokenizer t =  new DefaultTokenizer(toTokenize);
-        t.setTokenPreProcessor(tokenPreProcess);
-        return t;
+        if (toTokenize == null || toTokenize.isEmpty()) {
+            throw new IllegalArgumentException("Unable to proceed; no sentence to tokenize");
+        }
+
+        Tokenizer t1 = tokenizerFactory.create(toTokenize);
+        t1.setTokenPreProcessor(preProcess);
+        Tokenizer ret = new NGramTokenizer(t1, minN, maxN);
+        return ret;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t =  new DefaultStreamTokenizer(toTokenize);
-        t.setTokenPreProcessor(tokenPreProcess);
-        return t;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setTokenPreProcessor(TokenPreProcess preProcessor) {
-        this.tokenPreProcess = preProcessor;
+        this.preProcess = preProcessor;
     }
 
     /**
@@ -59,8 +68,6 @@ public class DefaultTokenizerFactory implements TokenizerFactory {
      */
     @Override
     public TokenPreProcess getTokenPreProcessor() {
-        return tokenPreProcess;
+        return preProcess;
     }
-
-
 }
