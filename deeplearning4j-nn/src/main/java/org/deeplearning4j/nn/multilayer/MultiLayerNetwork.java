@@ -2354,7 +2354,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
-    /**Evaluate the network (classification performance)
+    /**
+     * Evaluate the network (classification performance)
+     *
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
@@ -2362,18 +2364,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return evaluate(iterator, null);
     }
 
-    /** Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+    /**
+     * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+     *
      * @param iterator Data to undertake evaluation on
-     * @return Evaluation object, summarizing returs of the evaluation
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
-    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList){
+    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList) {
+        return evaluate(iterator, labelsList, 1);
+    }
+
+    /**
+     * Evaluate the network (for classification) on the provided data set, with top N accuracy in addition to standard accuracy.
+     * For 'standard' accuracy evaluation only, use topN = 1
+     *
+     * @param iterator   Iterator (data) to evaluate on
+     * @param labelsList List of labels. May be null.
+     * @param topN       N value for top N accuracy evaluation
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList, int topN) {
         if(layers == null || !(getOutputLayer() instanceof IOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
+        Evaluation e = new Evaluation(labelsList, topN);
         while(iterator.hasNext()){
             DataSet next = iterator.next();
 

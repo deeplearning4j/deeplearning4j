@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.api.Style;

@@ -3,7 +3,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,6 +13,7 @@
     <modules>
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
+        <module>deeplearning4j-ui-model</module>
     </modules>
 
 </project>

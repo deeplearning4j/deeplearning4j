@@ -104,11 +104,11 @@ public class TestEarlyStoppingCompGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
+                .updater(Updater.SGD).learningRate(5.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                 .setOutputs("0")
                 .pretrain(false).backprop(true)
                 .build();

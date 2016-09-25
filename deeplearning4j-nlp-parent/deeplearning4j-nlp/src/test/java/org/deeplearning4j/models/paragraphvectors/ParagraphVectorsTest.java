@@ -21,7 +21,6 @@ package org.deeplearning4j.models.paragraphvectors;
 
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -39,8 +38,8 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
-import org.deeplearning4j.text.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -54,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -199,6 +199,16 @@ public class ParagraphVectorsTest {
 
         assertTrue(vec.hasWord("DOC_16392"));
         assertTrue(vec.hasWord("DOC_3720"));
+
+        List<String> result = new ArrayList<>(vec.nearestLabels(vec.getWordVectorMatrix("DOC_16392"), 10));
+        System.out.println("nearest labels: " + result);
+        for(String label: result) {
+            System.out.println(label + "/DOC_16392: " + vec.similarity(label, "DOC_16392"));
+        }
+        assertTrue(result.contains("DOC_16392"));
+        assertTrue(result.contains("DOC_21383"));
+
+
 
         /*
             We have few lines that contain pretty close words invloved.

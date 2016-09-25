@@ -17,9 +17,9 @@
  */
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.jsontype.NamedType;
 import lombok.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -85,7 +85,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
         try {
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -113,7 +113,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }

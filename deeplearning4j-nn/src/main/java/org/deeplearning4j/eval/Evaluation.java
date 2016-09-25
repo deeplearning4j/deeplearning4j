@@ -23,9 +23,12 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,11 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class Evaluation implements Serializable {
+    protected static final Logger log = LoggerFactory.getLogger(Evaluation.class);
 
+    protected final int topN;
+    protected int topNCorrectCount = 0;
+    protected int topNTotalCount = 0;      //Could use topNCountCorrect / (double)getNumRowCounter() - except for eval(int,int), hence separate counters
     protected Counter<Integer> truePositives = new Counter<>();
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
@@ -48,12 +55,12 @@ public class Evaluation implements Serializable {
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
     protected List<String> labelsList = new ArrayList<>();
-    protected static Logger log = LoggerFactory.getLogger(Evaluation.class);
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
     // Empty constructor
     public Evaluation() {
+        this.topN = 1;
     }
 
     // Constructor that takes number of output classes
@@ -64,7 +71,7 @@ public class Evaluation implements Serializable {
      * @param numClasses the number of classes to account for in the evaluation
      */
     public Evaluation(int numClasses) {
-        this(createLabels(numClasses));
+        this(createLabels(numClasses), 1);
     }
 
     /**
@@ -76,11 +83,7 @@ public class Evaluation implements Serializable {
      *               for the output
      */
     public Evaluation(List<String> labels) {
-        this.labelsList = labels;
-        if(labels != null){
-            createConfusion(labels.size());
-        }
-
+        this(labels, 1);
     }
 
     /**
@@ -90,7 +93,23 @@ public class Evaluation implements Serializable {
      * @param labels a map of label index to label value
      */
     public Evaluation(Map<Integer, String> labels) {
-        this(createLabelsFromMap(labels));
+        this(createLabelsFromMap(labels), 1);
+    }
+
+    /**
+     * Constructor to use for top N accuracy
+     *
+     * @param labels Labels for the classes (may be null)
+     * @param topN   Value to use for top N accuracy calculation (<=1: standard accuracy). Note that with top N
+     *               accuracy, an example is considered 'correct' if the probability for the true class is one of the
+     *               highest N values
+     */
+    public Evaluation(List<String> labels, int topN) {
+        this.labelsList = labels;
+        if (labels != null) {
+            createConfusion(labels.size());
+        }
+        this.topN = topN;
     }
 
     private static List<String> createLabels(int numClasses){
@@ -231,6 +250,24 @@ public class Evaluation implements Serializable {
                 falsePositives.incrementCount(col, colFp);
                 falseNegatives.incrementCount(col, colFn);
                 trueNegatives.incrementCount(col, colTn);
+            }
+        }
+
+        if (nCols > 1 && topN > 1) {
+            //Calculate top N accuracy
+            //TODO: this could be more efficient
+            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            int nExamples = realOutcomeIndex.length();
+            for (int i = 0; i < nExamples; i++) {
+                int labelIdx = (int) realOutcomeIndex.getDouble(i);
+                double prob = guesses.getDouble(i, labelIdx);
+                INDArray row = guesses.getRow(i);
+                int countGreaterThan = (int) Nd4j.getExecutioner().exec(new MatchCondition(row, Conditions.greaterThan(prob)), Integer.MAX_VALUE).getDouble(0);
+                if (countGreaterThan < topN) {
+                    //For example, for top 3 accuracy: can have at most 2 other probabilities larger
+                    topNCorrectCount++;
+                }
+                topNTotalCount++;
             }
         }
     }
@@ -383,10 +420,14 @@ public class Evaluation implements Serializable {
         double rec = recall();
         double f1 = f1();
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:  ").append(format(df,acc));
-        builder.append("\n Precision: ").append(format(df,prec));
-        builder.append("\n Recall:    ").append(format(df,rec));
-        builder.append("\n F1 Score:  ").append(format(df,f1));
+        builder.append("\n Accuracy:        ").append(format(df,acc));
+        if(topN > 1){
+            double topNAcc = topNAccuracy();
+            builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df,topNAcc));
+        }
+        builder.append("\n Precision:       ").append(format(df,prec));
+        builder.append("\n Recall:          ").append(format(df,rec));
+        builder.append("\n F1 Score:        ").append(format(df,f1));
         builder.append("\n========================================================================");
         return builder.toString();
     }
@@ -652,6 +693,16 @@ public class Evaluation implements Serializable {
         return countCorrect / (double)getNumRowCounter();
     }
 
+    /**
+     * Top N accuracy of the predictions so far. For top N = 1 (default), equivalent to {@link #accuracy()}
+     * @return Top N accuracy
+     */
+    public double topNAccuracy() {
+        if(topN <= 1) return accuracy();
+        if(topNTotalCount == 0) return 0.0;
+        return topNCorrectCount / (double)topNTotalCount;
+    }
+
 
     // Access counter methods
 
@@ -780,6 +831,36 @@ public class Evaluation implements Serializable {
         return numRowCounter;
     }
 
+    /**
+     * Return the number of correct predictions according to top N value. For top N = 1 (default) this is equivalent to
+     * the number of correct predictions
+     * @return Number of correct top N predictions
+     */
+    public int getTopNCorrectCount(){
+        if(topN <= 1){
+            int nClasses = confusion.getClasses().size();
+            int countCorrect = 0;
+            for (int i = 0; i < nClasses; i++) {
+                countCorrect += confusion.getCount(i, i);
+            }
+            return countCorrect;
+        }
+        return topNCorrectCount;
+    }
+
+    /**
+     * Return the total number of top N evaluations. Most of the time, this is exactly equal to {@link #getNumRowCounter()},
+     * but may differ in the case of using {@link #eval(int, int)} as top N accuracy cannot be calculated in that case
+     * (i.e., requires the full probability distribution, not just predicted/actual indices)
+     * @return Total number of top N predictions
+     */
+    public int getTopNTotalCount(){
+        if( topN <= 1){
+            return getNumRowCounter();
+        }
+        return topNTotalCount;
+    }
+
     public String getClassLabel(Integer clazz) {
         return resolveLabelForClass(clazz);
     }
@@ -814,6 +895,12 @@ public class Evaluation implements Serializable {
         }
         numRowCounter += other.numRowCounter;
         if (labelsList.isEmpty()) labelsList.addAll(other.labelsList);
+
+        if(topN != other.topN){
+            log.warn("Different topN values ({} vs {}) detected during Evaluation merging. Top N accuracy may not be accurate.",topN,other.topN);
+        }
+        this.topNCorrectCount += other.topNCorrectCount;
+        this.topNTotalCount += other.topNTotalCount;
     }
 
     /**
