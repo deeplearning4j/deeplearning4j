@@ -609,9 +609,9 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            if (useTracker.get() > System.currentTimeMillis() - 3000)
-                                System.gc();
-                            Thread.sleep(100);
+                            //if (useTracker.get() > System.currentTimeMillis() - 3000)
+                               // System.gc();
+                            Thread.sleep(50);
                         } else Thread.sleep(50);
                     } catch (Exception e) {
 
