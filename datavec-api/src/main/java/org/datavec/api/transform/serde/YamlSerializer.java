@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.serde;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Serializer used for converting objects (Transforms, Conditions, etc) to YAML format

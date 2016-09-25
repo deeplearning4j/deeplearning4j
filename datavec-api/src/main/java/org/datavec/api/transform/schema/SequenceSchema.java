@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import lombok.Data;

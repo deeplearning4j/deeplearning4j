@@ -16,10 +16,10 @@
 
 package org.datavec.api.records.reader.impl;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.impl.jackson.FieldSelection;
 import org.datavec.api.records.reader.impl.jackson.JacksonRecordReader;

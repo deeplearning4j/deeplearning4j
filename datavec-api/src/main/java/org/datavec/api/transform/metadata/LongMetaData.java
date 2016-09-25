@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.metadata;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
