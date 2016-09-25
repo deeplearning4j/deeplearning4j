@@ -803,7 +803,6 @@ public class RecordReaderDataSetiteratorTest {
         int numClasses = 3;
 
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv,batchSize,labelIdx,numClasses);
-        rrdsi.setCollectMetaData(true);
 
         NormalizerStandardize ns = new NormalizerStandardize();
         ns.fit(rrdsi);
@@ -817,6 +816,7 @@ public class RecordReaderDataSetiteratorTest {
                 .updater(Updater.SGD).learningRate(0.1)
                 .list()
                 .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
                         .nIn(4).nOut(3).build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -830,23 +830,34 @@ public class RecordReaderDataSetiteratorTest {
         }
 
         Evaluation e = new Evaluation();
+        rrdsi.setCollectMetaData(true); //*** New: Enable collection of metadata (stored in the DataSets) ***
+
         while(rrdsi.hasNext()){
             DataSet ds = rrdsi.next();
-            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);
+            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);    //*** New - cross dependencies here make types difficult, usid Object internally in DataSet for this***
 
             INDArray out = net.output(ds.getFeatures());
-            e.eval(ds.getLabels(), out, meta);
+            e.eval(ds.getLabels(), out, meta);      //*** New - evaluate and also store metadata ***
         }
 
         System.out.println(e.stats());
 
-        System.out.println("\n\nPrediction Errors:");
-        List<Prediction> errors = e.getPredictionErrors();
+        System.out.println("\n\n*** Prediction Errors: ***");
+
+        List<Prediction> errors = e.getPredictionErrors();          //*** New - get list of prediction errors from evaluation ***
+        List<RecordMetaData> metaForErrors = new ArrayList<>();
+        for(Prediction p : errors) metaForErrors.add(p.getRecordMetaData());
+        DataSet ds = rrdsi.loadFromMetaData(metaForErrors);         //*** New - dynamically load a subset of the data, just for prediction errors ***
+        INDArray output = net.output(ds.getFeatures());
+
+        int count = 0;
         for(Prediction t : errors){
-            System.out.println(t + "\t\tRaw Data: " + csv.loadFromMeta(t.getRecordMetaData()).getRecord());
+            System.out.println(t
+                    + "\t\tRaw Data: " + csv.loadFromMeta(t.getRecordMetaData()).getRecord()    //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
+                    + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count)
+                    + "\tNetwork predictions: " + output.getRow(count));
+            count++;
         }
-
-
     }
 
 }

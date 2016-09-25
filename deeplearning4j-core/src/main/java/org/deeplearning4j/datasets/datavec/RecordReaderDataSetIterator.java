@@ -39,6 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import javax.annotation.Generated;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -190,7 +191,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private DataSet getDataSet(List<Writable> record) {
         List<Writable> currList;
         if (record instanceof List)
-            currList = (List<Writable>) record;
+            currList = record;
         else
             currList = new ArrayList<>(record);
 
@@ -364,12 +365,30 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
-    public DataSet loadFromMeta(RecordMetaData meta){
-        return loadFromMeta(Collections.singletonList(meta));
+    public DataSet loadFromMetaData(RecordMetaData meta) throws IOException {
+        return loadFromMetaData(Collections.singletonList(meta));
     }
 
-    public DataSet loadFromMeta(List<RecordMetaData> list){
+    public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        List<Record> records = ((RecordReaderMeta)recordReader).loadFromMeta(list);
+        List<DataSet> dataSets = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        for(Record r : records){
+            dataSets.add(getDataSet(r.getRecord()));
+            meta.add(r.getMetaData());
+        }
+
+        if(dataSets.isEmpty()) {
+            return new DataSet();
+        }
+
+        DataSet ret = DataSet.merge(dataSets);
+        ret.setExampleMetaData(meta);
+        last = ret;
+        if (preProcessor != null) preProcessor.preProcess(ret);
+        //Add label name values to dataset
+        if (recordReader.getLabels() != null) ret.setLabelNames(recordReader.getLabels());
+        return ret;
     }
 }
