@@ -17,18 +17,21 @@
 package org.datavec.api.records.reader.impl.collection;
 
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Collection record reader for sequences.
@@ -36,9 +39,10 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class CollectionSequenceRecordReader extends BaseRecordReader implements SequenceRecordReader {
+public class CollectionSequenceRecordReader extends BaseRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
     private Iterator<? extends Collection<? extends Collection<Writable>>> records;
     private final Collection<? extends Collection<? extends Collection<Writable>>> original;
+    private int count = 0;
 
     /**
      *
@@ -93,6 +97,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     @Override
     public void reset() {
         this.records = original.iterator();
+        this.count = 0;
     }
 
     @Override
@@ -104,13 +109,70 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     @Override
     @SuppressWarnings("unchecked")
     public List<List<Writable>> sequenceRecord() {
-        List<List<Writable>> record = (List<List<Writable>>)records.next();
+        List<List<Writable>> record = toList(records.next());
         invokeListeners(record);
+        count++;
         return record;
     }
 
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), new RecordMetaDataIndex(count-1));
+    }
+
+    @Override
+    public SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        Set<Integer> toLoad = new LinkedHashSet<>();
+        for (RecordMetaData recordMetaData : recordMetaDatas) {
+            if (!(recordMetaData instanceof RecordMetaDataIndex)) {
+                throw new IllegalArgumentException("Expected RecordMetaDataIndex; got: " + recordMetaData);
+            }
+            long idx = ((RecordMetaDataIndex) recordMetaData).getIndex();
+            if (idx >= original.size()) {
+                throw new IllegalStateException("Cannot get index " + idx + " from collection: contains " + original + " elements");
+            }
+            toLoad.add((int) idx);
+        }
+
+        List<SequenceRecord> out = new ArrayList<>();
+        if (original instanceof List) {
+            List<Collection<? extends Collection<Writable>>> asList = (List<Collection<? extends Collection<Writable>>>) original;
+            for (Integer i : toLoad) {
+                List<List<Writable>> l = toList(asList.get(i));
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l, new RecordMetaDataIndex(i, CollectionRecordReader.class));
+                out.add(r);
+            }
+        } else {
+            Iterator<? extends Collection<? extends Collection<Writable>>> iter = original.iterator();
+            int i = 0;
+            while (iter.hasNext()) {
+                Collection<? extends Collection<Writable>> c = iter.next();
+                if (!toLoad.contains(i++)) {
+                    continue;
+                }
+                List<List<Writable>> record = toList(c);
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record, new RecordMetaDataIndex(i - 1, CollectionSequenceRecordReader.class));
+                out.add(r);
+            }
+        }
+        return out;
+    }
+
+    private static List<List<Writable>> toList(Collection<? extends Collection<Writable>> next){
+        List<List<Writable>> record = new ArrayList<>();
+        for(Collection<Writable> c : next){
+            record.add(new ArrayList<>(c));
+        }
+        return record;
     }
 }

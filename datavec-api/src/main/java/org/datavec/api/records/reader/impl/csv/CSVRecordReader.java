@@ -104,7 +104,7 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[0]);    //TODO: handle String splits etc
         RecordMetaData meta = new RecordMetaDataLine(this.currIndex-1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
-        return new Record(next, meta);
+        return new org.datavec.api.records.impl.Record(next, meta);
     }
 
     @Override

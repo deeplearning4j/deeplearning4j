@@ -17,7 +17,11 @@
 package org.datavec.api.records.reader.impl.collection;
 
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.BaseRecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Writable;
@@ -25,10 +29,7 @@ import org.datavec.api.writable.Writable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Collection record reader.
@@ -36,9 +37,10 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CollectionRecordReader extends BaseRecordReader {
+public class CollectionRecordReader extends BaseRecordReader implements RecordReaderMeta {
     private Iterator<? extends Collection<Writable>> records;
     private final Collection<? extends Collection<Writable>> original;
+    private int count = 0;
 
     public CollectionRecordReader(Collection<? extends Collection<Writable>> records) {
         this.records = records.iterator();
@@ -58,8 +60,9 @@ public class CollectionRecordReader extends BaseRecordReader {
     @Override
     public List<Writable> next() {
         Collection<Writable> next = records.next();
-        List<Writable> record = (next instanceof List ? (List<Writable>)next : new ArrayList<>(next));
+        List<Writable> record = (next instanceof List ? (List<Writable>) next : new ArrayList<>(next));
         invokeListeners(record);
+        count++;
         return record;
     }
 
@@ -84,13 +87,14 @@ public class CollectionRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public List<String> getLabels(){
+    public List<String> getLabels() {
         return null;
     }
 
     @Override
     public void reset() {
         this.records = original.iterator();
+        this.count = 0;
     }
 
     @Override
@@ -99,4 +103,51 @@ public class CollectionRecordReader extends BaseRecordReader {
     }
 
 
+    @Override
+    public Record nextRecord() {
+        return new org.datavec.api.records.impl.Record(next(), new RecordMetaDataIndex(count - 1));
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        Set<Integer> toLoad = new HashSet<>();
+        for (RecordMetaData recordMetaData : recordMetaDatas) {
+            if (!(recordMetaData instanceof RecordMetaDataIndex)) {
+                throw new IllegalArgumentException("Expected RecordMetaDataIndex; got: " + recordMetaData);
+            }
+            long idx = ((RecordMetaDataIndex) recordMetaData).getIndex();
+            if (idx >= original.size()) {
+                throw new IllegalStateException("Cannot get index " + idx + " from collection: contains " + original + " elements");
+            }
+            toLoad.add((int) idx);
+        }
+
+        List<Record> out = new ArrayList<>();
+        if (original instanceof List) {
+            List<Collection<Writable>> asList = (List<Collection<Writable>>) original;
+            for (Integer i : toLoad) {
+                List<Writable> l = new ArrayList<>(asList.get(i));
+                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i, CollectionRecordReader.class));
+                out.add(r);
+            }
+        } else {
+            Iterator<? extends Collection<Writable>> iter = original.iterator();
+            int i = 0;
+            while (iter.hasNext()) {
+                Collection<Writable> c = iter.next();
+                if (!toLoad.contains(i++)) {
+                    continue;
+                }
+                List<Writable> l = (c instanceof List ? ((List<Writable>) c) : new ArrayList<>(c));
+                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i - 1, CollectionRecordReader.class));
+                out.add(r);
+            }
+        }
+        return out;
+    }
 }

@@ -251,7 +251,7 @@ public class LineRecordReader extends BaseRecordReader {
         //And return...
         List<Record> out = new ArrayList<>();
         for(Triple<Integer,RecordMetaDataLine,List<Writable>> t : list){
-            out.add(new Record(t.getThird(), t.getSecond()));
+            out.add(new org.datavec.api.records.impl.Record(t.getThird(), t.getSecond()));
         }
         return out;
     }

@@ -31,6 +31,8 @@ public interface Record extends Serializable {
 
     List<Writable> getRecord();
 
+    void setRecord(List<Writable> record);
+
     RecordMetaData getMetaData();
 
 }
