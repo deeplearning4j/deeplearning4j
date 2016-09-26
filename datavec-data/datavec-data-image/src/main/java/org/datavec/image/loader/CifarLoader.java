@@ -40,8 +40,12 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
 import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
 
 /**
+ * CifarLoader is loader specific for the Cifar10 dataset
+ *
  * Reference: Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009.
- * Created by nyghtowl on 12/17/15.
+ *
+ * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
+ * https://github.com/szagoruyko/cifar.torch
  */
 public class CifarLoader extends NativeImageLoader implements Serializable {
     public final static int NUM_TRAIN_IMAGES = 50000;
@@ -69,9 +73,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public static String TESTFILENAME = "test_batch.bin";
     protected static String trainFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_train_serialized");
     protected static String testFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_test_serialized.ser");
-    protected static String cifarStats = FilenameUtils.concat(fullDir.toString(), "cifar_stats.csv");
     protected static boolean train = true;
-    public static boolean preProcessCifar = false;
+    public static boolean useSpecialPreProcessCifar = false;
     public static Map<String, String> cifarDataMap = new HashMap<>();
 
     protected static int height = HEIGHT;
@@ -80,7 +83,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected static long seed = System.currentTimeMillis();
     protected static boolean shuffle = true;
     protected int numExamples = 0;
-    protected static int numToConvertDS = 10000;
+    protected static int numToConvertDS = 10000; // Each file is 10000 images, limiting for file preprocess load
     protected double uMean = 0;
     protected double uStd = 0;
     protected double vMean = 0;
@@ -91,36 +94,36 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected int fileNum = 0;
 
     public CifarLoader() {
-        this(height,width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
+        this(height,width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
     }
 
     public CifarLoader(boolean train) {
-        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
+        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
     }
 
     public CifarLoader(boolean train, File fullPath) {
-        this(height, width, channels, null, train, preProcessCifar, fullPath, seed, shuffle);
+        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullPath, seed, shuffle);
     }
 
-    public CifarLoader(int height, int width, int channels, boolean train, boolean preProcessCifar) {
-        this(height, width, channels, null, train, preProcessCifar, fullDir, seed, shuffle);
+    public CifarLoader(int height, int width, int channels, boolean train, boolean useSpecialPreProcessCifar) {
+        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
     }
 
-    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar) {
-        this(height, width, channels, imgTransform, train, preProcessCifar, fullDir, seed, shuffle);
+    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean useSpecialPreProcessCifar) {
+        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
     }
 
-    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar, boolean shuffle) {
-        this(height, width, channels, imgTransform, train, preProcessCifar, fullDir, seed, shuffle);
+    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean useSpecialPreProcessCifar, boolean shuffle) {
+        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
     }
 
-    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean preProcessCifar, File fullPath, long seed, boolean shuffle) {
+    public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train, boolean useSpecialPreProcessCifar, File fullPath, long seed, boolean shuffle) {
         super(height, width, channels, imgTransform);
         this.height = height;
         this.width = width;
         this.channels = channels;
         this.train = train;
-        this.preProcessCifar = preProcessCifar;
+        this.useSpecialPreProcessCifar = useSpecialPreProcessCifar;
         this.fullDir = fullPath;
         this.seed = seed;
         this.shuffle = shuffle;
@@ -193,7 +196,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
         defineLabels();
 
-        if (preProcessCifar && train && !cifarProcessedFilesExists()) {
+        if (useSpecialPreProcessCifar && train && !cifarProcessedFilesExists()) {
             for (int i = fileNum+1; i <= (TRAINFILENAMES.length); i++) {
                 inputStream = trainInputStream;
                 DataSet result = convertDataSet(numToConvertDS);
@@ -248,7 +251,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
         if (converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(orgImage));
-            // TODO rec to normalize y before transform - currently doing after
+            // TODO determine if need to normalize y before transform - opencv docs rec but currently doing after
             writable = yuvTransform.transform(writable); // Converts to chrome color to help emphasize image objects
             writable = histEqualization.transform(writable); // Normalizes values to further clarify object of interest
             resImage = converter.convert(writable.getFrame());
@@ -308,7 +311,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             imageData.put(3 * i + 1, byteFeature[i + 1 + height * width]); // green
             imageData.put(3 * i + 2, byteFeature[i + 1]); // red
         }
-        if (preProcessCifar) {
+        if (useSpecialPreProcessCifar) {
             image = convertCifar(image);
         }
 
@@ -344,11 +347,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         double uTempMean, vTempMean;
         for (DataSet data :result) {
             try {
-                if (preProcessCifar) {
+                if (useSpecialPreProcessCifar) {
                     INDArray uChannel = data.getFeatures().tensorAlongDimension(1, new int[] {0,2,3});
                     INDArray vChannel = data.getFeatures().tensorAlongDimension(2, new int[] {0,2,3});
                     uTempMean = uChannel.mean(new int[] {0,2,3}).getDouble(0);
-                    // TODO INDArray.var result is incorrect based on dimensions passed in thus manual - log issue and test example
+                    // TODO INDArray.var result is incorrect based on dimensions passed in thus using manual
                     uStd += varManual(uChannel, uTempMean);
                     uMean += uTempMean;
                     vTempMean = vChannel.mean(new int[] {0,2,3}).getDouble(0);
@@ -377,7 +380,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public DataSet next(int batchSize, int exampleNum) {
         List<DataSet> temp = new ArrayList<>();
         DataSet result;
-        if (cifarProcessedFilesExists() && preProcessCifar) {
+        if (cifarProcessedFilesExists() && useSpecialPreProcessCifar) {
             if (exampleNum == 0 || ((exampleNum/fileNum) == numToConvertDS && train)) {
                 fileNum++;
                 if (train) loadDS.load(new File(trainFilesSerialized + fileNum + ".ser"));
