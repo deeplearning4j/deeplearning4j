@@ -1,5 +1,6 @@
 package org.nd4j.linalg.lossfunctions;
 
+
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.apache.commons.math3.util.Pair;
