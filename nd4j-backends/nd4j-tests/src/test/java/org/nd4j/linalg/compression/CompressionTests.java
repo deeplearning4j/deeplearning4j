@@ -10,8 +10,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.nio.ByteBuffer;
+
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -23,6 +27,30 @@ public class CompressionTests extends BaseNd4jTest {
             super(backend);
     }
 
+
+    @Test
+    public void testCompressionDescriptorSerde() {
+        CompressionDescriptor descriptor = new CompressionDescriptor();
+        descriptor.setCompressedLength(4);
+        descriptor.setOriginalElementSize(4);
+        descriptor.setNumberOfElements(4);
+        descriptor.setCompressionAlgorithm("GZIP");
+        descriptor.setOriginalLength(4);
+        descriptor.setCompressionType(CompressionType.LOSSY);
+        ByteBuffer toByteBuffer = descriptor.toByteBuffer();
+        CompressionDescriptor fromByteBuffer = CompressionDescriptor.fromByteBuffer(toByteBuffer);
+        assertEquals(descriptor,fromByteBuffer);
+    }
+
+    @Test
+    public void testGzipInPlaceCompression() {
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        Nd4j.getCompressor().setDefaultCompression("GZIP");
+        Nd4j.getCompressor().compressi(array);
+        assertTrue(array.isCompressed());
+        Nd4j.getCompressor().decompressi(array);
+        assertFalse(array.isCompressed());
+     }
 
     @Test
     public void testFP16Compression1() {
