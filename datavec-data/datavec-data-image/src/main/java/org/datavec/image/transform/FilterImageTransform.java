@@ -16,6 +16,7 @@
 package org.datavec.image.transform;
 
 import java.util.Random;
+
 import org.bytedeco.javacv.FFmpegFrameFilter;
 import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
@@ -76,4 +77,5 @@ public class FilterImageTransform extends BaseImageTransform {
         }
         return image;
     }
+
 }

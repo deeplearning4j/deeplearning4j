@@ -15,39 +15,42 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
-import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
+import java.util.Random;
+
 import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.MatVector;
+import static org.bytedeco.javacpp.opencv_core.split;
+import static org.bytedeco.javacpp.opencv_core.merge;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * Color conversion transform using CVT (cvtcolor):
- * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor"CVT Color</a>.
- * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-"More CVT Color</a>.
+ * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
+ * Used to improve the contrast of an image."
+ *
  */
-public class ColorConversion extends BaseImageTransform {
+public class EqualizeHistTransform extends BaseImageTransform {
 
     int conversionCode;
+    MatVector splitChannels = new MatVector();
 
     /**
-     * Default conversion BGR to Luv (chroma) color.
+     * Default transforms histogram equalization for CV_BGR2GRAY (grayscale)
      */
-    public ColorConversion() {
-        this(new Random(1234), COLOR_BGR2Luv);
+
+    public EqualizeHistTransform() {
+        this(new Random(1234), CV_BGR2GRAY);
     }
 
     /**
-     * Return new ColorConversion object
+     * Return contrast normalized object
      *
      * @param random Random
      * @param conversionCode  to transform,
      */
-    public ColorConversion(Random random, int conversionCode) {
+    public EqualizeHistTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
         converter = new OpenCVFrameConverter.ToMat();
@@ -61,6 +64,7 @@ public class ColorConversion extends BaseImageTransform {
      * @param random object to use (or null for deterministic)
      * @return transformed image
      */
+
     @Override
     public ImageWritable transform(ImageWritable image, Random random) {
         if (image == null) {
@@ -68,12 +72,21 @@ public class ColorConversion extends BaseImageTransform {
         }
         Mat mat = (Mat) converter.convert(image.getFrame());
         Mat result = new Mat();
-
         try {
-            cvtColor(mat, result, conversionCode);
+            if (conversionCode == CV_BGR2GRAY) {
+                equalizeHist(mat, result);
+            } else if (conversionCode == CV_BGR2YCrCb || conversionCode == COLOR_BGR2Luv) {
+                split(mat, splitChannels);
+                equalizeHist(splitChannels.get(0), splitChannels.get(0)); //equalize histogram on the 1st channel (Y)
+                merge(splitChannels,result);
+            }
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         return new ImageWritable(converter.convert(result));
     }
+
+
+
 }

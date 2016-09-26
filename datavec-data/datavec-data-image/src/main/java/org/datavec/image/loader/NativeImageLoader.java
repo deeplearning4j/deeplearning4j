@@ -128,6 +128,7 @@ public class NativeImageLoader extends BaseImageLoader {
         this(height, width, channels, imageTransform);
         normalizeIfNeeded = (normalizeValue > 0)? true: false;
         this.normalizeValue = normalizeValue;
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     @Override

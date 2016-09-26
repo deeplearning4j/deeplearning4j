@@ -17,11 +17,13 @@ package org.datavec.image.transform;
 
 import java.util.Random;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
+import org.bytedeco.javacv.CanvasFrame;
 import org.junit.Test;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
+import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -158,14 +160,43 @@ public class TestImageTransform {
 
     @Test
     public void testConvertColorTransform() throws Exception {
+//        Mat origImage = new Mat();
+//        Mat transImage = new Mat();
+//        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
         ImageWritable writable = makeRandomImage(32, 32, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new ColorConversion();
+        ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
+        showOrig.transform(writable);
+//        origImage = converter.convert(writable.getFrame());
 
+        ImageTransform transform = new ColorConversionTransform(new Random(42), COLOR_BGR2YCrCb);
         ImageWritable w = transform.transform(writable);
-        Frame f = w.getFrame();
-        assertNotEquals(f, frame);
+        ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
+        showTrans.transform(writable);
+//        transImage = converter.convert(writable.getFrame());
+
+        Frame newframe = w.getFrame();
+        assertNotEquals(frame, newframe);
         assertEquals(null, transform.transform(null));
+    }
+
+    @Test
+    public void testHistEqualization() throws CanvasFrame.Exception {
+        // TODO pull out historgram to confirm equalization...
+        ImageWritable writable = makeRandomImage(32, 32, 3);
+        Frame frame = writable.getFrame();
+        ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
+        showOrig.transform(writable);
+
+        ImageTransform transform = new EqualizeHistTransform(new Random(42), COLOR_BGR2YCrCb);
+        ImageWritable w = transform.transform(writable);
+
+        ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
+        showTrans.transform(writable);
+        Frame newframe = w.getFrame();
+        assertNotEquals(frame, newframe);
+        assertEquals(null, transform.transform(null));
+
     }
 
     public static ImageWritable makeRandomImage(int height, int width, int channels) {

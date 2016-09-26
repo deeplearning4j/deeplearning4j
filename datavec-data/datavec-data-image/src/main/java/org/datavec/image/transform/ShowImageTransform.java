@@ -17,6 +17,7 @@ package org.datavec.image.transform;
 
 import java.util.Random;
 import javax.swing.JFrame;
+
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.data.ImageWritable;
@@ -89,4 +90,5 @@ public class ShowImageTransform extends BaseImageTransform {
         }
         return image;
     }
+
 }
