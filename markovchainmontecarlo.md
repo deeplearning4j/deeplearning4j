@@ -108,7 +108,7 @@ Remember, the output layer of a classifier, for example, might be image labels l
 
 ## MCMC and Deep Reinforcement Learning
 
-Work in Progress.
+MCMC can be used in the context of deep reinforcement learning to sample from the array of possible moves available in any given state. This section is a work in progress. 
 
 ## Further Deeplearning4j Tutorials
 
