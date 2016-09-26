@@ -195,7 +195,7 @@ public class DataSetIteratorTest {
 		final int width = 32;
 		int channels = 3;
 		int outputNum = CifarLoader.NUM_LABELS;
-		int numSamples = 100;
+		int numSamples = 10;
 		int batchSize = 5;
 		int iterations = 1;
 		int seed = 123;
@@ -232,7 +232,7 @@ public class DataSetIteratorTest {
 
 		model.fit(cifar);
 
-		cifar.test(100);
+		cifar.test(10);
 		Evaluation eval = new Evaluation(cifar.getLabels());
 		while(cifar.hasNext()) {
 			DataSet testDS = cifar.next(batchSize);
