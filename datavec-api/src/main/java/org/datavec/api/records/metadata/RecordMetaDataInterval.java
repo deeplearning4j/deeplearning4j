@@ -22,22 +22,25 @@ import lombok.Data;
 import java.net.URI;
 
 /**
- * A general-purpose RecordMetaData implementation, with an index (long value)<br>
- * Used for example in {@link org.datavec.api.records.reader.impl.collection.CollectionRecordReader} and
- * {@link org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader}
+ * A general-purpose RecordMetaData implementation, with two indices (long values), generally forming an interval
  *
  * @author Alex Black
  */
 @AllArgsConstructor @Data
-public class RecordMetaDataIndex implements RecordMetaData {
+public class RecordMetaDataInterval implements RecordMetaData {
 
-    private final long index;
+    private final long from;
+    private final long to;
     private final URI uri;
-    private final Class<?> readerClass;
+    private Class<?> readerClass;
+
+    public RecordMetaDataInterval(long from, long to, URI uri){
+        this(from, to, uri, null);
+    }
 
     @Override
     public String getLocation() {
-        return "index=" + index;
+        return "interval(" + from + "," + to + ")";
     }
 
     @Override

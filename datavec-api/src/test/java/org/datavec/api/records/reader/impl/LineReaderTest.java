@@ -25,13 +25,16 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -63,8 +66,11 @@ public class LineReaderTest {
         reader.initialize(split);
 
         int count = 0;
+        List<List<Writable>> list = new ArrayList<>();
         while(reader.hasNext()) {
-            assertEquals(1,reader.next().size());
+            List<Writable> l = reader.next();
+            assertEquals(1,l.size());
+            list.add(l);
             count++;
         }
 

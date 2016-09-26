@@ -36,8 +36,8 @@ public interface SequenceRecordReaderMeta extends SequenceRecordReader {
 
     SequenceRecord nextSequence();
 
-    SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException;
+    SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException;
 
-    List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
+    List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

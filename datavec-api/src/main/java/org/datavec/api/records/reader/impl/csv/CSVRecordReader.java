@@ -44,8 +44,8 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
      * */
     public final static String QUOTE_HANDLING_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
     private boolean skippedLines = false;
-    private int skipNumLines = 0;
-    private String delimiter = DEFAULT_DELIMITER;
+    protected int skipNumLines = 0;
+    protected String delimiter = DEFAULT_DELIMITER;
     public final static String DEFAULT_DELIMITER = ",";
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";

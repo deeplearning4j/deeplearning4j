@@ -56,21 +56,8 @@ public class LineRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-        if(split instanceof StringSplit) {
-            StringSplit stringSplit = (StringSplit) split;
-            iter = Arrays.asList(stringSplit.getData()).listIterator();
-        } else if (split instanceof InputStreamInputSplit){
-            InputStream is = ((InputStreamInputSplit) split).getIs();
-            if(is != null){
-                iter =  IOUtils.lineIterator(new InputStreamReader(is));
-            }
-        } else {
-            this.locations = split.locations();
-            if (locations != null && locations.length > 0) {
-                iter =  IOUtils.lineIterator(new InputStreamReader(locations[0].toURL().openStream()));
-            }
-        }
         this.inputSplit = split;
+        this.iter = getIterator();
     }
 
     @Override
@@ -181,6 +168,39 @@ public class LineRecordReader extends BaseRecordReader {
         return Collections.singletonList((Writable)new Text(line));
     }
 
+    protected Iterator<String> getIterator(){
+        Iterator<String> iterator = null;
+        if(inputSplit instanceof StringSplit) {
+            StringSplit stringSplit = (StringSplit) inputSplit;
+            iterator = Collections.singletonList(stringSplit.getData()).listIterator();
+        } else if (inputSplit instanceof InputStreamInputSplit){
+            InputStream is = ((InputStreamInputSplit) inputSplit).getIs();
+            if(is != null){
+                iterator =  IOUtils.lineIterator(new InputStreamReader(is));
+            }
+        } else {
+            this.locations = inputSplit.locations();
+            if (locations != null && locations.length > 0) {
+                InputStream inputStream;
+                try{
+                    inputStream = locations[0].toURL().openStream();
+                }catch(IOException e){
+                    throw new RuntimeException(e);
+                }
+                iterator =  IOUtils.lineIterator(new InputStreamReader(inputStream));
+            }
+        }
+        if(iterator == null) throw new UnsupportedOperationException("Unknown input split: " + inputSplit);
+        return iterator;
+    }
+
+    protected void closeIfRequired(Iterator<String> iterator){
+        if(iterator instanceof LineIterator){
+            LineIterator iter = (LineIterator)iterator;
+            iter.close();
+        }
+    }
+
 
     //@Override //TODO
     public List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException {
@@ -196,12 +216,6 @@ public class LineRecordReader extends BaseRecordReader {
             list.add(new Triple<>(count++, (RecordMetaDataLine)rmd, (List<Writable>)null));
         }
 
-//        Collections.sort(list, new Comparator<Pair<Integer,RecordMetaData>>(){
-//            @Override
-//            public int compare(Pair<Integer, RecordMetaData> o1, Pair<Integer, RecordMetaData> o2) {
-//                return Integer.compare(o1.getFirst(), o2.getFirst());
-//            }
-//        });
         //Sort by line number:
         Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){
             @Override
@@ -210,22 +224,7 @@ public class LineRecordReader extends BaseRecordReader {
             }
         });
 
-        Iterator<String> iterator = null;
-        if(inputSplit instanceof StringSplit) {
-            StringSplit stringSplit = (StringSplit) inputSplit;
-            iterator = Collections.singletonList(stringSplit.getData()).listIterator();
-        } else if (inputSplit instanceof InputStreamInputSplit){
-            InputStream is = ((InputStreamInputSplit) inputSplit).getIs();
-            if(is != null){
-                iterator =  IOUtils.lineIterator(new InputStreamReader(is));
-            }
-        } else {
-            this.locations = inputSplit.locations();
-            if (locations != null && locations.length > 0) {
-                iterator =  IOUtils.lineIterator(new InputStreamReader(locations[0].toURL().openStream()));
-            }
-        }
-        if(iterator == null) throw new UnsupportedOperationException(); //TODO
+        Iterator<String> iterator = getIterator();
 
         Iterator<Triple<Integer,RecordMetaDataLine,List<Writable>>> metaIter = list.iterator();
         int currentLineIdx = 0;
@@ -239,6 +238,7 @@ public class LineRecordReader extends BaseRecordReader {
             }
             t.setThird(Collections.<Writable>singletonList(new Text(line)));
         }
+        closeIfRequired(iterator);
 
         //Now, sort by the original order:
         Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){

@@ -105,7 +105,7 @@ public class CollectionRecordReader extends BaseRecordReader implements RecordRe
 
     @Override
     public Record nextRecord() {
-        return new org.datavec.api.records.impl.Record(next(), new RecordMetaDataIndex(count - 1));
+        return new org.datavec.api.records.impl.Record(next(), new RecordMetaDataIndex(count - 1, null, CollectionRecordReader.class));
     }
 
     @Override
@@ -132,7 +132,7 @@ public class CollectionRecordReader extends BaseRecordReader implements RecordRe
             List<Collection<Writable>> asList = (List<Collection<Writable>>) original;
             for (Integer i : toLoad) {
                 List<Writable> l = new ArrayList<>(asList.get(i));
-                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i, CollectionRecordReader.class));
+                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i, null, CollectionRecordReader.class));
                 out.add(r);
             }
         } else {
@@ -144,7 +144,7 @@ public class CollectionRecordReader extends BaseRecordReader implements RecordRe
                     continue;
                 }
                 List<Writable> l = (c instanceof List ? ((List<Writable>) c) : new ArrayList<>(c));
-                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i - 1, CollectionRecordReader.class));
+                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i - 1, null, CollectionRecordReader.class));
                 out.add(r);
             }
         }

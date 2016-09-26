@@ -117,12 +117,12 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
     }
 
     @Override
-    public SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
     }
 
     @Override
-    public List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<SequenceRecord> out = new ArrayList<>();
         for(RecordMetaData meta : recordMetaDatas){
             File next = new File(meta.getURI());

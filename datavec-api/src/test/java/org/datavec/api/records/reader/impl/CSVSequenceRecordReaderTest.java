@@ -124,7 +124,7 @@ public class CSVSequenceRecordReaderTest {
         }
         assertEquals(3, l2.size());
 
-        List<SequenceRecord> fromMeta = seqReader.loadFromMetaData(meta);
+        List<SequenceRecord> fromMeta = seqReader.loadSequenceFromMetaData(meta);
         for( int i=0; i<3; i++ ){
             assertEquals(l.get(i), l2.get(i).getSequenceRecord());
             assertEquals(l.get(i), fromMeta.get(i).getSequenceRecord());

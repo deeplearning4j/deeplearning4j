@@ -16,16 +16,25 @@
 
 package org.datavec.api.records.reader.impl.csv;
 
+import org.apache.commons.io.IOUtils;
+import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.metadata.RecordMetaDataLineInterval;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.InputStreamInputSplit;
+import org.datavec.api.split.StringSplit;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * A CSV Sequence record reader where:<br>
@@ -37,7 +46,7 @@ import java.util.NoSuchElementException;
  *
  * @author Alex Black
  */
-public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
+public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
 
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";
 
@@ -92,5 +101,97 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Reading CSV data from DataInputStream not yet implemented");
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        int lineBefore = currIndex;
+        List<List<Writable>> record = sequenceRecord();
+        int lineAfter = currIndex;
+        RecordMetaData meta = new RecordMetaDataLineInterval(lineBefore,lineAfter-1, locations[0],CSVNLinesSequenceRecordReader.class);
+        return new org.datavec.api.records.impl.SequenceRecord(record, meta);
+    }
+
+    @Override
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        //First: create a sorted list of the RecordMetaData
+        List<Triple<Integer,RecordMetaDataLineInterval,List<List<Writable>>>> list = new ArrayList<>();
+        Iterator<RecordMetaData> iter = recordMetaDatas.iterator();
+        int count = 0;
+        while(iter.hasNext()){
+            RecordMetaData rmd = iter.next();
+            if(!(rmd instanceof RecordMetaDataLineInterval)){
+                throw new IllegalArgumentException("Invalid metadata; expected RecordMetaDataLineInterval instance; got: " + rmd);
+            }
+            list.add(new Triple<>(count++, (RecordMetaDataLineInterval)rmd, (List<List<Writable>>)new ArrayList<List<Writable>>()));
+        }
+
+        //Sort by starting line number:
+        Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLineInterval, List<List<Writable>>>>(){
+            @Override
+            public int compare(Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o1, Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o2) {
+                return Integer.compare(o1.getSecond().getLineNumberStart(), o2.getSecond().getLineNumberStart());
+            }
+        });
+
+        Iterator<String> lineIter = getIterator();
+        int currentLineIdx = 0;
+        String line = lineIter.next();
+        while(currentLineIdx < skipNumLines){
+            line = lineIter.next();
+            currentLineIdx++;
+        }
+        for (Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> next : list) {
+            int nextStartLine = next.getSecond().getLineNumberStart();
+            int nextEndLine = next.getSecond().getLineNumberEnd();
+            while (currentLineIdx < nextStartLine && lineIter.hasNext()) {
+                line = lineIter.next();
+                currentLineIdx++;
+            }
+            while (currentLineIdx <= nextEndLine && (lineIter.hasNext() || currentLineIdx == nextEndLine)) {
+                String[] split = line.split(this.delimiter, -1);
+                List<Writable> writables = new ArrayList<>();
+                for (String s : split) {
+                    writables.add(new Text(s));
+                }
+                next.getThird().add(writables);
+                currentLineIdx++;
+                if(lineIter.hasNext()) {
+                    line = lineIter.next();
+                }
+            }
+        }
+        closeIfRequired(lineIter);
+
+        //Now, sort by the original order:
+        Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLineInterval, List<List<Writable>>>>(){
+            @Override
+            public int compare(Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o1, Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o2) {
+                return Integer.compare(o1.getFirst(), o2.getFirst());
+            }
+        });
+
+        //And return...
+        List<SequenceRecord> out = new ArrayList<>();
+        for( Triple<Integer,RecordMetaDataLineInterval, List<List<Writable>>> t : list){
+            out.add(new org.datavec.api.records.impl.SequenceRecord(t.getThird(), t.getSecond()));
+        }
+
+        return out;
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData){
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas){
+        throw new UnsupportedOperationException("Not supported");
     }
 }

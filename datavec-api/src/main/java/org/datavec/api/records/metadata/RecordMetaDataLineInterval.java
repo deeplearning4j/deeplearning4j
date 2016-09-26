@@ -18,26 +18,32 @@ package org.datavec.api.records.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.commons.io.FilenameUtils;
 
 import java.net.URI;
 
 /**
- * A general-purpose RecordMetaData implementation, with an index (long value)<br>
- * Used for example in {@link org.datavec.api.records.reader.impl.collection.CollectionRecordReader} and
- * {@link org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader}
- *
- * @author Alex Black
+ * Created by Alex on 20/09/2016.
  */
 @AllArgsConstructor @Data
-public class RecordMetaDataIndex implements RecordMetaData {
+public class RecordMetaDataLineInterval implements RecordMetaData {
 
-    private final long index;
-    private final URI uri;
-    private final Class<?> readerClass;
+    private int lineNumberStart;
+    private int lineNumberEnd;
+    private URI uri;
+    private Class<?> readerClass;
+
 
     @Override
     public String getLocation() {
-        return "index=" + index;
+        String filename;
+        if(uri != null){
+            String str = uri.toString();
+            filename = FilenameUtils.getBaseName(str) + "." + FilenameUtils.getExtension(str) + " ";
+        } else {
+            filename = "";
+        }
+        return filename + "lines " + lineNumberStart + "-" + lineNumberEnd;
     }
 
     @Override

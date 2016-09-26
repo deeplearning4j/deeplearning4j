@@ -17,7 +17,6 @@
 package org.datavec.api.records.reader.impl.collection;
 
 
-import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
@@ -122,16 +121,16 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
 
     @Override
     public SequenceRecord nextSequence() {
-        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), new RecordMetaDataIndex(count-1));
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), new RecordMetaDataIndex(count-1, null, CollectionSequenceRecordReader.class));
     }
 
     @Override
-    public SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
     }
 
     @Override
-    public List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         Set<Integer> toLoad = new LinkedHashSet<>();
         for (RecordMetaData recordMetaData : recordMetaDatas) {
             if (!(recordMetaData instanceof RecordMetaDataIndex)) {
@@ -149,7 +148,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
             List<Collection<? extends Collection<Writable>>> asList = (List<Collection<? extends Collection<Writable>>>) original;
             for (Integer i : toLoad) {
                 List<List<Writable>> l = toList(asList.get(i));
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l, new RecordMetaDataIndex(i, CollectionRecordReader.class));
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l, new RecordMetaDataIndex(i, null, CollectionRecordReader.class));
                 out.add(r);
             }
         } else {
@@ -161,7 +160,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
                     continue;
                 }
                 List<List<Writable>> record = toList(c);
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record, new RecordMetaDataIndex(i - 1, CollectionSequenceRecordReader.class));
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record, new RecordMetaDataIndex(i - 1, null, CollectionSequenceRecordReader.class));
                 out.add(r);
             }
         }
