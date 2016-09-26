@@ -11,6 +11,7 @@
   <version>0.6.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>nd4j-aeron</module>
         <module>nd4j-jackson</module>
         <module>nd4j-kryo</module>
         <module>nd4j-base64</module>
