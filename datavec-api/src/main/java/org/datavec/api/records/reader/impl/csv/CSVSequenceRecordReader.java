@@ -17,6 +17,11 @@
 package org.datavec.api.records.reader.impl.csv;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -25,17 +30,18 @@ import org.datavec.api.writable.Writable;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 /**
  * CSV Sequence Record Reader
- * This reader is indended to read sequences of data in CSV format, where
+ * This reader is intended to read sequences of data in CSV format, where
  * each sequence is defined in its own file (and there are multiple files)
  * Each line in the file represents one time step
  * @author Alex Black
  */
-public class CSVSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
+public class CSVSequenceRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
     private int skipNumLines = 0;
     private String delimiter = ",";
 
@@ -55,38 +61,45 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
-        @SuppressWarnings("unchecked")
-        Iterator<String> lineIter = IOUtils.lineIterator(new InputStreamReader(dataInputStream));
-        if (skipNumLines > 0) {
-            int count = 0;
-            while (count++ < skipNumLines && lineIter.hasNext()) lineIter.next();
-        }
-
-        List<List<Writable>> out = new ArrayList<>();
-        while (lineIter.hasNext()) {
-            String line = lineIter.next();
-            String[] split = line.split(delimiter);
-            ArrayList<Writable> list = new ArrayList<>();
-            for (String s : split) list.add(new Text(s));
-            out.add(list);
-        }
-
-        return out;
+        return loadAndClose(dataInputStream);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public List<List<Writable>> sequenceRecord() {
+        return nextSequence().getSequenceRecord();
+    }
+
+
+    @Override
+    public SequenceRecord nextSequence() {
         File next = iter.next();
         invokeListeners(next);
 
-        Iterator<String> lineIter;
-        try {
-            lineIter = IOUtils.lineIterator(new InputStreamReader(new FileInputStream(next)));
-        } catch (IOException e) {
+        List<List<Writable>> out;
+        try{
+            out = loadAndClose(new FileInputStream(next));
+        } catch (IOException e){
             throw new RuntimeException(e);
         }
 
+        return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataURI(next.toURI()));
+    }
+
+    private List<List<Writable>> loadAndClose(InputStream inputStream){
+        LineIterator lineIter = null;
+        try {
+            lineIter = IOUtils.lineIterator(new InputStreamReader(inputStream));
+            return load(lineIter);
+        } finally {
+            if(lineIter != null){
+                lineIter.close();
+            }
+            IOUtils.closeQuietly(inputStream);
+        }
+    }
+
+    private List<List<Writable>> load(Iterator<String> lineIter){
         if (skipNumLines > 0) {
             int count = 0;
             while (count++ < skipNumLines && lineIter.hasNext()) lineIter.next();
@@ -100,9 +113,22 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
             for (String s : split) list.add(new Text(s));
             out.add(list);
         }
-
         return out;
     }
 
+    @Override
+    public SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
 
+    @Override
+    public List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<SequenceRecord> out = new ArrayList<>();
+        for(RecordMetaData meta : recordMetaDatas){
+            File next = new File(meta.getURI());
+            List<List<Writable>> sequence = loadAndClose(new FileInputStream(next));
+            out.add(new org.datavec.api.records.impl.SequenceRecord(sequence, meta));
+        }
+        return out;
+    }
 }
