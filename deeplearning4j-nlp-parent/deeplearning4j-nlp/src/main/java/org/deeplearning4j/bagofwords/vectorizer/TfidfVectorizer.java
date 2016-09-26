@@ -97,10 +97,10 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         List<String> tokens = tokenizer.getTokens();
 
         // build document words count
-        Map<String, AtomicInteger> counts = new HashMap<>();
+        Map<String, AtomicLong> counts = new HashMap<>();
         for (String token: tokens) {
             if (!counts.containsKey(token))
-                counts.put(token, new AtomicInteger(0));
+                counts.put(token, new AtomicLong(0));
 
             counts.get(token).incrementAndGet();
         }
@@ -109,7 +109,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
             int idx = vocabCache.indexOf(tokens.get(i));
             if(idx >= 0) {
                 //System.out.println("TF-IDF for word: " + tokens.get(i));
-                ret.putScalar(idx, tfidfWord(tokens.get(i), counts.get(tokens.get(i)).intValue(), tokens.size()));
+                ret.putScalar(idx, tfidfWord(tokens.get(i), counts.get(tokens.get(i)).longValue(), tokens.size()));
             }
         }
         return ret;
@@ -117,11 +117,11 @@ public class TfidfVectorizer extends BaseTextVectorizer {
 
 
 
-    private double tfidfWord(String word, int wordCount, int documentLength) {
+    private double tfidfWord(String word, long wordCount, long documentLength) {
         return MathUtils.tfidf(tfForWord(wordCount, documentLength),idfForWord(word));
     }
 
-    private double tfForWord(int wordCount, int documentLength) {
+    private double tfForWord(long wordCount, long documentLength) {
         return (double) wordCount / (double) documentLength;
     }
 
