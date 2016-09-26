@@ -43,10 +43,18 @@ public class BasicNDArrayCompressor {
         }
     }
 
+    /**
+     * Get the set of available codecs for
+     * compression
+     * @return
+     */
     public Set<String> getAvailableCompressors() {
         return codecs.keySet();
     }
 
+    /**
+     * Prints available compressors to standard out
+     */
     public void printAvailableCompressors() {
         StringBuilder builder = new StringBuilder();
         builder.append("Available compressors: ");
@@ -57,10 +65,20 @@ public class BasicNDArrayCompressor {
         System.out.println(builder.toString());
     }
 
+    /**
+     * Get the ndarray compressor
+     * singleton
+     * @return
+     */
     public static BasicNDArrayCompressor getInstance() {
         return INSTANCE;
     }
 
+    /**
+     * Set the default compression algorithm
+     * @param algorithm the algorithm to set
+     * @return
+     */
     public BasicNDArrayCompressor setDefaultCompression(@NonNull String algorithm) {
         algorithm = algorithm.toUpperCase();
  //       if (!codecs.containsKey(algorithm))
@@ -73,16 +91,36 @@ public class BasicNDArrayCompressor {
         return this;
     }
 
+    /**
+     * Get the default compression algorithm as a string.
+     * This is an all caps algorithm with a representation in the
+     * CompressionAlgorithm enum
+     * @return
+     */
     public String getDefaultCompression() {
         synchronized (this) {
             return defaultCompression;
         }
     }
 
+    /**
+     * Compress the given data buffer
+     * given the default compression algorithm
+     * @param buffer the data buffer to compress
+     * @return the compressed version of the data buffer
+     */
     public DataBuffer compress(DataBuffer buffer) {
         return compress(buffer, getDefaultCompression());
     }
 
+    /**
+     * Compress the data buffer
+     * given a specified algorithm
+     * @param buffer the buffer to compress
+     * @param algorithm the algorithm to compress
+     * use
+     * @return the compressed data buffer
+     */
     public DataBuffer compress(DataBuffer buffer, String algorithm) {
         algorithm = algorithm.toUpperCase();
         if (!codecs.containsKey(algorithm))
@@ -95,11 +133,23 @@ public class BasicNDArrayCompressor {
         return compress(array, getDefaultCompression());
     }
 
+    /**
+     * In place compression of the passed in ndarray
+     * with the default compression algorithm
+     * @param array
+     */
     public void compressi(INDArray array) {
         compressi(array, getDefaultCompression());
     }
 
 
+    /**
+     * Returns a compressed version of the
+     * given ndarray
+     * @param array the array to compress
+     * @param algorithm the algorithm to compress with
+     * @return a compressed copy of this ndarray
+     */
     public INDArray compress(INDArray array, String algorithm) {
         algorithm = algorithm.toUpperCase();
         if (!codecs.containsKey(algorithm))
@@ -108,6 +158,12 @@ public class BasicNDArrayCompressor {
         return codecs.get(algorithm).compress(array);
     }
 
+    /**
+     * In place Compress the given ndarray
+     * with the given algorithm
+     * @param array the array to compress
+     * @param algorithm
+     */
     public void compressi(INDArray array, String algorithm) {
         algorithm = algorithm.toUpperCase();
         if (!codecs.containsKey(algorithm))
@@ -116,6 +172,11 @@ public class BasicNDArrayCompressor {
         codecs.get(algorithm).compressi(array);
     }
 
+    /**
+     * Decompress the given databuffer
+     * @param buffer the databuffer to compress
+     * @return the decompressed databuffer
+     */
     public DataBuffer decompress(DataBuffer buffer) {
         if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
             throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + buffer.dataType());
@@ -129,6 +190,11 @@ public class BasicNDArrayCompressor {
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
     }
 
+    /**
+     *
+     * @param array
+     * @return
+     */
     public INDArray decompress(INDArray array) {
         if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
             return array;
@@ -142,7 +208,14 @@ public class BasicNDArrayCompressor {
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(array);
     }
 
-    public void decompressi (INDArray array) {
+    /**
+     * in place decompression of the given
+     * ndarray. If the ndarray isn't compressed
+     * this will do nothing
+     * @param array the array to decompressed
+     *              if it is comprssed
+     */
+    public void decompressi(INDArray array) {
         if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
             return;
 
@@ -155,12 +228,20 @@ public class BasicNDArrayCompressor {
          codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
     }
 
+    /**
+     * Decompress several ndarrays
+     * @param arrays
+     */
     public void autoDecompress(INDArray... arrays) {
         for (INDArray array: arrays) {
             autoDecompress(array);
         }
     }
 
+    /**
+     *
+     * @param array
+     */
     public void autoDecompress(INDArray array) {
         if (array.isCompressed())
             decompressi(array);
