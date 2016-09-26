@@ -27,10 +27,10 @@ import java.util.List;
 /**
  * Created by Alex on 20/09/2016.
  */
-@AllArgsConstructor @Data
-public class Record implements Serializable {
+public interface Record extends Serializable {
 
-    private List<Writable> record;
-    private RecordMetaData metaData;
+    List<Writable> getRecord();
+
+    RecordMetaData getMetaData();
 
 }

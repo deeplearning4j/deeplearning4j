@@ -34,10 +34,10 @@ import java.util.List;
  */
 public interface RecordReaderMeta extends RecordReader {
 
-    Record nextMeta();
+    Record nextRecord();
 
-    Record loadFromMeta(RecordMetaData recordMetaData) throws IOException;
+    Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException;
 
-    List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException;
+    List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

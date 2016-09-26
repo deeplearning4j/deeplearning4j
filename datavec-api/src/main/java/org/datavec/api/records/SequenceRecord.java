@@ -14,30 +14,21 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.records.reader;
+package org.datavec.api.records;
 
-import org.datavec.api.berkeley.Pair;
-import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.Writable;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 
 /**
- * This is TEMPORARY interface to maintain forward compatibility until 0.7.0 release, at which point
- * the functionality here will be moved to SequenceRecordReader<br>
- *
- * SequenceRecordReaderMeta adds methods that provide both the record AND metadata for the record
- *
- * @author Alex
+ * Created by Alex on 20/09/2016.
  */
-public interface SequenceRecordReaderMeta extends SequenceRecordReader {
+public interface SequenceRecord extends Serializable {
 
-    SequenceRecord nextSequence();
+    List<List<Writable>> getSequenceRecord();
 
-    SequenceRecord loadFromMetaData(RecordMetaData recordMetaData) throws IOException;
-
-    List<SequenceRecord> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
+    RecordMetaData getMetaData();
 
 }

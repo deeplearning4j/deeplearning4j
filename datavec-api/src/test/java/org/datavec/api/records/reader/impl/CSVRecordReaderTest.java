@@ -17,7 +17,6 @@
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.berkeley.Pair;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -173,7 +172,7 @@ public class CSVRecordReaderTest {
         List<RecordMetaData> metaList = new ArrayList<>();
         List<List<Writable>> writables = new ArrayList<>();
         while(rr.hasNext()){
-            Record r = rr.nextMeta();
+            Record r = rr.nextRecord();
             assertEquals(5, r.getRecord().size());
             lineCount++;
             RecordMetaData meta = r.getMetaData();
@@ -188,7 +187,7 @@ public class CSVRecordReaderTest {
 
 
         System.out.println("\n\n\n--------------------------------");
-        List<Record> contents = rr.loadFromMeta(metaList);
+        List<Record> contents = rr.loadFromMetaData(metaList);
         assertEquals(150, contents.size());
         for(Record r : contents ){
             System.out.println(r);
@@ -201,7 +200,7 @@ public class CSVRecordReaderTest {
         meta2.add(metaList.get(70));
         meta2.add(metaList.get(60));
 
-        List<Record> contents2 = rr.loadFromMeta(meta2);
+        List<Record> contents2 = rr.loadFromMetaData(meta2);
         assertEquals(writables.get(100),contents2.get(0).getRecord());
         assertEquals(writables.get(90),contents2.get(1).getRecord());
         assertEquals(writables.get(80),contents2.get(2).getRecord());
