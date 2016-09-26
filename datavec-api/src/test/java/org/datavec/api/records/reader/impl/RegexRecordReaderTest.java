@@ -16,6 +16,10 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -61,6 +65,39 @@ public class RegexRecordReaderTest {
         assertEquals(exp1, rr.next());
         assertEquals(exp2, rr.next());
         assertFalse(rr.hasNext());
+    }
+
+    @Test
+    public void testRegexLineRecordReaderMeta() throws Exception {
+        String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
+
+        RecordReaderMeta rr = new RegexLineRecordReader(regex, 1);
+        rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
+
+        List<List<Writable>> list = new ArrayList<>();
+        while(rr.hasNext()){
+            list.add(rr.next());
+        }
+        assertEquals(3, list.size());
+
+        List<Record> list2 = new ArrayList<>();
+        List<List<Writable>> list3 = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        rr.reset();
+        int count = 1;  //Start by skipping 1 line
+        while(rr.hasNext()){
+            Record r = rr.nextRecord();
+            list2.add(r);
+            list3.add(r.getRecord());
+            meta.add(r.getMetaData());
+
+            assertEquals(count++, ((RecordMetaDataLine)r.getMetaData()).getLineNumber());
+        }
+
+        List<Record> fromMeta = rr.loadFromMetaData(meta);
+
+        assertEquals(list, list3);
+        assertEquals(list2, fromMeta);
     }
 
     @Test

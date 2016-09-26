@@ -22,13 +22,14 @@ package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.datavec.api.berkeley.Pair;
 import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.BaseRecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
@@ -36,7 +37,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
 
@@ -45,12 +45,13 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class LineRecordReader extends BaseRecordReader {
+public class LineRecordReader extends BaseRecordReader implements RecordReaderMeta {
 
 
     private Iterator<String> iter;
     protected URI[] locations;
-    protected int currIndex = 0;
+    protected int splitIndex = 0;
+    protected int lineIndex = 0;    //Line index within the current split
     protected Configuration conf;
     protected InputSplit inputSplit;
 
@@ -73,15 +74,16 @@ public class LineRecordReader extends BaseRecordReader {
             String record = iter.next();
             invokeListeners(record);
             ret.add(new Text(record));
-            currIndex++;
+            lineIndex++;
             return ret;
         } else {
-            if ( !(inputSplit instanceof StringSplit) && currIndex < locations.length-1 ) {
-                currIndex++;
+            if ( !(inputSplit instanceof StringSplit) && splitIndex < locations.length-1 ) {
+                splitIndex++;
+                lineIndex = 0;
                 try {
                     close();
-                    iter = IOUtils.lineIterator(new InputStreamReader(locations[currIndex].toURL().openStream()));
-                    onLocationOpen(locations[currIndex]);
+                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
+                    onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -103,12 +105,12 @@ public class LineRecordReader extends BaseRecordReader {
         if ( iter != null && iter.hasNext() ) {
             return true;
         } else {
-            if (locations != null && !(inputSplit instanceof StringSplit) && currIndex < locations.length-1 ) {
-                currIndex++;
+            if (locations != null && !(inputSplit instanceof StringSplit) && splitIndex < locations.length-1 ) {
+                splitIndex++;
                 try {
                     close();
-                    iter = IOUtils.lineIterator(new InputStreamReader(locations[currIndex].toURL().openStream()));
-                    onLocationOpen(locations[currIndex]);
+                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
+                    onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -153,10 +155,11 @@ public class LineRecordReader extends BaseRecordReader {
         if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
         try{
             initialize(inputSplit);
-            currIndex = 0;
+            splitIndex = 0;
         }catch(Exception e){
             throw new RuntimeException("Error during LineRecordReader reset",e);
         }
+        lineIndex = 0;
     }
 
     @Override
@@ -201,9 +204,21 @@ public class LineRecordReader extends BaseRecordReader {
         }
     }
 
+    @Override
+    public Record nextRecord() {
+        List<Writable> next = next();
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, LineRecordReader.class); //-1 as line number has been incremented already...
+        return new org.datavec.api.records.impl.Record(next, meta);
+    }
 
-    //@Override //TODO
-    public List<Record> loadFromMeta(List<RecordMetaData> recordMetaDatas) throws IOException {
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return null;
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         //First: create a sorted list of the RecordMetaData
         List<Triple<Integer,RecordMetaDataLine,List<Writable>>> list = new ArrayList<>();
         Iterator<RecordMetaData> iter = recordMetaDatas.iterator();

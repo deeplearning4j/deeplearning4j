@@ -16,19 +16,15 @@
 
 package org.datavec.api.records.reader.impl.csv;
 
-import org.apache.commons.io.IOUtils;
 import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.metadata.RecordMetaDataLineInterval;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.split.InputStreamInputSplit;
-import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -105,10 +101,11 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
 
     @Override
     public SequenceRecord nextSequence() {
-        int lineBefore = currIndex;
+        int lineBefore = lineIndex;
         List<List<Writable>> record = sequenceRecord();
-        int lineAfter = currIndex;
-        RecordMetaData meta = new RecordMetaDataLineInterval(lineBefore,lineAfter-1, locations[0],CSVNLinesSequenceRecordReader.class);
+        int lineAfter = lineIndex;
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        RecordMetaData meta = new RecordMetaDataLineInterval(lineBefore,lineAfter-1, uri, CSVNLinesSequenceRecordReader.class);
         return new org.datavec.api.records.impl.SequenceRecord(record, meta);
     }
 

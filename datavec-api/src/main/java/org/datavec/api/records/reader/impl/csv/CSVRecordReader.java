@@ -92,18 +92,23 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
         }
         Text t =  (Text) super.next().iterator().next();
         String val = t.toString();
-        String[] split = val.split(delimiter, -1);
+        return parseLine(val);
+    }
+
+    protected List<Writable> parseLine(String line){
+        String[] split = line.split(delimiter, -1);
         List<Writable> ret = new ArrayList<>();
-        for(String s : split)
+        for(String s : split) {
             ret.add(new Text(s));
+        }
         return ret;
     }
 
     @Override
     public Record nextRecord(){
         List<Writable> next = next();
-        URI uri = (locations == null || locations.length < 1 ? null : locations[0]);    //TODO: handle String splits etc
-        RecordMetaData meta = new RecordMetaDataLine(this.currIndex-1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
         return new org.datavec.api.records.impl.Record(next, meta);
     }
 
@@ -114,16 +119,11 @@ public class CSVRecordReader extends LineRecordReader implements RecordReaderMet
 
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        List<Record> list = super.loadFromMeta(recordMetaDatas);
+        List<Record> list = super.loadFromMetaData(recordMetaDatas);
 
         for(Record r : list ){
             String line = r.getRecord().get(0).toString();
-            String[] split = line.split(delimiter, -1);
-            List<Writable> writables = new ArrayList<>();
-            for(String s : split) {
-                writables.add(new Text(s));
-            }
-            r.setRecord(writables);
+            r.setRecord(parseLine(line));
         }
 
         return list;
