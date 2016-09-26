@@ -55,7 +55,7 @@ public class NDArrayStrings {
      * @return the formatted array
      */
     public String format(INDArray arr) {
-        String padding = decimalFormat.format(arr.maxNumber());
+        String padding = decimalFormat.format(3.0000);
         this.padding = padding.length();
         return format(arr,arr.rank());
     }

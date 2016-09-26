@@ -24,6 +24,8 @@ public enum CompressionAlgorithm {
      */
     public static CompressionAlgorithm fromString(String algorithm) {
         switch(algorithm.toUpperCase()) {
+            case "FP16" : return FLOAT8;
+            case "FP32" : return FLOAT16;
             case "FLOAT8" : return FLOAT8;
             case "FLOAT16" : return FLOAT16;
             case "GZIP" : return GZIP;
