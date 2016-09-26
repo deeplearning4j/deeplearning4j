@@ -77,25 +77,21 @@ public class CompressionDescriptor implements Cloneable, Serializable {
      * bytebuffer
      */
     public static CompressionDescriptor fromByteBuffer(ByteBuffer byteBuffer) {
-        //ensure position is at 0
-        byteBuffer.rewind();
         CompressionDescriptor compressionDescriptor = new CompressionDescriptor();
         //compression type
-        int compressionTypeOrdinal = byteBuffer.asIntBuffer().get(0);
+        int compressionTypeOrdinal = byteBuffer.getInt();
         CompressionType compressionType = CompressionType.values()[compressionTypeOrdinal];
         compressionDescriptor.setCompressionType(compressionType);
 
         //compression algo
-        int compressionAlgoOrdinal = byteBuffer.asIntBuffer().get(1);
+        int compressionAlgoOrdinal = byteBuffer.getInt();
         CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.values()[compressionAlgoOrdinal];
         compressionDescriptor.setCompressionAlgorithm(compressionAlgorithm.name());
-        //start 2 ints in from the 2 ordinal types of the compression type and algorithm
-        byteBuffer.position(8);
         //from here everything is longs
-        compressionDescriptor.setOriginalLength(byteBuffer.asLongBuffer().get(0));
-        compressionDescriptor.setCompressedLength(byteBuffer.asLongBuffer().get(1));
-        compressionDescriptor.setNumberOfElements(byteBuffer.asLongBuffer().get(2));
-        compressionDescriptor.setOriginalElementSize(byteBuffer.asLongBuffer().get(3));
+        compressionDescriptor.setOriginalLength(byteBuffer.getLong());
+        compressionDescriptor.setCompressedLength(byteBuffer.getLong());
+        compressionDescriptor.setNumberOfElements(byteBuffer.getLong());
+        compressionDescriptor.setOriginalElementSize(byteBuffer.getLong());
         return compressionDescriptor;
     }
 
@@ -124,6 +120,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
         directAlloc.putLong(compressedLength);
         directAlloc.putLong(numberOfElements);
         directAlloc.putLong(originalElementSize);
+        directAlloc.rewind();
         return directAlloc;
     }
 
