@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.ui.nearestneighbors;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.sptree.DataPoint;

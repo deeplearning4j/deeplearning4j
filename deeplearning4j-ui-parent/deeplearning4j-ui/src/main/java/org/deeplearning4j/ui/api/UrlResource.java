@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.nd4j.shade.dwjackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

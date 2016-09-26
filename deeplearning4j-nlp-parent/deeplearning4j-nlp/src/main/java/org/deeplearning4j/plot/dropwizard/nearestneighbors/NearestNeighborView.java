@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.plot.dropwizard.nearestneighbors;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 /**
  * @author Adam Gibson

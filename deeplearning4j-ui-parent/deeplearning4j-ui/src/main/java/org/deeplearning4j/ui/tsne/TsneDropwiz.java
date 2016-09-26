@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.tsne;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;

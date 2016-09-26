@@ -1,7 +1,7 @@
 package org.deeplearning4j.plot.dropwizard;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.nd4j.shade.dwjackson.databind.ObjectMapper;
+import org.nd4j.shade.dwjackson.databind.module.SimpleModule;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.jackson.VectorDeSerializer;
 import org.nd4j.serde.jackson.VectorSerializer;

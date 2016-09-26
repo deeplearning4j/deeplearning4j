@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.flow;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.dwjackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -371,9 +371,10 @@ public class FlowIterationListener implements IterationListener {
             List<String> inputs = graph.getConfiguration().getNetworkInputs();
             // now we need to add inputs as y0 nodes
             int x = 0;
+            int inputNum = 0;
             for (String input: inputs) {
                 GraphVertex vertex = graph.getVertex(input);
-                INDArray gInput = vertex.getInputs()[0];
+                INDArray gInput = graph.getInput(inputNum++);
                 long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
 
                 long numSamples = gInput.lengthLong() / tadLength;

@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.ui.activation;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 /**
  * used for rendering reconstructions

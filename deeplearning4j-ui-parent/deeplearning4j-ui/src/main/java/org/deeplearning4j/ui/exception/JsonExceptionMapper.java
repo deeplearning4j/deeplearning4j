@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.exception;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import org.nd4j.shade.dwjackson.core.JsonProcessingException;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;

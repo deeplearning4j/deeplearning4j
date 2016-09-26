@@ -179,7 +179,7 @@ public class TestRenders extends BaseUiServerTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
-                .setInputTypes(InputType.convolutional(1,28,28))
+                .setInputTypes(InputType.convolutionalFlat(28,28,1))
                 .addLayer("cnn_1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
                 .addLayer("cnn_2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
                 .addLayer("max_1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn_1", "cnn_2")
@@ -195,7 +195,10 @@ public class TestRenders extends BaseUiServerTest {
 
         DataSetIterator mnist = new MnistDataSetIterator(32,640,false,true,false,12345);
 
-        graph.fit(mnist);
+        for( int i=0; i<3; i++ ) {
+            graph.fit(mnist);
+            Thread.sleep(1000);
+        }
     }
 
 }

@@ -19,10 +19,10 @@
 package org.deeplearning4j.plot.dropwizard;
 
 import com.google.common.collect.ImmutableMap;
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
-import io.dropwizard.views.ViewBundle;
+import org.nd4j.shade.dropwizard.Application;
+import org.nd4j.shade.dropwizard.setup.Bootstrap;
+import org.nd4j.shade.dropwizard.setup.Environment;
+import org.nd4j.shade.dropwizard.views.ViewBundle;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

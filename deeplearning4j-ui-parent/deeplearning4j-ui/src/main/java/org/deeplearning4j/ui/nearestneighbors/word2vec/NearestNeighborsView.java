@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.ui.nearestneighbors.word2vec;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 /**
  * Created by agibsonccc on 10/8/14.

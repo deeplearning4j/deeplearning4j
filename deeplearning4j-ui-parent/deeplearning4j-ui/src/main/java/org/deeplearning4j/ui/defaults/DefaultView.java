@@ -1,6 +1,6 @@
 package org.deeplearning4j.ui.defaults;
 
-import io.dropwizard.views.View;
+import org.nd4j.shade.dropwizard.views.View;
 
 /**
  * @author raver119@gmail.com
