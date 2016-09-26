@@ -8,7 +8,10 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.List;
 
 /**
+ * CifarDataSetIterator is an iterator for Cifar10 dataset explicitly
  *
+ * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
+ * https://github.com/szagoruyko/cifar.torch
  */
 
 public class CifarDataSetIterator extends RecordReaderDataSetIterator {
@@ -18,54 +21,53 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     protected static int channels = 3;
     protected static CifarLoader loader;
     protected int totalExamples = CifarLoader.NUM_TRAIN_IMAGES;
-    // TODO use maxNumBatches and batchNum instead
     protected int numExamples = totalExamples;
     protected int exampleCount = 0;
     protected boolean overshot = false;
     protected ImageTransform imageTransform;
-    protected static boolean usePreProcessCifar = false;
+    protected static boolean useSpecialPreProcessCifar = false;
     protected static boolean train = true;
 
     /**
      * Loads images with given  batchSize, numExamples, & version returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, boolean train) {
-        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
+        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize, numExamples, & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize, numExamples, imgDim & version returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize & numExamples returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int numExamples) {
-        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
+        this(batchSize, numExamples, new int[]{height, width, channels}, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize & imgDim returned by the generator.
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim) {
-        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, usePreProcessCifar, train);
+        this(batchSize, CifarLoader.NUM_TRAIN_IMAGES, imgDim, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
      * Loads images with given  batchSize, numExamples, imgDim & version returned by the generator.
      */
-    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean preProcessCifar, boolean train) {
-        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, preProcessCifar, train);
+    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean useSpecialPreProcessCifar, boolean train) {
+        this(batchSize, numExamples, imgDim, CifarLoader.NUM_LABELS, null, useSpecialPreProcessCifar, train);
     }
 
     /**
@@ -75,21 +77,19 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * @param imgDim         an array of height, width and channels
      * @param numExamples    the overall number of examples
      * @param imageTransform the transformation to apply to the images
-     * @param preProcessCifar preprocess cifar
+     * @param useSpecialPreProcessCifar use Zagoruyko's preprocess for Cifar
      * @param train          true if use training set and false for test
      */
-    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables, ImageTransform imageTransform, boolean preProcessCifar, boolean train) {
+    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables, ImageTransform imageTransform, boolean useSpecialPreProcessCifar, boolean train) {
         super(null, batchSize, 1, numExamples);
-        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, train, preProcessCifar);
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, train, useSpecialPreProcessCifar);
         this.totalExamples = train ? totalExamples : CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples ? totalExamples : numExamples;
         this.numPossibleLabels = numPossibleLables;
         this.imageTransform = imageTransform;
-        this.usePreProcessCifar = preProcessCifar;
+        this.useSpecialPreProcessCifar = useSpecialPreProcessCifar;
         this.train = train;
     }
-
-    // TODO add transform  - random flip when loading batches
 
     @Override
     public DataSet next(int batchSize) {
@@ -98,7 +98,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
             return last;
         }
         DataSet result;
-        if (usePreProcessCifar) {
+        if (useSpecialPreProcessCifar) {
             result = loader.next(batchSize, exampleCount);
         }
         else
