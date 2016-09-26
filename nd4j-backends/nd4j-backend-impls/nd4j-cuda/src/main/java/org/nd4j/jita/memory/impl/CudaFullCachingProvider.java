@@ -107,23 +107,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             if (point.getDeviceId() != deviceId)
                 throw new RuntimeException("deviceId changed!");
 
-            if (validator.get(address).intValue() != deviceId) {
-                log.error("MISMATCH: {}", address);
-                throw new RuntimeException("PEW");
-            }
-/*
-            if (point.getDevicePointer().address() != address)
-                throw new RuntimeException("address changed!");
-
-            if (validator.contains(address)) {
-                if (validator.get(address).intValue() != deviceId) {
-                    log.error("MISMATCH: {}", address);
-                    throw new RuntimeException("PEW");
-                }
-            } else {
-                validator.put(address, deviceId);
-            }
-*/
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
                 cache.put(new CudaPointer(point.getDevicePointer().address()));
