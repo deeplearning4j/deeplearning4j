@@ -20,10 +20,12 @@ package org.deeplearning4j.datasets.datavec;
 
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
@@ -205,6 +207,40 @@ public class RecordReaderDataSetiteratorTest {
         expL2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{0, 0, 0, 1}));
         expL2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{0, 0, 1, 0}));
         assertEquals(dsList.get(2).getLabels(), expL2);
+    }
+
+    @Test
+    public void testSequenceRecordReaderMeta() throws Exception {
+        //need to manually extract
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+        }
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+        resource = new ClassPathResource("csvsequencelabels_0.txt");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+        featureReader.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        SequenceRecordReaderDataSetIterator iter =
+                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+
+        iter.setCollectMetaData(true);
+
+        assertEquals(3, iter.inputColumns());
+        assertEquals(4, iter.totalOutcomes());
+
+        while (iter.hasNext()) {
+            DataSet ds = iter.next();
+            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);
+            DataSet fromMeta = iter.loadFromMetaData(meta);
+
+            assertEquals(ds, fromMeta);
+        }
     }
 
     @Test
@@ -646,6 +682,39 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(1,iteratorRegression.totalOutcomes());
     }
 
+    @Test
+    public void testSequenceRecordReaderSingleReaderMetaData() throws Exception {
+        //need to manually extract
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequenceSingle_%d.txt", i)).getTempFileFromArchive();
+        }
+
+        ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
+        String path = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReaderMeta reader = new CSVSequenceRecordReader(1, ",");
+        reader.initialize(new NumberedFileInputSplit(path, 0, 2));
+        SequenceRecordReaderDataSetIterator iteratorClassification = new SequenceRecordReaderDataSetIterator(reader, 1, 3, 0, false);
+
+        SequenceRecordReaderMeta reader2 = new CSVSequenceRecordReader(1, ",");
+        reader2.initialize(new NumberedFileInputSplit(path, 0, 2));
+        SequenceRecordReaderDataSetIterator iteratorRegression = new SequenceRecordReaderDataSetIterator(reader2, 1, 3, 0, true);
+
+        iteratorClassification.setCollectMetaData(true);
+        iteratorRegression.setCollectMetaData(true);
+
+        while(iteratorClassification.hasNext()){
+            DataSet ds = iteratorClassification.next();
+            DataSet fromMeta = iteratorClassification.loadFromMetaData(ds.getExampleMetaData(RecordMetaData.class));
+            assertEquals(ds, fromMeta);
+        }
+
+        while(iteratorRegression.hasNext()){
+            DataSet ds = iteratorRegression.next();
+            DataSet fromMeta = iteratorRegression.loadFromMetaData(ds.getExampleMetaData(RecordMetaData.class));
+            assertEquals(ds, fromMeta);
+        }
+    }
 
 
     @Test
@@ -799,7 +868,9 @@ public class RecordReaderDataSetiteratorTest {
                 i++;
             }
             System.out.println();
-        }
 
+            DataSet fromMeta = rrdsi.loadFromMetaData(meta);
+            assertEquals(ds, fromMeta);
+        }
     }
 }
