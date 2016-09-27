@@ -1,5 +1,6 @@
-package org.nd4j.paramterserver.parameteraveraging;
+package org.nd4j.parameterserver.parameteraveraging;
 
+import lombok.Data;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Parameter averaging listener
  * @author Adam Gibson
  */
+@Data
 public class ParameterAveragingListener implements NDArrayCallback {
     private INDArray arr;
     private double totalN;

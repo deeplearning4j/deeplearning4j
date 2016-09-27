@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
+    private Aeron.Context ctx;
 
     @Before
     public void before() {
@@ -87,7 +88,7 @@ public class NdArrayIpcTest {
 
 
     private Aeron.Context getContext() {
-        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+       if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
                 .errorHandler(e -> log.error(e.toString(), e));

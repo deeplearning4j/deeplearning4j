@@ -96,7 +96,6 @@ public class AeronNDArraySerde {
             shapeBuff.put(i,byteBuffer.getInt());
         }
 
-        System.out.println("SHAPE BUFF " + shapeBuff);
 
 
 
