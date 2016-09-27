@@ -24,12 +24,28 @@ import org.datavec.api.writable.Writable;
 import java.util.List;
 
 /**
- * Created by Alex on 20/09/2016.
+ * A standard implementation of the {@link org.datavec.api.records.SequenceRecord} interface.
+ *
+ * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class SequenceRecord implements org.datavec.api.records.SequenceRecord {
 
     private List<List<Writable>> sequenceRecord;
     private RecordMetaData metaData;
 
+    @Override
+    public int getSequenceLength() {
+        if(sequenceRecord == null) return 0;
+        return sequenceRecord.size();
+    }
+
+    @Override
+    public List<Writable> getTimeStep(int timeStep) {
+        if(timeStep < 0 || timeStep > sequenceRecord.size()){
+            throw new IllegalArgumentException("Invalid input: " + sequenceRecord.size() + " time steps available; cannot get " + timeStep);
+        }
+        return sequenceRecord.get(timeStep);
+    }
 }

@@ -27,17 +27,41 @@ import java.util.List;
 /**
  * This is TEMPORARY interface to maintain forward compatibility until 0.7.0 release, at which point
  * the functionality here will be moved to RecordReader<br>
- *
- * RecordReaderMeta adds methods that provide both the record AND metadata for the record
+ * <p>
+ * RecordReaderMeta adds methods that provide both the record AND metadata for the record; it also has methods to
+ * load an arbitrary subset of the data (that would normally be returned by the record reader) for one or more specified
+ * RecordMetaData instance(s).
  *
  * @author Alex
  */
 public interface RecordReaderMeta extends RecordReader {
 
+    /**
+     * Similar to {@link #next()}, but returns a {@link Record} object, that may include metadata such as the source
+     * of the data
+     *
+     * @return next record
+     */
     Record nextRecord();
 
+    /**
+     * Load a single record from the given {@link RecordMetaData} instance<br>
+     * Note: that for data that isn't splittable (i.e., text data that needs to be scanned/split), it is more efficient to
+     * load multiple records at once using {@link #loadFromMetaData(List)}
+     *
+     * @param recordMetaData Metadata for the record that we want to load from
+     * @return Single record for the given RecordMetaData instance
+     * @throws IOException If I/O error occurs during loading
+     */
     Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException;
 
+    /**
+     * Load multiple records from the given a list of {@link RecordMetaData} instances<br>
+     *
+     * @param recordMetaDatas Metadata for the records that we want to load from
+     * @return Multiple records for the given RecordMetaData instances
+     * @throws IOException If I/O error occurs during loading
+     */
     List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

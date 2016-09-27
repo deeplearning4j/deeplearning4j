@@ -16,8 +16,6 @@
 
 package org.datavec.api.records;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.Writable;
 
@@ -25,14 +23,37 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Created by Alex on 20/09/2016.
+ * A Record contains a set of values for a single example or instance. Each value in the Record is represented by
+ * a {@link Writable} object. The record may (optionally) also have a {@link RecordMetaData} instance, that represents
+ * metadata (source location, etc) for the record.<br>
+ * For sequences, see {@link SequenceRecord}
+ *
+ * @author Alex Black
  */
 public interface Record extends Serializable {
 
+    /**
+     * Get the record values, as a {@code List<Writable>}
+     *
+     * @return Record values
+     */
     List<Writable> getRecord();
 
+    /**
+     * Get the record values for this Record
+     */
     void setRecord(List<Writable> record);
 
+    /**
+     * Get the RecordMetaData for this record
+     *
+     * @return Metadata for this record (or null, if none has been set)
+     */
     RecordMetaData getMetaData();
+
+    /**
+     * Set the Record metadata
+     */
+    void setMetaData(RecordMetaData recordMetaData);
 
 }

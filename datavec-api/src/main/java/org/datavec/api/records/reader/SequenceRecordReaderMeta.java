@@ -17,6 +17,7 @@
 package org.datavec.api.records.reader;
 
 import org.datavec.api.berkeley.Pair;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.Writable;
@@ -27,17 +28,41 @@ import java.util.List;
 /**
  * This is TEMPORARY interface to maintain forward compatibility until 0.7.0 release, at which point
  * the functionality here will be moved to SequenceRecordReader<br>
- *
- * SequenceRecordReaderMeta adds methods that provide both the record AND metadata for the record
+ * <p>
+ * SequenceRecordReaderMeta adds methods that provide both the record AND metadata for the record; it also has methods to
+ * load an arbitrary subset of the data (that would normally be returned by the record reader) for one or more specified
+ * RecordMetaData instance(s).
  *
  * @author Alex
  */
 public interface SequenceRecordReaderMeta extends SequenceRecordReader {
 
+    /**
+     * Similar to {@link #sequenceRecord()}, but returns a {@link Record} object, that may include metadata such as the source
+     * of the data
+     *
+     * @return next sequence record
+     */
     SequenceRecord nextSequence();
 
+    /**
+     * Load a single sequence record from the given {@link RecordMetaData} instance<br>
+     * Note: that for data that isn't splittable (i.e., text data that needs to be scanned/split), it is more efficient to
+     * load multiple records at once using {@link #loadSequenceFromMetaData(List)}
+     *
+     * @param recordMetaData Metadata for the sequence record that we want to load from
+     * @return Single sequence record for the given RecordMetaData instance
+     * @throws IOException If I/O error occurs during loading
+     */
     SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException;
 
+    /**
+     * Load multiple sequence records from the given a list of {@link RecordMetaData} instances<br>
+     *
+     * @param recordMetaDatas Metadata for the records that we want to load from
+     * @return Multiple sequence record for the given RecordMetaData instances
+     * @throws IOException If I/O error occurs during loading
+     */
     List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
 
 }

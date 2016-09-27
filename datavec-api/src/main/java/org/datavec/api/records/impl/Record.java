@@ -25,9 +25,12 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Created by Alex on 20/09/2016.
+ * A standard implementation of the {@link org.datavec.api.records.Record} interface
+ *
+ * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class Record implements org.datavec.api.records.Record {
 
     private List<Writable> record;
