@@ -442,6 +442,22 @@ public class TestTransforms {
     }
 
     @Test
+    public void testAppendStringColumnTransform() {
+        Schema schema = getSchema(ColumnType.String);
+
+        Transform transform = new AppendStringColumnTransform("column", "_AppendThis");
+        transform.setInputSchema(schema);
+        Schema out = transform.transform(schema);
+
+        assertEquals(1, out.getColumnMetaData().size());
+        TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
+
+        assertEquals(Collections.singletonList((Writable) new Text("one_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("one"))));
+        assertEquals(Collections.singletonList((Writable) new Text("two_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("two"))));
+        assertEquals(Collections.singletonList((Writable) new Text("three_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("three"))));
+    }
+
+    @Test
     public void testStringListToCategoricalSetTransform() {
         //Idea: String list to a set of categories... "a,c" for categories {a,b,c} -> "true","false","true"
 

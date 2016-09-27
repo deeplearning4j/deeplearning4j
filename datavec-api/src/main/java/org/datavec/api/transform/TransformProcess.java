@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -732,6 +733,16 @@ public class TransformProcess implements Serializable {
          */
         public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone) {
             return transform(new StringToTimeTransform(column, format, dateTimeZone));
+        }
+
+        /**
+         * Append a String to a specified column
+         *
+         * @param column      Column to append the value to
+         * @param toAppend    String to append to the end of each writable
+         */
+        public Builder appendStringColumnTransform(String column, String toAppend){
+            return transform(new AppendStringColumnTransform(column, toAppend));
         }
 
         /**
