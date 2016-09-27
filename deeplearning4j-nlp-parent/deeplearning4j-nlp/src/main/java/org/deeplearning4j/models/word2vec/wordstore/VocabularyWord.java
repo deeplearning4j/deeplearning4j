@@ -1,9 +1,9 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.ToString;
@@ -95,7 +95,7 @@ public class VocabularyWord implements Serializable {
                 we need JSON as single line to save it at first line of the CSV model file
             */
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
