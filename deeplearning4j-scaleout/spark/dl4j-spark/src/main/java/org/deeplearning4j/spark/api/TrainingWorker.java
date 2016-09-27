@@ -21,6 +21,19 @@ import java.io.Serializable;
 public interface TrainingWorker<R extends TrainingResult> extends Serializable {
 
     /**
+     * Remove a training hook from the worker
+     * @param trainingHook the training hook to remove
+     */
+    void removeHook(TrainingHook trainingHook);
+
+    /**
+     * Add a training hook to be used
+     * during training of the worker
+     * @param trainingHook the training hook to add
+     */
+    void addHook(TrainingHook trainingHook);
+
+    /**
      * Get the initial model when training a MultiLayerNetwork/SparkDl4jMultiLayer
      *
      * @return Initial model for this worker
