@@ -18,12 +18,20 @@
 
 package org.deeplearning4j.eval;
 
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -33,9 +41,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -585,5 +595,76 @@ public class EvalTest {
         assertEquals(6, e1.getTopNCorrectCount());
         assertEquals(2.0/8, e1.accuracy(), 1e-6);
         assertEquals(6.0/8, e1.topNAccuracy(), 1e-6);
+    }
+
+
+    @Test
+    public void testEvaluationWithMetaData() throws Exception {
+
+        RecordReaderMeta csv = new CSVRecordReader();
+        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        int batchSize = 10;
+        int labelIdx = 4;
+        int numClasses = 3;
+
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv,batchSize,labelIdx,numClasses);
+
+        NormalizerStandardize ns = new NormalizerStandardize();
+        ns.fit(rrdsi);
+        rrdsi.setPreProcessor(ns);
+        rrdsi.reset();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.SGD).learningRate(0.1)
+                .list()
+                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .nIn(4).nOut(3).build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        for( int i=0; i<4; i++ ){
+            net.fit(rrdsi);
+            rrdsi.reset();
+        }
+
+        Evaluation e = new Evaluation();
+        rrdsi.setCollectMetaData(true); //*** New: Enable collection of metadata (stored in the DataSets) ***
+
+        while(rrdsi.hasNext()){
+            DataSet ds = rrdsi.next();
+            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);    //*** New - cross dependencies here make types difficult, usid Object internally in DataSet for this***
+
+            INDArray out = net.output(ds.getFeatures());
+            e.eval(ds.getLabels(), out, meta);      //*** New - evaluate and also store metadata ***
+        }
+
+        System.out.println(e.stats());
+
+        System.out.println("\n\n*** Prediction Errors: ***");
+
+        List<Prediction> errors = e.getPredictionErrors();          //*** New - get list of prediction errors from evaluation ***
+        List<RecordMetaData> metaForErrors = new ArrayList<>();
+        for(Prediction p : errors) metaForErrors.add(p.getRecordMetaData());
+        DataSet ds = rrdsi.loadFromMetaData(metaForErrors);         //*** New - dynamically load a subset of the data, just for prediction errors ***
+        INDArray output = net.output(ds.getFeatures());
+
+        int count = 0;
+        for(Prediction t : errors){
+            System.out.println(t
+                    + "\t\tRaw Data: " + csv.loadFromMetaData(t.getRecordMetaData()).getRecord()    //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
+                    + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count)
+                    + "\tNetwork predictions: " + output.getRow(count));
+            count++;
+        }
+
+
     }
 }
