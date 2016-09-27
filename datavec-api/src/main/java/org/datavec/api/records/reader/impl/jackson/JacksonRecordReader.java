@@ -16,6 +16,10 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
@@ -54,7 +58,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class JacksonRecordReader extends BaseRecordReader {
+public class JacksonRecordReader extends BaseRecordReader implements RecordReaderMeta {
 
     private static final TypeReference<Map<String,Object>> typeRef = new TypeReference<Map<String, Object>>(){};
 
@@ -236,6 +240,40 @@ public class JacksonRecordReader extends BaseRecordReader {
         //Edge case: might want label as the last value
         if((labelPosition >= paths.size() || labelPosition == -1) && labelGenerator != null ){
             out.add(labelGenerator.getLabelForPath(uri));
+        }
+
+        return out;
+    }
+
+    @Override
+    public Record nextRecord() {
+        URI currentURI = uris[cursor];
+        List<Writable> writables = next();
+        RecordMetaData meta = new RecordMetaDataURI(currentURI,JacksonRecordReader.class);
+        return new org.datavec.api.records.impl.Record(writables, meta);
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+
+        List<Record> out = new ArrayList<>();
+        for(RecordMetaData metaData : recordMetaDatas){
+            URI uri = metaData.getURI();
+
+            String fileAsString;
+            try{
+                fileAsString = FileUtils.readFileToString(new File(uri.toURL().getFile()));
+            } catch(IOException e){
+                throw new RuntimeException("Error reading URI file",e);
+            }
+
+            List<Writable> writables = readValues(uri, fileAsString);
+            out.add(new org.datavec.api.records.impl.Record(writables,metaData));
         }
 
         return out;
