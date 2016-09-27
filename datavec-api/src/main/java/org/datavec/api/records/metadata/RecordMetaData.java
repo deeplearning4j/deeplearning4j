@@ -16,6 +16,7 @@
 
 package org.datavec.api.records.metadata;
 
+import java.io.Serializable;
 import java.net.URI;
 
 /**
@@ -27,7 +28,7 @@ import java.net.URI;
  *
  * @author Alex Black
  */
-public interface RecordMetaData {
+public interface RecordMetaData extends Serializable {
 
     /**
      * Get a human-readable location for the data
