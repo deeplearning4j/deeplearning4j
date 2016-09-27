@@ -48,6 +48,6 @@ public class AppendStringColumnTransform extends BaseColumnTransform {
 
     @Override
     public String toString() {
-        return "AppendStringTransform(append=\"" + toAppend + "\")";
+        return "AppendStringColumnTransform(append=\"" + toAppend + "\")";
     }
 }
