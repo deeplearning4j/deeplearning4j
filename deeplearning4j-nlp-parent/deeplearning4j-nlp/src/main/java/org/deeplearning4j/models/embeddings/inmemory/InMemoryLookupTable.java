@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.models.embeddings.inmemory;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.nd4j.shade.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;

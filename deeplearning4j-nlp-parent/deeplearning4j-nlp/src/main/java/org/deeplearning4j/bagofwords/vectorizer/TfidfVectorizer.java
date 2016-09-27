@@ -23,9 +23,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -96,22 +96,33 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
 
+        // build document words count
+        Map<String, AtomicLong> counts = new HashMap<>();
+        for (String token: tokens) {
+            if (!counts.containsKey(token))
+                counts.put(token, new AtomicLong(0));
+
+            counts.get(token).incrementAndGet();
+        }
+
         for(int i = 0;i < tokens.size(); i++) {
             int idx = vocabCache.indexOf(tokens.get(i));
             if(idx >= 0) {
                 //System.out.println("TF-IDF for word: " + tokens.get(i));
-                ret.putScalar(idx, tfidfWord(tokens.get(i), tokens.size()));
+                ret.putScalar(idx, tfidfWord(tokens.get(i), counts.get(tokens.get(i)).longValue(), tokens.size()));
             }
         }
         return ret;
     }
 
-    private double tfidfWord(String word, int documentLength) {
-        return MathUtils.tfidf(tfForWord(word, documentLength),idfForWord(word));
+
+
+    private double tfidfWord(String word, long wordCount, long documentLength) {
+        return MathUtils.tfidf(tfForWord(wordCount, documentLength),idfForWord(word));
     }
 
-    private double tfForWord(String word, int documentLength) {
-        return MathUtils.tf(vocabCache.wordFrequency(word), documentLength);
+    private double tfForWord(long wordCount, long documentLength) {
+        return (double) wordCount / (double) documentLength;
     }
 
     private double idfForWord(String word) {

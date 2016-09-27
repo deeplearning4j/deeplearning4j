@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -47,6 +48,8 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected boolean newEpoch = false;
     protected int queueSize = 1;
     protected boolean async = false;
+    protected AtomicLong iterationsCounter = new AtomicLong(0);
+    protected long totalIterations = Long.MAX_VALUE;
 
     public MultipleEpochsIterator(int numEpochs,DataSetIterator iter) {
         this.numEpochs = numEpochs;
@@ -60,10 +63,27 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
     }
 
+    public MultipleEpochsIterator(DataSetIterator iter, int queueSize, long totalIterations) {
+        this.numEpochs = Integer.MAX_VALUE;
+        this.queueSize = queueSize;
+        this.async = queueSize > 1 && iter.asyncSupported();
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
+        this.totalIterations = totalIterations;
+    }
+
+    public MultipleEpochsIterator(DataSetIterator iter, long totalIterations) {
+        this.numEpochs = Integer.MAX_VALUE;
+        this.queueSize = 1;
+        this.async = false;
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
+        this.totalIterations = totalIterations;
+    }
+
     public MultipleEpochsIterator(int numEpochs,DataSet ds) {
         this.numEpochs = numEpochs;
         this.ds = ds;
     }
+
 
     /**
      * Like the standard next method but allows a
@@ -76,6 +96,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     public DataSet next(int num) {
         DataSet next;
         batch++;
+        iterationsCounter.incrementAndGet();
         if(iter == null){
             // return full DataSet
             if(num == -1) {
@@ -169,6 +190,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
         epochs = 0;
         lastBatch = batch;
         batch = 0;
+        iterationsCounter.set(0);
         iter.reset();
     }
 
@@ -222,6 +244,9 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
+        if (iterationsCounter.get() >= totalIterations)
+            return false;
+
         if (newEpoch) {
             log.info("Epoch " + epochs + ", number of batches completed " + lastBatch);
             newEpoch = false;

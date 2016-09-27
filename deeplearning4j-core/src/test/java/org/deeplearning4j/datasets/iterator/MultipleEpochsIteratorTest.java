@@ -121,7 +121,7 @@ public class MultipleEpochsIteratorTest {
     }
 
     @Test
-    public void testMEDIWithLoa2() throws Exception {
+    public void testMEDIWithLoad2() throws Exception {
         ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(100));
         MultipleEpochsIterator iterator = new MultipleEpochsIterator(10, iter, 24);
         TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 2);
@@ -134,6 +134,21 @@ public class MultipleEpochsIteratorTest {
 
         long num2 = consumer.consumeWhileHasNext(true);
         assertEquals((10 * 100) + 150, num1+num2);
+    }
+
+    @Test
+    public void testMEDIWithLoad3() throws Exception {
+        ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(10000));
+        MultipleEpochsIterator iterator = new MultipleEpochsIterator(iter, 24, 136);
+        TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 2);
+        long num1 = 0;
+
+        while (iterator.hasNext()) {
+            consumer.consumeOnce(iterator.next(), true);
+            num1++;
+        }
+
+        assertEquals(136, num1);
     }
 
     private class IterableWithoutException implements Iterable<DataSet> {

@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -64,7 +64,7 @@ public class AbstractElementFactory<T extends SequenceElement> implements Sequen
             ObjectMapper mapper = SequenceElement.mapper();
             try {
                 json = mapper.writeValueAsString(element);
-            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
         }

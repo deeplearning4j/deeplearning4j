@@ -169,7 +169,7 @@ public class DataSetIteratorTest {
 
 	@Test
 	public void testCifarIterator() throws Exception {
-		int numExamples = 10;
+		int numExamples = 1;
 		int row = 28;
 		int col = 28;
 		int channels = 1;
@@ -177,23 +177,31 @@ public class DataSetIteratorTest {
 		assertTrue(iter.hasNext());
 		DataSet data = iter.next();
 		assertEquals(numExamples, data.getLabels().size(0));
-		assertEquals(channels*row*col, data.getFeatureMatrix().size(1));
+		assertEquals(channels*row*col, data.getFeatureMatrix().ravel().length());
 	}
 
 
 	@Test
-	public void testCifarModel() throws Exception{
+	public void testCifarModel() throws Exception {
+		// Streaming
+		runCifar(false);
+
+		// Preprocess
+		runCifar(true);
+	}
+
+	public void runCifar(boolean preProcessCifar) throws Exception{
 		final int height = 32;
 		final int width = 32;
 		int channels = 3;
 		int outputNum = CifarLoader.NUM_LABELS;
-		int numSamples = 100;
+		int numSamples = 10;
 		int batchSize = 5;
 		int iterations = 1;
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, true);
+		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, new int[] {height, width, channels}, preProcessCifar, true);
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
@@ -224,14 +232,14 @@ public class DataSetIteratorTest {
 
 		model.fit(cifar);
 
-		cifar = new CifarDataSetIterator(batchSize, numSamples, false);
+		cifar.test(10);
 		Evaluation eval = new Evaluation(cifar.getLabels());
 		while(cifar.hasNext()) {
 			DataSet testDS = cifar.next(batchSize);
 			INDArray output = model.output(testDS.getFeatureMatrix());
 			eval.eval(testDS.getLabels(), output);
 		}
-		System.out.println(eval.stats());
+		System.out.println(eval.stats(true));
 	}
 
 
