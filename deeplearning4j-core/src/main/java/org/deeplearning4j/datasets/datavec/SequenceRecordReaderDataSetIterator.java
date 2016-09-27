@@ -2,11 +2,9 @@ package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposable;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
@@ -242,10 +240,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             labelList.add(labels);
         }
 
-        return nextMultipleSequenceReeaders(featureList, labelList, meta);
+        return nextMultipleSequenceReaders(featureList, labelList, meta);
     }
 
-    private DataSet nextMultipleSequenceReeaders(List<INDArray> featureList, List<INDArray> labelList, List<RecordMetaData> meta ){
+    private DataSet nextMultipleSequenceReaders(List<INDArray> featureList, List<INDArray> labelList, List<RecordMetaData> meta ){
 
         //Convert 2d sequences/time series to 3d minibatch data
         INDArray featuresOut;
@@ -678,8 +676,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 INDArray[] fl = getFeaturesLabelsSingleReader(sr.getSequenceRecord());
                 listFeatures.add(fl[0]);
                 listLabels.add(fl[1]);
-                minLength = Math.min(minLength, fl[0].size(2));
-                maxLength = Math.max(maxLength, fl[1].size(2));
+                minLength = Math.min(minLength, fl[0].size(0));
+                maxLength = Math.max(maxLength, fl[1].size(0));
             }
 
             return getSingleSequenceReader(listFeatures, listLabels, minLength, maxLength, list);
@@ -705,7 +703,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 labelList.add(getLabels(l.get(i).getSequenceRecord()));
             }
 
-            return nextMultipleSequenceReeaders(featureList, labelList, list);
+            return nextMultipleSequenceReaders(featureList, labelList, list);
         }
     }
 }
