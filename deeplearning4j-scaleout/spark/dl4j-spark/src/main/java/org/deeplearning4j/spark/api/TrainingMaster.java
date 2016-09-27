@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.api;
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -26,6 +25,19 @@ import java.util.Collection;
  * @author Alex Black
  */
 public interface TrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>> {
+
+
+    /**
+     * Remove a training hook from the worker
+     * @param trainingHook the training hook to remove
+     */
+    void removeHook(TrainingHook trainingHook);
+
+    /**
+     * Add a hook for the master for pre and post training
+     * @param trainingHook the training hook to add
+     */
+    void addHook(TrainingHook trainingHook);
 
     /**
      * Get the TrainingMaster configuration as JSON
