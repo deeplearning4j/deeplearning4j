@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
@@ -97,11 +98,12 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private String exportDirectory = null;
     private Random rng;
 
+    private Collection<TrainingHook> trainingHookList;
     private int lastExportedRDDId = Integer.MIN_VALUE;
     private String lastRDDExportPath;
     private final String trainingMasterUID;
 
-    private ParameterAveragingTrainingMaster(){
+    private ParameterAveragingTrainingMaster() {
         // no-arg constructor for Jackson
 
         String jvmuid = UIDProvider.getJVMUID();
@@ -122,6 +124,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         this.storageLevelStreams = builder.storageLevelStreams;
         this.rddTrainingApproach = builder.rddTrainingApproach;
         this.exportDirectory = builder.exportDirectory;
+        this.trainingHookList = builder.trainingHooks;
+
         if(builder.rngSeed == null){
             this.rng = new Random();
         } else {
@@ -187,14 +191,14 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return jsonMapper;
     }
 
-    private static synchronized ObjectMapper getYamlMapper(){
-        if(yamlMapper == null){
+    private static synchronized ObjectMapper getYamlMapper() {
+        if(yamlMapper == null) {
             yamlMapper = getNewMapper(new YAMLFactory());
         }
         return yamlMapper;
     }
 
-    private static ObjectMapper getNewMapper(JsonFactory jsonFactory){
+    private static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
         ObjectMapper om = new ObjectMapper(jsonFactory);
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -203,6 +207,26 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         return om;
+    }
+
+    /**
+     * Remove a training hook from the worker
+     *
+     * @param trainingHook the training hook to remove
+     */
+    @Override
+    public void removeHook(TrainingHook trainingHook) {
+        trainingHookList.remove(trainingHook);
+    }
+
+    /**
+     * Add a hook for the master for pre and post training
+     *
+     * @param trainingHook the training hook to add
+     */
+    @Override
+    public void addHook(TrainingHook trainingHook) {
+        trainingHookList.add(trainingHook);
     }
 
     @Override
@@ -233,7 +257,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      *
      * @param jsonStr    ParameterAveragingTrainingMaster configuration serialized as JSON
      */
-    public static ParameterAveragingTrainingMaster fromJson(String jsonStr){
+    public static ParameterAveragingTrainingMaster fromJson(String jsonStr) {
         ObjectMapper om = getJsonMapper();
         try{
             return om.readValue(jsonStr, ParameterAveragingTrainingMaster.class);
@@ -270,7 +294,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(false, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
-        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList);
     }
 
     @Override
@@ -284,7 +308,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(true, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
-        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList);
     }
 
     private int numObjectsEachWorker(int numExamplesEachRddObject) {
@@ -354,7 +378,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int origNumPartitions = trainingData.partitions().size();
         if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
-            log.info("Coalesing PortableDataStreams from {} to {} partitions", origNumPartitions, numWorkers);
+            log.info("Coalescing PortableDataStreams from {} to {} partitions", origNumPartitions, numWorkers);
             trainingData = trainingData.coalesce(numWorkers);
         }
         if (storageLevelStreams != null) trainingData.persist(storageLevelStreams);
@@ -430,7 +454,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private void executeTrainingDirect(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData){
         if (collectTrainingStats) stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
-        // number of minibatches between averagings
+        // number of minibatches between averaging
         //But to do that, we need to know: (a) the number of examples, and (b) the number of workers
         if (storageLevel != null) trainingData.persist(storageLevel);
 
@@ -926,7 +950,36 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
         private String exportDirectory = null;
         private Long rngSeed;
+        private Collection<TrainingHook> trainingHooks;
 
+
+        /**
+         * Adds training hooks to the master.
+         * The training master will setup the workers
+         * with the desired hooks for training.
+         * This can allow for tings like parameter servers
+         * and async updates as well as collecting statistics.
+         * @param trainingHooks the training hooks to ad
+         * @return
+         */
+        public Builder trainingHooks(Collection<TrainingHook> trainingHooks) {
+            this.trainingHooks = trainingHooks;
+            return this;
+        }
+
+        /**
+         * Adds training hooks to the master.
+         * The training master will setup the workers
+         * with the desired hooks for training.
+         * This can allow for tings like parameter servers
+         * and async updates as well as collecting statistics.
+         * @param trainingHooks the training hooks to ad
+         * @return
+         */
+        public Builder trainingHooks(TrainingHook...hooks) {
+            this.trainingHooks = Arrays.asList(hooks);
+            return this;
+        }
 
         /**
          * Same as {@link #Builder(Integer, int)} but automatically set number of workers based on JavaSparkContext.defaultParallelism()

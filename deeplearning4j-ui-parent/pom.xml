@@ -10,10 +10,21 @@
     <artifactId>deeplearning4j-ui-parent</artifactId>
     <packaging>pom</packaging>
 
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
     <modules>
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
         <module>deeplearning4j-ui-model</module>
+        <module>deeplearning4j-ui-remote-iterationlisteners</module>
+        <module>deeplearning4j-ui-resources</module>
     </modules>
 
 </project>
