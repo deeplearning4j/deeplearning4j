@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.spark.api.TrainingHook;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -19,8 +20,13 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
- * ParameterAveragingTrainingWorker implements standard parameter averaging every m iterations.
+ * ParameterAveragingTrainingWorker
+ * implements standard parameter
+ * averaging every m iterations.
  *
  * @author Alex Black
  */
@@ -28,13 +34,40 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     private final Broadcast<NetBroadcastTuple> broadcast;
     private final boolean saveUpdater;
+    private Collection<TrainingHook> trainingHooks;
     private final WorkerConfiguration configuration;
     private ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper stats = null;
 
     public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration) {
+        this(broadcast,saveUpdater,configuration,new ArrayList<TrainingHook>());
+    }
+
+    public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration,Collection<TrainingHook> trainingHooks) {
         this.broadcast = broadcast;
         this.saveUpdater = saveUpdater;
         this.configuration = configuration;
+        this.trainingHooks = trainingHooks;
+    }
+
+    /**
+     * Remove a training hook from the worker
+     *
+     * @param trainingHook the training hook to remove
+     */
+    @Override
+    public void removeHook(TrainingHook trainingHook) {
+        trainingHooks.remove(trainingHook);
+    }
+
+    /**
+     * Add a training hook to be used
+     * during training of the worker
+     *
+     * @param trainingHook the training hook to add
+     */
+    @Override
+    public void addHook(TrainingHook trainingHook) {
+        trainingHooks.add(trainingHook);
     }
 
     @Override
@@ -88,7 +121,16 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     @Override
     public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
+
+        for(TrainingHook trainingHook : trainingHooks)
+            trainingHook.preUpdate(dataSet,network);
+
         network.fit(dataSet);
+
+        for(TrainingHook trainingHook : trainingHooks)
+            trainingHook.postUpdate(dataSet,network);
+
+
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -100,14 +142,24 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     }
 
     @Override
-    public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, ComputationGraph graph, boolean isLast){
+    public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, ComputationGraph graph, boolean isLast) {
         return processMinibatch(ComputationGraphUtil.toMultiDataSet(dataSet), graph, isLast);
     }
 
     @Override
-    public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast){
+    public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
+       //pre training hooks
+        for(TrainingHook trainingHook : trainingHooks)
+            trainingHook.preUpdate(dataSet,graph);
+
         graph.fit(dataSet);
+
+        //post training hooks
+        for(TrainingHook trainingHook : trainingHooks)
+            trainingHook.postUpdate(dataSet,graph);
+
+
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
