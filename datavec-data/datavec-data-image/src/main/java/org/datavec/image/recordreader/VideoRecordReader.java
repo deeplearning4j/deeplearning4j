@@ -44,7 +44,7 @@ import java.util.*;
 /**
  *
  * A video is just a moving window of pictures.
- * It should be processed as cuh.
+ * It should be processed as such.
  * This iterates over a root folder and returns a
  *
  * @author Adam Gibson

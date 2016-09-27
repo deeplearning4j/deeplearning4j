@@ -17,13 +17,14 @@
 package org.datavec.api.records.metadata;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.net.URI;
 
 /**
  * Created by Alex on 26/09/2016.
  */
-@AllArgsConstructor
+@AllArgsConstructor @Data
 public class RecordMetaDataURI implements RecordMetaData {
 
     private final URI uri;

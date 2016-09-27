@@ -21,7 +21,10 @@ import static org.junit.Assert.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
@@ -83,12 +86,60 @@ public class LineReaderTest {
         }
     }
 
-    private static PrintWriter makeGzippedPW(File file) throws IOException {
-        return new PrintWriter(
-                new GZIPOutputStream(
-                        new FileOutputStream(file, false)
-                )
-        );
+    @Test
+    public void testLineReaderMetaData() throws Exception {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        File tmpdir = new File(tempDir,"tmpdir-testLineReader");
+        if(tmpdir.exists()) tmpdir.delete();
+        tmpdir.mkdir();
+
+        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp1.txt"));
+        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp2.txt"));
+        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp3.txt"));
+
+        FileUtils.writeLines(tmp1, Arrays.asList("1","2","3"));
+        FileUtils.writeLines(tmp2, Arrays.asList("4","5","6"));
+        FileUtils.writeLines(tmp3, Arrays.asList("7","8","9"));
+
+        InputSplit split = new FileSplit(tmpdir);
+
+        RecordReaderMeta reader = new LineRecordReader();
+        reader.initialize(split);
+
+        List<List<Writable>> list = new ArrayList<>();
+        while(reader.hasNext()) {
+            list.add(reader.next());
+        }
+        assertEquals(9, list.size());
+
+
+        List<List<Writable>> out2 = new ArrayList<>();
+        List<Record> out3 = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        reader.reset();
+        int count = 0;
+        while(reader.hasNext()){
+            Record r = reader.nextRecord();
+            out2.add(r.getRecord());
+            out3.add(r);
+            meta.add(r.getMetaData());
+            int fileIdx = count / 3 + 1;
+            String uri = r.getMetaData().getURI().toString();
+            assertTrue(uri.endsWith("tmp" + fileIdx + ".txt"));
+            count++;
+        }
+
+        assertEquals(list, out2);
+
+        List<Record> fromMeta = reader.loadFromMetaData(meta);
+        assertEquals(out3, fromMeta);
+
+
+        try{
+            FileUtils.deleteDirectory(tmpdir);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -123,6 +174,4 @@ public class LineReaderTest {
             e.printStackTrace();
         }
     }
-
-
 }

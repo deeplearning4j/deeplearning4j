@@ -36,6 +36,13 @@
     <dependencies>
 
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
@@ -55,8 +62,6 @@
             <groupId>com.github.jai-imageio</groupId>
             <artifactId>jai-imageio-core</artifactId>
             <version>1.3.0</version>
-           
-
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
