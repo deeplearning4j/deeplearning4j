@@ -32,9 +32,10 @@ import java.util.List;
 
 /**
  * Record reader
+ *
  * @author Adam Gibson
  */
-public interface RecordReader extends Closeable,Serializable,Configurable {
+public interface RecordReader extends Closeable, Serializable, Configurable {
 
     public final static String NAME_SPACE = RecordReader.class.getName();
 
@@ -43,6 +44,7 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
 
     /**
      * Called once at initialization.
+     *
      * @param split the split that defines the range of records to read
      * @throws java.io.IOException
      * @throws InterruptedException
@@ -51,7 +53,8 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
 
     /**
      * Called once at initialization.
-     * @param conf a configuration for initialization
+     *
+     * @param conf  a configuration for initialization
      * @param split the split that defines the range of records to read
      * @throws java.io.IOException
      * @throws InterruptedException
@@ -60,6 +63,7 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
 
     /**
      * Get the next record
+     *
      * @return
      */
     List<Writable> next();
@@ -67,25 +71,30 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
 
     /**
      * Whether there are anymore records
+     *
      * @return
      */
     boolean hasNext();
 
     /**
      * List of label strings
+     *
      * @return
      */
     List<String> getLabels();
 
     /**
      * Reset record reader iterator
+     *
      * @return
      */
     void reset();
 
-    /**Load the record from the given DataInputStream
+    /**
+     * Load the record from the given DataInputStream
      * Unlike {@link #next()} the internal state of the RecordReader is not modified
      * Implementations of this method should not close the DataInputStream
+     *
      * @throws IOException if error occurs during reading from the input stream
      */
     List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException;
@@ -98,7 +107,8 @@ public interface RecordReader extends Closeable,Serializable,Configurable {
     /**
      * Set the record listeners for this record reader.
      */
-    void setListeners(RecordListener...listeners);
+    void setListeners(RecordListener... listeners);
+
     /**
      * Set the record listeners for this record reader.
      */

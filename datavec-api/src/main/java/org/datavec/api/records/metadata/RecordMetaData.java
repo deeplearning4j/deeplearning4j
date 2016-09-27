@@ -43,7 +43,6 @@ public interface RecordMetaData {
 
     /**
      * Get the class that was used to generate the record
-     * @return
      */
     Class<?> getReaderClass();
 

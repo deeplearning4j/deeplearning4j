@@ -26,7 +26,8 @@ import java.net.URI;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class RecordMetaDataInterval implements RecordMetaData {
 
     private final long from;
@@ -34,7 +35,7 @@ public class RecordMetaDataInterval implements RecordMetaData {
     private final URI uri;
     private Class<?> readerClass;
 
-    public RecordMetaDataInterval(long from, long to, URI uri){
+    public RecordMetaDataInterval(long from, long to, URI uri) {
         this(from, to, uri, null);
     }
 

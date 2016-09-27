@@ -16,16 +16,27 @@
 
 package org.datavec.api.records.metadata;
 
+import lombok.Data;
+
 import java.net.URI;
 
 /**
- * Created by Alex on 27/09/2016.
+ * A RecordMetaData instance that combines multiple individual RecordMetaData instances
+ *
+ * @author Alex Black
  */
+@Data
 public class RecordMetaDataComposable implements RecordMetaData {
 
+    private Class<?> readerClass;
     private RecordMetaData[] meta;
 
-    public RecordMetaDataComposable(RecordMetaData... recordMetaDatas){
+    public RecordMetaDataComposable(RecordMetaData... recordMetaDatas) {
+        this(null, recordMetaDatas);
+    }
+
+    public RecordMetaDataComposable(Class<?> readerClass, RecordMetaData... recordMetaDatas) {
+        this.readerClass = readerClass;
         this.meta = recordMetaDatas;
     }
 
@@ -34,8 +45,8 @@ public class RecordMetaDataComposable implements RecordMetaData {
         StringBuilder sb = new StringBuilder();
         sb.append("locations(");
         boolean first = true;
-        for(RecordMetaData rmd : meta){
-            if(!first) sb.append(",");
+        for (RecordMetaData rmd : meta) {
+            if (!first) sb.append(",");
             sb.append(rmd.getLocation());
             first = false;
         }
@@ -50,6 +61,6 @@ public class RecordMetaDataComposable implements RecordMetaData {
 
     @Override
     public Class<?> getReaderClass() {
-        return null;    //TODO
+        return readerClass;
     }
 }

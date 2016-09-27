@@ -23,9 +23,12 @@ import org.apache.commons.io.FilenameUtils;
 import java.net.URI;
 
 /**
- * Created by Alex on 20/09/2016.
+ * A RecordMetaData instance for a line number, generall in a file
+ *
+ * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class RecordMetaDataLine implements RecordMetaData {
 
     private int lineNumber;
@@ -36,7 +39,7 @@ public class RecordMetaDataLine implements RecordMetaData {
     @Override
     public String getLocation() {
         String filename;
-        if(uri != null){
+        if (uri != null) {
             String str = uri.toString();
             filename = FilenameUtils.getBaseName(str) + "." + FilenameUtils.getExtension(str) + " ";
         } else {

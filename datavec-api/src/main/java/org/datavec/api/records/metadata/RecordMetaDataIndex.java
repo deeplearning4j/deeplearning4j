@@ -28,7 +28,8 @@ import java.net.URI;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class RecordMetaDataIndex implements RecordMetaData {
 
     private final long index;

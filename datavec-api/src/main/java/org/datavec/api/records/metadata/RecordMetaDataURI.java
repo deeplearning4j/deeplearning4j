@@ -22,15 +22,18 @@ import lombok.Data;
 import java.net.URI;
 
 /**
- * Created by Alex on 26/09/2016.
+ * A standard RecordMetaData instance that contains a URI only
+ *
+ * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class RecordMetaDataURI implements RecordMetaData {
 
     private final URI uri;
     private final Class<?> readerClass;
 
-    public RecordMetaDataURI(URI uri){
+    public RecordMetaDataURI(URI uri) {
         this(uri, null);
     }
 
