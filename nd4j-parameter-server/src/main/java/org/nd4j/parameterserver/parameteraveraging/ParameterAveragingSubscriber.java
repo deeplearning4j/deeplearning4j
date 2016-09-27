@@ -1,4 +1,4 @@
-package org.nd4j.paramterserver.parameteraveraging;
+package org.nd4j.parameterserver.parameteraveraging;
 
 import io.aeron.Aeron;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
@@ -16,7 +16,6 @@ public class ParameterAveragingSubscriber {
     private static Logger log = LoggerFactory.getLogger(ParameterAveragingSubscriber.class);
 
     private ParameterAveragingSubscriber() {}
-
     public static void main(String[] args) {
         Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
