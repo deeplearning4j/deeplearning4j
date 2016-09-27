@@ -246,6 +246,7 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
+        <module>nd4j-parameter-server</module>
     </modules>
 
     <properties>
