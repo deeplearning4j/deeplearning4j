@@ -1,7 +1,14 @@
 package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
+import lombok.Setter;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataComposable;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,10 +20,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Sequence record reader data set iterator
@@ -62,6 +67,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private AlignmentMode alignmentMode;
 
     private final boolean singleSequenceReaderMode;
+
+    @Getter @Setter
+    private boolean collectMetaData = false;
 
     /**
      * Constructor where features and labels come from different RecordReaders (for example, different files)
@@ -134,24 +142,38 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         }
     }
 
-    private DataSet nextSingleSequenceReader(int num){
+    private DataSet nextSingleSequenceReader(int num) {
         List<INDArray> listFeatures = new ArrayList<>(num);
         List<INDArray> listLabels = new ArrayList<>(num);
+        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
         int minLength = 0;
         int maxLength = 0;
-        for( int i=0; i<num && hasNext(); i++ ){
-            List<List<Writable>> sequence = recordReader.sequenceRecord();
+        for (int i = 0; i < num && hasNext(); i++) {
+            List<List<Writable>> sequence;
+            if (collectMetaData && recordReader instanceof SequenceRecordReaderMeta) {
+                SequenceRecord sequenceRecord = ((SequenceRecordReaderMeta) recordReader).nextSequence();
+                sequence = sequenceRecord.getSequenceRecord();
+                meta.add(sequenceRecord.getMetaData());
+            } else {
+                sequence = recordReader.sequenceRecord();
+            }
             INDArray[] fl = getFeaturesLabelsSingleReader(sequence);
-            if(i == 0){
+            if (i == 0) {
                 minLength = fl[0].size(0);
                 maxLength = minLength;
             } else {
-                minLength = Math.min(minLength,fl[0].size(0));
-                maxLength = Math.max(maxLength,fl[0].size(0));
+                minLength = Math.min(minLength, fl[0].size(0));
+                maxLength = Math.max(maxLength, fl[0].size(0));
             }
             listFeatures.add(fl[0]);
             listLabels.add(fl[1]);
         }
+
+        return getSingleSequenceReader(listFeatures, listLabels, minLength, maxLength, meta);
+    }
+
+    private DataSet getSingleSequenceReader(List<INDArray> listFeatures, List<INDArray> listLabels, int minLength, int maxLength,
+                                            List<RecordMetaData> meta ){
 
         //Convert to 3d minibatch
         //Note: using f order here, as each  time step is contiguous in the buffer with f order (isn't the case with c order)
@@ -188,17 +210,30 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         if (inputColumns == -1) inputColumns = featuresOut.size(1);
         if (totalOutcomes == -1) totalOutcomes = labelsOut.size(1);
         DataSet ds = new DataSet(featuresOut, labelsOut, featuresMask, labelsMask);
+        if(collectMetaData){
+            ds.setExampleMetaData(meta);
+        }
         if (preProcessor != null) preProcessor.preProcess(ds);
         return ds;
     }
 
-    private DataSet nextMultipleSequenceReaders(int num){
+    private DataSet nextMultipleSequenceReaders(int num) {
         List<INDArray> featureList = new ArrayList<>(num);
         List<INDArray> labelList = new ArrayList<>(num);
+        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
         for (int i = 0; i < num && hasNext(); i++) {
-
-            List<List<Writable>> featureSequence = recordReader.sequenceRecord();
-            List<List<Writable>> labelSequence = labelsReader.sequenceRecord();
+            List<List<Writable>> featureSequence;
+            List<List<Writable>> labelSequence;
+            if (collectMetaData && recordReader instanceof SequenceRecordReaderMeta && labelsReader instanceof SequenceRecordReaderMeta) {
+                SequenceRecord f = ((SequenceRecordReaderMeta) recordReader).nextSequence();
+                SequenceRecord l = ((SequenceRecordReaderMeta) labelsReader).nextSequence();
+                featureSequence = f.getSequenceRecord();
+                labelSequence = l.getSequenceRecord();
+                meta.add(new RecordMetaDataComposable(f.getMetaData(), l.getMetaData()));
+            } else {
+                featureSequence = recordReader.sequenceRecord();
+                labelSequence = labelsReader.sequenceRecord();
+            }
 
             INDArray features = getFeatures(featureSequence);
             INDArray labels = getLabels(labelSequence); //2d time series, with shape [timeSeriesLength,vectorSize]
@@ -206,6 +241,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             featureList.add(features);
             labelList.add(labels);
         }
+
+        return nextMultipleSequenceReeaders(featureList, labelList, meta);
+    }
+
+    private DataSet nextMultipleSequenceReeaders(List<INDArray> featureList, List<INDArray> labelList, List<RecordMetaData> meta ){
 
         //Convert 2d sequences/time series to 3d minibatch data
         INDArray featuresOut;
@@ -348,6 +388,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         if (inputColumns == -1) inputColumns = featuresOut.size(1);
         if (totalOutcomes == -1) totalOutcomes = labelsOut.size(1);
         DataSet ds = new DataSet(featuresOut, labelsOut, featuresMask, labelsMask);
+        if(collectMetaData){
+            ds.setExampleMetaData(meta);
+        }
         if (preProcessor != null) preProcessor.preProcess(ds);
         return ds;
     }
@@ -599,5 +642,70 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         }
 
         return new INDArray[]{features,labels};
+    }
+
+
+    /**
+     * Load a single sequence example to a DataSet, using the provided RecordMetaData.
+     * Note that it is more efficient to load multiple instances at once, using {@link #loadFromMetaData(List)}
+     *
+     * @param recordMetaData RecordMetaData to load from. Should have been produced by the given record reader
+     * @return DataSet with the specified example
+     * @throws IOException If an error occurs during loading of the data
+     */
+    public DataSet loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData));
+    }
+
+    /**
+     * Load a multiple sequence examples to a DataSet, using the provided RecordMetaData instances.
+     *
+     * @param list List of RecordMetaData instances to load from. Should have been produced by the record reader provided
+     *             to the SequenceRecordReaderDataSetIterator constructor
+     * @return DataSet with the specified examples
+     * @throws IOException If an error occurs during loading of the data
+     */
+    public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
+        //Two cases: single vs. multiple reader...
+        if(singleSequenceReaderMode){
+            List<SequenceRecord> records = ((SequenceRecordReaderMeta)recordReader).loadSequenceFromMetaData(list);
+
+            List<INDArray> listFeatures = new ArrayList<>(list.size());
+            List<INDArray> listLabels = new ArrayList<>(list.size());
+            int minLength = Integer.MAX_VALUE;
+            int maxLength = Integer.MIN_VALUE;
+            for(SequenceRecord sr : records){
+                INDArray[] fl = getFeaturesLabelsSingleReader(sr.getSequenceRecord());
+                listFeatures.add(fl[0]);
+                listLabels.add(fl[1]);
+                minLength = Math.min(minLength, fl[0].size(2));
+                maxLength = Math.max(maxLength, fl[1].size(2));
+            }
+
+            return getSingleSequenceReader(listFeatures, listLabels, minLength, maxLength, list);
+        } else {
+            //Expect to get a RecordReaderMetaComposable here
+
+            List<RecordMetaData> fMeta = new ArrayList<>();
+            List<RecordMetaData> lMeta = new ArrayList<>();
+            for(RecordMetaData m : list){
+                RecordMetaDataComposable m2 = (RecordMetaDataComposable)m;
+                fMeta.add(m2.getMeta()[0]);
+                lMeta.add(m2.getMeta()[1]);
+            }
+
+            List<SequenceRecord> f = ((SequenceRecordReaderMeta)recordReader).loadSequenceFromMetaData(fMeta);
+            List<SequenceRecord> l = ((SequenceRecordReaderMeta)labelsReader).loadSequenceFromMetaData(lMeta);
+
+            List<INDArray> featureList = new ArrayList<>(fMeta.size());
+            List<INDArray> labelList = new ArrayList<>(fMeta.size());
+
+            for(int i=0; i<fMeta.size(); i++ ){
+                featureList.add(getFeatures(f.get(i).getSequenceRecord()));
+                labelList.add(getLabels(l.get(i).getSequenceRecord()));
+            }
+
+            return nextMultipleSequenceReeaders(featureList, labelList, list);
+        }
     }
 }

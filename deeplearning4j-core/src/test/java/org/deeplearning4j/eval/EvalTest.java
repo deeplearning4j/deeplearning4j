@@ -665,6 +665,31 @@ public class EvalTest {
             count++;
         }
 
+        int errorCount = errors.size();
+        double expAcc = 1.0 - errorCount / 150.0;
+        assertEquals(expAcc, e.accuracy(), 1e-5);
+
+        ConfusionMatrix<Integer> confusion = e.getConfusionMatrix();
+        int[] actualCounts = new int[3];
+        int[] predictedCounts = new int[3];
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<3; j++ ){
+                int entry = confusion.getCount(i,j);    //(actual,predicted)
+                List<Prediction> list = e.getPredictions(i,j);
+                assertEquals(entry, list.size());
+
+                actualCounts[i] += entry;
+                predictedCounts[j] += entry;
+            }
+        }
+
+        for( int i=0; i<3; i++ ){
+            List<Prediction> actualClassI = e.getPredictionsByActualClass(i);
+            List<Prediction> predictedClassI = e.getPredictionByPredictedClass(i);
+            assertEquals(actualCounts[i], actualClassI.size());
+            assertEquals(predictedCounts[i], predictedClassI.size());
+        }
+
 
     }
 }
