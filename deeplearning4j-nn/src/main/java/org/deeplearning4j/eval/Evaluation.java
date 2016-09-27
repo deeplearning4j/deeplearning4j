@@ -60,7 +60,7 @@ public class Evaluation implements Serializable {
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
-    protected Map<Pair<Integer,Integer>,List<RecordMetaData>> confusionMatrixMeta;      //Pair: (Actual,Predicted)
+    protected Map<Pair<Integer,Integer>,List<RecordMetaData>> confusionMatrixMetaData;      //Pair: (Actual,Predicted)
 
     // Empty constructor
     public Evaluation() {
@@ -173,7 +173,7 @@ public class Evaluation implements Serializable {
      *              for evaluation
      * @param network the network to use for output
      */
-    public void eval(INDArray trueLabels,INDArray input,MultiLayerNetwork network) {
+    public void eval(INDArray trueLabels, INDArray input, MultiLayerNetwork network) {
         eval(trueLabels,network.output(input, Layer.TrainingMode.TEST));
     }
 
@@ -189,10 +189,18 @@ public class Evaluation implements Serializable {
      * @param guesses      the guesses/prediction (usually a probability vector)
      */
     public void eval(INDArray realOutcomes, INDArray guesses) {
-
+        eval(realOutcomes, guesses, (List<RecordMetaData>)null);
     }
 
-    public void eval(INDArray realOutcomes, INDArray guesses, List<RecordMetaData> meta ) {
+    /**
+     * Evaluate the network, with optional metadata
+     *
+     * @param realOutcomes   Data labels
+     * @param guesses        Network predictions
+     * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
+     *
+     */
+    public void eval(INDArray realOutcomes, INDArray guesses, List<RecordMetaData> recordMetaData ) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -236,6 +244,16 @@ public class Evaluation implements Serializable {
             falsePositives.incrementCount(0, fn);
             falseNegatives.incrementCount(0, fn);
             trueNegatives.incrementCount(0, tn);
+
+            if(recordMetaData != null ){
+                for( int i=0; i<binaryGuesses.size(0); i++ ){
+                    if(i >= recordMetaData.size()) break;
+                    int actual = realOutcomes.getDouble(0) == 0.0 ? 0 : 1;
+                    int predicted = binaryGuesses.getDouble(0) == 0.0 ? 0 : 1;
+                    addToMetaConfusionMatrix(actual, predicted, recordMetaData.get(i));
+                }
+            }
+
         } else {
             INDArray guessIndex = Nd4j.argMax(guesses, 1);
             INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
@@ -246,8 +264,8 @@ public class Evaluation implements Serializable {
                 int predicted = (int)guessIndex.getDouble(i);
                 confusion.add(actual,predicted);
 
-                if(meta != null && meta.size() > i){
-                    RecordMetaData m = meta.get(i);
+                if(recordMetaData != null && recordMetaData.size() > i){
+                    RecordMetaData m = recordMetaData.get(i);
                     addToMetaConfusionMatrix(actual,predicted,m);
                 }
             }
@@ -976,73 +994,135 @@ public class Evaluation implements Serializable {
 
 
     private void addToMetaConfusionMatrix(int actual, int predicted, RecordMetaData metaData){
-        if(confusionMatrixMeta == null){
-            confusionMatrixMeta = new HashMap<>();
+        if(confusionMatrixMetaData == null){
+            confusionMatrixMetaData = new HashMap<>();
         }
 
         Pair<Integer,Integer> p = new Pair<>(actual,predicted);
-        List<RecordMetaData> list = confusionMatrixMeta.get(p);
+        List<RecordMetaData> list = confusionMatrixMetaData.get(p);
         if(list == null){
             list = new ArrayList<>();
-            confusionMatrixMeta.put(p,list);
+            confusionMatrixMetaData.put(p,list);
         }
 
         list.add(metaData);
     }
 
-    public void getRecordDataForConfusionMatrix(int actual, int predicted){
-
-    }
-
-//    public List<Triple<Integer,Integer,RecordMetaData>> getPredictionErrors(){
-//        if(this.confusionMatrixMeta == null) return null;
-//
-//        List<Triple<Integer,Integer,RecordMetaData>> list = new ArrayList<>();
-//        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : confusionMatrixMeta.entrySet()){
-//            Pair<Integer,Integer> p = entry.getKey();
-//            if(p.getFirst().equals(p.getSecond())){
-//                //predicted = actual -> not an error -> skip
-//                continue;
-//            }
-//            for(RecordMetaData m : entry.getValue()){
-//                list.add(new Triple<>(p.getFirst(),p.getSecond(),m));
-//            }
-//        }
-//
-//        return list;
-//    }
-
-    public List<Prediction> getPredictionErrors(){
-        if(this.confusionMatrixMeta == null) return null;
+    /**
+     * Get a list of prediction errors, on a per-record basis<br>
+     * <p>
+     * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
+     * via {@link #getConfusionMatrix()}
+     *
+     * @return A list of prediction errors, or null if no metadata has been recorded
+     */
+    public List<Prediction> getPredictionErrors() {
+        if (this.confusionMatrixMetaData == null) return null;
 
         List<Prediction> list = new ArrayList<>();
 
-        List<Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>>> sorted = new ArrayList<>(confusionMatrixMeta.entrySet());
+        List<Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>>> sorted = new ArrayList<>(confusionMatrixMetaData.entrySet());
         Collections.sort(sorted, new Comparator<Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>>>() {
             @Override
             public int compare(Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o1, Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o2) {
-                Pair<Integer,Integer> p1 = o1.getKey();
-                Pair<Integer,Integer> p2 = o2.getKey();
-                int order = Integer.compare(p1.getFirst(),p2.getFirst());
-                if(order != 0) return order;
+                Pair<Integer, Integer> p1 = o1.getKey();
+                Pair<Integer, Integer> p2 = o2.getKey();
+                int order = Integer.compare(p1.getFirst(), p2.getFirst());
+                if (order != 0) return order;
                 order = Integer.compare(p1.getSecond(), p2.getSecond());
                 return order;
             }
         });
 
-//        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : confusionMatrixMeta.entrySet()){
-        for(Map.Entry<Pair<Integer,Integer>,List<RecordMetaData>> entry : sorted){
-            Pair<Integer,Integer> p = entry.getKey();
-            if(p.getFirst().equals(p.getSecond())){
+        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : sorted) {
+            Pair<Integer, Integer> p = entry.getKey();
+            if (p.getFirst().equals(p.getSecond())) {
                 //predicted = actual -> not an error -> skip
                 continue;
             }
-            for(RecordMetaData m : entry.getValue()){
-//                list.add(new Triple<>(p.getFirst(),p.getSecond(),m));
-                list.add(new Prediction(p.getFirst(), p.getSecond(),m));
+            for (RecordMetaData m : entry.getValue()) {
+                list.add(new Prediction(p.getFirst(), p.getSecond(), m));
             }
         }
 
         return list;
+    }
+
+    /**
+     * Get a list of predictions, for all data with the specified <i>actual</i> class, regardless of the predicted
+     * class.
+     * <p>
+     * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
+     * via {@link #getConfusionMatrix()}
+     *
+     * @param actualClass Actual class to get predictions for
+     * @return List of predictions, or null if the "evaluate with metadata" method was not used
+     */
+    public List<Prediction> getPredictionsByActualClass(int actualClass) {
+        if (confusionMatrixMetaData == null) return null;
+
+        List<Prediction> out = new ArrayList<>();
+        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : confusionMatrixMetaData.entrySet()) {  //Entry Pair: (Actual,Predicted)
+            if (entry.getKey().getFirst() == actualClass) {
+                int actual = entry.getKey().getFirst();
+                int predicted = entry.getKey().getSecond();
+                for (RecordMetaData m : entry.getValue()) {
+                    out.add(new Prediction(actual, predicted, m));
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Get a list of predictions, for all data with the specified <i>predicted</i> class, regardless of the actual data
+     * class.
+     * <p>
+     * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
+     * via {@link #getConfusionMatrix()}
+     *
+     * @param predictedClass Actual class to get predictions for
+     * @return List of predictions, or null if the "evaluate with metadata" method was not used
+     */
+    public List<Prediction> getPredictionByPredictedClass(int predictedClass) {
+        if (confusionMatrixMetaData == null) return null;
+
+        List<Prediction> out = new ArrayList<>();
+        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : confusionMatrixMetaData.entrySet()) { //Entry Pair: (Actual,Predicted)
+            if (entry.getKey().getSecond() == predictedClass) {
+                int actual = entry.getKey().getFirst();
+                int predicted = entry.getKey().getSecond();
+                for (RecordMetaData m : entry.getValue()) {
+                    out.add(new Prediction(actual, predicted, m));
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Get a list of predictions in the specified confusion matrix entry (i.e., for the given actua/predicted class pair)
+     *
+     * @param actualClass    Actual class
+     * @param predictedClass Predicted class
+     * @return List of predictions that match the specified actual/predicted classes, or null if the "evaluate with metadata" method was not used
+     */
+    public List<Prediction> getPredictions(int actualClass, int predictedClass) {
+        if (confusionMatrixMetaData == null) return null;
+
+        List<Prediction> out = new ArrayList<>();
+        List<RecordMetaData> list = confusionMatrixMetaData.get(new Pair<>(actualClass, predictedClass));
+        if (list == null) return out;
+
+        for (RecordMetaData meta : list) {
+            out.add(new Prediction(actualClass, predictedClass, meta));
+        }
+        return out;
     }
 }
