@@ -16,6 +16,9 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -36,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class TestCollectionRecordReaders {
 
     @Test
-    public void testCollectionSequenceRecordReader(){
+    public void testCollectionSequenceRecordReader() throws Exception {
 
         List<List<List<Writable>>> listOfSequences = new ArrayList<>();
 
@@ -50,7 +53,7 @@ public class TestCollectionRecordReaders {
         sequence2.add(Arrays.asList((Writable)new IntWritable(6), new IntWritable(7)));
         listOfSequences.add(sequence2);
 
-        SequenceRecordReader seqRR = new CollectionSequenceRecordReader(listOfSequences);
+        SequenceRecordReaderMeta seqRR = new CollectionSequenceRecordReader(listOfSequences);
         assertTrue(seqRR.hasNext());
 
         assertEquals(sequence1, seqRR.sequenceRecord());
@@ -61,6 +64,24 @@ public class TestCollectionRecordReaders {
         assertEquals(sequence1, seqRR.sequenceRecord());
         assertEquals(sequence2, seqRR.sequenceRecord());
         assertFalse(seqRR.hasNext());
+
+        //Test metadata:
+        seqRR.reset();
+        List<List<List<Writable>>> out2 = new ArrayList<>();
+        List<SequenceRecord> seq = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+
+        while(seqRR.hasNext()){
+            SequenceRecord r = seqRR.nextSequence();
+            out2.add(r.getSequenceRecord());
+            seq.add(r);
+            meta.add(r.getMetaData());
+        }
+
+        assertEquals(listOfSequences, out2);
+
+        List<SequenceRecord> fromMeta = seqRR.loadSequenceFromMetaData(meta);
+        assertEquals(seq, fromMeta);
     }
 
 }
