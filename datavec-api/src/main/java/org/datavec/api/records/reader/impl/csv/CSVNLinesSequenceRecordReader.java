@@ -136,7 +136,7 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
             }
         });
 
-        Iterator<String> lineIter = getIterator();
+        Iterator<String> lineIter = getIterator(0); //TODO handle multi file case...
         int currentLineIdx = 0;
         String line = lineIter.next();
         while(currentLineIdx < skipNumLines){

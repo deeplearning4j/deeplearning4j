@@ -134,6 +134,15 @@ public class LineReaderTest {
         List<Record> fromMeta = reader.loadFromMetaData(meta);
         assertEquals(out3, fromMeta);
 
+        //try: second line of second and third files only...
+        List<RecordMetaData> subsetMeta = new ArrayList<>();
+        subsetMeta.add(meta.get(4));
+        subsetMeta.add(meta.get(7));
+        List<Record> subset = reader.loadFromMetaData(subsetMeta);
+        assertEquals(2, subset.size());
+        assertEquals(out3.get(4), subset.get(0));
+        assertEquals(out3.get(7), subset.get(1));
+
 
         try{
             FileUtils.deleteDirectory(tmpdir);

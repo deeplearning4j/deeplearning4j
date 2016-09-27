@@ -58,7 +58,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         this.inputSplit = split;
-        this.iter = getIterator();
+        this.iter = getIterator(0);
     }
 
     @Override
@@ -87,6 +87,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                lineIndex = 0;  //New split opened -> reset line index
 
                 if(iter.hasNext()) {
                     String record = iter.next();
@@ -107,6 +108,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
         } else {
             if (locations != null && !(inputSplit instanceof StringSplit) && splitIndex < locations.length-1 ) {
                 splitIndex++;
+                lineIndex = 0;  //New split -> reset line count
                 try {
                     close();
                     iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
@@ -171,7 +173,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
         return Collections.singletonList((Writable)new Text(line));
     }
 
-    protected Iterator<String> getIterator(){
+    protected Iterator<String> getIterator(int location){
         Iterator<String> iterator = null;
         if(inputSplit instanceof StringSplit) {
             StringSplit stringSplit = (StringSplit) inputSplit;
@@ -186,7 +188,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
             if (locations != null && locations.length > 0) {
                 InputStream inputStream;
                 try{
-                    inputStream = locations[0].toURL().openStream();
+                    inputStream = locations[location].toURL().openStream();
                 }catch(IOException e){
                     throw new RuntimeException(e);
                 }
@@ -221,6 +223,7 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         //First: create a sorted list of the RecordMetaData
         List<Triple<Integer,RecordMetaDataLine,List<Writable>>> list = new ArrayList<>();
+        Set<URI> uris = new HashSet<>();
         Iterator<RecordMetaData> iter = recordMetaDatas.iterator();
         int count = 0;
         while(iter.hasNext()){
@@ -229,33 +232,89 @@ public class LineRecordReader extends BaseRecordReader implements RecordReaderMe
                 throw new IllegalArgumentException("Invalid metadata; expected RecordMetaDataLine instance; got: " + rmd);
             }
             list.add(new Triple<>(count++, (RecordMetaDataLine)rmd, (List<Writable>)null));
+            if(rmd.getURI() != null) uris.add(rmd.getURI());
+        }
+        List<URI> sortedURIs = null;
+        if(uris.size() > 0) {
+            sortedURIs = new ArrayList<>(uris);
+            Collections.sort(sortedURIs);
         }
 
-        //Sort by line number:
+        //Sort by URI first (if possible - don't always have URIs though, for String split etc), then sort by line number:
         Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){
             @Override
             public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1, Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
+                if(o1.getSecond().getURI() != null){
+                    if(!o1.getSecond().getURI().equals(o2.getSecond().getURI())){
+                        return o1.getSecond().getURI().compareTo(o2.getSecond().getURI());
+                    }
+                }
                 return Integer.compare(o1.getSecond().getLineNumber(), o2.getSecond().getLineNumber());
             }
         });
 
-        Iterator<String> iterator = getIterator();
+        if(uris.size() > 0 && sortedURIs != null){
+            //URIs case - possibly with multiple URIs
+            Iterator<Triple<Integer,RecordMetaDataLine,List<Writable>>> metaIter = list.iterator(); //Currently sorted by URI, then line number
 
-        Iterator<Triple<Integer,RecordMetaDataLine,List<Writable>>> metaIter = list.iterator();
-        int currentLineIdx = 0;
-        String line = iterator.next();
-        while(metaIter.hasNext()){
-            Triple<Integer,RecordMetaDataLine,List<Writable>> t = metaIter.next();
-            int nextLineIdx = t.getSecond().getLineNumber();
-            while(currentLineIdx < nextLineIdx && iterator.hasNext()){
-                line = iterator.next();
-                currentLineIdx++;
+            URI currentURI = sortedURIs.get(0);
+            Iterator<String> currentUriIter = IOUtils.lineIterator(new InputStreamReader(currentURI.toURL().openStream()));
+            int currentURIIdx = 0;      //Index of URI
+            int currentLineIdx = 0;     //Index of the line for the current URI
+            String line = currentUriIter.next();
+            while(metaIter.hasNext()) {
+                Triple<Integer, RecordMetaDataLine, List<Writable>> t = metaIter.next();
+                URI thisURI = t.getSecond().getURI();
+                int nextLineIdx = t.getSecond().getLineNumber();
+
+                //First: find the right URI for this record...
+                while(!currentURI.equals(thisURI)){
+                    //Iterate to the next URI
+                    currentURIIdx++;
+                    if(currentURIIdx >= sortedURIs.size()){
+                        //Should never happen
+                        throw new IllegalStateException("Count not find URI " + thisURI + " in URIs list: " + sortedURIs);
+                    }
+                    currentURI = sortedURIs.get(currentURIIdx);
+                    currentLineIdx = 0;
+                    if(currentURI.equals(thisURI)){
+                        //Found the correct URI for this MetaData instance
+                        closeIfRequired(currentUriIter);
+                        currentUriIter = IOUtils.lineIterator(new InputStreamReader(currentURI.toURL().openStream()));
+                        line = currentUriIter.next();
+                    }
+                }
+
+                //Have the correct URI/iter open -> scan to the required line
+                while(currentLineIdx < nextLineIdx && currentUriIter.hasNext()){
+                    line = currentUriIter.next();
+                    currentLineIdx++;
+                }
+                if(currentLineIdx < nextLineIdx && !currentUriIter.hasNext()){
+                    throw new IllegalStateException("Could not get line " + nextLineIdx + " from URI " + currentURI + ": has only " + currentLineIdx + " lines");
+                }
+                t.setThird(Collections.<Writable>singletonList(new Text(line)));
             }
-            t.setThird(Collections.<Writable>singletonList(new Text(line)));
+        } else {
+            //Not URI based: String split, etc
+            Iterator<String> iterator = getIterator(0);
+            Iterator<Triple<Integer,RecordMetaDataLine,List<Writable>>> metaIter = list.iterator();
+            int currentLineIdx = 0;
+            String line = iterator.next();
+            while(metaIter.hasNext()){
+                Triple<Integer,RecordMetaDataLine,List<Writable>> t = metaIter.next();
+                int nextLineIdx = t.getSecond().getLineNumber();
+                while(currentLineIdx < nextLineIdx && iterator.hasNext()){
+                    line = iterator.next();
+                    currentLineIdx++;
+                }
+                t.setThird(Collections.<Writable>singletonList(new Text(line)));
+            }
+            closeIfRequired(iterator);
         }
-        closeIfRequired(iterator);
 
-        //Now, sort by the original order:
+
+        //Now, sort by the original (request) order:
         Collections.sort(list, new Comparator<Triple<Integer,RecordMetaDataLine, List<Writable>>>(){
             @Override
             public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1, Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
