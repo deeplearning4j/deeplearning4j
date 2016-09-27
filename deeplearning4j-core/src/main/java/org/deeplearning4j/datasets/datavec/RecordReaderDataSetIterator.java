@@ -162,7 +162,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 dataSets.add(getDataSet(record));
             } else {
                 if(collectMetaData && (recordReader instanceof RecordReaderMeta)){
-                    Record record = ((RecordReaderMeta) recordReader).nextMeta();
+                    Record record = ((RecordReaderMeta) recordReader).nextRecord();
                     dataSets.add(getDataSet(record.getRecord()));
                     meta.add(record.getMetaData());
                 } else {
@@ -364,14 +364,28 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         return recordReader.getLabels();
     }
 
-
-    public DataSet loadFromMetaData(RecordMetaData meta) throws IOException {
-        return loadFromMetaData(Collections.singletonList(meta));
+    /**
+     * Load a single example to a DataSet, using the provided RecordMetaData.
+     * Note that it is more efficient to load multiple instances at once, using {@link #loadFromMetaData(List)}
+     *
+     * @param recordMetaData RecordMetaData to load from. Should have been produced by the given record reader
+     * @return DataSet with the specified example
+     * @throws IOException If an error occurs during loading of the data
+     */
+    public DataSet loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData));
     }
 
+    /**
+     * Load a multiple examples to a DataSet, using the provided RecordMetaData instances.
+     *
+     * @param list List of RecordMetaData instances to load from. Should have been produced by the record reader provided
+     *             to the RecordReaderDataSetIterator constructor
+     * @return DataSet with the specified examples
+     * @throws IOException If an error occurs during loading of the data
+     */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
-
-        List<Record> records = ((RecordReaderMeta)recordReader).loadFromMeta(list);
+        List<Record> records = ((RecordReaderMeta)recordReader).loadFromMetaData(list);
         List<DataSet> dataSets = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         for(Record r : records){
@@ -387,7 +401,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         ret.setExampleMetaData(meta);
         last = ret;
         if (preProcessor != null) preProcessor.preProcess(ret);
-        //Add label name values to dataset
         if (recordReader.getLabels() != null) ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
