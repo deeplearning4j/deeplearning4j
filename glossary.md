@@ -241,6 +241,18 @@ Highway networks are an architecture introduced by Schmidhuber et al to let info
 
 * [Highway Networks](http://arxiv.org/abs/1505.00387)
 
+### <a name="hyperplane">Hyperplane</a>
+
+"A hyperplane in an n-dimensional Euclidean space is a flat, n-1 dimensional subset of that space that divides the space into two disconnected parts. What does that mean intuitively? 
+
+First think of the real line. Now pick a point. That point divides the real line into two parts (the part above that point, and the part below that point). The real line has 1 dimension, while the point has 0 dimensions. So a point is a hyperplane of the real line.
+
+Now think of the two-dimensional plane. Now pick any line. That line divides the plane into two parts ("left" and "right" or maybe "above" and "below"). The plane has 2 dimensions, but the line has only one. So a line is a hyperplane of the 2d plane. Notice that if you pick a point, it doesn't divide the 2d plane into two parts. So one point is not enough.
+
+Now think of a 3d space. Now to divide the space into two parts, you need a plane. Your plane has two dimensions, your space has three. So a plane is the hyperplane for a 3d space.
+
+OK, now we've run out of visual examples. But suppose you have a space of n dimensions. You can write down an equation describing an n-1 dimensional object that divides the n-dimensional space into two pieces. That's a hyperplane." -[Quora](https://www.quora.com/Support-Vector-Machines-What-is-an-intuitive-explanation-of-hyperplane/answer/Jerrod-Ankenman?srid=OfW)
+
 ### <a name="iclr">International Conference on Learning Representations</a>
 
 ICLR, pronounced "I-clear". An important conference. See [representation learning](#represent).
