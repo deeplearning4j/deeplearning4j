@@ -60,6 +60,7 @@ import java.nio.IntBuffer;
 import java.util.*;
 import java.util.Set;
 
+import static org.nd4j.linalg.factory.Nd4j.compressDebug;
 import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
 
 
@@ -738,7 +739,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    
+
 
     @Override
     public int elementWiseStride() {
@@ -4569,7 +4570,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public String toString() {
+        if(!isCompressed())
+            return new NDArrayStrings().format(this);
+        else if(isCompressed() && compressDebug)
+            return "COMPRESSED ARRAY. SYSTEM PROPERTY compressdebug is true. This is to prevent auto decompression from being triggered.";
         return new NDArrayStrings().format(this);
+
     }
 
     /**

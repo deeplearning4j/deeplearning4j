@@ -1,0 +1,96 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.nd4j:nd4j-cuda-7.5:jar:0.6.1-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: junit:junit:jar -> version ${junit.version} vs (?) @ org.nd4j:nd4j-cuda-7.5:[unknown-version], /home/agibsonccc/code/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/pom.xml, line 207, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] Inspecting build with total of 30 modules...
+[INFO] Not installing Nexus Staging features:
+[INFO]  * Preexisting staging related goal bindings found in 30 modules.
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] nd4j
+[INFO] nd4j-shade
+[INFO] jackson
+[INFO] nd4j-common
+[INFO] nd4j-context
+[INFO] nd4j-buffer
+[INFO] nd4j-backends
+[INFO] nd4j-api-parent
+[INFO] nd4j-api
+[INFO] nd4j-jdbc
+[INFO] nd4j-jdbc-api
+[INFO] nd4j-jdbc-mysql
+[INFO] nd4j-native-api
+[INFO] nd4j-serde
+[INFO] nd4j-base64
+[INFO] nd4j-jackson
+[INFO] nd4j-backend-impls
+[INFO] nd4j-native
+[INFO] nd4j-instrumentation
+[INFO] nd4j-perf
+[INFO] nd4j-aeron
+[INFO] nd4j-kryo
+[INFO] nd4j-camel-routes
+[INFO] nd4j-kafka
+[INFO] nd4j-bytebuddy
+[INFO] nd4j-tests
+[INFO] nd4j-native-platform
+[INFO] nd4j-cuda
+[INFO] nd4j-cuda-platform
+[INFO] nd4j-parameter-server
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building nd4j 0.6.1-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary:
+[INFO] 
+[INFO] nd4j ............................................... FAILURE [  0.078 s]
+[INFO] nd4j-shade ......................................... SKIPPED
+[INFO] jackson ............................................ SKIPPED
+[INFO] nd4j-common ........................................ SKIPPED
+[INFO] nd4j-context ....................................... SKIPPED
+[INFO] nd4j-buffer ........................................ SKIPPED
+[INFO] nd4j-backends ...................................... SKIPPED
+[INFO] nd4j-api-parent .................................... SKIPPED
+[INFO] nd4j-api ........................................... SKIPPED
+[INFO] nd4j-jdbc .......................................... SKIPPED
+[INFO] nd4j-jdbc-api ...................................... SKIPPED
+[INFO] nd4j-jdbc-mysql .................................... SKIPPED
+[INFO] nd4j-native-api .................................... SKIPPED
+[INFO] nd4j-serde ......................................... SKIPPED
+[INFO] nd4j-base64 ........................................ SKIPPED
+[INFO] nd4j-jackson ....................................... SKIPPED
+[INFO] nd4j-backend-impls ................................. SKIPPED
+[INFO] nd4j-native ........................................ SKIPPED
+[INFO] nd4j-instrumentation ............................... SKIPPED
+[INFO] nd4j-perf .......................................... SKIPPED
+[INFO] nd4j-aeron ......................................... SKIPPED
+[INFO] nd4j-kryo .......................................... SKIPPED
+[INFO] nd4j-camel-routes .................................. SKIPPED
+[INFO] nd4j-kafka ......................................... SKIPPED
+[INFO] nd4j-bytebuddy ..................................... SKIPPED
+[INFO] nd4j-tests ......................................... SKIPPED
+[INFO] nd4j-native-platform ............................... SKIPPED
+[INFO] nd4j-cuda .......................................... SKIPPED
+[INFO] nd4j-cuda-platform ................................. SKIPPED
+[INFO] nd4j-parameter-server .............................. SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 0.914 s
+[INFO] Finished at: 2016-09-27T08:22:58+09:00
+[INFO] Final Memory: 19M/607M
+[INFO] ------------------------------------------------------------------------
+[ERROR] Unknown lifecycle phase "instal". You must specify a valid lifecycle phase or a goal in the format <plugin-prefix>:<goal> or <plugin-group-id>:<plugin-artifact-id>[:<plugin-version>]:<goal>. Available lifecycle phases are: validate, initialize, generate-sources, process-sources, generate-resources, process-resources, compile, process-classes, generate-test-sources, process-test-sources, generate-test-resources, process-test-resources, test-compile, process-test-classes, test, prepare-package, package, pre-integration-test, integration-test, post-integration-test, verify, install, deploy, pre-clean, clean, post-clean, pre-site, site, post-site, site-deploy. -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/LifecyclePhaseNotFoundException

@@ -86,7 +86,6 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
                 //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
-                validator.put(pointer.address(), deviceId);
 
                 if (pointer == null)
                     return null;
