@@ -21,17 +21,23 @@ import static org.junit.Assert.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -63,8 +69,11 @@ public class LineReaderTest {
         reader.initialize(split);
 
         int count = 0;
+        List<List<Writable>> list = new ArrayList<>();
         while(reader.hasNext()) {
-            assertEquals(1,reader.next().size());
+            List<Writable> l = reader.next();
+            assertEquals(1,l.size());
+            list.add(l);
             count++;
         }
 
@@ -77,12 +86,69 @@ public class LineReaderTest {
         }
     }
 
-    private static PrintWriter makeGzippedPW(File file) throws IOException {
-        return new PrintWriter(
-                new GZIPOutputStream(
-                        new FileOutputStream(file, false)
-                )
-        );
+    @Test
+    public void testLineReaderMetaData() throws Exception {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        File tmpdir = new File(tempDir,"tmpdir-testLineReader");
+        if(tmpdir.exists()) tmpdir.delete();
+        tmpdir.mkdir();
+
+        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp1.txt"));
+        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp2.txt"));
+        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp3.txt"));
+
+        FileUtils.writeLines(tmp1, Arrays.asList("1","2","3"));
+        FileUtils.writeLines(tmp2, Arrays.asList("4","5","6"));
+        FileUtils.writeLines(tmp3, Arrays.asList("7","8","9"));
+
+        InputSplit split = new FileSplit(tmpdir);
+
+        RecordReaderMeta reader = new LineRecordReader();
+        reader.initialize(split);
+
+        List<List<Writable>> list = new ArrayList<>();
+        while(reader.hasNext()) {
+            list.add(reader.next());
+        }
+        assertEquals(9, list.size());
+
+
+        List<List<Writable>> out2 = new ArrayList<>();
+        List<Record> out3 = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        reader.reset();
+        int count = 0;
+        while(reader.hasNext()){
+            Record r = reader.nextRecord();
+            out2.add(r.getRecord());
+            out3.add(r);
+            meta.add(r.getMetaData());
+            int fileIdx = count / 3 + 1;
+            String uri = r.getMetaData().getURI().toString();
+            assertTrue(uri.endsWith("tmp" + fileIdx + ".txt"));
+            count++;
+        }
+
+        assertEquals(list, out2);
+
+        List<Record> fromMeta = reader.loadFromMetaData(meta);
+        assertEquals(out3, fromMeta);
+
+        //try: second line of second and third files only...
+        List<RecordMetaData> subsetMeta = new ArrayList<>();
+        subsetMeta.add(meta.get(4));
+        subsetMeta.add(meta.get(7));
+        List<Record> subset = reader.loadFromMetaData(subsetMeta);
+        assertEquals(2, subset.size());
+        assertEquals(out3.get(4), subset.get(0));
+        assertEquals(out3.get(7), subset.get(1));
+
+
+        try{
+            FileUtils.deleteDirectory(tmpdir);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -117,6 +183,4 @@ public class LineReaderTest {
             e.printStackTrace();
         }
     }
-
-
 }

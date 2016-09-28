@@ -17,6 +17,8 @@
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -157,5 +159,52 @@ public class CSVRecordReaderTest {
             List<Writable> vals = reader.next();
             assertEquals("Entry count", 5, vals.size());
         }
+    }
+
+
+    @Test
+    public void testMeta() throws Exception {
+
+        CSVRecordReader rr = new CSVRecordReader(0,",");
+        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        int lineCount = 0;
+        List<RecordMetaData> metaList = new ArrayList<>();
+        List<List<Writable>> writables = new ArrayList<>();
+        while(rr.hasNext()){
+            Record r = rr.nextRecord();
+            assertEquals(5, r.getRecord().size());
+            lineCount++;
+            RecordMetaData meta = r.getMetaData();
+            System.out.println(r.getRecord() + "\t" + meta.getLocation() + "\t" + meta.getURI());
+
+            metaList.add(meta);
+            writables.add(r.getRecord());
+        }
+        assertFalse(rr.hasNext());
+        assertEquals(150, lineCount);
+        rr.reset();
+
+
+        System.out.println("\n\n\n--------------------------------");
+        List<Record> contents = rr.loadFromMetaData(metaList);
+        assertEquals(150, contents.size());
+        for(Record r : contents ){
+            System.out.println(r);
+        }
+
+        List<RecordMetaData> meta2 = new ArrayList<>();
+        meta2.add(metaList.get(100));
+        meta2.add(metaList.get(90));
+        meta2.add(metaList.get(80));
+        meta2.add(metaList.get(70));
+        meta2.add(metaList.get(60));
+
+        List<Record> contents2 = rr.loadFromMetaData(meta2);
+        assertEquals(writables.get(100),contents2.get(0).getRecord());
+        assertEquals(writables.get(90),contents2.get(1).getRecord());
+        assertEquals(writables.get(80),contents2.get(2).getRecord());
+        assertEquals(writables.get(70),contents2.get(3).getRecord());
+        assertEquals(writables.get(60),contents2.get(4).getRecord());
     }
 }

@@ -19,7 +19,10 @@ package org.datavec.codec.reader;
 import static org.junit.Assert.*;
 
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.ArrayWritable;
@@ -29,6 +32,7 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -59,6 +63,33 @@ public class CodecReaderTest {
         //Expected size: 80x46x3
         assertEquals(1, first.size());
         assertEquals(80 * 46 * 3, ((ArrayWritable)first.iterator().next()).length());
+    }
+
+    @Test
+    public void testCodecReaderMeta() throws Exception {
+        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        SequenceRecordReaderMeta reader = new CodecRecordReader();
+        Configuration conf = new Configuration();
+        conf.set(CodecRecordReader.RAVEL, "true");
+        conf.set(CodecRecordReader.START_FRAME, "160");
+        conf.set(CodecRecordReader.TOTAL_FRAMES, "500");
+        conf.set(CodecRecordReader.ROWS, "80");
+        conf.set(CodecRecordReader.COLUMNS, "46");
+        reader.initialize(new FileSplit(file));
+        reader.setConf(conf);
+        assertTrue(reader.hasNext());
+        List<List<Writable>> record = reader.sequenceRecord();
+        assertEquals(500, record.size());   //500 frames
+
+        reader.reset();
+        SequenceRecord seqR = reader.nextSequence();
+        assertEquals(record, seqR.getSequenceRecord());
+        RecordMetaData meta = seqR.getMetaData();
+        System.out.println(meta);
+        assertTrue(meta.getURI().toString().endsWith("fire_lowres.mp4"));
+
+        SequenceRecord fromMeta = reader.loadSequenceFromMetaData(meta);
+        assertEquals(seqR, fromMeta);
     }
 
 

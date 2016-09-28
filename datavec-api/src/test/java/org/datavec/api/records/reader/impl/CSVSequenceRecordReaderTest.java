@@ -16,6 +16,8 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
@@ -26,6 +28,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -87,6 +90,44 @@ public class CSVSequenceRecordReaderTest {
                 assertEquals(4,lineCount);
             }
             assertEquals(3,sequenceCount);
+        }
+    }
+
+    @Test
+    public void testMetaData() throws Exception {
+        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1,",");
+        seqReader.initialize(new TestInputSplit());
+
+        List<List<List<Writable>>> l = new ArrayList<>();
+        while (seqReader.hasNext()) {
+            List<List<Writable>> sequence = seqReader.sequenceRecord();
+            assertEquals(4, sequence.size());    //4 lines, plus 1 header line
+
+            Iterator<List<Writable>> timeStepIter = sequence.iterator();
+            int lineCount = 0;
+            while (timeStepIter.hasNext()) {
+                timeStepIter.next();
+                lineCount++;
+            }
+            assertEquals(4,lineCount);
+
+            l.add(sequence);
+        }
+
+        List<SequenceRecord> l2 = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        seqReader.reset();
+        while(seqReader.hasNext()){
+            SequenceRecord sr = seqReader.nextSequence();
+            l2.add(sr);
+            meta.add(sr.getMetaData());
+        }
+        assertEquals(3, l2.size());
+
+        List<SequenceRecord> fromMeta = seqReader.loadSequenceFromMetaData(meta);
+        for( int i=0; i<3; i++ ){
+            assertEquals(l.get(i), l2.get(i).getSequenceRecord());
+            assertEquals(l.get(i), fromMeta.get(i).getSequenceRecord());
         }
     }
 

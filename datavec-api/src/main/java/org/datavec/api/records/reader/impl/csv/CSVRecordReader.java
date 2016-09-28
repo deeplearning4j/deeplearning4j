@@ -19,6 +19,10 @@ package org.datavec.api.records.reader.impl.csv;
 
 
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
@@ -34,14 +38,14 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class CSVRecordReader extends LineRecordReader {
+public class CSVRecordReader extends LineRecordReader implements RecordReaderMeta {
     /** A regex delimiter that can parse quotes (string literals) that may have commas in them: http://stackoverflow.com/a/1757107/523744
      * Note: This adds considerable overhead compared to the default "," delimiter, and should only be used when necessary.
      * */
     public final static String QUOTE_HANDLING_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
     private boolean skippedLines = false;
-    private int skipNumLines = 0;
-    private String delimiter = DEFAULT_DELIMITER;
+    protected int skipNumLines = 0;
+    protected String delimiter = DEFAULT_DELIMITER;
     public final static String DEFAULT_DELIMITER = ",";
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
@@ -88,12 +92,41 @@ public class CSVRecordReader extends LineRecordReader {
         }
         Text t =  (Text) super.next().iterator().next();
         String val = t.toString();
-        String[] split = val.split(delimiter, -1);
-        List<Writable> ret = new ArrayList<>();
-        for(String s : split)
-            ret.add(new Text(s));
-        return ret;
+        return parseLine(val);
+    }
 
+    protected List<Writable> parseLine(String line){
+        String[] split = line.split(delimiter, -1);
+        List<Writable> ret = new ArrayList<>();
+        for(String s : split) {
+            ret.add(new Text(s));
+        }
+        return ret;
+    }
+
+    @Override
+    public Record nextRecord(){
+        List<Writable> next = next();
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
+        return new org.datavec.api.records.impl.Record(next, meta);
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> list = super.loadFromMetaData(recordMetaDatas);
+
+        for(Record r : list ){
+            String line = r.getRecord().get(0).toString();
+            r.setRecord(parseLine(line));
+        }
+
+        return list;
     }
 
     @Override

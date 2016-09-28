@@ -16,6 +16,10 @@
 
 package org.datavec.api.records.reader.impl.regex;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
@@ -26,6 +30,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +46,7 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
-public class RegexLineRecordReader extends LineRecordReader {
+public class RegexLineRecordReader extends LineRecordReader implements RecordReaderMeta {
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
 
     private String regex;
@@ -64,7 +69,6 @@ public class RegexLineRecordReader extends LineRecordReader {
 
     @Override
     public List<Writable> next() {
-
         if(numLinesSkipped < skipNumLines) {
             for(int i = numLinesSkipped; i < skipNumLines; i++, numLinesSkipped++) {
                 if(!hasNext()) {
@@ -75,16 +79,16 @@ public class RegexLineRecordReader extends LineRecordReader {
         }
         Text t =  (Text) super.next().iterator().next();
         String val = t.toString();
-        return getRecord(val);
+        return parseLine(val);
     }
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        Writable w = ((List<Writable>)super.record(uri,dataInputStream)).get(0);
-        return getRecord(w.toString());
+        Writable w = super.record(uri,dataInputStream).get(0);
+        return parseLine(w.toString());
     }
 
-    private List<Writable> getRecord(String line){
+    private List<Writable> parseLine(String line){
         Matcher m = pattern.matcher(line);
 
         List<Writable> ret;
@@ -108,4 +112,28 @@ public class RegexLineRecordReader extends LineRecordReader {
         numLinesSkipped = 0;
     }
 
+    @Override
+    public Record nextRecord() {
+        List<Writable> next = next();
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, RegexLineRecordReader.class); //-1 as line number has been incremented already...
+        return new org.datavec.api.records.impl.Record(next, meta);
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> list = super.loadFromMetaData(recordMetaDatas);
+
+        for(Record r : list ){
+            String line = r.getRecord().get(0).toString();
+            r.setRecord(parseLine(line));
+        }
+
+        return list;
+    }
 }

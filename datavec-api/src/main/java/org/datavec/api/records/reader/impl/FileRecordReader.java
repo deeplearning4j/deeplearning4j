@@ -18,6 +18,10 @@ package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
@@ -33,7 +37,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class FileRecordReader extends BaseRecordReader {
+public class FileRecordReader extends BaseRecordReader implements RecordReaderMeta {
 
     protected Iterator<File> iter;
     protected Configuration conf;
@@ -103,32 +107,16 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
+        return nextRecord().getRecord();
+    }
+
+    private List<Writable> loadFromFile(File next){
         List<Writable> ret = new ArrayList<>();
         try {
-            File next = iter.next();
-            this.currentFile = next;
-            invokeListeners(next);
             ret.add(new Text(FileUtils.readFileToString(next)));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(iter.hasNext()) {
-            return ret;
-        }
-        else {
-            if(iter.hasNext()) {
-                try {
-                    File next = iter.next();
-                    this.currentFile = next;
-                    invokeListeners(next);
-                    ret.add(new Text(FileUtils.readFileToString(next)));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        }
-
         return ret;
     }
 
@@ -193,4 +181,33 @@ public class FileRecordReader extends BaseRecordReader {
         return Collections.singletonList((Writable)new Text(sb.toString()));
     }
 
+    @Override
+    public Record nextRecord() {
+        File next = iter.next();
+        this.currentFile = next;
+        invokeListeners(next);
+        List<Writable> ret = loadFromFile(next);
+
+        return new org.datavec.api.records.impl.Record(ret, new RecordMetaDataURI(next.toURI(),FileRecordReader.class));
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> out = new ArrayList<>();
+
+        for(RecordMetaData meta : recordMetaDatas ){
+            URI uri = meta.getURI();
+
+            File f = new File(uri);
+            List<Writable> list = loadFromFile(f);
+            out.add(new org.datavec.api.records.impl.Record(list, meta));
+        }
+
+        return out;
+    }
 }

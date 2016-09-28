@@ -16,6 +16,9 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
@@ -33,6 +36,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -164,6 +168,42 @@ public class JacksonRecordReaderTest {
         exp2 = Arrays.asList((Writable)new IntWritable(2), new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"));
         assertEquals(exp2, rr.next());
     }
+
+    @Test
+    public void testAppendingLabelsMetaData() throws Exception {
+        ClassPathResource cpr = new ClassPathResource("json/json_test_0.txt");
+        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+
+        InputSplit is = new NumberedFileInputSplit(path, 0, 2);
+
+        //Insert at the end:
+        RecordReaderMeta rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1, new LabelGen());
+        rr.initialize(is);
+
+        List<List<Writable>> out = new ArrayList<>();
+        while(rr.hasNext()){
+            out.add(rr.next());
+        }
+        assertEquals(3, out.size());
+
+        rr.reset();
+
+        List<List<Writable>> out2 = new ArrayList<>();
+        List<Record> outRecord = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        while(rr.hasNext()){
+            Record r = rr.nextRecord();
+            out2.add(r.getRecord());
+            outRecord.add(r);
+            meta.add(r.getMetaData());
+        }
+
+        assertEquals(out, out2);
+
+        List<Record> fromMeta = rr.loadFromMetaData(meta);
+        assertEquals(outRecord, fromMeta);
+    }
+
 
     private static class LabelGen implements PathLabelGenerator {
 
