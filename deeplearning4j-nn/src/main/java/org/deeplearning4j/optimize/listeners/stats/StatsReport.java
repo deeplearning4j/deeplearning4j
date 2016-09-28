@@ -1,5 +1,8 @@
 package org.deeplearning4j.optimize.listeners.stats;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 import java.util.Map;
 
 /**
@@ -14,10 +17,27 @@ public interface StatsReport {
 
     void reportScore(double currentScore);
 
-    void reportMeanMagnitudesParameters(Map<String,Double> meanMagnitudesParameters);
+    //--- Performance and System Stats ---
 
-    void reportMeanMagnitudesUpdates(Map<String,Double> meanMagnitudesUpdates);
+    void reportMemoryUse(Long jvmCurrentBytes, Long jvmMaxBytes, Long offHeapCurrentBytes, Long offHeapMaxBytes,
+                         Long gpuCurrentBytes, Long gpuMaxBytes );
 
-    void reportMeanMagnitudesActivations(Map<String,Double> meanMagnitudesActivations);
+    void reportPerformance(double examplesPerSecond, double minibatchesPerSecond);
+
+    //--- Histograms ---
+
+    void reportHistogramParameter(Map<String,Pair<INDArray,int[]>> histogram);
+
+    void reportHistogramUpdates(Map<String,Pair<INDArray,int[]>> histogram);
+
+    void reportHistogramActivations(Map<String,Pair<INDArray,int[]>> histogram);
+
+
+    //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
+    void reportMean(StatsType statsType, Map<String,Double> mean);
+
+    void reportStdev(StatsType statsType, Map<String,Double> stdev);
+
+    void reportMeanMagnitudes(StatsType statsType, Map<String,Double> meanMagnitudes);
 
 }
