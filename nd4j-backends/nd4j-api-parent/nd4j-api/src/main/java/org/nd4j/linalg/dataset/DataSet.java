@@ -64,8 +64,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private INDArray featuresMask;
     private INDArray labelsMask;
 
-    //TODO find a better way to do this...
-    private List<Object> exampleMetaData;
+    private List<Serializable> exampleMetaData;
 
     private transient boolean preProcessed = false;
 
@@ -73,16 +72,19 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this(null,null);
     }
 
-    public List<Object> getExampleMetaData(){
+    @Override
+    public List<Serializable> getExampleMetaData(){
         return exampleMetaData;
     }
 
-    public <T> List<T> getExampleMetaData(Class<T> metaDataType){
+    @Override
+    public <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType){
         return (List<T>)exampleMetaData;
     }
 
-    public void setExampleMetaData(List<?> exampleMetaData){
-        this.exampleMetaData = (List<Object>)exampleMetaData;
+    @Override
+    public void setExampleMetaData(List<? extends Serializable> exampleMetaData){
+        this.exampleMetaData = (List<Serializable>)exampleMetaData;
     }
 
 
