@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.datavec;
 
 
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -21,7 +22,6 @@ public class RecordReaderMultiDataSetIteratorTest {
 
     @Test
     public void testsBasic() throws Exception {
-
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
         RecordReader rr = new CSVRecordReader(0,",");
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
@@ -113,17 +113,35 @@ public class RecordReaderMultiDataSetIteratorTest {
     }
 
     @Test
+    public void testsBasicMeta() throws Exception {
+        //As per testBasic - but also loading metadata
+        RecordReader rr2 = new CSVRecordReader(0,",");
+        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
+                .addReader("reader",rr2)
+                .addInput("reader",0,3)
+                .addOutputOneHot("reader",4,3)
+                .build();
+
+        rrmdsi.setCollectMetaData(true);
+
+        int count = 0;
+        while(rrmdsi.hasNext()){
+            MultiDataSet mds = rrmdsi.next();
+            MultiDataSet fromMeta = rrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
+            assertEquals(mds, fromMeta);
+            count++;
+        }
+        assertEquals(150/10, count);
+    }
+
+    @Test
     public void testSplittingCSV() throws Exception{
         //Here's the idea: take Iris, and split it up into 2 inputs and 2 output arrays
         //Inputs: columns 0 and 1-2
         //Outputs: columns 3, and 4->OneHot
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
-        }
-
         RecordReader rr = new CSVRecordReader(0,",");
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr,10,4,3);
@@ -169,6 +187,33 @@ public class RecordReaderMultiDataSetIteratorTest {
             assertEquals(expOut2,lmds[1]);
         }
         assertFalse(rrmdsi.hasNext());
+    }
+
+    @Test
+    public void testSplittingCSVMeta() throws Exception{
+        //Here's the idea: take Iris, and split it up into 2 inputs and 2 output arrays
+        //Inputs: columns 0 and 1-2
+        //Outputs: columns 3, and 4->OneHot
+        RecordReader rr2 = new CSVRecordReader(0,",");
+        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
+                .addReader("reader",rr2)
+                .addInput("reader",0,0)
+                .addInput("reader",1,2)
+                .addOutput("reader",3,3)
+                .addOutputOneHot("reader", 4, 3)
+                .build();
+        rrmdsi.setCollectMetaData(true);
+
+        int count = 0;
+        while(rrmdsi.hasNext()){
+            MultiDataSet mds = rrmdsi.next();
+            MultiDataSet fromMeta = rrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
+            assertEquals(mds, fromMeta);
+            count++;
+        }
+        assertEquals(150/10, count);
     }
 
     @Test
@@ -234,7 +279,52 @@ public class RecordReaderMultiDataSetIteratorTest {
             assertEquals(lds,lmds[0]);
         }
         assertFalse(srrmdsi.hasNext());
+    }
 
+    @Test
+    public void testSplittingCSVSequenceMeta() throws Exception {
+        //Idea: take CSV sequences, and split "csvsequence_i.txt" into two separate inputs; keep "csvSequencelables_i.txt"
+        // as standard one-hot output
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        }
+
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+        resource = new ClassPathResource("csvsequencelabels_0.txt");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+        featureReader.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        SequenceRecordReader featureReader2 = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader2 = new CSVSequenceRecordReader(1, ",");
+        featureReader2.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        RecordReaderMultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
+                .addSequenceReader("seq1", featureReader2)
+                .addSequenceReader("seq2", labelReader2)
+                .addInput("seq1",0,1)
+                .addInput("seq1", 2, 2)
+                .addOutputOneHot("seq2",0,4)
+                .build();
+
+        srrmdsi.setCollectMetaData(true);
+
+        int count = 0;
+        while(srrmdsi.hasNext()){
+            MultiDataSet mds = srrmdsi.next();
+            MultiDataSet fromMeta = srrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
+            assertEquals(mds, fromMeta);
+            count++;
+        }
+        assertEquals(3, count);
     }
 
 
@@ -364,6 +454,69 @@ public class RecordReaderMultiDataSetIteratorTest {
         }
         assertFalse(rrmdsiStart.hasNext());
         assertFalse(rrmdsiEnd.hasNext());
+    }
+
+
+    @Test
+    public void testVariableLengthTSMeta() throws Exception {
+        //need to manually extract
+        for(int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        }
+        //Set up SequenceRecordReaderDataSetIterators for comparison
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+        resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
+        String labelsPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+
+        //Set up
+        SequenceRecordReader featureReader3 = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader3 = new CSVSequenceRecordReader(1, ",");
+        featureReader3.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader3.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        SequenceRecordReader featureReader4 = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader4 = new CSVSequenceRecordReader(1, ",");
+        featureReader4.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader4.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        RecordReaderMultiDataSetIterator rrmdsiStart = new RecordReaderMultiDataSetIterator.Builder(1)
+                .addSequenceReader("in",featureReader3)
+                .addSequenceReader("out",labelReader3)
+                .addInput("in")
+                .addOutputOneHot("out",0,4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START)
+                .build();
+
+        RecordReaderMultiDataSetIterator rrmdsiEnd = new RecordReaderMultiDataSetIterator.Builder(1)
+                .addSequenceReader("in",featureReader4)
+                .addSequenceReader("out",labelReader4)
+                .addInput("in")
+                .addOutputOneHot("out",0,4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END)
+                .build();
+
+        rrmdsiStart.setCollectMetaData(true);
+        rrmdsiEnd.setCollectMetaData(true);
+
+        int count = 0;
+        while(rrmdsiStart.hasNext()) {
+            MultiDataSet mdsStart = rrmdsiStart.next();
+            MultiDataSet mdsEnd = rrmdsiEnd.next();
+
+            MultiDataSet mdsStartFromMeta = rrmdsiStart.loadFromMetaData(mdsStart.getExampleMetaData(RecordMetaData.class));
+            MultiDataSet mdsEndFromMeta = rrmdsiEnd.loadFromMetaData(mdsEnd.getExampleMetaData(RecordMetaData.class));
+
+            assertEquals(mdsStart, mdsStartFromMeta);
+            assertEquals(mdsEnd, mdsEndFromMeta);
+
+            count++;
+        }
+        assertFalse(rrmdsiStart.hasNext());
+        assertFalse(rrmdsiEnd.hasNext());
+        assertEquals(3, count);
     }
 
 }

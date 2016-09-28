@@ -19,18 +19,28 @@
 package org.deeplearning4j.datasets.datavec;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.IOException;
 import java.util.*;
 
 /**RecordReaderMultiDataSetIterator: A {@link MultiDataSetIterator} for data from one or more RecordReaders and SequenceRecordReaders<br>
@@ -62,6 +72,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     private List<SubsetDetails> inputs = new ArrayList<>();
     private List<SubsetDetails> outputs = new ArrayList<>();
 
+    @Getter
+    @Setter
+    private boolean collectMetaData = false;
+    private boolean metaCollectionPossible;
+
     private MultiDataSetPreProcessor preProcessor;
 
     private RecordReaderMultiDataSetIterator(Builder builder){
@@ -71,6 +86,14 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         this.sequenceRecordReaders = builder.sequenceRecordReaders;
         this.inputs.addAll(builder.inputs);
         this.outputs.addAll(builder.outputs);
+
+        metaCollectionPossible = true;
+        for(RecordReader rr : this.recordReaders.values()){
+            metaCollectionPossible &= (rr instanceof RecordReaderMeta);
+        }
+        for(SequenceRecordReader rr : this.sequenceRecordReaders.values()){
+            metaCollectionPossible &= (rr instanceof SequenceRecordReaderMeta);
+        }
     }
 
     @Override
@@ -85,35 +108,71 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next(int num) {
-        if(!hasNext()) throw new NoSuchElementException("No next elements");
+        if (!hasNext()) throw new NoSuchElementException("No next elements");
 
         //First: load the next values from the RR / SeqRRs
-        Map<String,List<List<Writable>>> nextRRVals = new HashMap<>();
-        Map<String,List<List<List<Writable>>>> nextSeqRRVals = new HashMap<>();
+        Map<String, List<List<Writable>>> nextRRVals = new HashMap<>();
+        Map<String, List<List<List<Writable>>>> nextSeqRRVals = new HashMap<>();
+        List<RecordMetaDataComposableMap> nextMetas = (collectMetaData ? new ArrayList<RecordMetaDataComposableMap>() : null);
 
-        int minExamples = Integer.MAX_VALUE;
-        for(Map.Entry<String,RecordReader> entry : recordReaders.entrySet() ){
+
+        for (Map.Entry<String, RecordReader> entry : recordReaders.entrySet()) {
             RecordReader rr = entry.getValue();
             List<List<Writable>> writables = new ArrayList<>(num);
-            for( int i=0; i<num && rr.hasNext(); i++ ){
-                writables.add(rr.next());
+            for (int i = 0; i < num && rr.hasNext(); i++) {
+                List<Writable> record;
+                if (collectMetaData && metaCollectionPossible) {
+                    Record r = ((RecordReaderMeta) rr).nextRecord();
+                    record = r.getRecord();
+                    if (nextMetas.size() <= i) {
+                        nextMetas.add(new RecordMetaDataComposableMap(new HashMap<String, RecordMetaData>()));
+                    }
+                    RecordMetaDataComposableMap map = nextMetas.get(i);
+                    map.getMeta().put(entry.getKey(), r.getMetaData());
+                } else {
+                    record = rr.next();
+                }
+                writables.add(record);
             }
-            minExamples = Math.min(minExamples,writables.size());
 
             nextRRVals.put(entry.getKey(), writables);
         }
 
-        for(Map.Entry<String,SequenceRecordReader> entry : sequenceRecordReaders.entrySet() ){
+        for (Map.Entry<String, SequenceRecordReader> entry : sequenceRecordReaders.entrySet()) {
             SequenceRecordReader rr = entry.getValue();
             List<List<List<Writable>>> writables = new ArrayList<>(num);
-            for( int i=0; i<num && rr.hasNext(); i++ ){
-                List<List<Writable>> next = rr.sequenceRecord();
-                writables.add(next);
+            for (int i = 0; i < num && rr.hasNext(); i++) {
+                List<List<Writable>> sequence;
+                if (collectMetaData && metaCollectionPossible) {
+                    SequenceRecord r = ((SequenceRecordReaderMeta) rr).nextSequence();
+                    sequence = r.getSequenceRecord();
+                    if (nextMetas.size() <= i) {
+                        nextMetas.add(new RecordMetaDataComposableMap(new HashMap<String, RecordMetaData>()));
+                    }
+                    RecordMetaDataComposableMap map = nextMetas.get(i);
+                    map.getMeta().put(entry.getKey(), r.getMetaData());
+                } else {
+                    sequence = rr.sequenceRecord();
+                }
+                writables.add(sequence);
             }
-            minExamples = Math.min(minExamples,writables.size());
 
             nextSeqRRVals.put(entry.getKey(), writables);
         }
+
+        return nextMultiDataSet(nextRRVals, nextSeqRRVals, nextMetas);
+    }
+
+    private MultiDataSet nextMultiDataSet(Map<String, List<List<Writable>>> nextRRVals, Map<String, List<List<List<Writable>>>> nextSeqRRVals,
+                        List<RecordMetaDataComposableMap> nextMetas){
+        int minExamples = Integer.MAX_VALUE;
+        for(List<List<Writable>> exampleData : nextRRVals.values()){
+            minExamples = Math.min(minExamples, exampleData.size());
+        }
+        for(List<List<List<Writable>>> exampleData : nextSeqRRVals.values()){
+            minExamples = Math.min(minExamples, exampleData.size());
+        }
+
 
         if(minExamples == Integer.MAX_VALUE) throw new RuntimeException("Error occurred during data set generation: no readers?");  //Should never happen
 
@@ -187,6 +246,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         if(!outputMasks) outputArrMasks = null;
 
         MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(inputArrs,outputArrs,inputArrMasks,outputArrMasks);
+        if(collectMetaData && metaCollectionPossible){
+            mds.setExampleMetaData(nextMetas);
+        }
         if(preProcessor != null) preProcessor.preProcess(mds);
         return mds;
     }
@@ -516,6 +578,73 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
             return new RecordReaderMultiDataSetIterator(this);
         }
+    }
+
+    /**
+     * Load a single example to a DataSet, using the provided RecordMetaData.
+     * Note that it is more efficient to load multiple instances at once, using {@link #loadFromMetaData(List)}
+     *
+     * @param recordMetaData RecordMetaData to load from. Should have been produced by the given record reader
+     * @return DataSet with the specified example
+     * @throws IOException If an error occurs during loading of the data
+     */
+    public MultiDataSet loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData));
+    }
+
+    /**
+     * Load a multiple sequence examples to a DataSet, using the provided RecordMetaData instances.
+     *
+     * @param list List of RecordMetaData instances to load from. Should have been produced by the record reader provided
+     *             to the SequenceRecordReaderDataSetIterator constructor
+     * @return DataSet with the specified examples
+     * @throws IOException If an error occurs during loading of the data
+     */
+    public MultiDataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
+        //First: load the next values from the RR / SeqRRs
+        Map<String, List<List<Writable>>> nextRRVals = new HashMap<>();
+        Map<String, List<List<List<Writable>>>> nextSeqRRVals = new HashMap<>();
+        List<RecordMetaDataComposableMap> nextMetas = (collectMetaData ? new ArrayList<RecordMetaDataComposableMap>() : null);
+
+
+        for (Map.Entry<String, RecordReader> entry : recordReaders.entrySet()) {
+            RecordReader rr = entry.getValue();
+
+            List<RecordMetaData> thisRRMeta = new ArrayList<>();
+            for(RecordMetaData m : list){
+                RecordMetaDataComposableMap m2 = (RecordMetaDataComposableMap)m;
+                thisRRMeta.add(m2.getMeta().get(entry.getKey()));
+            }
+
+            List<Record> fromMeta = ((RecordReaderMeta)rr).loadFromMetaData(thisRRMeta);
+            List<List<Writable>> writables = new ArrayList<>(list.size());
+            for(Record r : fromMeta){
+                writables.add(r.getRecord());
+            }
+
+            nextRRVals.put(entry.getKey(), writables);
+        }
+
+        for (Map.Entry<String, SequenceRecordReader> entry : sequenceRecordReaders.entrySet()) {
+            SequenceRecordReader rr = entry.getValue();
+
+            List<RecordMetaData> thisRRMeta = new ArrayList<>();
+            for(RecordMetaData m : list){
+                RecordMetaDataComposableMap m2 = (RecordMetaDataComposableMap)m;
+                thisRRMeta.add(m2.getMeta().get(entry.getKey()));
+            }
+
+            List<SequenceRecord> fromMeta = ((SequenceRecordReaderMeta)rr).loadSequenceFromMetaData(thisRRMeta);
+            List<List<List<Writable>>> writables = new ArrayList<>(list.size());
+            for(SequenceRecord r : fromMeta){
+                writables.add(r.getSequenceRecord());
+            }
+
+            nextSeqRRVals.put(entry.getKey(), writables);
+        }
+
+        return nextMultiDataSet(nextRRVals, nextSeqRRVals, nextMetas);
+
     }
 
     @AllArgsConstructor
