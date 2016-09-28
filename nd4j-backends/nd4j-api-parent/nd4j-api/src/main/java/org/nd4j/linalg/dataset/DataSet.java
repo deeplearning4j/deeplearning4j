@@ -136,15 +136,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     /**
+     * @deprecated Use {@link #merge(List)}
+     */
+    @Deprecated
+    public static DataSet merge(List<DataSet> data, boolean clone) {
+        return merge(data);
+    }
+
+    /**
      * Merge the list of datasets in to one list.
      * All the rows are merged in to one dataset
      *
      * @param data the data to merge
-     * @param clone whether to clone the data
-     *              or use a reference
      * @return a single dataset
      */
-    public static DataSet merge(List<DataSet> data,boolean clone) {
+    public static DataSet merge(List<DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
         DataSet first = data.get(0);
@@ -225,7 +231,22 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 throw new IllegalStateException("Cannot merge examples: labels rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(data.get(0).getLabels().shape()));
         }
 
-        return new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
+        DataSet dataset = new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
+
+        List<Serializable> meta = null;
+        for(DataSet ds : data){
+            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()){
+                meta = null;
+                break;
+            }
+            if(meta == null) meta = new ArrayList<>();
+            meta.addAll(ds.getExampleMetaData());
+        }
+        if(meta != null){
+            dataset.setExampleMetaData(meta);
+        }
+
+        return dataset;
     }
 
     private static INDArray merge2d(INDArray[] data){
@@ -348,26 +369,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
 
         return new INDArray[]{out,outMask};
-    }
-
-    /**
-     * Merge the list of datasets in to one list.
-     * All the rows are merged in to one dataset
-     *
-     * @param data the data to merge
-     * @return a single dataset
-     */
-    public static DataSet merge(List<DataSet> data) {
-        if (data.isEmpty())
-            throw new IllegalArgumentException("Unable to merge empty dataset");
-        return merge(data,false);
-    }
-
-    private static int totalExamples(Collection<DataSet> coll) {
-        int count = 0;
-        for (DataSet d : coll)
-            count += d.numExamples();
-        return count;
     }
 
     @Override
