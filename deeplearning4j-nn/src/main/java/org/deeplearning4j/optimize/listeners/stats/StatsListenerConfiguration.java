@@ -5,27 +5,11 @@ package org.deeplearning4j.optimize.listeners.stats;
  */
 public interface StatsListenerConfiguration {
 
-    boolean reportingFrequency();
-
-    boolean collectScore();
+    int reportingFrequency();
 
     boolean useNTPTimeSource();
 
-    boolean collectHistogramParameters();
-
-    boolean collectHistogramUpdates();
-
-    boolean collectHistogramActivations();
-
-    int numHistogramBins();
-
-    boolean collectLearningRates();
-
-    boolean collectMeanMagnitudesParameters();
-
-    boolean collectMeanMagnitudesUpdates();
-
-    boolean collectMeanMagnitudesActivations();
+    //--- Performance and System Stats ---
 
     /**
      * Minibatches/second, examples/second, total time, total batches, total examples
@@ -40,5 +24,27 @@ public interface StatsListenerConfiguration {
 
     boolean collectDataSetMetaData();
 
+    //--- General ---
+
+    boolean collectScore();
+
+    boolean collectLearningRates();
+
+    //--- Histograms ---
+    boolean collectHistogramParameters();
+
+    boolean collectHistogramUpdates();
+
+    boolean collectHistogramActivations();
+
+    int numHistogramBins();
+
+    //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
+
+    boolean collectMean(StatsType type);
+
+    boolean collectStdev(StatsType type);
+
+    boolean collectMeanMagnitudes(StatsType type);
 
 }
