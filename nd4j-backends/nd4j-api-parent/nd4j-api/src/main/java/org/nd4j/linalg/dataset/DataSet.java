@@ -954,7 +954,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             }
 
-            list.add(new DataSet(featuresHere,labelsHere,featureMaskHere,labelMaskHere));
+            DataSet ds = new DataSet(featuresHere,labelsHere,featureMaskHere,labelMaskHere);
+            if(exampleMetaData != null && exampleMetaData.size() > i){
+                ds.setExampleMetaData(Collections.singletonList(exampleMetaData.get(i)));
+            }
+            list.add(ds);
         }
         return list;
     }
@@ -986,8 +990,62 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
             throw new IllegalArgumentException("Unable to split on size equal or larger than the number of rows (# numExamples=" + numExamples + ", numHoldout=" + numHoldout + ")");
-        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(0,numHoldout),NDArrayIndex.all()));
-        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples()), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+        DataSet first = new DataSet();
+        DataSet second = new DataSet();
+        switch(features.rank()){
+            case 2:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                break;
+            case 3:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            case 4:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            default:
+                throw new UnsupportedOperationException("Features rank: " + features.rank());
+        }
+        switch(labels.rank()){
+            case 2:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                break;
+            case 3:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            case 4:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            default:
+                throw new UnsupportedOperationException("Labels rank: " + features.rank());
+        }
+
+        if(featuresMask != null){
+            first.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+            second.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+        }
+        if(labelsMask != null){
+            first.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(0, numHoldout), NDArrayIndex.all()));
+            second.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+        }
+
+        if(exampleMetaData != null){
+            List<Serializable> meta1 = new ArrayList<>();
+            List<Serializable> meta2 = new ArrayList<>();
+            for( int i=0; i<numHoldout && i < exampleMetaData.size(); i++ ){
+                meta1.add(exampleMetaData.get(i));
+            }
+            for( int i=numHoldout; i<numExamples && i < exampleMetaData.size(); i++ ){
+                meta2.add(exampleMetaData.get(i));
+            }
+            first.setExampleMetaData(meta1);
+            second.setExampleMetaData(meta2);
+        }
         return new SplitTestAndTrain(first, second);
     }
 
