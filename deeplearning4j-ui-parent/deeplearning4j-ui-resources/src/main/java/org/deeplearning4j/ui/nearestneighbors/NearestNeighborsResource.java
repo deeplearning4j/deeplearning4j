@@ -29,6 +29,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.ui.api.UrlResource;
+import org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsQuery;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.deeplearning4j.util.SerializationUtils;
 

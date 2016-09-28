@@ -11,5 +11,9 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
  */
 public interface TrainingResult {
 
+    /**
+     *
+     * @param sparkTrainingStats
+     */
     void setStats(SparkTrainingStats sparkTrainingStats);
 }
