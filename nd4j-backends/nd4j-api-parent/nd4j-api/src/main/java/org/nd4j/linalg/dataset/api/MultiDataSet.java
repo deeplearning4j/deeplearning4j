@@ -136,4 +136,31 @@ public interface MultiDataSet extends Serializable {
      */
     List<MultiDataSet> asList();
 
+
+    /**
+     * Set the metadata for this MultiDataSet<br>
+     * By convention: the metadata can be any serializable object, one per example in the MultiDataSet
+     *
+     * @param exampleMetaData Example metadata to set
+     */
+    void setExampleMetaData(List<? extends Serializable> exampleMetaData);
+
+    /**
+     * Get the example metadata, or null if no metadata has been set<br>
+     * Note: this method results in an unchecked cast - care should be taken when using this!
+     *
+     * @param metaDataType Class of the metadata (used for type information)
+     * @param <T>          Type of metadata
+     * @return List of metadata objects
+     */
+    <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType);
+
+    /**
+     * Get the example metadata, or null if no metadata has been set
+     *
+     * @return List of metadata instances
+     * @see {@link #getExampleMetaData(Class)} for convenience method for types
+     */
+    List<Serializable> getExampleMetaData();
+
 }

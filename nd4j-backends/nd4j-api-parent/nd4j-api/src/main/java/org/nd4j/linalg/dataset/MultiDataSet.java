@@ -23,6 +23,8 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     private INDArray[] featuresMaskArrays;
     private INDArray[] labelsMaskArrays;
 
+    private List<Serializable> exampleMetaData;
+
     /** Create a new (empty) MultiDataSet object (all fields are null) */
     public MultiDataSet(){
 
@@ -64,6 +66,21 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
+    }
+
+    @Override
+    public List<Serializable> getExampleMetaData(){
+        return exampleMetaData;
+    }
+
+    @Override
+    public <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType){
+        return (List<T>)exampleMetaData;
+    }
+
+    @Override
+    public void setExampleMetaData(List<? extends Serializable> exampleMetaData){
+        this.exampleMetaData = (List<Serializable>)exampleMetaData;
     }
 
 
