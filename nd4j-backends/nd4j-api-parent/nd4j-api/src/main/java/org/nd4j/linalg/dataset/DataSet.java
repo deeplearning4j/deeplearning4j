@@ -561,13 +561,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     public void shuffle(long seed) {
         //note here we use the same seed with different random objects guaranteeing same order
-/*
-        if (getFeatures().rank() == 2 && getLabels().rank() == 2) {
-            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), 1);
-        } else {
-            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), ArrayUtil.range(1,getFeatures().rank()));
-        }
-*/
 
         List<INDArray> arrays = new ArrayList<>();
         List<int[]> dimensions = new ArrayList<>();
@@ -590,18 +583,19 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         Nd4j.shuffle(arrays, new Random(seed), dimensions);
 
-        /*
-        int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
-        int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
-        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
-        Nd4j.shuffle(getLabels(),new Random(seed),nonzeroDimsLab);
-        if(getFeaturesMaskArray() != null) {
-            Nd4j.shuffle(getFeaturesMaskArray(),new Random(seed),nonzeroDimsFeat);
+        //As per CpuNDArrayFactory.shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) and libnd4j transforms.h shuffleKernelGeneric
+        if(exampleMetaData != null){
+            List<Serializable> newMeta = new ArrayList<>(exampleMetaData);
+            int[] map = ArrayUtil.buildHalfVector(new Random(seed), numExamples() / 2, numExamples());
+            for( int i=0; i<numExamples()/2; i++ ){
+                int from = i;
+                int nextOffset = map[i];
+                Serializable temp = newMeta.get(from);
+                newMeta.set(from, newMeta.get(nextOffset));
+                newMeta.set(nextOffset, temp);
+            }
+            exampleMetaData = newMeta;
         }
-        if(getLabelsMaskArray() != null) {
-            Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
-        }
-        */
     }
 
 
