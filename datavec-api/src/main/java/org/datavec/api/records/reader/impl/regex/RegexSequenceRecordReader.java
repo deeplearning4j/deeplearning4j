@@ -17,6 +17,10 @@
 package org.datavec.api.records.reader.impl.regex;
 
 import org.apache.commons.io.FileUtils;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
@@ -28,10 +32,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,7 +57,7 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
-public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
+public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
     public static final String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
     public static final LineErrorHandling DEFAULT_ERROR_HANDLING = LineErrorHandling.FailOnInvalid;
@@ -90,15 +96,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     }
 
     public List<List<Writable>> sequenceRecord() {
-        File next = iter.next();
-
-        String fileContents;
-        try {
-            fileContents = FileUtils.readFileToString(next, charset.name());
-        } catch(IOException e){
-            throw new RuntimeException(e);
-        }
-        return loadSequence(fileContents, next.toURI());
+        return nextSequence().getSequenceRecord();
     }
 
     @Override
@@ -154,6 +152,38 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     @Override
     public void reset(){
         super.reset();
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        File next = iter.next();
+
+        String fileContents;
+        try {
+            fileContents = FileUtils.readFileToString(next, charset.name());
+        } catch(IOException e){
+            throw new RuntimeException(e);
+        }
+        List<List<Writable>> sequence = loadSequence(fileContents, next.toURI());
+        return new org.datavec.api.records.impl.SequenceRecord(sequence, new RecordMetaDataURI(next.toURI(), RegexSequenceRecordReader.class));
+    }
+
+    @Override
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<SequenceRecord> out = new ArrayList<>();
+        for(RecordMetaData meta : recordMetaDatas){
+            File next = new File(meta.getURI());
+            URI uri = next.toURI();
+            String fileContents = FileUtils.readFileToString(next, charset.name());
+            List<List<Writable>> sequence = loadSequence(fileContents, uri);
+            out.add(new org.datavec.api.records.impl.SequenceRecord(sequence, meta));
+        }
+        return out;
     }
 
 }

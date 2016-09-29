@@ -16,8 +16,11 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -61,6 +64,39 @@ public class CSVNLinesSequenceRecordReaderTest {
         }
 
         assertEquals(150/nLinesPerSequence, count);
+    }
+
+    @Test
+    public void testCSVNlinesSequenceRecordReaderMetaData() throws Exception {
+        int nLinesPerSequence = 10;
+
+        SequenceRecordReaderMeta seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
+        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        CSVRecordReader rr = new CSVRecordReader();
+        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        List<List<List<Writable>>> out = new ArrayList<>();
+        while(seqRR.hasNext()){
+            List<List<Writable>> next = seqRR.sequenceRecord();
+            out.add(next);
+        }
+
+        seqRR.reset();
+        List<List<List<Writable>>> out2 = new ArrayList<>();
+        List<SequenceRecord> out3 = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        while(seqRR.hasNext()){
+            SequenceRecord seq = seqRR.nextSequence();
+            out2.add(seq.getSequenceRecord());
+            meta.add(seq.getMetaData());
+            out3.add(seq);
+        }
+
+        assertEquals(out, out2);
+
+        List<SequenceRecord> out4 = seqRR.loadSequenceFromMetaData(meta);
+        assertEquals(out3, out4);
     }
 
 }

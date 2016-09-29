@@ -19,7 +19,11 @@ package org.datavec.image.recordreader;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.IntWritable;
@@ -31,9 +35,7 @@ import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.util.*;
 
@@ -42,7 +44,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public abstract class BaseImageRecordReader extends BaseRecordReader {
+public abstract class BaseImageRecordReader extends BaseRecordReader implements RecordReaderMeta {
     protected Iterator<File> iter;
     protected Configuration conf;
     protected File currentFile;
@@ -330,4 +332,31 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         return ret;
     }
 
+    @Override
+    public Record nextRecord() {
+        List<Writable> list = next();
+        URI uri = currentFile.toURI();
+        return new org.datavec.api.records.impl.Record(list, new RecordMetaDataURI(uri, BaseImageRecordReader.class));
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> out = new ArrayList<>();
+        for(RecordMetaData meta : recordMetaDatas){
+            URI uri = meta.getURI();
+            File f = new File(uri);
+
+            List<Writable> next;
+            try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))){
+                next = record(uri, dis);
+            }
+            out.add(new org.datavec.api.records.impl.Record(next, meta));
+        }
+        return out;
+    }
 }

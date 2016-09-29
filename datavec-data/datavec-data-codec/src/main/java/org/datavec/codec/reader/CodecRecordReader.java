@@ -18,7 +18,11 @@ package org.datavec.codec.reader;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.SequenceRecord;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
@@ -39,6 +43,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -58,7 +63,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CodecRecordReader extends FileRecordReader implements SequenceRecordReader {
+public class CodecRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
     private int startFrame = 0;
     private int numFrames = -1;
     private int totalFrames = -1;
@@ -185,6 +190,37 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
     @Override
     public Configuration getConf() {
         return super.getConf();
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        File next = iter.next();
+
+        List<List<Writable>> list;
+        try{
+            list = loadData(NIOUtils.readableFileChannel(next));
+        }catch(IOException e){
+            throw new RuntimeException(e);
+        }
+        return new org.datavec.api.records.impl.SequenceRecord(list, new RecordMetaDataURI(next.toURI(), CodecRecordReader.class));
+    }
+
+    @Override
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<SequenceRecord> out = new ArrayList<>();
+        for(RecordMetaData meta : recordMetaDatas){
+            File f = new File(meta.getURI());
+
+            List<List<Writable>> list = loadData(NIOUtils.readableFileChannel(f));
+            out.add(new org.datavec.api.records.impl.SequenceRecord(list, meta));
+        }
+
+        return out;
     }
 
 
