@@ -31,13 +31,9 @@ public interface StatsListenerConfiguration {
     boolean collectLearningRates();
 
     //--- Histograms ---
-    boolean collectHistogramParameters();
+    boolean collectHistograms(StatsType type);
 
-    boolean collectHistogramUpdates();
-
-    boolean collectHistogramActivations();
-
-    int numHistogramBins();
+    int numHistogramBins(StatsType type);
 
     //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
 
