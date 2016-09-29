@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners.stats;
 
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -11,6 +12,8 @@ import org.deeplearning4j.optimize.listeners.stats.temp.HistogramBin;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.management.*;
 import java.math.BigDecimal;
@@ -240,14 +243,13 @@ public class StatsListener implements IterationListener {
 
     private void doInit(Model model){
 
-        StatsInitConfiguration initConfiguration = receiver.getInitializationConfiguration();
+        StatsInitializationConfiguration initConfiguration = receiver.getInitializationConfiguration();
         StatsInitializationReport initReport = receiver.newInitializationReport();
 
-        if(initConfiguration.collectMachineInfo()){
+        if(initConfiguration.collectSoftwareInfo()){
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
 
-            int availableProcessors = osBean.getAvailableProcessors();
             String arch = osBean.getArch();
             String osName = osBean.getName();
             String jvmName = runtime.getVmName();
@@ -257,8 +259,24 @@ public class StatsListener implements IterationListener {
             String nd4jBackendClass = Nd4j.getNDArrayFactory().getClass().getName();
             String nd4jDataTypeName = DataTypeUtil.getDtypeFromContext().name();
 
-            initReport.reportMachineInfo(availableProcessors, arch, osName, jvmName, jvmVersion, jvmSpecVersion,
+            initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion,
                     nd4jBackendClass, nd4jDataTypeName);
+        }
+
+        if(initConfiguration.collectHardwareInfo()){
+            int availableProcessors = Runtime.getRuntime().availableProcessors();
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int nDevices = nativeOps.getAvailableDevices();
+
+            long[] deviceTotalMem = null;
+            if(nDevices > 0){
+                deviceTotalMem = new long[nDevices];
+                for( int i=0; i<nDevices; i++ ){
+                    deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(new IntPointer(i));
+                }
+            }
+
+            initReport.reportHardwareInfo(availableProcessors, nDevices, deviceTotalMem);
         }
 
         if(initConfiguration.collectModelInfo()){
@@ -278,7 +296,7 @@ public class StatsListener implements IterationListener {
             } else {
                 throw new RuntimeException();
             }
-            initReport.reportModelInfo(jsonConf, numLayers, numParams);
+            initReport.reportModelInfo(model.getClass().getName(), jsonConf, numLayers, numParams);
         }
 
         receiver.postInitializationReport(initReport);
