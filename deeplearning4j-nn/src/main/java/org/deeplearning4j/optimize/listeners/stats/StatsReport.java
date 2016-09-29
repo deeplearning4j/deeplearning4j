@@ -15,6 +15,8 @@ public interface StatsReport {
     //TODO: probably want to use NTP
     void reportTime(long currentTime);
 
+    void reportStatsCollectionDurationMS(long statsCollectionDurationMS);
+
     void reportScore(double currentScore);
 
     //--- Performance and System Stats ---
@@ -23,6 +25,8 @@ public interface StatsReport {
 
     void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
                            double examplesPerSecond, double minibatchesPerSecond);
+
+    void reportGarbageCollection(String gcName, long deltaReportTime, long deltaGCCount, long deltaGCTime);
 
     //--- Histograms ---
     void reportHistograms(StatsType statsType, Map<String,Pair<INDArray,int[]>> histogram);

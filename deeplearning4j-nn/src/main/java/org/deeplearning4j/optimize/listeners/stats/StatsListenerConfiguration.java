@@ -19,6 +19,8 @@ public interface StatsListenerConfiguration {
 
     boolean collectMemoryStats();
 
+    boolean collectGarbageCollectionStats();
+
     //Machine/JVM ID, backend, hardware??
     boolean collectSystemStats();
 
