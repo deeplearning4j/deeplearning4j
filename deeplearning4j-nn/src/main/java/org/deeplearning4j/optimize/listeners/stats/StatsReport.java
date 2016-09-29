@@ -18,19 +18,14 @@ public interface StatsReport {
     void reportScore(double currentScore);
 
     //--- Performance and System Stats ---
-
     void reportMemoryUse(Long jvmCurrentBytes, Long jvmMaxBytes, Long offHeapCurrentBytes, Long offHeapMaxBytes,
                          Long gpuCurrentBytes, Long gpuMaxBytes );
 
-    void reportPerformance(double examplesPerSecond, double minibatchesPerSecond);
+    void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
+                           double examplesPerSecond, double minibatchesPerSecond);
 
     //--- Histograms ---
-
-    void reportHistogramParameter(Map<String,Pair<INDArray,int[]>> histogram);
-
-    void reportHistogramUpdates(Map<String,Pair<INDArray,int[]>> histogram);
-
-    void reportHistogramActivations(Map<String,Pair<INDArray,int[]>> histogram);
+    void reportHistograms(StatsType statsType, Map<String,Pair<INDArray,int[]>> histogram);
 
 
     //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
