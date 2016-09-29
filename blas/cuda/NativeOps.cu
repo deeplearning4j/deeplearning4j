@@ -197,7 +197,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	// round num_threads to nearest warpSize
 	num_threads -= num_threads % warpSize;
 
-	num_threads = nd4j::math::nd4j_max<int>(32, num_threads);
+	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, funcAttr);
@@ -238,7 +238,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
+	//num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
 //	if (num_blocks > countMP)
@@ -1924,7 +1924,7 @@ void   NativeOps::execIndexReduceFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
 
-	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	indexReduceFloat<<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
 			xShapeInfo, shape::rank(hostXShapeInfo),
@@ -4065,7 +4065,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<512, 32, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5164,8 +5164,8 @@ void NativeOps::enableDebugMode(bool reallyEnable) {
 }
 
 void NativeOps::setGridLimit(int gridSize) {
-	if (gridSize > 1024)
-		gridSize = 1024;
+	if (gridSize > 8192)
+		gridSize = 8192;
 	if (gridSize < 1)
 		gridSize = 1;
 	blockLimit = gridSize;
