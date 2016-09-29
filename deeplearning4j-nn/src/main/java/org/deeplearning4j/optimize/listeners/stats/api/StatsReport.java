@@ -1,6 +1,7 @@
-package org.deeplearning4j.optimize.listeners.stats;
+package org.deeplearning4j.optimize.listeners.stats.api;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.optimize.listeners.stats.StatsType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
@@ -21,7 +22,7 @@ public interface StatsReport {
 
     //--- Performance and System Stats ---
     void reportMemoryUse(Long jvmCurrentBytes, Long jvmMaxBytes, Long offHeapCurrentBytes, Long offHeapMaxBytes,
-                         Long gpuCurrentBytes, Long gpuMaxBytes );
+                         long[] gpuCurrentBytes, long[] gpuMaxBytes );
 
     void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
                            double examplesPerSecond, double minibatchesPerSecond);

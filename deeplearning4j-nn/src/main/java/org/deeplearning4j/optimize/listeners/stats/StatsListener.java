@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.stats.api.*;
 import org.deeplearning4j.optimize.listeners.stats.temp.HistogramBin;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -116,8 +117,16 @@ public class StatsListener implements IterationListener {
             long offheapMax = Pointer.maxBytes();
 
             //TODO: GPU...
+            long[] gpuCurrentBytes = null;
+            long[] gpuMaxBytes = null;
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int nDevices = nativeOps.getAvailableDevices();
+            if(nDevices > 0){
+                gpuCurrentBytes = new long[nDevices];
+                gpuMaxBytes = new long[nDevices];
+            }
 
-            report.reportMemoryUse(jvmTotal, jvmMax, offheapTotal, offheapMax, null, null);
+            report.reportMemoryUse(jvmTotal, jvmMax, offheapTotal, offheapMax, gpuCurrentBytes, gpuMaxBytes);
         }
 
         if(config.collectGarbageCollectionStats()){
@@ -135,12 +144,12 @@ public class StatsListener implements IterationListener {
                     long count = bean.getCollectionCount();
                     long timeMs = bean.getCollectionTime();
                     Pair<Long,Long> lastStats = gcStatsAtLastReport.get(bean.getName());
-                    long deltaCount = count - lastStats.getFirst();
+                    long deltaGCCount = count - lastStats.getFirst();
                     long deltaGCTime = timeMs - lastStats.getSecond();
 
                     lastStats.setFirst(count);
                     lastStats.setSecond(timeMs);
-                    report.reportGarbageCollection(bean.getName(), deltaReportTime, deltaCount, deltaGCTime);
+                    report.reportGarbageCollection(bean.getName(), deltaReportTime, deltaGCCount, deltaGCTime);
                 }
             }
         }
@@ -152,7 +161,7 @@ public class StatsListener implements IterationListener {
         }
 
         if (config.collectLearningRates()) {
-            //TODO - how to get this?
+            //TODO
         }
 
 

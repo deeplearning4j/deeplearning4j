@@ -1,4 +1,4 @@
-package org.deeplearning4j.optimize.listeners.stats;
+package org.deeplearning4j.optimize.listeners.stats.api;
 
 /**
  * Created by Alex on 28/09/2016.
