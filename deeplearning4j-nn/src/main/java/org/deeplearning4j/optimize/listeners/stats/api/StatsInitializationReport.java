@@ -44,4 +44,8 @@ public interface StatsInitializationReport {
      */
     void reportModelInfo(String modelClassName, String modelConfigJson, int numLayers, int numParams);
 
+    /**
+     * Convert the initialization report to a byte[] for storage
+     */
+    byte[] toByteArray();
 }

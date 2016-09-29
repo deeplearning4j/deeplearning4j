@@ -40,4 +40,8 @@ public interface StatsReport {
 
     void reportMeanMagnitudes(StatsType statsType, Map<String,Double> meanMagnitudes);
 
+    /**
+     * Serialize the StatsReport to a byte[] for storage etc
+     */
+    byte[] toByteArray();
 }
