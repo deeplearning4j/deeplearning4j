@@ -9,7 +9,7 @@ public interface StatsListenerReceiver {
 
     StatsInitializationReport newInitializationReport();
 
-    StatsInitConfiguration getInitializationConfiguration();
+    StatsInitializationConfiguration getInitializationConfiguration();
 
     void postInitializationReport(StatsInitializationReport initializationReport);
 
