@@ -16,11 +16,25 @@ public interface StatsStorage {
     boolean sessionExists(String sessionID);
 
 
-
-    Object getStaticInfo(String sessionID, String workerID);
+    byte[] getStaticInfo(String sessionID, String workerID);
 
     List<String> listWorkerIDsForSession(String sessionID);
 
-    Object getLatestState(String sessionID, String workerID);
+    int getNumStateRecordsFor(String sessionID);
+
+    int getNumStateRecordsFor(String sessionID, String workerID);
+
+    byte[] getLatestState(String sessionID, String workerID);
+
+    List<byte[]> getLatestStateAllWorkers(String sessionID);
+
+    List<byte[]> getAllStatesAfter(String sessionID, String workerID, long timestamp);
+
+
+    // ----- Store new info -----
+
+    void putStaticInfo(String sessionID, String workerID, byte[] staticInfo);
+
+    void putState(String sessionID, String workerID, byte[] state);
 
 }
