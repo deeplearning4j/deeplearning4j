@@ -5,9 +5,19 @@ package org.deeplearning4j.optimize.listeners.stats;
  */
 public interface StatsListenerReceiver {
 
+    // --- Initialization: Done once, on first iteration ---
+
+    StatsInitializationReport newInitializationReport();
+
+    StatsInitConfiguration getInitializationConfiguration();
+
+    void postInitializationReport(StatsInitializationReport initializationReport);
+
+
+    // --- Stats: Collected and reported periodically (based on configuration)---
     StatsReport newStatsReport();
 
-    void postResult(StatsReport statsReport);
+    void postStatsReport(StatsReport statsReport);
 
     StatsListenerConfiguration getCurrentConfiguration();
 

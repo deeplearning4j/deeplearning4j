@@ -13,16 +13,12 @@ public interface StatsListenerConfiguration {
 
     /**
      * Minibatches/second, examples/second, total time, total batches, total examples
-     * @return
      */
     boolean collectPerformanceStats();
 
     boolean collectMemoryStats();
 
     boolean collectGarbageCollectionStats();
-
-    //Machine/JVM ID, backend, hardware??
-    boolean collectSystemStats();
 
     boolean collectDataSetMetaData();
 

@@ -8,10 +8,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.stats.temp.HistogramBin;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
+import java.lang.management.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,6 +63,7 @@ public class StatsListener implements IterationListener {
         long currentTime = getTime();
         if (iterCount == 0) {
             initTime = currentTime;
+            doInit(model);
         }
 
         if (config.collectPerformanceStats()) {
@@ -75,6 +77,7 @@ public class StatsListener implements IterationListener {
 
         StatsReport report = receiver.newStatsReport();
         report.reportTime(currentTime);
+        report.reportIterationCount(iterCount);
 
         long deltaReportTime = currentTime - lastReportTime;
 
@@ -226,13 +229,59 @@ public class StatsListener implements IterationListener {
         report.reportStatsCollectionDurationMS(endTime-currentTime);    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
         lastReportIteration = iterCount;
-        receiver.postResult(report);
+        receiver.postStatsReport(report);
         iterCount++;
     }
 
     private long getTime() {
         //Abstraction to allow NTP to be plugged in later...
         return System.currentTimeMillis();
+    }
+
+    private void doInit(Model model){
+
+        StatsInitConfiguration initConfiguration = receiver.getInitializationConfiguration();
+        StatsInitializationReport initReport = receiver.newInitializationReport();
+
+        if(initConfiguration.collectMachineInfo()){
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+
+            int availableProcessors = osBean.getAvailableProcessors();
+            String arch = osBean.getArch();
+            String osName = osBean.getName();
+            String jvmName = runtime.getVmName();
+            String jvmVersion = runtime.getVmVersion();
+            String jvmSpecVersion = runtime.getSpecVersion();
+
+            String nd4jBackendClass = Nd4j.getNDArrayFactory().getClass().getName();
+            String nd4jDataTypeName = DataTypeUtil.getDtypeFromContext().name();
+
+            initReport.reportMachineInfo(availableProcessors, arch, osName, jvmName, jvmVersion, jvmSpecVersion,
+                    nd4jBackendClass, nd4jDataTypeName);
+        }
+
+        if(initConfiguration.collectModelInfo()){
+            String jsonConf;
+            int numLayers;
+            int numParams;
+            if(model instanceof MultiLayerNetwork){
+                MultiLayerNetwork net = ((MultiLayerNetwork)model);
+                jsonConf = net.getLayerWiseConfigurations().toJson();
+                numLayers = net.getnLayers();
+                numParams = net.numParams();
+            } else if(model instanceof ComputationGraph){
+                ComputationGraph cg = ((ComputationGraph)model);
+                jsonConf = cg.getConfiguration().toJson();
+                numLayers = cg.getNumLayers();
+                numParams = cg.numParams();
+            } else {
+                throw new RuntimeException();
+            }
+            initReport.reportModelInfo(jsonConf, numLayers, numParams);
+        }
+
+        receiver.postInitializationReport(initReport);
     }
 
     private void updateExamplesMinibatchesCounts(Model model) {
