@@ -10,8 +10,12 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.stats.temp.HistogramBin;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +37,9 @@ public class StatsListener implements IterationListener {
 
     private long totalExamples = 0;
     private long totalMinibatches = 0;
+
+    private List<GarbageCollectorMXBean> gcBeans;
+    private Map<String,Pair<Long,Long>> gcStatsAtLastReport;
 
     public StatsListener(StatsListenerReceiver receiver) {
         this.receiver = receiver;
@@ -69,6 +76,8 @@ public class StatsListener implements IterationListener {
         StatsReport report = receiver.newStatsReport();
         report.reportTime(currentTime);
 
+        long deltaReportTime = currentTime - lastReportTime;
+
         //--- Performance and System Stats ---
 
         if (config.collectPerformanceStats()) {
@@ -103,6 +112,31 @@ public class StatsListener implements IterationListener {
             //TODO: GPU...
 
             report.reportMemoryUse(jvmTotal, jvmMax, offheapTotal, offheapMax, null, null);
+        }
+
+        if(config.collectGarbageCollectionStats()){
+            if(lastReportIteration == -1 || gcBeans == null){
+                //Haven't reported GC stats before...
+                gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+                gcStatsAtLastReport = new HashMap<>();
+                for( GarbageCollectorMXBean bean : gcBeans ){
+                    long count = bean.getCollectionCount();
+                    long timeMs = bean.getCollectionTime();
+                    gcStatsAtLastReport.put(bean.getName(), new Pair<>(count,timeMs));
+                }
+            } else {
+                for( GarbageCollectorMXBean bean : gcBeans ){
+                    long count = bean.getCollectionCount();
+                    long timeMs = bean.getCollectionTime();
+                    Pair<Long,Long> lastStats = gcStatsAtLastReport.get(bean.getName());
+                    long deltaCount = count - lastStats.getFirst();
+                    long deltaGCTime = timeMs - lastStats.getSecond();
+
+                    lastStats.setFirst(count);
+                    lastStats.setSecond(timeMs);
+                    report.reportGarbageCollection(bean.getName(), deltaReportTime, deltaCount, deltaGCTime);
+                }
+            }
         }
 
         //--- General ---
@@ -188,10 +222,12 @@ public class StatsListener implements IterationListener {
         }
 
 
-        iterCount++;
+        long endTime = getTime();
+        report.reportStatsCollectionDurationMS(endTime-currentTime);    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
-
+        lastReportIteration = iterCount;
         receiver.postResult(report);
+        iterCount++;
     }
 
     private long getTime() {
