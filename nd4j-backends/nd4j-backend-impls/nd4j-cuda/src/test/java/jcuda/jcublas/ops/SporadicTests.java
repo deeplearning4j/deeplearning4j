@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -135,5 +136,20 @@ public class SporadicTests {
         System.out.println(array2);
         assertEquals(array, array2);
 
+    }
+
+    @Test
+    public void testIAMax1() throws Exception {
+        INDArray arrayX = Nd4j.rand('c', 128000, 4);
+
+        Nd4j.getExecutioner().exec(new IAMax(arrayX), 1);
+
+        long time1 = System.nanoTime();
+        for (int i = 0; i < 10000; i++) {
+            Nd4j.getExecutioner().exec(new IAMax(arrayX), 1);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Time: " + ((time2 - time1) / 10000));
     }
 }
