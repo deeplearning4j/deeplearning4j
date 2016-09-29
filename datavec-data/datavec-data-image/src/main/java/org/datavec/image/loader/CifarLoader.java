@@ -357,6 +357,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     vTempMean = vChannel.mean(new int[] {0,2,3}).getDouble(0);
                     vStd += varManual(vChannel, vTempMean);
                     vMean += vTempMean;
+                } else {
+                    // normalize if just input stream and not special preprocess
+                    data.setFeatures(data.getFeatureMatrix().div(255));
                 }
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("The number of channels must be 3 to special preProcess Cifar with.");
