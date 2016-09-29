@@ -1,4 +1,6 @@
-package org.deeplearning4j.optimize.listeners.stats;
+package org.deeplearning4j.optimize.listeners.stats.api;
+
+import org.deeplearning4j.optimize.listeners.stats.StatsListener;
 
 /**
  * Configuration interface for static (unchanging) information, to be reported by {@link StatsListener}.
