@@ -1,5 +1,6 @@
 package org.nd4j.jita.constant;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     private AtomicAllocator allocator;
@@ -26,13 +28,21 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
-    private static final ConstantProtector protector = ConstantProtector.getInstance();
+    protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
     private static ProtectedCudaShapeInfoProvider ourInstance = new ProtectedCudaShapeInfoProvider();
 
 
     private ProtectedCudaShapeInfoProvider() {
 
+    }
+
+    /**
+     * This method forces cache purge, if cache is available for specific implementation
+     */
+    @Override
+    public void purgeCache() {
+        protector.purgeProtector();
     }
 
     public static ProtectedCudaShapeInfoProvider getInstance() {
@@ -48,7 +58,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-//            logger.info("Cache miss");
+//            log.info("Cache miss: {}", descriptor);
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             buffer.setConstant(true);
 
@@ -62,7 +72,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             cacheMiss.incrementAndGet();
             return buffer;
         } else {
-            //logger.info("Cache hit");
+     //       log.info("Cache hit: {}", descriptor);
             cacheHit.incrementAndGet();
         }
 

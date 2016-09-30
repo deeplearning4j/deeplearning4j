@@ -33,6 +33,25 @@ public class DeviceTADManager extends BasicTADManager {
         }
     }
 
+    /**
+     * This method removes all cached shape buffers
+     */
+    @Override
+    public void purgeBuffers() {
+        logger.info("Purging TAD buffers...");
+
+        tadCache = new ArrayList<>();
+
+        int numDevices =  configuration.getAvailableDevices().size();
+
+        for (int i = 0; i < numDevices; i++ ) {
+            logger.info("Resetting device: [{}]", i);
+            tadCache.add(i, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
+        }
+
+        super.purgeBuffers();
+    }
+
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         /*
@@ -47,7 +66,7 @@ public class DeviceTADManager extends BasicTADManager {
 
 
         if (!tadCache.get(deviceId).containsKey(descriptor)) {
-       //     logger.info("Creating new TAD...");
+            //logger.info("Creating new TAD...");
             Pair<DataBuffer, DataBuffer>buffers = super.getTADOnlyShapeInfo(array, dimension);
 
             if (buffers.getFirst() != array.shapeInfoDataBuffer())
@@ -58,7 +77,7 @@ public class DeviceTADManager extends BasicTADManager {
 
             // so, at this point we have buffer valid on host side. And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
-        } //else logger.info("Using TAD from cache...");
+        } //logger.info("Using TAD from cache...");
 
         return tadCache.get(deviceId).get(descriptor);
     }

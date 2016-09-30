@@ -58,4 +58,9 @@ public interface ConstantHandler {
      * @return
      */
     DataBuffer getConstantBuffer(double[] array);
+
+    /**
+     * This method removes all cached constants
+     */
+    void purgeConstants();
 }

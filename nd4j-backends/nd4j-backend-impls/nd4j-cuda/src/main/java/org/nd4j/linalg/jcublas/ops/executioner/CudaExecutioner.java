@@ -1576,6 +1576,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer dimensionDevPointer = null;
         Pointer dimensionHostPointer = null;
+        Pointer retPointer = null;
         int dimension[] = null;
 
         if (op.opNum() == 41 && op.extraArgs() != null) {
@@ -1603,7 +1604,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             ret = Nd4j.zeros(retShape);
 
-         //   log.info("Intermediatery result buffer: {}", ret.shapeInfoDataBuffer());
+            //log.info("Intermediatery result buffer: {}", ret.shapeInfoDataBuffer());
+            //log.info("Result buffer length: {}", ret.length());
 
             // FIXME: this maybe misleading use of this particular pointer
             hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context);
@@ -1612,6 +1614,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
             dimensionDevPointer = AtomicAllocator.getInstance().getPointer(dimensionBuffer, context);
             dimensionHostPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
+
+            retPointer = AtomicAllocator.getInstance().getPointer(ret, context);
         }
 
         Pointer hostTadShapeInfo = null;
@@ -1678,7 +1682,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devMaxTadShapeInfo,     // 13
                 devMaxTadOffsets, // 14
                 dimensionDevPointer, // special pointer for IsMax  // 15
-                dimensionHostPointer // special pointer for IsMax  // 16
+                dimensionHostPointer, // special pointer for IsMax  // 16
+                retPointer // special pointer for IsMax // 17
         );
 
 
@@ -1853,6 +1858,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (extraArgs != null)
             extraArgs.address();
+
+        if (ret != null)
+            ret.elementWiseStride();
 
         return null;
     }

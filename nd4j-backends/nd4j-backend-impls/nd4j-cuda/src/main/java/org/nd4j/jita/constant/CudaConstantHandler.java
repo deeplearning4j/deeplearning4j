@@ -63,4 +63,12 @@ public class CudaConstantHandler extends BasicConstantHandler {
     public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
         return wrappedHandler.relocateConstantSpace(dataBuffer);
     }
+
+    /**
+     * This method removes all cached constants
+     */
+    @Override
+    public void purgeConstants() {
+        wrappedHandler.purgeConstants();
+    }
 }
