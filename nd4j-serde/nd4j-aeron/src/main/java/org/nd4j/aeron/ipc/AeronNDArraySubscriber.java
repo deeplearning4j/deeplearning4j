@@ -115,10 +115,6 @@ public class AeronNDArraySubscriber {
     }
 
 
-    public static void main(String[] arg) {
-
-    }
-
 }
 
 

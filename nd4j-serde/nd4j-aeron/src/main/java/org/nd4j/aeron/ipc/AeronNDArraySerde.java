@@ -3,19 +3,15 @@ package org.nd4j.aeron.ipc;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
-import uk.co.real_logic.sbe.ir.generated.MessageHeaderDecoder;
-import uk.co.real_logic.sbe.ir.generated.MessageHeaderEncoder;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 
 /**
  * Serialization and de serialization class for

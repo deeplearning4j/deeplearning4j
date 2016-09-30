@@ -46,7 +46,9 @@ public class AeronUtil
     }
 
     /**
-     * Return a reusable, parameterized event loop that calls and idler when no messages are received
+     * Return a reusable, parameterized event
+     * loop that calls and idler
+     * when no messages are received
      *
      * @param fragmentHandler to be called back for each message.
      * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
@@ -55,23 +57,18 @@ public class AeronUtil
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-            final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+            final FragmentHandler fragmentHandler,
+            final int limit,
+            final AtomicBoolean running,
+            final IdleStrategy idleStrategy)
     {
-        return
-                (subscription) ->
-                {
-                    try
-                    {
+        return (subscription) -> {
+                    try {
                         while (running.get()) {
                             idleStrategy.idle(subscription.poll(fragmentHandler, limit));
                         }
-
-                        System.out.println("Ending");
-
-
                     }
-                    catch (final Exception ex)
-                    {
+                    catch (final Exception ex) {
                         LangUtil.rethrowUnchecked(ex);
                     }
                 };
