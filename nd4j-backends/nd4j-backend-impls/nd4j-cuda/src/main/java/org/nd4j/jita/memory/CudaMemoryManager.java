@@ -75,18 +75,18 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     /**
      * This method purges all cached memory chunks
-     * PLEASE NOTE: This method SHOULD NOT EVER BE USED in concurrent environments
+     * PLEASE NOTE: This method SHOULD NOT EVER BE USED without being 146% clear of all consequences.
      */
     @Override
     public synchronized void purgeCaches() {
         // reset device cache offset
-        Nd4j.getConstantHandler().purgeConstants();
+//        Nd4j.getConstantHandler().purgeConstants();
 
         // reset TADs
-        ((CudaGridExecutioner) Nd4j.getExecutioner()).getTadManager().purgeBuffers();
+//        ((CudaGridExecutioner) Nd4j.getExecutioner()).getTadManager().purgeBuffers();
 
         // purge shapes
-        Nd4j.getShapeInfoProvider().purgeCache();
+//        Nd4j.getShapeInfoProvider().purgeCache();
 
         // purge memory cache
         AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();

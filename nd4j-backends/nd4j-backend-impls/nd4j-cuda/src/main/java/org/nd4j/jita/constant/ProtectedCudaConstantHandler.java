@@ -53,6 +53,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     private static final int MAX_BUFFER_LENGTH = 272;
 
     protected Semaphore lock = new Semaphore(1);
+    private boolean resetHappened = false;
 
 
     public static ProtectedCudaConstantHandler getInstance() {
@@ -71,8 +72,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         protector.purgeProtector();
 
+        resetHappened = true;
+        logger.info("Resetting Constants...");
+
         for(Integer device: constantOffsets.keySet()) {
             constantOffsets.get(device).set(0);
+            buffersCache.put(device, new ConcurrentHashMap<ArrayDescriptor, DataBuffer>());
         }
     }
 
@@ -166,7 +171,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long cAddr = deviceAddresses.get(deviceId).address() + currentOffset;
 
-        //logger.info("copying to constant: {}, bufferLength: {}, bufferDtype: {}, currentOffset: {}, currentAddres: {}", requiredMemoryBytes, dataBuffer.length(), dataBuffer.dataType(), currentOffset, cAddr);
+        //if (resetHappened)
+        //    logger.info("copying to constant: {}, bufferLength: {}, bufferDtype: {}, currentOffset: {}, currentAddres: {}", requiredMemoryBytes, dataBuffer.length(), dataBuffer.dataType(), currentOffset, cAddr);
 
         point.setAllocationStatus(AllocationStatus.CONSTANT);
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));

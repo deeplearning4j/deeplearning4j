@@ -1,5 +1,6 @@
 package org.nd4j.jita.constant;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     private AtomicAllocator allocator;
@@ -56,7 +58,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-//            logger.info("Cache miss");
+//            log.info("Cache miss: {}", descriptor);
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             buffer.setConstant(true);
 
@@ -70,7 +72,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             cacheMiss.incrementAndGet();
             return buffer;
         } else {
-            //logger.info("Cache hit");
+     //       log.info("Cache hit: {}", descriptor);
             cacheHit.incrementAndGet();
         }
 

@@ -62,4 +62,17 @@ public class ShapeDescriptor {
         result = 31 * result + Arrays.hashCode(stride);
         return result;
     }
+
+    @Override
+    public String toString() {
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(shape.length).append(",").append(Arrays.toString(shape)).append(",").append(Arrays.toString(stride)).append(",").append(offset).append(",").append(ews).append(",").append(order);
+
+        String result = builder.toString().replaceAll("\\]","").replaceAll("\\[","");
+        result = "[" + result + "]";
+
+        return result;
+    }
 }
