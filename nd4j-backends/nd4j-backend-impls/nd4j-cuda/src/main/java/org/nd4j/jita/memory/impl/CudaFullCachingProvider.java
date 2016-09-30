@@ -11,6 +11,7 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,6 +31,21 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
 
     private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
+
+    public CudaFullCachingProvider() {
+
+        init();
+    }
+
+    public void init() {
+        int numDevices = configuration.getAvailableDevices().size();
+
+        deviceCachedAmount = new ArrayList<>();
+
+        for (int i = 0; i < numDevices; i++) {
+            deviceCachedAmount.add(new AtomicLong());
+        }
+    }
 
     /**
      * This method provides PointersPair to memory chunk specified by AllocationShape
@@ -58,7 +74,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 if (pointer != null) {
                     cacheDeviceHit.incrementAndGet();
 
-                    deviceCachedAmount.addAndGet(-1 * reqMemory);
+                    deviceCachedAmount.get(deviceId).addAndGet(-1 * reqMemory);
 
 //                    log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
 
@@ -92,7 +108,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_GPU_CACHE) {
+            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get(deviceId).get() >= MAX_GPU_CACHE) {
                 super.free(point);
                 return;
             }
@@ -155,7 +171,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 singleLock.acquire();
 
                 if (!deviceCache.get(deviceId).containsKey(shape)) {
-                    deviceCache.get(deviceId).put(shape, new CacheHolder(shape, deviceCachedAmount));
+                    deviceCache.get(deviceId).put(shape, new CacheHolder(shape, deviceCachedAmount.get(deviceId)));
                 }
             } catch (Exception e) {
 
@@ -174,6 +190,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     freeDevice(ptr, device);
                 }
             }
+
+            deviceCachedAmount.get(device).set(0);
         }
         super.purgeCache();
     }

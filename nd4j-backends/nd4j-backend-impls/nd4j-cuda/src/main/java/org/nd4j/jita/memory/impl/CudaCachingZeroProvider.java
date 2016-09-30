@@ -13,6 +13,8 @@ import org.nd4j.jita.memory.MemoryProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -45,7 +47,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     private final AtomicLong allocRequests = new AtomicLong(0);
 
     protected final AtomicLong zeroCachedAmount = new AtomicLong(0);
-    protected final AtomicLong deviceCachedAmount = new AtomicLong(0);
+    protected List<AtomicLong> deviceCachedAmount = new ArrayList<>();
 
 
     protected final Semaphore singleLock = new Semaphore(1);
@@ -195,7 +197,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
     public void printCacheStats() {
         log.debug("Cached host amount: " + zeroCachedAmount.get());
-        log.debug("Cached device amount: " + deviceCachedAmount.get());
+        log.debug("Cached device amount: " + deviceCachedAmount.get(0).get());
         log.debug("Total shapes in cache: " + zeroCache.size());
         log.debug("Current host hit ratio: " + getZeroCacheHitRatio());
         log.debug("Current device hit ratio: " + getDeviceCacheHitRatio());
@@ -269,5 +271,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 freeHost(ptr);
             }
         }
+
+        zeroCachedAmount.set(0);
     }
 }
