@@ -164,6 +164,8 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         float stdNaturalNums = (float) Math.sqrt((maxN*maxN- 1)/12);
         INDArray expectedStd = Nd4j.create(new float[] {stdNaturalNums,stdNaturalNums,stdNaturalNums}).reshape(3,1);
         expectedStd.muliColumnVector(featureABC);
+        //std calculates the sample std so divides by (n-1) not n
+        expectedStd.muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN-1));
 
         assertEquals(myNormalizer.getMean(),expectedMean);
         assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd).div(expectedStd)).maxNumber().floatValue() < 0.03);
@@ -176,11 +178,13 @@ public class NormalizerStandardize3D4DTest  extends BaseNd4jTest {
         DataSetIterator sampleIter = new TestDataSetIterator(fullDataSetUV,5);
         myNormalizer.fit(sampleIter);
         System.out.println("Testing with an iterator...");
+        System.out.println("Testing mean with an iterator...");
         assertEquals(myNormalizer.getMean(),expectedMean);
+        System.out.println("Testing std with an iterator...");
         assertTrue(Transforms.abs(myNormalizer.getStd().sub(expectedStd).div(expectedStd)).maxNumber().floatValue() < 0.03);
-        System.out.println("Actual std");
+        System.out.println("Actual std...");
         System.out.println(myNormalizer.getStd());
-        System.out.println("Expected std");
+        System.out.println("Expected std...");
         System.out.println(expectedStd);
 
     }

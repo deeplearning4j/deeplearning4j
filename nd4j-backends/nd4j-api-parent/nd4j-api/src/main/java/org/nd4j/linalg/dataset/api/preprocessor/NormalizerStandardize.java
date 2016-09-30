@@ -41,10 +41,11 @@ public class NormalizerStandardize implements DataNormalization {
         return Nd4j.vstack(theMean,theStd).dup();
     }
 
-    private void runnningFit(INDArray thenewArray, INDArray currentMeanStd, int batchCount, int runningTotal, boolean allDone) {
+    private void runningFit(INDArray thenewArray, INDArray currentMeanStd, int runningTotal, boolean allDone) {
+        int batchCount = thenewArray.size(0);
+        INDArray currentMean = currentMeanStd.getRow(0);
+        INDArray currentStd = currentMeanStd.getRow(1);
         if (!allDone) {
-            INDArray currentMean = currentMeanStd.getRow(0);
-            INDArray currentStd = currentMeanStd.getRow(1);
             // m_newM = m_oldM + (x - m_oldM)/m_n;
             INDArray xMinusMean = thenewArray.subRowVector(currentMean);
             INDArray newMean = currentMean.add(xMinusMean.sum(0).divi(runningTotal));
@@ -64,9 +65,14 @@ public class NormalizerStandardize implements DataNormalization {
             currentMeanStd.putRow(0,newMean);
         }
         else {
+            /*
             currentMeanStd.getRow(1).divi(runningTotal);
             currentMeanStd.putRow(1,Transforms.sqrt(currentMeanStd.getRow(1)));
             currentMeanStd.getRow(1).addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+            */
+            currentStd.divi(runningTotal);
+            Transforms.sqrt(currentStd,false);
+            currentStd.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
             if (currentMeanStd.getRow(0).min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
                 logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
         }
@@ -88,13 +94,24 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
+        //int size, sizeExcludeMask;
         featureRank = dataSet.getFeatures().rank();
 
         INDArray theFeatures = dataSet.getFeatures();
         if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet,true);
         if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet,true);
-        featureMeanStd = fit(theFeatures);
 
+        featureMeanStd = fit(theFeatures);
+        //FIXME:
+        /*
+        //Entries that are masked are wiped out to zero with tailor3d2d dataset
+        //Therefore they don't contribute to the sum etc etc, but the total size needs to be adjusted
+        if (dataSet.getFeaturesMaskArray() !=null) {
+            size = theFeatures.size(0);
+            sizeExcludeMask = dataSet.getFeaturesMaskArray() != null ? dataSet.getFeaturesMaskArray().sumNumber().intValue() : dataSet.getFeatures().size(0);
+            featureMeanStd.muli(size).divi(sizeExcludeMask);
+        }
+        */
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
 
@@ -103,6 +120,16 @@ public class NormalizerStandardize implements DataNormalization {
             if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
             if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
             labelMeanStd = fit(theLabels);
+            //FIXME:
+            /*
+            //Entries that are masked are wiped out to zero with tailor3d2d dataset
+            //Therefore they don't contribute to the sum etc etc, but the total size needs to be adjusted
+            if (dataSet.getLabelsMaskArray() != null) {
+                size = theLabels.size(0);
+                sizeExcludeMask = dataSet.getLabelsMaskArray() != null ? dataSet.getLabelsMaskArray().sumNumber().intValue() : dataSet.getFeatures().size(0);
+                labelMeanStd.muli(size).divi(sizeExcludeMask);
+            }
+            */
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
         }
@@ -116,40 +143,40 @@ public class NormalizerStandardize implements DataNormalization {
      */
     public void fit(DataSetIterator iterator) {
         featureMeanStd = null;
+        batchCount = 0;
+        labelbatchCount = 0;
         runningTotal = 0;
         labelRunningTotal = 0;
         INDArray theFeatures, theLabels;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
-            batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
+            theFeatures = next.getFeatures();
+            theLabels = next.getLabels();
+            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
+            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
+            batchCount = theFeatures.size(0);
             runningTotal += batchCount;
-            labelbatchCount = next.getLabelsMaskArray() != null ? next.getLabelsMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
-            labelRunningTotal += batchCount;
+            if (fitLabels) {
+                if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
+                if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
+                labelbatchCount = theLabels.size(0);
+                labelRunningTotal += labelbatchCount;
+            }
             if(featureMeanStd == null) {
                 this.fit(next);
-                featureMeanStd.getRow(1).muli(batchCount);
-                if (fitLabels) {
-                    labelMeanStd.getRow(1).muli(batchCount);
-                }
             }
             else {
-                theFeatures = next.getFeatures();
-                if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
-                if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
-                this.runnningFit(theFeatures,featureMeanStd,batchCount,runningTotal,false);
+                this.runningFit(theFeatures,featureMeanStd,runningTotal,false);
                 if (fitLabels) {
-                    theLabels = next.getLabels();
-                    if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(next,false);
-                    if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(next,false);
-                    this.runnningFit(theLabels,labelMeanStd,labelbatchCount,labelRunningTotal,false);
+                    this.runningFit(theLabels,labelMeanStd,labelRunningTotal,false);
                 }
             }
         }
-        this.runnningFit(featureMeanStd,featureMeanStd,batchCount,runningTotal,true);
+        if (runningTotal != batchCount) this.runningFit(featureMeanStd,featureMeanStd,runningTotal,true);
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
         if (fitLabels) {
-            this.runnningFit(labelMeanStd,labelMeanStd,labelbatchCount,labelRunningTotal,true);
+            if (labelRunningTotal != labelbatchCount) this.runningFit(labelMeanStd,labelMeanStd,labelRunningTotal,true);
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
         }
