@@ -66,8 +66,8 @@ public class NormalizerMinMaxScaler implements DataNormalization {
 
         if (fitLabels) {
             INDArray theLabels = dataSet.getLabels();
-            if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
-            if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
+            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
+            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
             labelMaxMin = fit(theLabels);
             labelMin = labelMaxMin.getRow(0).dup();
             labelMax = labelMaxMin.getRow(1).dup();
@@ -95,27 +95,32 @@ public class NormalizerMinMaxScaler implements DataNormalization {
             DataSet next = iterator.next();
             featureRank = next.getFeatures().rank();
             INDArray theFeatures = next.getFeatures();
+            INDArray theLabels = next.getLabels();
             if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
             if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
+            if (fitLabels) {
+                if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
+                if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
+            }
             if(featureMin == null) {
                 this.fit(next);
             }
             else {
                 nextMin =  theFeatures.min(0);;
                 featureMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,featureMin,featureMin,featureMin.length()));
-
                 nextMax =  theFeatures.max(0);
                 featureMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,featureMax,featureMax,featureMax.length()));
+
                 if (fitLabels) {
-                    nextMin =  theFeatures.min(0);;
+                    nextMin =  theLabels.min(0);;
                     labelMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,labelMin,labelMin,labelMin.length()));
 
-                    nextMax =  theFeatures.max(0);
+                    nextMax =  theLabels.max(0);
                     labelMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,labelMax,labelMax,labelMax.length()));
                 }
             }
         }
-        featureMaxMin= featureMax.sub(featureMin).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        featureMaxMin = featureMax.sub(featureMin).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (featureMaxMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Feature max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
         if (fitLabels) {

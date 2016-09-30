@@ -65,11 +65,6 @@ public class NormalizerStandardize implements DataNormalization {
             currentMeanStd.putRow(0,newMean);
         }
         else {
-            /*
-            currentMeanStd.getRow(1).divi(runningTotal);
-            currentMeanStd.putRow(1,Transforms.sqrt(currentMeanStd.getRow(1)));
-            currentMeanStd.getRow(1).addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
-            */
             currentStd.divi(runningTotal);
             Transforms.sqrt(currentStd,false);
             currentStd.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
@@ -102,34 +97,14 @@ public class NormalizerStandardize implements DataNormalization {
         if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet,true);
 
         featureMeanStd = fit(theFeatures);
-        //FIXME:
-        /*
-        //Entries that are masked are wiped out to zero with tailor3d2d dataset
-        //Therefore they don't contribute to the sum etc etc, but the total size needs to be adjusted
-        if (dataSet.getFeaturesMaskArray() !=null) {
-            size = theFeatures.size(0);
-            sizeExcludeMask = dataSet.getFeaturesMaskArray() != null ? dataSet.getFeaturesMaskArray().sumNumber().intValue() : dataSet.getFeatures().size(0);
-            featureMeanStd.muli(size).divi(sizeExcludeMask);
-        }
-        */
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
 
         if (fitLabels) {
             INDArray theLabels = dataSet.getLabels();
-            if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
-            if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
+            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
+            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
             labelMeanStd = fit(theLabels);
-            //FIXME:
-            /*
-            //Entries that are masked are wiped out to zero with tailor3d2d dataset
-            //Therefore they don't contribute to the sum etc etc, but the total size needs to be adjusted
-            if (dataSet.getLabelsMaskArray() != null) {
-                size = theLabels.size(0);
-                sizeExcludeMask = dataSet.getLabelsMaskArray() != null ? dataSet.getLabelsMaskArray().sumNumber().intValue() : dataSet.getFeatures().size(0);
-                labelMeanStd.muli(size).divi(sizeExcludeMask);
-            }
-            */
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
         }
@@ -157,8 +132,8 @@ public class NormalizerStandardize implements DataNormalization {
             batchCount = theFeatures.size(0);
             runningTotal += batchCount;
             if (fitLabels) {
-                if (featureRank == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
-                if (featureRank == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
+                if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
+                if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
                 labelbatchCount = theLabels.size(0);
                 labelRunningTotal += labelbatchCount;
             }
