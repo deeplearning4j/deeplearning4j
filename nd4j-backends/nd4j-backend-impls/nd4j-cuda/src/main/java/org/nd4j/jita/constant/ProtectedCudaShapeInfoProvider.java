@@ -26,13 +26,21 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
-    private static final ConstantProtector protector = ConstantProtector.getInstance();
+    protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
     private static ProtectedCudaShapeInfoProvider ourInstance = new ProtectedCudaShapeInfoProvider();
 
 
     private ProtectedCudaShapeInfoProvider() {
 
+    }
+
+    /**
+     * This method forces cache purge, if cache is available for specific implementation
+     */
+    @Override
+    public void purgeCache() {
+        protector.purgeProtector();
     }
 
     public static ProtectedCudaShapeInfoProvider getInstance() {

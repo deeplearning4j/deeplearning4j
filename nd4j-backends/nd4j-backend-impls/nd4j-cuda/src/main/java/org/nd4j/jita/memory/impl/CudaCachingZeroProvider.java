@@ -260,4 +260,14 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             }
         }
     }
+
+    @Override
+    public void purgeCache() {
+        for (AllocationShape shape: zeroCache.keySet()) {
+            Pointer ptr = null;
+            while ((ptr = zeroCache.get(shape).poll()) != null) {
+                freeHost(ptr);
+            }
+        }
+    }
 }

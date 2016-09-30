@@ -36,4 +36,7 @@ public interface MemoryProvider {
      * @return
      */
     boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory);
+
+
+    void purgeCache();
 }

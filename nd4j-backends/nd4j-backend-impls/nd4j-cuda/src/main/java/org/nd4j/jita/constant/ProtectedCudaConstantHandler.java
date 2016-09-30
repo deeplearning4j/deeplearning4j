@@ -63,6 +63,30 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     }
 
     /**
+     * This method removes all cached constants
+     */
+    @Override
+    public void purgeConstants() {
+        buffersCache = new HashMap<>();
+
+        protector.purgeProtector();
+
+        for(Integer device: constantOffsets.keySet()) {
+            constantOffsets.get(device).set(0);
+        }
+    }
+
+    /**
+     * Method suited for debug purposes only
+     *
+     * @return
+     */
+    protected int amountOfEntries(int deviceId) {
+        ensureMaps(deviceId);
+        return buffersCache.get(0).size();
+    }
+
+    /**
      * This method moves specified dataBuffer to CUDA constant memory space.
      *
      * PLEASE NOTE: CUDA constant memory is limited to 48KB per device.

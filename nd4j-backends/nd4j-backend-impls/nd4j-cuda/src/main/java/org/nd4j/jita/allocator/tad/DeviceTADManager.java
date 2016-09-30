@@ -33,6 +33,22 @@ public class DeviceTADManager extends BasicTADManager {
         }
     }
 
+    /**
+     * This method removes all cached shape buffers
+     */
+    @Override
+    public void purgeBuffers() {
+        tadCache = new ArrayList<>();
+
+        int numDevices =  configuration.getAvailableDevices().size();
+
+        for (int i = 0; i < numDevices; i++ ) {
+            tadCache.add(i, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
+        }
+
+        super.purgeBuffers();
+    }
+
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         /*

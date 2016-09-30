@@ -26,6 +26,13 @@ public class ConstantProtector {
     private List<Map<ShapeDescriptor, DataBuffer>> deviceCache = new ArrayList<>();
 
     private ConstantProtector() {
+        purgeProtector();
+    }
+
+    public void purgeProtector() {
+        protector = new CopyOnWriteArrayList<>();
+        deviceCache = new ArrayList<>();
+
         int numDevices =  CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
 
         for (int i = 0; i < numDevices; i++ ) {
@@ -48,4 +55,6 @@ public class ConstantProtector {
     public boolean containsDataBuffer(int deviceId, ShapeDescriptor descriptor) {
         return deviceCache.get(deviceId).containsKey(descriptor);
     }
+
+
 }

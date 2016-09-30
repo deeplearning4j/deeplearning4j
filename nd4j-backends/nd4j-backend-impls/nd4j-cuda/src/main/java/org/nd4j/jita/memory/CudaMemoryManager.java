@@ -70,4 +70,16 @@ public class CudaMemoryManager extends BasicMemoryManager {
             point.setAllocationStatus(AllocationStatus.DEALLOCATED);
         }
     }
+
+    /**
+     * This method purges all cached memory chunks
+     * PLEASE NOTE: This method SHOULD NOT EVER BE USED in concurrent environments
+     */
+    @Override
+    public synchronized void purgeCaches() {
+        // purge memory cache
+        AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
+
+        // reset device cache offset
+    }
 }

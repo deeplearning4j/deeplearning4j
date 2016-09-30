@@ -164,4 +164,17 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             }
         }
     }
+
+    @Override
+    public synchronized void purgeCache() {
+        for (Integer device: deviceCache.keySet()) {
+            for (AllocationShape shape: deviceCache.get(device).keySet()) {
+                Pointer ptr = null;
+                while ((ptr = deviceCache.get(device).get(shape).poll()) != null) {
+                    freeDevice(ptr, device);
+                }
+            }
+        }
+        super.purgeCache();
+    }
 }

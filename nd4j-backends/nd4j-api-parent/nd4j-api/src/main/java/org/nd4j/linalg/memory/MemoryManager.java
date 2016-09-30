@@ -24,4 +24,11 @@ public interface MemoryManager {
      * @param arrays
      */
     void collect(INDArray... arrays);
+
+
+    /**
+     * This method purges all cached memory chunks
+     * 
+     */
+    void purgeCaches();
 }

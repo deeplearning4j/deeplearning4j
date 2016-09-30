@@ -30,4 +30,13 @@ public class BasicMemoryManager implements MemoryManager {
     public void collect(INDArray... arrays) {
 
     }
+
+    /**
+     * This method purges all cached memory chunks
+     *
+     */
+    @Override
+    public void purgeCaches() {
+
+    }
 }
