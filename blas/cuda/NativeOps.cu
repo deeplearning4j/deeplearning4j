@@ -298,7 +298,7 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 
 	int num_blocks = xLength / num_threads;
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
+//	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
 
 	int targetBlocksPerMP = num_blocks / countMP;
@@ -311,6 +311,9 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 			num_threads -= 32;
 		}
 	}
+
+    if (xLength / num_threads > blockLimit)
+        num_blocks *= 2;
 
 	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
 
@@ -4065,7 +4068,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<512, 32, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<blockLimit, 4, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4080,8 +4083,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
-//        if (opNum == 37)
-//            printf("Im2Col params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+        if (opNum == 37 || opNum == 36) {
+            launchDims.x = 512;
+            launchDims.y = 512;
+            launchDims.z += 384;
+//            printf("Im2Col/Col2Im params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+//            fflush(stdout);
+        }
 
         DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 	/*	transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
