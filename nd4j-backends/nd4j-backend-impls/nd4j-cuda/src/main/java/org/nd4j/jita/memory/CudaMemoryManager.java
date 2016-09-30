@@ -10,6 +10,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryKind;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * @author raver119@gmail.com
@@ -77,9 +79,17 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public synchronized void purgeCaches() {
+        // reset device cache offset
+        Nd4j.getConstantHandler().purgeConstants();
+
+        // reset TADs
+        ((CudaGridExecutioner) Nd4j.getExecutioner()).getTadManager().purgeBuffers();
+
+        // purge shapes
+        Nd4j.getShapeInfoProvider().purgeCache();
+
         // purge memory cache
         AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
 
-        // reset device cache offset
     }
 }

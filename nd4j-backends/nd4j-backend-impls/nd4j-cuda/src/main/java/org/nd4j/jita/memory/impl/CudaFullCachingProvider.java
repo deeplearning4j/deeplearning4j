@@ -102,6 +102,9 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            if (point.isConstant())
+                return;
+
             AllocationShape shape = point.getShape();
             int deviceId = point.getDeviceId();
             long address = point.getDevicePointer().address();
