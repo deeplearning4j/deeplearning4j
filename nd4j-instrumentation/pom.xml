@@ -48,6 +48,7 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
@@ -68,6 +69,7 @@
 
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

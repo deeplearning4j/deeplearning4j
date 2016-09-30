@@ -236,6 +236,7 @@
     <name>nd4j</name>
     <url>http://nd4j.org/</url>
     <modules>
+        <module>nd4j-shade</module>
         <module>nd4j-jdbc</module>
         <module>nd4j-instrumentation</module>
         <module>nd4j-perf</module>
@@ -245,6 +246,7 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
+        <module>nd4j-parameter-server</module>
     </modules>
 
     <properties>
@@ -253,13 +255,15 @@
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
-        <javacpp.version>1.2.4</javacpp.version>
+        <javacpp.version>1.2.5-SNAPSHOT</javacpp.version>
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
         <spark.version>1.5.2</spark.version>
+        <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     </properties>
 
     <developers>
@@ -327,6 +331,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

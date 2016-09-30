@@ -2285,6 +2285,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 //        vec = vec.dup('c');
 //        vec = vec.dup('f');
 
+        System.out.println("Vec: " + vec);
+
         INDArray outC = arrC.muliRowVector(vec);
         INDArray outF = arrF.muliRowVector(vec);
 

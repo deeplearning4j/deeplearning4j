@@ -105,6 +105,8 @@ public class Nd4j {
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
     public final static String CONSTANT_PROVIDER = "constantsprovider";
     public final static String AFFINITY_MANAGER = "affinitymanager";
+    //disable toString() on compressed arrays for debugging. Should be off by default.
+    public final static String COMPRESSION_DEBUG = "compressiondebug";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -125,6 +127,7 @@ public class Nd4j {
     public static boolean shouldInstrument = false;
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
+    public static boolean compressDebug = false;
     public static Nd4jBackend backend;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -265,7 +268,6 @@ public class Nd4j {
                 for(int i = 0; i < toPad.rank(); i++) {
                     sizes.add(padWidth);
                 }
-
 
 
                 INDArray ret = toPad;
@@ -5197,11 +5199,13 @@ public class Nd4j {
                 return;
             }
 
-            if (!System.getProperty("sun.arch.data.model").equals("64")) {
+            if (!System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
+                    && !System.getProperty("os.arch").toLowerCase().startsWith("arm")
+                    && !System.getProperty("sun.arch.data.model").equals("64")) {
                 System.out.println();
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.out.println();
-                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit JVM");
+                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit x86 JVM");
                 System.out.println("                 Please, consider running this on 64-bit JVM instead");
                 System.out.println();
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -5228,6 +5232,7 @@ public class Nd4j {
                 System.out.println();
             }
 
+            compressDebug =  Boolean.parseBoolean(props.getProperty(COMPRESSION_DEBUG, "false"));
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
@@ -5287,24 +5292,42 @@ public class Nd4j {
 
     }
 
+    /**
+     *
+     * @return
+     */
     public static ShapeInfoProvider getShapeInfoProvider() {
         return shapeInfoProvider;
     }
 
+    /**
+     *
+     * @return
+     */
     public static ConstantHandler getConstantHandler() {
         return constantHandler;
     }
 
+    /**
+     *
+     * @return
+     */
     public static AffinityManager getAffinityManager() {
         return affinityManager;
     }
 
+    /**
+     *
+     * @return
+     */
     public static NDArrayFactory getNDArrayFactory() {
         return INSTANCE;
     }
 
     /**
-     * This method returns BasicNDArrayCompressor instance, suitable for NDArray compression/decompression in runtime
+     * This method returns BasicNDArrayCompressor instance,
+     * suitable for NDArray compression/decompression
+     * at runtime
      *
      * @return
      */

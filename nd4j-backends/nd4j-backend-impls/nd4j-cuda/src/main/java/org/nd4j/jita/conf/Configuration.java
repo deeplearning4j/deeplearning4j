@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -157,6 +158,114 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
+    private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
+    private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
+    private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
+    private static final String DEBUG_ENABLED = "ND4J_CUDA_DEBUG";
+    private static final String USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
+    private static final String MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
+    private static final String MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
+    private static final String MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
+    private static final String FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
+    private static final String VERBOSE = "ND4J_CUDA_VERBOSE";
+
+
+    private void parseEnvironmentVariables() {
+        Map<String, String> env = System.getenv();
+
+        if (env.containsKey(MAX_BLOCK_SIZE)) {
+            try {
+                int var = Integer.parseInt(env.get(MAX_BLOCK_SIZE));
+                setMaximumBlockSize(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, env.get(MAX_BLOCK_SIZE));
+            }
+        }
+
+        if (env.containsKey(MIN_BLOCK_SIZE)) {
+            try {
+                int var = Integer.parseInt(env.get(MIN_BLOCK_SIZE));
+                setMinimumBlockSize(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, env.get(MIN_BLOCK_SIZE));
+            }
+        }
+
+        if (env.containsKey(MAX_GRID_SIZE)) {
+            try {
+                int var = Integer.parseInt(env.get(MAX_GRID_SIZE));
+                setMaximumGridSize(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MAX_GRID_SIZE, env.get(MAX_GRID_SIZE));
+            }
+        }
+
+        if (env.containsKey(DEBUG_ENABLED)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(DEBUG_ENABLED));
+                enableDebug(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
+            }
+        }
+
+        if (env.containsKey(FORCE_SINGLE_GPU)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(FORCE_SINGLE_GPU));
+                allowMultiGPU(!var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, env.get(FORCE_SINGLE_GPU));
+            }
+        }
+
+        if (env.containsKey(VERBOSE)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(VERBOSE));
+                setVerbose(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
+            }
+        }
+
+        if (env.containsKey(USE_PREALLOCATION)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(USE_PREALLOCATION));
+                allowPreallocation(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", USE_PREALLOCATION, env.get(USE_PREALLOCATION));
+            }
+        }
+
+        if (env.containsKey(MAX_DEVICE_CACHE)) {
+            try {
+                long var = Long.parseLong(env.get(MAX_DEVICE_CACHE));
+                setMaximumDeviceCache(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, env.get(MAX_DEVICE_CACHE));
+            }
+        }
+
+
+        if (env.containsKey(MAX_HOST_CACHE)) {
+            try {
+                long var = Long.parseLong(env.get(MAX_HOST_CACHE));
+                setMaximumHostCache(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MAX_HOST_CACHE, env.get(MAX_HOST_CACHE));
+            }
+        }
+
+        if (env.containsKey(MAX_DEVICE_ALLOCATION)) {
+            try {
+                long var = Long.parseLong(env.get(MAX_DEVICE_ALLOCATION));
+                setMaximumSingleDeviceAllocation(var);
+            } catch (Exception e) {
+                logger.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, env.get(MAX_DEVICE_ALLOCATION));
+            }
+        }
+
+    }
+
     /**
      * This method enables/disables
      *
@@ -238,6 +347,8 @@ public class Configuration implements Serializable {
         for (int i = 0; i < cnt; i++) {
             availableDevices.add(i);
         }
+
+        parseEnvironmentVariables();
 
         nativeOps.setOmpNumThreads(maximumBlockSize);
         nativeOps.setGridLimit(maximumGridSize);
