@@ -2,6 +2,8 @@ package jcuda.jcublas.ops;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -11,12 +13,14 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
 
 /**
  * @author raver119@gmail.com
@@ -151,5 +155,23 @@ public class SporadicTests {
         long time2 = System.nanoTime();
 
         System.out.println("Time: " + ((time2 - time1) / 10000));
+    }
+
+    @Test
+    public void testLocality() {
+        INDArray array = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9});
+
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        assertEquals(true, point.isActualOnDeviceSide());
+
+        INDArray arrayR = array.reshape('f', 3, 3);
+
+        AllocationPoint pointR = AtomicAllocator.getInstance().getAllocationPoint(arrayR);
+        assertEquals(true, pointR.isActualOnDeviceSide());
+
+        INDArray arrayS = Shape.newShapeNoCopy(array,new int[]{3,3}, true);
+
+        AllocationPoint pointS = AtomicAllocator.getInstance().getAllocationPoint(arrayS);
+        assertEquals(true, pointS.isActualOnDeviceSide());
     }
 }
