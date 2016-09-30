@@ -197,14 +197,16 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	// round num_threads to nearest warpSize
 	num_threads -= num_threads % warpSize;
 
-	num_threads = nd4j::math::nd4j_max<int>(32, num_threads);
+	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
+    if (num_threads < warpSize && tadLength < warpSize)
+        num_threads = tadLength;
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, funcAttr);
 	int memory_floor = memory_limit;
 	int effective_block_limit =  countMP * blockThreshold;
 
-	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+	int num_blocks =  numTads; //nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 
 	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
 
@@ -238,7 +240,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
+	//num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
 //	if (num_blocks > countMP)
@@ -298,7 +300,7 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 
 	int num_blocks = xLength / num_threads;
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
+//	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
 
 	int targetBlocksPerMP = num_blocks / countMP;
@@ -311,6 +313,9 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 			num_threads -= 32;
 		}
 	}
+
+    if (xLength / num_threads > blockLimit)
+        num_blocks *= 2;
 
 	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
 
@@ -1691,6 +1696,7 @@ void   NativeOps::execTransformDouble(
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
+                        special = reinterpret_cast<double *>(extraPointers[17]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceDouble(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
@@ -1699,7 +1705,7 @@ void   NativeOps::execTransformDouble(
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxDouble<<<128, 64, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxDouble<<<blockLimit, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
 
                         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1924,7 +1930,7 @@ void   NativeOps::execIndexReduceFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
 
-	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	indexReduceFloat<<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
 			xShapeInfo, shape::rank(hostXShapeInfo),
@@ -3885,6 +3891,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	float * special = (float *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
+
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[1]);
 
 	if (verbose && launchDims.x == 1)
@@ -4057,6 +4064,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
+                        special = reinterpret_cast<float *>(extraPointers[17]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
@@ -4065,7 +4073,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<blockLimit, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4080,8 +4088,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
-//        if (opNum == 37)
-//            printf("Im2Col params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+        if (opNum == 37 || opNum == 36) {
+            launchDims.x = 512;
+            launchDims.y = 512;
+            launchDims.z += 384;
+//            printf("Im2Col/Col2Im params: .x: %i, .y: %i\n", launchDims.x, launchDims.y );
+//            fflush(stdout);
+        }
 
         DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 	/*	transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
@@ -4301,6 +4314,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
+                        special = reinterpret_cast<float16 *>(extraPointers[17]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceHalf(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
@@ -4309,7 +4323,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxHalf<<<128, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxHalf<<<blockLimit, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
 
                         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4908,6 +4922,13 @@ void NativeOps::initializeDevicesAndFunctions() {
     cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
 
     cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
+
+
+    //
+
+    cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
+    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
+    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
 }
 
 
@@ -5164,8 +5185,8 @@ void NativeOps::enableDebugMode(bool reallyEnable) {
 }
 
 void NativeOps::setGridLimit(int gridSize) {
-	if (gridSize > 1024)
-		gridSize = 1024;
+	if (gridSize > 8192)
+		gridSize = 8192;
 	if (gridSize < 1)
 		gridSize = 1;
 	blockLimit = gridSize;
@@ -5789,12 +5810,21 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
 					 int *dimension,
 					 int dimensionLength) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims = dim3(256, 256, 1024);
+
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostTadShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+
+    //dim3 launchDims = dim3(512, 32, 512);
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
+
+//    printf("ProblemLength: %i; tadLength: %i; .x: %i; .y: %i\n", shape::length(hostXShapeInfo), shape::length(hostTadShapeInfo), launchDims.x, launchDims.y);
+//    fflush(stdout);
 
     DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
