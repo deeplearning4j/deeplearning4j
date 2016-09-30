@@ -26,6 +26,8 @@ public interface StatsStorage {
 
     byte[] getLatestState(String sessionID, String workerID);
 
+    byte[] getState(String sessionID, String workerID, long timestamp);
+
     List<byte[]> getLatestStateAllWorkers(String sessionID);
 
     List<byte[]> getAllStatesAfter(String sessionID, String workerID, long timestamp);
@@ -35,6 +37,15 @@ public interface StatsStorage {
 
     void putStaticInfo(String sessionID, String workerID, byte[] staticInfo);
 
-    void putState(String sessionID, String workerID, byte[] state);
+    void putState(String sessionID, String workerID, long timestamp, byte[] state);
+
+
+    // ----- Listeners -----
+
+    void registerStatsStorageListener(StatsStorageListener listener);
+
+    void deregisterStatsStorageListener(StatsStorageListener listener);
+
+    void removeAllListeners();
 
 }

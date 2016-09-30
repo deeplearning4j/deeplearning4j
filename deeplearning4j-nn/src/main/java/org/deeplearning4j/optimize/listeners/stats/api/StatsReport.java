@@ -16,6 +16,8 @@ public interface StatsReport {
     //TODO: probably want to use NTP
     void reportTime(long currentTime);
 
+    long getTime();
+
     void reportStatsCollectionDurationMS(long statsCollectionDurationMS);
 
     void reportScore(double currentScore);
