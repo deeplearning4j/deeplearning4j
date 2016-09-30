@@ -198,13 +198,15 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	num_threads -= num_threads % warpSize;
 
 	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
+    if (num_threads < warpSize && tadLength < warpSize)
+        num_threads = tadLength;
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, funcAttr);
 	int memory_floor = memory_limit;
 	int effective_block_limit =  countMP * blockThreshold;
 
-	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+	int num_blocks =  numTads; //nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 
 	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
 
@@ -4916,6 +4918,13 @@ void NativeOps::initializeDevicesAndFunctions() {
     cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
 
     cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
+
+
+    //
+
+    cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
+    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
+    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
 }
 
 
@@ -5797,12 +5806,21 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
 					 int *dimension,
 					 int dimensionLength) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims = dim3(256, 256, 1024);
+
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostTadShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+
+    //dim3 launchDims = dim3(512, 32, 512);
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
+
+//    printf("ProblemLength: %i; tadLength: %i; .x: %i; .y: %i\n", shape::length(hostXShapeInfo), shape::length(hostTadShapeInfo), launchDims.x, launchDims.y);
+//    fflush(stdout);
 
     DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
