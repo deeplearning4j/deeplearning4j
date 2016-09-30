@@ -173,5 +173,11 @@ public class SporadicTests {
 
         AllocationPoint pointS = AtomicAllocator.getInstance().getAllocationPoint(arrayS);
         assertEquals(true, pointS.isActualOnDeviceSide());
+
+        INDArray arrayL = Nd4j.create(new int[]{3,4,4,4},'c');
+
+        AllocationPoint pointL = AtomicAllocator.getInstance().getAllocationPoint(arrayL);
+        assertEquals(true, pointL.isActualOnDeviceSide());
     }
+
 }
