@@ -170,9 +170,10 @@
             <group name="histograms" id="406" dimensionType="groupSizeEncoding">
                 <field name="statType" id="407" type="StatType"/>
                 <field name="minValue" id="408" type="double"/>
-                <field name="stepSize" id="409" type="double"/>
-                <group name="histogramCounts" id="410" dimensionType="groupSizeEncoding">
-                    <field name="binCount" id="411" type="uint32"/>
+                <field name="maxValue" id="409" type="double"/>
+                <field name="nBins" id="410" type="int32"/>
+                <group name="histogramCounts" id="411" dimensionType="groupSizeEncoding">
+                    <field name="binCount" id="412" type="uint32"/>
                 </group>
             </group>
         </group>

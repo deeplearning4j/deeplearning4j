@@ -1336,7 +1336,7 @@ public class UpdateDecoder
 
             public static int sbeBlockLength()
             {
-                return 17;
+                return 21;
             }
 
             public int actingBlockLength()
@@ -1439,12 +1439,12 @@ public class UpdateDecoder
             }
 
 
-            public static int stepSizeId()
+            public static int maxValueId()
             {
                 return 409;
             }
 
-            public static String stepSizeMetaAttribute(final MetaAttribute metaAttribute)
+            public static String maxValueMetaAttribute(final MetaAttribute metaAttribute)
             {
                 switch (metaAttribute)
                 {
@@ -1456,24 +1456,62 @@ public class UpdateDecoder
                 return "";
             }
 
-            public static double stepSizeNullValue()
+            public static double maxValueNullValue()
             {
                 return Double.NaN;
             }
 
-            public static double stepSizeMinValue()
+            public static double maxValueMinValue()
             {
                 return 4.9E-324d;
             }
 
-            public static double stepSizeMaxValue()
+            public static double maxValueMaxValue()
             {
                 return 1.7976931348623157E308d;
             }
 
-            public double stepSize()
+            public double maxValue()
             {
                 return buffer.getDouble(offset + 9, java.nio.ByteOrder.LITTLE_ENDIAN);
+            }
+
+
+            public static int nBinsId()
+            {
+                return 410;
+            }
+
+            public static String nBinsMetaAttribute(final MetaAttribute metaAttribute)
+            {
+                switch (metaAttribute)
+                {
+                    case EPOCH: return "unix";
+                    case TIME_UNIT: return "nanosecond";
+                    case SEMANTIC_TYPE: return "";
+                }
+
+                return "";
+            }
+
+            public static int nBinsNullValue()
+            {
+                return -2147483648;
+            }
+
+            public static int nBinsMinValue()
+            {
+                return -2147483647;
+            }
+
+            public static int nBinsMaxValue()
+            {
+                return 2147483647;
+            }
+
+            public int nBins()
+            {
+                return buffer.getInt(offset + 17, java.nio.ByteOrder.LITTLE_ENDIAN);
             }
 
 
@@ -1481,7 +1519,7 @@ public class UpdateDecoder
 
             public static long histogramCountsDecoderId()
             {
-                return 410;
+                return 411;
             }
 
             public HistogramCountsDecoder histogramCounts()
@@ -1566,7 +1604,7 @@ public class UpdateDecoder
 
                 public static int binCountId()
                 {
-                    return 411;
+                    return 412;
                 }
 
                 public static String binCountMetaAttribute(final MetaAttribute metaAttribute)
@@ -1610,7 +1648,7 @@ public class UpdateDecoder
                 public StringBuilder appendTo(final StringBuilder builder)
                 {
                     builder.append('(');
-                    //Token{signal=BEGIN_FIELD, name='binCount', description='null', id=411, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                    //Token{signal=BEGIN_FIELD, name='binCount', description='null', id=412, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
                     //Token{signal=ENCODING, name='uint32', description='null', id=-1, version=0, encodedLength=4, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
                     builder.append("binCount=");
                     builder.append(binCount());
@@ -1637,12 +1675,17 @@ public class UpdateDecoder
                 builder.append("minValue=");
                 builder.append(minValue());
                 builder.append('|');
-                //Token{signal=BEGIN_FIELD, name='stepSize', description='null', id=409, version=0, encodedLength=0, offset=9, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                //Token{signal=BEGIN_FIELD, name='maxValue', description='null', id=409, version=0, encodedLength=0, offset=9, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
                 //Token{signal=ENCODING, name='double', description='null', id=-1, version=0, encodedLength=8, offset=9, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=DOUBLE, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-                builder.append("stepSize=");
-                builder.append(stepSize());
+                builder.append("maxValue=");
+                builder.append(maxValue());
                 builder.append('|');
-                //Token{signal=BEGIN_GROUP, name='histogramCounts', description='null', id=410, version=0, encodedLength=4, offset=17, componentTokenCount=9, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+                //Token{signal=BEGIN_FIELD, name='nBins', description='null', id=410, version=0, encodedLength=0, offset=17, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=17, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                builder.append("nBins=");
+                builder.append(nBins());
+                builder.append('|');
+                //Token{signal=BEGIN_GROUP, name='histogramCounts', description='null', id=411, version=0, encodedLength=4, offset=21, componentTokenCount=9, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
                 builder.append("histogramCounts=[");
                 HistogramCountsDecoder histogramCounts = histogramCounts();
                 if (histogramCounts.count() > 0)
@@ -1687,7 +1730,7 @@ public class UpdateDecoder
             }
             builder.append(']');
             builder.append('|');
-            //Token{signal=BEGIN_GROUP, name='histograms', description='null', id=406, version=0, encodedLength=17, offset=-1, componentTokenCount=28, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+            //Token{signal=BEGIN_GROUP, name='histograms', description='null', id=406, version=0, encodedLength=21, offset=-1, componentTokenCount=31, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
             builder.append("histograms=[");
             HistogramsDecoder histograms = histograms();
             if (histograms.count() > 0)
@@ -1795,7 +1838,7 @@ public class UpdateDecoder
         }
         builder.append(']');
         builder.append('|');
-        //Token{signal=BEGIN_GROUP, name='perParameterStats', description='null', id=400, version=0, encodedLength=2, offset=-1, componentTokenCount=60, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=BEGIN_GROUP, name='perParameterStats', description='null', id=400, version=0, encodedLength=2, offset=-1, componentTokenCount=63, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("perParameterStats=[");
         PerParameterStatsDecoder perParameterStats = perParameterStats();
         if (perParameterStats.count() > 0)
