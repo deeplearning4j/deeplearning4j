@@ -31,7 +31,7 @@ public interface StatsInitializationReport {
      * @param numDevices             Number of compute devices (GPUs)
      * @param deviceTotalMemory      GPU memory by device: same length as numDevices. May be null, if numDevices is 0
      */
-    void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long[] deviceTotalMemory);
+    void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory, long[] deviceTotalMemory);
 
 
     /**
@@ -42,10 +42,40 @@ public interface StatsInitializationReport {
      * @param numLayers       Number of layers in the model
      * @param numParams       Number of parameters in the model
      */
-    void reportModelInfo(String modelClassName, String modelConfigJson, int numLayers, long numParams);
+    void reportModelInfo(String modelClassName, String modelConfigJson, String[] paramNames, int numLayers, long numParams);
 
     /**
      * Convert the initialization report to a byte[] for storage
      */
     byte[] toByteArray();
+
+    /**
+     * Deserialize the Stats from a byte[]
+     * @param byteArray Source array to deserialize from
+     */
+    void fromByteArray(byte[] byteArray);
+
+
+
+    boolean hasSoftwareInfo();
+    boolean hasHardwareInfo();
+    boolean hasModelInfo();
+    String getSwArch();
+    String getSwOsName();
+    String getSwJvmName();
+    String getSwJvmVersion();
+    String getSwJvmSpecVersion();
+    String getSwNd4jBackendClass();
+    String getSwNd4jDataTypeName();
+    int getHwJvmAvailableProcessors();
+    int getHwNumDevices();
+    long getHwJvmMaxMemory();
+    long getHwOffHeapMaxMemory();
+    long[] getHwDeviceTotalMemory();
+    String getModelClassName();
+    String getModelConfigJson();
+    String[] getModelParamNames();
+    int getModelNumLayers();
+    long getModelNumParams();
+
 }
