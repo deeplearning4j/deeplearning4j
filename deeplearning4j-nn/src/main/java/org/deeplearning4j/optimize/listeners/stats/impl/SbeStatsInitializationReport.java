@@ -4,8 +4,7 @@ import lombok.Data;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsInitializationReport;
-import org.deeplearning4j.optimize.listeners.stats.sbe.MessageHeaderEncoder;
-import org.deeplearning4j.optimize.listeners.stats.sbe.StaticInfoEncoder;
+import org.deeplearning4j.optimize.listeners.stats.sbe.*;
 
 import java.nio.charset.Charset;
 
@@ -93,6 +92,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //First: need to determine how large a buffer to use
         //Fixed length + repeating groups + variable length...
         int bufferSize = 8 + sie.sbeBlockLength();  //Header: 4 x uint16; block length is number of fixed size fields
+        bufferSize += 4 * 9;    //Each variable length field (not in a group): uint32 length field -> 4 bytes
+        System.out.println("Buffer size: " + bufferSize);
 
         //For variable length fields: easist way is simply to convert to UTF-8
         //Of course, it is possible to calculate it first - but we might as well convert, rather than count then convert
@@ -117,13 +118,21 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += length(bswNd4jBackendClass);
             bufferSize += length(bswNd4jDataTypeName);
         }
+        System.out.println("Buffer size: " + bufferSize);
+        bufferSize += 4;    //2x uint16 for group header
         if (hasHardwareInfo) {
             //Device info group:
-            bufferSize += (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length * 8);
+            bufferSize += (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length * 8);   //fixed content in group
             bufferSize += length(bhwDeviceDescription);
         }
+        System.out.println("Buffer size: " + bufferSize);
+        if(hasModelInfo){
+            bufferSize += length(bmodelConfigClass);
+            bufferSize += length(bmodelConfigJson);
+        }
+        System.out.println("Buffer size: " + bufferSize);
 
-        byte[] bytes = new byte[bufferSize];
+        byte[] bytes = new byte[bufferSize+200];
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
 
         enc.wrap(buffer, 0)
@@ -132,7 +141,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .schemaId(sie.sbeSchemaId())
                 .version(sie.sbeSchemaVersion());
 
-        int offset = enc.encodedLength();
+        int offset = enc.encodedLength();   //Expect 8 bytes...
 
         //Fixed length fields: always encoded, whether present or not.
         sie.wrap(buffer, offset)
@@ -169,7 +178,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .putModelConfigJson(bmodelConfigJson,0,bmodelConfigJson.length);
 
         offset += sie.encodedLength();
-        if(offset != bytes.length) throw new RuntimeException();
+        System.out.println("OFFSET: " + offset);
+//        if(offset != bytes.length) throw new RuntimeException();
 
         return bytes;
     }
@@ -201,7 +211,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     private byte[] toBytes(boolean present, String str) {
-        if (present || str == null) return EMPTY_BYTES;
+        if (!present || str == null) return EMPTY_BYTES;
         return str.getBytes(UTF8);
     }
 
@@ -217,7 +227,55 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
     @Override
     public void fromByteArray(byte[] bytes) {
+        //TODO we could do this much more efficiently, with buffer re-use, etc.
+        MessageHeaderDecoder dec = new MessageHeaderDecoder();
+        StaticInfoDecoder sid = new StaticInfoDecoder();
 
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        dec.wrap(buffer,0);
+
+        final int blockLength = dec.blockLength();
+        final int version = dec.version();
+
+        int headerLength = dec.encodedLength();
+        //TODO: in general, we'd check the header, version, schema etc.
+
+        sid.wrap(buffer,headerLength,blockLength,version);
+        long time = sid.time(); //TODO
+        InitFieldsPresentDecoder fields = sid.fieldsPresent();
+        hasSoftwareInfo = fields.softwareInfo();
+        hasHardwareInfo = fields.hardwareInfo();
+        hasModelInfo = fields.modelInfo();
+
+        //These fields: always present, even if !hasHardwareInfo
+        hwJvmAvailableProcessors = sid.hwJvmProcessors();
+        hwNumDevices = sid.hwNumDevices();
+        hwJvmMaxMemory = sid.hwJvmMaxMemory();
+        hwOffHeapMaxMemory = sid.hwOffheapMaxMemory();
+        modelNumLayers = sid.modelNumLayers();
+        modelNumParams = sid.modelNumParams();
+
+        StaticInfoDecoder.HwDeviceInfoGroupDecoder hwDeviceInfoGroupDecoder = sid.hwDeviceInfoGroup();
+        int count = 0;
+        if(hwDeviceInfoGroupDecoder.count() > 0){
+            hwDeviceTotalMemory = new long[count];
+            hwDeviceDescription = new String[count];
+        }
+        int i=0;
+        for(StaticInfoDecoder.HwDeviceInfoGroupDecoder hw : hwDeviceInfoGroupDecoder){
+            hwDeviceTotalMemory[i] = hw.deviceMemoryMax();
+            hwDeviceDescription[i++] = hw.deviceDescription();
+        }
+        //Variable length data. Even if it is missing: still needs to be read, to advance buffer
+        swArch = sid.swArch();
+        swOsName = sid.swOsName();
+        swJvmName = sid.swJvmName();
+        swJvmVersion = sid.swJvmVersion();
+        swJvmSpecVersion = sid.swJvmSpecVersion();
+        swNd4jBackendClass = sid.swNd4jBackendClass();
+        swNd4jDataTypeName = sid.swNd4jDataTypeName();
+        modelClassName = sid.modelConfigClassName();
+        modelConfigJson = sid.modelConfigJson();
     }
 
     @Override

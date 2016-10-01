@@ -113,10 +113,13 @@
         <field name="hwOffheapMaxMemory" id="6" type="int64"/>
         <field name="modelNumLayers" id="7" type="int32"/>
         <field name="modelNumParams" id="8" type="int64"/>
-        <!-- Groups - always second in SBE. Only one group here: GPU/Device info -->
+        <!-- Groups - always second in SBE. Two groups here: GPU/Device info, and model param names -->
         <group name="hwDeviceInfoGroup" id="9" dimensionType="groupSizeEncoding">
             <field name="deviceMemoryMax" id="10" type="int64"/>
             <data name="deviceDescription" id="50" type="VarDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
+        </group>
+        <group name="modelParamNames" id="11" dimensionType="groupSizeEncoding">
+            <data name="modelParamNames" id="51" type="VarDataUTF8"/>
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
          Also can't have variable length in composite types, hence separate data fields instead of grouped by sw/hw/model -->

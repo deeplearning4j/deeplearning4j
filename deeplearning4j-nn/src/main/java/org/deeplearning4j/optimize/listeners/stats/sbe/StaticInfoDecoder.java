@@ -294,7 +294,7 @@ public class StaticInfoDecoder
 
     public static int modelNumLayersId()
     {
-        return 5;
+        return 7;
     }
 
     public static String modelNumLayersMetaAttribute(final MetaAttribute metaAttribute)
@@ -332,7 +332,7 @@ public class StaticInfoDecoder
 
     public static int modelNumParamsId()
     {
-        return 6;
+        return 8;
     }
 
     public static String modelNumParamsMetaAttribute(final MetaAttribute metaAttribute)
@@ -372,7 +372,7 @@ public class StaticInfoDecoder
 
     public static long hwDeviceInfoGroupDecoderId()
     {
-        return 7;
+        return 9;
     }
 
     public HwDeviceInfoGroupDecoder hwDeviceInfoGroup()
@@ -457,7 +457,7 @@ public class StaticInfoDecoder
 
         public static int deviceMemoryMaxId()
         {
-            return 8;
+            return 10;
         }
 
         public static String deviceMemoryMaxMetaAttribute(final MetaAttribute metaAttribute)
@@ -580,7 +580,7 @@ public class StaticInfoDecoder
         public StringBuilder appendTo(final StringBuilder builder)
         {
             builder.append('(');
-            //Token{signal=BEGIN_FIELD, name='deviceMemoryMax', description='null', id=8, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+            //Token{signal=BEGIN_FIELD, name='deviceMemoryMax', description='null', id=10, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             builder.append("deviceMemoryMax=");
             builder.append(deviceMemoryMax());
@@ -588,6 +588,188 @@ public class StaticInfoDecoder
             //Token{signal=BEGIN_VAR_DATA, name='deviceDescription', description='null', id=50, version=0, encodedLength=0, offset=8, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             builder.append("deviceDescription=");
             builder.append(deviceDescription());
+            builder.append(')');
+            return builder;
+        }
+    }
+
+    private final ModelParamNamesDecoder modelParamNames = new ModelParamNamesDecoder();
+
+    public static long modelParamNamesDecoderId()
+    {
+        return 11;
+    }
+
+    public ModelParamNamesDecoder modelParamNames()
+    {
+        modelParamNames.wrap(parentMessage, buffer);
+        return modelParamNames;
+    }
+
+    public static class ModelParamNamesDecoder
+        implements Iterable<ModelParamNamesDecoder>, java.util.Iterator<ModelParamNamesDecoder>
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
+        private StaticInfoDecoder parentMessage;
+        private DirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final StaticInfoDecoder parentMessage, final DirectBuffer buffer)
+        {
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            dimensions.wrap(buffer, parentMessage.limit());
+            blockLength = dimensions.blockLength();
+            count = dimensions.numInGroup();
+            index = -1;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public int actingBlockLength()
+        {
+            return blockLength;
+        }
+
+        public int count()
+        {
+            return count;
+        }
+
+        public java.util.Iterator<ModelParamNamesDecoder> iterator()
+        {
+            return this;
+        }
+
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public boolean hasNext()
+        {
+            return (index + 1) < count;
+        }
+
+        public ModelParamNamesDecoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        public static int modelParamNamesId()
+        {
+            return 51;
+        }
+
+        public static String modelParamNamesCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String modelParamNamesMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int modelParamNamesHeaderLength()
+        {
+            return 4;
+        }
+
+        public int modelParamNamesLength()
+        {
+            final int limit = parentMessage.limit();
+            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        }
+
+        public int getModelParamNames(final MutableDirectBuffer dst, final int dstOffset, final int length)
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int bytesCopied = Math.min(length, dataLength);
+            parentMessage.limit(limit + headerLength + dataLength);
+            buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+            return bytesCopied;
+        }
+
+        public int getModelParamNames(final byte[] dst, final int dstOffset, final int length)
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int bytesCopied = Math.min(length, dataLength);
+            parentMessage.limit(limit + headerLength + dataLength);
+            buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+            return bytesCopied;
+        }
+
+        public String modelParamNames()
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            parentMessage.limit(limit + headerLength + dataLength);
+            final byte[] tmp = new byte[dataLength];
+            buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+            final String value;
+            try
+            {
+                value = new String(tmp, "UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            return value;
+        }
+
+        public String toString()
+        {
+            return appendTo(new StringBuilder(100)).toString();
+        }
+
+        public StringBuilder appendTo(final StringBuilder builder)
+        {
+            builder.append('(');
+            //Token{signal=BEGIN_VAR_DATA, name='modelParamNames', description='null', id=51, version=0, encodedLength=0, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+            builder.append("modelParamNames=");
+            builder.append(modelParamNames());
             builder.append(')');
             return builder;
         }
@@ -1362,17 +1544,17 @@ public class StaticInfoDecoder
         builder.append("hwOffheapMaxMemory=");
         builder.append(hwOffheapMaxMemory());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='modelNumLayers', description='null', id=5, version=0, encodedLength=0, offset=28, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='modelNumLayers', description='null', id=7, version=0, encodedLength=0, offset=28, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=28, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelNumLayers=");
         builder.append(modelNumLayers());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='modelNumParams', description='null', id=6, version=0, encodedLength=0, offset=32, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='modelNumParams', description='null', id=8, version=0, encodedLength=0, offset=32, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=32, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelNumParams=");
         builder.append(modelNumParams());
         builder.append('|');
-        //Token{signal=BEGIN_GROUP, name='hwDeviceInfoGroup', description='null', id=7, version=0, encodedLength=8, offset=40, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=BEGIN_GROUP, name='hwDeviceInfoGroup', description='null', id=9, version=0, encodedLength=8, offset=40, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("hwDeviceInfoGroup=[");
         HwDeviceInfoGroupDecoder hwDeviceInfoGroup = hwDeviceInfoGroup();
         if (hwDeviceInfoGroup.count() > 0)
@@ -1380,6 +1562,20 @@ public class StaticInfoDecoder
             while (hwDeviceInfoGroup.hasNext())
             {
                 hwDeviceInfoGroup.next().appendTo(builder);
+                builder.append(',');
+            }
+            builder.setLength(builder.length() - 1);
+        }
+        builder.append(']');
+        builder.append('|');
+        //Token{signal=BEGIN_GROUP, name='modelParamNames', description='null', id=11, version=0, encodedLength=0, offset=-1, componentTokenCount=12, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        builder.append("modelParamNames=[");
+        ModelParamNamesDecoder modelParamNames = modelParamNames();
+        if (modelParamNames.count() > 0)
+        {
+            while (modelParamNames.hasNext())
+            {
+                modelParamNames.next().appendTo(builder);
                 builder.append(',');
             }
             builder.setLength(builder.length() - 1);
