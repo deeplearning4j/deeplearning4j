@@ -30,6 +30,7 @@
     Overview, performance:      http://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html
     Wiki:                       https://github.com/real-logic/simple-binary-encoding/wiki
     SBE tool:                   https://github.com/real-logic/simple-binary-encoding/wiki/Sbe-Tool-Guide
+    SBE tool via Maven:         https://github.com/real-logic/simple-binary-encoding/wiki/Sbe-Tool-Maven
     Schema:                     https://github.com/real-logic/simple-binary-encoding/wiki/FIX-SBE-XML-Primer
     Using the generated code:   https://github.com/real-logic/simple-binary-encoding/wiki/Java-Users-Guide
     Example:                    https://github.com/real-logic/simple-binary-encoding/blob/master/sbe-samples/src/main/java/uk/co/real_logic/sbe/examples/ExampleUsingGeneratedStub.java
@@ -43,18 +44,18 @@
             <type name="schemaId" primitiveType="uint16"/>
             <type name="version" primitiveType="uint16"/>
         </composite>
-        <composite name="varDataUTF8">
+        <composite name="InitVarDataUTF8">
             <type name="length" primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
         </composite>
-        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+        <composite name="InitGroupSizeEncoding" description="Repeating group dimensions">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="numInGroup" primitiveType="uint16"/>
         </composite>
     </types>
     <types>
         <!-- Set for encoding presence/absence of software, hardware and model information -->
-        <set name="FieldsPresent" encodingType="uint8" semanticType="FieldsPresent">
+        <set name="InitFieldsPresent" encodingType="uint8" semanticType="FieldsPresent">
             <choice name="softwareInfo">0</choice>
             <choice name="hardwareInfo">1</choice>
             <choice name="modelInfo">2</choice>
@@ -63,26 +64,26 @@
     <sbe:message name="StaticInfo" id="1" description="Static information for hardware, software, and model">
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
-        <field name="fieldsPresent" id="2" type="FieldsPresent"/>
+        <field name="fieldsPresent" id="2" type="InitFieldsPresent"/>
         <field name="hwJvmProcessors" id="3" type="uint16"/>
         <field name="hwNumDevices" id="4" type="uint8"/>
         <field name="modelNumLayers" id="5" type="int32"/>
         <field name="modelNumParams" id="6" type="int64"/>
         <!-- Groups - always second in SBE. Only one group here: GPU/Device info -->
-        <group name="hwDeviceInfoGroup" id="7" dimensionType="groupSizeEncoding">
+        <group name="hwDeviceInfoGroup" id="7" dimensionType="InitGroupSizeEncoding">
             <field name="deviceMemoryMax" id="8" type="int64"/>
-            <data name="deviceDescription" id="50" type="varDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
+            <data name="deviceDescription" id="50" type="InitVarDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
          Also can't have variable length in composite types, hence separate data fields instead of grouped by sw/hw/model -->
-        <data name="swArch" id="100" type="varDataUTF8"/>
-        <data name="swOsName" id="101" type="varDataUTF8"/>
-        <data name="swJvmName" id="102" type="varDataUTF8"/>
-        <data name="swJvmVersion" id="103" type="varDataUTF8"/>
-        <data name="swJvmSpecVersion" id="104" type="varDataUTF8"/>
-        <data name="swNd4jBackendClass" id="105" type="varDataUTF8"/>
-        <data name="swNd4jDataTypeName" id="106" type="varDataUTF8"/>
-        <data name="modelConfigClassName" id="200" type="varDataUTF8"/>
-        <data name="modelConfigJson" id="201" type="varDataUTF8"/>
+        <data name="swArch" id="100" type="InitVarDataUTF8"/>
+        <data name="swOsName" id="101" type="InitVarDataUTF8"/>
+        <data name="swJvmName" id="102" type="InitVarDataUTF8"/>
+        <data name="swJvmVersion" id="103" type="InitVarDataUTF8"/>
+        <data name="swJvmSpecVersion" id="104" type="InitVarDataUTF8"/>
+        <data name="swNd4jBackendClass" id="105" type="InitVarDataUTF8"/>
+        <data name="swNd4jDataTypeName" id="106" type="InitVarDataUTF8"/>
+        <data name="modelConfigClassName" id="200" type="InitVarDataUTF8"/>
+        <data name="modelConfigJson" id="201" type="InitVarDataUTF8"/>
     </sbe:message>
 </sbe:messageSchema>
