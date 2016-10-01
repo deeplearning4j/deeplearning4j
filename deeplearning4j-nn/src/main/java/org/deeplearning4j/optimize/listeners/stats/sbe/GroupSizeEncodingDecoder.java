@@ -1,17 +1,17 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
-package org.deeplearning4j.optimize.listeners.stats.sbe.init;
+package org.deeplearning4j.optimize.listeners.stats.sbe;
 
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.init.InitGroupSizeEncodingDecoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.GroupSizeEncodingDecoder"})
 @SuppressWarnings("all")
-public class InitGroupSizeEncodingDecoder
+public class GroupSizeEncodingDecoder
 {
     public static final int ENCODED_LENGTH = 4;
     private DirectBuffer buffer;
     private int offset;
 
-    public InitGroupSizeEncodingDecoder wrap(final DirectBuffer buffer, final int offset)
+    public GroupSizeEncodingDecoder wrap(final DirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;

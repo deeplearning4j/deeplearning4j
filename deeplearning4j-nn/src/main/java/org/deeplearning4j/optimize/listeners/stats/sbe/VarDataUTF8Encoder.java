@@ -1,17 +1,17 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
-package org.deeplearning4j.optimize.listeners.stats.sbe.init;
+package org.deeplearning4j.optimize.listeners.stats.sbe;
 
 import org.agrona.MutableDirectBuffer;
 
-@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.init.InitVarDataUTF8Encoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.VarDataUTF8Encoder"})
 @SuppressWarnings("all")
-public class InitVarDataUTF8Encoder
+public class VarDataUTF8Encoder
 {
     public static final int ENCODED_LENGTH = -1;
     private MutableDirectBuffer buffer;
     private int offset;
 
-    public InitVarDataUTF8Encoder wrap(final MutableDirectBuffer buffer, final int offset)
+    public VarDataUTF8Encoder wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -39,7 +39,7 @@ public class InitVarDataUTF8Encoder
         return 1073741824L;
     }
 
-    public InitVarDataUTF8Encoder length(final long value)
+    public VarDataUTF8Encoder length(final long value)
     {
         buffer.putInt(offset + 0, (int)value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -67,7 +67,7 @@ public class InitVarDataUTF8Encoder
 
     public StringBuilder appendTo(final StringBuilder builder)
     {
-        InitVarDataUTF8Decoder writer = new InitVarDataUTF8Decoder();
+        VarDataUTF8Decoder writer = new VarDataUTF8Decoder();
         writer.wrap(buffer, offset);
 
         return writer.appendTo(builder);
