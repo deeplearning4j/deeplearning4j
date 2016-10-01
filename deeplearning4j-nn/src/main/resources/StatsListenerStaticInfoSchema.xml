@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                   package="org.deeplearning4j.optimize.listeners.stats.sbe"
+                   package="org.deeplearning4j.optimize.listeners.stats.sbe.init"
                    id="1"
                    version="0"
                    semanticVersion="0.6.1"
@@ -16,8 +16,9 @@
     1. Download sbe-all-1.5.1.jar (later versions should be fine) - http://repo1.maven.org/maven2/uk/co/real-logic/sbe-all/1.5.1/
     2. Change directory to the directory containing the above jar
     3. Run the following:
-       java -Dsbe.output.dir=<path>/deeplearning4j-nn/src/main/ -jar sbe-all-1.5.1.jar <path>/deeplearning4j-nn/src/main/resources/StatsListenerStaticInfoSchema.xml
+       java -Dsbe.output.dir=<path>/deeplearning4j-nn/src/main/java/ -jar sbe-all-1.5.1.jar <path>/deeplearning4j-nn/src/main/resources/StatsListenerStaticInfoSchema.xml
        Where <path> is the path to the DL4J project root directory
+       The "package" property above (org.deeplearning4j...) defines the rest of the output path relative to the output directory
 
     Some key points to note with SBE:
     - There are specific rules regarding the formats and ordering for the Schema. You need to understand these before
