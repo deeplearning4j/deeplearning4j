@@ -24,7 +24,7 @@ public interface StatsReport {
 
     //--- Performance and System Stats ---
     void reportMemoryUse(Long jvmCurrentBytes, Long jvmMaxBytes, Long offHeapCurrentBytes, Long offHeapMaxBytes,
-                         long[] gpuCurrentBytes, long[] gpuMaxBytes );
+                         long[] deviceCurrentBytes, long[] deviceMaxBytes );
 
     void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
                            double examplesPerSecond, double minibatchesPerSecond);

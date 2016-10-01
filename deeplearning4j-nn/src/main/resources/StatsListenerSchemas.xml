@@ -64,12 +64,49 @@
             <choice name="hardwareInfo">1</choice>
             <choice name="modelInfo">2</choice>
         </set>
+
+        <!-- Updates: Set for encoding present/absence of various entries -->
+        <set name="UpdateFieldsPresent" encodingType="uint32" semanticType="UpdateFieldsPresent">
+            <choice name="score">0</choice>
+            <choice name="memoryUse">1</choice>
+            <choice name="performance">2</choice>
+            <choice name="garbageCollection">3</choice>
+            <choice name="histogramParameters">4</choice>
+            <choice name="histogramUpdates">5</choice>
+            <choice name="histogramActivations">6</choice>
+            <choice name="meanParameters">7</choice>
+            <choice name="meanUpdates">8</choice>
+            <choice name="meanActivations">9</choice>
+            <choice name="meanMagnitudeParameters">10</choice>
+            <choice name="meanMagnitudeUpdates">11</choice>
+            <choice name="meanMagnitudeActivations">12</choice>
+        </set>
+        <enum name="MemoryType" encodingType="uint8">
+            <validValue name="JvmCurrent">0</validValue>
+            <validValue name="JvmMax">1</validValue>
+            <validValue name="OffHeapCurrent">2</validValue>
+            <validValue name="OffHeapMax">3</validValue>
+            <validValue name="DeviceCurrent">4</validValue>
+            <validValue name="DeviceMax">5</validValue>
+        </enum>
+
+        <enum name="StatSource" encodingType="uint8">
+            <validValue name="Parameters">0</validValue>
+            <validValue name="Updates">1</validValue>
+            <validValue name="Activations">2</validValue>
+        </enum>
+        <enum name="StatType" encodingType="uint8">
+            <validValue name="Mean">0</validValue>
+            <validValue name="Stdev">1</validValue>
+            <validValue name="MeanMagnitude">2</validValue>
+        </enum>
     </types>
 
     <!-- Message 1: Static information -->
     <sbe:message name="StaticInfo" id="1" description="Static information for hardware, software, and model">
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
+        <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
         <field name="fieldsPresent" id="2" type="InitFieldsPresent"/>
         <field name="hwJvmProcessors" id="3" type="uint16"/>
         <field name="hwNumDevices" id="4" type="uint8"/>
@@ -97,8 +134,43 @@
     <sbe:message name="Update" id="2" description="Model status update">
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
+        <field name="fieldsPresent" id="2" type="UpdateFieldsPresent"/>
+        <field name="statsCollectionDuration" id="3" type="int64"/>
 
         <!-- Groups - always second in SBE -->
+        <group name="memoryUse" id="100" dimensionType="groupSizeEncoding">
+            <field name="memoryType" id="101" type="MemoryType"/>
+            <field name="memoryBytes" id="102" type="int64"/>
+        </group>
+        <group name="performance" id="200" dimensionType="groupSizeEncoding">
+            <field name="totalRuntimeMs" id="201" type="int64"/>
+            <field name="totalExamples" id="202" type="int64"/>
+            <field name="totalMinibatches" id="203" type="int64"/>
+            <field name="examplesPerSecond" id="204" type="float"/>
+            <field name="minibatchesPerSecond" id="205" type="float"/>
+        </group>
+        <group name="gcStats" id="300" dimensionType="groupSizeEncoding">
+            <field name="deltaGCCount" id="301" type="int32"/>
+            <field name="deltaGCTimeMs" id="302" type="int32"/>
+            <data name="gcName" id="1000" type="VarDataUTF8" />
+        </group>
+        <!-- Per parameter stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations; histograms for params/updates/activations -->
+        <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
+            <field name="paramID" id="401" type="uint16"/>
+            <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
+                <field name="statSource" id="403" type="StatSource"/>
+                <field name="statType" id="404" type="StatType"/>
+                <field name="value" id="405" type="double"/>
+            </group>
+            <group name="histograms" id="406" dimensionType="groupSizeEncoding">
+                <field name="statType" id="407" type="StatType"/>
+                <field name="minValue" id="408" type="double"/>
+                <field name="stepSize" id="409" type="double"/>
+                <group name="histogramCounts" id="410" dimensionType="groupSizeEncoding">
+                    <field name="count" id="411" type="uint32"/>
+                </group>
+            </group>
+        </group>
 
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
     </sbe:message>
