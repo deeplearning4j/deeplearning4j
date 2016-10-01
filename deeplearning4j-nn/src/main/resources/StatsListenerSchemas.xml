@@ -106,15 +106,16 @@
     <sbe:message name="StaticInfo" id="1" description="Static information for hardware, software, and model">
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
-        <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
         <field name="fieldsPresent" id="2" type="InitFieldsPresent"/>
         <field name="hwJvmProcessors" id="3" type="uint16"/>
         <field name="hwNumDevices" id="4" type="uint8"/>
-        <field name="modelNumLayers" id="5" type="int32"/>
-        <field name="modelNumParams" id="6" type="int64"/>
+        <field name="hwJvmMaxMemory" id="5" type="int64"/>
+        <field name="hwOffheapMaxMemory" id="6" type="int64"/>
+        <field name="modelNumLayers" id="7" type="int32"/>
+        <field name="modelNumParams" id="8" type="int64"/>
         <!-- Groups - always second in SBE. Only one group here: GPU/Device info -->
-        <group name="hwDeviceInfoGroup" id="7" dimensionType="groupSizeEncoding">
-            <field name="deviceMemoryMax" id="8" type="int64"/>
+        <group name="hwDeviceInfoGroup" id="9" dimensionType="groupSizeEncoding">
+            <field name="deviceMemoryMax" id="10" type="int64"/>
             <data name="deviceDescription" id="50" type="VarDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
@@ -134,8 +135,9 @@
     <sbe:message name="Update" id="2" description="Model status update">
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
-        <field name="fieldsPresent" id="2" type="UpdateFieldsPresent"/>
-        <field name="statsCollectionDuration" id="3" type="int64"/>
+        <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
+        <field name="fieldsPresent" id="3" type="UpdateFieldsPresent"/>
+        <field name="statsCollectionDuration" id="4" type="int64"/>
 
         <!-- Groups - always second in SBE -->
         <group name="memoryUse" id="100" dimensionType="groupSizeEncoding">
@@ -167,7 +169,7 @@
                 <field name="minValue" id="408" type="double"/>
                 <field name="stepSize" id="409" type="double"/>
                 <group name="histogramCounts" id="410" dimensionType="groupSizeEncoding">
-                    <field name="count" id="411" type="uint32"/>
+                    <field name="binCount" id="411" type="uint32"/>
                 </group>
             </group>
         </group>

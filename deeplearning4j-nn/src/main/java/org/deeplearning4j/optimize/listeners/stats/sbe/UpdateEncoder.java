@@ -1005,22 +1005,22 @@ public class UpdateEncoder
                     return this;
                 }
 
-                public static long countNullValue()
+                public static long binCountNullValue()
                 {
                     return 4294967294L;
                 }
 
-                public static long countMinValue()
+                public static long binCountMinValue()
                 {
                     return 0L;
                 }
 
-                public static long countMaxValue()
+                public static long binCountMaxValue()
                 {
                     return 4294967293L;
                 }
 
-                public HistogramCountsEncoder count(final long value)
+                public HistogramCountsEncoder binCount(final long value)
                 {
                     buffer.putInt(offset + 0, (int)value, java.nio.ByteOrder.LITTLE_ENDIAN);
                     return this;

@@ -108,6 +108,7 @@ public class StatsListener implements IterationListener {
         }
 
         if (config.collectMemoryStats()) {
+
             Runtime runtime = Runtime.getRuntime();
             long jvmTotal = runtime.totalMemory();
             long jvmMax = runtime.maxMemory();
@@ -284,8 +285,12 @@ public class StatsListener implements IterationListener {
                     deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(new IntPointer(i));
                 }
             }
+            long jvmMaxMemory = Runtime.getRuntime().maxMemory();
+            long offheapMaxMemory = Pointer.maxBytes();
 
-            initReport.reportHardwareInfo(availableProcessors, nDevices, deviceTotalMem);
+            String[] deviceDescription = null;  //TODO
+
+            initReport.reportHardwareInfo(availableProcessors, nDevices, jvmMaxMemory, offheapMaxMemory, deviceTotalMem, deviceDescription);
         }
 
         if(initConfiguration.collectModelInfo()){
@@ -305,7 +310,15 @@ public class StatsListener implements IterationListener {
             } else {
                 throw new RuntimeException();
             }
-            initReport.reportModelInfo(model.getClass().getName(), jsonConf, numLayers, numParams);
+
+            Map<String,INDArray> paramMap = model.paramTable();
+            String[] paramNames = new String[paramMap.size()];
+            int i=0;
+            for(String s : paramMap.keySet()){      //Assuming sensible iteration order - LinkedHashMaps are used in MLN/CG for example
+                paramNames[i++] = s;
+            }
+
+            initReport.reportModelInfo(model.getClass().getName(), jsonConf, paramNames, numLayers, numParams);
         }
 
         receiver.postInitializationReport(initReport);

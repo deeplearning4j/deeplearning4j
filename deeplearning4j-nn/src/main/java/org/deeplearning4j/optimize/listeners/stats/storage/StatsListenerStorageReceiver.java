@@ -24,6 +24,7 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
     @Override
     public StatsInitializationReport newInitializationReport() {
         //TODO
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -42,6 +43,7 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
     @Override
     public StatsReport newStatsReport() {
         //TODO
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
