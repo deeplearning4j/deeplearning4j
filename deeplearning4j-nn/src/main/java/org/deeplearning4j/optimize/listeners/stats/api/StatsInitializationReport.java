@@ -31,7 +31,8 @@ public interface StatsInitializationReport {
      * @param numDevices             Number of compute devices (GPUs)
      * @param deviceTotalMemory      GPU memory by device: same length as numDevices. May be null, if numDevices is 0
      */
-    void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory, long[] deviceTotalMemory);
+    void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory,
+                            long[] deviceTotalMemory, String[] deviceDescription);
 
 
     /**
@@ -72,6 +73,7 @@ public interface StatsInitializationReport {
     long getHwJvmMaxMemory();
     long getHwOffHeapMaxMemory();
     long[] getHwDeviceTotalMemory();
+    String[] getHwDeviceDescription();
     String getModelClassName();
     String getModelConfigJson();
     String[] getModelParamNames();

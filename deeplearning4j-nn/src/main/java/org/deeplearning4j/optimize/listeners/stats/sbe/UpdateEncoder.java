@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class UpdateEncoder
 {
-    public static final int BLOCK_LENGTH = 20;
+    public static final int BLOCK_LENGTH = 24;
     public static final int TEMPLATE_ID = 2;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -96,11 +96,33 @@ public class UpdateEncoder
     }
 
 
+    public static int deltaTimeNullValue()
+    {
+        return -2147483648;
+    }
+
+    public static int deltaTimeMinValue()
+    {
+        return -2147483647;
+    }
+
+    public static int deltaTimeMaxValue()
+    {
+        return 2147483647;
+    }
+
+    public UpdateEncoder deltaTime(final int value)
+    {
+        buffer.putInt(offset + 8, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+
     private final UpdateFieldsPresentEncoder fieldsPresent = new UpdateFieldsPresentEncoder();
 
     public UpdateFieldsPresentEncoder fieldsPresent()
     {
-        fieldsPresent.wrap(buffer, offset + 8);
+        fieldsPresent.wrap(buffer, offset + 12);
         return fieldsPresent;
     }
 
@@ -121,7 +143,7 @@ public class UpdateEncoder
 
     public UpdateEncoder statsCollectionDuration(final long value)
     {
-        buffer.putLong(offset + 12, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

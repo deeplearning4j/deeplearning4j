@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class StaticInfoEncoder
 {
-    public static final int BLOCK_LENGTH = 28;
+    public static final int BLOCK_LENGTH = 40;
     public static final int TEMPLATE_ID = 1;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -96,33 +96,11 @@ public class StaticInfoEncoder
     }
 
 
-    public static int deltaTimeNullValue()
-    {
-        return -2147483648;
-    }
-
-    public static int deltaTimeMinValue()
-    {
-        return -2147483647;
-    }
-
-    public static int deltaTimeMaxValue()
-    {
-        return 2147483647;
-    }
-
-    public StaticInfoEncoder deltaTime(final int value)
-    {
-        buffer.putInt(offset + 8, value, java.nio.ByteOrder.LITTLE_ENDIAN);
-        return this;
-    }
-
-
     private final InitFieldsPresentEncoder fieldsPresent = new InitFieldsPresentEncoder();
 
     public InitFieldsPresentEncoder fieldsPresent()
     {
-        fieldsPresent.wrap(buffer, offset + 12);
+        fieldsPresent.wrap(buffer, offset + 8);
         return fieldsPresent;
     }
 
@@ -143,7 +121,7 @@ public class StaticInfoEncoder
 
     public StaticInfoEncoder hwJvmProcessors(final int value)
     {
-        buffer.putShort(offset + 13, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putShort(offset + 9, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -165,7 +143,51 @@ public class StaticInfoEncoder
 
     public StaticInfoEncoder hwNumDevices(final short value)
     {
-        buffer.putByte(offset + 15, (byte)value);
+        buffer.putByte(offset + 11, (byte)value);
+        return this;
+    }
+
+
+    public static long hwJvmMaxMemoryNullValue()
+    {
+        return -9223372036854775808L;
+    }
+
+    public static long hwJvmMaxMemoryMinValue()
+    {
+        return -9223372036854775807L;
+    }
+
+    public static long hwJvmMaxMemoryMaxValue()
+    {
+        return 9223372036854775807L;
+    }
+
+    public StaticInfoEncoder hwJvmMaxMemory(final long value)
+    {
+        buffer.putLong(offset + 12, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+
+    public static long hwOffheapMaxMemoryNullValue()
+    {
+        return -9223372036854775808L;
+    }
+
+    public static long hwOffheapMaxMemoryMinValue()
+    {
+        return -9223372036854775807L;
+    }
+
+    public static long hwOffheapMaxMemoryMaxValue()
+    {
+        return 9223372036854775807L;
+    }
+
+    public StaticInfoEncoder hwOffheapMaxMemory(final long value)
+    {
+        buffer.putLong(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -187,7 +209,7 @@ public class StaticInfoEncoder
 
     public StaticInfoEncoder modelNumLayers(final int value)
     {
-        buffer.putInt(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(offset + 28, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -209,7 +231,7 @@ public class StaticInfoEncoder
 
     public StaticInfoEncoder modelNumParams(final long value)
     {
-        buffer.putLong(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + 32, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
