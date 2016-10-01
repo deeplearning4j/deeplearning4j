@@ -1,8 +1,6 @@
 package org.deeplearning4j.optimize.listeners.stats.api;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.optimize.listeners.stats.StatsType;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
@@ -23,16 +21,16 @@ public interface StatsReport {
     void reportScore(double currentScore);
 
     //--- Performance and System Stats ---
-    void reportMemoryUse(Long jvmCurrentBytes, Long jvmMaxBytes, Long offHeapCurrentBytes, Long offHeapMaxBytes,
+    void reportMemoryUse(long jvmCurrentBytes, long jvmMaxBytes, long offHeapCurrentBytes, long offHeapMaxBytes,
                          long[] deviceCurrentBytes, long[] deviceMaxBytes );
 
     void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
                            double examplesPerSecond, double minibatchesPerSecond);
 
-    void reportGarbageCollection(String gcName, long deltaReportTime, long deltaGCCount, long deltaGCTime);
+    void reportGarbageCollection(String gcName, int deltaReportTimeMs, int deltaGCCount, int deltaGCTime);
 
     //--- Histograms ---
-    void reportHistograms(StatsType statsType, Map<String,Pair<INDArray,int[]>> histogram);
+    void reportHistograms(StatsType statsType, Map<String, Histogram> histogram);
 
 
     //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
@@ -46,4 +44,6 @@ public interface StatsReport {
      * Serialize the StatsReport to a byte[] for storage etc
      */
     byte[] toByteArray();
+
+    void fromByteArray(byte[] bytes);
 }
