@@ -855,11 +855,11 @@ public class UpdateEncoder
                 this.buffer = buffer;
                 actingVersion = SCHEMA_VERSION;
                 dimensions.wrap(buffer, parentMessage.limit());
-                dimensions.blockLength((int)17);
+                dimensions.blockLength((int)21);
                 dimensions.numInGroup((int)count);
                 index = -1;
                 this.count = count;
-                blockLength = 17;
+                blockLength = 21;
                 parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
             }
 
@@ -870,7 +870,7 @@ public class UpdateEncoder
 
             public static int sbeBlockLength()
             {
-                return 17;
+                return 21;
             }
 
             public HistogramsEncoder next()
@@ -914,24 +914,46 @@ public class UpdateEncoder
             }
 
 
-            public static double stepSizeNullValue()
+            public static double maxValueNullValue()
             {
                 return Double.NaN;
             }
 
-            public static double stepSizeMinValue()
+            public static double maxValueMinValue()
             {
                 return 4.9E-324d;
             }
 
-            public static double stepSizeMaxValue()
+            public static double maxValueMaxValue()
             {
                 return 1.7976931348623157E308d;
             }
 
-            public HistogramsEncoder stepSize(final double value)
+            public HistogramsEncoder maxValue(final double value)
             {
                 buffer.putDouble(offset + 9, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+                return this;
+            }
+
+
+            public static int nBinsNullValue()
+            {
+                return -2147483648;
+            }
+
+            public static int nBinsMinValue()
+            {
+                return -2147483647;
+            }
+
+            public static int nBinsMaxValue()
+            {
+                return 2147483647;
+            }
+
+            public HistogramsEncoder nBins(final int value)
+            {
+                buffer.putInt(offset + 17, value, java.nio.ByteOrder.LITTLE_ENDIAN);
                 return this;
             }
 
@@ -940,7 +962,7 @@ public class UpdateEncoder
 
             public static long histogramCountsId()
             {
-                return 410;
+                return 411;
             }
 
             public HistogramCountsEncoder histogramCountsCount(final int count)
