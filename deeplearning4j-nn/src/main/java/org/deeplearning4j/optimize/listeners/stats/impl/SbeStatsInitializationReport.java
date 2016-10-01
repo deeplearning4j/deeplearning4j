@@ -15,8 +15,7 @@ import java.nio.charset.Charset;
 public class SbeStatsInitializationReport implements StatsInitializationReport {
 
     private static Charset UTF8 = Charset.forName("UTF-8");
-    private static byte[] EMPTY_STRING_BYTES = "".getBytes(UTF8);
-    private static byte[] EMPTY_BYTES = new byte[0];
+    private static byte[] EMPTY_BYTES = new byte[0];    //Also equivalent to "".getBytes(UTF8);
 
     private boolean hasSoftwareInfo;
     private boolean hasHardwareInfo;
@@ -30,8 +29,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private String swNd4jBackendClass;
     private String swNd4jDataTypeName;
 
-    private int hwJvmAvailableProcessors = -1;
-    private int hwNumDevices = -1;
+    private int hwJvmAvailableProcessors;
+    private int hwNumDevices;
     private long hwJvmMaxMemory;
     private long hwOffHeapMaxMemory;
     private long[] hwDeviceTotalMemory;
@@ -89,14 +88,18 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         StaticInfoEncoder sie = new StaticInfoEncoder();
 
 
-        //First: need to determine how large a buffer to use
+        //First: need to determine how large a buffer to use.
+        //Buffer is composed of:
+        //(a) Header: 8 bytes (4x uint16 = 8 bytes)
+        //(b) Fixed length entries length (sie.BlockLength())
+        //(c) Group 1: Hardware devices (GPUs) max memory: 4 bytes header + nEntries * 8 (int64) + nEntries * variable length Strings (header + content)  = 4 + 8*n + content
+        //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
+        //(e) Variable length fields: 9 String length fields. Size: 4 bytes header, plus content. 36 bytes header
         //Fixed length + repeating groups + variable length...
-        int bufferSize = 8 + sie.sbeBlockLength();  //Header: 4 x uint16; block length is number of fixed size fields
-        bufferSize += 4 * 9;    //Each variable length field (not in a group): uint32 length field -> 4 bytes
-        System.out.println("Buffer size: " + bufferSize);
+        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 36; //header + fixed values + group headers + variable length headers
 
-        //For variable length fields: easist way is simply to convert to UTF-8
-        //Of course, it is possible to calculate it first - but we might as well convert, rather than count then convert
+        //For variable length field lengths: easist way is simply to convert to UTF-8
+        //Of course, it is possible to calculate it first - but we might as well convert (1 pass), rather than count then convert (2 passes)
         byte[] bswArch = toBytes(hasSoftwareInfo, swArch);
         byte[] bswOsName = toBytes(hasSoftwareInfo, swOsName);
         byte[] bswJvmName = toBytes(hasSoftwareInfo, swJvmName);
@@ -108,6 +111,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         byte[] bmodelConfigJson = toBytes(hasModelInfo, modelConfigJson);
 
         byte[][] bhwDeviceDescription = toBytes(hasHardwareInfo, hwDeviceDescription);
+        byte[][] bModelParamNames = toBytes(hasModelInfo, modelParamNames);
 
         if (hasSoftwareInfo) {
             bufferSize += length(bswArch);
@@ -118,21 +122,27 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += length(bswNd4jBackendClass);
             bufferSize += length(bswNd4jDataTypeName);
         }
-        System.out.println("Buffer size: " + bufferSize);
-        bufferSize += 4;    //2x uint16 for group header
+        int nHWDeviceStats = (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length);
+        nHWDeviceStats = Math.max(nHWDeviceStats, (hwDeviceDescription == null ? 0 : hwDeviceDescription.length));
+        if(!hasHardwareInfo) nHWDeviceStats = 0;
         if (hasHardwareInfo) {
             //Device info group:
-            bufferSize += (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length * 8);   //fixed content in group
+            bufferSize += (hwDeviceTotalMemory == null ? 0 : nHWDeviceStats * 8);   //fixed content in group: int64 -> 8 bytes
+            bufferSize += (bhwDeviceDescription == null ? 0 : nHWDeviceStats * 4);     //uint32: 4 bytes per entry for var length header...
+//            bufferSize += hwNumDevices * 8;   //fixed content in group: int64 -> 8 bytes
+//            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...
             bufferSize += length(bhwDeviceDescription);
         }
-        System.out.println("Buffer size: " + bufferSize);
         if(hasModelInfo){
             bufferSize += length(bmodelConfigClass);
             bufferSize += length(bmodelConfigJson);
+            bufferSize += length(bModelParamNames);
+            bufferSize += (bModelParamNames == null ? 0 : bModelParamNames.length * 4);   //uint32: 4 bytes per entry for var length header...
         }
-        System.out.println("Buffer size: " + bufferSize);
 
-        byte[] bytes = new byte[bufferSize+200];
+
+        //Now know the
+        byte[] bytes = new byte[bufferSize];
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
 
         enc.wrap(buffer, 0)
@@ -158,11 +168,17 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .modelNumParams(modelNumParams);
         //Device info group...
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
-        for(int i=0; i<hwNumDevices; i++ ){
+        for(int i=0; i<nHWDeviceStats; i++ ){
             long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? -1 : hwDeviceTotalMemory[i];
-            byte[] descr = bswNd4jDataTypeName == null || bhwDeviceDescription.length <= i ? EMPTY_STRING_BYTES : bhwDeviceDescription[i];
-            if(descr == null) descr = EMPTY_STRING_BYTES;
+            byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? EMPTY_BYTES : bhwDeviceDescription[i];
+            if(descr == null) descr = EMPTY_BYTES;
             hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr,0,descr.length);
+        }
+
+        int nParamNames = modelParamNames == null ? 0 : modelParamNames.length;
+        StaticInfoEncoder.ModelParamNamesEncoder mpnEnc = sie.modelParamNamesCount(nParamNames);
+        for( int i=0; i<nParamNames; i++ ){
+            mpnEnc.next().putModelParamNames(bModelParamNames[i],0,bModelParamNames[i].length);
         }
 
         //In the case of !hasSoftwareInfo: these will all be empty byte arrays... still need to encode them (for 0 length) however
@@ -178,8 +194,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .putModelConfigJson(bmodelConfigJson,0,bmodelConfigJson.length);
 
         offset += sie.encodedLength();
-        System.out.println("OFFSET: " + offset);
-//        if(offset != bytes.length) throw new RuntimeException();
+        if(offset != bytes.length){
+            throw new RuntimeException();
+        }
 
         return bytes;
     }
@@ -256,8 +273,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         modelNumParams = sid.modelNumParams();
 
         StaticInfoDecoder.HwDeviceInfoGroupDecoder hwDeviceInfoGroupDecoder = sid.hwDeviceInfoGroup();
-        int count = 0;
-        if(hwDeviceInfoGroupDecoder.count() > 0){
+        int count = hwDeviceInfoGroupDecoder.count();
+        if(count > 0){
             hwDeviceTotalMemory = new long[count];
             hwDeviceDescription = new String[count];
         }
@@ -265,6 +282,13 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         for(StaticInfoDecoder.HwDeviceInfoGroupDecoder hw : hwDeviceInfoGroupDecoder){
             hwDeviceTotalMemory[i] = hw.deviceMemoryMax();
             hwDeviceDescription[i++] = hw.deviceDescription();
+        }
+        i=0;
+        StaticInfoDecoder.ModelParamNamesDecoder mpdec = sid.modelParamNames();
+        int mpnCount = mpdec.count();
+        modelParamNames = new String[mpnCount];
+        for(StaticInfoDecoder.ModelParamNamesDecoder mp : mpdec){
+            modelParamNames[i++] = mp.modelParamNames();
         }
         //Variable length data. Even if it is missing: still needs to be read, to advance buffer
         swArch = sid.swArch();
@@ -274,8 +298,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = sid.swJvmSpecVersion();
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
+        if(!hasSoftwareInfo) clearSwFields();
         modelClassName = sid.modelConfigClassName();
         modelConfigJson = sid.modelConfigJson();
+        if(!hasModelInfo) clearModelFields();
     }
 
     @Override
@@ -291,5 +317,22 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     @Override
     public boolean hasModelInfo() {
         return hasModelInfo;
+    }
+
+
+    private void clearSwFields(){
+        swArch = null;
+        swOsName = null;
+        swJvmName = null;
+        swJvmVersion = null;
+        swJvmSpecVersion = null;
+        swNd4jBackendClass = null;
+        swNd4jDataTypeName = null;
+    }
+
+    private void clearModelFields(){
+        modelClassName = null;
+        modelConfigJson = null;
+        modelParamNames = null;
     }
 }
