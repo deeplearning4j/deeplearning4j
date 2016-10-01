@@ -42,7 +42,7 @@ public interface StatsInitializationReport {
      * @param numLayers       Number of layers in the model
      * @param numParams       Number of parameters in the model
      */
-    void reportModelInfo(String modelClassName, String modelConfigJson, int numLayers, int numParams);
+    void reportModelInfo(String modelClassName, String modelConfigJson, int numLayers, long numParams);
 
     /**
      * Convert the initialization report to a byte[] for storage
