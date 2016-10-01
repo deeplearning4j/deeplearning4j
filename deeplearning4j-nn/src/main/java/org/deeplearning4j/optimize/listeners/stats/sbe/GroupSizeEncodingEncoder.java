@@ -1,17 +1,17 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
-package org.deeplearning4j.optimize.listeners.stats.sbe.init;
+package org.deeplearning4j.optimize.listeners.stats.sbe;
 
 import org.agrona.MutableDirectBuffer;
 
-@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.init.InitGroupSizeEncodingEncoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.GroupSizeEncodingEncoder"})
 @SuppressWarnings("all")
-public class InitGroupSizeEncodingEncoder
+public class GroupSizeEncodingEncoder
 {
     public static final int ENCODED_LENGTH = 4;
     private MutableDirectBuffer buffer;
     private int offset;
 
-    public InitGroupSizeEncodingEncoder wrap(final MutableDirectBuffer buffer, final int offset)
+    public GroupSizeEncodingEncoder wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -39,7 +39,7 @@ public class InitGroupSizeEncodingEncoder
         return 65534;
     }
 
-    public InitGroupSizeEncodingEncoder blockLength(final int value)
+    public GroupSizeEncodingEncoder blockLength(final int value)
     {
         buffer.putShort(offset + 0, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -61,7 +61,7 @@ public class InitGroupSizeEncodingEncoder
         return 65534;
     }
 
-    public InitGroupSizeEncodingEncoder numInGroup(final int value)
+    public GroupSizeEncodingEncoder numInGroup(final int value)
     {
         buffer.putShort(offset + 2, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -74,7 +74,7 @@ public class InitGroupSizeEncodingEncoder
 
     public StringBuilder appendTo(final StringBuilder builder)
     {
-        InitGroupSizeEncodingDecoder writer = new InitGroupSizeEncodingDecoder();
+        GroupSizeEncodingDecoder writer = new GroupSizeEncodingDecoder();
         writer.wrap(buffer, offset);
 
         return writer.appendTo(builder);

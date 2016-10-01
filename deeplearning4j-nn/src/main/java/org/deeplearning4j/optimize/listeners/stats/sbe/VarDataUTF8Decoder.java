@@ -1,17 +1,17 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
-package org.deeplearning4j.optimize.listeners.stats.sbe.init;
+package org.deeplearning4j.optimize.listeners.stats.sbe;
 
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.init.InitVarDataUTF8Decoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.VarDataUTF8Decoder"})
 @SuppressWarnings("all")
-public class InitVarDataUTF8Decoder
+public class VarDataUTF8Decoder
 {
     public static final int ENCODED_LENGTH = -1;
     private DirectBuffer buffer;
     private int offset;
 
-    public InitVarDataUTF8Decoder wrap(final DirectBuffer buffer, final int offset)
+    public VarDataUTF8Decoder wrap(final DirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
