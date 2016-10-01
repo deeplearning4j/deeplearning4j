@@ -63,6 +63,7 @@ public class DataSetUtil {
             INDArray in2dMask = Nd4j.create(actualSamples,features);
             int i = 0;
             //definitely a faster way to do this as you can skip the rest of the timesteps after the first zero in the mask
+            //use a boolean mask??
             for (int j=0; j < instances; j++){
                 for (int k=0; k < timesteps; k++){
                         if (columnMask.getInt(j*timesteps+k, 0) != 0) {
