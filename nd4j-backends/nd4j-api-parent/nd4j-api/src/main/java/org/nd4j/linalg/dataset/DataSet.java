@@ -518,6 +518,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public DataSet copy() {
         DataSet ret = new DataSet(getFeatures().dup(), getLabels().dup());
+        if (getLabelsMaskArray() != null) ret.setLabelsMaskArray(getLabelsMaskArray().dup());
+        if(getFeaturesMaskArray() != null) ret.setFeaturesMaskArray(getFeaturesMaskArray().dup());
         ret.setColumnNames(getColumnNames());
         ret.setLabelNames(getLabelNames());
         return ret;
