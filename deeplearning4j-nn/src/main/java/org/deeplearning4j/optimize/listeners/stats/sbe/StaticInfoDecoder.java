@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class StaticInfoDecoder
 {
-    public static final int BLOCK_LENGTH = 28;
+    public static final int BLOCK_LENGTH = 40;
     public static final int TEMPLATE_ID = 1;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -115,44 +115,6 @@ public class StaticInfoDecoder
     }
 
 
-    public static int deltaTimeId()
-    {
-        return 2;
-    }
-
-    public static String deltaTimeMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
-        }
-
-        return "";
-    }
-
-    public static int deltaTimeNullValue()
-    {
-        return -2147483648;
-    }
-
-    public static int deltaTimeMinValue()
-    {
-        return -2147483647;
-    }
-
-    public static int deltaTimeMaxValue()
-    {
-        return 2147483647;
-    }
-
-    public int deltaTime()
-    {
-        return buffer.getInt(offset + 8, java.nio.ByteOrder.LITTLE_ENDIAN);
-    }
-
-
     public static int fieldsPresentId()
     {
         return 2;
@@ -174,7 +136,7 @@ public class StaticInfoDecoder
 
     public InitFieldsPresentDecoder fieldsPresent()
     {
-        fieldsPresent.wrap(buffer, offset + 12);
+        fieldsPresent.wrap(buffer, offset + 8);
         return fieldsPresent;
     }
 
@@ -212,7 +174,7 @@ public class StaticInfoDecoder
 
     public int hwJvmProcessors()
     {
-        return (buffer.getShort(offset + 13, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF);
+        return (buffer.getShort(offset + 9, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF);
     }
 
 
@@ -250,7 +212,83 @@ public class StaticInfoDecoder
 
     public short hwNumDevices()
     {
-        return ((short)(buffer.getByte(offset + 15) & 0xFF));
+        return ((short)(buffer.getByte(offset + 11) & 0xFF));
+    }
+
+
+    public static int hwJvmMaxMemoryId()
+    {
+        return 5;
+    }
+
+    public static String hwJvmMaxMemoryMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static long hwJvmMaxMemoryNullValue()
+    {
+        return -9223372036854775808L;
+    }
+
+    public static long hwJvmMaxMemoryMinValue()
+    {
+        return -9223372036854775807L;
+    }
+
+    public static long hwJvmMaxMemoryMaxValue()
+    {
+        return 9223372036854775807L;
+    }
+
+    public long hwJvmMaxMemory()
+    {
+        return buffer.getLong(offset + 12, java.nio.ByteOrder.LITTLE_ENDIAN);
+    }
+
+
+    public static int hwOffheapMaxMemoryId()
+    {
+        return 6;
+    }
+
+    public static String hwOffheapMaxMemoryMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static long hwOffheapMaxMemoryNullValue()
+    {
+        return -9223372036854775808L;
+    }
+
+    public static long hwOffheapMaxMemoryMinValue()
+    {
+        return -9223372036854775807L;
+    }
+
+    public static long hwOffheapMaxMemoryMaxValue()
+    {
+        return 9223372036854775807L;
+    }
+
+    public long hwOffheapMaxMemory()
+    {
+        return buffer.getLong(offset + 20, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
@@ -288,7 +326,7 @@ public class StaticInfoDecoder
 
     public int modelNumLayers()
     {
-        return buffer.getInt(offset + 16, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + 28, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
@@ -326,7 +364,7 @@ public class StaticInfoDecoder
 
     public long modelNumParams()
     {
-        return buffer.getLong(offset + 20, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + 32, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
@@ -1299,37 +1337,42 @@ public class StaticInfoDecoder
         builder.append("time=");
         builder.append(time());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='deltaTime', description='null', id=2, version=0, encodedLength=0, offset=8, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=8, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        builder.append("deltaTime=");
-        builder.append(deltaTime());
-        builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=2, version=0, encodedLength=0, offset=12, componentTokenCount=7, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=BEGIN_SET, name='InitFieldsPresent', description='null', id=-1, version=0, encodedLength=1, offset=12, componentTokenCount=5, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='FieldsPresent'}}
+        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=2, version=0, encodedLength=0, offset=8, componentTokenCount=7, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_SET, name='InitFieldsPresent', description='null', id=-1, version=0, encodedLength=1, offset=8, componentTokenCount=5, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='FieldsPresent'}}
         builder.append("fieldsPresent=");
         builder.append(fieldsPresent());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='hwJvmProcessors', description='null', id=3, version=0, encodedLength=0, offset=13, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='uint16', description='null', id=-1, version=0, encodedLength=2, offset=13, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='hwJvmProcessors', description='null', id=3, version=0, encodedLength=0, offset=9, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='uint16', description='null', id=-1, version=0, encodedLength=2, offset=9, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("hwJvmProcessors=");
         builder.append(hwJvmProcessors());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='hwNumDevices', description='null', id=4, version=0, encodedLength=0, offset=15, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='uint8', description='null', id=-1, version=0, encodedLength=1, offset=15, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='hwNumDevices', description='null', id=4, version=0, encodedLength=0, offset=11, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='uint8', description='null', id=-1, version=0, encodedLength=1, offset=11, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("hwNumDevices=");
         builder.append(hwNumDevices());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='modelNumLayers', description='null', id=5, version=0, encodedLength=0, offset=16, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=16, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='hwJvmMaxMemory', description='null', id=5, version=0, encodedLength=0, offset=12, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=12, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("hwJvmMaxMemory=");
+        builder.append(hwJvmMaxMemory());
+        builder.append('|');
+        //Token{signal=BEGIN_FIELD, name='hwOffheapMaxMemory', description='null', id=6, version=0, encodedLength=0, offset=20, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=20, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("hwOffheapMaxMemory=");
+        builder.append(hwOffheapMaxMemory());
+        builder.append('|');
+        //Token{signal=BEGIN_FIELD, name='modelNumLayers', description='null', id=5, version=0, encodedLength=0, offset=28, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=28, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelNumLayers=");
         builder.append(modelNumLayers());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='modelNumParams', description='null', id=6, version=0, encodedLength=0, offset=20, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=20, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='modelNumParams', description='null', id=6, version=0, encodedLength=0, offset=32, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=32, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelNumParams=");
         builder.append(modelNumParams());
         builder.append('|');
-        //Token{signal=BEGIN_GROUP, name='hwDeviceInfoGroup', description='null', id=7, version=0, encodedLength=8, offset=28, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=BEGIN_GROUP, name='hwDeviceInfoGroup', description='null', id=7, version=0, encodedLength=8, offset=40, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("hwDeviceInfoGroup=[");
         HwDeviceInfoGroupDecoder hwDeviceInfoGroup = hwDeviceInfoGroup();
         if (hwDeviceInfoGroup.count() > 0)

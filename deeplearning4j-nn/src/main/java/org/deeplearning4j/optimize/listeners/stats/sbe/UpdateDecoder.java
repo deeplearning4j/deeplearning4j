@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class UpdateDecoder
 {
-    public static final int BLOCK_LENGTH = 20;
+    public static final int BLOCK_LENGTH = 24;
     public static final int TEMPLATE_ID = 2;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -115,9 +115,47 @@ public class UpdateDecoder
     }
 
 
-    public static int fieldsPresentId()
+    public static int deltaTimeId()
     {
         return 2;
+    }
+
+    public static String deltaTimeMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int deltaTimeNullValue()
+    {
+        return -2147483648;
+    }
+
+    public static int deltaTimeMinValue()
+    {
+        return -2147483647;
+    }
+
+    public static int deltaTimeMaxValue()
+    {
+        return 2147483647;
+    }
+
+    public int deltaTime()
+    {
+        return buffer.getInt(offset + 8, java.nio.ByteOrder.LITTLE_ENDIAN);
+    }
+
+
+    public static int fieldsPresentId()
+    {
+        return 3;
     }
 
     public static String fieldsPresentMetaAttribute(final MetaAttribute metaAttribute)
@@ -136,13 +174,13 @@ public class UpdateDecoder
 
     public UpdateFieldsPresentDecoder fieldsPresent()
     {
-        fieldsPresent.wrap(buffer, offset + 8);
+        fieldsPresent.wrap(buffer, offset + 12);
         return fieldsPresent;
     }
 
     public static int statsCollectionDurationId()
     {
-        return 3;
+        return 4;
     }
 
     public static String statsCollectionDurationMetaAttribute(final MetaAttribute metaAttribute)
@@ -174,7 +212,7 @@ public class UpdateDecoder
 
     public long statsCollectionDuration()
     {
-        return buffer.getLong(offset + 12, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + 16, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
@@ -1700,17 +1738,22 @@ public class UpdateDecoder
         builder.append("time=");
         builder.append(time());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=2, version=0, encodedLength=0, offset=8, componentTokenCount=17, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=8, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
+        //Token{signal=BEGIN_FIELD, name='deltaTime', description='null', id=2, version=0, encodedLength=0, offset=8, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int32', description='null', id=-1, version=0, encodedLength=4, offset=8, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("deltaTime=");
+        builder.append(deltaTime());
+        builder.append('|');
+        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=3, version=0, encodedLength=0, offset=12, componentTokenCount=17, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=12, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
         builder.append("fieldsPresent=");
         builder.append(fieldsPresent());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='statsCollectionDuration', description='null', id=3, version=0, encodedLength=0, offset=12, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=12, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_FIELD, name='statsCollectionDuration', description='null', id=4, version=0, encodedLength=0, offset=16, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=16, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("statsCollectionDuration=");
         builder.append(statsCollectionDuration());
         builder.append('|');
-        //Token{signal=BEGIN_GROUP, name='memoryUse', description='null', id=100, version=0, encodedLength=9, offset=20, componentTokenCount=19, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=BEGIN_GROUP, name='memoryUse', description='null', id=100, version=0, encodedLength=9, offset=24, componentTokenCount=19, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("memoryUse=[");
         MemoryUseDecoder memoryUse = memoryUse();
         if (memoryUse.count() > 0)
