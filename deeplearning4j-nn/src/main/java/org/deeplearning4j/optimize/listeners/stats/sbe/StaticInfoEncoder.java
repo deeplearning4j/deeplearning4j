@@ -1,10 +1,10 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
-package org.deeplearning4j.optimize.listeners.stats.sbe.init;
+package org.deeplearning4j.optimize.listeners.stats.sbe;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.init.StaticInfoEncoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.optimize.listeners.stats.sbe.StaticInfoEncoder"})
 @SuppressWarnings("all")
 public class StaticInfoEncoder
 {
@@ -208,7 +208,7 @@ public class StaticInfoEncoder
     public static class HwDeviceInfoGroupEncoder
     {
         private static final int HEADER_SIZE = 4;
-        private final InitGroupSizeEncodingEncoder dimensions = new InitGroupSizeEncodingEncoder();
+        private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
         private StaticInfoEncoder parentMessage;
         private MutableDirectBuffer buffer;
         private int blockLength;
