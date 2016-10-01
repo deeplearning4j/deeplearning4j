@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="org.deeplearning4j.optimize.listeners.stats.sbe"
+                   id="1"
+                   version="0"
+                   semanticVersion="0.6.1"
+                   description="Deeplearning4j Stats Listener: Initialization/Static Information"
+                   byteOrder="littleEndian">
+    <!--
+    Schema for encoding static information using SBE - Simple Binary Encoding.
+    SBE uses code generation to create high-performance binary encoding/decoding classes. These are generated directly
+    from this XML data schema (for Java or C++), using the SBE Java tool.
+    The generated code files are then used in the project, as normal Java files
+
+    To build the encoder/decoder files:
+    1. Download sbe-all-1.5.1.jar (later versions should be fine) - http://repo1.maven.org/maven2/uk/co/real-logic/sbe-all/1.5.1/
+    2. Change directory to the directory containing the above jar
+    3. Run the following:
+       java -Dsbe.output.dir=<path>/deeplearning4j-nn/src/main/ -jar sbe-all-1.5.1.jar <path>/deeplearning4j-nn/src/main/resources/StatsListenerStaticInfoSchema.xml
+       Where <path> is the path to the DL4J project root directory
+
+    Some key points to note with SBE:
+    - There are specific rules regarding the formats and ordering for the Schema. You need to understand these before
+      messing with this file, or generating new SBE formats
+    - Encoding and decoding MUST follow the order defined in the schema exactly. Not doing this can result in corrupted
+      data being read. Consequently, to decode any part of the message, you must decode everything that came before it.
+
+    +++ References +++
+    Overview, performance:      http://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html
+    Wiki:                       https://github.com/real-logic/simple-binary-encoding/wiki
+    SBE tool:                   https://github.com/real-logic/simple-binary-encoding/wiki/Sbe-Tool-Guide
+    Schema:                     https://github.com/real-logic/simple-binary-encoding/wiki/FIX-SBE-XML-Primer
+    Using the generated code:   https://github.com/real-logic/simple-binary-encoding/wiki/Java-Users-Guide
+    Example:                    https://github.com/real-logic/simple-binary-encoding/blob/master/sbe-samples/src/main/java/uk/co/real_logic/sbe/examples/ExampleUsingGeneratedStub.java
+
+    Author: Alex Black
+    -->
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="varDataUTF8">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+    </types>
+    <types>
+        <!-- Set for encoding presence/absence of software, hardware and model information -->
+        <set name="FieldsPresent" encodingType="uint8" semanticType="FieldsPresent">
+            <choice name="softwareInfo">0</choice>
+            <choice name="hardwareInfo">1</choice>
+            <choice name="modelInfo">2</choice>
+        </set>
+    </types>
+    <sbe:message name="StaticInfo" id="1" description="Static information for hardware, software, and model">
+        <!-- Fixed length fields. These always appear first in SBE -->
+        <field name="time" id="1" type="int64"/>
+        <field name="fieldsPresent" id="2" type="FieldsPresent"/>
+        <field name="hwJvmProcessors" id="3" type="uint16"/>
+        <field name="hwNumDevices" id="4" type="uint8"/>
+        <field name="modelNumLayers" id="5" type="int32"/>
+        <field name="modelNumParams" id="6" type="int64"/>
+        <!-- Groups - always second in SBE. Only one group here: GPU/Device info -->
+        <group name="hwDeviceInfoGroup" id="7" dimensionType="groupSizeEncoding">
+            <field name="deviceMemoryMax" id="8" type="int64"/>
+            <data name="deviceDescription" id="50" type="varDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
+        </group>
+        <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
+         Also can't have variable length in composite types, hence separate data fields instead of grouped by sw/hw/model -->
+        <data name="swArch" id="100" type="varDataUTF8"/>
+        <data name="swOsName" id="101" type="varDataUTF8"/>
+        <data name="swJvmName" id="102" type="varDataUTF8"/>
+        <data name="swJvmVersion" id="103" type="varDataUTF8"/>
+        <data name="swJvmSpecVersion" id="104" type="varDataUTF8"/>
+        <data name="swNd4jBackendClass" id="105" type="varDataUTF8"/>
+        <data name="swNd4jDataTypeName" id="106" type="varDataUTF8"/>
+        <data name="modelConfigClassName" id="200" type="varDataUTF8"/>
+        <data name="modelConfigJson" id="201" type="varDataUTF8"/>
+    </sbe:message>
+</sbe:messageSchema>
