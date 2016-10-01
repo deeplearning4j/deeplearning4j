@@ -474,7 +474,7 @@ public class WordVectorSerializer {
      *
      */
     public static void writeWord2Vec(Word2Vec vectors, OutputStream stream) throws IOException {
-        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+        ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
 
         ZipEntry syn0 = new ZipEntry("syn0.txt");
         zipfile.putNextEntry(syn0);
@@ -572,7 +572,7 @@ public class WordVectorSerializer {
      * This method saves ParagraphVectors model into compressed zip file and sends it to output stream
      */
     public static void writeParagraphVectors(ParagraphVectors vectors, OutputStream stream) throws IOException {
-        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+        ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
 
         ZipEntry syn0 = new ZipEntry("syn0.txt");
         zipfile.putNextEntry(syn0);
