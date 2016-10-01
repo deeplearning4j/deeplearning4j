@@ -1564,12 +1564,12 @@ public class UpdateDecoder
                     return this;
                 }
 
-                public static int countId()
+                public static int binCountId()
                 {
                     return 411;
                 }
 
-                public static String countMetaAttribute(final MetaAttribute metaAttribute)
+                public static String binCountMetaAttribute(final MetaAttribute metaAttribute)
                 {
                     switch (metaAttribute)
                     {
@@ -1581,22 +1581,22 @@ public class UpdateDecoder
                     return "";
                 }
 
-                public static long countNullValue()
+                public static long binCountNullValue()
                 {
                     return 4294967294L;
                 }
 
-                public static long countMinValue()
+                public static long binCountMinValue()
                 {
                     return 0L;
                 }
 
-                public static long countMaxValue()
+                public static long binCountMaxValue()
                 {
                     return 4294967293L;
                 }
 
-                public long count()
+                public long binCount()
                 {
                     return (buffer.getInt(offset + 0, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
                 }
@@ -1610,10 +1610,10 @@ public class UpdateDecoder
                 public StringBuilder appendTo(final StringBuilder builder)
                 {
                     builder.append('(');
-                    //Token{signal=BEGIN_FIELD, name='count', description='null', id=411, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                    //Token{signal=BEGIN_FIELD, name='binCount', description='null', id=411, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
                     //Token{signal=ENCODING, name='uint32', description='null', id=-1, version=0, encodedLength=4, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-                    builder.append("count=");
-                    builder.append(count());
+                    builder.append("binCount=");
+                    builder.append(binCount());
                     builder.append(')');
                     return builder;
                 }
