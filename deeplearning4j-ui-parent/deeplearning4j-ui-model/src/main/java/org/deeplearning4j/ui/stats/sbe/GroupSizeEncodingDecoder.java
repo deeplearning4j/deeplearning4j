@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.stats.sbe;
 
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"GroupSizeEncodingDecoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.GroupSizeEncodingDecoder"})
 @SuppressWarnings("all")
 public class GroupSizeEncodingDecoder
 {

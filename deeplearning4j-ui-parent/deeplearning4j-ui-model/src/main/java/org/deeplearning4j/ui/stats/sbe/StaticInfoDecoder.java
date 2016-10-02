@@ -4,7 +4,7 @@ package org.deeplearning4j.ui.stats.sbe;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"StaticInfoDecoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.StaticInfoDecoder"})
 @SuppressWarnings("all")
 public class StaticInfoDecoder
 {

@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.stats.sbe;
 
 import org.agrona.MutableDirectBuffer;
 
-@javax.annotation.Generated(value = {"UpdateFieldsPresentEncoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.UpdateFieldsPresentEncoder"})
 @SuppressWarnings("all")
 public class UpdateFieldsPresentEncoder
 {

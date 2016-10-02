@@ -1,7 +1,7 @@
 /* Generated SBE (Simple Binary Encoding) message codec */
 package org.deeplearning4j.ui.stats.sbe;
 
-@javax.annotation.Generated(value = {"SummaryType"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.SummaryType"})
 public enum SummaryType
 {
     Mean((short)0),

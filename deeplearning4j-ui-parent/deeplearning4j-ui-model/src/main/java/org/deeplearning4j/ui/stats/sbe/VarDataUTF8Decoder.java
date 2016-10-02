@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.stats.sbe;
 
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"VarDataUTF8Decoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.VarDataUTF8Decoder"})
 @SuppressWarnings("all")
 public class VarDataUTF8Decoder
 {
