@@ -140,7 +140,7 @@
         <field name="time" id="1" type="int64"/>
         <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
         <field name="fieldsPresent" id="3" type="UpdateFieldsPresent"/>
-        <field name="statsCollectionDuration" id="4" type="int64"/>
+        <field name="statsCollectionDuration" id="4" type="int32"/>
         <field name="score" id="5" type="double"/>
 
         <!-- Groups - always second in SBE -->
