@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsType;
 import org.deeplearning4j.optimize.listeners.stats.api.Histogram;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsReport;
@@ -18,18 +19,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Alex on 01/10/2016.
+ * An implementation of {@link StatsReport} using Simple Binary Encoding (SBE)
+ *
+ * @author Alex Black
  */
 @EqualsAndHashCode
-@ToString
+@ToString @Data
 public class SbeStatsReport implements StatsReport {
 
     private final String[] paramNames;
 
     private int iterationCount;
-    private long reportTime;
+    private long time;
     private long statsCollectionDurationMs;
-    private double currentScore;
+    private double score;
 
     private long jvmCurrentBytes;
     private long jvmMaxBytes;
@@ -67,22 +70,22 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public void reportTime(long reportTime) {
-        this.reportTime = reportTime;
+        this.time = reportTime;
     }
 
     @Override
     public long getTime() {
-        return reportTime;
+        return time;
     }
 
     @Override
-    public void reportStatsCollectionDurationMS(long statsCollectionDurationMS) {
+    public void reportStatsCollectionDurationMS(int statsCollectionDurationMS) {
         this.statsCollectionDurationMs = statsCollectionDurationMS;
     }
 
     @Override
     public void reportScore(double currentScore) {
-        this.currentScore = currentScore;
+        this.score = currentScore;
         this.scorePresent = true;
     }
 
@@ -110,9 +113,19 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
-    public void reportGarbageCollection(String gcName, int deltaReportTimeMs, int deltaGCCount, int deltaGCTime) {
+    public void reportGarbageCollection(String gcName, int deltaGCCount, int deltaGCTime) {
         if (gcStats == null) gcStats = new ArrayList<>();
         gcStats.add(new GCStats(gcName, deltaGCCount, deltaGCTime));
+    }
+
+    @Override
+    public List<Pair<String, int[]>> getGarbageCollectionStats() {
+        if(gcStats == null) return null;
+        List<Pair<String,int[]>> temp = new ArrayList<>();
+        for(GCStats g : gcStats){
+            temp.add(new Pair<>(g.gcName, new int[]{g.getDeltaGCCount(), g.getDeltaGCTime()}));
+        }
+        return temp;
     }
 
     @Override
@@ -122,15 +135,33 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
+    public Map<String, Histogram> getHistograms(StatsType statsType) {
+        if( histograms == null) return null;
+        return histograms.get(statsType);
+    }
+
+    @Override
     public void reportMean(StatsType statsType, Map<String, Double> mean) {
         if (this.meanValues == null) this.meanValues = new HashMap<>();
         this.meanValues.put(statsType, mean);
     }
 
     @Override
+    public Map<String, Double> getMean(StatsType statsType) {
+        if(this.meanValues == null) return null;
+        return meanValues.get(statsType);
+    }
+
+    @Override
     public void reportStdev(StatsType statsType, Map<String, Double> stdev) {
         if (this.stdevValues == null) this.stdevValues = new HashMap<>();
         this.stdevValues.put(statsType, stdev);
+    }
+
+    @Override
+    public Map<String, Double> getStdev(StatsType statsType) {
+        if(this.stdevValues == null) return null;
+        return stdevValues.get(statsType);
     }
 
     @Override
@@ -235,7 +266,7 @@ public class SbeStatsReport implements StatsReport {
         ue.wrap(buffer, offset);
 
         //Fixed length fields: always encoded
-        ue.time(reportTime)
+        ue.time(time)
                 .deltaTime(0)   //TODO
                 .fieldsPresent()
                 .score(scorePresent)
@@ -253,7 +284,7 @@ public class SbeStatsReport implements StatsReport {
                 .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations));
 
         ue.statsCollectionDuration(statsCollectionDurationMs)
-                .score(currentScore);
+                .score(score);
 
 
         UpdateEncoder.MemoryUseEncoder mue = ue.memoryUseCount(memoryUseCount);
@@ -474,7 +505,7 @@ public class SbeStatsReport implements StatsReport {
         ud.wrap(buffer, headerLength, blockLength, version);
 
         //TODO iteration count
-        reportTime = ud.time();
+        time = ud.time();
         long deltaTime = ud.deltaTime(); //TODO
 
         UpdateFieldsPresentDecoder fpd = ud.fieldsPresent();
@@ -493,7 +524,7 @@ public class SbeStatsReport implements StatsReport {
         boolean meanMagAct = fpd.meanMagnitudeActivations();
 
         statsCollectionDurationMs = ud.statsCollectionDuration();
-        currentScore = ud.score();
+        score = ud.score();
 
         //First group: memory use
         UpdateDecoder.MemoryUseDecoder mud = ud.memoryUse();

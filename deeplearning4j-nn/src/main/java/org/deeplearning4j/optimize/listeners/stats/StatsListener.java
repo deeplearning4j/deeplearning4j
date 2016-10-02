@@ -86,7 +86,6 @@ public class StatsListener implements IterationListener {
         long deltaReportTime = currentTime - lastReportTime;
 
         //--- Performance and System Stats ---
-
         if (config.collectPerformanceStats()) {
             //Stats to collect: total runtime, total examples, total minibatches, iterations/second, examples/second
             double examplesPerSecond;
@@ -117,7 +116,7 @@ public class StatsListener implements IterationListener {
             long offheapTotal = Pointer.totalBytes();
             long offheapMax = Pointer.maxBytes();
 
-            //TODO: GPU...
+            //GPU
             long[] gpuCurrentBytes = null;
             long[] gpuMaxBytes = null;
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -150,16 +149,13 @@ public class StatsListener implements IterationListener {
 
                     lastStats.setFirst(count);
                     lastStats.setSecond(timeMs);
-                    report.reportGarbageCollection(bean.getName(), (int)deltaReportTime, (int)deltaGCCount, (int)deltaGCTime);
+                    report.reportGarbageCollection(bean.getName(), (int)deltaGCCount, (int)deltaGCTime);
                 }
             }
         }
 
         //--- General ---
-
-        if (config.collectScore()) {
-            report.reportScore(model.score());
-        }
+        report.reportScore(model.score());  //Always report score
 
         if (config.collectLearningRates()) {
             //TODO
@@ -239,7 +235,7 @@ public class StatsListener implements IterationListener {
 
 
         long endTime = getTime();
-        report.reportStatsCollectionDurationMS(endTime-currentTime);    //Amount of time required to alculate all histograms, means etc.
+        report.reportStatsCollectionDurationMS((int)(endTime-currentTime));    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
         lastReportIteration = iterCount;
         receiver.postStatsReport(report);

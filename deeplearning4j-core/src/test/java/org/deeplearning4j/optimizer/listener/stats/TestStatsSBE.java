@@ -1,18 +1,12 @@
 package org.deeplearning4j.optimizer.listener.stats;
 
-import org.apache.commons.math3.exception.NumberIsTooLargeException;
-import org.apache.commons.math3.exception.OutOfRangeException;
 import org.deeplearning4j.optimize.listeners.stats.api.Histogram;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsReport;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsType;
 import org.deeplearning4j.optimize.listeners.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.optimize.listeners.stats.impl.SbeStatsReport;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -197,7 +191,7 @@ public class TestStatsSBE {
         String[] paramNames = new String[]{"param0", "param1"};
 
         long time = System.currentTimeMillis();
-        long duration = 123456;
+        int duration = 123456;
 
         long perfRuntime = 1;
         long perfTotalEx = 2;
@@ -213,11 +207,9 @@ public class TestStatsSBE {
         long[] memDM = new long[]{12, 13};
 
         String gc1Name = "14";
-        int gcd1 = 15;
         int gcdc1 = 16;
         int gcdt1 = 17;
         String gc2Name = "18";
-        int gcd2 = 19;
         int gcdc2 = 20;
         int gcdt2 = 21;
 
@@ -296,8 +288,8 @@ public class TestStatsSBE {
                                             }
 
                                             if (collectGCStats) {
-                                                report.reportGarbageCollection(gc1Name, gcd1, gcdc1, gcdt1);
-                                                report.reportGarbageCollection(gc2Name, gcd2, gcdc2, gcdt2);
+                                                report.reportGarbageCollection(gc1Name, gcdc1, gcdt1);
+                                                report.reportGarbageCollection(gc2Name, gcdc2, gcdt2);
                                             }
 
                                             if (collectDataSetMetaData) {
