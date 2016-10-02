@@ -121,7 +121,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         }
         int nHWDeviceStats = (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length);
         nHWDeviceStats = Math.max(nHWDeviceStats, (hwDeviceDescription == null ? 0 : hwDeviceDescription.length));
-        if(!hasHardwareInfo) nHWDeviceStats = 0;
+        if (!hasHardwareInfo) nHWDeviceStats = 0;
         if (hasHardwareInfo) {
             //Device info group:
             bufferSize += (hwDeviceTotalMemory == null ? 0 : nHWDeviceStats * 8);   //fixed content in group: int64 -> 8 bytes
@@ -130,7 +130,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 //            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...
             bufferSize += SbeUtil.length(bhwDeviceDescription);
         }
-        if(hasModelInfo){
+        if (hasModelInfo) {
             bufferSize += SbeUtil.length(bmodelConfigClass);
             bufferSize += SbeUtil.length(bmodelConfigJson);
             bufferSize += SbeUtil.length(bModelParamNames);
@@ -165,17 +165,17 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .modelNumParams(modelNumParams);
         //Device info group...
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
-        for(int i=0; i<nHWDeviceStats; i++ ){
+        for (int i = 0; i < nHWDeviceStats; i++) {
             long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? -1 : hwDeviceTotalMemory[i];
             byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
-            if(descr == null) descr = SbeUtil.EMPTY_BYTES;
-            hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr,0,descr.length);
+            if (descr == null) descr = SbeUtil.EMPTY_BYTES;
+            hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr, 0, descr.length);
         }
 
         int nParamNames = modelParamNames == null ? 0 : modelParamNames.length;
         StaticInfoEncoder.ModelParamNamesEncoder mpnEnc = sie.modelParamNamesCount(nParamNames);
-        for( int i=0; i<nParamNames; i++ ){
-            mpnEnc.next().putModelParamNames(bModelParamNames[i],0,bModelParamNames[i].length);
+        for (int i = 0; i < nParamNames; i++) {
+            mpnEnc.next().putModelParamNames(bModelParamNames[i], 0, bModelParamNames[i].length);
         }
 
         //In the case of !hasSoftwareInfo: these will all be empty byte arrays... still need to encode them (for 0 length) however
@@ -187,17 +187,16 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .putSwNd4jBackendClass(bswNd4jBackendClass, 0, bswNd4jBackendClass.length)
                 .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length);
         //Similar: !hasModelInfo -> empty byte[]
-        sie.putModelConfigClassName(bmodelConfigClass,0,bmodelConfigClass.length)
-                .putModelConfigJson(bmodelConfigJson,0,bmodelConfigJson.length);
+        sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length)
+                .putModelConfigJson(bmodelConfigJson, 0, bmodelConfigJson.length);
 
         offset += sie.encodedLength();
-        if(offset != bytes.length){
+        if (offset != bytes.length) {
             throw new RuntimeException();
         }
 
         return bytes;
     }
-
 
 
     @Override
@@ -207,7 +206,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         StaticInfoDecoder sid = new StaticInfoDecoder();
 
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-        dec.wrap(buffer,0);
+        dec.wrap(buffer, 0);
 
         final int blockLength = dec.blockLength();
         final int version = dec.version();
@@ -215,7 +214,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         int headerLength = dec.encodedLength();
         //TODO: in general, we'd check the header, version, schema etc.
 
-        sid.wrap(buffer,headerLength,blockLength,version);
+        sid.wrap(buffer, headerLength, blockLength, version);
         long time = sid.time(); //TODO
         InitFieldsPresentDecoder fields = sid.fieldsPresent();
         hasSoftwareInfo = fields.softwareInfo();
@@ -232,20 +231,20 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
         StaticInfoDecoder.HwDeviceInfoGroupDecoder hwDeviceInfoGroupDecoder = sid.hwDeviceInfoGroup();
         int count = hwDeviceInfoGroupDecoder.count();
-        if(count > 0){
+        if (count > 0) {
             hwDeviceTotalMemory = new long[count];
             hwDeviceDescription = new String[count];
         }
-        int i=0;
-        for(StaticInfoDecoder.HwDeviceInfoGroupDecoder hw : hwDeviceInfoGroupDecoder){
+        int i = 0;
+        for (StaticInfoDecoder.HwDeviceInfoGroupDecoder hw : hwDeviceInfoGroupDecoder) {
             hwDeviceTotalMemory[i] = hw.deviceMemoryMax();
             hwDeviceDescription[i++] = hw.deviceDescription();
         }
-        i=0;
+        i = 0;
         StaticInfoDecoder.ModelParamNamesDecoder mpdec = sid.modelParamNames();
         int mpnCount = mpdec.count();
         modelParamNames = new String[mpnCount];
-        for(StaticInfoDecoder.ModelParamNamesDecoder mp : mpdec){
+        for (StaticInfoDecoder.ModelParamNamesDecoder mp : mpdec) {
             modelParamNames[i++] = mp.modelParamNames();
         }
         //Variable length data. Even if it is missing: still needs to be read, to advance buffer
@@ -256,10 +255,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = sid.swJvmSpecVersion();
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
-        if(!hasSoftwareInfo) clearSwFields();
+        if (!hasSoftwareInfo) clearSwFields();
         modelClassName = sid.modelConfigClassName();
         modelConfigJson = sid.modelConfigJson();
-        if(!hasModelInfo) clearModelFields();
+        if (!hasModelInfo) clearModelFields();
     }
 
     @Override
@@ -278,7 +277,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
 
-    private void clearSwFields(){
+    private void clearSwFields() {
         swArch = null;
         swOsName = null;
         swJvmName = null;
@@ -288,7 +287,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swNd4jDataTypeName = null;
     }
 
-    private void clearModelFields(){
+    private void clearModelFields() {
         modelClassName = null;
         modelConfigJson = null;
         modelParamNames = null;
