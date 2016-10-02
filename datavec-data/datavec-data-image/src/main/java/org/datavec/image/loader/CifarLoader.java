@@ -194,7 +194,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             e.printStackTrace();
         }
 
-        defineLabels();
+        if(labels.isEmpty()) defineLabels();
 
         if (useSpecialPreProcessCifar && train && !cifarProcessedFilesExists()) {
             for (int i = fileNum+1; i <= (TRAINFILENAMES.length); i++) {
@@ -436,6 +436,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         train = false;
         setInputStream();
         shuffle = false;
+        numExamples = 0;
+        fileNum = 0;
     }
 
 }
