@@ -2,15 +2,15 @@ package org.deeplearning4j.optimize.listeners.stats.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsType;
 import org.deeplearning4j.optimize.listeners.stats.api.Histogram;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsReport;
 import org.deeplearning4j.optimize.listeners.stats.api.SummaryType;
-import org.deeplearning4j.optimize.listeners.stats.sbe.MemoryType;
-import org.deeplearning4j.optimize.listeners.stats.sbe.MessageHeaderEncoder;
-import org.deeplearning4j.optimize.listeners.stats.sbe.UpdateEncoder;
+import org.deeplearning4j.optimize.listeners.stats.sbe.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +20,11 @@ import java.util.Map;
 /**
  * Created by Alex on 01/10/2016.
  */
+@EqualsAndHashCode
+@ToString
 public class SbeStatsReport implements StatsReport {
+
+    private final String[] paramNames;
 
     private int iterationCount;
     private long reportTime;
@@ -42,14 +46,19 @@ public class SbeStatsReport implements StatsReport {
 
     private List<GCStats> gcStats;
 
-    private Map<StatsType,Map<String,Histogram>> histograms;
-    private Map<StatsType,Map<String,Double>> meanValues;
-    private Map<StatsType,Map<String,Double>> stdevValues;
-    private Map<StatsType,Map<String,Double>> meanMagnitudeValues;
+    private Map<StatsType, Map<String, Histogram>> histograms;
+    private Map<StatsType, Map<String, Double>> meanValues;
+    private Map<StatsType, Map<String, Double>> stdevValues;
+    private Map<StatsType, Map<String, Double>> meanMagnitudeValues;
 
     private boolean scorePresent;
     private boolean memoryUsePresent;
     private boolean performanceStatsPresent;
+
+    public SbeStatsReport(String[] paramNames) {
+        if (paramNames == null) paramNames = new String[0];
+        this.paramNames = paramNames;
+    }
 
     @Override
     public void reportIterationCount(int iterationCount) {
@@ -102,32 +111,32 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public void reportGarbageCollection(String gcName, int deltaReportTimeMs, int deltaGCCount, int deltaGCTime) {
-        if(gcStats == null) gcStats = new ArrayList<>();
-        gcStats.add(new GCStats(gcName, deltaReportTimeMs, deltaGCCount, deltaGCTime));
+        if (gcStats == null) gcStats = new ArrayList<>();
+        gcStats.add(new GCStats(gcName, deltaGCCount, deltaGCTime));
     }
 
     @Override
     public void reportHistograms(StatsType statsType, Map<String, Histogram> histogram) {
-        if(this.histograms == null) this.histograms = new HashMap<>();
+        if (this.histograms == null) this.histograms = new HashMap<>();
         this.histograms.put(statsType, histogram);
     }
 
     @Override
     public void reportMean(StatsType statsType, Map<String, Double> mean) {
-        if(this.meanValues == null) this.meanValues = new HashMap<>();
+        if (this.meanValues == null) this.meanValues = new HashMap<>();
         this.meanValues.put(statsType, mean);
     }
 
     @Override
     public void reportStdev(StatsType statsType, Map<String, Double> stdev) {
-        if(this.stdevValues == null) this.stdevValues = new HashMap<>();
-        this.stdevValues.put(statsType,stdev);
+        if (this.stdevValues == null) this.stdevValues = new HashMap<>();
+        this.stdevValues.put(statsType, stdev);
     }
 
     @Override
     public void reportMeanMagnitudes(StatsType statsType, Map<String, Double> meanMagnitudes) {
-        if(this.meanMagnitudeValues == null) this.meanMagnitudeValues = new HashMap<>();
-        this.meanMagnitudeValues.put(statsType,meanMagnitudes);
+        if (this.meanMagnitudeValues == null) this.meanMagnitudeValues = new HashMap<>();
+        this.meanMagnitudeValues.put(statsType, meanMagnitudes);
     }
 
     @Override
@@ -150,13 +159,13 @@ public class SbeStatsReport implements StatsReport {
 
         //Memory use group length...
         int memoryUseCount;
-        if(!memoryUsePresent){
+        if (!memoryUsePresent) {
             memoryUseCount = 0;
         } else {
             memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
                     + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
         }
-        bufferSize += 4 + 9*memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 1+8 = 9 bytes
+        bufferSize += 4 + 9 * memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 1+8 = 9 bytes
 
         //Performance group length
         bufferSize += 4 + (performanceStatsPresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
@@ -164,9 +173,9 @@ public class SbeStatsReport implements StatsReport {
         //GC stats group length
         bufferSize += 4;    //Group header: always present
         List<byte[]> gcStatsLabelBytes = null;
-        if(gcStats != null && gcStats.size() > 0){
+        if (gcStats != null && gcStats.size() > 0) {
             gcStatsLabelBytes = new ArrayList<>();
-            for( int i=0; i<gcStats.size(); i++ ){
+            for (int i = 0; i < gcStats.size(); i++) {
                 GCStats stats = gcStats.get(i);
                 bufferSize += 12;    //Fixed per group entry: 2x int32 -> 8 bytes PLUS the header for the variable length GC name: another 4 bytes
                 byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
@@ -177,36 +186,31 @@ public class SbeStatsReport implements StatsReport {
 
         //Per parameter stats group length
         bufferSize += 4;    //Per parameter stats group header: always present
-        //TODO: need to handle parameters and order properly...
-        List<String> params = new ArrayList<>();
-        if(histograms != null && histograms.size() > 0){
-            params = new ArrayList<>(histograms.get(histograms.keySet().iterator().next()).keySet());
-        }
-        int nParams = params.size();
+        int nParams = paramNames.length;
         bufferSize += nParams * 10;  //Each parameter entry: has a param ID -> uint16 -> 2 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
-        for(String s : params){
+        for (String s : paramNames) {
             //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
             int summaryStatsCount = 0;
-            for(StatsType statsType : StatsType.values() ){ //Parameters, updates, activations
-                for(SummaryType summaryType : SummaryType.values()){        //Mean, stdev, MM
-                    Map<String,Double> map = mapForTypes(statsType, summaryType);
-                    if(map == null) continue;
-                    if(map.containsKey(s)) summaryStatsCount++;
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    if (map.containsKey(s)) summaryStatsCount++;
                 }
             }
             //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
             bufferSize += summaryStatsCount * 10;
 
             //Histograms for this parameter
-            int nHistogramsThisParam = histograms.size();    //0, 1 or 2 for each parameter
+            int nHistogramsThisParam = (histograms == null ? 0 : histograms.size());    //0, 1 or 2 for each parameter
             //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
             bufferSize += 25 * nHistogramsThisParam;
             //PLUS, the number of count values, given by nBins...
             int nBinCountEntries = 0;
-            for(StatsType statsType : StatsType.values() ){
-                if(!histograms.containsKey(statsType)) continue;
-                Map<String,Histogram> map = histograms.get(statsType);
-                if(map.containsKey(s)){ //If it doesn't: assume 0 count...
+            for (StatsType statsType : StatsType.values()) {
+                if (histograms == null || !histograms.containsKey(statsType)) continue;
+                Map<String, Histogram> map = histograms.get(statsType);
+                if (map.containsKey(s)) { //If it doesn't: assume 0 count...
                     nBinCountEntries += map.get(s).getNBins();
                 }
             }
@@ -248,83 +252,85 @@ public class SbeStatsReport implements StatsReport {
                 .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
                 .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations));
 
-        ue.statsCollectionDuration(statsCollectionDurationMs);
+        ue.statsCollectionDuration(statsCollectionDurationMs)
+                .score(currentScore);
 
 
         UpdateEncoder.MemoryUseEncoder mue = ue.memoryUseCount(memoryUseCount);
-        if(memoryUsePresent){
+        if (memoryUsePresent) {
             mue.next().memoryType(MemoryType.JvmCurrent).memoryBytes(jvmCurrentBytes)
                     .next().memoryType(MemoryType.JvmMax).memoryBytes(jvmMaxBytes)
                     .next().memoryType(MemoryType.OffHeapCurrent).memoryBytes(offHeapCurrentBytes)
                     .next().memoryType(MemoryType.OffHeapMax).memoryBytes(offHeapMaxBytes);
-            if(deviceCurrentBytes != null){
-                for( int i=0; i<deviceCurrentBytes.length; i++ ){
+            if (deviceCurrentBytes != null) {
+                for (int i = 0; i < deviceCurrentBytes.length; i++) {
                     mue.next().memoryType(MemoryType.DeviceCurrent).memoryBytes(deviceCurrentBytes[i]);
                 }
             }
-            if(deviceMaxBytes != null){
-                for( int i=0; i<deviceMaxBytes.length; i++ ){
+            if (deviceMaxBytes != null) {
+                for (int i = 0; i < deviceMaxBytes.length; i++) {
                     mue.next().memoryType(MemoryType.DeviceMax).memoryBytes(deviceMaxBytes[i]);
                 }
             }
         }
 
         UpdateEncoder.PerformanceEncoder pe = ue.performanceCount(performanceStatsPresent ? 1 : 0);
-        if(performanceStatsPresent){
+        if (performanceStatsPresent) {
             pe.next().totalRuntimeMs(totalRuntimeMs)
                     .totalExamples(totalExamples)
                     .totalMinibatches(totalMinibatches)
-                    .examplesPerSecond((float)examplesPerSecond)
-                    .minibatchesPerSecond((float)minibatchesPerSecond);
+                    .examplesPerSecond((float) examplesPerSecond)
+                    .minibatchesPerSecond((float) minibatchesPerSecond);
         }
 
         UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.size() == 0 ? 0 : gcStats.size());
-        if(gcStats != null && gcStats.size() > 0 ){
-            int i=0;
-            for(GCStats g : gcStats){
+        if (gcStats != null && gcStats.size() > 0) {
+            int i = 0;
+            for (GCStats g : gcStats) {
                 byte[] gcLabelBytes = gcStatsLabelBytes.get(i++);
                 gce.next().deltaGCCount(g.deltaGCCount)
                         .deltaGCTimeMs(g.deltaGCTime)
-                        .putGcName(gcLabelBytes,0,gcLabelBytes.length);
+                        .putGcName(gcLabelBytes, 0, gcLabelBytes.length);
             }
         }
 
         // +++++ Per Parameter Stats +++++
         int nSummaryStats = 0;
-        if(meanValues != null) nSummaryStats += meanValues.size();      //0 to 3 values: parameters, updates, activations
-        if(stdevValues != null) nSummaryStats += stdevValues.size();
-        if(meanMagnitudeValues != null) nSummaryStats += meanMagnitudeValues.size();
+        if (meanValues != null)
+            nSummaryStats += meanValues.size();      //0 to 3 values: parameters, updates, activations
+        if (stdevValues != null) nSummaryStats += stdevValues.size();
+        if (meanMagnitudeValues != null) nSummaryStats += meanMagnitudeValues.size();
 
         int nHistograms = (histograms == null ? 0 : histograms.size());
         UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(nParams);
 
         int paramId = 0;
-        for(String s : params){
+        for (String s : paramNames) {
             ppe = ppe.next();
             ppe.paramID(paramId++);
             UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(nSummaryStats);
 
             //Summary stats
-            for(StatsType statsType : StatsType.values() ){ //Parameters, updates, activations
-                for(SummaryType summaryType : SummaryType.values()){        //Mean, stdev, MM
-                    Map<String,Double> map = mapForTypes(statsType, summaryType);
-                    if(map == null) continue;
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
                     appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
                 }
             }
 
             //Histograms
             UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistograms);
-            if(nHistograms > 0) {
+            if (nHistograms > 0) {
                 for (StatsType statsType : StatsType.values()) {
-                    Map<String,Histogram> map = histograms.get(statsType);
-                    if(map == null) continue;
+                    Map<String, Histogram> map = histograms.get(statsType);
+                    if (map == null) continue;
                     Histogram h = map.get(s);   //Histogram for StatsType for this parameter
                     double min;
                     double max;
                     int nBins;
                     int[] binCounts;
-                    if(h == null){
+                    if (h == null) {
                         min = 0.0;
                         max = 0.0;
                         nBins = 0;
@@ -336,9 +342,9 @@ public class SbeStatsReport implements StatsReport {
                         binCounts = h.getBinCounts();
                     }
 
-                    sshe = sshe.next().minValue(min).maxValue(max).nBins(nBins);
+                    sshe = sshe.next().statType(translate(statsType)).minValue(min).maxValue(max).nBins(nBins);
                     UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder.HistogramCountsEncoder histCountsEncoder = sshe.histogramCountsCount(nBins);
-                    for( int i=0; i<nBins; i++ ){
+                    for (int i = 0; i < nBins; i++) {
                         int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
                         histCountsEncoder.next().binCount(count);
                     }
@@ -347,23 +353,23 @@ public class SbeStatsReport implements StatsReport {
         }
 
         offset += ue.encodedLength();
-        if(offset != bytes.length){
+        if (offset != bytes.length) {
             throw new RuntimeException();
         }
 
         return bytes;
     }
 
-    private Map<String,Double> mapForTypes(StatsType statsType, SummaryType summaryType){
-        switch (summaryType){
+    private Map<String, Double> mapForTypes(StatsType statsType, SummaryType summaryType) {
+        switch (summaryType) {
             case Mean:
-                if(meanValues == null) return null;
+                if (meanValues == null) return null;
                 return meanValues.get(statsType);
             case Stdev:
-                if(stdevValues == null) return null;
+                if (stdevValues == null) return null;
                 return stdevValues.get(statsType);
             case MeanMagnitudes:
-                if(meanMagnitudeValues == null) return null;
+                if (meanMagnitudeValues == null) return null;
                 return meanMagnitudeValues.get(statsType);
         }
         return null;
@@ -371,12 +377,12 @@ public class SbeStatsReport implements StatsReport {
 
     private static void appendOrDefault(UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse, String param,
                                         StatsType statsType, SummaryType summaryType,
-                                        Map<String,Double> map, double defaultValue){
+                                        Map<String, Double> map, double defaultValue) {
         Double d = map.get(param);
-        if(d == null) d = defaultValue;
+        if (d == null) d = defaultValue;
 
         org.deeplearning4j.optimize.listeners.stats.sbe.StatsType st;
-        switch (statsType){
+        switch (statsType) {
             case Parameters:
                 st = org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Parameters;
                 break;
@@ -390,7 +396,7 @@ public class SbeStatsReport implements StatsReport {
                 throw new RuntimeException("Unknown stats type: " + statsType);
         }
         org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType summaryT;
-        switch(summaryType){
+        switch (summaryType) {
             case Mean:
                 summaryT = org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType.Mean;
                 break;
@@ -409,17 +415,225 @@ public class SbeStatsReport implements StatsReport {
                 .value(d);
     }
 
-    @Override
-    public void fromByteArray(byte[] bytes){
-
-
-
+    private static StatsType translate(org.deeplearning4j.optimize.listeners.stats.sbe.StatsType statsType) {
+        switch (statsType) {
+            case Parameters:
+                return StatsType.Parameters;
+            case Updates:
+                return StatsType.Updates;
+            case Activations:
+                return StatsType.Activations;
+            default:
+                throw new RuntimeException("Unknown stats type: " + statsType);
+        }
     }
 
-    @AllArgsConstructor @Data
+    private static org.deeplearning4j.optimize.listeners.stats.sbe.StatsType translate(StatsType statsType) {
+        switch (statsType) {
+            case Parameters:
+                return org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Parameters;
+            case Updates:
+                return org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Updates;
+            case Activations:
+                return org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Activations;
+            default:
+                throw new RuntimeException("Unknown stats type: " + statsType);
+        }
+    }
+
+    private static SummaryType translate(org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType summaryType) {
+        switch (summaryType) {
+            case Mean:
+                return SummaryType.Mean;
+            case Stdev:
+                return SummaryType.Stdev;
+            case MeanMagnitude:
+                return SummaryType.MeanMagnitudes;
+            default:
+                throw new RuntimeException("Unknown summary type: " + summaryType);
+        }
+    }
+
+
+    @Override
+    public void fromByteArray(byte[] bytes) {
+
+        //TODO we could do this much more efficiently, with buffer re-use, etc.
+        MessageHeaderDecoder dec = new MessageHeaderDecoder();
+        UpdateDecoder ud = new UpdateDecoder();
+
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        dec.wrap(buffer, 0);
+
+        final int blockLength = dec.blockLength();
+        final int version = dec.version();
+
+        int headerLength = dec.encodedLength();
+        //TODO: in general, we'd check the header, version, schema etc.
+
+        ud.wrap(buffer, headerLength, blockLength, version);
+
+        //TODO iteration count
+        reportTime = ud.time();
+        long deltaTime = ud.deltaTime(); //TODO
+
+        UpdateFieldsPresentDecoder fpd = ud.fieldsPresent();
+        scorePresent = fpd.score();
+        memoryUsePresent = fpd.memoryUse();
+        performanceStatsPresent = fpd.performance();
+        boolean gc = fpd.garbageCollection();
+        boolean histogramParameters = fpd.histogramParameters();
+        boolean histogramUpdates = fpd.histogramUpdates();
+        boolean histogramActivations = fpd.histogramActivations();
+        boolean meanParameters = fpd.meanParameters();
+        boolean meanUpdates = fpd.meanUpdates();
+        boolean meanActivations = fpd.meanActivations();
+        boolean meanMagParams = fpd.meanMagnitudeParameters();
+        boolean meanMagUpdates = fpd.meanMagnitudeUpdates();
+        boolean meanMagAct = fpd.meanMagnitudeActivations();
+
+        statsCollectionDurationMs = ud.statsCollectionDuration();
+        currentScore = ud.score();
+
+        //First group: memory use
+        UpdateDecoder.MemoryUseDecoder mud = ud.memoryUse();
+        List<Long> dcMem = null;        //TODO avoid
+        List<Long> dmMem = null;
+        for (UpdateDecoder.MemoryUseDecoder m : mud) {
+            MemoryType type = m.memoryType();
+            long memBytes = m.memoryBytes();
+            switch (type) {
+                case JvmCurrent:
+                    jvmCurrentBytes = memBytes;
+                    break;
+                case JvmMax:
+                    jvmMaxBytes = memBytes;
+                    break;
+                case OffHeapCurrent:
+                    offHeapCurrentBytes = memBytes;
+                    break;
+                case OffHeapMax:
+                    offHeapMaxBytes = memBytes;
+                    break;
+                case DeviceCurrent:
+                    if (dcMem == null) dcMem = new ArrayList<>();
+                    dcMem.add(memBytes);
+                    break;
+                case DeviceMax:
+                    if (dmMem == null) dmMem = new ArrayList<>();
+                    dmMem.add(memBytes);
+                    break;
+                case NULL_VAL:
+                    break;
+            }
+        }
+        if (dcMem != null) {
+            long[] a = new long[dcMem.size()];
+            int i = 0;
+            for (Long l : dcMem) {
+                a[i++] = l;
+            }
+            deviceCurrentBytes = a;
+        }
+        if (dmMem != null) {
+            long[] a = new long[dmMem.size()];
+            int i = 0;
+            for (Long l : dmMem) {
+                a[i++] = l;
+            }
+            deviceMaxBytes = a;
+        }
+
+        //Second group: performance stats (0 or 1 entries only)
+        for (UpdateDecoder.PerformanceDecoder pd : ud.performance()) {
+            totalRuntimeMs = pd.totalRuntimeMs();
+            totalExamples = pd.totalExamples();
+            totalMinibatches = pd.totalMinibatches();
+            examplesPerSecond = pd.examplesPerSecond();
+            minibatchesPerSecond = pd.minibatchesPerSecond();
+        }
+
+        //Third group: GC stats
+        for (UpdateDecoder.GcStatsDecoder gcsd : ud.gcStats()) {
+            if (gcStats == null) gcStats = new ArrayList<>();
+            int deltaGCCount = gcsd.deltaGCCount();
+            int deltaGCTimeMs = gcsd.deltaGCTimeMs();
+            String gcName = gcsd.gcName();
+            GCStats s = new GCStats(gcName, deltaGCCount, deltaGCTimeMs); //TODO delta time...
+            gcStats.add(s);
+        }
+
+        //Fourth group: Per parameter stats (and histograms, etc)
+        for (UpdateDecoder.PerParameterStatsDecoder ppsd : ud.perParameterStats()) {
+            int paramID = ppsd.paramID();
+            String paramName = paramNames[paramID];
+
+            //Summary stats (mean/stdev/mean magnitude)
+            for (UpdateDecoder.PerParameterStatsDecoder.SummaryStatDecoder ssd : ppsd.summaryStat()) {
+                StatsType st = translate(ssd.statType());
+                SummaryType summaryType = translate(ssd.summaryType());
+                double value = ssd.value();
+
+                switch (summaryType) {
+                    case Mean:
+                        if (meanValues == null) meanValues = new HashMap<>();
+                        Map<String, Double> map = meanValues.get(st);
+                        if (map == null) {
+                            map = new HashMap<>();
+                            meanValues.put(st, map);
+                        }
+                        map.put(paramName, value);
+                        break;
+                    case Stdev:
+                        if (stdevValues == null) stdevValues = new HashMap<>();
+                        Map<String, Double> map2 = stdevValues.get(st);
+                        if (map2 == null) {
+                            map2 = new HashMap<>();
+                            stdevValues.put(st, map2);
+                        }
+                        map2.put(paramName, value);
+                        break;
+                    case MeanMagnitudes:
+                        if (meanMagnitudeValues == null) meanMagnitudeValues = new HashMap<>();
+                        Map<String, Double> map3 = meanMagnitudeValues.get(st);
+                        if (map3 == null) {
+                            map3 = new HashMap<>();
+                            meanMagnitudeValues.put(st, map3);
+                        }
+                        map3.put(paramName, value);
+                        break;
+                }
+            }
+
+            //Histograms
+            for (UpdateDecoder.PerParameterStatsDecoder.HistogramsDecoder hd : ppsd.histograms()) {
+                StatsType st = translate(hd.statType());
+                double min = hd.minValue();
+                double max = hd.maxValue();
+                int nBins = hd.nBins();
+                int[] binCounts = new int[nBins];
+                int i = 0;
+                for (UpdateDecoder.PerParameterStatsDecoder.HistogramsDecoder.HistogramCountsDecoder hcd : hd.histogramCounts()) {
+                    binCounts[i++] = (int) hcd.binCount();
+                }
+
+                Histogram h = new Histogram(min, max, nBins, binCounts);
+                if (histograms == null) histograms = new HashMap<>();
+                Map<String, Histogram> map = histograms.get(st);
+                if (map == null) {
+                    map = new HashMap<>();
+                    histograms.put(st, map);
+                }
+                map.put(paramName, h);
+            }
+        }
+    }
+
+
+    @AllArgsConstructor
+    @Data
     private static class GCStats {
         private String gcName;
-        private int deltaReportTime;
         private int deltaGCCount;
         private int deltaGCTime;
     }
