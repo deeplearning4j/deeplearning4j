@@ -80,6 +80,7 @@
             <choice name="meanMagnitudeParameters">10</choice>
             <choice name="meanMagnitudeUpdates">11</choice>
             <choice name="meanMagnitudeActivations">12</choice>
+            <choice name="learningRatesPresent">13</choice>
         </set>
         <enum name="MemoryType" encodingType="uint8">
             <validValue name="JvmCurrent">0</validValue>
@@ -139,9 +140,10 @@
         <!-- Fixed length fields. These always appear first in SBE -->
         <field name="time" id="1" type="int64"/>
         <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
-        <field name="fieldsPresent" id="3" type="UpdateFieldsPresent"/>
-        <field name="statsCollectionDuration" id="4" type="int32"/>
-        <field name="score" id="5" type="double"/>
+        <field name="iterationCount" id="3" type="int32"/>
+        <field name="fieldsPresent" id="4" type="UpdateFieldsPresent"/>
+        <field name="statsCollectionDuration" id="5" type="int32"/>
+        <field name="score" id="6" type="double"/>
 
         <!-- Groups - always second in SBE -->
         <group name="memoryUse" id="100" dimensionType="groupSizeEncoding">
@@ -163,18 +165,19 @@
         <!-- Per parameter stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations; histograms for params/updates/activations -->
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
             <field name="paramID" id="401" type="uint16"/>
-            <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
-                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
-                <field name="summaryType" id="403" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
-                <field name="value" id="405" type="double"/>
+            <field name="learningRate" id="402" type="float"/>
+            <group name="summaryStat" id="403" dimensionType="groupSizeEncoding">
+                <field name="statType" id="404" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
+                <field name="summaryType" id="405" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
+                <field name="value" id="406" type="double"/>
             </group>
-            <group name="histograms" id="406" dimensionType="groupSizeEncoding">
-                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
-                <field name="minValue" id="408" type="double"/>
-                <field name="maxValue" id="409" type="double"/>
-                <field name="nBins" id="410" type="int32"/>
-                <group name="histogramCounts" id="411" dimensionType="groupSizeEncoding">
-                    <field name="binCount" id="412" type="uint32"/>
+            <group name="histograms" id="407" dimensionType="groupSizeEncoding">
+                <field name="statType" id="408" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
+                <field name="minValue" id="409" type="double"/>
+                <field name="maxValue" id="410" type="double"/>
+                <field name="nBins" id="411" type="int32"/>
+                <group name="histogramCounts" id="412" dimensionType="groupSizeEncoding">
+                    <field name="binCount" id="413" type="uint32"/>
                 </group>
             </group>
         </group>
