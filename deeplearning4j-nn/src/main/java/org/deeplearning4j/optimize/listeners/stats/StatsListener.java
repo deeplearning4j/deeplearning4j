@@ -150,7 +150,7 @@ public class StatsListener implements IterationListener {
 
                     lastStats.setFirst(count);
                     lastStats.setSecond(timeMs);
-                    report.reportGarbageCollection(bean.getName(), deltaReportTime, deltaGCCount, deltaGCTime);
+                    report.reportGarbageCollection(bean.getName(), (int)deltaReportTime, (int)deltaGCCount, (int)deltaGCTime);
                 }
             }
         }
@@ -169,18 +169,18 @@ public class StatsListener implements IterationListener {
         //--- Histograms ---
 
         if (config.collectHistograms(StatsType.Parameters)) {
-            Map<String, Pair<INDArray, int[]>> paramHistograms = getHistograms(model.paramTable(), config.numHistogramBins(StatsType.Parameters));
+            Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(), config.numHistogramBins(StatsType.Parameters));
             report.reportHistograms(StatsType.Parameters, paramHistograms);
         }
 
         if (config.collectHistograms(StatsType.Updates)) {
-            Map<String, Pair<INDArray, int[]>> updateHistograms = getHistograms(model.gradient().gradientForVariable(), config.numHistogramBins(StatsType.Updates));
+            Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(), config.numHistogramBins(StatsType.Updates));
             report.reportHistograms(StatsType.Updates, updateHistograms);
         }
 
         if (config.collectHistograms(StatsType.Activations)) {
             Map<String, INDArray> activations = getActivationArraysMap(model);
-            Map<String, Pair<INDArray, int[]>> activationHistograms = getHistograms(activations, config.numHistogramBins(StatsType.Activations));
+            Map<String, Histogram> activationHistograms = getHistograms(activations, config.numHistogramBins(StatsType.Activations));
             report.reportHistograms(StatsType.Activations, activationHistograms);
         }
 
@@ -362,9 +362,9 @@ public class StatsListener implements IterationListener {
         return out;
     }
 
-    private static Map<String, Pair<INDArray, int[]>> getHistograms(Map<String, INDArray> map, int nBins) {
+    private static Map<String, Histogram> getHistograms(Map<String, INDArray> map, int nBins) {
         //TODO This is temporary approach...
-        Map<String, Pair<INDArray, int[]>> out = new LinkedHashMap<>();
+        Map<String, Histogram> out = new LinkedHashMap<>();
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
             HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
@@ -378,7 +378,12 @@ public class StatsListener implements IterationListener {
                 count[i] = e.getValue().get();
             }
 
-            out.put(entry.getKey(), new Pair<>(bins, count));
+            double min = histogram.getMin();
+            double max = histogram.getMax();
+
+            Histogram h = new Histogram(min, max, nBins, count);
+
+            out.put(entry.getKey(), h);
         }
         return out;
     }

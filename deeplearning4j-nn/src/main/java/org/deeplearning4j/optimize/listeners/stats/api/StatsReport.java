@@ -1,7 +1,5 @@
 package org.deeplearning4j.optimize.listeners.stats.api;
 
-import org.deeplearning4j.optimize.listeners.stats.StatsType;
-
 import java.util.Map;
 
 /**

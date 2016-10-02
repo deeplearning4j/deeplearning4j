@@ -4,9 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.deeplearning4j.optimize.listeners.stats.StatsType;
+import org.deeplearning4j.optimize.listeners.stats.api.StatsType;
 import org.deeplearning4j.optimize.listeners.stats.api.Histogram;
 import org.deeplearning4j.optimize.listeners.stats.api.StatsReport;
+import org.deeplearning4j.optimize.listeners.stats.api.SummaryType;
 import org.deeplearning4j.optimize.listeners.stats.sbe.MemoryType;
 import org.deeplearning4j.optimize.listeners.stats.sbe.MessageHeaderEncoder;
 import org.deeplearning4j.optimize.listeners.stats.sbe.UpdateEncoder;
@@ -158,6 +159,7 @@ public class SbeStatsReport implements StatsReport {
                 .version(ue.sbeSchemaVersion());
 
         int offset = enc.encodedLength();   //Expect 8 bytes
+        ue.wrap(buffer, offset);
 
         //Fixed length fields: always encoded
         ue.time(reportTime)
@@ -222,18 +224,133 @@ public class SbeStatsReport implements StatsReport {
             }
         }
 
-        //TODO: need to handle parameters order...
+        // +++++ Per Parameter Stats +++++
+        //TODO: need to handle parameters and order properly...
 
+        int nSummaryStats = 0;
+        if(meanValues != null) nSummaryStats += meanValues.size();      //0 to 3 values: parameters, updates, activations
+        if(stdevValues != null) nSummaryStats += stdevValues.size();
+        if(meanMagnitudeValues != null) nSummaryStats += meanMagnitudeValues.size();
 
+        int nHistograms = (histograms == null ? 0 : histograms.size());
 
+        List<String> params = new ArrayList<>();
+        if(histograms != null && histograms.size() > 0){
+            params = new ArrayList<>(histograms.get(histograms.keySet().iterator().next()).keySet());
+        }
 
+        int nParams = params.size();
+        UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(nParams);
 
+        int paramId = 0;
+        for(String s : params){
+            ppe = ppe.next();
+            ppe.paramID(paramId++);
+            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(nSummaryStats);
 
+            //Summary stats
+            for(StatsType statsType : StatsType.values() ){ //Parameters, updates, activations
+                for(SummaryType summaryType : SummaryType.values()){        //Mean, stdev, MM
+                    Map<String,Double> map = mapForTypes(statsType, summaryType);
+                    if(map == null) continue;
+                    appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
+                }
+            }
 
+            //Histograms
+            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistograms);
+            if(nHistograms > 0) {
+                for (StatsType statsType : StatsType.values()) {
+                    Map<String,Histogram> map = histograms.get(statsType);
+                    if(map == null) continue;;
+                    Histogram h = map.get(s);   //Histogram for StatsType for this parameter
+                    double min;
+                    double max;
+                    int nBins;
+                    int[] binCounts;
+                    if(h == null){
+                        min = 0.0;
+                        max = 0.0;
+                        nBins = 0;
+                        binCounts = null;
+                    } else {
+                        min = h.getMin();
+                        max = h.getMax();
+                        nBins = h.getNBins();
+                        binCounts = h.getBinCounts();
+                    }
 
+                    sshe = sshe.next().minValue(min).maxValue(max).nBins(nBins);
+                    UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder.HistogramCountsEncoder histCountsEncoder = sshe.histogramCountsCount(nBins);
+                    for( int i=0; i<nBins; i++ ){
+                        int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
+                        histCountsEncoder.next().binCount(count);
+                    }
+                }
+            }
+        }
 
+        offset += ue.encodedLength();
+        if(offset != bytes.length){
+            throw new RuntimeException();
+        }
 
+        return bytes;
+    }
 
+    private Map<String,Double> mapForTypes(StatsType statsType, SummaryType summaryType){
+        switch (summaryType){
+            case Mean:
+                if(meanValues == null) return null;
+                return meanValues.get(statsType);
+            case Stdev:
+                if(stdevValues == null) return null;
+                return stdevValues.get(statsType);
+            case MeanMagnitudes:
+                if(meanMagnitudeValues == null) return null;
+                return meanMagnitudeValues.get(statsType);
+        }
+        return null;
+    }
+
+    private static void appendOrDefault(UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse, String param,
+                                        StatsType statsType, SummaryType summaryType,
+                                        Map<String,Double> map, double defaultValue){
+        Double d = map.get(param);
+        if(d == null) d = defaultValue;
+
+        org.deeplearning4j.optimize.listeners.stats.sbe.StatsType st;
+        switch (statsType){
+            case Parameters:
+                st = org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Parameters;
+                break;
+            case Updates:
+                st = org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Updates;
+                break;
+            case Activations:
+                st = org.deeplearning4j.optimize.listeners.stats.sbe.StatsType.Activations;
+                break;
+            default:
+                throw new RuntimeException("Unknown stats type: " + statsType);
+        }
+        org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType summaryT;
+        switch(summaryType){
+            case Mean:
+                summaryT = org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType.Mean;
+                break;
+            case Stdev:
+                summaryT = org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType.Stdev;
+                break;
+            case MeanMagnitudes:
+                summaryT = org.deeplearning4j.optimize.listeners.stats.sbe.SummaryType.MeanMagnitude;
+                break;
+            default:
+                throw new RuntimeException("Unknown summary type: " + summaryType);
+        }
+
+        sse.next().statType(st)
+                .summaryType(summaryT)
+                .value(d);
     }
 
     @Override
