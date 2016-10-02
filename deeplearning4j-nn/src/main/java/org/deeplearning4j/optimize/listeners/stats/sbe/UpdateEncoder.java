@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class UpdateEncoder
 {
-    public static final int BLOCK_LENGTH = 28;
+    public static final int BLOCK_LENGTH = 32;
     public static final int TEMPLATE_ID = 2;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -118,11 +118,33 @@ public class UpdateEncoder
     }
 
 
+    public static int iterationCountNullValue()
+    {
+        return -2147483648;
+    }
+
+    public static int iterationCountMinValue()
+    {
+        return -2147483647;
+    }
+
+    public static int iterationCountMaxValue()
+    {
+        return 2147483647;
+    }
+
+    public UpdateEncoder iterationCount(final int value)
+    {
+        buffer.putInt(offset + 12, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+
     private final UpdateFieldsPresentEncoder fieldsPresent = new UpdateFieldsPresentEncoder();
 
     public UpdateFieldsPresentEncoder fieldsPresent()
     {
-        fieldsPresent.wrap(buffer, offset + 12);
+        fieldsPresent.wrap(buffer, offset + 16);
         return fieldsPresent;
     }
 
@@ -143,7 +165,7 @@ public class UpdateEncoder
 
     public UpdateEncoder statsCollectionDuration(final int value)
     {
-        buffer.putInt(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -165,7 +187,7 @@ public class UpdateEncoder
 
     public UpdateEncoder score(final double value)
     {
-        buffer.putDouble(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putDouble(offset + 24, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -684,11 +706,11 @@ public class UpdateEncoder
             this.buffer = buffer;
             actingVersion = SCHEMA_VERSION;
             dimensions.wrap(buffer, parentMessage.limit());
-            dimensions.blockLength((int)2);
+            dimensions.blockLength((int)6);
             dimensions.numInGroup((int)count);
             index = -1;
             this.count = count;
-            blockLength = 2;
+            blockLength = 6;
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
@@ -699,7 +721,7 @@ public class UpdateEncoder
 
         public static int sbeBlockLength()
         {
-            return 2;
+            return 6;
         }
 
         public PerParameterStatsEncoder next()
@@ -738,11 +760,33 @@ public class UpdateEncoder
         }
 
 
+        public static float learningRateNullValue()
+        {
+            return Float.NaN;
+        }
+
+        public static float learningRateMinValue()
+        {
+            return 1.401298464324817E-45f;
+        }
+
+        public static float learningRateMaxValue()
+        {
+            return 3.4028234663852886E38f;
+        }
+
+        public PerParameterStatsEncoder learningRate(final float value)
+        {
+            buffer.putFloat(offset + 2, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+            return this;
+        }
+
+
         private final SummaryStatEncoder summaryStat = new SummaryStatEncoder();
 
         public static long summaryStatId()
         {
-            return 402;
+            return 403;
         }
 
         public SummaryStatEncoder summaryStatCount(final int count)
@@ -844,7 +888,7 @@ public class UpdateEncoder
 
         public static long histogramsId()
         {
-            return 406;
+            return 407;
         }
 
         public HistogramsEncoder histogramsCount(final int count)
@@ -984,7 +1028,7 @@ public class UpdateEncoder
 
             public static long histogramCountsId()
             {
-                return 411;
+                return 412;
             }
 
             public HistogramCountsEncoder histogramCountsCount(final int count)

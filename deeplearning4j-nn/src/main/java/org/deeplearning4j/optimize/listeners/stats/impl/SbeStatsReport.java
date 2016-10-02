@@ -1,9 +1,6 @@
 package org.deeplearning4j.optimize.listeners.stats.impl;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.deeplearning4j.berkeley.Pair;
@@ -50,6 +47,7 @@ public class SbeStatsReport implements StatsReport {
 
     private List<GCStats> gcStats;
 
+    private Map<String,Double> learningRatesByParam;
     private Map<StatsType, Map<String, Histogram>> histograms;
     private Map<StatsType, Map<String, Double>> meanValues;
     private Map<StatsType, Map<String, Double>> stdevValues;
@@ -88,6 +86,16 @@ public class SbeStatsReport implements StatsReport {
     public void reportScore(double currentScore) {
         this.score = currentScore;
         this.scorePresent = true;
+    }
+
+    @Override
+    public void reportLearningRates(Map<String, Double> learningRatesByParam) {
+        this.learningRatesByParam = learningRatesByParam;
+    }
+
+    @Override
+    public Map<String, Double> getLearningRates() {
+        return this.learningRatesByParam;
     }
 
     @Override
@@ -183,6 +191,11 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
+    public boolean hasLearningRates() {
+        return learningRatesByParam != null;
+    }
+
+    @Override
     public boolean hasMemoryUse() {
         return memoryUsePresent;
     }
@@ -264,7 +277,7 @@ public class SbeStatsReport implements StatsReport {
         //Per parameter stats group length
         bufferSize += 4;    //Per parameter stats group header: always present
         int nParams = paramNames.length;
-        bufferSize += nParams * 10;  //Each parameter entry: has a param ID -> uint16 -> 2 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
+        bufferSize += nParams * 14;  //Each parameter entry: has a param ID, learning rate -> uint16 + float -> 6 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
         for (String s : paramNames) {
             //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
             int summaryStatsCount = 0;
@@ -314,6 +327,7 @@ public class SbeStatsReport implements StatsReport {
         //Fixed length fields: always encoded
         ue.time(time)
                 .deltaTime(0)   //TODO
+                .iterationCount(iterationCount)
                 .fieldsPresent()
                 .score(scorePresent)
                 .memoryUse(memoryUsePresent)
@@ -327,7 +341,8 @@ public class SbeStatsReport implements StatsReport {
                 .meanActivations(meanValues != null && meanValues.containsKey(StatsType.Activations))
                 .meanMagnitudeParameters(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Parameters))
                 .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
-                .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations));
+                .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations))
+                .learningRatesPresent(learningRatesByParam != null);
 
         ue.statsCollectionDuration(statsCollectionDurationMs)
                 .score(score);
@@ -384,7 +399,12 @@ public class SbeStatsReport implements StatsReport {
         int paramId = 0;
         for (String s : paramNames) {
             ppe = ppe.next();
-            ppe.paramID(paramId++);
+            float lr = 0.0f;
+            if(learningRatesByParam != null && learningRatesByParam.containsKey(s)){
+                lr = learningRatesByParam.get(s).floatValue();
+            }
+            ppe.paramID(paramId++)
+                    .learningRate(lr);
             UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(nSummaryStats);
 
             //Summary stats
@@ -553,6 +573,7 @@ public class SbeStatsReport implements StatsReport {
         //TODO iteration count
         time = ud.time();
         long deltaTime = ud.deltaTime(); //TODO
+        iterationCount = ud.iterationCount();
 
         UpdateFieldsPresentDecoder fpd = ud.fieldsPresent();
         scorePresent = fpd.score();
@@ -568,6 +589,7 @@ public class SbeStatsReport implements StatsReport {
         boolean meanMagParams = fpd.meanMagnitudeParameters();
         boolean meanMagUpdates = fpd.meanMagnitudeUpdates();
         boolean meanMagAct = fpd.meanMagnitudeActivations();
+        boolean learningRatesPresent = fpd.learningRatesPresent();
 
         statsCollectionDurationMs = ud.statsCollectionDuration();
         score = ud.score();
@@ -644,6 +666,11 @@ public class SbeStatsReport implements StatsReport {
         for (UpdateDecoder.PerParameterStatsDecoder ppsd : ud.perParameterStats()) {
             int paramID = ppsd.paramID();
             String paramName = paramNames[paramID];
+            float lr = ppsd.learningRate();
+            if(learningRatesPresent){
+                if(learningRatesByParam == null) learningRatesByParam = new HashMap<>();
+                learningRatesByParam.put(paramName, (double)lr);
+            }
 
             //Summary stats (mean/stdev/mean magnitude)
             for (UpdateDecoder.PerParameterStatsDecoder.SummaryStatDecoder ssd : ppsd.summaryStat()) {

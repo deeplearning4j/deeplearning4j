@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -158,7 +159,22 @@ public class StatsListener implements IterationListener {
         report.reportScore(model.score());  //Always report score
 
         if (config.collectLearningRates()) {
-            //TODO
+            Layer[] layers = null;
+            if(model instanceof MultiLayerNetwork){
+                layers = ((MultiLayerNetwork) model).getLayers();
+            } else if(model instanceof ComputationGraph){
+                ((ComputationGraph) model).getLayers();
+            }
+
+            if(layers != null){
+                Map<String,Double> lrs = new HashMap<>();
+                for(Layer l : layers){
+                    NeuralNetConfiguration conf = l.conf();
+                    lrs.putAll(conf.getLearningRateByParam());
+                }
+
+                report.reportLearningRates(lrs);
+            }
         }
 
 
