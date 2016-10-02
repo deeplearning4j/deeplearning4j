@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.stats.sbe;
 
 import org.agrona.MutableDirectBuffer;
 
-@javax.annotation.Generated(value = {"MessageHeaderEncoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.MessageHeaderEncoder"})
 @SuppressWarnings("all")
 public class MessageHeaderEncoder
 {

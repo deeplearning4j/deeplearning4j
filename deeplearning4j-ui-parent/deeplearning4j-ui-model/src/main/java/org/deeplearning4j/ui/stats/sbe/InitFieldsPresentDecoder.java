@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.stats.sbe;
 
 import org.agrona.DirectBuffer;
 
-@javax.annotation.Generated(value = {"InitFieldsPresentDecoder"})
+@javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.InitFieldsPresentDecoder"})
 @SuppressWarnings("all")
 public class InitFieldsPresentDecoder
 {
