@@ -19,6 +19,11 @@ public interface StatsReport {
     void reportIterationCount(int iterationCount);
 
     /**
+     * Get the current iteration number
+     */
+    int getIterationCount();
+
+    /**
      * Report the current time for this report, in epoch (ms) format
      */
     void reportTime(long currentTime);
@@ -49,6 +54,17 @@ public interface StatsReport {
      * Get the score at the current iteration
      */
     double getScore();
+
+    /**
+     * Report the learning rates by parameter
+     */
+    void reportLearningRates(Map<String,Double> learningRatesByParam);
+
+    /**
+     * Get the learning rates by parameter
+     */
+    Map<String,Double> getLearningRates();
+
 
     //--- Performance and System Stats ---
 
@@ -212,12 +228,17 @@ public interface StatsReport {
      * @param statsType Stats type to get mean magnitude values for
      * @return Map of mean magnitude values by parameter
      */
-    Map<String,Double> getMeanMagnitudes(StatsType statsType);
+    Map<String, Double> getMeanMagnitudes(StatsType statsType);
 
     /**
      * Return whether the score is present (has been reported)
      */
     boolean hasScore();
+
+    /**
+     * Return whether the learning rates are present (have been reported)
+     */
+    boolean hasLearningRates();
 
     /**
      * Return whether memory use has been reported

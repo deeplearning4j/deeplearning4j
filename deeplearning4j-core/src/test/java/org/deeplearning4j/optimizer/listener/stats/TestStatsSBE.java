@@ -194,6 +194,7 @@ public class TestStatsSBE {
 
         long time = System.currentTimeMillis();
         int duration = 123456;
+        int iterCount = 123;
 
         long perfRuntime = 1;
         long perfTotalEx = 2;
@@ -216,6 +217,10 @@ public class TestStatsSBE {
         int gcdt2 = 21;
 
         double score = 22.0;
+
+        Map<String,Double> lrByParam = new HashMap<>();
+        lrByParam.put(paramNames[0], 22.5);
+        lrByParam.put(paramNames[1], 22.75);
 
         Map<String, Histogram> pHist = new HashMap<>();
         pHist.put(paramNames[0], new Histogram(23, 24, 2, new int[]{25, 26}));
@@ -281,6 +286,7 @@ public class TestStatsSBE {
                                             SbeStatsReport report = new SbeStatsReport(paramNames);
                                             report.reportTime(time);
                                             report.reportStatsCollectionDurationMS(duration);
+                                            report.reportIterationCount(iterCount);
                                             if (collectPerformanceStats) {
                                                 report.reportPerformance(perfRuntime, perfTotalEx, perfTotalMB, perfEPS, perfMBPS);
                                             }
@@ -303,7 +309,7 @@ public class TestStatsSBE {
                                             }
 
                                             if (collectLearningRates) {
-                                                //TODO
+                                                report.reportLearningRates(lrByParam);
                                             }
 
                                             if (collectHistograms[0]) {   //Param hist
@@ -347,8 +353,10 @@ public class TestStatsSBE {
                                             assertEquals(report, report2);
 
 
+
                                             assertEquals(time, report2.getTime());
                                             assertEquals(duration, report2.getStatsCollectionDurationMs());
+                                            assertEquals(iterCount, report2.getIterationCount());
                                             if(collectPerformanceStats){
                                                 assertEquals(perfRuntime, report2.getTotalRuntimeMs());
                                                 assertEquals(perfTotalEx, report2.getTotalExamples());
@@ -397,7 +405,13 @@ public class TestStatsSBE {
                                             }
 
                                             if(collectLearningRates){
-                                                //TODO
+                                                assertEquals(lrByParam.keySet(), report2.getLearningRates().keySet());
+                                                for(String s : lrByParam.keySet()){
+                                                    assertEquals(lrByParam.get(s), report2.getLearningRates().get(s), 1e-6);
+                                                }
+                                                assertTrue(report2.hasLearningRates());
+                                            } else {
+                                                assertFalse(report2.hasLearningRates());
                                             }
 
                                             if(collectHistograms[0]){
