@@ -784,12 +784,12 @@ public class UpdateEncoder
 
                 return this;
             }
-            public SummaryStatEncoder statSource(final StatSource value)
+            public SummaryStatEncoder statType(final StatsType value)
             {
                 buffer.putByte(offset + 0, (byte)value.value());
                 return this;
             }
-            public SummaryStatEncoder statType(final StatType value)
+            public SummaryStatEncoder summaryType(final SummaryType value)
             {
                 buffer.putByte(offset + 1, (byte)value.value());
                 return this;
@@ -886,7 +886,7 @@ public class UpdateEncoder
 
                 return this;
             }
-            public HistogramsEncoder statType(final StatType value)
+            public HistogramsEncoder statType(final StatsType value)
             {
                 buffer.putByte(offset + 0, (byte)value.value());
                 return this;
