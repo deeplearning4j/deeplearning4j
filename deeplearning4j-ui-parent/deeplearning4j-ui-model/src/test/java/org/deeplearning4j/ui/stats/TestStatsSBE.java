@@ -481,7 +481,6 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));;
                                             }
 
-
                                             testCount++;
                                         }
                                     }

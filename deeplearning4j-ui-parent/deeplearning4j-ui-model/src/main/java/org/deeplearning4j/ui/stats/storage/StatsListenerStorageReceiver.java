@@ -52,7 +52,7 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
         String workerID = null;     //TODO
         //TODO proper types for the state report...
         long time = statsReport.getTime();
-        statsStorage.putState(sessionID, workerID, time, statsReport.toByteArray());
+        statsStorage.putUpdate(sessionID, workerID, time, statsReport.toByteArray());
     }
 
     @Override

@@ -7,6 +7,8 @@ public interface StatsStorageListener {
 
     void notifyNewSession(String sessionID);
 
+    void notifyNewWorkerID(String sessionID, String workerID);
+
     void notifyStaticInfo(String sessionID, String workerID);
 
     void notifyStatusUpdate(String sessionID, String workerID, long timestamp);

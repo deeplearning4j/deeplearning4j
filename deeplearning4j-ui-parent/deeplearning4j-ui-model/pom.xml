@@ -50,6 +50,13 @@
             <version>${agrona.version}</version>
         </dependency>
 
+        <!-- MapDB - Used for StatsListener storage -->
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>${mapdb.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

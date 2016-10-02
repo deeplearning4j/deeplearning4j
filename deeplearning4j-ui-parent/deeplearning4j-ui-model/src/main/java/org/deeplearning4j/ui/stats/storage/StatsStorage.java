@@ -1,5 +1,9 @@
 package org.deeplearning4j.ui.stats.storage;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.deeplearning4j.berkeley.Pair;
+
 import java.util.List;
 
 /**
@@ -11,7 +15,7 @@ public interface StatsStorage {
     /**
      * Get a list of all sessions stored by this storage backend
      */
-    List<StatsSession> listSessions();
+    List<String> listSessionIDs();
 
     boolean sessionExists(String sessionID);
 
@@ -20,24 +24,24 @@ public interface StatsStorage {
 
     List<String> listWorkerIDsForSession(String sessionID);
 
-    int getNumStateRecordsFor(String sessionID);
+    int getNumUpdateRecordsFor(String sessionID);
 
-    int getNumStateRecordsFor(String sessionID, String workerID);
+    int getNumUpdateRecordsFor(String sessionID, String workerID);
 
-    byte[] getLatestState(String sessionID, String workerID);
+    Pair<Long, byte[]> getLatestUpdate(String sessionID, String workerID);
 
-    byte[] getState(String sessionID, String workerID, long timestamp);
+    byte[] getUpdate(String sessionID, String workerID, long timestamp);
 
-    List<byte[]> getLatestStateAllWorkers(String sessionID);
+    List<UpdateRecord> getLatestUpdateAllWorkers(String sessionID);
 
-    List<byte[]> getAllStatesAfter(String sessionID, String workerID, long timestamp);
+    List<UpdateRecord> getAllUpdatesAfter(String sessionID, String workerID, long timestamp);
 
 
     // ----- Store new info -----
 
     void putStaticInfo(String sessionID, String workerID, byte[] staticInfo);
 
-    void putState(String sessionID, String workerID, long timestamp, byte[] state);
+    void putUpdate(String sessionID, String workerID, long timestamp, byte[] update);
 
 
     // ----- Listeners -----
@@ -48,4 +52,13 @@ public interface StatsStorage {
 
     void removeAllListeners();
 
+    List<StatsStorageListener> getListeners();
+
+    @AllArgsConstructor @Data
+    public static class UpdateRecord {
+        private final String sessionID;
+        private final String workerID;
+        private final long timestamp;
+        private final byte[] record;
+    }
 }
