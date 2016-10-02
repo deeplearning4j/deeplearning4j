@@ -14,9 +14,6 @@ import java.nio.charset.Charset;
 @Data
 public class SbeStatsInitializationReport implements StatsInitializationReport {
 
-    private static Charset UTF8 = Charset.forName("UTF-8");
-    private static byte[] EMPTY_BYTES = new byte[0];    //Also equivalent to "".getBytes(UTF8);
-
     private boolean hasSoftwareInfo;
     private boolean hasHardwareInfo;
     private boolean hasModelInfo;
@@ -100,27 +97,27 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
         //For variable length field lengths: easist way is simply to convert to UTF-8
         //Of course, it is possible to calculate it first - but we might as well convert (1 pass), rather than count then convert (2 passes)
-        byte[] bswArch = toBytes(hasSoftwareInfo, swArch);
-        byte[] bswOsName = toBytes(hasSoftwareInfo, swOsName);
-        byte[] bswJvmName = toBytes(hasSoftwareInfo, swJvmName);
-        byte[] bswJvmVersion = toBytes(hasSoftwareInfo, swJvmVersion);
-        byte[] bswJvmSpecVersion = toBytes(hasSoftwareInfo, swJvmSpecVersion);
-        byte[] bswNd4jBackendClass = toBytes(hasSoftwareInfo, swNd4jBackendClass);
-        byte[] bswNd4jDataTypeName = toBytes(hasSoftwareInfo, swNd4jDataTypeName);
-        byte[] bmodelConfigClass = toBytes(hasModelInfo, modelClassName);
-        byte[] bmodelConfigJson = toBytes(hasModelInfo, modelConfigJson);
+        byte[] bswArch = SbeUtil.toBytes(hasSoftwareInfo, swArch);
+        byte[] bswOsName = SbeUtil.toBytes(hasSoftwareInfo, swOsName);
+        byte[] bswJvmName = SbeUtil.toBytes(hasSoftwareInfo, swJvmName);
+        byte[] bswJvmVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmVersion);
+        byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
+        byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
+        byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
+        byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
+        byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
 
-        byte[][] bhwDeviceDescription = toBytes(hasHardwareInfo, hwDeviceDescription);
-        byte[][] bModelParamNames = toBytes(hasModelInfo, modelParamNames);
+        byte[][] bhwDeviceDescription = SbeUtil.toBytes(hasHardwareInfo, hwDeviceDescription);
+        byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
 
         if (hasSoftwareInfo) {
-            bufferSize += length(bswArch);
-            bufferSize += length(bswOsName);
-            bufferSize += length(bswJvmName);
-            bufferSize += length(bswJvmVersion);
-            bufferSize += length(bswJvmSpecVersion);
-            bufferSize += length(bswNd4jBackendClass);
-            bufferSize += length(bswNd4jDataTypeName);
+            bufferSize += SbeUtil.length(bswArch);
+            bufferSize += SbeUtil.length(bswOsName);
+            bufferSize += SbeUtil.length(bswJvmName);
+            bufferSize += SbeUtil.length(bswJvmVersion);
+            bufferSize += SbeUtil.length(bswJvmSpecVersion);
+            bufferSize += SbeUtil.length(bswNd4jBackendClass);
+            bufferSize += SbeUtil.length(bswNd4jDataTypeName);
         }
         int nHWDeviceStats = (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length);
         nHWDeviceStats = Math.max(nHWDeviceStats, (hwDeviceDescription == null ? 0 : hwDeviceDescription.length));
@@ -131,12 +128,12 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += (bhwDeviceDescription == null ? 0 : nHWDeviceStats * 4);     //uint32: 4 bytes per entry for var length header...
 //            bufferSize += hwNumDevices * 8;   //fixed content in group: int64 -> 8 bytes
 //            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...
-            bufferSize += length(bhwDeviceDescription);
+            bufferSize += SbeUtil.length(bhwDeviceDescription);
         }
         if(hasModelInfo){
-            bufferSize += length(bmodelConfigClass);
-            bufferSize += length(bmodelConfigJson);
-            bufferSize += length(bModelParamNames);
+            bufferSize += SbeUtil.length(bmodelConfigClass);
+            bufferSize += SbeUtil.length(bmodelConfigJson);
+            bufferSize += SbeUtil.length(bModelParamNames);
             bufferSize += (bModelParamNames == null ? 0 : bModelParamNames.length * 4);   //uint32: 4 bytes per entry for var length header...
         }
 
@@ -170,8 +167,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
         for(int i=0; i<nHWDeviceStats; i++ ){
             long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? -1 : hwDeviceTotalMemory[i];
-            byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? EMPTY_BYTES : bhwDeviceDescription[i];
-            if(descr == null) descr = EMPTY_BYTES;
+            byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
+            if(descr == null) descr = SbeUtil.EMPTY_BYTES;
             hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr,0,descr.length);
         }
 
@@ -201,46 +198,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         return bytes;
     }
 
-    private static int length(byte[] bytes) {
-        if (bytes == null) return 0;
-        return bytes.length;
-    }
 
-    private static int length(byte[][] bytes) {
-        if (bytes == null) return 0;
-        int count = 0;
-        for (int i = 0; i < bytes.length; i++) {
-            if (bytes[i] != null) count += bytes[i].length;
-        }
-        return count;
-    }
-
-    private static int length(String str) {
-        if (str == null) return 0;
-        return str.length();
-    }
-
-    private static int length(String[] arr) {
-        if (arr == null || arr.length == 0) return 0;
-        int sum = 0;
-        for (String s : arr) sum += length(s);
-        return sum;
-    }
-
-    private byte[] toBytes(boolean present, String str) {
-        if (!present || str == null) return EMPTY_BYTES;
-        return str.getBytes(UTF8);
-    }
-
-    private byte[][] toBytes(boolean present, String[] str) {
-        if (str == null) return null;
-        byte[][] b = new byte[str.length][0];
-        for (int i = 0; i < str.length; i++) {
-            if (str[i] == null) continue;
-            b[i] = toBytes(present, str[i]);
-        }
-        return b;
-    }
 
     @Override
     public void fromByteArray(byte[] bytes) {

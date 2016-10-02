@@ -136,6 +136,7 @@ public class SbeStatsReport implements StatsReport {
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
         UpdateEncoder ue = new UpdateEncoder();
 
+        //--------------------------------------------------------------------------------------------------------------
         //First: determine buffer size.
         //(a) Header: 8 bytes (4x uint16 = 8 bytes)
         //(b) Fixed length entries length (sie.BlockLength())
@@ -149,6 +150,77 @@ public class SbeStatsReport implements StatsReport {
 
         //TODO need full length calc here...
 
+        //Memory use group length...
+        int memoryUseCount;
+        if(!memoryUsePresent){
+            memoryUseCount = 0;
+        } else {
+            memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
+                    + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
+        }
+
+        bufferSize += 4 + 5*memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 5 bytes
+
+        //Performance group length
+        bufferSize += 4 + (memoryUsePresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
+
+        //GC stats group length
+        bufferSize += 4;    //Group header: always present
+        List<byte[]> gcStatsLabelBytes;
+        if(gcStats != null && gcStats.size() > 0){
+            gcStatsLabelBytes = new ArrayList<>();
+            for( int i=0; i<gcStats.size(); i++ ){
+                GCStats stats = gcStats.get(i);
+                bufferSize += 8;    //Fixed per group entry: 2x int32 -> 8 bytes
+                byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
+                bufferSize += nameAsBytes.length;
+                gcStatsLabelBytes.add(nameAsBytes);
+            }
+        }
+
+        //Per parameter stats group length
+        bufferSize += 4;    //Group header: always present
+        //TODO: need to handle parameters and order properly...
+        List<String> params = new ArrayList<>();
+        if(histograms != null && histograms.size() > 0){
+            params = new ArrayList<>(histograms.get(histograms.keySet().iterator().next()).keySet());
+        }
+        int nParams = params.size();
+        bufferSize += nParams * 10;  //Each parameter entry: has a param ID -> uint16 -> 2 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
+        for(String s : params){
+            //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
+            int summaryStatsCount = 0;
+            for(StatsType statsType : StatsType.values() ){ //Parameters, updates, activations
+                for(SummaryType summaryType : SummaryType.values()){        //Mean, stdev, MM
+                    Map<String,Double> map = mapForTypes(statsType, summaryType);
+                    if(map == null) continue;
+                    if(map.containsKey(s)) summaryStatsCount++;
+                }
+            }
+            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 10 bytes
+            bufferSize += summaryStatsCount * 10;
+
+            //Histograms for this parameter
+            int nHistograms = histograms.size();    //0, 1 or 2 for each parameter
+            //For each histogram: StatsType (uint8) + 2x double + int32 -> 21 bytes PLUS counts group header (4 bytes) -> 25 bytes
+            bufferSize += 25 * nHistograms;
+            //PLUS, the number of count values, given by nBins...
+            int nBinCountEntries = 0;
+            for(StatsType statsType : StatsType.values() ){
+                if(!histograms.containsKey(statsType)) continue;
+                Map<String,Histogram> map = histograms.get(statsType);
+                if(map.containsKey(s)){ //If it doesn't: assume 0 count...
+                    nBinCountEntries += map.get(s).getNBins();
+                }
+            }
+            bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
+        }
+
+        //End buffer size calculation
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //Start encoding
 
         byte[] bytes = new byte[bufferSize];
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
@@ -181,13 +253,7 @@ public class SbeStatsReport implements StatsReport {
 
         ue.statsCollectionDuration(statsCollectionDurationMs);
 
-        int memoryUseCount;
-        if(!memoryUsePresent){
-            memoryUseCount = 0;
-        } else {
-            memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
-                    + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
-        }
+
         UpdateEncoder.MemoryUseEncoder mue = ue.memoryUseCount(memoryUseCount);
         if(memoryUsePresent){
             mue.next().memoryType(MemoryType.JvmCurrent).memoryBytes(jvmCurrentBytes)
@@ -225,21 +291,12 @@ public class SbeStatsReport implements StatsReport {
         }
 
         // +++++ Per Parameter Stats +++++
-        //TODO: need to handle parameters and order properly...
-
         int nSummaryStats = 0;
         if(meanValues != null) nSummaryStats += meanValues.size();      //0 to 3 values: parameters, updates, activations
         if(stdevValues != null) nSummaryStats += stdevValues.size();
         if(meanMagnitudeValues != null) nSummaryStats += meanMagnitudeValues.size();
 
         int nHistograms = (histograms == null ? 0 : histograms.size());
-
-        List<String> params = new ArrayList<>();
-        if(histograms != null && histograms.size() > 0){
-            params = new ArrayList<>(histograms.get(histograms.keySet().iterator().next()).keySet());
-        }
-
-        int nParams = params.size();
         UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(nParams);
 
         int paramId = 0;
@@ -262,7 +319,7 @@ public class SbeStatsReport implements StatsReport {
             if(nHistograms > 0) {
                 for (StatsType statsType : StatsType.values()) {
                     Map<String,Histogram> map = histograms.get(statsType);
-                    if(map == null) continue;;
+                    if(map == null) continue;
                     Histogram h = map.get(s);   //Histogram for StatsType for this parameter
                     double min;
                     double max;
