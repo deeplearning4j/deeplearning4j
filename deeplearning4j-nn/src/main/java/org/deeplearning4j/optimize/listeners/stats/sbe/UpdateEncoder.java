@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class UpdateEncoder
 {
-    public static final int BLOCK_LENGTH = 32;
+    public static final int BLOCK_LENGTH = 28;
     public static final int TEMPLATE_ID = 2;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -126,24 +126,24 @@ public class UpdateEncoder
         return fieldsPresent;
     }
 
-    public static long statsCollectionDurationNullValue()
+    public static int statsCollectionDurationNullValue()
     {
-        return -9223372036854775808L;
+        return -2147483648;
     }
 
-    public static long statsCollectionDurationMinValue()
+    public static int statsCollectionDurationMinValue()
     {
-        return -9223372036854775807L;
+        return -2147483647;
     }
 
-    public static long statsCollectionDurationMaxValue()
+    public static int statsCollectionDurationMaxValue()
     {
-        return 9223372036854775807L;
+        return 2147483647;
     }
 
-    public UpdateEncoder statsCollectionDuration(final long value)
+    public UpdateEncoder statsCollectionDuration(final int value)
     {
-        buffer.putLong(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -165,7 +165,7 @@ public class UpdateEncoder
 
     public UpdateEncoder score(final double value)
     {
-        buffer.putDouble(offset + 24, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putDouble(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

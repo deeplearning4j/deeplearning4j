@@ -24,14 +24,15 @@ import java.util.Map;
  * @author Alex Black
  */
 @EqualsAndHashCode
-@ToString @Data
+@ToString
+@Data
 public class SbeStatsReport implements StatsReport {
 
     private final String[] paramNames;
 
     private int iterationCount;
     private long time;
-    private long statsCollectionDurationMs;
+    private int statsCollectionDurationMs;
     private double score;
 
     private long jvmCurrentBytes;
@@ -120,9 +121,9 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public List<Pair<String, int[]>> getGarbageCollectionStats() {
-        if(gcStats == null) return null;
-        List<Pair<String,int[]>> temp = new ArrayList<>();
-        for(GCStats g : gcStats){
+        if (gcStats == null) return null;
+        List<Pair<String, int[]>> temp = new ArrayList<>();
+        for (GCStats g : gcStats) {
             temp.add(new Pair<>(g.gcName, new int[]{g.getDeltaGCCount(), g.getDeltaGCTime()}));
         }
         return temp;
@@ -136,7 +137,7 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public Map<String, Histogram> getHistograms(StatsType statsType) {
-        if( histograms == null) return null;
+        if (histograms == null) return null;
         return histograms.get(statsType);
     }
 
@@ -148,7 +149,7 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public Map<String, Double> getMean(StatsType statsType) {
-        if(this.meanValues == null) return null;
+        if (this.meanValues == null) return null;
         return meanValues.get(statsType);
     }
 
@@ -160,7 +161,7 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public Map<String, Double> getStdev(StatsType statsType) {
-        if(this.stdevValues == null) return null;
+        if (this.stdevValues == null) return null;
         return stdevValues.get(statsType);
     }
 
@@ -168,6 +169,51 @@ public class SbeStatsReport implements StatsReport {
     public void reportMeanMagnitudes(StatsType statsType, Map<String, Double> meanMagnitudes) {
         if (this.meanMagnitudeValues == null) this.meanMagnitudeValues = new HashMap<>();
         this.meanMagnitudeValues.put(statsType, meanMagnitudes);
+    }
+
+    @Override
+    public Map<String, Double> getMeanMagnitudes(StatsType statsType) {
+        if (this.meanMagnitudeValues == null) return null;
+        return this.meanMagnitudeValues.get(statsType);
+    }
+
+    @Override
+    public boolean hasScore() {
+        return scorePresent;
+    }
+
+    @Override
+    public boolean hasMemoryUse() {
+        return memoryUsePresent;
+    }
+
+    @Override
+    public boolean hasPerformance() {
+        return performanceStatsPresent;
+    }
+
+    @Override
+    public boolean hasGarbageCollection() {
+        return gcStats != null && gcStats.size() > 0;
+    }
+
+    @Override
+    public boolean hasHistograms(StatsType statsType) {
+        if (histograms == null) return false;
+        return histograms.containsKey(statsType);
+    }
+
+    @Override
+    public boolean hasSummaryStats(StatsType statsType, SummaryType summaryType) {
+        switch (summaryType) {
+            case Mean:
+                return meanValues != null && meanValues.containsKey(statsType);
+            case Stdev:
+                return stdevValues != null && stdevValues.containsKey(statsType);
+            case MeanMagnitudes:
+                return meanMagnitudeValues != null && meanMagnitudeValues.containsKey(statsType);
+        }
+        return false;
     }
 
     @Override
