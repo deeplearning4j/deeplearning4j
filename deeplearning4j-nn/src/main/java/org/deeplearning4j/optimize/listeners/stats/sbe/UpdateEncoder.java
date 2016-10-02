@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 @SuppressWarnings("all")
 public class UpdateEncoder
 {
-    public static final int BLOCK_LENGTH = 24;
+    public static final int BLOCK_LENGTH = 32;
     public static final int TEMPLATE_ID = 2;
     public static final int SCHEMA_ID = 1;
     public static final int SCHEMA_VERSION = 0;
@@ -144,6 +144,28 @@ public class UpdateEncoder
     public UpdateEncoder statsCollectionDuration(final long value)
     {
         buffer.putLong(offset + 16, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+
+    public static double scoreNullValue()
+    {
+        return Double.NaN;
+    }
+
+    public static double scoreMinValue()
+    {
+        return 4.9E-324d;
+    }
+
+    public static double scoreMaxValue()
+    {
+        return 1.7976931348623157E308d;
+    }
+
+    public UpdateEncoder score(final double value)
+    {
+        buffer.putDouble(offset + 24, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

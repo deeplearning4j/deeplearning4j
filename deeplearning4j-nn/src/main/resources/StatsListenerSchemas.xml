@@ -141,6 +141,7 @@
         <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
         <field name="fieldsPresent" id="3" type="UpdateFieldsPresent"/>
         <field name="statsCollectionDuration" id="4" type="int64"/>
+        <field name="score" id="5" type="double"/>
 
         <!-- Groups - always second in SBE -->
         <group name="memoryUse" id="100" dimensionType="groupSizeEncoding">
@@ -157,7 +158,7 @@
         <group name="gcStats" id="300" dimensionType="groupSizeEncoding">
             <field name="deltaGCCount" id="301" type="int32"/>
             <field name="deltaGCTimeMs" id="302" type="int32"/>
-            <data name="gcName" id="1000" type="VarDataUTF8" />
+            <data name="gcName" id="1000" type="VarDataUTF8"/>
         </group>
         <!-- Per parameter stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations; histograms for params/updates/activations -->
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
