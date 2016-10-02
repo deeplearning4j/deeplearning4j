@@ -25,16 +25,10 @@
             <version>${datavec.version}</version>
         </dependency>
 
-        <!-- ND4J APIs -->
+        <!-- ND4J API -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-api</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
 
@@ -50,13 +44,5 @@
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
         </dependency>
-
-        <!-- Agrona. Used for Stats listener encoding/decoding via SBE -->
-        <dependency>
-            <groupId>org.agrona</groupId>
-            <artifactId>Agrona</artifactId>
-            <version>${agrona.version}</version>
-        </dependency>
-
     </dependencies>
 </project>
