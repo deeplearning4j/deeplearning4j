@@ -163,7 +163,12 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.train = false;
         this.loader.test();
         this.numExamples = numExamples;
-        reset();
+        this.totalExamples = CifarLoader.NUM_TEST_IMAGES;
+        exampleCount = 0;
+        overshot = false;
+        batchNum = 0;
+
+//        reset();
     }
 
 
