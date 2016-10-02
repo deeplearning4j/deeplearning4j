@@ -35,6 +35,12 @@ public interface StatsReport {
     void reportStatsCollectionDurationMS(int statsCollectionDurationMS);
 
     /**
+     * Get the number of millisecons required to calculate al of the stats. This is effectively the amount of
+     * listener overhead.
+     */
+    int getStatsCollectionDurationMs();
+
+    /**
      * Report model score at the current iteration
      */
     void reportScore(double currentScore);
@@ -199,6 +205,50 @@ public interface StatsReport {
      * @param meanMagnitudes Map of mean magnitude values by parameter
      */
     void reportMeanMagnitudes(StatsType statsType, Map<String, Double> meanMagnitudes);
+
+    /**
+     * Get the mean magnitude values for each parameter for the given StatsType (Parameters/Updates/Activations)
+     *
+     * @param statsType Stats type to get mean magnitude values for
+     * @return Map of mean magnitude values by parameter
+     */
+    Map<String,Double> getMeanMagnitudes(StatsType statsType);
+
+    /**
+     * Return whether the score is present (has been reported)
+     */
+    boolean hasScore();
+
+    /**
+     * Return whether memory use has been reported
+     */
+    boolean hasMemoryUse();
+
+    /**
+     * Return whether performance stats (total time, total examples etc) have been reported
+     */
+    boolean hasPerformance();
+
+    /**
+     * Return whether garbage collection information has been reported
+     */
+    boolean hasGarbageCollection();
+
+    /**
+     * Return whether histograms have been reported, for the given stats type (Parameters, Updates, Activations)
+     *
+     * @param statsType Stats type
+     */
+    boolean hasHistograms(StatsType statsType);
+
+    /**
+     * Return whether the summary stats (mean, standard deviation, mean magnitudes) have been repotred for the
+     * given stats type (Parameters, Updates, Activations)
+     *
+     * @param statsType   stats type (Parameters, Updates, Activations)
+     * @param summaryType Summary statistic type (mean, stdev, mean magnitude)
+     */
+    boolean hasSummaryStats(StatsType statsType, SummaryType summaryType);
 
     /**
      * Serialize the StatsReport to a byte[] for storage etc
