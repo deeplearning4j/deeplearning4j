@@ -90,12 +90,12 @@
             <validValue name="DeviceMax">5</validValue>
         </enum>
 
-        <enum name="StatSource" encodingType="uint8">
+        <enum name="StatsType" encodingType="uint8">
             <validValue name="Parameters">0</validValue>
             <validValue name="Updates">1</validValue>
             <validValue name="Activations">2</validValue>
         </enum>
-        <enum name="StatType" encodingType="uint8">
+        <enum name="SummaryType" encodingType="uint8">
             <validValue name="Mean">0</validValue>
             <validValue name="Stdev">1</validValue>
             <validValue name="MeanMagnitude">2</validValue>
@@ -163,12 +163,12 @@
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
             <field name="paramID" id="401" type="uint16"/>
             <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
-                <field name="statSource" id="403" type="StatSource"/>
-                <field name="statType" id="404" type="StatType"/>
+                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
+                <field name="summaryType" id="403" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
                 <field name="value" id="405" type="double"/>
             </group>
             <group name="histograms" id="406" dimensionType="groupSizeEncoding">
-                <field name="statType" id="407" type="StatType"/>
+                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
                 <field name="minValue" id="408" type="double"/>
                 <field name="maxValue" id="409" type="double"/>
                 <field name="nBins" id="410" type="int32"/>
