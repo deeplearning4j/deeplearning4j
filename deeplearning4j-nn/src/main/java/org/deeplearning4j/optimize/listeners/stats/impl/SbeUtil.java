@@ -3,12 +3,16 @@ package org.deeplearning4j.optimize.listeners.stats.impl;
 import java.nio.charset.Charset;
 
 /**
- * Created by Alex on 02/10/2016.
+ * Utilities for use in {@link SbeStatsInitializationReport} and {@link SbeStatsReport}
+ *
+ * @author Alex Black
  */
 public class SbeUtil {
 
     public static final Charset UTF8 = Charset.forName("UTF-8");
     public static final byte[] EMPTY_BYTES = new byte[0];    //Also equivalent to "".getBytes(UTF8);
+
+    private SbeUtil(){ }
 
     public static int length(byte[] bytes) {
         if (bytes == null) return 0;
