@@ -9,7 +9,9 @@ import org.deeplearning4j.optimize.listeners.stats.sbe.*;
 import java.nio.charset.Charset;
 
 /**
- * Created by Alex on 01/10/2016.
+ * An implementation of {@link StatsInitializationReport} using Simple Binary Encoding (SBE)
+ *
+ * @author Alex Black
  */
 @Data
 public class SbeStatsInitializationReport implements StatsInitializationReport {

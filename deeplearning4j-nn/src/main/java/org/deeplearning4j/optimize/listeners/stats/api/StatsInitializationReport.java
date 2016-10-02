@@ -52,32 +52,52 @@ public interface StatsInitializationReport {
 
     /**
      * Deserialize the Stats from a byte[]
+     *
      * @param byteArray Source array to deserialize from
      */
     void fromByteArray(byte[] byteArray);
 
 
-
     boolean hasSoftwareInfo();
+
     boolean hasHardwareInfo();
+
     boolean hasModelInfo();
+
     String getSwArch();
+
     String getSwOsName();
+
     String getSwJvmName();
+
     String getSwJvmVersion();
+
     String getSwJvmSpecVersion();
+
     String getSwNd4jBackendClass();
+
     String getSwNd4jDataTypeName();
+
     int getHwJvmAvailableProcessors();
+
     int getHwNumDevices();
+
     long getHwJvmMaxMemory();
+
     long getHwOffHeapMaxMemory();
+
     long[] getHwDeviceTotalMemory();
+
     String[] getHwDeviceDescription();
+
     String getModelClassName();
+
     String getModelConfigJson();
+
     String[] getModelParamNames();
+
     int getModelNumLayers();
+
     long getModelNumParams();
 
 }

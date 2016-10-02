@@ -1,7 +1,9 @@
 package org.deeplearning4j.optimize.listeners.stats.api;
 
 /**
- * Created by Alex on 28/09/2016.
+ * Stats type, for use in {@link org.deeplearning4j.optimize.listeners.stats.StatsListener}
+ *
+ * @author Alex Black
  */
 public enum StatsType {
 
