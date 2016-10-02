@@ -144,11 +144,9 @@ public class SbeStatsReport implements StatsReport {
         //(d) Group 2: Performance stats
         //(e) Group 3: GC stats
         //(f) Group 4: Per parameter performance stats
-        //Here: no variable length String fields...
+        //Here: no variable length String fields, outside of the GC name group...
 
         int bufferSize = 8 + ue.sbeBlockLength();
-
-        //TODO need full length calc here...
 
         //Memory use group length...
         int memoryUseCount;
@@ -158,20 +156,19 @@ public class SbeStatsReport implements StatsReport {
             memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
                     + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
         }
-
-        bufferSize += 4 + 5*memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 5 bytes
+        bufferSize += 4 + 9*memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 1+8 = 9 bytes
 
         //Performance group length
-        bufferSize += 4 + (memoryUsePresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
+        bufferSize += 4 + (performanceStatsPresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
 
         //GC stats group length
         bufferSize += 4;    //Group header: always present
-        List<byte[]> gcStatsLabelBytes;
+        List<byte[]> gcStatsLabelBytes = null;
         if(gcStats != null && gcStats.size() > 0){
             gcStatsLabelBytes = new ArrayList<>();
             for( int i=0; i<gcStats.size(); i++ ){
                 GCStats stats = gcStats.get(i);
-                bufferSize += 8;    //Fixed per group entry: 2x int32 -> 8 bytes
+                bufferSize += 12;    //Fixed per group entry: 2x int32 -> 8 bytes PLUS the header for the variable length GC name: another 4 bytes
                 byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
                 bufferSize += nameAsBytes.length;
                 gcStatsLabelBytes.add(nameAsBytes);
@@ -179,7 +176,7 @@ public class SbeStatsReport implements StatsReport {
         }
 
         //Per parameter stats group length
-        bufferSize += 4;    //Group header: always present
+        bufferSize += 4;    //Per parameter stats group header: always present
         //TODO: need to handle parameters and order properly...
         List<String> params = new ArrayList<>();
         if(histograms != null && histograms.size() > 0){
@@ -197,13 +194,13 @@ public class SbeStatsReport implements StatsReport {
                     if(map.containsKey(s)) summaryStatsCount++;
                 }
             }
-            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 10 bytes
+            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
             bufferSize += summaryStatsCount * 10;
 
             //Histograms for this parameter
-            int nHistograms = histograms.size();    //0, 1 or 2 for each parameter
-            //For each histogram: StatsType (uint8) + 2x double + int32 -> 21 bytes PLUS counts group header (4 bytes) -> 25 bytes
-            bufferSize += 25 * nHistograms;
+            int nHistogramsThisParam = histograms.size();    //0, 1 or 2 for each parameter
+            //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
+            bufferSize += 25 * nHistogramsThisParam;
             //PLUS, the number of count values, given by nBins...
             int nBinCountEntries = 0;
             for(StatsType statsType : StatsType.values() ){
@@ -281,12 +278,14 @@ public class SbeStatsReport implements StatsReport {
                     .minibatchesPerSecond((float)minibatchesPerSecond);
         }
 
-        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null && gcStats.size() > 0 ? 0 : gcStats.size());
+        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.size() == 0 ? 0 : gcStats.size());
         if(gcStats != null && gcStats.size() > 0 ){
+            int i=0;
             for(GCStats g : gcStats){
+                byte[] gcLabelBytes = gcStatsLabelBytes.get(i++);
                 gce.next().deltaGCCount(g.deltaGCCount)
                         .deltaGCTimeMs(g.deltaGCTime)
-                        .gcName(g.getGcName());
+                        .putGcName(gcLabelBytes,0,gcLabelBytes.length);
             }
         }
 

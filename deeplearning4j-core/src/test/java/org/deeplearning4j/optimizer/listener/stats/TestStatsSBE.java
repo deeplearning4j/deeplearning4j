@@ -347,7 +347,6 @@ public class TestStatsSBE {
                                             byte[] bytes = report.toByteArray();
 
 
-
                                         }
                                     }
                                 }
