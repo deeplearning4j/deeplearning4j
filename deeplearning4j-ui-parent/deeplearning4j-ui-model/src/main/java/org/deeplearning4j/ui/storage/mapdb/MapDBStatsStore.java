@@ -16,6 +16,10 @@ import java.util.*;
  */
 public class MapDBStatsStore implements StatsStorage {
 
+    private static final String COMPOSITE_KEY_HEADER = "&&&";
+    private static final String COMPOSITE_KEY_SEPARATOR = "@@@";
+
+    private boolean isClosed = false;
     private DB db;
 
     private Set<String> sessionIDs;
@@ -52,7 +56,19 @@ public class MapDBStatsStore implements StatsStorage {
                 .valueSerializer(Serializer.BYTE_ARRAY)
                 .createOrOpen();
 
-
+        //Load up any saved update maps to the update map...
+        for(String s : db.getAllNames()){
+            if(s.startsWith(COMPOSITE_KEY_HEADER)){
+                Map<Long,byte[]> m = db.hashMap(s)
+                        .keySerializer(Serializer.LONG)
+                        .valueSerializer(Serializer.BYTE_ARRAY)
+                        .open();
+                String[] arr = s.split(COMPOSITE_KEY_SEPARATOR);
+                arr[0] = arr[0].substring(COMPOSITE_KEY_HEADER.length());   //Remove header...
+                SessionWorkerId id = new SessionWorkerId(arr[0], arr[1]);
+                updates.put(id, m);
+            }
+        }
     }
 
     private synchronized Map<Long, byte[]> getUpdateMap(String sessionID, String workerID, boolean createIfRequired) {
@@ -63,7 +79,7 @@ public class MapDBStatsStore implements StatsStorage {
         if(!createIfRequired){
             return null;
         }
-        String compositeKey = "sID_" + sessionID + "-wID_" + workerID;
+        String compositeKey = COMPOSITE_KEY_HEADER + sessionID + COMPOSITE_KEY_SEPARATOR + workerID;
         Map<Long, byte[]> updateMap = db.hashMap(compositeKey)
                 .keySerializer(Serializer.LONG)
                 .valueSerializer(Serializer.BYTE_ARRAY)
@@ -81,12 +97,24 @@ public class MapDBStatsStore implements StatsStorage {
             }
         } else {
             SessionWorkerId id = new SessionWorkerId(sessionId, workerID);
-            if (!updates.containsKey(id)) {
+            if (getUpdateMap(sessionId,workerID,false) == null && !staticInfo.containsKey(id)) {
                 for (StatsStorageListener l : listeners) {
                     l.notifyNewWorkerID(sessionId, workerID);
                 }
             }
         }
+    }
+
+    @Override
+    public void close() {
+        db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
+        db.close();
+        isClosed = true;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed;
     }
 
     @Override
@@ -186,6 +214,8 @@ public class MapDBStatsStore implements StatsStorage {
             }
         }
 
+        Collections.sort(list);
+
         return list;
     }
 
@@ -197,6 +227,7 @@ public class MapDBStatsStore implements StatsStorage {
         SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
 
         this.staticInfo.put(id, staticInfo);
+        db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
         for (StatsStorageListener l : listeners) {
             l.notifyStaticInfo(sessionID, workerID);
@@ -209,6 +240,7 @@ public class MapDBStatsStore implements StatsStorage {
 
         Map<Long, byte[]> updateMap = getUpdateMap(sessionID, workerID, true);
         updateMap.put(timestamp, update);
+        db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
         for (StatsStorageListener l : listeners) {
             l.notifyStatusUpdate(sessionID, workerID, timestamp);
@@ -280,6 +312,11 @@ public class MapDBStatsStore implements StatsStorage {
             int c = sessionID.compareTo(o.sessionID);
             if (c != 0) return c;
             return workerID.compareTo(workerID);
+        }
+
+        @Override
+        public String toString(){
+            return "(" + sessionID + "," + workerID + ")";
         }
     }
 
