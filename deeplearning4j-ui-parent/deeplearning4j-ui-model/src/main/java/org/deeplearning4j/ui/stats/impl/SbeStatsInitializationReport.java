@@ -119,15 +119,12 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += SbeUtil.length(bswNd4jBackendClass);
             bufferSize += SbeUtil.length(bswNd4jDataTypeName);
         }
-        int nHWDeviceStats = (hwDeviceTotalMemory == null ? 0 : hwDeviceTotalMemory.length);
-        nHWDeviceStats = Math.max(nHWDeviceStats, (hwDeviceDescription == null ? 0 : hwDeviceDescription.length));
+        int nHWDeviceStats = hwNumDevices;
         if (!hasHardwareInfo) nHWDeviceStats = 0;
         if (hasHardwareInfo) {
             //Device info group:
-            bufferSize += (hwDeviceTotalMemory == null ? 0 : nHWDeviceStats * 8);   //fixed content in group: int64 -> 8 bytes
-            bufferSize += (bhwDeviceDescription == null ? 0 : nHWDeviceStats * 4);     //uint32: 4 bytes per entry for var length header...
-//            bufferSize += hwNumDevices * 8;   //fixed content in group: int64 -> 8 bytes
-//            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...
+            bufferSize += hwNumDevices * 8;     //fixed content in group: int64 -> 8 bytes. Encode an entry, even if hwDeviceTotalMemory is null
+            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...; as above
             bufferSize += SbeUtil.length(bhwDeviceDescription);
         }
         if (hasModelInfo) {
@@ -166,7 +163,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //Device info group...
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
         for (int i = 0; i < nHWDeviceStats; i++) {
-            long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? -1 : hwDeviceTotalMemory[i];
+            long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? 0 : hwDeviceTotalMemory[i];
             byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
             if (descr == null) descr = SbeUtil.EMPTY_BYTES;
             hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr, 0, descr.length);
@@ -240,6 +237,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             hwDeviceTotalMemory[i] = hw.deviceMemoryMax();
             hwDeviceDescription[i++] = hw.deviceDescription();
         }
+
         i = 0;
         StaticInfoDecoder.ModelParamNamesDecoder mpdec = sid.modelParamNames();
         int mpnCount = mpdec.count();
