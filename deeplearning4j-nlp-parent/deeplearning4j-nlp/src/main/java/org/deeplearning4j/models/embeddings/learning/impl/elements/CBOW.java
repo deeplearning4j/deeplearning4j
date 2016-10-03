@@ -102,33 +102,35 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     public INDArray iterateSample(T currentWord, INDArray neu1, AtomicLong nextRandom, double alpha, boolean isInference) {
         INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
 
-        for (int p = 0; p < currentWord.getCodeLength(); p++) {
-            double f = 0;
-            int code = currentWord.getCodes().get(p);
-            int point = currentWord.getPoints().get(p);
+        if (configuration.isUseHierarchicSoftmax())
+            for (int p = 0; p < currentWord.getCodeLength(); p++) {
+                double f = 0;
+                int code = currentWord.getCodes().get(p);
+                int point = currentWord.getPoints().get(p);
 
-            INDArray syn1row = syn1.getRow(point);
+                INDArray syn1row = syn1.getRow(point);
 
-            double dot = Nd4j.getBlasWrapper().dot(neu1, syn1.getRow(point));
+                double dot = Nd4j.getBlasWrapper().dot(neu1, syn1.getRow(point));
 
-            if(dot < -MAX_EXP || dot >= MAX_EXP)
-                continue;
+                if(dot < -MAX_EXP || dot >= MAX_EXP)
+                    continue;
 
-            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if(idx >= expTable.length)
-                continue;
+                int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
+                if(idx >= expTable.length)
+                    continue;
 
-            //score
-            f =  expTable[idx];
+                //score
+                f =  expTable[idx];
 
-            double g = useAdaGrad ?  currentWord.getGradient(p, (1 - code - f), alpha) : (1 - code - f) * alpha;
+                double g = useAdaGrad ?  currentWord.getGradient(p, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
-            Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, syn1row, neu1e);
-            if (!isInference)
-                Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
-            else
-                Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row.dup());
-        }
+                Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, syn1row, neu1e);
+
+                if (!isInference)
+                    Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
+                else
+                    Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row.dup());
+            }
 
         if (negative > 0 && !isInference) {
             int target = currentWord.getIndex();
