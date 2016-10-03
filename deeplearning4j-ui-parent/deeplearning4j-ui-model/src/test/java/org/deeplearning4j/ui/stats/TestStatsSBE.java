@@ -42,6 +42,7 @@ public class TestStatsSBE {
         String jvmSpecVersion = "13";
         String nd4jBackendClass = "14";
         String nd4jDataTypeName = "15";
+        String hostname = "15a";
 
         //Model info
         String modelClassName = "16";
@@ -61,7 +62,7 @@ public class TestStatsSBE {
                     }
 
                     if (hasSoftwareInfo) {
-                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName);
+                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname);
                     }
 
                     if (hasModelInfo) {
@@ -137,6 +138,7 @@ public class TestStatsSBE {
         String jvmSpecVersion = null;
         String nd4jBackendClass = null;
         String nd4jDataTypeName = null;
+        String hostname = null;
 
         //Model info
         String modelClassName = null;
@@ -158,7 +160,7 @@ public class TestStatsSBE {
                     }
 
                     if (hasSoftwareInfo) {
-                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName);
+                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname);
                     }
 
                     if (hasModelInfo) {

@@ -25,6 +25,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private String swJvmSpecVersion;
     private String swNd4jBackendClass;
     private String swNd4jDataTypeName;
+    private String swHostname;
 
     private int hwJvmAvailableProcessors;
     private int hwNumDevices;
@@ -42,7 +43,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                                   String nd4jBackendClass, String nd4jDataTypeName) {
+                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname) {
         this.swArch = arch;
         this.swOsName = osName;
         this.swJvmName = jvmName;
@@ -50,6 +51,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         this.swJvmSpecVersion = jvmSpecVersion;
         this.swNd4jBackendClass = nd4jBackendClass;
         this.swNd4jDataTypeName = nd4jDataTypeName;
+        this.swHostname = hostname;
         hasSoftwareInfo = true;
     }
 
@@ -91,9 +93,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //(b) Fixed length entries length (sie.BlockLength())
         //(c) Group 1: Hardware devices (GPUs) max memory: 4 bytes header + nEntries * 8 (int64) + nEntries * variable length Strings (header + content)  = 4 + 8*n + content
         //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
-        //(e) Variable length fields: 9 String length fields. Size: 4 bytes header, plus content. 36 bytes header
+        //(e) Variable length fields: 10 String length fields. Size: 4 bytes header, plus content. 40 bytes header
         //Fixed length + repeating groups + variable length...
-        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 36; //header + fixed values + group headers + variable length headers
+        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 40; //header + fixed values + group headers + variable length headers
 
         //For variable length field lengths: easist way is simply to convert to UTF-8
         //Of course, it is possible to calculate it first - but we might as well convert (1 pass), rather than count then convert (2 passes)
@@ -104,6 +106,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
         byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
 
@@ -118,6 +121,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += SbeUtil.length(bswJvmSpecVersion);
             bufferSize += SbeUtil.length(bswNd4jBackendClass);
             bufferSize += SbeUtil.length(bswNd4jDataTypeName);
+            bufferSize += SbeUtil.length(bswHostname);
         }
         int nHWDeviceStats = hwNumDevices;
         if (!hasHardwareInfo) nHWDeviceStats = 0;
@@ -135,7 +139,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         }
 
 
-        //Now know the
+        //Now know the buffer size -> create appropriate sized byte array
         byte[] bytes = new byte[bufferSize];
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
 
@@ -182,7 +186,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .putSwJvmVersion(bswJvmVersion, 0, bswJvmVersion.length)
                 .putSwJvmSpecVersion(bswJvmSpecVersion, 0, bswJvmSpecVersion.length)
                 .putSwNd4jBackendClass(bswNd4jBackendClass, 0, bswNd4jBackendClass.length)
-                .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length);
+                .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length)
+                .putSwHostName(bswHostname, 0, bswHostname.length);
         //Similar: !hasModelInfo -> empty byte[]
         sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length)
                 .putModelConfigJson(bmodelConfigJson, 0, bmodelConfigJson.length);
@@ -253,6 +258,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = sid.swJvmSpecVersion();
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
+        swHostname = sid.swHostName();
         if (!hasSoftwareInfo) clearSwFields();
         modelClassName = sid.modelConfigClassName();
         modelConfigJson = sid.modelConfigJson();
@@ -283,6 +289,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = null;
         swNd4jBackendClass = null;
         swNd4jDataTypeName = null;
+        swHostname = null;
     }
 
     private void clearModelFields() {

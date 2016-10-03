@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.stats;
 
+import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.berkeley.Pair;
@@ -17,12 +18,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.InputStream;
 import java.lang.management.*;
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -281,8 +280,19 @@ public class StatsListener implements IterationListener {
             String nd4jBackendClass = Nd4j.getNDArrayFactory().getClass().getName();
             String nd4jDataTypeName = DataTypeUtil.getDtypeFromContext().name();
 
+            String hostname = System.getenv("COMPUTERNAME");
+            if(hostname == null || hostname.isEmpty()){
+                try{
+                    Process proc = Runtime.getRuntime().exec("hostname");
+                    try (InputStream stream = proc.getInputStream()) {
+                        hostname = IOUtils.toString(stream);
+                    }
+                }catch(Exception e){ }
+            }
+
+
             initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion,
-                    nd4jBackendClass, nd4jDataTypeName);
+                    nd4jBackendClass, nd4jDataTypeName, hostname);
         }
 
         if(initConfiguration.collectHardwareInfo()){
