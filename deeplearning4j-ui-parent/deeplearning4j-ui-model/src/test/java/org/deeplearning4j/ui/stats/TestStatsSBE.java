@@ -525,4 +525,244 @@ public class TestStatsSBE {
         Assert.assertEquals(8000, testCount);
     }
 
+    @Test
+    public void testSbeStatsUpdateNullValues() {
+
+        String[] paramNames = null; //new String[]{"param0", "param1"};
+
+        long time = System.currentTimeMillis();
+        int duration = 123456;
+        int iterCount = 123;
+
+        long perfRuntime = 1;
+        long perfTotalEx = 2;
+        long perfTotalMB = 3;
+        double perfEPS = 4.0;
+        double perfMBPS = 5.0;
+
+        long memJC = 6;
+        long memJM = 7;
+        long memOC = 8;
+        long memOM = 9;
+        long[] memDC = null;
+        long[] memDM = null;
+
+        String gc1Name = null;
+        int gcdc1 = 16;
+        int gcdt1 = 17;
+        String gc2Name = null;
+        int gcdc2 = 20;
+        int gcdt2 = 21;
+
+        double score = 22.0;
+
+        Map<String,Double> lrByParam = null;
+
+        Map<String, Histogram> pHist = null;
+        Map<String, Histogram> uHist = null;
+        Map<String, Histogram> aHist = null;
+
+        Map<String, Double> pMean = null;
+        Map<String, Double> uMean = null;
+        Map<String, Double> aMean = null;
+
+        Map<String, Double> pStd = null;
+        Map<String, Double> uStd = null;
+        Map<String, Double> aStd = null;
+
+        Map<String, Double> pMM = null;
+        Map<String, Double> uMM = null;
+        Map<String, Double> aMM = null;
+
+
+        boolean[] tf = new boolean[]{true, false};
+        boolean[][] tf3 = new boolean[][]{
+                {false, false, false},
+                {true, false, false},
+                {false, true, false},
+                {true, false, true},
+                {true, true, true}};
+
+        //Total tests: 2^6 x 5^3 = 8000 separate tests
+        int testCount = 0;
+        for (boolean collectPerformanceStats : tf) {
+            for (boolean collectMemoryStats : tf) {
+                for (boolean collectGCStats : tf) {
+                    for (boolean collectDataSetMetaData : tf) {
+                        for (boolean collectScore : tf) {
+                            for (boolean collectLearningRates : tf) {
+                                for (boolean[] collectHistograms : tf3) {
+                                    for (boolean[] collectMeanStdev : tf3) {
+                                        for (boolean[] collectMM : tf3) {
+
+                                            SbeStatsReport report = new SbeStatsReport(paramNames);
+                                            report.reportTime(time);
+                                            report.reportStatsCollectionDurationMS(duration);
+                                            report.reportIterationCount(iterCount);
+                                            if (collectPerformanceStats) {
+                                                report.reportPerformance(perfRuntime, perfTotalEx, perfTotalMB, perfEPS, perfMBPS);
+                                            }
+
+                                            if (collectMemoryStats) {
+                                                report.reportMemoryUse(memJC, memJM, memOC, memOM, memDC, memDM);
+                                            }
+
+                                            if (collectGCStats) {
+                                                report.reportGarbageCollection(gc1Name, gcdc1, gcdt1);
+                                                report.reportGarbageCollection(gc2Name, gcdc2, gcdt2);
+                                            }
+
+                                            if (collectDataSetMetaData) {
+                                                //TODO
+                                            }
+
+                                            if (collectScore) {
+                                                report.reportScore(score);
+                                            }
+
+                                            if (collectLearningRates) {
+                                                report.reportLearningRates(lrByParam);
+                                            }
+
+                                            if (collectHistograms[0]) {   //Param hist
+                                                report.reportHistograms(StatsType.Parameters, pHist);
+                                            }
+                                            if (collectHistograms[1]) {   //Update hist
+                                                report.reportHistograms(StatsType.Updates, uHist);
+                                            }
+                                            if (collectHistograms[2]) {   //Act hist
+                                                report.reportHistograms(StatsType.Activations, aHist);
+                                            }
+
+                                            if (collectMeanStdev[0]) {    //Param mean/stdev
+                                                report.reportMean(StatsType.Parameters, pMean);
+                                                report.reportStdev(StatsType.Parameters, pStd);
+                                            }
+                                            if (collectMeanStdev[1]) {    //Update mean/stdev
+                                                report.reportMean(StatsType.Updates, uMean);
+                                                report.reportStdev(StatsType.Updates, uStd);
+                                            }
+                                            if (collectMeanStdev[2]) {    //Act mean/stdev
+                                                report.reportMean(StatsType.Activations, aMean);
+                                                report.reportStdev(StatsType.Activations, aStd);
+                                            }
+
+                                            if (collectMM[0]) {   //Param mean mag
+                                                report.reportMeanMagnitudes(StatsType.Parameters, pMM);
+                                            }
+                                            if (collectMM[1]) {   //Update mm
+                                                report.reportMeanMagnitudes(StatsType.Updates, uMM);
+                                            }
+                                            if (collectMM[2]) {   //Act mm
+                                                report.reportMeanMagnitudes(StatsType.Activations, aMM);
+                                            }
+
+                                            byte[] bytes = report.toByteArray();
+
+                                            StatsReport report2 = new SbeStatsReport(paramNames);
+                                            report2.fromByteArray(bytes);
+
+                                            assertEquals(time, report2.getTime());
+                                            assertEquals(duration, report2.getStatsCollectionDurationMs());
+                                            assertEquals(iterCount, report2.getIterationCount());
+                                            if(collectPerformanceStats){
+                                                assertEquals(perfRuntime, report2.getTotalRuntimeMs());
+                                                assertEquals(perfTotalEx, report2.getTotalExamples());
+                                                assertEquals(perfTotalMB, report2.getTotalMinibatches());
+                                                assertEquals(perfEPS, report2.getExamplesPerSecond(), 0.0);
+                                                assertEquals(perfMBPS, report2.getMinibatchesPerSecond(), 0.0);
+                                                Assert.assertTrue(report2.hasPerformance());
+                                            } else {
+                                                Assert.assertFalse(report2.hasPerformance());
+                                            }
+
+                                            if(collectMemoryStats){
+                                                assertEquals(memJC, report2.getJvmCurrentBytes());
+                                                assertEquals(memJM, report2.getJvmMaxBytes());
+                                                assertEquals(memOC, report2.getOffHeapCurrentBytes());
+                                                assertEquals(memOM, report2.getOffHeapMaxBytes());
+                                                assertArrayEquals(memDC, report2.getDeviceCurrentBytes());
+                                                assertArrayEquals(memDM, report2.getDeviceMaxBytes());
+
+                                                Assert.assertTrue(report2.hasMemoryUse());
+                                            } else {
+                                                Assert.assertFalse(report2.hasMemoryUse());
+                                            }
+
+                                            if(collectGCStats){
+                                                List<Pair<String,int[]>> gcs = report2.getGarbageCollectionStats();
+                                                Assert.assertEquals(2, gcs.size());
+                                                assertNullOrZeroLength(gcs.get(0).getFirst());
+                                                Assert.assertArrayEquals(new int[]{gcdc1,gcdt1}, gcs.get(0).getSecond());
+                                                assertNullOrZeroLength(gcs.get(1).getFirst());
+                                                Assert.assertArrayEquals(new int[]{gcdc2,gcdt2}, gcs.get(1).getSecond());
+                                                Assert.assertTrue(report2.hasGarbageCollection());
+                                            } else {
+                                                Assert.assertFalse(report2.hasGarbageCollection());
+                                            }
+
+                                            if(collectDataSetMetaData){
+                                                //TODO
+                                            }
+
+                                            if(collectScore){
+                                                assertEquals(score, report2.getScore(), 0.0);
+                                                Assert.assertTrue(report2.hasScore());
+                                            } else {
+                                                Assert.assertFalse(report2.hasScore());
+                                            }
+
+                                            if(collectLearningRates){
+                                                assertNull(report2.getLearningRates());
+                                            } else {
+                                                Assert.assertFalse(report2.hasLearningRates());
+                                            }
+
+                                            assertNull(report2.getHistograms(StatsType.Parameters));
+                                            Assert.assertFalse(report2.hasHistograms(StatsType.Parameters));
+
+                                            assertNull(report2.getHistograms(StatsType.Updates));
+                                            Assert.assertFalse(report2.hasHistograms(StatsType.Updates));
+
+                                            assertNull(report2.getHistograms(StatsType.Activations));
+                                            Assert.assertFalse(report2.hasHistograms(StatsType.Activations));
+
+                                            assertNull(report2.getMean(StatsType.Parameters));
+                                            assertNull(report2.getStdev(StatsType.Parameters));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Mean));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Stdev));
+
+                                            assertNull(report2.getMean(StatsType.Updates));
+                                            assertNull(report2.getStdev(StatsType.Updates));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Mean));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Stdev));
+
+                                            assertNull(report2.getMean(StatsType.Activations));
+                                            assertNull(report2.getStdev(StatsType.Activations));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.Mean));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.Stdev));
+
+                                            assertNull(report2.getMeanMagnitudes(StatsType.Parameters));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));;
+
+                                            assertNull(report2.getMeanMagnitudes(StatsType.Updates));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));;
+
+                                            assertNull(report2.getMeanMagnitudes(StatsType.Activations));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));;
+
+                                            testCount++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.assertEquals(8000, testCount);
+    }
+
 }
