@@ -22,9 +22,10 @@ public interface StatsInitializationReport {
      * @param jvmSpecVersion   JVM Specification version (for example, 1.8)
      * @param nd4jBackendClass ND4J backend Factory class
      * @param nd4jDataTypeName ND4J datatype name
+     * @param hostname         Hostname for the machine, if available
      */
     void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                            String nd4jBackendClass, String nd4jDataTypeName);
+                            String nd4jBackendClass, String nd4jDataTypeName, String hostname);
 
     /**
      * @param jvmAvailableProcessors Number of available processor cores according to the JVM
