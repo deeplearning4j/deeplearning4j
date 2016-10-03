@@ -2046,6 +2046,14 @@ Nd4jPointer NativeOps::createBlasHandle() {
     return 0L;
 }
 
+int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+    return 0;
+}
+
+int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+    return 0;
+}
+
 int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
     return 0L;
 }

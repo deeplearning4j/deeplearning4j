@@ -5212,6 +5212,16 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	verbose = reallyEnable;
 }
 
+int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+	int device = getDeviceId(ptrToDeviceId);
+	return deviceProperties[device].major;
+}
+
+int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+	int device = getDeviceId(ptrToDeviceId);
+	return deviceProperties[device].minor;
+}
+
 /**
   * Concatneate multi array of the same shape together
   * along a particular dimension
