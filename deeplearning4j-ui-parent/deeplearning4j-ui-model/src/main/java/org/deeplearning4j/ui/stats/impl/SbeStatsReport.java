@@ -292,7 +292,12 @@ public class SbeStatsReport implements StatsReport {
             bufferSize += summaryStatsCount * 10;
 
             //Histograms for this parameter
-            int nHistogramsThisParam = (histograms == null ? 0 : histograms.size());    //0, 1 or 2 for each parameter
+            int nHistogramsThisParam = 0;
+            if(histograms != null && histograms.size() > 0){
+                for(Map<String,Histogram> map : histograms.values()){
+                    if(map != null && map.containsKey(s)) nHistogramsThisParam++;
+                }
+            }
             //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
             bufferSize += 25 * nHistogramsThisParam;
             //PLUS, the number of count values, given by nBins...
@@ -300,7 +305,7 @@ public class SbeStatsReport implements StatsReport {
             for (StatsType statsType : StatsType.values()) {
                 if (histograms == null || !histograms.containsKey(statsType)) continue;
                 Map<String, Histogram> map = histograms.get(statsType);
-                if (map.containsKey(s)) { //If it doesn't: assume 0 count...
+                if ( map != null && map.containsKey(s)) { //If it doesn't: assume 0 count...
                     nBinCountEntries += map.get(s).getNBins();
                 }
             }
@@ -387,13 +392,6 @@ public class SbeStatsReport implements StatsReport {
         }
 
         // +++++ Per Parameter Stats +++++
-        int nSummaryStats = 0;
-        if (meanValues != null)
-            nSummaryStats += meanValues.size();      //0 to 3 values: parameters, updates, activations
-        if (stdevValues != null) nSummaryStats += stdevValues.size();
-        if (meanMagnitudeValues != null) nSummaryStats += meanMagnitudeValues.size();
-
-        int nHistograms = (histograms == null ? 0 : histograms.size());
         UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(nParams);
 
         int paramId = 0;
@@ -405,7 +403,17 @@ public class SbeStatsReport implements StatsReport {
             }
             ppe.paramID(paramId++)
                     .learningRate(lr);
-            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(nSummaryStats);
+
+            int summaryStatsCount = 0;
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    if (map.containsKey(s)) summaryStatsCount++;
+                }
+            }
+
+            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
 
             //Summary stats
             for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
@@ -416,9 +424,16 @@ public class SbeStatsReport implements StatsReport {
                 }
             }
 
+            int nHistogramsThisParam = 0;
+            if(histograms != null && histograms.size() > 0){
+                for(Map<String,Histogram> map : histograms.values()){
+                    if(map != null && map.containsKey(s)) nHistogramsThisParam++;
+                }
+            }
+
             //Histograms
-            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistograms);
-            if (nHistograms > 0) {
+            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistogramsThisParam);
+            if (nHistogramsThisParam > 0) {
                 for (StatsType statsType : StatsType.values()) {
                     Map<String, Histogram> map = histograms.get(statsType);
                     if (map == null) continue;
