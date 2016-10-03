@@ -75,6 +75,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+    protected volatile transient Properties properties;
 
     public CudaExecutioner() {
 
@@ -1874,29 +1875,32 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      * @return
      */
     @Override
-    public Properties getEnvironmentInformation() {
-        Properties properties = super.getEnvironmentInformation();
+    public synchronized Properties getEnvironmentInformation() {
+        if (properties == null) {
+            Properties props = super.getEnvironmentInformation();
 
-        List<Map<String, Long>> devicesList = new ArrayList<>();
-        int currentDevice = nativeOps.getDevice();
+            List<Map<String, Long>> devicesList = new ArrayList<>();
+            int currentDevice = nativeOps.getDevice();
 
-        for (int i = 0; i < nativeOps.getAvailableDevices(); i++ ) {
-            Map<String, Long> deviceProps = new HashMap<>();
+            for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
+                Map<String, Long> deviceProps = new HashMap<>();
 
-            deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(new CudaPointer(i)));
-            deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(new CudaPointer(i)));
-            deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(new CudaPointer(i)));
-            deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(new CudaPointer(i)));
+                deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(new CudaPointer(i)));
+                deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(new CudaPointer(i)));
+                deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(new CudaPointer(i)));
+                deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(new CudaPointer(i)));
 
-            devicesList.add(i, deviceProps);
+                devicesList.add(i, deviceProps);
+            }
+
+            props.put("backend", "CUDA");
+            props.put("cuda.availableDevices", nativeOps.getAvailableDevices());
+            props.put("cuda.devicesInformation", devicesList);
+            props.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
+
+            nativeOps.setDevice(new CudaPointer(currentDevice));
+            properties = props;
         }
-
-        properties.put("backend","CUDA");
-        properties.put("cuda.availableDevices", nativeOps.getAvailableDevices());
-        properties.put("cuda.devicesInformation", devicesList);
-        properties.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
-
-        nativeOps.setDevice(new CudaPointer(currentDevice));
         return properties;
     }
 }

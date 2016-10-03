@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -180,4 +181,11 @@ public class SporadicTests {
         assertEquals(true, pointL.isActualOnDeviceSide());
     }
 
+    @Test
+    public void testEnvironment() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
+        Properties properties = Nd4j.getExecutioner().getEnvironmentInformation();
+
+        System.out.println("Props: " + properties.toString());
+    }
 }

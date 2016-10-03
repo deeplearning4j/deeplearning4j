@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -338,5 +339,13 @@ public class NativeOpExecutionerTest {
         INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
 
         Nd4j.getExecutioner().exec(new IsMax(array, 1));
+    }
+
+    @Test
+    public void testEnvironment() throws Exception {
+        INDArray array = Nd4j.zeros(new int[]{4, 5}, 'f');
+        Properties properties = Nd4j.getExecutioner().getEnvironmentInformation();
+
+        System.out.println("Props: " + properties.toString());
     }
 }

@@ -777,7 +777,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Properties properties = super.getEnvironmentInformation();
 
         properties.put("backend","CPU");
-        properties.put("omp.threads", loop.ompGetNumThreads());
+        properties.put("omp.threads", loop.ompGetMaxThreads());
         properties.put("blas.threads", NativeOpsHolder.getInstance().getDeviceNativeBlas().getMaxThreads());
         properties.put("blas.vendor", NativeOpsHolder.getInstance().getDeviceNativeBlas().getBlasVendor().toString());
 
