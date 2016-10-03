@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -28,6 +29,10 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -324,5 +329,23 @@ public  class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void exec(GridOp op) {
         throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
+    }
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties environment = new Properties();
+
+
+        environment.put("cores", Runtime.getRuntime().availableProcessors());
+        environment.put("memory.available", Runtime.getRuntime().maxMemory());
+        environment.put("os", System.getProperty("os.name"));
+
+
+        return environment;
     }
 }

@@ -31,6 +31,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
@@ -48,10 +49,11 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.*;
 
 
 /**
@@ -1863,6 +1865,39 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             ret.elementWiseStride();
 
         return null;
+    }
+
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties properties = super.getEnvironmentInformation();
+
+        List<Map<String, Long>> devicesList = new ArrayList<>();
+        int currentDevice = nativeOps.getDevice();
+
+        for (int i = 0; i < nativeOps.getAvailableDevices(); i++ ) {
+            Map<String, Long> deviceProps = new HashMap<>();
+
+            deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(new CudaPointer(i)));
+            deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(new CudaPointer(i)));
+            deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(new CudaPointer(i)));
+            deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(new CudaPointer(i)));
+
+            devicesList.add(i, deviceProps);
+        }
+
+        properties.put("backend","CUDA");
+        properties.put("cuda.availableDevices", nativeOps.getAvailableDevices());
+        properties.put("cuda.devicesInformation", devicesList);
+        properties.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
+
+        nativeOps.setDevice(new CudaPointer(currentDevice));
+        return properties;
     }
 }
 

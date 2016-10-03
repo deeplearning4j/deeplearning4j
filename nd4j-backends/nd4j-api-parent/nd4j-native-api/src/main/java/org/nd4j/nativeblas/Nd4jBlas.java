@@ -21,6 +21,15 @@ import org.slf4j.LoggerFactory;
  */
 @Platform(include = "NativeBlas.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class Nd4jBlas extends Pointer {
+
+    public enum Vendor {
+        UNKNOWN,
+        CUBLAS,
+        OPENBLAS,
+        MKL,
+    }
+
+
     private static Logger logger = LoggerFactory.getLogger(Nd4jBlas.class);
     static {
         // using our custom platform properties from resources, and on user request,
@@ -89,6 +98,18 @@ public class Nd4jBlas extends Pointer {
         return ht_off;
     }
 
+    /**
+     * This method returns BLAS library vendor
+     *
+     * @return
+     */
+    public Vendor getBlasVendor() {
+        if (getVendor() > 3)
+            return Vendor.UNKNOWN;
+
+        return Vendor.values()[getVendor()];
+    }
+
     private boolean isOdd(int value) {
         return (value % 2 != 0);
     }
@@ -96,6 +117,10 @@ public class Nd4jBlas extends Pointer {
     private native void allocate();
 
     public native void setMaxThreads(int num);
+
+    public native int getMaxThreads();
+
+    protected native int getVendor();
 
 /*
      * ======================================================
