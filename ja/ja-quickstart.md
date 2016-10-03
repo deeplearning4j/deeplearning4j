@@ -131,7 +131,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 Mavenの各プロジェクトにはPOMファイルがあります。exampleを作動させると、POMファイルは、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)のようになります。
 
-IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があります。`MLPLinearClassifier`がおすすめです。ネットワークがすぐに弊社のユーザー・インターフェースにある2つのデータグループを分類するのを確認できるからです。Githubにあるファイルは[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)からアクセスできます。
+IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があります。`MLPClassifierLinear`がおすすめです。ネットワークがすぐに弊社のユーザー・インターフェースにある2つのデータグループを分類するのを確認できるからです。Githubにあるファイルは[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)からアクセスできます。
 
 このexampleを実行するには、右クリックして、ドロップダウンメニューにある緑色のボタンを選択します。すると、IntelliJの下部のウインドウにスコアの連続が見えます。右端にある数字はネットワークの分類のためのエラースコアです。ネットワークが学習している場合は、時間の経過とともに各バッチが処理されていくにしたがってその数字は減少していきます。最後に、このウィンドウは、ニューラルネットワークのモデルがどのくらい正確になったかを報告します。
 
@@ -147,7 +147,7 @@ IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があり�
 
 1.Gitterに参加しましょう。Gitterには3つの大きなコミュニティチャンネルがあります。
   * [DL4J Live Chat（ライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)は、DL4Jのすべてのことについてを扱うメインチャンネルです。ほとんどの人々はこのチャットを使っています。
-  * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)は、ニューラルネットワークを始めた人々のために設けられています。初心者の方々は是非ご参加ください!
+  * [Tuning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)は、ニューラルネットワークを始めた人々のために設けられています。初心者の方々は是非ご参加ください!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)は、弊社の次のリリースのチェックや改善のお手伝いをしてくださっている方々向けです。注意：このコミュニティーは経験者向けです。
 2.[Introduction to deep neural networks（ディープニューラルネットワークについて）](ja-neuralnet-overview)または[弊社の詳細チュートリアルの一つ](../tutorials)をお読みください。
 3.より詳細の[Comprehensive Setup Guide（セットアップ全ガイド）](ja-gettingstarted)をお読みください。
