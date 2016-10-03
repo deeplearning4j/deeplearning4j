@@ -300,5 +300,10 @@ public class MapDBStatsStore implements StatsStorage {
                 throw new IOException(e);
             }
         }
+
+        @Override
+        public int compare(SessionWorkerId w1, SessionWorkerId w2){
+            return w1.compareTo(w2);
+        }
     }
 }

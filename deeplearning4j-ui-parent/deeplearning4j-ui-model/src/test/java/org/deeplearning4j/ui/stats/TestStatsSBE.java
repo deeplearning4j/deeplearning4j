@@ -82,7 +82,11 @@ public class TestStatsSBE {
                         assertEquals(offHeapMaxMemory, report2.getHwOffHeapMaxMemory());
                         assertArrayEquals(deviceTotalMemory, report2.getHwDeviceTotalMemory());
                         assertArrayEquals(deviceDescription, report2.getHwDeviceDescription());
+                        assertTrue(report2.hasHardwareInfo());
+                    } else {
+                        assertFalse(report2.hasHardwareInfo());
                     }
+
                     if (hasSoftwareInfo) {
                         assertEquals(arch, report2.getSwArch());
                         assertEquals(osName, report2.getSwOsName());
@@ -91,13 +95,20 @@ public class TestStatsSBE {
                         assertEquals(jvmSpecVersion, report2.getSwJvmSpecVersion());
                         assertEquals(nd4jBackendClass, report2.getSwNd4jBackendClass());
                         assertEquals(nd4jDataTypeName, report2.getSwNd4jDataTypeName());
+                        assertTrue(report2.hasSoftwareInfo());
+                    } else {
+                        assertFalse(report2.hasSoftwareInfo());
                     }
+
                     if (hasModelInfo) {
                         assertEquals(modelClassName, report2.getModelClassName());
                         assertEquals(modelConfigJson, report2.getModelConfigJson());
                         assertArrayEquals(modelparamNames, report2.getModelParamNames());
                         assertEquals(numLayers, report2.getModelNumLayers());
                         assertEquals(numParams, report2.getModelNumParams());
+                        assertTrue(report2.hasModelInfo());
+                    } else {
+                        assertFalse(report2.hasModelInfo());
                     }
                 }
             }
@@ -139,6 +150,8 @@ public class TestStatsSBE {
             for (boolean hasSoftwareInfo : tf) {
                 for (boolean hasModelInfo : tf) {
 
+                    System.out.println(hasHardwareInfo + "\t" + hasSoftwareInfo + "\t" + hasModelInfo);
+
                     SbeStatsInitializationReport report = new SbeStatsInitializationReport();
                     if (hasHardwareInfo) {
                         report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory, deviceDescription);
@@ -157,35 +170,52 @@ public class TestStatsSBE {
                     SbeStatsInitializationReport report2 = new SbeStatsInitializationReport();
                     report2.fromByteArray(asBytes);
 
-                    assertEquals(report, report2);
-
                     if (hasHardwareInfo) {
                         assertEquals(jvmAvailableProcessors, report2.getHwJvmAvailableProcessors());
                         assertEquals(numDevices, report2.getHwNumDevices());
                         assertEquals(jvmMaxMemory, report2.getHwJvmMaxMemory());
                         assertEquals(offHeapMaxMemory, report2.getHwOffHeapMaxMemory());
-                        assertArrayEquals(deviceTotalMemory, report2.getHwDeviceTotalMemory());
-                        assertArrayEquals(deviceDescription, report2.getHwDeviceDescription());
+                        assertArrayEquals(new long[]{0,0}, report2.getHwDeviceTotalMemory());       //Edge case: nDevices = 2, but missing mem data -> expect long[] of 0s out, due to fixed encoding
+                        assertArrayEquals(new String[]{"",""}, report2.getHwDeviceDescription());   //As above
+                        assertTrue(report2.hasHardwareInfo());
+                    } else {
+                        assertFalse(report2.hasHardwareInfo());
                     }
+
                     if (hasSoftwareInfo) {
-                        assertEquals(arch, report2.getSwArch());
-                        assertEquals(osName, report2.getSwOsName());
-                        assertEquals(jvmName, report2.getSwJvmName());
-                        assertEquals(jvmVersion, report2.getSwJvmVersion());
-                        assertEquals(jvmSpecVersion, report2.getSwJvmSpecVersion());
-                        assertEquals(nd4jBackendClass, report2.getSwNd4jBackendClass());
-                        assertEquals(nd4jDataTypeName, report2.getSwNd4jDataTypeName());
+                        assertNullOrZeroLength(report2.getSwArch());
+                        assertNullOrZeroLength(report2.getSwOsName());
+                        assertNullOrZeroLength(report2.getSwJvmName());
+                        assertNullOrZeroLength(report2.getSwJvmVersion());
+                        assertNullOrZeroLength(report2.getSwJvmSpecVersion());
+                        assertNullOrZeroLength(report2.getSwNd4jBackendClass());
+                        assertNullOrZeroLength(report2.getSwNd4jDataTypeName());
+                        assertTrue(report2.hasSoftwareInfo());
+                    } else {
+                        assertFalse(report2.hasSoftwareInfo());
                     }
+
                     if (hasModelInfo) {
-                        assertEquals(modelClassName, report2.getModelClassName());
-                        assertEquals(modelConfigJson, report2.getModelConfigJson());
-                        assertArrayEquals(modelparamNames, report2.getModelParamNames());
+                        assertNullOrZeroLength(report2.getModelClassName());
+                        assertNullOrZeroLength(report2.getModelConfigJson());
+                        assertNullOrZeroLengthArray(report2.getModelParamNames());
                         assertEquals(numLayers, report2.getModelNumLayers());
                         assertEquals(numParams, report2.getModelNumParams());
+                        assertTrue(report2.hasModelInfo());
+                    } else {
+                        assertFalse(report2.hasModelInfo());
                     }
                 }
             }
         }
+    }
+
+    private static void assertNullOrZeroLength(String str){
+        assertTrue(str == null || str.length() == 0);
+    }
+
+    private static void assertNullOrZeroLengthArray(String[] str){
+        assertTrue(str == null || str.length == 0);
     }
 
     @Test
