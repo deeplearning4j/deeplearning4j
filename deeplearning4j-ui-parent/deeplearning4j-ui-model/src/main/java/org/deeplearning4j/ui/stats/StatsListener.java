@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.stats;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.*;
 import java.math.BigDecimal;
@@ -27,10 +29,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Alex on 28/09/2016.
  */
+@Slf4j
 public class StatsListener implements IterationListener {
 
+    public enum ErrorHandling {LogAndContinue, Fail};
     private enum StatType {Mean, Stdev, MeanMagnitude}
 
+    private ErrorHandling errorHandling = ErrorHandling.LogAndContinue;
+    private int maxErrorMessages = 10;
+    private int printedErrorMessages = 0;
     private final StatsListenerReceiver receiver;
     private int iterCount = 0;
 
@@ -253,7 +260,22 @@ public class StatsListener implements IterationListener {
         report.reportStatsCollectionDurationMS((int)(endTime-currentTime));    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
         lastReportIteration = iterCount;
-        receiver.postStatsReport(report);
+        try{
+            receiver.postStatsReport(report);
+        }catch(IOException e){
+            switch (errorHandling){
+                case LogAndContinue:
+                    if(printedErrorMessages++ < maxErrorMessages) {
+                        log.warn("Exception thrown by storage layer when posting update", e);
+                    }
+                    if(printedErrorMessages == maxErrorMessages){
+                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
+                    }
+                    break;
+                case Fail:
+                    throw new RuntimeException(e);
+            }
+        }
         iterCount++;
     }
 
@@ -343,7 +365,22 @@ public class StatsListener implements IterationListener {
             initReport.reportModelInfo(model.getClass().getName(), jsonConf, paramNames, numLayers, numParams);
         }
 
-        receiver.postInitializationReport(initReport);
+        try{
+            receiver.postInitializationReport(initReport);
+        }catch(IOException e){
+            switch (errorHandling){
+                case LogAndContinue:
+                    if(printedErrorMessages++ < maxErrorMessages) {
+                        log.warn("Exception thrown by storage layer when posting initialization report", e);
+                    }
+                    if(printedErrorMessages == maxErrorMessages){
+                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
+                    }
+                    break;
+                case Fail:
+                    throw new RuntimeException(e);
+            }
+        }
     }
 
     private void updateExamplesMinibatchesCounts(Model model) {

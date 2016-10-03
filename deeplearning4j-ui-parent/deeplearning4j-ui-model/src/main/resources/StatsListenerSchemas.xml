@@ -131,6 +131,7 @@
         <data name="swJvmSpecVersion" id="104" type="VarDataUTF8"/>
         <data name="swNd4jBackendClass" id="105" type="VarDataUTF8"/>
         <data name="swNd4jDataTypeName" id="106" type="VarDataUTF8"/>
+        <data name="swHostName" id="107" type="VarDataUTF8"/>
         <data name="modelConfigClassName" id="200" type="VarDataUTF8"/>
         <data name="modelConfigJson" id="201" type="VarDataUTF8"/>
     </sbe:message>
