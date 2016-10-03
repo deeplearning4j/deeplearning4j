@@ -186,36 +186,38 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         INDArray neu1e = Nd4j.create(configuration.getLayersSize());
 
       //  System.out.println("--------------------------");
-        for(int i = 0; i < w1.getCodeLength(); i++) {
-            int code = w1.getCodes().get(i);
-            int point = w1.getPoints().get(i);
-            if(point >= syn0.rows() || point < 0)
-                throw new IllegalStateException("Illegal point " + point);
-            //other word vector
 
-            INDArray syn1 = this.syn1.slice(point);
+        if (configuration.isUseHierarchicSoftmax())
+            for(int i = 0; i < w1.getCodeLength(); i++) {
+                int code = w1.getCodes().get(i);
+                int point = w1.getPoints().get(i);
+                if(point >= syn0.rows() || point < 0)
+                    throw new IllegalStateException("Illegal point " + point);
+                //other word vector
 
-
-            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
-
-            if(dot < -MAX_EXP || dot >= MAX_EXP)
-                continue;
+                INDArray syn1 = this.syn1.slice(point);
 
 
-            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if(idx >= expTable.length)
-                continue;
+                double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
 
-            //score
-            double f = expTable[idx];
+                if(dot < -MAX_EXP || dot >= MAX_EXP)
+                    continue;
 
 
-            //gradient
-            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
+                int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
+                if(idx >= expTable.length)
+                    continue;
 
-            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
-            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
-        }
+                //score
+                double f = expTable[idx];
+
+
+                //gradient
+                double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
+
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
+            }
 
         int target = w1.getIndex();
         int label;
