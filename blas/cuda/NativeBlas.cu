@@ -83,6 +83,17 @@ void Nd4jBlas::setMaxThreads(int num) {
     // no-op
 }
 
+int Nd4jBlas::getMaxThreads() {
+    // 0 - cuBLAS
+    return 0;
+}
+
+int Nd4jBlas::getVendor() {
+    // 0 - cuBLAS
+    return 0;
+}
+
+
 /*
  * ======================================================
  * Level 1 BLAS functions
