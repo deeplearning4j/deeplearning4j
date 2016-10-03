@@ -90,10 +90,14 @@ public class RemoteConvolutionalIterationListener implements IterationListener {
             Random rnd = new Random();
             MultiLayerNetwork l = (MultiLayerNetwork) model;
             BufferedImage sourceImage = null;
+            int sampleDim = -1;
             for (Layer layer: l.getLayers()) {
                 if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                     INDArray output = layer.activate();
-                    int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+
+                    if (sampleDim < 0)
+                        sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+
                     if (cnt == 0) {
                         INDArray inputs = ((ConvolutionLayer) layer).input();
 
@@ -104,11 +108,7 @@ public class RemoteConvolutionalIterationListener implements IterationListener {
                         }
                     }
 
-
-//                    log.info("Layer output shape: " + Arrays.toString(output.shape()));
-
                     INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
-                    //                  log.info("TAD(3,2,1) shape: " + Arrays.toString(tad.shape()));
 
                     tensors.add(tad);
 
