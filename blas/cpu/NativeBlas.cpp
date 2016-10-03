@@ -105,7 +105,7 @@ CBLAS_DIAG convertDiag(int from) {
 }
 
 int maxThreads = 8;
-int vendor = -1;
+int vendor = 0;
 
 /**
  * Side of a matrix, left or right
@@ -145,7 +145,7 @@ void blas_set_num_threads(int num) {
         if (mkl_global != NULL) {
             mkl_global(num);
 
-            vendor = 2;
+            vendor = 3;
 
             int_int_int mkl_domain = (int_int_int) GetProcAddress(handle, "MKL_Domain_Set_Num_Threads");
             if (mkl_domain != NULL) {
@@ -167,7 +167,7 @@ void blas_set_num_threads(int num) {
       if (handle != NULL) {
         void_int oblas = (void_int) GetProcAddress(handle, "openblas_set_num_threads");
         if (oblas != NULL) {
-            vendor = 1;
+            vendor = 2;
             oblas(num);
         } else {
             printf("Unable to tune runtime. Please set OMP_NUM_THREADS manually.\n");
@@ -191,7 +191,7 @@ void blas_set_num_threads(int num) {
             // we're running against mkl
             mkl_global((int) num);
 
-            vendor = 2;
+            vendor = 3;
 
             int_int_int mkl_domain = (int_int_int) dlsym(handle, "MKL_Domain_Set_Num_Threads");
             if (mkl_domain != NULL) {
@@ -214,7 +214,7 @@ void blas_set_num_threads(int num) {
         if (handle != NULL) {
             void_int oblas = (void_int) dlsym(handle, "openblas_set_num_threads");
             if (oblas != NULL) {
-                vendor = 1;
+                vendor = 2;
                 // we're running against openblas
                 oblas((int) num);
             } else {
@@ -243,10 +243,10 @@ int Nd4jBlas::getMaxThreads() {
 }
 
 int Nd4jBlas::getVendor() {
-    // -1 - Unknown
-    // 0 - cuBLAS
-    // 1 - openBLAS
-    // 2 - MKL
+    // 0 - Unknown
+    // 1 - cuBLAS
+    // 2 - openBLAS
+    // 3 - MKL
     return vendor;
 }
 

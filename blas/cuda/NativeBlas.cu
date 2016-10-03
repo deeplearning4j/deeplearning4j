@@ -89,8 +89,8 @@ int Nd4jBlas::getMaxThreads() {
 }
 
 int Nd4jBlas::getVendor() {
-    // 0 - cuBLAS
-    return 0;
+    // 1 - cuBLAS
+    return 1;
 }
 
 
