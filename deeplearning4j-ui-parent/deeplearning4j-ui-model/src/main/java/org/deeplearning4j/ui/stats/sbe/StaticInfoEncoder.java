@@ -1172,6 +1172,92 @@ public class StaticInfoEncoder
         return this;
     }
 
+    public static int swHostNameId()
+    {
+        return 107;
+    }
+
+    public static String swHostNameCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String swHostNameMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int swHostNameHeaderLength()
+    {
+        return 4;
+    }
+
+    public StaticInfoEncoder putSwHostName(final DirectBuffer src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder putSwHostName(final byte[] src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder swHostName(final String value)
+    {
+        final byte[] bytes;
+        try
+        {
+            bytes = value.getBytes("UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        final int length = bytes.length;
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+        return this;
+    }
+
     public static int modelConfigClassNameId()
     {
         return 200;
