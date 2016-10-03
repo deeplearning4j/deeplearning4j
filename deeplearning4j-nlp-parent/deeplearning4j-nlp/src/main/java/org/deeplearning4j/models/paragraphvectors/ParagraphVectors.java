@@ -732,6 +732,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
 
             ret.configuration = this.configuration;
 
@@ -1030,6 +1031,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder sequenceLearningAlgorithm(String algorithm) {
             super.sequenceLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder useHierarchicSoftmax(boolean reallyUse) {
+            super.useHierarchicSoftmax(reallyUse);
             return this;
         }
 

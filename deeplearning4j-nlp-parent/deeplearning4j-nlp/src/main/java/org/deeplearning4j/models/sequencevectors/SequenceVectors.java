@@ -258,6 +258,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean resetModel = true;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected boolean useUnknown = false;
+        protected boolean useHierarchicSoftmax = true;
         protected int[] variableWindows;
 
         protected boolean trainSequenceVectors = false;
@@ -431,6 +432,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> workers(int numWorkers) {
             this.workers = numWorkers;
+            return this;
+        }
+
+        /**
+         * Enable/disable hierarchic softmax
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> useHierarchicSoftmax(boolean reallyUse) {
+            this.useHierarchicSoftmax = reallyUse;
             return this;
         }
 
@@ -774,6 +786,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUNK(this.UNK);
             this.configuration.setVariableWindows(variableWindows);
+            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
 
             vectors.configuration = this.configuration;
 
