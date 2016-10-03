@@ -1,6 +1,9 @@
 package org.deeplearning4j.ui.stats.storage;
 
 import org.deeplearning4j.ui.stats.api.*;
+import org.deeplearning4j.ui.storage.StatsStorage;
+
+import java.io.IOException;
 
 /**
  * A simple StatsListenerReceiver that takes the provided stats information, and passes them on to the storage layer.
@@ -33,7 +36,7 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
     }
 
     @Override
-    public void postInitializationReport(StatsInitializationReport initializationReport) {
+    public void postInitializationReport(StatsInitializationReport initializationReport) throws IOException {
         String sessionID = null;    //TODO
         String workerID = null;     //TODO
         //TODO proper types for the init report...

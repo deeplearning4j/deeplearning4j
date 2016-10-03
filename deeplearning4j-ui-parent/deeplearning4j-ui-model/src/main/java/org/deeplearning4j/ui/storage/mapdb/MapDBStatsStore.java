@@ -1,9 +1,9 @@
-package org.deeplearning4j.ui.stats.mapdb;
+package org.deeplearning4j.ui.storage.mapdb;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.ui.stats.storage.StatsStorage;
+import org.deeplearning4j.ui.storage.StatsStorage;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
@@ -137,7 +137,7 @@ public class MapDBStatsStore implements StatsStorage {
     }
 
     @Override
-    public Pair<Long, byte[]> getLatestUpdate(String sessionID, String workerID) {
+    public UpdateRecord getLatestUpdate(String sessionID, String workerID) {
         SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
         Map<Long,byte[]> map = updates.get(id);
         if(map == null) return null;
@@ -145,15 +145,16 @@ public class MapDBStatsStore implements StatsStorage {
         for(Long l : map.keySet()){
             max = Math.max(max, l);
         }
-        return new Pair<>(max,map.get(max));
+        return new UpdateRecord(sessionID, workerID, max, map.get(max));
     }
 
     @Override
-    public byte[] getUpdate(String sessionID, String workerID, long timestamp) {
+    public UpdateRecord getUpdate(String sessionID, String workerID, long timestamp) {
         SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
         Map<Long,byte[]> map = updates.get(id);
         if(map == null) return null;
-        return map.get(timestamp);
+
+        return new UpdateRecord(sessionID, workerID, timestamp, map.get(timestamp));
     }
 
     @Override
@@ -162,9 +163,9 @@ public class MapDBStatsStore implements StatsStorage {
 
         for( SessionWorkerId id : updates.keySet() ){
             if(sessionID.equals(id.getSessionID())){
-                Pair<Long,byte[]> p = getLatestUpdate(sessionID, id.workerID);
-                if(p != null){
-                    list.add(new UpdateRecord(sessionID, id.workerID, p.getFirst(), p.getSecond()));
+                UpdateRecord r = getLatestUpdate(sessionID, id.workerID);
+                if(r != null){
+                    list.add(r);
                 }
             }
         }
