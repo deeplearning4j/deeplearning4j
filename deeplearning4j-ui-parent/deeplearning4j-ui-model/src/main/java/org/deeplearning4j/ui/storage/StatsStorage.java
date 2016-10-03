@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 
 import java.io.IOException;
@@ -28,6 +27,16 @@ import java.util.List;
  */
 public interface StatsStorage {
 
+
+    /**
+     * Close any open resources (files, etc)
+     */
+    void close() throws IOException;
+
+    /**
+     * @return Whether the StatsStorage implementation has been closed or not
+     */
+    boolean isClosed();
 
     /**
      * Get a list of all sessions stored by this storage backend
@@ -173,10 +182,22 @@ public interface StatsStorage {
      */
     @AllArgsConstructor
     @Data
-    public static class UpdateRecord {
+    public static class UpdateRecord implements Comparable<UpdateRecord> {
         private final String sessionID;
         private final String workerID;
         private final long timestamp;
         private final byte[] record;
+
+        public String toString() {
+            return "UpdateRecord(sessionID=" + this.sessionID + ", workerID=" + this.workerID + ", timestamp=" + this.timestamp + ", recordLength=" + this.record.length + ")";
+        }
+
+        @Override
+        public int compareTo(UpdateRecord o) {
+            if (!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
+            if (!workerID.equals(o.workerID)) return workerID.compareTo(o.workerID);
+            if (timestamp != o.timestamp) return Long.compare(timestamp, o.timestamp);
+            return 0;
+        }
     }
 }
