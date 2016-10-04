@@ -917,7 +917,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         int numTads = arrays.get(0).length() / tadLength;
 
-        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
+        int[] map = ArrayUtil.buildInterleavedVector(rnd, numTads);
 
         CudaIntDataBuffer shuffle = new CudaIntDataBuffer(map);
 

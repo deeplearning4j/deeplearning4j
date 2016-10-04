@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -7,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
@@ -14,6 +16,7 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 @Ignore
+@Slf4j
 public class ArrayUtilsTests {
 
     @Test
@@ -87,5 +90,20 @@ public class ArrayUtilsTests {
 
         assertEquals(arrayC, arrayF);
 
+    }
+
+
+    @Test
+    public void testInterleavedVector1() {
+        int[] vector = ArrayUtil.buildInterleavedVector(new Random(), 11);
+
+        log.error("Vector: {}", vector);
+    }
+
+    @Test
+    public void testHalfVector1() {
+        int[] vector = ArrayUtil.buildHalfVector(new Random(), 12);
+
+        log.error("Vector: {}", vector);
     }
 }
