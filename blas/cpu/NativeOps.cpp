@@ -2282,7 +2282,10 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
         // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
 
-        for (Nd4jIndex r = 0; r < numTads / 2; r++) {
+        for (Nd4jIndex r = 0; r < numTads; r++) {
+            if (shuffleMap[r] < 0)
+                continue;
+
             int oldOffset = tadOffset[r];
             int newOffset = tadOffset[shuffleMap[r]];
 
