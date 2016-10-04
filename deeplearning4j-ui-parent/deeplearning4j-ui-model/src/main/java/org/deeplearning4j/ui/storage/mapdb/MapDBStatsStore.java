@@ -23,6 +23,7 @@ public class MapDBStatsStore implements StatsStorage {
     private DB db;
 
     private Set<String> sessionIDs;
+    private Map<String, SessionMetaData> sessionMetaData;
     private Map<SessionWorkerId, byte[]> staticInfo;
 
     private Map<SessionWorkerId, Map<Long, byte[]>> updates = new HashMap<>();
@@ -51,6 +52,10 @@ public class MapDBStatsStore implements StatsStorage {
 
         //Initialize/open the required maps/lists
         sessionIDs = db.hashSet("sessionIDs", Serializer.STRING).createOrOpen();
+        sessionMetaData = db.hashMap("sessionMetaData")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(new SessionMetaDataSerializer())
+                .createOrOpen();
         staticInfo = db.hashMap("staticInfo")
                 .keySerializer(new SessionWorkerIdSerializer())
                 .valueSerializer(Serializer.BYTE_ARRAY)
@@ -219,6 +224,11 @@ public class MapDBStatsStore implements StatsStorage {
         return list;
     }
 
+    @Override
+    public SessionMetaData getSessionMetaData(String sessionID) {
+        return this.sessionMetaData.get(sessionID);
+    }
+
     // ----- Store new info -----
 
     @Override
@@ -247,6 +257,16 @@ public class MapDBStatsStore implements StatsStorage {
         }
     }
 
+    @Override
+    public void putSessionMetaData(String sessionID, String staticInfoClass, String updateClass, Serializable otherMetaData) {
+        this.sessionMetaData.put(sessionID, new SessionMetaData(sessionID, staticInfoClass, updateClass, otherMetaData));
+        for(StatsStorageListener l : listeners){
+            l.notifySessionMetaData(sessionID);
+        }
+    }
+
+
+    // ----- Listeners -----
 
     @Override
     public void registerStatsStorageListener(StatsStorageListener listener) {
@@ -324,7 +344,7 @@ public class MapDBStatsStore implements StatsStorage {
     private static class SessionWorkerIdSerializer implements Serializer<SessionWorkerId> {
         @Override
         public void serialize(@NotNull DataOutput2 out, @NotNull SessionWorkerId value) throws IOException {
-            ObjectOutputStream out2 = new ObjectOutputStream((OutputStream) out);
+            ObjectOutputStream out2 = new ObjectOutputStream(out);
             out2.writeObject(value);
             out2.flush();
         }
@@ -342,6 +362,31 @@ public class MapDBStatsStore implements StatsStorage {
         @Override
         public int compare(SessionWorkerId w1, SessionWorkerId w2){
             return w1.compareTo(w2);
+        }
+    }
+
+    private static class SessionMetaDataSerializer implements Serializer<SessionMetaData>{
+
+        @Override
+        public void serialize(@NotNull DataOutput2 out, @NotNull SessionMetaData value) throws IOException {
+            ObjectOutputStream out2 = new ObjectOutputStream(out);
+            out2.writeObject(value);
+            out2.flush();
+        }
+
+        @Override
+        public SessionMetaData deserialize(@NotNull DataInput2 in, int available) throws IOException {
+            try {
+                ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
+                return (SessionMetaData) in2.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new IOException(e);
+            }
+        }
+
+        @Override
+        public int compare(SessionMetaData m1, SessionMetaData m2){
+            return m1.compareTo(m2);
         }
     }
 }
