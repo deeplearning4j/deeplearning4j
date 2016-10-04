@@ -1260,6 +1260,8 @@ public class NativeOps extends Pointer {
 
     public native int getDeviceMinor(Pointer ptrToDeviceId);
 
+    public native String getDeviceName(Pointer ptrToDeviceId);
+
     public native int memcpy(Pointer dst, Pointer src, long size, int flags, Pointer reserved);
 
     public native int memcpyAsync(Pointer dst, Pointer src, long size, int flags, Pointer reserved);

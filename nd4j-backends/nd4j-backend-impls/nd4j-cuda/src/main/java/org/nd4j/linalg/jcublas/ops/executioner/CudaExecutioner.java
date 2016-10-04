@@ -1879,16 +1879,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (properties == null) {
             Properties props = super.getEnvironmentInformation();
 
-            List<Map<String, Long>> devicesList = new ArrayList<>();
+            List<Map<String, Object>> devicesList = new ArrayList<>();
             int currentDevice = nativeOps.getDevice();
 
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
-                Map<String, Long> deviceProps = new HashMap<>();
+                Map<String, Object> deviceProps = new HashMap<>();
 
-                deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(new CudaPointer(i)));
-                deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(new CudaPointer(i)));
-                deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(new CudaPointer(i)));
-                deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(new CudaPointer(i)));
+                CudaPointer devPtr = new CudaPointer(1);
+
+                deviceProps.put("cuda.deviceName", nativeOps.getDeviceName(devPtr));
+                deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(devPtr));
+                deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(devPtr));
+                deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(devPtr));
+                deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(devPtr));
 
                 devicesList.add(i, deviceProps);
             }
