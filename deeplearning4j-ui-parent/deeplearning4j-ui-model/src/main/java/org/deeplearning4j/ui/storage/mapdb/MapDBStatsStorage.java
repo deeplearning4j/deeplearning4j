@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.storage.mapdb;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.storage.StatsStorage;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +13,7 @@ import java.util.*;
 /**
  * Created by Alex on 02/10/2016.
  */
-public class MapDBStatsStore implements StatsStorage {
+public class MapDBStatsStorage implements StatsStorage {
 
     private static final String COMPOSITE_KEY_HEADER = "&&&";
     private static final String COMPOSITE_KEY_SEPARATOR = "@@@";
@@ -30,11 +29,11 @@ public class MapDBStatsStore implements StatsStorage {
 
     private List<StatsStorageListener> listeners = new ArrayList<>();
 
-    public MapDBStatsStore() {
+    public MapDBStatsStorage() {
         this(new Builder());
     }
 
-    public MapDBStatsStore(Builder builder) {
+    public MapDBStatsStorage(Builder builder) {
         File f = builder.getFile();
 
         if (f == null) {
@@ -315,8 +314,8 @@ public class MapDBStatsStore implements StatsStorage {
             return this;
         }
 
-        public MapDBStatsStore build() {
-            return new MapDBStatsStore(this);
+        public MapDBStatsStorage build() {
+            return new MapDBStatsStorage(this);
         }
 
     }

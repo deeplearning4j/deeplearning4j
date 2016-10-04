@@ -3,10 +3,9 @@ package org.deeplearning4j.ui.storage;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
-import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStore;
+import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +25,7 @@ public class TestMapDBStatsStore {
 
         File f = Files.createTempFile("TestMapDbStatsStore",".db").toFile();
         f.delete(); //Don't want file to exist...
-        StatsStorage ss = new MapDBStatsStore.Builder()
+        StatsStorage ss = new MapDBStatsStorage.Builder()
                 .file(f)
                 .build();
 
@@ -106,7 +105,7 @@ public class TestMapDBStatsStore {
         ss.close();
         assertTrue(ss.isClosed());
 
-        ss = new MapDBStatsStore.Builder()
+        ss = new MapDBStatsStorage.Builder()
                 .file(f)
                 .build();
 
