@@ -2453,3 +2453,12 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
 
 }
+
+const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+    char name[256];
+    memset(name, 0, 256 * sizeof(char));
+
+    // TODO: provide proper CPU model name here
+    sprintf(name, "x86-compatible CPU");
+    return name;
+}

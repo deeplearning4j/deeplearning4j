@@ -5222,6 +5222,13 @@ int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
 	return deviceProperties[device].minor;
 }
 
+
+const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+    int device = getDeviceId(ptrToDeviceId);
+
+    return deviceProperties[device].name;
+}
+
 /**
   * Concatneate multi array of the same shape together
   * along a particular dimension
