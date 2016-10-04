@@ -587,21 +587,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         //As per CpuNDArrayFactory.shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) and libnd4j transforms.h shuffleKernelGeneric
         if(exampleMetaData != null){
-            List<Serializable> newMeta = new ArrayList<>(exampleMetaData);
             int[] map = ArrayUtil.buildInterleavedVector(new Random(seed), numExamples());
             ArrayUtil.shuffleWithMap(exampleMetaData, map);
-            /*
-            // we don't shuffle it here, and doing that externally
-            for( int i=0; i<numExamples(); i++ ){
-
-                int from = i;
-                int nextOffset = map[i];
-                Serializable temp = newMeta.get(from);
-                newMeta.set(from, newMeta.get(nextOffset));
-                newMeta.set(nextOffset, temp);
-            }
-            exampleMetaData = newMeta;
-            */
         }
     }
 
