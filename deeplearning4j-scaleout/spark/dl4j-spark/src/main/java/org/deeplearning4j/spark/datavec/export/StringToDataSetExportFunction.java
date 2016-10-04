@@ -27,7 +27,7 @@ import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.spark.util.UIDProvider;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.net.URI;
