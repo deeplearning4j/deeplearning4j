@@ -33,6 +33,7 @@ public class TestStatsSBE {
         long offHeapMaxMemory = 4;
         long[] deviceTotalMemory = new long[]{5, 6};
         String[] deviceDescription = new String[]{"7", "8"};
+        String hwUID = "8a";
 
         //Software info
         String arch = "9";
@@ -43,6 +44,7 @@ public class TestStatsSBE {
         String nd4jBackendClass = "14";
         String nd4jDataTypeName = "15";
         String hostname = "15a";
+        String jvmUID = "15b";
 
         //Model info
         String modelClassName = "16";
@@ -58,11 +60,11 @@ public class TestStatsSBE {
 
                     SbeStatsInitializationReport report = new SbeStatsInitializationReport();
                     if (hasHardwareInfo) {
-                        report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory, deviceDescription);
+                        report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory, deviceDescription, hwUID);
                     }
 
                     if (hasSoftwareInfo) {
-                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname);
+                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname, jvmUID);
                     }
 
                     if (hasModelInfo) {
@@ -83,6 +85,7 @@ public class TestStatsSBE {
                         assertEquals(offHeapMaxMemory, report2.getHwOffHeapMaxMemory());
                         assertArrayEquals(deviceTotalMemory, report2.getHwDeviceTotalMemory());
                         assertArrayEquals(deviceDescription, report2.getHwDeviceDescription());
+                        assertEquals(hwUID, report2.getHwHardwareUID());
                         assertTrue(report2.hasHardwareInfo());
                     } else {
                         assertFalse(report2.hasHardwareInfo());
@@ -96,6 +99,7 @@ public class TestStatsSBE {
                         assertEquals(jvmSpecVersion, report2.getSwJvmSpecVersion());
                         assertEquals(nd4jBackendClass, report2.getSwNd4jBackendClass());
                         assertEquals(nd4jDataTypeName, report2.getSwNd4jDataTypeName());
+                        assertEquals(jvmUID, report2.getSwJvmUID());
                         assertTrue(report2.hasSoftwareInfo());
                     } else {
                         assertFalse(report2.hasSoftwareInfo());
@@ -129,6 +133,7 @@ public class TestStatsSBE {
         long offHeapMaxMemory = 4;
         long[] deviceTotalMemory = null;
         String[] deviceDescription = null;
+        String hwUID = null;
 
         //Software info
         String arch = null;
@@ -139,6 +144,7 @@ public class TestStatsSBE {
         String nd4jBackendClass = null;
         String nd4jDataTypeName = null;
         String hostname = null;
+        String jvmUID = null;
 
         //Model info
         String modelClassName = null;
@@ -156,11 +162,13 @@ public class TestStatsSBE {
 
                     SbeStatsInitializationReport report = new SbeStatsInitializationReport();
                     if (hasHardwareInfo) {
-                        report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory, deviceDescription);
+                        report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory,
+                                deviceDescription, hwUID);
                     }
 
                     if (hasSoftwareInfo) {
-                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname);
+                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass,
+                                nd4jDataTypeName, hostname, jvmUID);
                     }
 
                     if (hasModelInfo) {
@@ -179,6 +187,7 @@ public class TestStatsSBE {
                         assertEquals(offHeapMaxMemory, report2.getHwOffHeapMaxMemory());
                         assertArrayEquals(new long[]{0,0}, report2.getHwDeviceTotalMemory());       //Edge case: nDevices = 2, but missing mem data -> expect long[] of 0s out, due to fixed encoding
                         assertArrayEquals(new String[]{"",""}, report2.getHwDeviceDescription());   //As above
+                        assertNullOrZeroLength(report2.getHwHardwareUID());
                         assertTrue(report2.hasHardwareInfo());
                     } else {
                         assertFalse(report2.hasHardwareInfo());
@@ -192,6 +201,7 @@ public class TestStatsSBE {
                         assertNullOrZeroLength(report2.getSwJvmSpecVersion());
                         assertNullOrZeroLength(report2.getSwNd4jBackendClass());
                         assertNullOrZeroLength(report2.getSwNd4jDataTypeName());
+                        assertNullOrZeroLength(report2.getSwJvmUID());
                         assertTrue(report2.hasSoftwareInfo());
                     } else {
                         assertFalse(report2.hasSoftwareInfo());
