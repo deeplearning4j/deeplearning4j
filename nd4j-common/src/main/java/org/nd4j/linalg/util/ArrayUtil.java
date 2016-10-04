@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -1606,7 +1607,7 @@ public class ArrayUtil {
             indexes.add(i);
         }
 
-        Collections.shuffle(indexes);
+        Collections.shuffle(indexes, rng);
 
         for (int i = 0; i < result.length; i++) {
             if (i < result.length / 2) {
@@ -1630,7 +1631,7 @@ public class ArrayUtil {
             odds.add(i - 1);
         }
 
-        Collections.shuffle(indexes);
+        Collections.shuffle(indexes, rng);
 
         // now all even elements will be interleaved with odd elements
         for (int i = 0; i < result.length; i++) {
@@ -1651,6 +1652,21 @@ public class ArrayUtil {
 
 
         return result;
+    }
+
+    protected static <T extends Object> void swap(List<T> objects, int idxA, int idxB) {
+        T tmpA = objects.get(idxA);
+        T tmpB = objects.get(idxB);
+        objects.set(idxA, tmpB);
+        objects.set(idxB, tmpA);
+    }
+
+    public static <T extends Object> void shuffleWithMap(List<T> objects, int[] map) {
+        for (int i = 0; i < map.length; i++) {
+            if (map[i] >= 0) {
+                swap(objects, i, map[i]);
+            }
+        }
     }
 
     public static int argMinOfMax(int[] first, int[] second){

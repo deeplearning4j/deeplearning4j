@@ -819,7 +819,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         int numTads = arrays.get(0).length() / tadLength;
 
-        int[] map = ArrayUtil.buildHalfVector(rnd, numTads / 2, numTads);
+        int[] map = ArrayUtil.buildInterleavedVector(rnd, numTads);
 
         PointerPointer dataPointers = new PointerPointer(arrays.size());
         PointerPointer shapePointers = new PointerPointer(arrays.size());
