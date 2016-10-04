@@ -92,6 +92,15 @@ public class TestMapDBStatsStore {
         assertEquals(4, l.countUpdate);
         assertArrayEquals(u4, ss.getUpdate("sid0","wid1",100).getRecord());
 
+        assertEquals(0, l.countMetaData);
+        ss.putSessionMetaData("sid0","some.class","update.class","Here's some more metadata!");
+        assertEquals(1, l.countMetaData);
+        StatsStorage.SessionMetaData smd = ss.getSessionMetaData("sid0");
+        assertEquals("sid0",smd.getSessionID());
+        assertEquals("some.class", smd.getStaticInfoClass());
+        assertEquals("update.class", smd.getUpdateClass());
+        assertEquals("Here's some more metadata!", smd.getOtherMetaData());
+
 
         //Close and re-open
         ss.close();
@@ -129,6 +138,7 @@ public class TestMapDBStatsStore {
         private int countNewWorkerId;
         private int countStaticInfo;
         private int countUpdate;
+        private int countMetaData;
 
         @Override
         public void notifyNewSession(String sessionID) {
@@ -148,6 +158,11 @@ public class TestMapDBStatsStore {
         @Override
         public void notifyStatusUpdate(String sessionID, String workerID, long timestamp) {
             countUpdate++;
+        }
+
+        @Override
+        public void notifySessionMetaData(String sessionID) {
+            countMetaData++;
         }
     }
 }
