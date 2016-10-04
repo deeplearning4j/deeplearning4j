@@ -5,6 +5,7 @@ import lombok.Data;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -125,7 +126,26 @@ public interface StatsStorage {
     List<UpdateRecord> getAllUpdatesAfter(String sessionID, String workerID, long timestamp);
 
 
+    /**
+     * Get the session metadata, if any has been registered via {@link #putSessionMetaData(String, String, String, Serializable)}
+     *
+     * @param sessionID    Session ID to get metadat
+     * @return Session metadata, or null if none is available
+     */
+    SessionMetaData getSessionMetaData(String sessionID);
+
     // ----- Store new info -----
+
+    /**
+     * Optional method to store some additional metadata for each session. Idea: record the classes used to
+     * serialize and deserialize the static info and updates (as a class name).
+     * This is mainly used for debugging and validation
+     *
+     * @param staticInfoClass    Class used to serialize/deserialize the static information
+     * @param updateClass        Class used to serialize/deserialize updates
+     * @param otherMetaData      Any other serializable metadata for this session (optional)
+     */
+    void putSessionMetaData(String sessionID, String staticInfoClass, String updateClass, Serializable otherMetaData);
 
     /**
      * Put a new static info record to the stats storage instance. If static info for the given session/worker IDs
@@ -182,7 +202,7 @@ public interface StatsStorage {
      */
     @AllArgsConstructor
     @Data
-    public static class UpdateRecord implements Comparable<UpdateRecord> {
+    class UpdateRecord implements Comparable<UpdateRecord>, Serializable {
         private final String sessionID;
         private final String workerID;
         private final long timestamp;
@@ -200,4 +220,37 @@ public interface StatsStorage {
             return 0;
         }
     }
+
+    @AllArgsConstructor
+    @Data
+    class SessionMetaData implements Comparable<SessionMetaData>, Serializable {
+        private final String sessionID;
+        private final String staticInfoClass;
+        private final String updateClass;
+        private final Serializable otherMetaData;
+
+        @Override
+        public String toString(){
+            return "SessionMetaData(sessionID=" + sessionID + ",staticInfoClass=" + staticInfoClass + ",updateClass=" +
+                    updateClass + "otherMetaData=" + otherMetaData + ")";
+        }
+
+        @Override
+        public int compareTo(SessionMetaData o) {
+            if(!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
+            if(staticInfoClass == null && o.staticInfoClass != null) return 1;  //This object: 'greater than' o
+            else if(staticInfoClass != null && o.staticInfoClass == null) return -1;
+            //Both null, or neither are
+            if(staticInfoClass != null ){
+                if(!staticInfoClass.equals(o.staticInfoClass)) return staticInfoClass.compareTo(o.staticInfoClass);
+            }
+            if(updateClass == null && o.updateClass != null) return 1;
+            else if(updateClass != null && o.updateClass == null) return -1;
+            if(updateClass != null){
+                return updateClass.compareTo(o.updateClass);
+            }
+            return 0;
+        }
+    }
+
 }
