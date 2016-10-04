@@ -26,6 +26,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private String swNd4jBackendClass;
     private String swNd4jDataTypeName;
     private String swHostname;
+    private String swJvmUID;
 
     private int hwJvmAvailableProcessors;
     private int hwNumDevices;
@@ -33,6 +34,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private long hwOffHeapMaxMemory;
     private long[] hwDeviceTotalMemory;
     private String[] hwDeviceDescription;
+    private String hwHardwareUID;
 
     private String modelClassName;
     private String modelConfigJson;
@@ -43,7 +45,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname) {
+                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid) {
         this.swArch = arch;
         this.swOsName = osName;
         this.swJvmName = jvmName;
@@ -52,18 +54,20 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         this.swNd4jBackendClass = nd4jBackendClass;
         this.swNd4jDataTypeName = nd4jDataTypeName;
         this.swHostname = hostname;
+        this.swJvmUID = jvmUid;
         hasSoftwareInfo = true;
     }
 
     @Override
     public void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory,
-                                   long[] deviceTotalMemory, String[] deviceDescription) {
+                                   long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID) {
         this.hwJvmAvailableProcessors = jvmAvailableProcessors;
         this.hwNumDevices = numDevices;
         this.hwJvmMaxMemory = jvmMaxMemory;
         this.hwOffHeapMaxMemory = offHeapMaxMemory;
         this.hwDeviceTotalMemory = deviceTotalMemory;
         this.hwDeviceDescription = deviceDescription;
+        this.hwHardwareUID = hardwareUID;
         hasHardwareInfo = true;
     }
 
@@ -93,9 +97,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //(b) Fixed length entries length (sie.BlockLength())
         //(c) Group 1: Hardware devices (GPUs) max memory: 4 bytes header + nEntries * 8 (int64) + nEntries * variable length Strings (header + content)  = 4 + 8*n + content
         //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
-        //(e) Variable length fields: 10 String length fields. Size: 4 bytes header, plus content. 40 bytes header
+        //(e) Variable length fields: 12 String length fields. Size: 4 bytes header, plus content. 48 bytes header
         //Fixed length + repeating groups + variable length...
-        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 40; //header + fixed values + group headers + variable length headers
+        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 48; //header + fixed values + group headers + variable length headers
 
         //For variable length field lengths: easist way is simply to convert to UTF-8
         //Of course, it is possible to calculate it first - but we might as well convert (1 pass), rather than count then convert (2 passes)
@@ -107,6 +111,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
         byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
+        byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
         byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
 
@@ -122,6 +128,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += SbeUtil.length(bswNd4jBackendClass);
             bufferSize += SbeUtil.length(bswNd4jDataTypeName);
             bufferSize += SbeUtil.length(bswHostname);
+            bufferSize += SbeUtil.length(bswJvmUID);
         }
         int nHWDeviceStats = hwNumDevices;
         if (!hasHardwareInfo) nHWDeviceStats = 0;
@@ -130,6 +137,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += hwNumDevices * 8;     //fixed content in group: int64 -> 8 bytes. Encode an entry, even if hwDeviceTotalMemory is null
             bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...; as above
             bufferSize += SbeUtil.length(bhwDeviceDescription);
+            bufferSize += SbeUtil.length(bHwHardwareUID);
         }
         if (hasModelInfo) {
             bufferSize += SbeUtil.length(bmodelConfigClass);
@@ -187,7 +195,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .putSwJvmSpecVersion(bswJvmSpecVersion, 0, bswJvmSpecVersion.length)
                 .putSwNd4jBackendClass(bswNd4jBackendClass, 0, bswNd4jBackendClass.length)
                 .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length)
-                .putSwHostName(bswHostname, 0, bswHostname.length);
+                .putSwHostName(bswHostname, 0, bswHostname.length)
+                .putSwJvmUID(bswJvmUID, 0, bswJvmUID.length)
+                .putHwHardwareUID(bHwHardwareUID, 0, bHwHardwareUID.length);
         //Similar: !hasModelInfo -> empty byte[]
         sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length)
                 .putModelConfigJson(bmodelConfigJson, 0, bmodelConfigJson.length);
@@ -251,6 +261,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             modelParamNames[i++] = mp.modelParamNames();
         }
         //Variable length data. Even if it is missing: still needs to be read, to advance buffer
+        //Again, the exact order of these calls matters here
         swArch = sid.swArch();
         swOsName = sid.swOsName();
         swJvmName = sid.swJvmName();
@@ -259,7 +270,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
         swHostname = sid.swHostName();
+        swJvmUID = sid.swJvmUID();
         if (!hasSoftwareInfo) clearSwFields();
+        hwHardwareUID = sid.hwHardwareUID();
+        if(!hasHardwareInfo) clearHwFields();
         modelClassName = sid.modelConfigClassName();
         modelConfigJson = sid.modelConfigJson();
         if (!hasModelInfo) clearModelFields();
@@ -280,6 +294,11 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         return hasModelInfo;
     }
 
+    private void clearHwFields(){
+        hwDeviceTotalMemory = null;
+        hwDeviceDescription = null;
+        hwHardwareUID = null;
+    }
 
     private void clearSwFields() {
         swArch = null;
@@ -290,6 +309,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swNd4jBackendClass = null;
         swNd4jDataTypeName = null;
         swHostname = null;
+        swJvmUID = null;
     }
 
     private void clearModelFields() {

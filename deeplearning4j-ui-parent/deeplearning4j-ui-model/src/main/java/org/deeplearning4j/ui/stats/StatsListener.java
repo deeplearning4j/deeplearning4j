@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.temp.HistogramBin;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -314,7 +315,7 @@ public class StatsListener implements IterationListener {
 
 
             initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion,
-                    nd4jBackendClass, nd4jDataTypeName, hostname);
+                    nd4jBackendClass, nd4jDataTypeName, hostname, UIDProvider.getJVMUID());
         }
 
         if(initConfiguration.collectHardwareInfo()){
@@ -334,7 +335,8 @@ public class StatsListener implements IterationListener {
 
             String[] deviceDescription = null;  //TODO
 
-            initReport.reportHardwareInfo(availableProcessors, nDevices, jvmMaxMemory, offheapMaxMemory, deviceTotalMem, deviceDescription);
+            initReport.reportHardwareInfo(availableProcessors, nDevices, jvmMaxMemory, offheapMaxMemory, deviceTotalMem,
+                    deviceDescription, UIDProvider.getHardwareUID());
         }
 
         if(initConfiguration.collectModelInfo()){
