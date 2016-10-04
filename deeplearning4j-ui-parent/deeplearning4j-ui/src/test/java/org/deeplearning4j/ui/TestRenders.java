@@ -21,6 +21,8 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
+import org.deeplearning4j.ui.renders.UpdateFilterIterationListener;
+import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
