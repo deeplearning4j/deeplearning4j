@@ -160,6 +160,8 @@ public class ParagraphVectors extends Word2Vec {
             sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
         }*/
 
+        initLearners();
+
         INDArray inf = learner.inferSequence(sequence, 119, learningRate);
 
         return inf;
