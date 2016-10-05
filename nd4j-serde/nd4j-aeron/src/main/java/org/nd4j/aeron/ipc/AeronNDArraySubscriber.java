@@ -10,7 +10,12 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-
+/**
+ *
+ * Subscriber for ndarray
+ *
+ * @author Adam Gibson
+ */
 @Data
 @Builder
 public class AeronNDArraySubscriber {
@@ -18,7 +23,9 @@ public class AeronNDArraySubscriber {
     private String channel;
     // A unique identifier for a stream within a channel. Stream ID 0 is reserved
     // for internal use and should not be used by applications.
-    private int streamId;
+    private int streamId = -1;
+    // A unique identifier for a stream within a channel. Stream ID 0 is reserved
+    // for internal use and should not be used by applications.
     // Maximum number of message fragments to receive during a single 'poll' operation
     private int fragmentLimitCount;
     // Create a context, needed for client connection to media driver
@@ -28,6 +35,10 @@ public class AeronNDArraySubscriber {
     private final AtomicBoolean init = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(AeronNDArraySubscriber.class);
     private NDArrayCallback ndArrayCallback;
+    private Aeron aeron;
+    private AtomicBoolean launched = new AtomicBoolean(false);
+
+
 
 
     private void init() {
@@ -40,8 +51,15 @@ public class AeronNDArraySubscriber {
             throw new IllegalStateException("NDArray callback must be specified in the builder.");
         init.set(true);
         log.info("Channel subscriber " + channel + " and stream id " + streamId);
+        launched = new AtomicBoolean(false);
     }
 
+
+    public synchronized  boolean launched() {
+        if(launched == null)
+            launched = new AtomicBoolean(false);
+        return launched.get();
+    }
 
     /**
      * Launch a background thread
@@ -65,16 +83,43 @@ public class AeronNDArraySubscriber {
         // dataHandler method, which will be called with new messages as they are received.
         // The Aeron and Subscription classes implement AutoCloseable, and will automatically
         // clean up resources when this try block is finished.
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(channel, streamId)) {
-            log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-            AeronUtil.subscriberLoop(new NDArrayFragmentHandler(ndArrayCallback),fragmentLimitCount,running)
-                    .accept(subscription);
+        //Note here that we are either creating 1 or 2 subscriptions.
+        //The first one is a  normal 1 subscription listener.
+        //The second one is when we want to send responses
 
+        boolean started = false;
+        while(!started) {
+            try {
+                try (final Aeron aeron = Aeron.connect(ctx);
+                     final Subscription subscription = aeron.addSubscription(channel, streamId)) {
+                    this.aeron = aeron;
+                    log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
+                    AeronUtil.subscriberLoop(
+                            new NDArrayFragmentHandler(ndArrayCallback),
+                            fragmentLimitCount,
+                            running,launched)
+                            .accept(subscription);
+                    started = true;
 
+                }
+            }catch(Exception e) {
+                log.warn("Unable to connect...trying again on channel " + channel);
+            }
         }
+
     }
 
+    /**
+     * Returns the connection uri in the form of:
+     * host:port:streamId
+     * @return
+     */
+    public String connectionUrl() {
+        String[] split = channel.replace("aeron:udp?endpoint=","").split(":");
+        String host = split[0];
+        int port = Integer.parseInt(split[1]);
+        return AeronConnectionInformation.of(host,port,streamId).toString();
+    }
 
     /**
      * Start a subscriber in another thread
@@ -90,12 +135,14 @@ public class AeronNDArraySubscriber {
                                                          String host,
                                                          int port,
                                                          NDArrayCallback callback,
-                                                         int streamId) {
-        final AtomicBoolean running = new AtomicBoolean(true);
+                                                         int streamId,
+                                                         AtomicBoolean running) {
 
-
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId)
-                .ctx(context).channel(String.format("aeron:udp?endpoint=%s:%d",host,port))
+        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber
+                .builder()
+                .streamId(streamId)
+                .ctx(context)
+                .channel(AeronUtil.aeronChannel(host,port))
                 .running(running)
                 .ndArrayCallback(callback).build();
 
@@ -110,6 +157,7 @@ public class AeronNDArraySubscriber {
         });
 
         t.start();
+
 
         return subscriber;
     }

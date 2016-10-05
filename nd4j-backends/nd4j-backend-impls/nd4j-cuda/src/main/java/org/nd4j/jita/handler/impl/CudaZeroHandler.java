@@ -273,6 +273,16 @@ public class CudaZeroHandler implements MemoryHandler {
                             if (!initialize) {
                                 point.tickDeviceWrite();
                                 point.tickHostRead();
+                            } else {
+                                //CudaContext ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(point);
+
+                                nativeOps.memsetAsync(pair.getDevicePointer(),0, reqMemory, 0, context.getSpecialStream());
+                                context.getSpecialStream().synchronize();
+
+                                point.tickDeviceWrite();
+                                point.tickHostRead();
+
+                                //AtomicAllocator.getInstance().getFlowController().registerAction(ctx, point);
                             }
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]", deviceId, reqMemory);

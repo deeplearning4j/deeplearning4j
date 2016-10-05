@@ -134,7 +134,8 @@ public class CudaDirectProvider implements MemoryProvider {
             case DEVICE: {
                 // cudaFree call
                 //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
-
+                if (point.isConstant())
+                    return;
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
@@ -185,6 +186,20 @@ public class CudaDirectProvider implements MemoryProvider {
         if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
             return false;
         else return true;
+    }
 
+    protected void freeHost(Pointer pointer) {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.freeHost(pointer);
+    }
+
+    protected void freeDevice(Pointer pointer, int deviceId) {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.freeDevice(pointer, new CudaPointer(0));
+    }
+
+    @Override
+    public void purgeCache() {
+        // no-op
     }
 }

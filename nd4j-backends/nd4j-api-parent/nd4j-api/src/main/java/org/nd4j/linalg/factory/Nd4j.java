@@ -62,6 +62,8 @@ import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
+import org.nd4j.linalg.memory.BasicMemoryManager;
+import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -107,6 +109,7 @@ public class Nd4j {
     public final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
+    public final static String MEMORY_MANAGER = "memorymanager";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -143,6 +146,7 @@ public class Nd4j {
     protected static Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz;
     protected static Class<? extends BasicConstantHandler> constantProviderClazz;
     protected static Class<? extends BasicAffinityManager> affinityManagerClazz;
+    protected static Class<? extends BasicMemoryManager> memoryManagerClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -157,6 +161,7 @@ public class Nd4j {
     protected static ShapeInfoProvider shapeInfoProvider;
     protected static ConstantHandler constantHandler;
     protected static AffinityManager affinityManager;
+    protected static MemoryManager memoryManager;
 
 
     protected static Properties props = new Properties();
@@ -268,6 +273,7 @@ public class Nd4j {
                 for(int i = 0; i < toPad.rank(); i++) {
                     sizes.add(padWidth);
                 }
+
 
 
                 INDArray ret = toPad;
@@ -2290,7 +2296,7 @@ public class Nd4j {
         Nd4j.write(arr, dos);
         dos.flush();
         dos.close();
-
+        bos.close();
     }
 
 
@@ -5247,6 +5253,7 @@ public class Nd4j {
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class.forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class.forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+            memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class.forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
@@ -5263,6 +5270,7 @@ public class Nd4j {
 
 
 
+            memoryManager = memoryManagerClazz.newInstance();
             affinityManager = affinityManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
@@ -5333,6 +5341,14 @@ public class Nd4j {
      */
     public static BasicNDArrayCompressor getCompressor() {
         return BasicNDArrayCompressor.getInstance();
+    }
+
+    /**
+     * This method returns backend-specific MemoryManager implementation, for low-level memory management
+     * @return
+     */
+    public static MemoryManager getMemoryManager() {
+        return memoryManager;
     }
 
     public static INDArray typeConversion(INDArray array, DataBuffer.TypeEx targetType) {

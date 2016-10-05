@@ -36,6 +36,14 @@ public class CpuTADManager implements TADManager {
         this.constantHandler = constantHandler;
     }
 
+    /**
+     * This method removes all cached shape buffers
+     */
+    @Override
+    public void purgeBuffers() {
+        cache = new ConcurrentHashMap<>();
+    }
+
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         if (dimension == null || dimension[0] == Integer.MAX_VALUE) {

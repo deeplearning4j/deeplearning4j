@@ -30,4 +30,9 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
 
         return shapeCache.get(descriptor);
     }
+
+    @Override
+    public void purgeCache() {
+        shapeCache = new ConcurrentHashMap<>();
+    }
 }

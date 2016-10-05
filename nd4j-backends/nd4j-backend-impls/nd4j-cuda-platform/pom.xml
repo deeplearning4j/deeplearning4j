@@ -6,11 +6,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-cuda-7.5-platform</artifactId>
+    <artifactId>nd4j-cuda-8.0-platform</artifactId>
     <name>nd4j-cuda-platform</name>
 
     <properties>
-        <cuda.version>7.5</cuda.version>
+        <cuda.version>8.0</cuda.version>
         <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
     </properties>
 

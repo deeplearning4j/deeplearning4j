@@ -40,4 +40,12 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     public synchronized DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
         return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order);
     }
+
+    /**
+     * This method forces cache purge, if cache is available for specific implementation
+     */
+    @Override
+    public void purgeCache() {
+        provider.purgeCache();
+    }
 }

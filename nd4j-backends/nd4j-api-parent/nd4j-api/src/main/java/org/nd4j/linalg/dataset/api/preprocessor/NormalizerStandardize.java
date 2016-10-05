@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -40,10 +41,11 @@ public class NormalizerStandardize implements DataNormalization {
         return Nd4j.vstack(theMean,theStd).dup();
     }
 
-    private void runnningFit(INDArray thenewArray, INDArray currentMeanStd, int batchCount, int runningTotal, boolean allDone) {
+    private void runningFit(INDArray thenewArray, INDArray currentMeanStd, int runningTotal, boolean allDone) {
+        int batchCount = thenewArray.size(0);
+        INDArray currentMean = currentMeanStd.getRow(0);
+        INDArray currentStd = currentMeanStd.getRow(1);
         if (!allDone) {
-            INDArray currentMean = currentMeanStd.getRow(0);
-            INDArray currentStd = currentMeanStd.getRow(1);
             // m_newM = m_oldM + (x - m_oldM)/m_n;
             INDArray xMinusMean = thenewArray.subRowVector(currentMean);
             INDArray newMean = currentMean.add(xMinusMean.sum(0).divi(runningTotal));
@@ -63,9 +65,9 @@ public class NormalizerStandardize implements DataNormalization {
             currentMeanStd.putRow(0,newMean);
         }
         else {
-            currentMeanStd.getRow(1).divi(runningTotal);
-            currentMeanStd.putRow(1,Transforms.sqrt(currentMeanStd.getRow(1)));
-            currentMeanStd.getRow(1).addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+            currentStd.divi(runningTotal);
+            Transforms.sqrt(currentStd,false);
+            currentStd.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
             if (currentMeanStd.getRow(0).min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
                 logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
         }
@@ -87,20 +89,21 @@ public class NormalizerStandardize implements DataNormalization {
      * @param dataSet
      */
     public void fit(DataSet dataSet) {
+        //int size, sizeExcludeMask;
         featureRank = dataSet.getFeatures().rank();
 
         INDArray theFeatures = dataSet.getFeatures();
-        if (featureRank == 3) theFeatures = tailor3d2d(dataSet,true);
-        if (featureRank == 4) theFeatures = tailor4d2d(dataSet,true);
-        featureMeanStd = fit(theFeatures);
+        if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet,true);
+        if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet,true);
 
+        featureMeanStd = fit(theFeatures);
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
 
         if (fitLabels) {
             INDArray theLabels = dataSet.getLabels();
-            if (featureRank == 3) theLabels = tailor3d2d(dataSet,false);
-            if (featureRank == 4) theLabels = tailor4d2d(dataSet,false);
+            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
+            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
             labelMeanStd = fit(theLabels);
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
@@ -115,40 +118,40 @@ public class NormalizerStandardize implements DataNormalization {
      */
     public void fit(DataSetIterator iterator) {
         featureMeanStd = null;
+        batchCount = 0;
+        labelbatchCount = 0;
         runningTotal = 0;
         labelRunningTotal = 0;
         INDArray theFeatures, theLabels;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
-            batchCount = next.getFeaturesMaskArray() != null ? next.getFeaturesMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
+            theFeatures = next.getFeatures();
+            theLabels = next.getLabels();
+            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
+            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
+            batchCount = theFeatures.size(0);
             runningTotal += batchCount;
-            labelbatchCount = next.getLabelsMaskArray() != null ? next.getLabelsMaskArray().sumNumber().intValue() :  next.getFeatures().size(0);
-            labelRunningTotal += batchCount;
+            if (fitLabels) {
+                if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
+                if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
+                labelbatchCount = theLabels.size(0);
+                labelRunningTotal += labelbatchCount;
+            }
             if(featureMeanStd == null) {
                 this.fit(next);
-                featureMeanStd.getRow(1).muli(batchCount);
-                if (fitLabels) {
-                    labelMeanStd.getRow(1).muli(batchCount);
-                }
             }
             else {
-                theFeatures = next.getFeatures();
-                if (featureRank == 3) theFeatures = tailor3d2d(next,true);
-                if (featureRank == 4) theFeatures = tailor4d2d(next,true);
-                this.runnningFit(theFeatures,featureMeanStd,batchCount,runningTotal,false);
+                this.runningFit(theFeatures,featureMeanStd,runningTotal,false);
                 if (fitLabels) {
-                    theLabels = next.getLabels();
-                    if (featureRank == 3) theLabels = tailor3d2d(next,false);
-                    if (featureRank == 4) theLabels = tailor4d2d(next,false);
-                    this.runnningFit(theLabels,labelMeanStd,labelbatchCount,labelRunningTotal,false);
+                    this.runningFit(theLabels,labelMeanStd,labelRunningTotal,false);
                 }
             }
         }
-        this.runnningFit(featureMeanStd,featureMeanStd,batchCount,runningTotal,true);
+        if (runningTotal != batchCount) this.runningFit(featureMeanStd,featureMeanStd,runningTotal,true);
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
         if (fitLabels) {
-            this.runnningFit(labelMeanStd,labelMeanStd,labelbatchCount,labelRunningTotal,true);
+            if (labelRunningTotal != labelbatchCount) this.runningFit(labelMeanStd,labelMeanStd,labelRunningTotal,true);
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
         }
@@ -220,13 +223,6 @@ public class NormalizerStandardize implements DataNormalization {
         }
     }
 
-    public void revert(DataSetIterator toPreProcessIter) {
-        while (toPreProcessIter.hasNext()) {
-            this.revert(toPreProcessIter.next());
-        }
-        toPreProcessIter.reset();
-    }
-
     public INDArray getMean() {
         if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         return featureMean;
@@ -275,74 +271,6 @@ public class NormalizerStandardize implements DataNormalization {
             Nd4j.saveBinary(this.labelMean,statistics[2]);
             Nd4j.saveBinary(this.labelStd,statistics[3]);
         }
-    }
-
-    private INDArray tailor3d2d(DataSet dataset, boolean areFeatures) {
-        /* A 2d dataset has dimemsions sample x features
-         * A 3d dataset is a timeseries with dimensions sample x features x timesteps
-         * A 3d dataset can also have a mask associated with it in case samples are of varying time steps
-         * Each sample has a mask associated with it that is applied to all features.
-         * Masks are of dimension sample x timesteps
-         */
-        INDArray theArray, theMask;
-        theArray = areFeatures ? dataset.getFeatures() : dataset.getLabels();
-        theMask = areFeatures ? dataset.getFeaturesMaskArray() : dataset.getLabelsMaskArray();
-
-        int instances = theArray.size(0);
-        int features = theArray.size(1);
-        int timesteps = theArray.size(2);
-
-        boolean hasMasks = theMask != null;
-        INDArray in2d = Nd4j.create(features,timesteps*instances);
-
-        int tads = theArray.tensorssAlongDimension(2,0);
-        // the number of tads are the number of features
-        for(int i = 0; i < tads; i++){
-            INDArray thisTAD = theArray.tensorAlongDimension(i, 2, 0);
-            //mask is samples x timesteps
-            if (hasMasks)
-                //if there are masks they are multiplied with the mask array to wipe out the values associated with it
-                //to wipe out the values associated with it to wipe out the values associated with it
-                thisTAD.muli(theMask);
-            //Each row is now values for a given feature across all time steps, across all samples
-            in2d.putRow(i, Nd4j.toFlattened('c',thisTAD));
-        }
-        //Must transpose to return a matrix compatible with 2d viz samples x features
-        in2d = in2d.transpose();
-        //flatten mask
-        if (hasMasks) {
-            //only need rows where columnMask is 1
-            INDArray columnMask = Nd4j.toFlattened('c',theMask).transpose();
-            int actualSamples = columnMask.sumNumber().intValue();
-            INDArray in2dMask = Nd4j.create(actualSamples,features);
-            int j = 0;
-            for (int i=0; i < timesteps*instances; i++){
-                if (columnMask.getInt(i, 0) != 0) {
-                    in2dMask.putRow(j, in2d.getRow(i));
-                    j++;
-                }
-            }
-            return in2dMask;
-        }
-        return in2d;
-    }
-
-    private INDArray tailor4d2d(DataSet dataset, boolean areFeatures) {
-        INDArray theArray;
-        theArray = areFeatures ? dataset.getFeatures() : dataset.getLabels();
-        int instances = theArray.size(0);
-        int channels = theArray.size(1);
-        int height = theArray.size(2);
-        int width = theArray.size(3);
-
-        INDArray in2d = Nd4j.create(channels,height*width*instances);
-
-        int tads = theArray.tensorssAlongDimension(3,2,0);
-        for(int i = 0; i < tads; i++){
-            INDArray thisTAD = theArray.tensorAlongDimension(i, 3, 2, 0);
-            in2d.putRow(i, Nd4j.toFlattened(thisTAD));
-        }
-        return in2d.transposei();
     }
 
 }

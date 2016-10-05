@@ -29,8 +29,16 @@ import java.util.function.Consumer;
 /**
  * Utility functions for samples
  */
-public class AeronUtil
-{
+public class AeronUtil {
+    /**
+     * Aeron channel generation
+     * @param host the host
+     * @param port the port
+     * @return the aeron channel via udp
+     */
+    public static String aeronChannel(String host,int port) {
+        return String.format("aeron:udp?endpoint=%s:%d",host,port);
+    }
     /**
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
@@ -40,9 +48,9 @@ public class AeronUtil
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-            final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running) {
+            final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running,final AtomicBoolean launched) {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
-        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, limit, running, idleStrategy,launched);
     }
 
     /**
@@ -60,18 +68,19 @@ public class AeronUtil
             final FragmentHandler fragmentHandler,
             final int limit,
             final AtomicBoolean running,
-            final IdleStrategy idleStrategy)
+            final IdleStrategy idleStrategy,final AtomicBoolean launched)
     {
         return (subscription) -> {
-                    try {
-                        while (running.get()) {
-                            idleStrategy.idle(subscription.poll(fragmentHandler, limit));
-                        }
-                    }
-                    catch (final Exception ex) {
-                        LangUtil.rethrowUnchecked(ex);
-                    }
-                };
+            try {
+                while (running.get()) {
+                    idleStrategy.idle(subscription.poll(fragmentHandler, limit));
+                    launched.set(true);
+                }
+            }
+            catch (final Exception ex) {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        };
     }
 
     /**

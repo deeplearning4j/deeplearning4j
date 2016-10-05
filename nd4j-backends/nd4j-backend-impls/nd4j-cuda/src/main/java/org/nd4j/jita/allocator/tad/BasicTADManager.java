@@ -66,4 +66,12 @@ public class BasicTADManager implements TADManager {
             return new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
         }
     }
+
+    /**
+     * This method removes all cached shape buffers
+     */
+    @Override
+    public void purgeBuffers() {
+        // no-op
+    }
 }

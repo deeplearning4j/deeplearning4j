@@ -6,9 +6,13 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -108,5 +112,20 @@ public class LoneTest extends BaseNd4jTest {
 
         //this was throwing an exception
         INDArray c = Nd4j.tensorMmul(b, a, axes);
+    }
+
+    @Test
+    public void maskWhenMerge() {
+        DataSet dsA = new DataSet(Nd4j.linspace(1, 15, 15).reshape(1, 3, 5), Nd4j.zeros(1, 3, 5));
+        DataSet dsB = new DataSet(Nd4j.linspace(1, 9, 9).reshape(1, 3, 3), Nd4j.zeros(1, 3, 3));
+        List<DataSet> dataSetList = new ArrayList<DataSet>();
+        dataSetList.add(dsA);
+        dataSetList.add(dsB);
+        DataSet fullDataSet = DataSet.merge(dataSetList);
+        assertTrue(fullDataSet.getFeaturesMaskArray() != null);
+
+        DataSet fullDataSetCopy = fullDataSet.copy();
+        assertTrue(fullDataSetCopy.getFeaturesMaskArray() != null);
+
     }
 }

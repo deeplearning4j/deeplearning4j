@@ -2,6 +2,7 @@ package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
 
@@ -66,19 +67,33 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         // Create an Aeron instance with client-provided context configuration and connect to the
         // media driver, and create a Publication.  The Aeron and Publication classes implement
         // AutoCloseable, and will automatically clean up resources when this try block is finished.
-        if(aeron == null)
-            aeron = Aeron.connect(ctx);
-        if(publication == null)
-            publication = aeron.addPublication(channel, streamId);
-
+        boolean connected = false;
+        if(aeron == null) {
+            try {
+                while(!connected) {
+                    aeron = Aeron.connect(ctx);
+                    connected = true;
+                }
+            }catch (Exception e) {
+                log.warn("Reconnecting on publisher...failed to connect");
+            }
+        }
+        int connectionTries = 0;
+        while(publication == null && connectionTries < 3) {
+            try {
+                publication = aeron.addPublication(channel, streamId);
+            }catch (DriverTimeoutException e) {
+                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream" + streamId);
+                connectionTries++;
+            }
+        }
 
 
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
         log.debug("Begin publish " + channel + " and stream " + streamId);
-        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L)
-        {
+        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
             if (result == Publication.BACK_PRESSURED)
             {
                 log.debug(" Offer failed due to back pressure");
@@ -154,9 +169,15 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(aeron != null)
-            aeron.close();
-        if(publication != null)
-            publication.close();
+        if(aeron != null) {
+            try {
+                aeron.close();
+            }catch (Exception e) {}
+        }
+        if(publication != null) {
+            try {
+                publication.close();
+            }catch(Exception e) {}
+        }
     }
 }
