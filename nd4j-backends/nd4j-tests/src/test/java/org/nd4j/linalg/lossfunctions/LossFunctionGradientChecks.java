@@ -46,6 +46,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
         INDArray[] labels = new INDArray[]{
                 Nd4j.create(new double[]{0,1,0}),
+                Nd4j.create(new double[]{0,1,1}),
                 /*Nd4j.create(new double[][]{{1,0,0},{0,1,0},{0,0,1}}),
                 Nd4j.create(new double[]{1,2,1}),
                 Nd4j.create(new double[][]{{1,2,1},{0.1,1,0.5},{20,3,1}}),
@@ -70,6 +71,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         };
 
         INDArray[] preOut = new INDArray[]{
+                Nd4j.rand(1,3),
                 Nd4j.rand(1,3),
                 /*
                 Nd4j.rand(3,3),
@@ -96,7 +98,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         };
 
         ILossFunction[] lossFn = new ILossFunction[]{
-                new LossMCXENT(),
+                new LossBinaryXENT(), new LossBinaryXENT(),
                 /*new LossMCXENT(), new LossMCXENT(),
                 new LossMCXENT(),new LossMSE(), new LossMSE(), new LossKLD(), new LossKLD(), new LossMAE(), new LossMAE(),*/
                 new LossMAE(), new LossMAE(), new LossMSE(), new LossMSE(),
@@ -108,7 +110,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         };
 
         String[] activationFns = new String[]{
-                "softmax",
+                "identity", "tanh",
                 /*"softmax","tanh","identity","tanh",
                 "tanh","identity","identity","identity","identity",*/
                  "identity", "identity", "identity", "identity",
