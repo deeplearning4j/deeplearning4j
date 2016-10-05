@@ -42,7 +42,8 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
 
     @Override
     public void initialize() {
-        //No op
+        bestEpoch = -1;
+        bestScore = Double.NaN;
     }
 
     @Override
