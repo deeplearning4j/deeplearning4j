@@ -28,6 +28,10 @@ public class LossBinaryXENT implements ILossFunction {
         } else {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             scoreArr = Transforms.log(output, false).muli(labels);
+            INDArray secondTerm = output.rsub(1);
+            Transforms.log(secondTerm,false);
+            secondTerm.muli(labels.rsub(1));
+            scoreArr.addi(secondTerm);
         }
         if (mask != null) {
             scoreArr.muliColumnVector(mask);
