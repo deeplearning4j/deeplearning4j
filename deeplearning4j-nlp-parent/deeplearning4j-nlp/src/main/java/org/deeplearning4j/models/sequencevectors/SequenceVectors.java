@@ -54,7 +54,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient T unknownElement;
     protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
     protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
-
+    protected transient boolean configured = false;
 
 
     @Setter protected transient Set<VectorsListener<T>> eventListeners;
@@ -125,6 +125,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
+    protected void initLearners() {
+        if (!configured) {
+            log.info("Building learning algorithms:");
+            if (trainElementsVectors && elementsLearningAlgorithm != null) {
+                log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
+                elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
+                elementsLearningAlgorithm.pretrain(iterator);
+            }
+            if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
+                log.info("          building SequenceLearningAlgorithm: [" + sequenceLearningAlgorithm.getCodeName() + "]");
+                sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+                sequenceLearningAlgorithm.pretrain(this.iterator);
+            }
+            configured = true;
+        }
+    }
 
     /**
      * Starts training over
@@ -148,17 +164,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             lookupTable.resetWeights(true);
         }
 
-        log.info("Building learning algorithms:");
-        if (trainElementsVectors && elementsLearningAlgorithm != null) {
-            log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
-            elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
-            elementsLearningAlgorithm.pretrain(iterator);
-        }
-        if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
-            log.info("          building SequenceLearningAlgorithm: [" +sequenceLearningAlgorithm.getCodeName()+ "]");
-            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
-            sequenceLearningAlgorithm.pretrain(this.iterator);
-        }
+        initLearners();
 
         log.info("Starting learning process...");
         if (this.stopWords == null) this.stopWords = new ArrayList<>();
