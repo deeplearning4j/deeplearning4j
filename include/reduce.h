@@ -601,7 +601,11 @@ template<typename OpType>
 						T finalVal = startingVal;
 						BlockInformation info(length);
 						T *blocks = new T[info.chunks];
-#pragma omp parallel proc_bind(AFFINITY)
+
+                        int _threads = nd4j::math::nd4j_min<int>(info.threads, omp_get_max_threads());
+                        _threads = nd4j::math::nd4j_max<int>(_threads, 1);
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY)
 						{
 							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
