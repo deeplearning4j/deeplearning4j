@@ -33,6 +33,14 @@
         <developerConnection>scm:git:git@github.com:deeplearning4j/gym-java-client.git</developerConnection>
     </scm>
 
+    <properties>
+        <unirest.version>1.4.9</unirest.version>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
+        <nd4j.backend>nd4j-native</nd4j.backend>
+    </properties>
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -46,17 +54,25 @@
         </repository>
     </distributionManagement>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-native</artifactId>
+                <version>${nd4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-cuda-7.5</artifactId>
+                <version>${nd4j.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
+            <artifactId>${nd4j.backend}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
@@ -105,13 +121,6 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <properties>
-        <unirest.version>1.4.9</unirest.version>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
-    </properties>
 
     <build>
         <plugins>
