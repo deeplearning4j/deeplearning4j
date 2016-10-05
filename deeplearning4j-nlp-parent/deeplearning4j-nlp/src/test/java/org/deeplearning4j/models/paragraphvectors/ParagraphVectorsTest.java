@@ -24,6 +24,7 @@ import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -697,5 +698,59 @@ public class ParagraphVectorsTest {
 
         return  Nd4j.getBlasWrapper().dot(vector, vector2);
 
+    }
+
+    /**
+     * Special test to check d2v inference against pre-trained gensim model and
+     */
+    @Ignore
+    @Test
+    public void testGensimEquality() throws Exception {
+
+        INDArray expB = Nd4j.create(new double[]{-0.02465764,  0.00756337, -0.0268607 ,  0.01588023,  0.01580242, -0.00150542,  0.00116652,  0.0021577 , -0.00754891, -0.02441176, -0.01271976, -0.02015191,  0.00220599,  0.03722657, -0.01629612, -0.02779619, -0.01157856, -0.01937938, -0.00744667,  0.01990043, -0.00505888,  0.00573646,  0.00385467, -0.0282531 ,  0.03484593, -0.05528606,  0.02428633, -0.01510474,  0.00153177, -0.03637344, 0.01747423, -0.00090738, -0.02199888,  0.01410434, -0.01710641, -0.01446697, -0.04225266,  0.00262217,  0.00871943,  0.00471594, 0.0101348 , -0.01991908,  0.00874325, -0.00606416, -0.01035323, -0.01376545,  0.00451507, -0.01220307, -0.04361237,  0.00026028, -0.02401881,  0.00580314,  0.00238946, -0.01325974,  0.01879044, -0.00335623, -0.01631887,  0.02222102, -0.02998703,  0.03190075, -0.01675236, -0.01799807, -0.01314015,  0.01950069,  0.0011723 , 0.01013178,  0.01093296, -0.034143  ,  0.00420227,  0.01449351, -0.00629987,  0.01652851, -0.01286825,  0.03314656,  0.03485073, 0.01120341,  0.01298241,  0.0019494 , -0.02420256, -0.0063762, 0.01527091, -0.00732881,  0.0060427 ,  0.019327  , -0.02068196, 0.00876712,  0.00292274,  0.01312969, -0.01529114,  0.0021757 , -0.00565621, -0.01093122,  0.02758765, -0.01342688,  0.01606117, -0.02666447,  0.00541112,  0.00375426, -0.00761796,  0.00136015, -0.01169962, -0.03012749,  0.03012953, -0.05491332, -0.01137303, -0.01392103,  0.01370098, -0.00794501,  0.0248435 ,  0.00319645, 0.04261713, -0.00364211,  0.00780485,  0.01182583, -0.00647098, 0.03291231, -0.02515565,  0.03480943,  0.00119836, -0.00490694, 0.02615346, -0.00152456,  0.00196142, -0.02326461,  0.00603225, -0.02414703, -0.02540966,  0.0072112 , -0.01090273, -0.00505061, -0.02196866,  0.00515245,  0.04981546, -0.02237269, -0.00189305, 0.0169786 ,  0.01782372, -0.00430022,  0.00551226,  0.00293861, -0.01337168, -0.00302476, -0.01869966,  0.00270757,  0.03199976, -0.01614617, -0.02716484,  0.01560035, -0.01312686, -0.01604082, 0.01347521,  0.03229654,  0.00707219, -0.00588392,  0.02444809, -0.01068742, -0.0190814 , -0.00556385, -0.00462766,  0.01283929, 0.02001247, -0.00837629, -0.00041943, -0.02298774,  0.00874839, 0.00434907, -0.00963332,  0.00476905,  0.00793049, -0.00212557, -0.01839353,  0.03345517,  0.00838255, -0.0157447 , -0.0376134 , 0.01059611, -0.02323246, -0.01326356, -0.01116734,  0.00598869, 0.0211626 ,  0.01872963, -0.0038276 , -0.01208279, -0.00989125, 0.04147648,  0.00181867, -0.00369355,  0.02312465,  0.0048396 , 0.00564515,  0.01317832, -0.0057621 , -0.01882041, -0.02869064, -0.00670661,  0.02585443, -0.01108428,  0.01411031,  0.01204507, -0.01244726, -0.00962342, -0.00205239, -0.01653971,  0.02871559, -0.00772978,  0.0214524 ,  0.02035478, -0.01324312,  0.00169302, -0.00064739,  0.00531795,  0.01059279, -0.02455794, -0.00002782, -0.0068906 , -0.0160858 , -0.0031842 , -0.02295724,  0.01481094, 0.01769004, -0.02925742,  0.02050495, -0.00029003, -0.02815636, 0.02467367,  0.03419458,  0.00654938, -0.01847546,  0.00999932, 0.00059222, -0.01722176,  0.05172159, -0.01548486,  0.01746444, 0.007871  ,  0.0078471 , -0.02414417,  0.01898077, -0.01470176, -0.00299465,  0.00368212, -0.02474656,  0.01317451,  0.03706085, -0.00032923,  0.02655881,  0.0013586 , -0.0120303 , -0.05030316, 0.0222294 , -0.0070967 , -0.02150935,  0.03254268,  0.01369857, 0.00246183, -0.02253576, -0.00551247,  0.00787363,  0.01215617, 0.02439827, -0.01104699, -0.00774596, -0.01898127, -0.01407653, 0.00195514, -0.03466602,  0.01560903, -0.01239944, -0.02474852, 0.00155114,  0.00089324, -0.01725949, -0.00011816,  0.00742845, 0.01247074, -0.02467943, -0.00679623,  0.01988366, -0.00626181, -0.02396477,  0.01052101, -0.01123178, -0.00386291, -0.00349261, -0.02714747, -0.00563315,  0.00228767, -0.01303677, -0.01971108, 0.00014759, -0.00346399,  0.02220698,  0.01979946, -0.00526076, 0.00647453,  0.01428513,  0.00223467, -0.01690172, -0.0081715 });
+
+        VectorsConfiguration configuration = new VectorsConfiguration();
+        Word2Vec w2v = WordVectorSerializer.readWord2VecFromText(
+                new File("/home/raver119/Downloads/gensim_models_for_dl4j/word"),
+                new File("/home/raver119/Downloads/gensim_models_for_dl4j/hs"),
+                new File("/home/raver119/Downloads/gensim_models_for_dl4j/hs_code"),
+                new File("/home/raver119/Downloads/gensim_models_for_dl4j/hs_mapping"),
+                configuration
+        );
+
+
+        assertNotEquals(null, w2v.getLookupTable());
+        assertNotEquals(null, w2v.getVocab());
+
+        ParagraphVectors d2v = new ParagraphVectors.Builder(configuration)
+                                                        .useExistingWordVectors(w2v)
+                                                        .sequenceLearningAlgorithm(new DM<VocabWord>())
+                                                        .tokenizerFactory(new DefaultTokenizerFactory())
+                                                        .resetModel(false)
+                                                        .build();
+
+
+        assertNotEquals(null, d2v.getLookupTable());
+        assertNotEquals(null, d2v.getVocab());
+
+        assertTrue(d2v.getVocab() == w2v.getVocab());
+        assertTrue(d2v.getLookupTable() == w2v.getLookupTable());
+
+        String textA = "Donald Trump referred to President Obama as “your president” during the first presidential debate on Monday, much to many people’s chagrin on social media.\n"
+                + "\n"
+                + "Trump, made the reference after saying that the greatest threat facing the world is nuclear weapons. He then turned to Hillary Clinton and said, “Not global warming like you think and your President thinks,” referring to Obama.";
+
+        String textB = "The comment followed Trump doubling down on his false claims about the so-called birther conspiracy theory about Obama. People following the debate were immediately angered that Trump implied Obama is not his president.";
+
+
+        INDArray arrayA = d2v.inferVector(textA);
+        INDArray arrayB = d2v.inferVector(textB);
+
+        assertNotEquals(null, arrayA);
+        assertNotEquals(null, arrayB);
+
+        double simB = Transforms.cosineSim(arrayB, expB);
+
+        log.info("SimilarityB: {}", simB);
     }
 }
