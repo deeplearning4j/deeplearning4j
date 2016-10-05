@@ -51,7 +51,7 @@ public class ParameterAveragingTest {
         AtomicBoolean running = new AtomicBoolean(true);
         int length = 1000;
         ParameterAveragingListener subscriber = new ParameterAveragingListener(length);
-        AeronNDArraySubscriber subscriber1 =  AeronNDArraySubscriber.startSubscriber(ctx,"127.0.0.1",40123,subscriber,10);
+        AeronNDArraySubscriber subscriber1 =  AeronNDArraySubscriber.startSubscriber(ctx,"127.0.0.1",40123,subscriber,10,new AtomicBoolean(false));
         AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
                 .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
                 .build();

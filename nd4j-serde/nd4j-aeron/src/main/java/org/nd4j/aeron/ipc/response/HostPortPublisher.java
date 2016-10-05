@@ -1,27 +1,28 @@
-package org.nd4j.aeron.ipc;
+package org.nd4j.aeron.ipc.response;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
-import io.aeron.exceptions.DriverTimeoutException;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-
 import org.agrona.concurrent.UnsafeBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.aeron.ipc.AeronNDArrayPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 
 /**
- * NDArray publisher for aeron
+ * Sends a host port
+ * to the given
+ * aeron channel
  *
  * @author Adam Gibson
  */
-@Data
+@AllArgsConstructor
 @Builder
-public class AeronNDArrayPublisher implements  AutoCloseable {
+public class HostPortPublisher implements AutoCloseable {
+
+    private String uriToSend;
     // A unique identifier for a stream within a channel. Stream ID 0 is reserved
     // for internal use and should not be used by applications.
     private int streamId;
@@ -33,94 +34,69 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
 
-
-
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
-        log.debug("Channel publisher" + channel + " and stream " + streamId);
+        log.info("Channel publisher" + channel + " and stream " + streamId);
     }
 
-    /**
-     * Publish an ndarray to an aeron channel
-     * @param arr
-     * @throws Exception
-     */
-    public void publish(INDArray arr) throws Exception {
-        // Allocate enough buffer size to hold maximum message length
-        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        log.debug("Publishing to " + channel + " on stream Id " + streamId);
-        //ensure default values are set
-        while(!arr.isCompressed())
-            Nd4j.getCompressor().compressi(arr,"GZIP");
 
-
-        UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(arr);
-
+    public void send() {
         if(!init)
             init();
-        // Create a context, needed for client connection to media driver
-        // A separate media driver process needs to be running prior to starting this application
 
         // Create an Aeron instance with client-provided context configuration and connect to the
         // media driver, and create a Publication.  The Aeron and Publication classes implement
         // AutoCloseable, and will automatically clean up resources when this try block is finished.
-        boolean connected = false;
-        if(aeron == null) {
-            try {
-                while(!connected) {
-                    aeron = Aeron.connect(ctx);
-                    connected = true;
-                }
-            }catch (Exception e) {
-                log.warn("Reconnecting on publisher...failed to connect");
-            }
-        }
-        int connectionTries = 0;
-        while(publication == null && connectionTries < 3) {
+        if(aeron == null)
+            aeron = Aeron.connect(ctx);
+
+        while(publication == null) {
             try {
                 publication = aeron.addPublication(channel, streamId);
-            }catch (DriverTimeoutException e) {
-                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream" + streamId);
-                connectionTries++;
+                log.info("Publication created on channel " + channel);
+            }
+            catch (Exception e) {
+                log.warn("Trying to connect again on channel " + channel);
             }
         }
 
 
+        UnsafeBuffer buffer = new UnsafeBuffer(uriToSend.getBytes());
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
-        log.debug("Begin publish " + channel + " and stream " + streamId);
+        log.info("Begin publish " + channel + " and stream " + streamId);
+        int timesFailed = 0;
         while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
-            if (result == Publication.BACK_PRESSURED)
-            {
-                log.debug(" Offer failed due to back pressure");
+            if (result == Publication.BACK_PRESSURED && timesFailed % 1000 == 0)
+                log.info("Offer failed due to back pressure " + channel + " and stream " + streamId);
+
+            else if (result == Publication.NOT_CONNECTED && timesFailed % 1000 == 0)
+                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream " + streamId);
+
+            else if (result == Publication.ADMIN_ACTION && timesFailed % 1000 == 0)
+                log.info("Offer failed because of an administration action in the system " + channel + " and stream " + streamId);
+
+            else if (result == Publication.CLOSED && timesFailed % 1000 == 0)
+                log.info("Offer failed publication is closed " + channel + " and stream " + streamId);
+
+            else if(timesFailed % 1000 == 0)
+                log.info("Offer failed due to unknown reason on channel " + channel + " and stream " + streamId);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-            else if (result == Publication.NOT_CONNECTED)
-            {
-                log.debug(" Offer failed because publisher is not connected to subscriber");
-            }
-            else if (result == Publication.ADMIN_ACTION)
-            {
-                log.debug("Offer failed because of an administration action in the system");
-            }
-            else if (result == Publication.CLOSED)
-            {
-                log.debug("Offer failed publication is closed");
-            }
-            else
-            {
-                log.debug(" Offer failed due to unknown reason");
-            }
+            timesFailed++;
+
         }
 
 
-        log.debug("Done sending.");
-
+        log.info("Done sending uri " + uriToSend);
     }
-
 
     /**
      * Closes this resource, relinquishing any underlying resources.
@@ -169,15 +145,9 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(aeron != null) {
-            try {
-                aeron.close();
-            }catch (Exception e) {}
-        }
-        if(publication != null) {
-            try {
-                publication.close();
-            }catch(Exception e) {}
-        }
+        if(aeron != null)
+            aeron.close();
+        if(publication != null)
+            publication.close();
     }
 }
