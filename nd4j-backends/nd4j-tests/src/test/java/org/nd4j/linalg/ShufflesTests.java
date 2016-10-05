@@ -250,13 +250,13 @@ public class ShufflesTests extends BaseNd4jTest {
      */
     @Test
     public void testHalfVectors1() throws Exception {
-        int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 10, 20);
-        int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 10, 20);
+        int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 20);
+        int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 20);
 
         assertFalse(Arrays.equals(array1, array2));
 
-        assertEquals(10, array1.length);
-        assertEquals(10, array2.length);
+        assertEquals(20, array1.length);
+        assertEquals(20, array2.length);
     }
 
 
