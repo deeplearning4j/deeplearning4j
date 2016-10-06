@@ -10,10 +10,8 @@ import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.SummaryType;
 import org.deeplearning4j.ui.stats.sbe.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 /**
  * An implementation of {@link StatsReport} using Simple Binary Encoding (SBE)
@@ -52,6 +50,11 @@ public class SbeStatsReport implements StatsReport {
     private Map<StatsType, Map<String, Double>> meanValues;
     private Map<StatsType, Map<String, Double>> stdevValues;
     private Map<StatsType, Map<String, Double>> meanMagnitudeValues;
+
+    private String metaDataClassName;
+    //Store in serialized form; deserialize iff required. Might save us some class not found (or, version) errors, if
+    // metadata is saved but is never used
+    private List<byte[]> dataSetMetaData;
 
     private boolean scorePresent;
     private boolean memoryUsePresent;
@@ -180,9 +183,56 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
+    public void reportDataSetMetaData(List<Serializable> dataSetMetaData, Class<?> metaDataClass) {
+        reportDataSetMetaData(dataSetMetaData, (metaDataClass == null ? null : metaDataClass.getName()));
+    }
+
+    @Override
+    public void reportDataSetMetaData(List<Serializable> dataSetMetaData, String metaDataClass) {
+        if(dataSetMetaData != null) {
+            this.dataSetMetaData = new ArrayList<>();
+            for (Serializable s : dataSetMetaData) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                    oos.writeObject(s);
+                    oos.flush();
+                    oos.close();
+                } catch (IOException e) {
+                    throw new RuntimeException("Unexpected IOException from ByteArrayOutputStream", e);
+                }
+                byte[] b = baos.toByteArray();
+                this.dataSetMetaData.add(b);
+            }
+        } else {
+            this.dataSetMetaData = null;
+        }
+        this.metaDataClassName = metaDataClass;
+    }
+
+    @Override
     public Map<String, Double> getMeanMagnitudes(StatsType statsType) {
         if (this.meanMagnitudeValues == null) return null;
         return this.meanMagnitudeValues.get(statsType);
+    }
+
+    @Override
+    public List<Serializable> getDataSetMetaData() {
+        if(dataSetMetaData == null || dataSetMetaData.size() == 0) return null;
+
+        List<Serializable> l = new ArrayList<>();
+        for(byte[] b : dataSetMetaData){
+            try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b))){
+                l.add((Serializable)ois.readObject());
+            }catch (IOException | ClassNotFoundException e){
+                throw new RuntimeException(e);
+            }
+        }
+        return l;
+    }
+
+    @Override
+    public String getDataSetMetaDataClassName() {
+        return metaDataClassName;
     }
 
     @Override
@@ -227,6 +277,11 @@ public class SbeStatsReport implements StatsReport {
                 return meanMagnitudeValues != null && meanMagnitudeValues.containsKey(statsType);
         }
         return false;
+    }
+
+    @Override
+    public boolean hasDataSetMetaData() {
+        return dataSetMetaData != null || metaDataClassName != null;
     }
 
     @Override
@@ -312,6 +367,19 @@ public class SbeStatsReport implements StatsReport {
             bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
         }
 
+        //Metadata group:
+        bufferSize += 4;    //Metadata group header: always present
+        if(dataSetMetaData != null && dataSetMetaData.size() > 0){
+            for(byte[] b : dataSetMetaData){
+                bufferSize += 4 + b.length; //4 bytes header + content
+            }
+        }
+
+        //Metadata class name:
+        bufferSize += 4; // 4 bytes header (always present)
+        byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
+        bufferSize += metaDataClassNameBytes.length;
+
         //End buffer size calculation
 
         //--------------------------------------------------------------------------------------------------------------
@@ -347,7 +415,8 @@ public class SbeStatsReport implements StatsReport {
                 .meanMagnitudeParameters(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Parameters))
                 .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
                 .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations))
-                .learningRatesPresent(learningRatesByParam != null);
+                .learningRatesPresent(learningRatesByParam != null)
+                .dataSetMetaDataPresent(hasDataSetMetaData());
 
         ue.statsCollectionDuration(statsCollectionDurationMs)
                 .score(score);
@@ -464,9 +533,25 @@ public class SbeStatsReport implements StatsReport {
             }
         }
 
+        // +++ DataSet MetaData +++
+        UpdateEncoder.DataSetMetaDataBytesEncoder metaEnc = ue.dataSetMetaDataBytesCount(dataSetMetaData != null ? dataSetMetaData.size() : 0);
+        if(dataSetMetaData != null && dataSetMetaData.size() > 0) {
+            for (byte[] b : dataSetMetaData) {
+                metaEnc = metaEnc.next();
+                UpdateEncoder.DataSetMetaDataBytesEncoder.MetaDataBytesEncoder mdbe = metaEnc.metaDataBytesCount(b.length);
+                for (byte bb : b) {
+                    mdbe.next().bytes(bb);
+                }
+            }
+        }
+
+        //Class name for DataSet metadata
+        ue.putDataSetMetaDataClassName(metaDataClassNameBytes,0,metaDataClassNameBytes.length);
+
         offset += ue.encodedLength();
         if (offset != bytes.length) {
-            throw new RuntimeException();
+            throw new RuntimeException("Unexpected offset: estimated buffer length (" + bytes.length
+                    + " bytes) does not match encoded length (" + offset + " bytes)");
         }
 
         return bytes;
@@ -605,6 +690,7 @@ public class SbeStatsReport implements StatsReport {
         boolean meanMagUpdates = fpd.meanMagnitudeUpdates();
         boolean meanMagAct = fpd.meanMagnitudeActivations();
         boolean learningRatesPresent = fpd.learningRatesPresent();
+        boolean metaDataPresent = fpd.dataSetMetaDataPresent();
 
         statsCollectionDurationMs = ud.statsCollectionDuration();
         score = ud.score();
@@ -745,6 +831,25 @@ public class SbeStatsReport implements StatsReport {
                 }
                 map.put(paramName, h);
             }
+        }
+
+        //Final group: DataSet metadata
+        for(UpdateDecoder.DataSetMetaDataBytesDecoder metaDec : ud.dataSetMetaDataBytes() ){
+            if(this.dataSetMetaData == null) this.dataSetMetaData = new ArrayList<>();
+            UpdateDecoder.DataSetMetaDataBytesDecoder.MetaDataBytesDecoder mdbd = metaDec.metaDataBytes();
+            int length = mdbd.count();
+            byte[] b = new byte[length];
+            int i=0;
+            for(UpdateDecoder.DataSetMetaDataBytesDecoder.MetaDataBytesDecoder mdbd2 : mdbd ){
+                b[i++] = mdbd2.bytes();
+            }
+            this.dataSetMetaData.add(b);
+        }
+
+        //Variable length: DataSet metadata class name
+        this.metaDataClassName = ud.dataSetMetaDataClassName();
+        if(!metaDataPresent){
+            this.metaDataClassName = null;
         }
     }
 

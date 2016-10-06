@@ -3,6 +3,7 @@ package org.deeplearning4j.ui.stats.api;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.stats.StatsListener;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -59,12 +60,12 @@ public interface StatsReport {
     /**
      * Report the learning rates by parameter
      */
-    void reportLearningRates(Map<String,Double> learningRatesByParam);
+    void reportLearningRates(Map<String, Double> learningRatesByParam);
 
     /**
      * Get the learning rates by parameter
      */
-    Map<String,Double> getLearningRates();
+    Map<String, Double> getLearningRates();
 
 
     //--- Performance and System Stats ---
@@ -224,12 +225,44 @@ public interface StatsReport {
     void reportMeanMagnitudes(StatsType statsType, Map<String, Double> meanMagnitudes);
 
     /**
+     * Report any metadata for the DataSet
+     *
+     * @param dataSetMetaData MetaData for the DataSet
+     * @param metaDataClass   Class of the metadata. Can be later retieved using {@link #getDataSetMetaDataClassName()}
+     */
+    void reportDataSetMetaData(List<Serializable> dataSetMetaData, Class<?> metaDataClass);
+
+    /**
+     * Report any metadata for the DataSet
+     *
+     * @param dataSetMetaData MetaData for the DataSet
+     * @param metaDataClass   Class of the metadata. Can be later retieved using {@link #getDataSetMetaDataClassName()}
+     */
+    void reportDataSetMetaData(List<Serializable> dataSetMetaData, String metaDataClass);
+
+    /**
      * Get the mean magnitude values for each parameter for the given StatsType (Parameters/Updates/Activations)
      *
      * @param statsType Stats type to get mean magnitude values for
      * @return Map of mean magnitude values by parameter
      */
     Map<String, Double> getMeanMagnitudes(StatsType statsType);
+
+    /**
+     * Get the DataSet metadata, if any (null otherwise).
+     * Note: due to serialization issues, this may in principle throw an unchecked exception related
+     * to class availability, serialization etc.
+     *
+     * @return List of DataSet metadata, if any.
+     */
+    List<Serializable> getDataSetMetaData();
+
+    /**
+     * Get the class
+     *
+     * @return
+     */
+    String getDataSetMetaDataClassName();
 
     /**
      * Return whether the score is present (has been reported)
@@ -264,13 +297,21 @@ public interface StatsReport {
     boolean hasHistograms(StatsType statsType);
 
     /**
-     * Return whether the summary stats (mean, standard deviation, mean magnitudes) have been repotred for the
+     * Return whether the summary stats (mean, standard deviation, mean magnitudes) have been reported for the
      * given stats type (Parameters, Updates, Activations)
      *
      * @param statsType   stats type (Parameters, Updates, Activations)
      * @param summaryType Summary statistic type (mean, stdev, mean magnitude)
      */
     boolean hasSummaryStats(StatsType statsType, SummaryType summaryType);
+
+
+    /**
+     * Return whether any DataSet metadata is present or not
+     *
+     * @return True if DataSet metadata is present
+     */
+    boolean hasDataSetMetaData();
 
     /**
      * Serialize the StatsReport to a byte[] for storage etc

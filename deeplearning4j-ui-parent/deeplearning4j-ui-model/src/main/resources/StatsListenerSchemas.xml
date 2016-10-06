@@ -81,6 +81,7 @@
             <choice name="meanMagnitudeUpdates">11</choice>
             <choice name="meanMagnitudeActivations">12</choice>
             <choice name="learningRatesPresent">13</choice>
+            <choice name="dataSetMetaDataPresent">14</choice>
         </set>
         <enum name="MemoryType" encodingType="uint8">
             <validValue name="JvmCurrent">0</validValue>
@@ -184,7 +185,12 @@
                 </group>
             </group>
         </group>
-
+        <group name="dataSetMetaDataBytes" id="500" dimensionType="groupSizeEncoding">
+            <group name="metaDataBytes" id="501" dimensionType="groupSizeEncoding">
+                <field name="bytes" id="502" type="int8"/>
+            </group>
+        </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
+        <data name="dataSetMetaDataClassName" id="1100" type="VarDataUTF8"/>
     </sbe:message>
 </sbe:messageSchema>

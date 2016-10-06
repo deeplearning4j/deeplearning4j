@@ -10,6 +10,8 @@ import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -185,8 +187,8 @@ public class TestStatsSBE {
                         assertEquals(numDevices, report2.getHwNumDevices());
                         assertEquals(jvmMaxMemory, report2.getHwJvmMaxMemory());
                         assertEquals(offHeapMaxMemory, report2.getHwOffHeapMaxMemory());
-                        assertArrayEquals(new long[]{0,0}, report2.getHwDeviceTotalMemory());       //Edge case: nDevices = 2, but missing mem data -> expect long[] of 0s out, due to fixed encoding
-                        assertArrayEquals(new String[]{"",""}, report2.getHwDeviceDescription());   //As above
+                        assertArrayEquals(new long[]{0, 0}, report2.getHwDeviceTotalMemory());       //Edge case: nDevices = 2, but missing mem data -> expect long[] of 0s out, due to fixed encoding
+                        assertArrayEquals(new String[]{"", ""}, report2.getHwDeviceDescription());   //As above
                         assertNullOrZeroLength(report2.getHwHardwareUID());
                         assertTrue(report2.hasHardwareInfo());
                     } else {
@@ -222,11 +224,11 @@ public class TestStatsSBE {
         }
     }
 
-    private static void assertNullOrZeroLength(String str){
+    private static void assertNullOrZeroLength(String str) {
         assertTrue(str == null || str.length() == 0);
     }
 
-    private static void assertNullOrZeroLengthArray(String[] str){
+    private static void assertNullOrZeroLengthArray(String[] str) {
         assertTrue(str == null || str.length == 0);
     }
 
@@ -261,7 +263,7 @@ public class TestStatsSBE {
 
         double score = 22.0;
 
-        Map<String,Double> lrByParam = new HashMap<>();
+        Map<String, Double> lrByParam = new HashMap<>();
         lrByParam.put(paramNames[0], 22.5);
         lrByParam.put(paramNames[1], 22.75);
 
@@ -305,6 +307,12 @@ public class TestStatsSBE {
         aMM.put(paramNames[0], 65.0);
         aMM.put(paramNames[1], 66.0);
 
+        List<Serializable> metaDataList = new ArrayList<>();
+        metaDataList.add("meta1");
+        metaDataList.add("meta2");
+        metaDataList.add("meta3");
+        Class<?> metaDataClass = String.class;
+
 
         boolean[] tf = new boolean[]{true, false};
         boolean[][] tf3 = new boolean[][]{
@@ -319,9 +327,9 @@ public class TestStatsSBE {
         for (boolean collectPerformanceStats : tf) {
             for (boolean collectMemoryStats : tf) {
                 for (boolean collectGCStats : tf) {
-                    for (boolean collectDataSetMetaData : tf) {
-                        for (boolean collectScore : tf) {
-                            for (boolean collectLearningRates : tf) {
+                    for (boolean collectScore : tf) {
+                        for (boolean collectLearningRates : tf) {
+                            for (boolean collectMetaData : tf) {
                                 for (boolean[] collectHistograms : tf3) {
                                     for (boolean[] collectMeanStdev : tf3) {
                                         for (boolean[] collectMM : tf3) {
@@ -343,16 +351,16 @@ public class TestStatsSBE {
                                                 report.reportGarbageCollection(gc2Name, gcdc2, gcdt2);
                                             }
 
-                                            if (collectDataSetMetaData) {
-                                                //TODO
-                                            }
-
                                             if (collectScore) {
                                                 report.reportScore(score);
                                             }
 
                                             if (collectLearningRates) {
                                                 report.reportLearningRates(lrByParam);
+                                            }
+
+                                            if (collectMetaData) {
+                                                report.reportDataSetMetaData(metaDataList, metaDataClass);
                                             }
 
                                             if (collectHistograms[0]) {   //Param hist
@@ -396,11 +404,10 @@ public class TestStatsSBE {
                                             assertEquals(report, report2);
 
 
-
                                             assertEquals(time, report2.getTime());
                                             assertEquals(duration, report2.getStatsCollectionDurationMs());
                                             assertEquals(iterCount, report2.getIterationCount());
-                                            if(collectPerformanceStats){
+                                            if (collectPerformanceStats) {
                                                 assertEquals(perfRuntime, report2.getTotalRuntimeMs());
                                                 assertEquals(perfTotalEx, report2.getTotalExamples());
                                                 assertEquals(perfTotalMB, report2.getTotalMinibatches());
@@ -411,7 +418,7 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasPerformance());
                                             }
 
-                                            if(collectMemoryStats){
+                                            if (collectMemoryStats) {
                                                 assertEquals(memJC, report2.getJvmCurrentBytes());
                                                 assertEquals(memJM, report2.getJvmMaxBytes());
                                                 assertEquals(memOC, report2.getOffHeapCurrentBytes());
@@ -424,32 +431,28 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasMemoryUse());
                                             }
 
-                                            if(collectGCStats){
-                                                List<Pair<String,int[]>> gcs = report2.getGarbageCollectionStats();
+                                            if (collectGCStats) {
+                                                List<Pair<String, int[]>> gcs = report2.getGarbageCollectionStats();
                                                 Assert.assertEquals(2, gcs.size());
                                                 Assert.assertEquals(gc1Name, gcs.get(0).getFirst());
-                                                Assert.assertArrayEquals(new int[]{gcdc1,gcdt1}, gcs.get(0).getSecond());
+                                                Assert.assertArrayEquals(new int[]{gcdc1, gcdt1}, gcs.get(0).getSecond());
                                                 Assert.assertEquals(gc2Name, gcs.get(1).getFirst());
-                                                Assert.assertArrayEquals(new int[]{gcdc2,gcdt2}, gcs.get(1).getSecond());
+                                                Assert.assertArrayEquals(new int[]{gcdc2, gcdt2}, gcs.get(1).getSecond());
                                                 Assert.assertTrue(report2.hasGarbageCollection());
                                             } else {
                                                 Assert.assertFalse(report2.hasGarbageCollection());
                                             }
 
-                                            if(collectDataSetMetaData){
-                                                //TODO
-                                            }
-
-                                            if(collectScore){
+                                            if (collectScore) {
                                                 assertEquals(score, report2.getScore(), 0.0);
                                                 Assert.assertTrue(report2.hasScore());
                                             } else {
                                                 Assert.assertFalse(report2.hasScore());
                                             }
 
-                                            if(collectLearningRates){
+                                            if (collectLearningRates) {
                                                 assertEquals(lrByParam.keySet(), report2.getLearningRates().keySet());
-                                                for(String s : lrByParam.keySet()){
+                                                for (String s : lrByParam.keySet()) {
                                                     assertEquals(lrByParam.get(s), report2.getLearningRates().get(s), 1e-6);
                                                 }
                                                 Assert.assertTrue(report2.hasLearningRates());
@@ -457,26 +460,35 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasLearningRates());
                                             }
 
-                                            if(collectHistograms[0]){
+                                            if (collectMetaData) {
+                                                assertNotNull(report2.getDataSetMetaData());
+                                                assertEquals(metaDataList, report2.getDataSetMetaData());
+                                                assertEquals(metaDataClass.getName(), report2.getDataSetMetaDataClassName());
+                                                assertTrue(report2.hasDataSetMetaData());
+                                            } else {
+                                                assertFalse(report2.hasDataSetMetaData());
+                                            }
+
+                                            if (collectHistograms[0]) {
                                                 assertEquals(pHist, report2.getHistograms(StatsType.Parameters));
                                                 Assert.assertTrue(report2.hasHistograms(StatsType.Parameters));
                                             } else {
                                                 Assert.assertFalse(report2.hasHistograms(StatsType.Parameters));
                                             }
-                                            if(collectHistograms[1]){
+                                            if (collectHistograms[1]) {
                                                 assertEquals(uHist, report2.getHistograms(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasHistograms(StatsType.Updates));
                                             } else {
                                                 Assert.assertFalse(report2.hasHistograms(StatsType.Updates));
                                             }
-                                            if(collectHistograms[2]){
+                                            if (collectHistograms[2]) {
                                                 assertEquals(aHist, report2.getHistograms(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasHistograms(StatsType.Activations));
                                             } else {
                                                 Assert.assertFalse(report2.hasHistograms(StatsType.Activations));
                                             }
 
-                                            if(collectMeanStdev[0]){
+                                            if (collectMeanStdev[0]) {
                                                 assertEquals(pMean, report2.getMean(StatsType.Parameters));
                                                 assertEquals(pStd, report2.getStdev(StatsType.Parameters));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Mean));
@@ -485,7 +497,7 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Mean));
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Stdev));
                                             }
-                                            if(collectMeanStdev[1]){
+                                            if (collectMeanStdev[1]) {
                                                 assertEquals(uMean, report2.getMean(StatsType.Updates));
                                                 assertEquals(uStd, report2.getStdev(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Updates, SummaryType.Mean));
@@ -494,7 +506,7 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Mean));
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Stdev));
                                             }
-                                            if(collectMeanStdev[2]){
+                                            if (collectMeanStdev[2]) {
                                                 assertEquals(aMean, report2.getMean(StatsType.Activations));
                                                 assertEquals(aStd, report2.getStdev(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Activations, SummaryType.Mean));
@@ -504,23 +516,26 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.Stdev));
                                             }
 
-                                            if(collectMM[0]){
+                                            if (collectMM[0]) {
                                                 assertEquals(pMM, report2.getMeanMagnitudes(StatsType.Parameters));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
                                             } else {
-                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));;
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
+                                                ;
                                             }
-                                            if(collectMM[1]){
+                                            if (collectMM[1]) {
                                                 assertEquals(uMM, report2.getMeanMagnitudes(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
                                             } else {
-                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));;
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
+                                                ;
                                             }
-                                            if(collectMM[2]){
+                                            if (collectMM[2]) {
                                                 assertEquals(aMM, report2.getMeanMagnitudes(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
                                             } else {
-                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));;
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
+                                                ;
                                             }
 
                                             testCount++;
@@ -568,7 +583,7 @@ public class TestStatsSBE {
 
         double score = 22.0;
 
-        Map<String,Double> lrByParam = null;
+        Map<String, Double> lrByParam = null;
 
         Map<String, Histogram> pHist = null;
         Map<String, Histogram> uHist = null;
@@ -677,7 +692,7 @@ public class TestStatsSBE {
                                             assertEquals(time, report2.getTime());
                                             assertEquals(duration, report2.getStatsCollectionDurationMs());
                                             assertEquals(iterCount, report2.getIterationCount());
-                                            if(collectPerformanceStats){
+                                            if (collectPerformanceStats) {
                                                 assertEquals(perfRuntime, report2.getTotalRuntimeMs());
                                                 assertEquals(perfTotalEx, report2.getTotalExamples());
                                                 assertEquals(perfTotalMB, report2.getTotalMinibatches());
@@ -688,7 +703,7 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasPerformance());
                                             }
 
-                                            if(collectMemoryStats){
+                                            if (collectMemoryStats) {
                                                 assertEquals(memJC, report2.getJvmCurrentBytes());
                                                 assertEquals(memJM, report2.getJvmMaxBytes());
                                                 assertEquals(memOC, report2.getOffHeapCurrentBytes());
@@ -701,30 +716,30 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasMemoryUse());
                                             }
 
-                                            if(collectGCStats){
-                                                List<Pair<String,int[]>> gcs = report2.getGarbageCollectionStats();
+                                            if (collectGCStats) {
+                                                List<Pair<String, int[]>> gcs = report2.getGarbageCollectionStats();
                                                 Assert.assertEquals(2, gcs.size());
                                                 assertNullOrZeroLength(gcs.get(0).getFirst());
-                                                Assert.assertArrayEquals(new int[]{gcdc1,gcdt1}, gcs.get(0).getSecond());
+                                                Assert.assertArrayEquals(new int[]{gcdc1, gcdt1}, gcs.get(0).getSecond());
                                                 assertNullOrZeroLength(gcs.get(1).getFirst());
-                                                Assert.assertArrayEquals(new int[]{gcdc2,gcdt2}, gcs.get(1).getSecond());
+                                                Assert.assertArrayEquals(new int[]{gcdc2, gcdt2}, gcs.get(1).getSecond());
                                                 Assert.assertTrue(report2.hasGarbageCollection());
                                             } else {
                                                 Assert.assertFalse(report2.hasGarbageCollection());
                                             }
 
-                                            if(collectDataSetMetaData){
+                                            if (collectDataSetMetaData) {
                                                 //TODO
                                             }
 
-                                            if(collectScore){
+                                            if (collectScore) {
                                                 assertEquals(score, report2.getScore(), 0.0);
                                                 Assert.assertTrue(report2.hasScore());
                                             } else {
                                                 Assert.assertFalse(report2.hasScore());
                                             }
 
-                                            if(collectLearningRates){
+                                            if (collectLearningRates) {
                                                 assertNull(report2.getLearningRates());
                                             } else {
                                                 Assert.assertFalse(report2.hasLearningRates());
@@ -755,13 +770,16 @@ public class TestStatsSBE {
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.Stdev));
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Parameters));
-                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));;
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
+                                            ;
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Updates));
-                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));;
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
+                                            ;
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Activations));
-                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));;
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
+                                            ;
 
                                             testCount++;
                                         }

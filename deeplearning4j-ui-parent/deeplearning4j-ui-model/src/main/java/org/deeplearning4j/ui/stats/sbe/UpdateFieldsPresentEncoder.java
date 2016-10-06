@@ -141,4 +141,12 @@ public class UpdateFieldsPresentEncoder
         buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
+
+    public UpdateFieldsPresentEncoder dataSetMetaDataPresent(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 14) : bits & ~(1 << 14);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
 }
