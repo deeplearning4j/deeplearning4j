@@ -92,13 +92,13 @@ namespace functions {
 			}
 
 			host_and_device T variance() {
-				if (n <= 1)
+				if (n <= (T) 1.0)
 					return 0.0;
 				return M2 / (n);
 			}
 
 			host_and_device T varianceBiasCorrected() {
-				if (this->n <= 1) {
+				if (this->n <= (T) 1.0) {
 					return 0.0;
 				}
 
@@ -112,9 +112,9 @@ namespace functions {
 				return M2 / n;
 			}
 
-			host_and_device T skewness() { return M2 > 0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : 0; }
+			host_and_device T skewness() { return M2 > (T) 0.0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : 0; }
 
-			host_and_device T kurtosis() { return M2 > 0 ? n * M4 / (M2 * M2) : 0; }
+			host_and_device T kurtosis() { return M2 > (T) 0.0 ? n * M4 / (M2 * M2) : 0; }
 
 			host_and_device T getM2() {
 				return M2;
@@ -224,9 +224,9 @@ namespace functions {
 			//calculate an update of the reduce operation
 			host_and_device static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
 				T *extraParams) {
-				if (x.n == 0 && y.n > 0)
+				if (x.n == (T) 0.0 && y.n > (T) 0.0)
 					return y;
-				else if (x.n > 0 && y.n == 0)
+				else if (x.n > (T) 0.0 && y.n == (T) 0.0)
 					return x;
 				SummaryStatsData<T> result;
 				T n = x.n + y.n;

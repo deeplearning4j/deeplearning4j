@@ -112,7 +112,7 @@ template<typename T>
 
 #endif
 		inline T nd4j_sigmoid(T val) {
-			return 1.0 / (1.0 + nd4j_exp<T>(-val));
+			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T>(-val));
 		}
 
 		template<typename T>
@@ -121,7 +121,7 @@ template<typename T>
 
 #endif
 		inline T nd4j_elu(T val) {
-			if (val >= 0.0) return val;
+			if (val >= (T) 0.0) return val;
 			else return nd4j_exp<T>(val) - 1.0;
 			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
@@ -132,7 +132,7 @@ template<typename T>
 		__host__ __device__
 #endif
 		inline T nd4j_leakyrelu(T val,T alpha) {
-			if (val < 0.0) return alpha * val;
+			if (val < (T) 0.0f) return alpha * val;
 			else return val;
 			//return val < 0 ?  alpha * val : val;
 		}
@@ -144,7 +144,7 @@ template<typename T>
 
 #endif
 		inline T nd4j_eluderivative(T val) {
-			if (val >= 0.0) return 1.0;
+			if (val >= (T) 0.0f) return 1.0f;
 			else return nd4j_exp(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
@@ -161,7 +161,7 @@ template<typename T>
 
 #endif
 		inline T softplus(T val) {
-			return nd4j_log<T>(1.0 + nd4j_exp<T>(val));
+			return nd4j_log<T>(1.0f + nd4j_exp<T>(val));
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -169,7 +169,7 @@ template<typename T>
 
 #endif
 		inline T nd4j_softsign(T val) {
-			return val / (1.0 + nd4j::math::nd4j_abs<T>(val));
+			return val / (1.0f + nd4j::math::nd4j_abs<T>(val));
 		}
 
 		template<typename T>
@@ -192,7 +192,7 @@ template<typename T>
 #endif
 		inline T nd4j_tanhderivative(T val) {
 			T tanh = nd4j_tanh(val);
-			return 1.0 - tanh * tanh;
+			return 1.0f - tanh * tanh;
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -201,7 +201,7 @@ template<typename T>
 #endif
 		inline T nd4j_sigmoidderivative(T val) {
 			T sigmoid = nd4j_sigmoid(val);
-			T out = sigmoid * (1.0 - sigmoid);
+			T out = sigmoid * (1.0f - sigmoid);
 			return out;
 		}
 
@@ -211,8 +211,8 @@ template<typename T>
 
 #endif
 		inline T nd4j_softsignderivative(T val) {
-			T y = 1 + nd4j_abs(val);
-			return 1.0 / (y * y);
+			T y = 1.0f + nd4j_abs(val);
+			return 1.0f / (y * y);
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -234,13 +234,20 @@ template<typename T>
 #endif
 		inline T nd4j_atan(T val);
 
-#ifdef __CUDACC__
+
 		template<>
+#ifdef __CUDACC__
 		__host__ __device__
-		inline float16 nd4j_abs<float16>(float16 value) {
-			return (float16) fabsf((float) value);
-		}
 #endif
+		inline float16 nd4j_abs<float16>(float16 value) {
+#ifdef NATIVE_HALFS
+            return value < 0. ?  __hneg(value.data) : value;
+#else
+			return (float16) fabsf((float) value);
+#endif
+		}
+
+
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -265,13 +272,15 @@ template<typename T>
 			return value < 0 ? -value : value;
 		}
 
-#ifdef __CUDACC__
+
 		template<>
+#ifdef __CUDACC__
 		__host__ __device__
+#endif
 		inline float16 nd4j_max<float16>(float16 val1, float16 val2) {
 			return val1 > val2 ? val1 : val2;
 		}
-#endif
+
 
 		template<>
 #ifdef __CUDACC__
@@ -328,14 +337,6 @@ template<typename T>
 			return val1 < val2 ? val1 : val2;
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_ceil<float16>(float16 val1) {
-			return (float16) ceilf((float) val1);
-		}
-#endif
-
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -374,15 +375,6 @@ template<typename T>
 		inline int nd4j_ceil<int>(int val) {
 			return ceil((float) val);
 		}
-
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_cos<float16>(float16 val) {
-			return (float16) cosf((float) val);
-		}
-#endif
-
 
 		template<>
 #ifdef __CUDACC__

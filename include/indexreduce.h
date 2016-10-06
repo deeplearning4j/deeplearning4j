@@ -289,7 +289,7 @@ template<typename OpType>
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
-				for(Nd4jIndex i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
 					IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
 					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
@@ -297,7 +297,7 @@ template<typename OpType>
 				int rank = shape::rank(xShapeInfo);
 				int ind2sub[MAX_RANK];
 #pragma unroll
-				for(Nd4jIndex i = tid;i < n; i += blockDim.x * gridDim.x) {
+				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 					int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
 					IndexValue <T> indexVal = {dx[offset], i};

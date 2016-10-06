@@ -259,7 +259,7 @@ template<typename OpType>
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
                         // TODO: later probably replace this. Right now we need extraZ sync for CosineSimilarity ONLY
-						if (tid == 0 && extraZ[0] != 0.0 && extraZ[1] != 0.0) {
+						if (tid == 0 && extraZ[0] != (T) 0.0 && extraZ[1] != (T) 0.0) {
 						    extraZ[0] = 0.0;
 						    extraZ[1] = 0.0;
                             for (int i = 0; i < gridDim.x; i++) {
