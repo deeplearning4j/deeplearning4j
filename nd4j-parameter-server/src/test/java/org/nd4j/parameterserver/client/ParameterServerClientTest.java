@@ -6,10 +6,7 @@ import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
-import org.nd4j.aeron.ipc.NDArrayHolder;
-import org.nd4j.aeron.ipc.response.AeronNDArrayResponder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingListener;
@@ -17,7 +14,6 @@ import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;

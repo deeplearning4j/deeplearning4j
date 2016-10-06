@@ -47,11 +47,16 @@ public class ParameterAveragingSubscriber {
     private boolean master = false;
     @Parameter(names={"-pm","--publishmaster"}, description = "Publish master url: host:port - this is for peer nodes needing to publish to another peer.", arity = 1)
     private String publishMasterUrl = "localhost:40123";
+    @Parameter(names={"-md","--mediadriverdirectory"}, description = "The media driver directory name. This is for when the media drier is started as a separate process.", arity = 1)
+    private String mediaDriverDirectoryName;
+
 
     private MediaDriver mediaDriver;
     private AeronNDArrayResponder responder;
     private AeronNDArraySubscriber subscriber;
     private   NDArrayCallback callback;
+
+
     /**
      * Allow passing in a
      * media driver that already exists
@@ -81,8 +86,10 @@ public class ParameterAveragingSubscriber {
         if(publishMasterUrl == null && !master)
             throw new IllegalStateException("Please specify a master url or set master to true");
 
-        //allows passing in a media driver for things like uni tests
-        if(mediaDriver == null) {
+        //allows passing in a media driver for things like unit tests
+        //also ensure we don't use a media driver when a directory is specified
+        //for a remote one
+        if(mediaDriver == null && mediaDriverDirectoryName == null) {
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
                     .threadingMode(ThreadingMode.DEDICATED)
                     .dirsDeleteOnStart(deleteDirectoryOnStart)
@@ -92,15 +99,12 @@ public class ParameterAveragingSubscriber {
                     .senderIdleStrategy(new BusySpinIdleStrategy());
 
             mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx);
+            //set the variable since we are using a media dirver directly
+            mediaDriverDirectoryName = mediaDriver.aeronDirectoryName();
             log.info("Using media driver directory " + mediaDriver.aeronDirectoryName());
         }
 
-        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .keepAliveInterval(1000)
-                .errorHandler(e -> log.error(e.toString(), e));
+
 
 
         if(master) {
@@ -153,7 +157,7 @@ public class ParameterAveragingSubscriber {
         Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
                 .availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .aeronDirectoryName(mediaDriverDirectoryName)
                 .keepAliveInterval(10000)
                 .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
