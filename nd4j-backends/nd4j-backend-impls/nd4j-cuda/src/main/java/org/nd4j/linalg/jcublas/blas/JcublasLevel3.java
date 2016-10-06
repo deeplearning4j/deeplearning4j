@@ -8,7 +8,9 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -56,7 +58,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.hgemm(
-                    new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    new PointerPointer(new Pointer[] {ctx.getHandle(), new CudaPointer(CudaEnvironment.getInstance().getCurrentDeviceArchitecture())}),
                     Order,
                     TransA,
                     TransB,
