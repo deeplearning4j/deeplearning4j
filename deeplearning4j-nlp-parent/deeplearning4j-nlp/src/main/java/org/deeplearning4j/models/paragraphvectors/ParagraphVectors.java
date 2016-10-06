@@ -135,8 +135,8 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(LabelledDocument document, double learningRate, double minLearningRate, int iterations) {
         if (document.getReferencedContent() != null) {
-            return inferVector(document.getReferencedContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
-        } else return inferVector(document.getContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+            return inferVector(document.getReferencedContent(), learningRate, minLearningRate, iterations);
+        } else return inferVector(document.getContent(), learningRate, minLearningRate, iterations);
     }
 
     /**
@@ -162,7 +162,7 @@ public class ParagraphVectors extends Word2Vec {
 
         initLearners();
 
-        INDArray inf = learner.inferSequence(sequence, 119, learningRate);
+        INDArray inf = learner.inferSequence(sequence, 119, learningRate, minLearningRate, iterations);
 
         return inf;
     }
@@ -174,7 +174,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(String text) {
-        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
@@ -184,7 +184,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(LabelledDocument document) {
-        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
@@ -194,7 +194,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(List<VocabWord> document) {
-        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
