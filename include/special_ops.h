@@ -1001,7 +1001,7 @@ namespace simdOps {
 
 			if (resultEWS >= 1) {
 				for (int i = threadIdx.x; i < length; i += blockDim.x) {
-					result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
+					result[i * resultEWS] = result[i * resultEWS] * ((T) 1.0 - result[i * resultEWS]);
 				}
 			}
 			else {

@@ -122,7 +122,7 @@ template<typename T>
 #endif
 		inline T nd4j_elu(T val) {
 			if (val >= (T) 0.0) return val;
-			else return nd4j_exp<T>(val) - 1.0;
+			else return nd4j_exp<T>(val) - (T) 1.0;
 			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
@@ -144,8 +144,8 @@ template<typename T>
 
 #endif
 		inline T nd4j_eluderivative(T val) {
-			if (val >= (T) 0.0f) return 1.0f;
-			else return nd4j_exp(val);
+			if (val >= (T) 0.0f) return (T) 1.0f;
+			else return nd4j_exp<T>(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
 		template<typename T>
@@ -161,7 +161,7 @@ template<typename T>
 
 #endif
 		inline T softplus(T val) {
-			return nd4j_log<T>(1.0f + nd4j_exp<T>(val));
+			return nd4j_log<T>((T) 1.0f + nd4j_exp<T>(val));
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -169,7 +169,7 @@ template<typename T>
 
 #endif
 		inline T nd4j_softsign(T val) {
-			return val / (1.0f + nd4j::math::nd4j_abs<T>(val));
+			return val / ((T) 1.0f + nd4j::math::nd4j_abs<T>(val));
 		}
 
 		template<typename T>
@@ -192,7 +192,7 @@ template<typename T>
 #endif
 		inline T nd4j_tanhderivative(T val) {
 			T tanh = nd4j_tanh(val);
-			return 1.0f - tanh * tanh;
+			return (T) 1.0f - tanh * tanh;
 		}
 		template<typename T>
 #ifdef __CUDACC__
@@ -201,7 +201,7 @@ template<typename T>
 #endif
 		inline T nd4j_sigmoidderivative(T val) {
 			T sigmoid = nd4j_sigmoid(val);
-			T out = sigmoid * (1.0f - sigmoid);
+			T out = sigmoid * ((T) 1.0f - sigmoid);
 			return out;
 		}
 
@@ -211,8 +211,8 @@ template<typename T>
 
 #endif
 		inline T nd4j_softsignderivative(T val) {
-			T y = 1.0f + nd4j_abs(val);
-			return 1.0f / (y * y);
+			T y = (T) 1.0f + nd4j_abs(val);
+			return (T) 1.0f / (y * y);
 		}
 		template<typename T>
 #ifdef __CUDACC__

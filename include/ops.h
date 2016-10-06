@@ -496,7 +496,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 * (1.0 - d1);
+			return d1 * ((T) 1.0 - d1);
 		}
 	};
 
@@ -576,8 +576,8 @@ namespace simdOps {
 			T max = params[1];
 			if (d1 >= min && d1 <= max)
 				return d1;
-			if (min == (T) 0.0 && max == (T) 1.0) {
-				T val = 1 / (1 + nd4j::math::nd4j_exp<T>(-d1));
+			if (min == (T) 0.0f && max == (T) 1.0f) {
+				T val = (T) 1.0f / ((T) 1.0f + nd4j::math::nd4j_exp<T>(-d1));
 				return (nd4j::math::nd4j_floor<T>(val * (max - min)) + min);
 			}
 
@@ -642,7 +642,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 * (1 - d1);
+			return d1 * ((T) 1.0 - d1);
 		}
 	};
 
@@ -827,10 +827,10 @@ namespace simdOps {
 			//const double cutOff = nd4j::math::nd4j_log(realMin);
 
 			T k = params[0];
-			if (d1 * k > - MIN_CUTFOFF)
-				return (T)(- MIN_CUTFOFF / k);
-			else if (d1 * k < MIN_CUTFOFF)
-				return (T)(MIN_CUTFOFF / k);
+			if (d1 * k > (T) - MIN_CUTFOFF)
+				return (T)((T)- MIN_CUTFOFF / k);
+			else if (d1 * k < (T) MIN_CUTFOFF)
+				return (T)((T) MIN_CUTFOFF / k);
 			return d1;
 		}
 	};
@@ -857,7 +857,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return 1.0 - d1;
+			return (T) 1.0 - d1;
 		}
 	};
 
@@ -1123,8 +1123,8 @@ namespace simdOps {
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			T bias = extraParams[1];
-			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (int) n))
-				/ (T)(n - 1.0);
+			return (reduction - (nd4j::math::nd4j_pow<T>(bias, (T) 2.0f) / (int) n))
+                / (n - (int) 1);
 		}
 	};
 
@@ -1642,8 +1642,8 @@ template<typename T>
 
 #ifdef __CUDACC__
 			T length = params[1];
-            int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+            T tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>((T) clock64() * (T) tid + (T) length * (T) tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
@@ -1661,12 +1661,12 @@ template<typename T>
 			T prob = params[0];
 #ifdef __CUDACC__
 			T length = params[1];
-			int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+			T tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>((T) clock64() * (T) tid + (T) length * (T) tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
-			return rnd >= prob ? 0 : d1 / prob;
+			return rnd >= prob ? (T) 0.0 : d1 / prob;
 		}
 	};
 

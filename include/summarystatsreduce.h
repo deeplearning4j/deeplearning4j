@@ -102,7 +102,7 @@ namespace functions {
 					return 0.0;
 				}
 
-				return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - 1.0);
+				return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - (T) 1.0);
 			}
 
 
@@ -112,9 +112,13 @@ namespace functions {
 				return M2 / n;
 			}
 
-			host_and_device T skewness() { return M2 > (T) 0.0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : 0; }
+			host_and_device T skewness() {
+                if (M2 > (T) 0.0) {
+                    return ((T) nd4j::math::nd4j_sqrt<T>(n)) * M3 / nd4j::math::nd4j_pow<T>(M2, (T) 1.5);
+                } else return 0.0;
+            }
 
-			host_and_device T kurtosis() { return M2 > (T) 0.0 ? n * M4 / (M2 * M2) : 0; }
+			host_and_device T kurtosis() { return M2 > (T) 0.0 ? n * M4 / (M2 * M2) : (T) 0.0; }
 
 			host_and_device T getM2() {
 				return M2;
