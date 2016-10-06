@@ -485,7 +485,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
             ret.variableWindows = this.variableWindows;
-
+            ret.seed = this.seed;
 
 
             ret.iterator = this.iterator;

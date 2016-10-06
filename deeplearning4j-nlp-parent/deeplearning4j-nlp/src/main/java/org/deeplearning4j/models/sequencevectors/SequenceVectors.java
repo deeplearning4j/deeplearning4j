@@ -628,6 +628,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> seed(long randomSeed) {
             // has no effect in original w2v actually
+            this.seed = randomSeed;
             return this;
         }
 
