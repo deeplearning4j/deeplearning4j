@@ -857,11 +857,6 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                      float16 *B, int ldb,
                      float beta,
                      float16 *C, int ldc) {
-    /*
-    __half *aPointer = reinterpret_cast<__half *>(A);
-    __half *bPointer = reinterpret_cast<__half *>(B);
-    __half *cPointer = reinterpret_cast<__half *>(C);
-    */
     cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
     int arch = getIntPtr(extraParams[1]);
 
@@ -871,17 +866,21 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
 
     // on these selected archs we run with cublasHgemm
     if (arch == 53 || arch == 60 || arch == 61){
-        nd4j::float16 hAlpha = alpha;
-        nd4j::float16 hBeta = beta;
+        __half *aPointer = reinterpret_cast<__half *>(A);
+        __half *bPointer = reinterpret_cast<__half *>(B);
+        __half *cPointer = reinterpret_cast<__half *>(C);
+
+        float16 hAlpha = alpha;
+        float16 hBeta = beta;
 
         cublasHgemm(*handle,
                 convertTranspose(TransA), convertTranspose(TransB),
                 M, N, K,
                 &hAlpha.data,
-                A, lda,
-                B, ldb,
+                aPointer, lda,
+                bPointer, ldb,
                 &hBeta.data,
-                C, ldc);
+                cPointer, ldc);
     } else {
         cublasSgemmEx(*handle,
                    convertTranspose(TransA),
