@@ -307,6 +307,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.UNK = configuration.getUNK();
             this.STOP = configuration.getSTOP();
             this.variableWindows = configuration.getVariableWindows();
+            this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
 
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());

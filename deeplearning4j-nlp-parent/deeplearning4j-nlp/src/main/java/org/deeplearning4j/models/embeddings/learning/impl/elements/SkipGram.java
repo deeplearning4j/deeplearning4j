@@ -223,6 +223,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         int label;
         //negative sampling
         if(negative > 0) {
+            if (syn1Neg == null) {
+                ((InMemoryLookupTable<T>) lookupTable).initNegative();
+                syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
+            }
+
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)
                     label = 1;

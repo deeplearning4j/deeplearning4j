@@ -822,6 +822,8 @@ public class WordVectorSerializer {
         // first we load syn0
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
         InMemoryLookupTable lookupTable = pair.getFirst();
+        lookupTable.setNegative(configuration.getNegative());
+        lookupTable.initNegative();
         VocabCache<VocabWord> vocab = (VocabCache<VocabWord>) pair.getSecond();
 
         // now we load syn1
