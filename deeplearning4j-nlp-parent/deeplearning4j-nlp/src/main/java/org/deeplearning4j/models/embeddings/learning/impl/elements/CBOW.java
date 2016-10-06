@@ -102,6 +102,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     public INDArray iterateSample(T currentWord, INDArray neu1, AtomicLong nextRandom, double alpha, boolean isInference) {
         INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
 
+        logger.info("HS: {}; Neg: {}", configuration.isUseHierarchicSoftmax(), configuration.getNegative() > 0);
+
         if (configuration.isUseHierarchicSoftmax())
             for (int p = 0; p < currentWord.getCodeLength(); p++) {
                 double f = 0;
@@ -132,9 +134,14 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row.dup());
             }
 
-        if (negative > 0 && !isInference) {
+        if (negative > 0) {
             int target = currentWord.getIndex();
             int label;
+
+            if (syn1Neg == null) {
+                ((InMemoryLookupTable<T>) lookupTable).initNegative();
+                syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
+            }
 
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)

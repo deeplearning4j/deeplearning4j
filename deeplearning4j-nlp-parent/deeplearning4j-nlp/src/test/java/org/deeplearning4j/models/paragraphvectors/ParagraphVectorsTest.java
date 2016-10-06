@@ -715,6 +715,8 @@ public class ParagraphVectorsTest {
 
         configuration.setIterations(5);
         configuration.setLearningRate(0.01);
+        configuration.setUseHierarchicSoftmax(true);
+        configuration.setNegative(0);
 
         Word2Vec w2v = WordVectorSerializer.readWord2VecFromText(
                 new File("/home/raver119/Downloads/gensim_models_for_dl4j/word"),
@@ -749,9 +751,11 @@ public class ParagraphVectorsTest {
 
         String textB = "The comment followed Trump doubling down on his false claims about the so-called birther conspiracy theory about Obama. People following the debate were immediately angered that Trump implied Obama is not his president.";
 
+        String textC = "practice of trust owned Trump for example indeed and conspiracy between provoke";
 
         INDArray arrayA = d2v.inferVector(textA);
         INDArray arrayB = d2v.inferVector(textB);
+        INDArray arrayC = d2v.inferVector(textC);
 
         assertNotEquals(null, arrayA);
         assertNotEquals(null, arrayB);
@@ -763,9 +767,11 @@ public class ParagraphVectorsTest {
         Transforms.unitVec(expB);
 
         double simX = Transforms.cosineSim(arrayA, arrayB);
+        double simC = Transforms.cosineSim(arrayA, arrayC);
         double simB = Transforms.cosineSim(arrayB, expB);
 
         log.info("SimilarityX: {}", simX);
+        log.info("SimilarityC: {}", simC);
         log.info("SimilarityB: {}", simB);
     }
 }
