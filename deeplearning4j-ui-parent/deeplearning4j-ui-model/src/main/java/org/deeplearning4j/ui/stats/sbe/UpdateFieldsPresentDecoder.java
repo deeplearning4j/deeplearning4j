@@ -93,6 +93,11 @@ public class UpdateFieldsPresentDecoder
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 13));
     }
+
+    public boolean dataSetMetaDataPresent()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 14));
+    }
     public String toString()
     {
         return appendTo(new StringBuilder(100)).toString();
@@ -226,6 +231,15 @@ public class UpdateFieldsPresentDecoder
                 builder.append(',');
             }
             builder.append("learningRatesPresent");
+            atLeastOne = true;
+        }
+        if (dataSetMetaDataPresent())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("dataSetMetaDataPresent");
             atLeastOne = true;
         }
         builder.append('}');

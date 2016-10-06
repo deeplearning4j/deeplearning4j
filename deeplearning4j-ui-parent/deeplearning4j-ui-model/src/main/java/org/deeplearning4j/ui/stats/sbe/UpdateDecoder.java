@@ -1867,6 +1867,340 @@ public class UpdateDecoder
         }
     }
 
+    private final DataSetMetaDataBytesDecoder dataSetMetaDataBytes = new DataSetMetaDataBytesDecoder();
+
+    public static long dataSetMetaDataBytesDecoderId()
+    {
+        return 500;
+    }
+
+    public DataSetMetaDataBytesDecoder dataSetMetaDataBytes()
+    {
+        dataSetMetaDataBytes.wrap(parentMessage, buffer);
+        return dataSetMetaDataBytes;
+    }
+
+    public static class DataSetMetaDataBytesDecoder
+        implements Iterable<DataSetMetaDataBytesDecoder>, java.util.Iterator<DataSetMetaDataBytesDecoder>
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
+        private UpdateDecoder parentMessage;
+        private DirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final UpdateDecoder parentMessage, final DirectBuffer buffer)
+        {
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            dimensions.wrap(buffer, parentMessage.limit());
+            blockLength = dimensions.blockLength();
+            count = dimensions.numInGroup();
+            index = -1;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public int actingBlockLength()
+        {
+            return blockLength;
+        }
+
+        public int count()
+        {
+            return count;
+        }
+
+        public java.util.Iterator<DataSetMetaDataBytesDecoder> iterator()
+        {
+            return this;
+        }
+
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public boolean hasNext()
+        {
+            return (index + 1) < count;
+        }
+
+        public DataSetMetaDataBytesDecoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        private final MetaDataBytesDecoder metaDataBytes = new MetaDataBytesDecoder();
+
+        public static long metaDataBytesDecoderId()
+        {
+            return 501;
+        }
+
+        public MetaDataBytesDecoder metaDataBytes()
+        {
+            metaDataBytes.wrap(parentMessage, buffer);
+            return metaDataBytes;
+        }
+
+        public static class MetaDataBytesDecoder
+            implements Iterable<MetaDataBytesDecoder>, java.util.Iterator<MetaDataBytesDecoder>
+        {
+            private static final int HEADER_SIZE = 4;
+            private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
+            private UpdateDecoder parentMessage;
+            private DirectBuffer buffer;
+            private int blockLength;
+            private int actingVersion;
+            private int count;
+            private int index;
+            private int offset;
+
+            public void wrap(
+                final UpdateDecoder parentMessage, final DirectBuffer buffer)
+            {
+                this.parentMessage = parentMessage;
+                this.buffer = buffer;
+                dimensions.wrap(buffer, parentMessage.limit());
+                blockLength = dimensions.blockLength();
+                count = dimensions.numInGroup();
+                index = -1;
+                parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+            }
+
+            public static int sbeHeaderSize()
+            {
+                return HEADER_SIZE;
+            }
+
+            public static int sbeBlockLength()
+            {
+                return 1;
+            }
+
+            public int actingBlockLength()
+            {
+                return blockLength;
+            }
+
+            public int count()
+            {
+                return count;
+            }
+
+            public java.util.Iterator<MetaDataBytesDecoder> iterator()
+            {
+                return this;
+            }
+
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            public boolean hasNext()
+            {
+                return (index + 1) < count;
+            }
+
+            public MetaDataBytesDecoder next()
+            {
+                if (index + 1 >= count)
+                {
+                    throw new java.util.NoSuchElementException();
+                }
+
+                offset = parentMessage.limit();
+                parentMessage.limit(offset + blockLength);
+                ++index;
+
+                return this;
+            }
+
+            public static int bytesId()
+            {
+                return 502;
+            }
+
+            public static String bytesMetaAttribute(final MetaAttribute metaAttribute)
+            {
+                switch (metaAttribute)
+                {
+                    case EPOCH: return "unix";
+                    case TIME_UNIT: return "nanosecond";
+                    case SEMANTIC_TYPE: return "";
+                }
+
+                return "";
+            }
+
+            public static byte bytesNullValue()
+            {
+                return (byte)-128;
+            }
+
+            public static byte bytesMinValue()
+            {
+                return (byte)-127;
+            }
+
+            public static byte bytesMaxValue()
+            {
+                return (byte)127;
+            }
+
+            public byte bytes()
+            {
+                return buffer.getByte(offset + 0);
+            }
+
+
+            public String toString()
+            {
+                return appendTo(new StringBuilder(100)).toString();
+            }
+
+            public StringBuilder appendTo(final StringBuilder builder)
+            {
+                builder.append('(');
+                //Token{signal=BEGIN_FIELD, name='bytes', description='null', id=502, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                //Token{signal=ENCODING, name='int8', description='null', id=-1, version=0, encodedLength=1, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                builder.append("bytes=");
+                builder.append(bytes());
+                builder.append(')');
+                return builder;
+            }
+        }
+
+        public String toString()
+        {
+            return appendTo(new StringBuilder(100)).toString();
+        }
+
+        public StringBuilder appendTo(final StringBuilder builder)
+        {
+            builder.append('(');
+            //Token{signal=BEGIN_GROUP, name='metaDataBytes', description='null', id=501, version=0, encodedLength=1, offset=0, componentTokenCount=9, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+            builder.append("metaDataBytes=[");
+            MetaDataBytesDecoder metaDataBytes = metaDataBytes();
+            if (metaDataBytes.count() > 0)
+            {
+                while (metaDataBytes.hasNext())
+                {
+                    metaDataBytes.next().appendTo(builder);
+                    builder.append(',');
+                }
+                builder.setLength(builder.length() - 1);
+            }
+            builder.append(']');
+            builder.append(')');
+            return builder;
+        }
+    }
+
+    public static int dataSetMetaDataClassNameId()
+    {
+        return 1100;
+    }
+
+    public static String dataSetMetaDataClassNameCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String dataSetMetaDataClassNameMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int dataSetMetaDataClassNameHeaderLength()
+    {
+        return 4;
+    }
+
+    public int dataSetMetaDataClassNameLength()
+    {
+        final int limit = parentMessage.limit();
+        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+    }
+
+    public int getDataSetMetaDataClassName(final MutableDirectBuffer dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public int getDataSetMetaDataClassName(final byte[] dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public String dataSetMetaDataClassName()
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        parentMessage.limit(limit + headerLength + dataLength);
+        final byte[] tmp = new byte[dataLength];
+        buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+        final String value;
+        try
+        {
+            value = new String(tmp, "UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        return value;
+    }
+
     public String toString()
     {
         return appendTo(new StringBuilder(100)).toString();
@@ -1910,8 +2244,8 @@ public class UpdateDecoder
         builder.append("iterationCount=");
         builder.append(iterationCount());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=4, version=0, encodedLength=0, offset=16, componentTokenCount=18, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=16, componentTokenCount=16, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
+        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=4, version=0, encodedLength=0, offset=16, componentTokenCount=19, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=16, componentTokenCount=17, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
         builder.append("fieldsPresent=");
         builder.append(fieldsPresent());
         builder.append('|');
@@ -1980,6 +2314,24 @@ public class UpdateDecoder
             builder.setLength(builder.length() - 1);
         }
         builder.append(']');
+        builder.append('|');
+        //Token{signal=BEGIN_GROUP, name='dataSetMetaDataBytes', description='null', id=500, version=0, encodedLength=0, offset=-1, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        builder.append("dataSetMetaDataBytes=[");
+        DataSetMetaDataBytesDecoder dataSetMetaDataBytes = dataSetMetaDataBytes();
+        if (dataSetMetaDataBytes.count() > 0)
+        {
+            while (dataSetMetaDataBytes.hasNext())
+            {
+                dataSetMetaDataBytes.next().appendTo(builder);
+                builder.append(',');
+            }
+            builder.setLength(builder.length() - 1);
+        }
+        builder.append(']');
+        builder.append('|');
+        //Token{signal=BEGIN_VAR_DATA, name='dataSetMetaDataClassName', description='null', id=1100, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("dataSetMetaDataClassName=");
+        builder.append(dataSetMetaDataClassName());
 
         limit(originalLimit);
 
