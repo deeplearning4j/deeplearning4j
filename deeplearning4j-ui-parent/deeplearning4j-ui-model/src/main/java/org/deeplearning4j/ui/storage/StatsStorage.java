@@ -13,10 +13,13 @@ import java.util.List;
  * <p>
  * Key design ideas:
  * (a) Everything is stored as byte[]
- * (b) There are 3 types of things used to identify these arrays:
+ * (b) There are 4 types of things used to uniquely identify these arrays:
  * i.   SessionID: A unique identifier for a single session
- * ii.  WorkerID: A unique identifier for workers, within a session
- * iii. Timestamp: time at
+ * ii.  TypeID: A unique identifier for the listener or type of data
+ *      For example, we might have stats from 2 (or more) listeners with identical session and worker IDs
+ *      This is typically hard-coded, per listener class
+ * iii. WorkerID: A unique identifier for workers, within a session
+ * iv.  Timestamp: time at which the record was
  * For example, single machine training would have 1 session ID and 1 worker ID
  * Distributed training could have 1 session ID and multiple worker IDs
  * A hyperparameter optimization job could have multiple
@@ -26,7 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public interface StatsStorage {
+public interface StatsStorage extends StatsStorageRouter {
 
 
     /**
@@ -94,7 +97,7 @@ public interface StatsStorage {
      * @param workerID  worker ID
      * @return UpdateRecord containing the session/worker IDs, timestamp and content for the most recent update
      */
-    UpdateRecord getLatestUpdate(String sessionID, String workerID);
+    Persistable getLatestUpdate(String sessionID, String workerID);
 
     /**
      * Get the specified update (or null, if none exists for the given session/worker ids and timestamp)
@@ -104,7 +107,7 @@ public interface StatsStorage {
      * @param timestamp Timestamp
      * @return Update
      */
-    UpdateRecord getUpdate(String sessionID, String workerID, long timestamp);
+    Persistable getUpdate(String sessionID, String workerID, long timestamp);
 
     /**
      * Get the latest update for all workers, for the given session ID
@@ -112,7 +115,7 @@ public interface StatsStorage {
      * @param sessionID Session ID
      * @return List of updates for the given Session ID
      */
-    List<UpdateRecord> getLatestUpdateAllWorkers(String sessionID);
+    List<Persistable> getLatestUpdateAllWorkers(String sessionID);
 
     /**
      * Get all updates for the given session and worker ID, that occur after (not including) the given timestamp.
@@ -123,7 +126,7 @@ public interface StatsStorage {
      * @param timestamp Timestamp
      * @return List of records occurring after the given timestamp
      */
-    List<UpdateRecord> getAllUpdatesAfter(String sessionID, String workerID, long timestamp);
+    List<Persistable> getAllUpdatesAfter(String sessionID, String workerID, long timestamp);
 
 
     /**
@@ -147,25 +150,27 @@ public interface StatsStorage {
      */
     void putSessionMetaData(String sessionID, String staticInfoClass, String updateClass, Serializable otherMetaData);
 
-    /**
-     * Put a new static info record to the stats storage instance. If static info for the given session/worker IDs
-     * already exists, this will be replaced.
-     *
-     * @param sessionID  Session ID
-     * @param workerID   Worker ID
-     * @param staticInfo Bytes to put
-     */
-    void putStaticInfo(String sessionID, String workerID, byte[] staticInfo) throws IOException;
-
-    /**
-     * Put a new update for the given session/worker/timestamp.
-     *
-     * @param sessionID Session ID
-     * @param workerID  Worker ID
-     * @param timestamp Timestamp for the update
-     * @param update    Update to store
-     */
-    void putUpdate(String sessionID, String workerID, long timestamp, byte[] update);
+//    /**
+//     * Put a new static info record to the stats storage instance. If static info for the given session/worker IDs
+//     * already exists, this will be replaced.
+//     *
+//     * @param sessionID  Session ID
+//     * @param typeID     Type ID (identifies listeners or stats type for a given session)
+//     * @param workerID   Worker ID
+//     * @param staticInfo Bytes to put
+//     */
+//    void putStaticInfo(String sessionID, String typeID, String workerID, byte[] staticInfo);
+//
+//    /**
+//     * Put a new update for the given session/type/worker/timestamp.
+//     *
+//     * @param sessionID Session ID
+//     * @param workerID  Worker ID
+//     * @param typeID    Type ID (identifies listeners or stats type for a given session)
+//     * @param timestamp Timestamp for the update
+//     * @param update    Update to store
+//     */
+//    void putUpdate(String sessionID, String typeID, String workerID, long timestamp, byte[] update);
 
 
     // ----- Listeners -----
@@ -197,29 +202,29 @@ public interface StatsStorage {
      */
     List<StatsStorageListener> getListeners();
 
-    /**
-     * UpdateRecord is a simple object that stores a session ID, worker ID, timestamp and byte[] record
-     */
-    @AllArgsConstructor
-    @Data
-    class UpdateRecord implements Comparable<UpdateRecord>, Serializable {
-        private final String sessionID;
-        private final String workerID;
-        private final long timestamp;
-        private final byte[] record;
-
-        public String toString() {
-            return "UpdateRecord(sessionID=" + this.sessionID + ", workerID=" + this.workerID + ", timestamp=" + this.timestamp + ", recordLength=" + this.record.length + ")";
-        }
-
-        @Override
-        public int compareTo(UpdateRecord o) {
-            if (!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
-            if (!workerID.equals(o.workerID)) return workerID.compareTo(o.workerID);
-            if (timestamp != o.timestamp) return Long.compare(timestamp, o.timestamp);
-            return 0;
-        }
-    }
+//    /**
+//     * UpdateRecord is a simple object that stores a session ID, worker ID, timestamp and byte[] record
+//     */
+//    @AllArgsConstructor
+//    @Data
+//    class UpdateRecord implements Comparable<UpdateRecord>, Serializable {
+//        private final String sessionID;
+//        private final String workerID;
+//        private final long timestamp;
+//        private final byte[] record;
+//
+//        public String toString() {
+//            return "UpdateRecord(sessionID=" + this.sessionID + ", workerID=" + this.workerID + ", timestamp=" + this.timestamp + ", recordLength=" + this.record.length + ")";
+//        }
+//
+//        @Override
+//        public int compareTo(UpdateRecord o) {
+//            if (!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
+//            if (!workerID.equals(o.workerID)) return workerID.compareTo(o.workerID);
+//            if (timestamp != o.timestamp) return Long.compare(timestamp, o.timestamp);
+//            return 0;
+//        }
+//    }
 
     @AllArgsConstructor
     @Data
