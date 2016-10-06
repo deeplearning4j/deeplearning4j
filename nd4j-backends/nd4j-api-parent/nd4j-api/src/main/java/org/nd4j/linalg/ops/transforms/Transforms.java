@@ -456,6 +456,29 @@ public class Transforms {
         return max(ndArray, k, Nd4j.copyOnOps);
     }
 
+    /**
+     * Stabilize to be within a range of k
+     *
+     * @param ndArray tbe ndarray
+     * @param k
+     * @param dup
+     * @return
+     */
+    public static INDArray min(INDArray ndArray, double k, boolean dup) {
+        return exec(dup ? new ScalarMin(ndArray.dup(), k) : new ScalarMin(ndArray, k));
+    }
+
+    /**
+     * Stabilize to be within a range of k
+     *
+     * @param ndArray tbe ndarray
+     * @param k
+     * @return
+     */
+    public static INDArray min(INDArray ndArray, double k) {
+        return min(ndArray, k, Nd4j.copyOnOps);
+    }
+
 
     /**
      * Stabilize to be within a range of k
