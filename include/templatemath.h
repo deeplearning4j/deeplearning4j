@@ -341,6 +341,19 @@ template<typename T>
 		__host__ __device__
 #endif
 
+		inline float16 nd4j_ceil<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hceil(val.data)
+#else
+			return ceilf(val);
+#endif
+		}
+
+		template<>
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+
 		inline float nd4j_ceil<float>(float val1) {
 			return ceilf(val1);
 		}
@@ -369,6 +382,19 @@ template<typename T>
 			return (float16) cosf((float) val);
 		}
 #endif
+
+
+		template<>
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+		inline float16 nd4j_cos<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+			return hcos(val.data);
+#else
+			return cosf(val);
+#endif
+		}
 
 		template<>
 #ifdef __CUDACC__
