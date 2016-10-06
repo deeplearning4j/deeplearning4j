@@ -846,6 +846,9 @@ void Nd4jBlas::dspr2(Nd4jPointer *extraParams, int Order, int Uplo,
  * GEMM
  * ------------------------------------------------------
  */
+int getIntPtr(Nd4jPointer ptrToDeviceId) {
+    return (int)(Nd4jIndex)ptrToDeviceId;
+}
 
 void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB,
                      int M, int N, int K,
@@ -860,11 +863,18 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
     __half *cPointer = reinterpret_cast<__half *>(C);
     */
     cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
-/*
-    nd4j::float16 hAlpha = alpha;
-    nd4j::float16 hBeta = beta;
+    int arch = getIntPtr(extraParams[1]);
 
-    cublasHgemm(*handle,
+#ifdef CUDA_8
+    // CUDA_R_16F for CUDA 8
+    // CUBLAS_DATA_HALF for CUDA 7.5
+
+    // on these selected archs we run with cublasHgemm
+    if (arch == 53 || arch == 60 || arch == 61){
+        nd4j::float16 hAlpha = alpha;
+        nd4j::float16 hBeta = beta;
+
+        cublasHgemm(*handle,
                 convertTranspose(TransA), convertTranspose(TransB),
                 M, N, K,
                 &hAlpha.data,
@@ -872,12 +882,8 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                 B, ldb,
                 &hBeta.data,
                 C, ldc);
-*/
-
-#ifdef CUDA_8
-    // CUDA_R_16F for CUDA 8
-    // CUBLAS_DATA_HALF for CUDA 7.5
-    cublasSgemmEx(*handle,
+    } else {
+        cublasSgemmEx(*handle,
                    convertTranspose(TransA),
                    convertTranspose(TransB),
                    M, N, K,
@@ -886,6 +892,7 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
                    B, CUDA_R_16F, ldb,
                    &beta,
                    C, CUDA_R_16F, ldc);
+    }
 #else
     cublasSgemmEx(*handle,
                   convertTranspose(TransA),
