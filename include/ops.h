@@ -32,7 +32,7 @@
 // 610 is for tests only
 // 600 is Tesla P100
 // 530 is Tegra
-#if __CUDA_ARCH__ == 610 || __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 530
+#if __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 530
 #define NATIVE_HALFS
 #endif
 

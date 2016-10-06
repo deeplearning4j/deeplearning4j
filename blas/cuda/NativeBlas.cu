@@ -865,7 +865,7 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams, int Order, int TransA, int TransB
     // CUBLAS_DATA_HALF for CUDA 7.5
 
     // on these selected archs we run with cublasHgemm
-    if (arch == 53 || arch == 60 || arch == 61){
+    if (arch == 53 || arch == 60){
         __half *aPointer = reinterpret_cast<__half *>(A);
         __half *bPointer = reinterpret_cast<__half *>(B);
         __half *cPointer = reinterpret_cast<__half *>(C);
