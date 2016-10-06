@@ -150,12 +150,14 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
      * @return
      */
     @Override
-    public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate) {
+    public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate, double minLearningRate, int iterations) {
         AtomicLong nextRandom = new AtomicLong(nr);
       //  Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
 
 //        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+
+        double stepDecay = Math.abs(learningRate - minLearningRate) / iterations;
 
         if(sequence.isEmpty())
             return null;
@@ -166,11 +168,13 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         labelArrays.add(ret);
 
-        for (int iter = 0; iter < configuration.getIterations(); iter++) {
+
+        for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                 dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, labelArrays, true);
             }
+            learningRate -= stepDecay;
         }
 
 
