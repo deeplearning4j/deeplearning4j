@@ -2462,9 +2462,11 @@ const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
         name = (char *) malloc(256 * sizeof(char));
         memset(name, 0, 256 * sizeof(char));
         nameSet = true;
+
+        // TODO: provide proper CPU model name here
+        sprintf(name, "x86-compatible CPU");
     }
 
-    // TODO: provide proper CPU model name here
-    sprintf(name, "x86-compatible CPU");
+
     return name;
 }
