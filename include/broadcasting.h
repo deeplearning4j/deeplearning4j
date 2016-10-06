@@ -196,7 +196,7 @@ template<typename OpType>
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
-				int *resultStride = shape::stride(tadShapeShapeInfo);
+				//int *resultStride = shape::stride(tadShapeShapeInfo);
                 int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
                 int tadRank = shape::rank(tadShapeShapeInfo);
                 int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
