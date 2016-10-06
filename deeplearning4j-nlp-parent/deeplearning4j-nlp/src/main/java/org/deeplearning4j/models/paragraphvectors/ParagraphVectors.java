@@ -704,6 +704,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.workers = this.workers;
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
+            ret.seed = this.seed;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;

@@ -242,7 +242,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
     public synchronized void initNegative() {
-        log.info("negative: {}; syn1Neg: {};", negative, syn1Neg);
         if(negative > 0 && syn1Neg == null) {
             syn1Neg = Nd4j.zeros(syn0.shape());
             makeTable(Math.max(expTable.length, 100000),0.75);
