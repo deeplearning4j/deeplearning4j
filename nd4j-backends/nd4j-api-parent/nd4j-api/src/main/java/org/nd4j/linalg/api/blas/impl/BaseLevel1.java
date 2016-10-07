@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -432,8 +433,10 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     public void scal(int N, double alpha, INDArray X) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dscal(N, alpha, X, BlasBufferUtil.getBlasStride(X));
-        else
+        else if(X.data().dataType() == DataBuffer.Type.FLOAT)
             sscal(N, (float) alpha, X, BlasBufferUtil.getBlasStride(X));
+        else if (X.data().dataType() == DataBuffer.Type.HALF)
+            Nd4j.getExecutioner().exec(new ScalarMultiplication(X, alpha));
     }
 
     /**
