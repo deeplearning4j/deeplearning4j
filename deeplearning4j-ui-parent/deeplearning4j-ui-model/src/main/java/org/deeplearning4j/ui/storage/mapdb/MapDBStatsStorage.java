@@ -143,6 +143,26 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
+    public List<String> listTypeIDsForSession(String sessionID) {
+        Set<String> typeIDs = new HashSet<>();
+        for(SessionTypeId st : storageMetaData.keySet()){
+            if(!sessionID.equals(st.getSessionID())) continue;
+            typeIDs.add(st.getTypeID());
+        }
+
+        for(SessionTypeWorkerId stw : staticInfo.keySet()){
+            if(!sessionID.equals(stw.getSessionID())) continue;
+            typeIDs.add(stw.getTypeID());
+        }
+        for(SessionTypeWorkerId stw : updates.keySet()){
+            if(!sessionID.equals(stw.getSessionID())) continue;
+            typeIDs.add(stw.getTypeID());
+        }
+
+        return new ArrayList<>(typeIDs);
+    }
+
+    @Override
     public List<String> listWorkerIDsForSession(String sessionID) {
         List<String> out = new ArrayList<>();
         for (SessionTypeWorkerId ids : staticInfo.keySet()) {

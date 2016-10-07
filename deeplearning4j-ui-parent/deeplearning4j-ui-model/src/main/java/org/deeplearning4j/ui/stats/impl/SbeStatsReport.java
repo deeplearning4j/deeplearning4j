@@ -642,7 +642,7 @@ public class SbeStatsReport implements StatsReport {
             for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
                 for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
+                    if (map == null || map.size() == 0) continue;
                     if (map.containsKey(s)) summaryStatsCount++;
                 }
             }
@@ -650,10 +650,11 @@ public class SbeStatsReport implements StatsReport {
             UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
 
             //Summary stats
+            int tempCount = 0;
             for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
                 for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
+                    if (map == null || map.size() == 0) continue;
                     appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
                 }
             }
@@ -670,7 +671,7 @@ public class SbeStatsReport implements StatsReport {
             if (nHistogramsThisParam > 0) {
                 for (StatsType statsType : StatsType.values()) {
                     Map<String, Histogram> map = histograms.get(statsType);
-                    if (map == null) continue;
+                    if (map == null || !map.containsKey(s)) continue;
                     Histogram h = map.get(s);   //Histogram for StatsType for this parameter
                     double min;
                     double max;

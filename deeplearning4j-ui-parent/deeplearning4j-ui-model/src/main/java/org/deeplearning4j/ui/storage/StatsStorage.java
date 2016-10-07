@@ -9,13 +9,13 @@ import java.util.List;
  * <p>
  * Key design ideas:
  * (a) Two types of storable objects:
- *     i.  {@link Persistable} objects, for once per session objects ("static info") and also for periodically reported data ("updates")
- *     ii. {@link StorageMetaData} objects, for
+ * i.  {@link Persistable} objects, for once per session objects ("static info") and also for periodically reported data ("updates")
+ * ii. {@link StorageMetaData} objects, for
  * (b) There are 4 types of things used to uniquely identify these Persistable objects:<br>
  * i.   SessionID: A unique identifier for a single session<br>
  * ii.  TypeID: A unique identifier for the listener or type of data<br>
- *      For example, we might have stats from 2 (or more) listeners with identical session and worker IDs<br>
- *      This is typically hard-coded, per listener class<br>
+ * For example, we might have stats from 2 (or more) listeners with identical session and worker IDs<br>
+ * This is typically hard-coded, per listener class<br>
  * iii. WorkerID: A unique identifier for workers, within a session<br>
  * iv.  Timestamp: time at which the record was created<br>
  * For example, single machine training (with 1 listener) would have 1 session ID, 1 type ID, 1 worker ID, and multiple timestamps.<br>
@@ -60,6 +60,14 @@ public interface StatsStorage extends StatsStorageRouter {
      * @return Static info, or null if none has been reported
      */
     Persistable getStaticInfo(String sessionID, String typeID, String workerID);
+
+    /**
+     * Get the list of type IDs for the given session ID
+     *
+     * @param sessionID Session ID to query
+     * @return List of type IDs
+     */
+    List<String> listTypeIDsForSession(String sessionID);
 
     /**
      * For a given session ID, list all of the known worker IDs
@@ -129,7 +137,7 @@ public interface StatsStorage extends StatsStorageRouter {
     /**
      * Get the session metadata, if any has been registered via {@link #putSessionMetaData(String, String, String, Serializable)}
      *
-     * @param sessionID    Session ID to get metadat
+     * @param sessionID Session ID to get metadat
      * @return Session metadata, or null if none is available
      */
     StorageMetaData getStorageMetaData(String sessionID, String typeID);
