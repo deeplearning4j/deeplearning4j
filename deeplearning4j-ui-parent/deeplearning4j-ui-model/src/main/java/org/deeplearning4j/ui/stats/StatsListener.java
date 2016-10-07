@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
+ * <p>
+ * Stats are collected and passed on to a {@link StatsStorageRouter}.
  *
  * @author Alex Black
  */
@@ -329,7 +331,9 @@ public class StatsListener implements IterationListener {
     }
 
     private void doInit(Model model){
+        long initTime = System.currentTimeMillis(); //TODO support NTP
         StatsInitializationReport initReport = new SbeStatsInitializationReport();
+        initReport.reportIDs(sessionID, TYPE_ID, workerID, initTime);
 
         if(initConfig.collectSoftwareInfo()){
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
@@ -409,12 +413,8 @@ public class StatsListener implements IterationListener {
         }
 
         StorageMetaData meta = new StorageMetaData(
-                System.currentTimeMillis(),     //TODO: support NTP implementation
-                "", //TODO  Session ID
-                TYPE_ID,
-                "", //TODO  Worker ID
-                SbeStatsInitializationReport.class,
-                SbeStatsReport.class);
+                initTime, sessionID, TYPE_ID, workerID,
+                SbeStatsInitializationReport.class, SbeStatsReport.class);
 
         List<String> paramNames = new ArrayList<>(model.paramTable().keySet());
         this.paramNames = paramNames.toArray(new String[paramNames.size()]);
