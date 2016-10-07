@@ -15,10 +15,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.Arrays;
 
 /**
- * Created by Alex on 07/10/2016.
+ * StorageMetaData: stores information about a given session: for example, the types of the static and update information.
+ *
+ * @author Alex Black
  */
 @Data
 public class StorageMetaData implements Persistable {

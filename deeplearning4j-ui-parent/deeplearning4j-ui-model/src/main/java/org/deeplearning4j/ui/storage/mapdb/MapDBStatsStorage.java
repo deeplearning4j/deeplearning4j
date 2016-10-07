@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.storage.mapdb;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.ui.stats.impl.SbeUtil;
-import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
+import org.deeplearning4j.ui.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.Persistable;
 import org.deeplearning4j.ui.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.StorageMetaData;
@@ -14,7 +14,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Created by Alex on 02/10/2016.
+ *
+ *
+ * @author Alex Black
  */
 public class MapDBStatsStorage implements StatsStorage {
 

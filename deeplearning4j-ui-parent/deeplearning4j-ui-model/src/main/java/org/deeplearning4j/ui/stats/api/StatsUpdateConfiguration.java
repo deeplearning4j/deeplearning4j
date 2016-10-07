@@ -1,13 +1,13 @@
 package org.deeplearning4j.ui.stats.api;
 
 /**
- * Similar to {@link StatsInitializationConfiguration}, StatsListenerConfiguration is an interface defining the stats
+ * Similar to {@link StatsInitializationConfiguration}, StatsUpdateConfiguration is an interface defining the stats
  * that should be collected and reported periodically.
  * In some implementations, this configuration may vary over time (i.e., stats may in principle be reconfigured by the user)
  *
  * @author Alex Black
  */
-public interface StatsListenerConfiguration {
+public interface StatsUpdateConfiguration {
 
     /**
      * Get the reporting frequency, in terms of listener calls
