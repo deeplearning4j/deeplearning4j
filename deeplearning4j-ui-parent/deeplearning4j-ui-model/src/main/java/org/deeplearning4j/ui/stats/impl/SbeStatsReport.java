@@ -408,6 +408,8 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public int encodingLengthBytes() {
+        //TODO convert Strings to byte[] only once
+
         //First: determine buffer size.
         //(a) Header: 8 bytes (4x uint16 = 8 bytes)
         //(b) Fixed length entries length (sie.BlockLength())
@@ -415,10 +417,10 @@ public class SbeStatsReport implements StatsReport {
         //(d) Group 2: Performance stats
         //(e) Group 3: GC stats
         //(f) Group 4: Per parameter performance stats
-        //Here: no variable length String fields, outside of the GC name group...
+        //Variable length String fields: 4 - session/type/worker IDs and metadata -> 4*4=16 bytes header, plus content
 
         UpdateEncoder ue = new UpdateEncoder();
-        int bufferSize = 8 + ue.sbeBlockLength();
+        int bufferSize = 8 + ue.sbeBlockLength() + 16;
 
         //Memory use group length...
         int memoryUseCount;
@@ -493,8 +495,13 @@ public class SbeStatsReport implements StatsReport {
             }
         }
 
+        //Session/worker IDs
+        byte[] bSessionID = SbeUtil.toBytes(true, sessionID);
+        byte[] bTypeID = SbeUtil.toBytes(true, typeID);
+        byte[] bWorkerID = SbeUtil.toBytes(true, workerID);
+        bufferSize += bSessionID.length + bTypeID.length + bWorkerID.length;
+
         //Metadata class name:
-        bufferSize += 4; // 4 bytes header (always present)
         byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
         bufferSize += metaDataClassNameBytes.length;
 
@@ -685,6 +692,14 @@ public class SbeStatsReport implements StatsReport {
                 }
             }
         }
+
+        //Session/worker IDs
+        byte[] bSessionID = SbeUtil.toBytes(true, sessionID);
+        byte[] bTypeID = SbeUtil.toBytes(true, typeID);
+        byte[] bWorkerID = SbeUtil.toBytes(true, workerID);
+        ue.putSessionID(bSessionID, 0, bSessionID.length);
+        ue.putTypeID(bTypeID, 0, bTypeID.length);
+        ue.putWorkerID(bWorkerID, 0, bWorkerID.length);
 
         //Class name for DataSet metadata
         byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
@@ -893,6 +908,11 @@ public class SbeStatsReport implements StatsReport {
             }
             this.dataSetMetaData.add(b);
         }
+
+        //IDs
+        this.sessionID = ud.sessionID();
+        this.typeID = ud.typeID();
+        this.workerID = ud.workerID();
 
         //Variable length: DataSet metadata class name
         this.metaDataClassName = ud.dataSetMetaDataClassName();

@@ -170,13 +170,17 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //(b) Fixed length entries length (sie.BlockLength())
         //(c) Group 1: Hardware devices (GPUs) max memory: 4 bytes header + nEntries * 8 (int64) + nEntries * variable length Strings (header + content)  = 4 + 8*n + content
         //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
-        //(e) Variable length fields: 12 String length fields. Size: 4 bytes header, plus content. 48 bytes header
+        //(e) Variable length fields: 15 String length fields. Size: 4 bytes header, plus content. 60 bytes header
         //Fixed length + repeating groups + variable length...
         StaticInfoEncoder sie = new StaticInfoEncoder();
-        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 48; //header + fixed values + group headers + variable length headers
+        int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 60; //header + fixed values + group headers + variable length headers
 
         //For variable length field lengths: easist way is simply to convert to UTF-8
         //Of course, it is possible to calculate it first - but we might as well convert (1 pass), rather than count then convert (2 passes)
+        byte[] bSessionId = SbeUtil.toBytes(true, sessionID);
+        byte[] bTypeId = SbeUtil.toBytes(true, typeID);
+        byte[] bWorkerId = SbeUtil.toBytes(true, workerID);
+
         byte[] bswArch = SbeUtil.toBytes(hasSoftwareInfo, swArch);
         byte[] bswOsName = SbeUtil.toBytes(hasSoftwareInfo, swOsName);
         byte[] bswJvmName = SbeUtil.toBytes(hasSoftwareInfo, swJvmName);
@@ -192,6 +196,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
         byte[][] bhwDeviceDescription = SbeUtil.toBytes(hasHardwareInfo, hwDeviceDescription);
         byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
+
+        bufferSize += bSessionId.length + bTypeId.length + bWorkerId.length;
 
         if (hasSoftwareInfo) {
             bufferSize += SbeUtil.length(bswArch);
@@ -236,6 +242,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
         StaticInfoEncoder sie = new StaticInfoEncoder();
+
+        byte[] bSessionId = SbeUtil.toBytes(true, sessionID);
+        byte[] bTypeId = SbeUtil.toBytes(true, typeID);
+        byte[] bWorkerId = SbeUtil.toBytes(true, workerID);
 
         byte[] bswArch = SbeUtil.toBytes(hasSoftwareInfo, swArch);
         byte[] bswOsName = SbeUtil.toBytes(hasSoftwareInfo, swOsName);
@@ -291,7 +301,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         }
 
         //In the case of !hasSoftwareInfo: these will all be empty byte arrays... still need to encode them (for 0 length) however
-        sie.putSwArch(bswArch, 0, bswArch.length)
+        sie.putSessionID(bSessionId, 0, bSessionId.length)
+                .putTypeID(bTypeId, 0, bTypeId.length)
+                .putWorkerID(bWorkerId, 0, bWorkerId.length)
+                .putSwArch(bswArch, 0, bswArch.length)
                 .putSwOsName(bswOsName, 0, bswOsName.length)
                 .putSwJvmName(bswJvmName, 0, bswJvmName.length)
                 .putSwJvmVersion(bswJvmVersion, 0, bswJvmVersion.length)
@@ -332,7 +345,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //TODO: in general, we should check the header, version, schema etc. But we don't have any other versions yet.
 
         sid.wrap(buffer, headerLength, blockLength, version);
-        long time = sid.time(); //TODO
+        timeStamp = sid.time();
         InitFieldsPresentDecoder fields = sid.fieldsPresent();
         hasSoftwareInfo = fields.softwareInfo();
         hasHardwareInfo = fields.hardwareInfo();
@@ -367,6 +380,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         }
         //Variable length data. Even if it is missing: still needs to be read, to advance buffer
         //Again, the exact order of these calls matters here
+        sessionID = sid.sessionID();
+        typeID = sid.typeID();
+        workerID = sid.workerID();
         swArch = sid.swArch();
         swOsName = sid.swOsName();
         swJvmName = sid.swJvmName();
