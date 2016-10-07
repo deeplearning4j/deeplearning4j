@@ -42,6 +42,7 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
             if(!seen.contains(token)) {
                 cache.incrementDocCount(token);
             }
+            seen.add(token);
         }
     }
 
