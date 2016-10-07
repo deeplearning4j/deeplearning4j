@@ -14,7 +14,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- *
+ * An implementation of the {@link StatsStorage} interface, backed by MapDB
  *
  * @author Alex Black
  */
@@ -203,7 +203,6 @@ public class MapDBStatsStorage implements StatsStorage {
             maxTime = Math.max(maxTime, l);
         }
         return map.get(maxTime);
-//        return new UpdateRecord(sessionID, workerID, max, map.get(max));
     }
 
     @Override
@@ -448,31 +447,6 @@ public class MapDBStatsStorage implements StatsStorage {
         }
     }
 
-//    private static class SessionMetaDataSerializer implements Serializer<SessionMetaData> {
-//
-//        @Override
-//        public void serialize(@NotNull DataOutput2 out, @NotNull SessionMetaData value) throws IOException {
-//            ObjectOutputStream out2 = new ObjectOutputStream(out);
-//            out2.writeObject(value);
-//            out2.flush();
-//        }
-//
-//        @Override
-//        public SessionMetaData deserialize(@NotNull DataInput2 in, int available) throws IOException {
-//            try {
-//                ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
-//                return (SessionMetaData) in2.readObject();
-//            } catch (ClassNotFoundException e) {
-//                throw new IOException(e);
-//            }
-//        }
-//
-//        @Override
-//        public int compare(SessionMetaData m1, SessionMetaData m2) {
-//            return m1.compareTo(m2);
-//        }
-//    }
-
     private static class PersistableSerializer<T extends Persistable> implements Serializer<T>{
 
         @Override
@@ -521,7 +495,5 @@ public class MapDBStatsStorage implements StatsStorage {
             return p1.getWorkerID().compareTo(p2.getWorkerID());
         }
     }
-
-//    private static class StorageMetaDataSerializer implements Serial
 
 }
