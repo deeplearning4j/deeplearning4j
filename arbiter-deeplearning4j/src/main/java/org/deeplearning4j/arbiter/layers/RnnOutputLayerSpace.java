@@ -52,7 +52,7 @@ public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
         return "RnnOutputLayerSpace(" + super.toString(delim) + ")";
     }
 
-    public static class Builder extends BaseOutputLayerSpace.Builder<RnnOutputLayer> {
+    public static class Builder extends BaseOutputLayerSpace.Builder<Builder> {
 
         @Override
         @SuppressWarnings("unchecked")
