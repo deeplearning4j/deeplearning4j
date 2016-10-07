@@ -87,10 +87,8 @@ public class StorageMetaData implements Persistable {
     @Override
     public byte[] encode() {
         byte[] bytes = new byte[encodingLengthBytes()];
-
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
         encode(buffer);
-
         return bytes;
     }
 

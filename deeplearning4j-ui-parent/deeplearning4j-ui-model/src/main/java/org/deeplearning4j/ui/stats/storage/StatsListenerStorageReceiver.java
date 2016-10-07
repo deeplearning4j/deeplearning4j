@@ -55,7 +55,7 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
         String sessionID = null;    //TODO
         String workerID = null;     //TODO
         //TODO proper types for the state report...
-        long time = statsReport.getTime();
+//        long time = statsReport.getTime();
 //        statsStorage.putUpdate(sessionID, workerID, time, statsReport.toByteArray());
         throw new UnsupportedOperationException("Not yet implemented");
     }

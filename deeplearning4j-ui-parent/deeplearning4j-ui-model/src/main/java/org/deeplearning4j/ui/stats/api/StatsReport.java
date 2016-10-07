@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.stats.api;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.Persistable;
 
 import java.io.Serializable;
 import java.util.List;
@@ -13,7 +14,9 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public interface StatsReport {
+public interface StatsReport extends Persistable {
+
+    void reportIDs(String sessionID, String typeID, String workerID, long timestamp);
 
     /**
      * Report the current iteration number
@@ -24,16 +27,6 @@ public interface StatsReport {
      * Get the current iteration number
      */
     int getIterationCount();
-
-    /**
-     * Report the current time for this report, in epoch (ms) format
-     */
-    void reportTime(long currentTime);
-
-    /**
-     * Get the report time (ms, epoch format)
-     */
-    long getTime();
 
     /**
      * Report the number of milliseconds required to calculate all of the stats. This is effectively the
@@ -312,16 +305,4 @@ public interface StatsReport {
      * @return True if DataSet metadata is present
      */
     boolean hasDataSetMetaData();
-
-    /**
-     * Serialize the StatsReport to a byte[] for storage etc
-     */
-    byte[] toByteArray();
-
-    /**
-     * Deserialize the StatsReport contents from a given byte[]
-     *
-     * @param bytes Bytes with content
-     */
-    void fromByteArray(byte[] bytes);
 }
