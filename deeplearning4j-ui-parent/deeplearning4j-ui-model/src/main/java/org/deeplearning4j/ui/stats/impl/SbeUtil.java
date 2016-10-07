@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.stats.impl;
 
+import java.io.*;
 import java.nio.charset.Charset;
 
 /**
@@ -55,4 +56,24 @@ public class SbeUtil {
         return b;
     }
 
+    public static byte[] toBytesSerializable(Serializable serializable){
+        if(serializable == null) return EMPTY_BYTES;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+            oos.writeObject(serializable);
+        }catch (IOException e){
+            throw new RuntimeException("Unexpected IOException during serialization",e);
+        }
+        return baos.toByteArray();
+    }
+
+    public static Serializable fromBytesSerializable(byte[] bytes){
+        if(bytes == null || bytes.length == 0) return null;
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        try(ObjectInputStream ois = new ObjectInputStream(bais)){
+            return (Serializable)ois;
+        } catch (IOException e) {
+            throw new RuntimeException("Unexpected IOException during deserialization",e);
+        }
+    }
 }

@@ -40,7 +40,8 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
         String sessionID = null;    //TODO
         String workerID = null;     //TODO
         //TODO proper types for the init report...
-        statsStorage.putStaticInfo(sessionID, workerID, initializationReport.toByteArray());
+//        statsStorage.putStaticInfo(sessionID, workerID, initializationReport.toByteArray());
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -55,7 +56,8 @@ public class StatsListenerStorageReceiver implements StatsListenerReceiver {
         String workerID = null;     //TODO
         //TODO proper types for the state report...
         long time = statsReport.getTime();
-        statsStorage.putUpdate(sessionID, workerID, time, statsReport.toByteArray());
+//        statsStorage.putUpdate(sessionID, workerID, time, statsReport.toByteArray());
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

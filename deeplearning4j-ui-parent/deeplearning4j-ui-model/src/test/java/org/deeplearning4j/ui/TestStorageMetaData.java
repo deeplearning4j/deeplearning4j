@@ -3,6 +3,8 @@ package org.deeplearning4j.ui;
 import org.deeplearning4j.ui.storage.StorageMetaData;
 import org.junit.Test;
 
+import java.io.Serializable;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -14,8 +16,9 @@ public class TestStorageMetaData {
     @Test
     public void testStorageMetaData(){
 
+        Serializable extraMeta = "ExtraMetaData";
         StorageMetaData m = new StorageMetaData(
-                "sessionID", "typeID", "workerID", "org.some.class.InitType", "org.some.class.UpdateType");
+                "sessionID", "typeID", "workerID", "org.some.class.InitType", "org.some.class.UpdateType", extraMeta);
 
         byte[] bytes = m.encode();
         StorageMetaData m2 = new StorageMetaData();
@@ -31,7 +34,6 @@ public class TestStorageMetaData {
         m2.decode(bytes);
         assertEquals(m, m2);
         assertArrayEquals(bytes, m2.encode());
-
     }
 
 }
