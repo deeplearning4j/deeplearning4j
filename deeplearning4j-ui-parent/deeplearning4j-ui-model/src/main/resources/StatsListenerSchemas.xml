@@ -170,22 +170,25 @@
             <field name="deltaGCTimeMs" id="302" type="int32"/>
             <data name="gcName" id="1000" type="VarDataUTF8"/>
         </group>
+        <group name="paramNames" id="350" dimensionType="groupSizeEncoding">
+            <data name="paramName" id="1100" type="VarDataUTF8"/>
+        </group>
         <!-- Per parameter stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations; histograms for params/updates/activations -->
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
-            <field name="paramID" id="401" type="uint16"/>
-            <field name="learningRate" id="402" type="float"/>
-            <group name="summaryStat" id="403" dimensionType="groupSizeEncoding">
-                <field name="statType" id="404" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
-                <field name="summaryType" id="405" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
-                <field name="value" id="406" type="double"/>
+            <!--<field name="paramID" id="401" type="uint16"/>-->
+            <field name="learningRate" id="401" type="float"/>
+            <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
+                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
+                <field name="summaryType" id="404" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
+                <field name="value" id="405" type="double"/>
             </group>
-            <group name="histograms" id="407" dimensionType="groupSizeEncoding">
-                <field name="statType" id="408" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
-                <field name="minValue" id="409" type="double"/>
-                <field name="maxValue" id="410" type="double"/>
-                <field name="nBins" id="411" type="int32"/>
-                <group name="histogramCounts" id="412" dimensionType="groupSizeEncoding">
-                    <field name="binCount" id="413" type="uint32"/>
+            <group name="histograms" id="406" dimensionType="groupSizeEncoding">
+                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
+                <field name="minValue" id="408" type="double"/>
+                <field name="maxValue" id="409" type="double"/>
+                <field name="nBins" id="410" type="int32"/>
+                <group name="histogramCounts" id="411" dimensionType="groupSizeEncoding">
+                    <field name="binCount" id="412" type="uint32"/>
                 </group>
             </group>
         </group>
@@ -195,10 +198,10 @@
             </group>
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
-        <data name="sessionID" id="600" type="VarDataUTF8"/>
-        <data name="typeID" id="601" type="VarDataUTF8"/>
-        <data name="workerID" id="602" type="VarDataUTF8"/>
-        <data name="dataSetMetaDataClassName" id="1100" type="VarDataUTF8"/>
+        <data name="sessionID" id="1200" type="VarDataUTF8"/>
+        <data name="typeID" id="1201" type="VarDataUTF8"/>
+        <data name="workerID" id="1202" type="VarDataUTF8"/>
+        <data name="dataSetMetaDataClassName" id="1300" type="VarDataUTF8"/>
     </sbe:message>
 
     <!-- Message 3: Simple MetaData for class for StorageMetaData -->

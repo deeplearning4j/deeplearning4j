@@ -2,9 +2,10 @@ package org.deeplearning4j.ui.storage.mapdb;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.ui.stats.impl.SbeUtil;
+import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.Persistable;
 import org.deeplearning4j.ui.storage.StatsStorage;
-import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.StorageMetaData;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
@@ -253,9 +254,9 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public void putUpdate(Persistable update) {
-        logIDs(update.getSessionID(), update.getWorkerID(), update.getTypeID());
+        logIDs(update.getSessionID(), update.getTypeID(), update.getWorkerID());
 
-        Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getWorkerID(), update.getTypeID(), true);
+        Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getTypeID(), update.getWorkerID(), true);
         updateMap.put(update.getTimeStamp(), update);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
@@ -329,12 +330,17 @@ public class MapDBStatsStorage implements StatsStorage {
 
     }
 
-    @AllArgsConstructor
     @Data
     public static class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
         private final String sessionID;
         private final String typeID;
         private final String workerID;
+
+        public SessionTypeWorkerId(String sessionID, String typeID, String workerID) {
+            this.sessionID = sessionID;
+            this.typeID = typeID;
+            this.workerID = workerID;
+        }
 
         @Override
         public int compareTo(SessionTypeWorkerId o) {
@@ -454,7 +460,8 @@ public class MapDBStatsStorage implements StatsStorage {
             String className = value.getClass().getName();
             int length = className.length();
             out.writeInt(length);
-            out.writeUTF(className);
+            byte[] b = SbeUtil.toBytes(true, className);
+            out.write(b);
             value.encode(out);
         }
 
@@ -476,7 +483,7 @@ public class MapDBStatsStorage implements StatsStorage {
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-            int remainingLength = available - length;
+            int remainingLength = available - length - 4;   //-4 for int length value
             byte[] temp = new byte[remainingLength];
             input.readFully(temp);
             p.decode(temp);

@@ -53,7 +53,6 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private int modelNumLayers;
     private long modelNumParams;
 
-
     @Override
     public void reportIDs(String sessionID, String typeID, String workerID, long timeStamp) {
         this.sessionID = sessionID;
@@ -273,7 +272,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
         //Fixed length fields: always encoded, whether present or not.
         sie.wrap(buffer, offset)
-                .time(-1L)  //TODO
+                .time(timeStamp)
                 .fieldsPresent()
                 .softwareInfo(hasSoftwareInfo)
                 .hardwareInfo(hasHardwareInfo)

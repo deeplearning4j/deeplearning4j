@@ -71,9 +71,11 @@ public class SbeUtil {
         if(bytes == null || bytes.length == 0) return null;
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         try(ObjectInputStream ois = new ObjectInputStream(bais)){
-            return (Serializable)ois;
+            return (Serializable)ois.readObject();
         } catch (IOException e) {
             throw new RuntimeException("Unexpected IOException during deserialization",e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 }

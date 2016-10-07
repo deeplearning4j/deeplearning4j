@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 07/10/2016.
@@ -33,8 +34,17 @@ public class TestStorageMetaData {
         bytes = m.encode();
         m2 = new StorageMetaData();
         m2.decode(bytes);
-        assertEquals(m, m2);
+        //In practice, we don't want these things to ever be null anyway...
+        assertNullOrZeroLength(m2.getSessionID());
+        assertNullOrZeroLength(m2.getTypeID());
+        assertNullOrZeroLength(m2.getWorkerID());
+        assertNullOrZeroLength(m2.getInitTypeClass());
+        assertNullOrZeroLength(m2.getUpdateTypeClass());
         assertArrayEquals(bytes, m2.encode());
+    }
+
+    private static void assertNullOrZeroLength(String str) {
+        assertTrue(str == null || str.length() == 0);
     }
 
 }

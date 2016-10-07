@@ -669,6 +669,162 @@ public class UpdateEncoder
         }
     }
 
+    private final ParamNamesEncoder paramNames = new ParamNamesEncoder();
+
+    public static long paramNamesId()
+    {
+        return 350;
+    }
+
+    public ParamNamesEncoder paramNamesCount(final int count)
+    {
+        paramNames.wrap(parentMessage, buffer, count);
+        return paramNames;
+    }
+
+    public static class ParamNamesEncoder
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
+        private UpdateEncoder parentMessage;
+        private MutableDirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final UpdateEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
+        {
+            if (count < 0 || count > 65534)
+            {
+                throw new IllegalArgumentException("count outside allowed range: count=" + count);
+            }
+
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            actingVersion = SCHEMA_VERSION;
+            dimensions.wrap(buffer, parentMessage.limit());
+            dimensions.blockLength((int)0);
+            dimensions.numInGroup((int)count);
+            index = -1;
+            this.count = count;
+            blockLength = 0;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public ParamNamesEncoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        public static int paramNameId()
+        {
+            return 1100;
+        }
+
+        public static String paramNameCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String paramNameMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int paramNameHeaderLength()
+        {
+            return 4;
+        }
+
+        public ParamNamesEncoder putParamName(final DirectBuffer src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public ParamNamesEncoder putParamName(final byte[] src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public ParamNamesEncoder paramName(final String value)
+        {
+            final byte[] bytes;
+            try
+            {
+                bytes = value.getBytes("UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            final int length = bytes.length;
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+            return this;
+        }
+    }
+
     private final PerParameterStatsEncoder perParameterStats = new PerParameterStatsEncoder();
 
     public static long perParameterStatsId()
@@ -706,11 +862,11 @@ public class UpdateEncoder
             this.buffer = buffer;
             actingVersion = SCHEMA_VERSION;
             dimensions.wrap(buffer, parentMessage.limit());
-            dimensions.blockLength((int)6);
+            dimensions.blockLength((int)4);
             dimensions.numInGroup((int)count);
             index = -1;
             this.count = count;
-            blockLength = 6;
+            blockLength = 4;
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
@@ -721,7 +877,7 @@ public class UpdateEncoder
 
         public static int sbeBlockLength()
         {
-            return 6;
+            return 4;
         }
 
         public PerParameterStatsEncoder next()
@@ -737,28 +893,6 @@ public class UpdateEncoder
 
             return this;
         }
-
-        public static int paramIDNullValue()
-        {
-            return 65535;
-        }
-
-        public static int paramIDMinValue()
-        {
-            return 0;
-        }
-
-        public static int paramIDMaxValue()
-        {
-            return 65534;
-        }
-
-        public PerParameterStatsEncoder paramID(final int value)
-        {
-            buffer.putShort(offset + 0, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
-            return this;
-        }
-
 
         public static float learningRateNullValue()
         {
@@ -777,7 +911,7 @@ public class UpdateEncoder
 
         public PerParameterStatsEncoder learningRate(final float value)
         {
-            buffer.putFloat(offset + 2, value, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putFloat(offset + 0, value, java.nio.ByteOrder.LITTLE_ENDIAN);
             return this;
         }
 
@@ -786,7 +920,7 @@ public class UpdateEncoder
 
         public static long summaryStatId()
         {
-            return 403;
+            return 402;
         }
 
         public SummaryStatEncoder summaryStatCount(final int count)
@@ -888,7 +1022,7 @@ public class UpdateEncoder
 
         public static long histogramsId()
         {
-            return 407;
+            return 406;
         }
 
         public HistogramsEncoder histogramsCount(final int count)
@@ -1028,7 +1162,7 @@ public class UpdateEncoder
 
             public static long histogramCountsId()
             {
-                return 412;
+                return 411;
             }
 
             public HistogramCountsEncoder histogramCountsCount(final int count)
@@ -1282,7 +1416,7 @@ public class UpdateEncoder
 
     public static int sessionIDId()
     {
-        return 600;
+        return 1200;
     }
 
     public static String sessionIDCharacterEncoding()
@@ -1368,7 +1502,7 @@ public class UpdateEncoder
 
     public static int typeIDId()
     {
-        return 601;
+        return 1201;
     }
 
     public static String typeIDCharacterEncoding()
@@ -1454,7 +1588,7 @@ public class UpdateEncoder
 
     public static int workerIDId()
     {
-        return 602;
+        return 1202;
     }
 
     public static String workerIDCharacterEncoding()
@@ -1540,7 +1674,7 @@ public class UpdateEncoder
 
     public static int dataSetMetaDataClassNameId()
     {
-        return 1100;
+        return 1300;
     }
 
     public static String dataSetMetaDataClassNameCharacterEncoding()
