@@ -135,7 +135,7 @@ public interface StatsStorage extends StatsStorageRouter {
      * @param sessionID    Session ID to get metadat
      * @return Session metadata, or null if none is available
      */
-    SessionMetaData getSessionMetaData(String sessionID);
+    SessionMetaData getSessionMetaData(String sessionID, String typeID);
 
     // ----- Store new info -----
 
