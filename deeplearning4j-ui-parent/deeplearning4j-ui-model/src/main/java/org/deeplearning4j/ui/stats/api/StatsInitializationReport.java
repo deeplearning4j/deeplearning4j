@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.stats.api;
 
 import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.Persistable;
 
 /**
  * An interface used with {@link StatsListener} for reporting static information.
@@ -12,7 +13,9 @@ import org.deeplearning4j.ui.stats.StatsListener;
  *
  * @author Alex Black
  */
-public interface StatsInitializationReport {
+public interface StatsInitializationReport extends Persistable {
+
+    void reportIDs(String sessionID, String typeID, String workerID, long timestamp);
 
     /**
      * @param arch             Operating system architecture, as reported by JVM
@@ -53,18 +56,6 @@ public interface StatsInitializationReport {
      * @param numParams       Number of parameters in the model
      */
     void reportModelInfo(String modelClassName, String modelConfigJson, String[] paramNames, int numLayers, long numParams);
-
-    /**
-     * Convert the initialization report to a byte[] for storage
-     */
-    byte[] toByteArray();
-
-    /**
-     * Deserialize the Stats from a byte[]
-     *
-     * @param byteArray Source array to deserialize from
-     */
-    void fromByteArray(byte[] byteArray);
 
 
     boolean hasSoftwareInfo();
