@@ -1,6 +1,7 @@
 package jcuda.jcublas.ops;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -15,9 +16,12 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -187,5 +191,33 @@ public class SporadicTests {
         Properties properties = Nd4j.getExecutioner().getEnvironmentInformation();
 
         System.out.println("Props: " + properties.toString());
+    }
+
+
+    /**
+     * This is special test that checks for memory alignment
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testDTypeSpam() throws Exception {
+        Random rnd = new Random();
+        for(int i = 0; i < 100; i++) {
+            DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+            float rand[] = new float[rnd.nextInt(10) + 1];
+            for (int x = 0; x < rand.length; x++) {
+                rand[x] = rnd.nextFloat();
+            }
+            Nd4j.getConstantHandler().getConstantBuffer(new float[]{rnd.nextFloat()});
+
+            int shape[] = new int[rnd.nextInt(3)+2];
+            for (int x = 0; x < shape.length; x++) {
+                shape[x] = rnd.nextInt(100) + 2;
+            }
+
+            DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+            INDArray array = Nd4j.rand(shape);
+            BooleanIndexing.applyWhere(array, Conditions.lessThan(rnd.nextDouble()), rnd.nextDouble());
+        }
     }
 }
