@@ -12,7 +12,13 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.stats.api.*;
+import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
+import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
+import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
+import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.stats.temp.HistogramBin;
+import org.deeplearning4j.ui.storage.StatsStorageRouter;
+import org.deeplearning4j.ui.storage.StorageMetaData;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -20,26 +26,36 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.*;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.RuntimeMXBean;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by Alex on 28/09/2016.
+ * StatsListener: a general purpose listener for collecting and reporting system and model information.
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class StatsListener implements IterationListener {
 
-    public enum ErrorHandling {LogAndContinue, Fail};
+    public static String TYPE_ID = "StatsListener";
     private enum StatType {Mean, Stdev, MeanMagnitude}
 
-    private ErrorHandling errorHandling = ErrorHandling.LogAndContinue;
-    private int maxErrorMessages = 10;
-    private int printedErrorMessages = 0;
-    private final StatsListenerReceiver receiver;
+//    public enum ErrorHandling {LogAndContinue, Fail};
+//    private ErrorHandling errorHandling = ErrorHandling.LogAndContinue;
+//    private int maxErrorMessages = 10;
+//    private int printedErrorMessages = 0;
+    private final StatsStorageRouter router;
+    private final StatsInitializationConfiguration initConfig;
+    private final StatsUpdateConfiguration updateConfig;
+    private final String sessionID;
+    private final String workerID;
+
     private int iterCount = 0;
 
     private long initTime;
@@ -51,16 +67,43 @@ public class StatsListener implements IterationListener {
     private long totalExamples = 0;
     private long totalMinibatches = 0;
 
+    private String[] paramNames;
     private List<GarbageCollectorMXBean> gcBeans;
     private Map<String,Pair<Long,Long>> gcStatsAtLastReport;
 
-    public StatsListener(StatsListenerReceiver receiver) {
-        this.receiver = receiver;
+    public StatsListener(StatsStorageRouter router) {
+        this(router, null, null, null, null);
+    }
+
+    public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
+                         String sessionID, String workerID){
+        this.router = router;
+        if(initConfig == null){
+            this.initConfig = new DefaultStatsInitializationConfiguration(true,true,true);
+        } else {
+            this.initConfig = initConfig;
+        }
+        if(updateConfig == null){
+            this.updateConfig = DefaultStatsUpdateConfiguration.builder().build();
+        } else {
+            this.updateConfig = updateConfig;
+        }
+        if(sessionID == null){
+            //TODO handle syncing session IDs across different listeners in the same model...
+            this.sessionID = UUID.randomUUID().toString();
+        } else {
+            this.sessionID = sessionID;
+        }
+        if(workerID == null){
+            this.workerID = UIDProvider.getJVMUID() + "_" + Thread.currentThread().getId();
+        } else {
+            this.workerID = workerID;
+        }
     }
 
     @Override
     public boolean invoked() {
-        return false;
+        return iterCount > 0;
     }
 
     @Override
@@ -70,7 +113,7 @@ public class StatsListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        StatsListenerConfiguration config = receiver.getCurrentConfiguration();
+        StatsUpdateConfiguration config = updateConfig;
 
         long currentTime = getTime();
         if (iterCount == 0) {
@@ -87,11 +130,8 @@ public class StatsListener implements IterationListener {
             return;
         }
 
-        StatsReport report = receiver.newStatsReport();
-//        report.reportTime(currentTime);
-        report.reportIterationCount(iterCount);
-
-        long deltaReportTime = currentTime - lastReportTime;
+        StatsReport report = new SbeStatsReport(paramNames);
+        report.reportIDs(sessionID, TYPE_ID, workerID, System.currentTimeMillis()); //TODO support NTP time
 
         //--- Performance and System Stats ---
         if (config.collectPerformanceStats()) {
@@ -261,22 +301,25 @@ public class StatsListener implements IterationListener {
         report.reportStatsCollectionDurationMS((int)(endTime-currentTime));    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
         lastReportIteration = iterCount;
-        try{
-            receiver.postStatsReport(report);
-        }catch(IOException e){
-            switch (errorHandling){
-                case LogAndContinue:
-                    if(printedErrorMessages++ < maxErrorMessages) {
-                        log.warn("Exception thrown by storage layer when posting update", e);
-                    }
-                    if(printedErrorMessages == maxErrorMessages){
-                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
-                    }
-                    break;
-                case Fail:
-                    throw new RuntimeException(e);
-            }
-        }
+
+        this.router.putUpdate(report);
+
+        //TODO error handling as per below
+//        try{
+//        }catch(IOException e){
+//            switch (errorHandling){
+//                case LogAndContinue:
+//                    if(printedErrorMessages++ < maxErrorMessages) {
+//                        log.warn("Exception thrown by storage layer when posting update", e);
+//                    }
+//                    if(printedErrorMessages == maxErrorMessages){
+//                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
+//                    }
+//                    break;
+//                case Fail:
+//                    throw new RuntimeException(e);
+//            }
+//        }
         iterCount++;
     }
 
@@ -286,11 +329,9 @@ public class StatsListener implements IterationListener {
     }
 
     private void doInit(Model model){
+        StatsInitializationReport initReport = new SbeStatsInitializationReport();
 
-        StatsInitializationConfiguration initConfiguration = receiver.getInitializationConfiguration();
-        StatsInitializationReport initReport = receiver.newInitializationReport();
-
-        if(initConfiguration.collectSoftwareInfo()){
+        if(initConfig.collectSoftwareInfo()){
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
 
@@ -318,7 +359,7 @@ public class StatsListener implements IterationListener {
                     nd4jBackendClass, nd4jDataTypeName, hostname, UIDProvider.getJVMUID());
         }
 
-        if(initConfiguration.collectHardwareInfo()){
+        if(initConfig.collectHardwareInfo()){
             int availableProcessors = Runtime.getRuntime().availableProcessors();
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             int nDevices = nativeOps.getAvailableDevices();
@@ -339,7 +380,7 @@ public class StatsListener implements IterationListener {
                     deviceDescription, UIDProvider.getHardwareUID());
         }
 
-        if(initConfiguration.collectModelInfo()){
+        if(initConfig.collectModelInfo()){
             String jsonConf;
             int numLayers;
             int numParams;
@@ -367,22 +408,35 @@ public class StatsListener implements IterationListener {
             initReport.reportModelInfo(model.getClass().getName(), jsonConf, paramNames, numLayers, numParams);
         }
 
-        try{
-            receiver.postInitializationReport(initReport);
-        }catch(IOException e){
-            switch (errorHandling){
-                case LogAndContinue:
-                    if(printedErrorMessages++ < maxErrorMessages) {
-                        log.warn("Exception thrown by storage layer when posting initialization report", e);
-                    }
-                    if(printedErrorMessages == maxErrorMessages){
-                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
-                    }
-                    break;
-                case Fail:
-                    throw new RuntimeException(e);
-            }
-        }
+        StorageMetaData meta = new StorageMetaData(
+                System.currentTimeMillis(),     //TODO: support NTP implementation
+                "", //TODO  Session ID
+                TYPE_ID,
+                "", //TODO  Worker ID
+                SbeStatsInitializationReport.class,
+                SbeStatsReport.class);
+
+        List<String> paramNames = new ArrayList<>(model.paramTable().keySet());
+        this.paramNames = paramNames.toArray(new String[paramNames.size()]);
+
+        router.putStorageMetaData(meta);
+        router.putStaticInfo(initReport);   //TODO error handling as per below
+
+//        try{
+//        }catch(IOException e){
+//            switch (errorHandling){
+//                case LogAndContinue:
+//                    if(printedErrorMessages++ < maxErrorMessages) {
+//                        log.warn("Exception thrown by storage layer when posting initialization report", e);
+//                    }
+//                    if(printedErrorMessages == maxErrorMessages){
+//                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
+//                    }
+//                    break;
+//                case Fail:
+//                    throw new RuntimeException(e);
+//            }
+//        }
     }
 
     private void updateExamplesMinibatchesCounts(Model model) {

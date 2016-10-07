@@ -1,7 +1,10 @@
 package org.deeplearning4j.ui.storage;
 
 /**
- * Created by Alex on 07/10/2016.
+ * StatsStorageRouter is intended to route static info, metadata and updates to a {@link StatsStorage} implementation.
+ * For example, a StatsStorageRouter might serialize and send objects over a network
+ *
+ * @author Alex Black
  */
 public interface StatsStorageRouter {
 

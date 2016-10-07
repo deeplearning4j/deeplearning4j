@@ -21,7 +21,7 @@ public interface StatsListenerReceiver {
 
     void postStatsReport(StatsReport statsReport) throws IOException;
 
-    StatsListenerConfiguration getCurrentConfiguration();
+    StatsUpdateConfiguration getCurrentConfiguration();
 
 
 

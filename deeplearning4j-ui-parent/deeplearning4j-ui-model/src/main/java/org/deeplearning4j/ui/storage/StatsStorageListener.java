@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.stats.storage;
+package org.deeplearning4j.ui.storage;
 
 import org.deeplearning4j.ui.storage.StorageMetaData;
 
@@ -19,6 +19,12 @@ public interface StatsStorageListener {
      */
     void notifyNewSession(String sessionID);
 
+    /**
+     * Notify the listener that a new TypeID has been registered for the given session
+     *
+     * @param sessionID    Session ID
+     * @param typeID       New type ID
+     */
     void notifyNewTypeID(String sessionID, String typeID);
 
     /**
