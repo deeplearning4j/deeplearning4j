@@ -154,14 +154,14 @@ template<typename OpType>
 					__syncthreads();
 
 					if (threadIdx.x == 0) {
-						unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+						unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
 						amLast = (ticket == gridDim.x - 1);
 					}
 
 					__syncthreads();
 
 					if (amLast) {
-						tc[4096] = 0;
+						tc[16384] = 0;
 
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
@@ -181,7 +181,7 @@ template<typename OpType>
 				else {
 					if (threadIdx.x == 0) {
 						unsigned int *tc = (unsigned *)reductionBuffer;
-						tc[4096] = 0;
+						tc[16384] = 0;
 						result[0] = OpType::postProcess(sPartials[0], n, extraParams);
 					}
 				}
@@ -601,7 +601,11 @@ template<typename OpType>
 						T finalVal = startingVal;
 						BlockInformation info(length);
 						T *blocks = new T[info.chunks];
-#pragma omp parallel proc_bind(AFFINITY)
+
+                        int _threads = nd4j::math::nd4j_min<int>(info.threads, omp_get_max_threads());
+                        _threads = nd4j::math::nd4j_max<int>(_threads, 1);
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY)
 						{
 							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {

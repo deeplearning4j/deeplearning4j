@@ -1343,6 +1343,8 @@ double   NativeOps::execSummaryStatsScalarDouble(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], 1, sizeof(double), 8);
 
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
+
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
@@ -1397,6 +1399,8 @@ void   NativeOps::execSummaryStatsDouble(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], 1, sizeof(double), 8);
 
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
+
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
@@ -1450,6 +1454,8 @@ void   NativeOps::execSummaryStatsDouble(
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], dimensionLength, sizeof(double), 8);
+
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -3488,6 +3494,8 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF16 opNum:[%i]\n", opNum);
 
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
+
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
@@ -3534,6 +3542,8 @@ float   NativeOps::execSummaryStatsScalarHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH16 opNum:[%i]\n", opNum);
+
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -3592,6 +3602,8 @@ void   NativeOps::execSummaryStatsFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF17 opNum:[%i]\n", opNum);
 
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
+
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
@@ -3637,6 +3649,8 @@ void   NativeOps::execSummaryStatsHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH17 opNum:[%i]\n", opNum);
+
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -3697,6 +3711,8 @@ void   NativeOps::execSummaryStatsFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF18 opNum:[%i]\n", opNum);
 
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
+
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			x,
@@ -3745,6 +3761,8 @@ void   NativeOps::execSummaryStatsHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH18 opNum:[%i]\n", opNum);
+
+    launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -5210,6 +5228,23 @@ void NativeOps::setOmpNumThreads(int threads) {
 
 void NativeOps::enableVerboseMode(bool reallyEnable) {
 	verbose = reallyEnable;
+}
+
+int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+	int device = getDeviceId(ptrToDeviceId);
+	return deviceProperties[device].major;
+}
+
+int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+	int device = getDeviceId(ptrToDeviceId);
+	return deviceProperties[device].minor;
+}
+
+
+const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+    int device = getDeviceId(ptrToDeviceId);
+
+    return deviceProperties[device].name;
 }
 
 /**

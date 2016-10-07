@@ -34,144 +34,144 @@
 
 
 namespace functions {
-	namespace summarystats {
+    namespace summarystats {
 
 
-		// This example computes several statistical properties of a data
-		// series in a single reduction.  The algorithm is described in detail here:
-		// http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-		//
-		// Thanks to Joseph Rhoads for contributing this example
+        // This example computes several statistical properties of a data
+        // series in a single reduction.  The algorithm is described in detail here:
+        // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+        //
+        // Thanks to Joseph Rhoads for contributing this example
 
 
-		// structure used to accumulate the moments and other
-		// statistical properties encountered so far.
-		template <typename T>
-		class SummaryStatsData {
+        // structure used to accumulate the moments and other
+        // statistical properties encountered so far.
+        template <typename T>
+        class SummaryStatsData {
 
-		public:
-			T n;
-			T min;
-			T max;
-			T mean;
-			T M2;
-			T M3;
-			T M4;
-			T bias;
+        public:
+            T n;
+            T min;
+            T max;
+            T mean;
+            T M2;
+            T M3;
+            T M4;
+            T bias;
 
-			host_and_device SummaryStatsData() {
-				initialize();
-			}
+            host_and_device SummaryStatsData() {
+                initialize();
+            }
 
-			// initialize to the identity element
+            // initialize to the identity element
 
-			host_and_device void initialize() {
-				n = mean = M2 = M3 = M4 = bias = 0;
-			}
+            host_and_device void initialize() {
+                n = mean = M2 = M3 = M4 = bias = 0;
+            }
 
-			host_and_device void initWithValue(T val) {
-				n = 1;
-				min = val;
-				max = val;
-				mean = val;
-				M2 = 0;
-				M3 = 0;
-				M4 = 0;
-				bias = 0;
-			}
+            host_and_device void initWithValue(T val) {
+                n = 1;
+                min = val;
+                max = val;
+                mean = val;
+                M2 = 0;
+                M3 = 0;
+                M4 = 0;
+                bias = 0;
+            }
 
-			host_and_device void setValues(SummaryStatsData<T> *target) {
-				n = target->n;
-				min = target->min;
-				max = target->max;
-				mean = target->mean;
-				M2 = target->M2;
-				M3 = target->M3;
-				M4 = target->M4;
-				bias = target->bias;
-			}
+            host_and_device void setValues(SummaryStatsData<T> *target) {
+                n = target->n;
+                min = target->min;
+                max = target->max;
+                mean = target->mean;
+                M2 = target->M2;
+                M3 = target->M3;
+                M4 = target->M4;
+                bias = target->bias;
+            }
 
-			host_and_device T variance() {
-				if (n <= 1)
-					return 0.0;
-				return M2 / (n);
-			}
+            host_and_device T variance() {
+                if (n <= 1)
+                    return 0.0;
+                return M2 / (n);
+            }
 
-			host_and_device T varianceBiasCorrected() {
-				if (this->n <= 1) {
-					return 0.0;
-				}
+            host_and_device T varianceBiasCorrected() {
+                if (this->n <= 1) {
+                    return 0.0;
+                }
 
-				return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - 1.0);
-			}
+                return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - 1.0);
+            }
 
 
-			host_and_device T variance_n() {
-				if (n <= 1)
-					return 0.0;
-				return M2 / n;
-			}
+            host_and_device T variance_n() {
+                if (n <= 1)
+                    return 0.0;
+                return M2 / n;
+            }
 
-			host_and_device T skewness() { return M2 > 0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : 0; }
+            host_and_device T skewness() { return M2 > 0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : (T) 0.0f; }
 
-			host_and_device T kurtosis() { return M2 > 0 ? n * M4 / (M2 * M2) : 0; }
+            host_and_device T kurtosis() { return M2 > 0 ? n * M4 / (M2 * M2) : 0; }
 
-			host_and_device T getM2() {
-				return M2;
-			}
+            host_and_device T getM2() {
+                return M2;
+            }
 
-			host_and_device void setM2(T m2) {
-				M2 = m2;
-			}
+            host_and_device void setM2(T m2) {
+                M2 = m2;
+            }
 
-			host_and_device T getM3() {
-				return M3;
-			}
+            host_and_device T getM3() {
+                return M3;
+            }
 
-			host_and_device void setM3(T m3) {
-				M3 = m3;
-			}
+            host_and_device void setM3(T m3) {
+                M3 = m3;
+            }
 
-			host_and_device T getM4() {
-				return M4;
-			}
+            host_and_device T getM4() {
+                return M4;
+            }
 
-			host_and_device void setM4(T m4) {
-				M4 = m4;
-			}
+            host_and_device void setM4(T m4) {
+                M4 = m4;
+            }
 
-			host_and_device T getMax() {
-				return max;
-			}
+            host_and_device T getMax() {
+                return max;
+            }
 
-			host_and_device void setMax(T max) {
-				this->max = max;
-			}
+            host_and_device void setMax(T max) {
+                this->max = max;
+            }
 
-			host_and_device T getMean() {
-				return mean;
-			}
+            host_and_device T getMean() {
+                return mean;
+            }
 
-			host_and_device void setMean(T mean) {
-				this->mean = mean;
-			}
+            host_and_device void setMean(T mean) {
+                this->mean = mean;
+            }
 
-			host_and_device T getMin() {
-				return min;
-			}
+            host_and_device T getMin() {
+                return min;
+            }
 
-			host_and_device void setMin(T min) {
-				this->min = min;
-			}
+            host_and_device void setMin(T min) {
+                this->min = min;
+            }
 
-			host_and_device T getN() {
-				return n;
-			}
+            host_and_device T getN() {
+                return n;
+            }
 
-			host_and_device void setN(T n) {
-				this->n = n;
-			}
-		};
+            host_and_device void setN(T n) {
+                this->n = n;
+            }
+        };
 
 
 
@@ -179,7 +179,7 @@ namespace functions {
 
 
 #ifdef __CUDACC__
-		// This is the un-specialized struct.  Note that we prevent instantiation of this
+        // This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 		template<typename T>
 		struct SharedSummaryStatsData {
@@ -215,51 +215,51 @@ namespace functions {
 		};
 #endif
 
-		/**
-		 * Standard deviation or variance 1 pass
-		 */
-		template<typename T>
-		class SummaryStatsReduce {
-		public:
-			//calculate an update of the reduce operation
-			host_and_device static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
-				T *extraParams) {
-				if (x.n == 0 && y.n > 0)
-					return y;
-				else if (x.n > 0 && y.n == 0)
-					return x;
-				SummaryStatsData<T> result;
-				T n = x.n + y.n;
-				T n2 = n  * n;
-				T n3 = n2 * n;
+        /**
+         * Standard deviation or variance 1 pass
+         */
+        template<typename T>
+        class SummaryStatsReduce {
+        public:
+            //calculate an update of the reduce operation
+            host_and_device static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
+                                                              T *extraParams) {
+                if (x.n == 0 && y.n > 0)
+                    return y;
+                else if (x.n > 0 && y.n == 0)
+                    return x;
+                SummaryStatsData<T> result;
+                T n = x.n + y.n;
+                T n2 = n  * n;
+                T n3 = n2 * n;
 
 
-				T delta = y.mean - x.mean;
-				T delta2 = delta  * delta;
-				T delta3 = delta2 * delta;
-				T delta4 = delta3 * delta;
+                T delta = y.mean - x.mean;
+                T delta2 = delta  * delta;
+                T delta3 = delta2 * delta;
+                T delta4 = delta3 * delta;
 
-				//Basic number of samples (n), min, and max
-				result.n = n;
-				result.min = nd4j::math::nd4j_min(x.min, y.min);
-				result.max = nd4j::math::nd4j_max(x.max, y.max);
+                //Basic number of samples (n), min, and max
+                result.n = n;
+                result.min = nd4j::math::nd4j_min(x.min, y.min);
+                result.max = nd4j::math::nd4j_max(x.max, y.max);
 
-				result.mean = x.mean + delta * y.n / n;
+                result.mean = x.mean + delta * y.n / n;
 
-				result.M2 = x.M2 + y.M2;
-				result.M2 += delta2 * x.n * y.n / n;
+                result.M2 = x.M2 + y.M2;
+                result.M2 += delta2 * x.n * y.n / n;
 
-				result.M3 = x.M3 + y.M3;
-				result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-				result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+                result.M3 = x.M3 + y.M3;
+                result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+                result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
-				result.M4 = x.M4 + y.M4;
-				result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-				result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-				result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+                result.M4 = x.M4 + y.M4;
+                result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+                result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+                result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
 
-				return result;
-			}
+                return result;
+            }
 
 
 
@@ -547,14 +547,14 @@ template<typename OpType>
 						__threadfence();
 
 						if (tid == 0) {
-							unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+							unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
 							amLast = (ticket == gridDim.x - 1);
 						}
 
 						__syncthreads();
 
 						if (amLast) {
-							tc[4096] = 0;
+							tc[16384] = 0;
 							SummaryStatsData<T> *pBuffer = (SummaryStatsData<T> *) reductionBuffer;
 
 							T startingVal = startingValue(dx);
@@ -581,7 +581,7 @@ template<typename OpType>
 					else {
 						if (tid == 0) {
 							unsigned int *tc = (unsigned *)reductionBuffer;
-							tc[4096] = 0;
+							tc[16384] = 0;
 							result[0] = result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
 						}
 					}
@@ -609,165 +609,165 @@ template<typename OpType>
 #endif
 
 
-	static T execScalar(const int opNum,
-		const bool biasCorrected,
-		T *x,
-		int *xShapeInfo,
-		T *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
-	}
+            static T execScalar(const int opNum,
+                                const bool biasCorrected,
+                                T *x,
+                                int *xShapeInfo,
+                                T *extraParams) {
+                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
+            }
 
 
-	static void exec(
-		const int opNum,
-		const bool biasCorrected,
-		T *x,
-		int *xShapeInfo,
-		T *extraParams,
-		T *result,
-		int *resultShapeInfoBuffer,
-		int *dimension, int dimensionLength) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
-	}
+            static void exec(
+                    const int opNum,
+                    const bool biasCorrected,
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *result,
+                    int *resultShapeInfoBuffer,
+                    int *dimension, int dimensionLength) {
+                DISPATCH_BY_OPNUM(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+            }
 
-	template<typename OpType>
+            template<typename OpType>
 #ifdef __CUDACC__
-			inline __host__
+            inline __host__
 
 #elif defined(__GNUC__)
 
 #endif
-			static T execScalar(
-				const bool biasCorrected,
-				T *x,
-				int *xShapeInfo,
-				T *extraParams) {
-				SummaryStatsData<T> startingIndex;
-				startingIndex.initialize();
-				int length = shape::length(xShapeInfo);
-				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-				if (xElementWiseStride == 1) {
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-							extraParams);
-					}
+            static T execScalar(
+                    const bool biasCorrected,
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams) {
+                SummaryStatsData<T> startingIndex;
+                startingIndex.initialize();
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                if (xElementWiseStride == 1) {
+                    for (int i = 0; i < length; i++) {
+                        SummaryStatsData<T> curr;
+                        curr.initWithValue(x[i]);
+                        startingIndex = update(startingIndex, curr,
+                                               extraParams);
+                    }
 
-					T finalVal = OpType::getValue(biasCorrected, startingIndex);
-					return finalVal;
-				}
-				else {
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-							extraParams);
-					}
+                    T finalVal = OpType::getValue(biasCorrected, startingIndex);
+                    return finalVal;
+                }
+                else {
+                    for (int i = 0; i < length; i++) {
+                        SummaryStatsData<T> curr;
+                        curr.initWithValue(x[i]);
+                        startingIndex = update(startingIndex, curr,
+                                               extraParams);
+                    }
 
-					T finalVal = OpType::getValue(biasCorrected, startingIndex);
-					return finalVal;
-				}
+                    T finalVal = OpType::getValue(biasCorrected, startingIndex);
+                    return finalVal;
+                }
 
 
-			}
+            }
 
-			template<typename OpType>
+            template<typename OpType>
 #ifdef __CUDACC__
-			inline __host__
+            inline __host__
 
 #elif defined(__GNUC__)
 
 #endif
-			static void exec(
-				const bool biasCorrected,
-				T *x,
-				int *xShapeInfo,
-				T *extraParams,
-				T *result,
-				int *resultShapeInfoBuffer,
-				int *dimension, int dimensionLength) {
-				if (shape::isScalar(resultShapeInfoBuffer)) {
-					result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
-					return;
-				}
+            static void exec(
+                    const bool biasCorrected,
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *result,
+                    int *resultShapeInfoBuffer,
+                    int *dimension, int dimensionLength) {
+                if (shape::isScalar(resultShapeInfoBuffer)) {
+                    result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                    return;
+                }
 
 
-				shape::TAD tad(xShapeInfo, dimension, dimensionLength);
-				tad.createTadOnlyShapeInfo();
-				tad.createOffsets();
+                shape::TAD tad(xShapeInfo, dimension, dimensionLength);
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
 
-				//no-op
-				if (tad.dimensionLength < 1)
-					return;
+                //no-op
+                if (tad.dimensionLength < 1)
+                    return;
 
-				int resultLength = shape::length(resultShapeInfoBuffer);
-				//pre squeezed: this is for keeping the pointer to the original
-				//shape information for tad offset
-				//the squeezed information doesn't render the right strides for
-				//tad offset
-				if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
-					result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
-					return;
-				}
+                int resultLength = shape::length(resultShapeInfoBuffer);
+                //pre squeezed: this is for keeping the pointer to the original
+                //shape information for tad offset
+                //the squeezed information doesn't render the right strides for
+                //tad offset
+                if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
+                    result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                    return;
+                }
 
-				if (!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
-					shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) && !(dimensionLength > 1)) {
+                if (!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
+                                                                             shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) && !(dimensionLength > 1)) {
 
-					/**
-					 * The element wise stride belong longs to a reduction index.
-					 * When used out of order, we can get rid of the data
-					 * dependencies and rely on using the max dimension
-					 * specified for stride instead.
-					 * Say we take the sum(0,1) along long arr
-					 * we can use arr.stride(1) as a representation
-					 * along long which to iterate.
-					 */
+                    /**
+                     * The element wise stride belong longs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along long arr
+                     * we can use arr.stride(1) as a representation
+                     * along long which to iterate.
+                     */
 
-					int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+                    int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 
-					int *xShape = shape::shapeOf(tadShapeShapeInfo);
-					int *xStride = shape::stride(tadShapeShapeInfo);
-					int rank = shape::rank(tadShapeShapeInfo);
+                    int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                    int *xStride = shape::stride(tadShapeShapeInfo);
+                    int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
-					for (int i = 0; i < resultLength; i++) {
-						int offset = tad.tadOffsets[i];
-						int shapeIter[MAX_RANK];
-						int coord[MAX_RANK];
-						int dim;
-						int rankIter = rank;
-						int xStridesIter[MAX_RANK];
-						T *xPointer = x + offset;
-						SummaryStatsData<T> comp;
-						comp.initWithValue(0.0);
-						if (PrepareOneRawArrayIter<T>(rankIter,
-							xShape,
-							xPointer,
-							xStride,
-							&rankIter,
-							shapeIter,
-							&xPointer,
-							xStridesIter) >= 0) {
-							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-								/* Process the innermost dimension */
-								SummaryStatsData<T> comp2;
-								comp2.initWithValue(xPointer[0]);
-								comp = update(comp, comp2, extraParams);
-							} ND4J_RAW_ITER_ONE_NEXT(dim,
-								rank,
-								coord,
-								shapeIter,
-								xPointer,
-								xStridesIter);
-						}
-						else {
-							printf("Unable to prepare array\n");
-						}
+                    for (int i = 0; i < resultLength; i++) {
+                        int offset = tad.tadOffsets[i];
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int rankIter = rank;
+                        int xStridesIter[MAX_RANK];
+                        T *xPointer = x + offset;
+                        SummaryStatsData<T> comp;
+                        comp.initWithValue(0.0);
+                        if (PrepareOneRawArrayIter<T>(rankIter,
+                                                      xShape,
+                                                      xPointer,
+                                                      xStride,
+                                                      &rankIter,
+                                                      shapeIter,
+                                                      &xPointer,
+                                                      xStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                SummaryStatsData<T> comp2;
+                                comp2.initWithValue(xPointer[0]);
+                                comp = update(comp, comp2, extraParams);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     xPointer,
+                                                     xStridesIter);
+                        }
+                        else {
+                            printf("Unable to prepare array\n");
+                        }
 
-						result[i] = OpType::getValue(biasCorrected, comp);
-					}
-				}
-				else {
+                        result[i] = OpType::getValue(biasCorrected, comp);
+                    }
+                }
+                else {
                     if (dimensionLength == 1) {
                         int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
@@ -818,10 +818,10 @@ template<typename OpType>
                             result[r] = OpType::getValue(biasCorrected, comp);
                         }
                     }
-				}
-			}
-		};
-	}
+                }
+            }
+        };
+    }
 }
 
 

@@ -13,8 +13,8 @@ int element_threshold = 32;
 #include <types/float8.h>
 #include <type_conversions.h>
 
-
-
+char *name;
+bool nameSet = false;
 
 
 #ifdef __EXPERIMENTAL__
@@ -2046,6 +2046,14 @@ Nd4jPointer NativeOps::createBlasHandle() {
     return 0L;
 }
 
+int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+    return 0;
+}
+
+int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+    return 0;
+}
+
 int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
     return 0L;
 }
@@ -2274,7 +2282,10 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
         // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
 
-        for (Nd4jIndex r = 0; r < numTads / 2; r++) {
+        for (Nd4jIndex r = 0; r < numTads; r++) {
+            if (shuffleMap[r] < 0)
+                continue;
+
             int oldOffset = tadOffset[r];
             int newOffset = tadOffset[shuffleMap[r]];
 
@@ -2444,4 +2455,18 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
 
+}
+
+const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+    if (!nameSet) {
+        name = (char *) malloc(256 * sizeof(char));
+        memset(name, 0, 256 * sizeof(char));
+        nameSet = true;
+
+        // TODO: provide proper CPU model name here
+        sprintf(name, "x86-compatible CPU");
+    }
+
+
+    return name;
 }

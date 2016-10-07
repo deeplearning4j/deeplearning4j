@@ -378,7 +378,7 @@ template<typename OpType>
                 // tad preparation
                 int tadEWS = shape::elementWiseStride(tadShapeInfo);
                 int zEWS = shape::elementWiseStride(tadShapeInfo);
-                int tadRank = shape::rank(tadShapeInfo);
+                //int tadRank = shape::rank(tadShapeInfo);
                 int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 int numTads =shape::length(xShapeInfo) / tadLength;
 

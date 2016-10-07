@@ -28,6 +28,14 @@
 
 #ifdef __CUDACC__
 #define op_def inline __device__
+
+// 610 is for tests only
+// 600 is Tesla P100
+// 530 is Tegra
+#if __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 530
+#define NATIVE_HALFS
+#endif
+
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -275,7 +283,7 @@ namespace simdOps {
 		op_def static T op(T d1, T d2, T *params) {
 			T diff = d1 - d2;
 			T absDiff = nd4j::math::nd4j_abs(diff);
-			if (absDiff < MIN)
+			if (absDiff < (T) MIN)
 				return 1;
 			return 0;
 		}
@@ -426,7 +434,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return ((d1 >= -1.0 && d1 <= 1.0) ? 1.0 : 0.0);
+			return ((d1 >= (T)-1.0 && d1 <= (T) 1.0) ? 1.0 : 0.0);
 		}
 	};
 
@@ -438,8 +446,8 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			if (d1 < -1.0) return -1.0;
-			else if (d1 > 1.0) return 1.0;
+			if (d1 < (T) -1.0) return -1.0;
+			else if (d1 > (T) 1.0) return 1.0;
 			else return d1;
 			//return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
 		}
@@ -476,7 +484,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static T op(T d1, T *params) {
-            if (d1 <= 0.0) return 0.001;
+            if (d1 <= (T) 0.) return 0.001;
                 else return d1;
         }
     };
@@ -488,7 +496,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 * (1.0 - d1);
+			return d1 * ((T) 1.0 - d1);
 		}
 	};
 
@@ -568,8 +576,8 @@ namespace simdOps {
 			T max = params[1];
 			if (d1 >= min && d1 <= max)
 				return d1;
-			if (min == 0 && max == 1) {
-				T val = 1 / (1 + nd4j::math::nd4j_exp<T>(-d1));
+			if (min == (T) 0.0f && max == (T) 1.0f) {
+				T val = (T) 1.0f / ((T) 1.0f + nd4j::math::nd4j_exp<T>(-d1));
 				return (nd4j::math::nd4j_floor<T>(val * (max - min)) + min);
 			}
 
@@ -622,7 +630,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (d1 > 0) - (d1 < 0);
+			return (d1 > (T) 0.0f) - (d1 < (T) 0.0f);
 		}
 	};
 
@@ -634,7 +642,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 * (1 - d1);
+			return d1 * ((T) 1.0 - d1);
 		}
 	};
 
@@ -764,7 +772,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			if (d1 >= 0.0) return 1.0;
+			if (d1 >= (T) 0.0) return 1.0;
 			else return params[0];
 			//return (d1 >= (T) 0.0 ? 1.0 : params[0]);
 		}
@@ -819,10 +827,10 @@ namespace simdOps {
 			//const double cutOff = nd4j::math::nd4j_log(realMin);
 
 			T k = params[0];
-			if (d1 * k > - MIN_CUTFOFF)
-				return (T)(- MIN_CUTFOFF / k);
-			else if (d1 * k < MIN_CUTFOFF)
-				return (T)(MIN_CUTFOFF / k);
+			if (d1 * k > (T) - MIN_CUTFOFF)
+				return (T)((T)- MIN_CUTFOFF / k);
+			else if (d1 * k < (T) MIN_CUTFOFF)
+				return (T)((T) MIN_CUTFOFF / k);
 			return d1;
 		}
 	};
@@ -849,7 +857,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return 1.0 - d1;
+			return (T) 1.0 - d1;
 		}
 	};
 
@@ -1115,8 +1123,8 @@ namespace simdOps {
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			T bias = extraParams[1];
-			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (int) n))
-				/ (T)(n - 1.0);
+			return (reduction - (nd4j::math::nd4j_pow<T>(bias, (T) 2.0f) / (int) n))
+                / (n - (int) 1);
 		}
 	};
 
@@ -1272,7 +1280,7 @@ namespace simdOps {
         }
 
         op_def static T startingValue(T *input) {
-            return 0.0;
+            return 0.0f;
         }
 
         op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
@@ -1285,11 +1293,12 @@ namespace simdOps {
             T diff = nd4j::math::nd4j_abs<T>(d1 - d2);
 
             if (d1 == d2) {
-                return 0.0;
-            } else if (d1 == 0 || d2 == 0 || diff < FLOAT_MIN_NORMAL) {
-                return diff < (EPS * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+                return 0.0f;
+            } else if (d1 == (T) 0.0f || d2 == (T) 0.0f || diff < (T) FLOAT_MIN_NORMAL) {
+                return diff <  (T) (EPS * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
             } else {
-                return (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE)) < EPS ? 0.0f : 1.0f;
+                T xDiff = (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE));
+                return  xDiff < (T) EPS ? 0.0f : 1.0f;
             }
         }
 
@@ -1576,7 +1585,7 @@ namespace simdOps {
         static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
-				if (ret < 0)
+				if (ret < (T) 0.0)
 					return val.variance();
 				return ret;
 			}
@@ -1604,7 +1613,7 @@ namespace simdOps {
         static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
-				if (ret < 0)
+				if (ret < (T) 0.0)
 					return nd4j::math::nd4j_sqrt(val.variance());
 				else
 					return nd4j::math::nd4j_sqrt(ret);
@@ -1633,8 +1642,8 @@ template<typename T>
 
 #ifdef __CUDACC__
 			T length = params[1];
-            int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+            T tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>((T) clock64() * (T) tid + (T) length * (T) tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
@@ -1652,12 +1661,12 @@ template<typename T>
 			T prob = params[0];
 #ifdef __CUDACC__
 			T length = params[1];
-			int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+			T tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>((T) clock64() * (T) tid + (T) length * (T) tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
-			return rnd >= prob ? 0 : d1 / prob;
+			return rnd >= prob ? (T) 0.0 : d1 / prob;
 		}
 	};
 

@@ -1001,7 +1001,7 @@ namespace simdOps {
 
 			if (resultEWS >= 1) {
 				for (int i = threadIdx.x; i < length; i += blockDim.x) {
-					result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
+					result[i * resultEWS] = result[i * resultEWS] * ((T) 1.0 - result[i * resultEWS]);
 				}
 			}
 			else {
@@ -1393,7 +1393,8 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-			if (extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
+			// FIXME: MAX_DIMENSION is lower then FP16 frame
+			if (extraParams == nullptr || (int) extraParams[0] == MAX_DIMENSION) {
 				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);
 			}
 		}

@@ -233,19 +233,16 @@ public:
     Nd4jIndex modulo;
     BlockInformation(Nd4jIndex length) {
 
-#pragma omp parallel
-        {
-            threads = omp_get_num_threads();
-            items = length / threads;
-            if(items < 1)
-                items = 1;
-            chunks = length / items;
-            modulo = length % items;
-            //one left over chunk
-            if(modulo > 0)
-                chunks++;
-        }
+    threads = omp_get_num_threads();
+    items = length / threads;
+    if(items < 1)
+        items = 1;
+    chunks = length / items;
+    modulo = length % items;
 
+    //one left over chunk
+    if(modulo > 0)
+        chunks++;
     }
 };
 

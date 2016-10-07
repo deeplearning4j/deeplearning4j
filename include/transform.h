@@ -1423,7 +1423,10 @@ __device__ void shuffleKernelGeneric(T **dX, int **xShapeInfo, T **dZ, int **zSh
 
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
-            for (Nd4jIndex r = blockIdx.x; r < numTads / 2; r += blockDim.x) {
+            for (Nd4jIndex r = blockIdx.x; r < numTads; r += blockDim.x) {
+                if (shuffleMap[r] < 0)
+                    continue;
+
                 int oldOffset = tadOffsets[f][r];
                 int newOffset = tadOffsets[f][shuffleMap[r]];
 

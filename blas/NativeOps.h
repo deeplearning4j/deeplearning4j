@@ -1186,6 +1186,12 @@ public:
 
     Nd4jIndex getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
 
+    int getDeviceMajor(Nd4jPointer ptrToDeviceId);
+
+    int getDeviceMinor(Nd4jPointer ptrToDeviceId);
+
+    const char * getDeviceName(Nd4jPointer ptrToDeviceId);
+
     int memcpy(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
     int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved);

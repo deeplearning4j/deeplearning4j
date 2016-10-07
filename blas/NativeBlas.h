@@ -33,6 +33,10 @@ public:
 
     void setMaxThreads(int num);
 
+    int getMaxThreads();
+
+    int getVendor();
+
     /*
      * ======================================================
      * Level 1 BLAS functions

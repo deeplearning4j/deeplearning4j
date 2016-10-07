@@ -13,6 +13,7 @@
 
 #ifdef __CUDACC__
 #include <types/float16.h>
+#define math_def __host__ __device__
 
 typedef union {
 		struct {
@@ -21,6 +22,8 @@ typedef union {
 		} B;
 		int W;
 } PAIR;
+#else
+#define math_def
 #endif
 
 namespace nd4j {
@@ -30,733 +33,484 @@ namespace nd4j {
 
 	namespace math {
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_abs(T value);
+		math_def inline T nd4j_abs(T value);
 
 template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline void nd4j_swap(T &val1, T &val2);
+        math_def inline void nd4j_swap(T &val1, T &val2);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_max(T val1, T val2);
+        math_def inline T nd4j_max(T val1, T val2);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_min(T val1, T val2);
+        math_def inline T nd4j_min(T val1, T val2);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_ceil(T val1);
+        math_def inline T nd4j_ceil(T val1);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_cos(T val);
+        math_def inline T nd4j_cos(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_exp(T val);
+        math_def inline T nd4j_exp(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_floor(T val);
+        math_def inline T nd4j_floor(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_log(T val);
+        math_def inline T nd4j_log(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_pow(T val, T val2);
+        math_def inline T nd4j_pow(T val, T val2);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_round(T val);
+        math_def inline T nd4j_round(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_sigmoid(T val) {
-			return 1.0 / (1.0 + nd4j_exp<T>(-val));
+        math_def inline T nd4j_sigmoid(T val) {
+			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T>(-val));
 		}
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_elu(T val) {
-			if (val >= 0.0) return val;
-			else return nd4j_exp<T>(val) - 1.0;
+        math_def inline T nd4j_elu(T val) {
+			if (val >= (T) 0.0) return val;
+			else return nd4j_exp<T>(val) - (T) 1.0;
 			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline T nd4j_leakyrelu(T val,T alpha) {
-			if (val < 0.0) return alpha * val;
+        math_def inline T nd4j_leakyrelu(T val,T alpha) {
+			if (val < (T) 0.0f) return alpha * val;
 			else return val;
 			//return val < 0 ?  alpha * val : val;
 		}
 
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_eluderivative(T val) {
-			if (val >= 0.0) return 1.0;
-			else return nd4j_exp(val);
+        math_def inline T nd4j_eluderivative(T val) {
+			if (val >= (T) 0.0f) return (T) 1.0f;
+			else return nd4j_exp<T>(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_sin(T val);
+        math_def inline T nd4j_sin(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T softplus(T val) {
-			return nd4j_log<T>(1.0 + nd4j_exp<T>(val));
+        math_def inline T softplus(T val) {
+			return nd4j_log<T>((T) 1.0f + nd4j_exp<T>(val));
 		}
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_softsign(T val) {
-			return val / (1.0 + nd4j::math::nd4j_abs<T>(val));
+        math_def inline T nd4j_softsign(T val) {
+			return val / ((T) 1.0f + nd4j::math::nd4j_abs<T>(val));
 		}
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_sqrt(T val);
+        math_def inline T nd4j_sqrt(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_tanh(T val);
+        math_def inline T nd4j_tanh(T val);
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_tanhderivative(T val) {
+        math_def inline T nd4j_tanhderivative(T val) {
 			T tanh = nd4j_tanh(val);
-			return 1.0 - tanh * tanh;
+			return (T) 1.0f - tanh * tanh;
 		}
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_sigmoidderivative(T val) {
+        math_def inline T nd4j_sigmoidderivative(T val) {
 			T sigmoid = nd4j_sigmoid(val);
-			T out = sigmoid * (1.0 - sigmoid);
+			T out = sigmoid * ((T) 1.0f - sigmoid);
 			return out;
 		}
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_softsignderivative(T val) {
-			T y = 1 + nd4j_abs(val);
-			return 1.0 / (y * y);
+        math_def inline T nd4j_softsignderivative(T val) {
+			T y = (T) 1.0f + nd4j_abs(val);
+			return (T) 1.0f / (y * y);
 		}
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline T nd4j_acos(T val);
+        math_def inline T nd4j_acos(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline T nd4j_asin(T val);
+        math_def inline T nd4j_asin(T val);
 
 		template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
+        math_def inline T nd4j_atan(T val);
 
-#endif
-		inline T nd4j_atan(T val);
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_abs<float16>(float16 value) {
+        math_def inline float16 nd4j_abs<float16>(float16 value) {
+#ifdef NATIVE_HALFS
+            return value < 0. ?  __hneg(value.data) : value;
+#else
 			return (float16) fabsf((float) value);
+#endif
 		}
-#endif
+
+
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_abs<float>(float value) {
+        math_def inline float nd4j_abs<float>(float value) {
 			return fabsf(value);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_abs<double>(double value) {
+        math_def inline double nd4j_abs<double>(double value) {
 			return value < 0 ? -value : value;
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_abs<int>(int value) {
+        math_def inline int nd4j_abs<int>(int value) {
 			return value < 0 ? -value : value;
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_max<float16>(float16 val1, float16 val2) {
-			return val1 > val2 ? val1 : val2;
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_max<float>(float val1, float val2) {
+        math_def inline float16 nd4j_max<float16>(float16 val1, float16 val2) {
+			return val1 > val2 ? val1 : val2;
+		}
+
+
+		template<>
+        math_def inline float nd4j_max<float>(float val1, float val2) {
 			return val1 > val2 ? val1 : val2;
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_max<double>(double val1, double val2) {
+        math_def inline double nd4j_max<double>(double val1, double val2) {
 			return val1 > val2 ? val1 : val2;
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_max<int>(int val1, int val2) {
+        math_def inline int nd4j_max<int>(int val1, int val2) {
 			return val1 > val2 ? val1 : val2;
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_min<float16>(float16 val1, float16 val2) {
-			return val1 < val2 ? val1 : val2;
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_min<float>(float val1, float val2) {
+        math_def inline float16 nd4j_min<float16>(float16 val1, float16 val2) {
+			return val1 < val2 ? val1 : val2;
+		}
+
+
+		template<>
+        math_def inline float nd4j_min<float>(float val1, float val2) {
 			return val1 < val2 ? val1 : val2;
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_min<double>(double val1, double val2) {
+        math_def inline double nd4j_min<double>(double val1, double val2) {
 			return val1 < val2 ? val1 : val2;
 		}
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_min<int>(int val1, int val2) {
+        math_def inline int nd4j_min<int>(int val1, int val2) {
 			return val1 < val2 ? val1 : val2;
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_ceil<float16>(float16 val1) {
-			return (float16) ceilf((float) val1);
+        math_def inline float16 nd4j_ceil<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hceil(val.data)
+#else
+			return ceilf(val);
+#endif
 		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-
-		inline float nd4j_ceil<float>(float val1) {
+        math_def inline float nd4j_ceil<float>(float val1) {
 			return ceilf(val1);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-
-		inline double nd4j_ceil<double>(double val) {
+        math_def inline double nd4j_ceil<double>(double val) {
 			return ceil(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_ceil<int>(int val) {
+        math_def inline int nd4j_ceil<int>(int val) {
 			return ceil((float) val);
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_cos<float16>(float16 val) {
-			return (float16) cosf((float) val);
-		}
+        math_def inline float16 nd4j_cos<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+			return hcos(val.data);
+#else
+			return cosf(val);
 #endif
+		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_cos<float>(float val) {
+        math_def inline float nd4j_cos<float>(float val) {
 			return cosf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_cos<double>(double val) {
+        math_def inline double nd4j_cos<double>(double val) {
 			return cos(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_cos<int>(int val) {
+        math_def inline int nd4j_cos<int>(int val) {
 			return cosf((float) val);
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_exp<float16>(float16 val) {
-			return (float16) expf((float) val);
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
+        math_def inline float16 nd4j_exp<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hexp(val.data);
+#else
+			return (float16) expf((float) val);
 #endif
-		inline float nd4j_exp<float>(float val) {
+		}
+
+
+		template<>
+        math_def inline float nd4j_exp<float>(float val) {
 			return expf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_exp<double>(double val) {
+        math_def inline double nd4j_exp<double>(double val) {
 			return exp(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_exp<int>(int val) {
+        math_def inline int nd4j_exp<int>(int val) {
 			return expf((float) val);
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_floor<float16>(float16 val) {
+        math_def inline float16 nd4j_floor<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hfloor(val.data);
+#else
 			return (float16) floorf((float) val);
-		}
 #endif
+		}
+
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_floor<float>(float val) {
+        math_def inline float nd4j_floor<float>(float val) {
 			return floorf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_floor<double>(double val) {
+        math_def inline double nd4j_floor<double>(double val) {
 			return floor(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_floor<int>(int val) {
+        math_def inline int nd4j_floor<int>(int val) {
 			return floorf((float) val);
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_log<float16>(float16 val) {
-			return (float16) logf((float) val);
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
+        math_def inline float16 nd4j_log<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hlog(val.data);
+#else
+			return (float16) logf((float) val);
 #endif
-		inline float nd4j_log<float>(float val) {
+		}
+
+
+		template<>
+        math_def inline float nd4j_log<float>(float val) {
 			return logf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#else
-
-#endif
-		inline double nd4j_log<double>(double val) {
+        math_def inline double nd4j_log<double>(double val) {
 			return log(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#else
-
-#endif
-		inline int nd4j_log<int>(int val) {
+        math_def inline int nd4j_log<int>(int val) {
 			return logf((int) val);
 		}
 
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_pow<float16>(float16 val, float16 val2) {
+        math_def inline float16 nd4j_pow<float16>(float16 val, float16 val2) {
 			return (float16) powf((float) val, (float) val2);
 		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_pow<float>(float val, float val2) {
+        math_def inline float nd4j_pow<float>(float val, float val2) {
 			return powf(val, val2);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_pow<double>(double val, double val2) {
+        math_def inline double nd4j_pow<double>(double val, double val2) {
 			return pow(val, val2);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_pow<int>(int val, int val2) {
+        math_def inline int nd4j_pow<int>(int val, int val2) {
 			return powf((float) val, (float) val2);
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_round<float16>(float16 val) {
+        math_def inline float16 nd4j_round<float16>(float16 val) {
 			return (float16) roundf((float) val);
 		}
-#endif
+
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_round<float>(float val) {
+        math_def inline float nd4j_round<float>(float val) {
 			return roundf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_round<double>(double val) {
+        math_def inline double nd4j_round<double>(double val) {
 			return round(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_round<int>(int val) {
+        math_def inline int nd4j_round<int>(int val) {
 			return round((float) val);
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_sin<float16>(float16 val) {
+        math_def inline float16 nd4j_sin<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hsin(val.data);
+#else
 			return (float16) sinf((float) val);
-		}
 #endif
+		}
+
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_sin<float>(float val) {
+        math_def inline float nd4j_sin<float>(float val) {
 			return sinf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_sin<double>(double val) {
+        math_def inline double nd4j_sin<double>(double val) {
 			return sin(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_sin<int>(int val) {
+        math_def inline int nd4j_sin<int>(int val) {
 			return sin((float) val);
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_sqrt<float16>(float16 val) {
-			return (float16) sqrtf((float) val);
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
+        math_def inline float16 nd4j_sqrt<float16>(float16 val) {
+#ifdef NATIVE_HALFS
+            return hsqrt(val.data);
+#else
+			return (float16) sqrtf((float) val);
 #endif
-		inline float nd4j_sqrt<float>(float val) {
+		}
+
+
+		template<>
+        math_def inline float nd4j_sqrt<float>(float val) {
 			return sqrtf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_sqrt<double>(double val) {
+        math_def inline double nd4j_sqrt<double>(double val) {
 			return sqrt(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_sqrt<int>(int val) {
+        math_def inline int nd4j_sqrt<int>(int val) {
 			return sqrtf((float) val);
 		}
 
-#ifdef __CUDACC__
 		template<>
-		__host__ __device__
-		inline float16 nd4j_tanh<float16>(float16 val) {
+        math_def inline float16 nd4j_tanh<float16>(float16 val) {
 			return (float16) tanhf((float) val);
 		}
-#endif
+
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_tanh<float>(float val) {
+        math_def inline float nd4j_tanh<float>(float val) {
 			return tanhf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_tanh<double>(double val) {
+        math_def inline double nd4j_tanh<double>(double val) {
 			return tanh(val);
 		}
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_tanh<int>(int val) {
+        math_def inline int nd4j_tanh<int>(int val) {
 			return tanhf((float) val);
 		}
 
-#ifdef __CUDACC__
-template<>
-		__host__ __device__
-		inline float16 nd4j_acos<float16>(float16 val) {
+
+        template<>
+        math_def inline float16 nd4j_acos<float16>(float16 val) {
 			return (float16) acosf((float) val);
 		}
-#endif
+
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_acos<float>(float val) {
+        math_def inline float nd4j_acos<float>(float val) {
 			return acosf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_acos<double>(double val) {
+        math_def inline double nd4j_acos<double>(double val) {
 			return acos(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_acos<int>(int val) {
+        math_def inline int nd4j_acos<int>(int val) {
 			return acosf((float) val);
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_asin<float16>(float16 val) {
-			return (float16) asinf((float) val);
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_asin<float>(float val) {
+        math_def inline float16 nd4j_asin<float16>(float16 val) {
+			return (float16) asinf((float) val);
+		}
+
+
+		template<>
+        math_def inline float nd4j_asin<float>(float val) {
 			return asinf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_asin<double>(double val) {
+        math_def inline double nd4j_asin<double>(double val) {
 			return asin(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_asin<int>(int val) {
+        math_def inline int nd4j_asin<int>(int val) {
 			return asinf((float) val);
 		}
 
-#ifdef __CUDACC__
-		template<>
-		__host__ __device__
-		inline float16 nd4j_atan<float16>(float16 val) {
-			return (float16) atanf((float)val);
-		}
-#endif
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline float nd4j_atan<float>(float val) {
+        math_def inline float16 nd4j_atan<float16>(float16 val) {
+			return (float16) atanf((float)val);
+		}
+
+
+		template<>
+        math_def inline float nd4j_atan<float>(float val) {
 			return atanf(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline double nd4j_atan<double>(double val) {
+        math_def inline double nd4j_atan<double>(double val) {
 			return atan(val);
 		}
 
 		template<>
-#ifdef __CUDACC__
-		__host__ __device__
-#endif
-		inline int nd4j_atan<int>(int val) {
+        math_def inline int nd4j_atan<int>(int val) {
 			return atanf((float) val);
 		}
 
 
-template<typename T>
-#ifdef __CUDACC__
-		__host__ __device__
-
-#endif
-		inline void nd4j_swap(T &val1, T &val2) {
+        template<typename T>
+        math_def inline void nd4j_swap(T &val1, T &val2) {
             T temp = val1; val1=val2; val2=temp;
 		};
 
