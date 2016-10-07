@@ -2,22 +2,16 @@ package org.deeplearning4j.ui.storage;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
-import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
