@@ -28,6 +28,12 @@ public class TestStatsSBE {
 
         boolean[] tf = new boolean[]{true, false};
 
+        //IDs
+        String sessionID = "sid";
+        String typeID = "tid";
+        String workerID = "wid";
+        long timestamp = -1;
+
         //Hardware info
         int jvmAvailableProcessors = 1;
         int numDevices = 2;
@@ -61,6 +67,8 @@ public class TestStatsSBE {
                 for (boolean hasModelInfo : tf) {
 
                     SbeStatsInitializationReport report = new SbeStatsInitializationReport();
+                    report.reportIDs(sessionID, typeID, workerID, timestamp);
+
                     if (hasHardwareInfo) {
                         report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory, deviceDescription, hwUID);
                     }
@@ -79,6 +87,11 @@ public class TestStatsSBE {
                     report2.decode(asBytes);
 
                     assertEquals(report, report2);
+
+                    assertEquals(sessionID, report2.getSessionID());
+                    assertEquals(typeID, report2.getTypeID());
+                    assertEquals(workerID, report2.getWorkerID());
+                    assertEquals(timestamp, report2.getTimeStamp());
 
                     if (hasHardwareInfo) {
                         assertEquals(jvmAvailableProcessors, report2.getHwJvmAvailableProcessors());
@@ -163,6 +176,8 @@ public class TestStatsSBE {
                     System.out.println(hasHardwareInfo + "\t" + hasSoftwareInfo + "\t" + hasModelInfo);
 
                     SbeStatsInitializationReport report = new SbeStatsInitializationReport();
+                    report.reportIDs(null, null, null, -1);
+
                     if (hasHardwareInfo) {
                         report.reportHardwareInfo(jvmAvailableProcessors, numDevices, jvmMaxMemory, offHeapMaxMemory, deviceTotalMemory,
                                 deviceDescription, hwUID);
@@ -236,6 +251,12 @@ public class TestStatsSBE {
     public void testSbeStatsUpdate() {
 
         String[] paramNames = new String[]{"param0", "param1"};
+
+        //IDs
+        String sessionID = "sid";
+        String typeID = "tid";
+        String workerID = "wid";
+        long timestamp = -1;
 
         long time = System.currentTimeMillis();
         int duration = 123456;
@@ -335,7 +356,7 @@ public class TestStatsSBE {
                                         for (boolean[] collectMM : tf3) {
 
                                             SbeStatsReport report = new SbeStatsReport(paramNames);
-//                                            report.reportTime(time);
+                                            report.reportIDs(sessionID, typeID, workerID, time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
                                             if (collectPerformanceStats) {
@@ -402,6 +423,11 @@ public class TestStatsSBE {
                                             report2.decode(bytes);
 
                                             assertEquals(report, report2);
+
+                                            assertEquals(sessionID, report2.getSessionID());
+                                            assertEquals(typeID, report2.getTypeID());
+                                            assertEquals(workerID, report2.getWorkerID());
+                                            assertEquals(time, report2.getTimeStamp());
 
 
                                             assertEquals(time, report2.getTimeStamp());
@@ -623,7 +649,7 @@ public class TestStatsSBE {
                                         for (boolean[] collectMM : tf3) {
 
                                             SbeStatsReport report = new SbeStatsReport(paramNames);
-//                                            report.reportTime(time);
+                                            report.reportIDs(null, null, null, time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
                                             if (collectPerformanceStats) {

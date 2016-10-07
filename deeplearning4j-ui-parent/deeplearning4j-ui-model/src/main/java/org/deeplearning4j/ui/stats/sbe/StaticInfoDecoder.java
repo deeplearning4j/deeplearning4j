@@ -775,9 +775,246 @@ public class StaticInfoDecoder
         }
     }
 
-    public static int swArchId()
+    public static int sessionIDId()
     {
         return 100;
+    }
+
+    public static String sessionIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int sessionIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public int sessionIDLength()
+    {
+        final int limit = parentMessage.limit();
+        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+    }
+
+    public int getSessionID(final MutableDirectBuffer dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public int getSessionID(final byte[] dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public String sessionID()
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        parentMessage.limit(limit + headerLength + dataLength);
+        final byte[] tmp = new byte[dataLength];
+        buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+        final String value;
+        try
+        {
+            value = new String(tmp, "UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        return value;
+    }
+
+    public static int typeIDId()
+    {
+        return 101;
+    }
+
+    public static String typeIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int typeIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public int typeIDLength()
+    {
+        final int limit = parentMessage.limit();
+        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+    }
+
+    public int getTypeID(final MutableDirectBuffer dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public int getTypeID(final byte[] dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public String typeID()
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        parentMessage.limit(limit + headerLength + dataLength);
+        final byte[] tmp = new byte[dataLength];
+        buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+        final String value;
+        try
+        {
+            value = new String(tmp, "UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        return value;
+    }
+
+    public static int workerIDId()
+    {
+        return 102;
+    }
+
+    public static String workerIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int workerIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public int workerIDLength()
+    {
+        final int limit = parentMessage.limit();
+        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+    }
+
+    public int getWorkerID(final MutableDirectBuffer dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public int getWorkerID(final byte[] dst, final int dstOffset, final int length)
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int bytesCopied = Math.min(length, dataLength);
+        parentMessage.limit(limit + headerLength + dataLength);
+        buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+        return bytesCopied;
+    }
+
+    public String workerID()
+    {
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        parentMessage.limit(limit + headerLength + dataLength);
+        final byte[] tmp = new byte[dataLength];
+        buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+        final String value;
+        try
+        {
+            value = new String(tmp, "UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        return value;
+    }
+
+    public static int swArchId()
+    {
+        return 201;
     }
 
     public static String swArchCharacterEncoding()
@@ -856,7 +1093,7 @@ public class StaticInfoDecoder
 
     public static int swOsNameId()
     {
-        return 101;
+        return 202;
     }
 
     public static String swOsNameCharacterEncoding()
@@ -935,7 +1172,7 @@ public class StaticInfoDecoder
 
     public static int swJvmNameId()
     {
-        return 102;
+        return 203;
     }
 
     public static String swJvmNameCharacterEncoding()
@@ -1014,7 +1251,7 @@ public class StaticInfoDecoder
 
     public static int swJvmVersionId()
     {
-        return 103;
+        return 204;
     }
 
     public static String swJvmVersionCharacterEncoding()
@@ -1093,7 +1330,7 @@ public class StaticInfoDecoder
 
     public static int swJvmSpecVersionId()
     {
-        return 104;
+        return 205;
     }
 
     public static String swJvmSpecVersionCharacterEncoding()
@@ -1172,7 +1409,7 @@ public class StaticInfoDecoder
 
     public static int swNd4jBackendClassId()
     {
-        return 105;
+        return 206;
     }
 
     public static String swNd4jBackendClassCharacterEncoding()
@@ -1251,7 +1488,7 @@ public class StaticInfoDecoder
 
     public static int swNd4jDataTypeNameId()
     {
-        return 106;
+        return 207;
     }
 
     public static String swNd4jDataTypeNameCharacterEncoding()
@@ -1330,7 +1567,7 @@ public class StaticInfoDecoder
 
     public static int swHostNameId()
     {
-        return 107;
+        return 208;
     }
 
     public static String swHostNameCharacterEncoding()
@@ -1409,7 +1646,7 @@ public class StaticInfoDecoder
 
     public static int swJvmUIDId()
     {
-        return 108;
+        return 209;
     }
 
     public static String swJvmUIDCharacterEncoding()
@@ -1488,7 +1725,7 @@ public class StaticInfoDecoder
 
     public static int hwHardwareUIDId()
     {
-        return 200;
+        return 300;
     }
 
     public static String hwHardwareUIDCharacterEncoding()
@@ -1567,7 +1804,7 @@ public class StaticInfoDecoder
 
     public static int modelConfigClassNameId()
     {
-        return 300;
+        return 400;
     }
 
     public static String modelConfigClassNameCharacterEncoding()
@@ -1646,7 +1883,7 @@ public class StaticInfoDecoder
 
     public static int modelConfigJsonId()
     {
-        return 301;
+        return 401;
     }
 
     public static String modelConfigJsonCharacterEncoding()
@@ -1819,51 +2056,63 @@ public class StaticInfoDecoder
         }
         builder.append(']');
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swArch', description='null', id=100, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='sessionID', description='null', id=100, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("sessionID=");
+        builder.append(sessionID());
+        builder.append('|');
+        //Token{signal=BEGIN_VAR_DATA, name='typeID', description='null', id=101, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("typeID=");
+        builder.append(typeID());
+        builder.append('|');
+        //Token{signal=BEGIN_VAR_DATA, name='workerID', description='null', id=102, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        builder.append("workerID=");
+        builder.append(workerID());
+        builder.append('|');
+        //Token{signal=BEGIN_VAR_DATA, name='swArch', description='null', id=201, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swArch=");
         builder.append(swArch());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swOsName', description='null', id=101, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swOsName', description='null', id=202, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swOsName=");
         builder.append(swOsName());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swJvmName', description='null', id=102, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swJvmName', description='null', id=203, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swJvmName=");
         builder.append(swJvmName());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swJvmVersion', description='null', id=103, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swJvmVersion', description='null', id=204, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swJvmVersion=");
         builder.append(swJvmVersion());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swJvmSpecVersion', description='null', id=104, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swJvmSpecVersion', description='null', id=205, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swJvmSpecVersion=");
         builder.append(swJvmSpecVersion());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swNd4jBackendClass', description='null', id=105, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swNd4jBackendClass', description='null', id=206, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swNd4jBackendClass=");
         builder.append(swNd4jBackendClass());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swNd4jDataTypeName', description='null', id=106, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swNd4jDataTypeName', description='null', id=207, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swNd4jDataTypeName=");
         builder.append(swNd4jDataTypeName());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swHostName', description='null', id=107, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swHostName', description='null', id=208, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swHostName=");
         builder.append(swHostName());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='swJvmUID', description='null', id=108, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='swJvmUID', description='null', id=209, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("swJvmUID=");
         builder.append(swJvmUID());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='hwHardwareUID', description='null', id=200, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='hwHardwareUID', description='null', id=300, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("hwHardwareUID=");
         builder.append(hwHardwareUID());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='modelConfigClassName', description='null', id=300, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='modelConfigClassName', description='null', id=400, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelConfigClassName=");
         builder.append(modelConfigClassName());
         builder.append('|');
-        //Token{signal=BEGIN_VAR_DATA, name='modelConfigJson', description='null', id=301, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_VAR_DATA, name='modelConfigJson', description='null', id=401, version=0, encodedLength=0, offset=-1, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
         builder.append("modelConfigJson=");
         builder.append(modelConfigJson());
 
