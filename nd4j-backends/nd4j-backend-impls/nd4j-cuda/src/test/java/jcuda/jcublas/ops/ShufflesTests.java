@@ -285,7 +285,7 @@ public class ShufflesTests {
 
     @Test
     public void testHalfVectors() throws Exception {
-        int[] array = ArrayUtil.buildHalfVector(new Random(12), 5, 11);
+        int[] array = ArrayUtil.buildHalfVector(new Random(12), 11);
 
         System.out.println("HalfVec: " + Arrays.toString(array));
     }

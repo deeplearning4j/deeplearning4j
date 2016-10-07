@@ -23,6 +23,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
+import java.util.Map;
+import java.util.Properties;
+
 /**
  * An operation executioner handles storage specific details of
  * executing an operation
@@ -167,4 +170,11 @@ public interface OpExecutioner {
      * @param op
      */
     void exec(GridOp op);
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    Properties getEnvironmentInformation();
 }
