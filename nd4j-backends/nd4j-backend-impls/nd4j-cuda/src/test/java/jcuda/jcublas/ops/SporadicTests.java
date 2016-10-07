@@ -208,7 +208,7 @@ public class SporadicTests {
             for (int x = 0; x < rand.length; x++) {
                 rand[x] = rnd.nextFloat();
             }
-            Nd4j.getConstantHandler().getConstantBuffer(new float[]{rnd.nextFloat()});
+            Nd4j.getConstantHandler().getConstantBuffer(rand);
 
             int shape[] = new int[rnd.nextInt(3)+2];
             for (int x = 0; x < shape.length; x++) {
