@@ -88,7 +88,7 @@ public class StatsListener implements IterationListener {
         }
 
         StatsReport report = receiver.newStatsReport();
-        report.reportTime(currentTime);
+//        report.reportTime(currentTime);
         report.reportIterationCount(iterCount);
 
         long deltaReportTime = currentTime - lastReportTime;

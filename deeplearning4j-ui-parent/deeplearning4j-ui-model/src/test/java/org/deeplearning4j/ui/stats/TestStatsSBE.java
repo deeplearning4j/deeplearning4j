@@ -73,10 +73,10 @@ public class TestStatsSBE {
                         report.reportModelInfo(modelClassName, modelConfigJson, modelparamNames, numLayers, numParams);
                     }
 
-                    byte[] asBytes = report.toByteArray();
+                    byte[] asBytes = report.encode();
 
                     SbeStatsInitializationReport report2 = new SbeStatsInitializationReport();
-                    report2.fromByteArray(asBytes);
+                    report2.decode(asBytes);
 
                     assertEquals(report, report2);
 
@@ -177,10 +177,10 @@ public class TestStatsSBE {
                         report.reportModelInfo(modelClassName, modelConfigJson, modelparamNames, numLayers, numParams);
                     }
 
-                    byte[] asBytes = report.toByteArray();
+                    byte[] asBytes = report.encode();
 
                     SbeStatsInitializationReport report2 = new SbeStatsInitializationReport();
-                    report2.fromByteArray(asBytes);
+                    report2.decode(asBytes);
 
                     if (hasHardwareInfo) {
                         assertEquals(jvmAvailableProcessors, report2.getHwJvmAvailableProcessors());
@@ -335,7 +335,7 @@ public class TestStatsSBE {
                                         for (boolean[] collectMM : tf3) {
 
                                             SbeStatsReport report = new SbeStatsReport(paramNames);
-                                            report.reportTime(time);
+//                                            report.reportTime(time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
                                             if (collectPerformanceStats) {
@@ -396,15 +396,15 @@ public class TestStatsSBE {
                                                 report.reportMeanMagnitudes(StatsType.Activations, aMM);
                                             }
 
-                                            byte[] bytes = report.toByteArray();
+                                            byte[] bytes = report.encode();
 
                                             StatsReport report2 = new SbeStatsReport(paramNames);
-                                            report2.fromByteArray(bytes);
+                                            report2.decode(bytes);
 
                                             assertEquals(report, report2);
 
 
-                                            assertEquals(time, report2.getTime());
+                                            assertEquals(time, report2.getTimeStamp());
                                             assertEquals(duration, report2.getStatsCollectionDurationMs());
                                             assertEquals(iterCount, report2.getIterationCount());
                                             if (collectPerformanceStats) {
@@ -623,7 +623,7 @@ public class TestStatsSBE {
                                         for (boolean[] collectMM : tf3) {
 
                                             SbeStatsReport report = new SbeStatsReport(paramNames);
-                                            report.reportTime(time);
+//                                            report.reportTime(time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
                                             if (collectPerformanceStats) {
@@ -684,12 +684,12 @@ public class TestStatsSBE {
                                                 report.reportMeanMagnitudes(StatsType.Activations, aMM);
                                             }
 
-                                            byte[] bytes = report.toByteArray();
+                                            byte[] bytes = report.encode();
 
                                             StatsReport report2 = new SbeStatsReport(paramNames);
-                                            report2.fromByteArray(bytes);
+                                            report2.decode(bytes);
 
-                                            assertEquals(time, report2.getTime());
+                                            assertEquals(time, report2.getTimeStamp());
                                             assertEquals(duration, report2.getStatsCollectionDurationMs());
                                             assertEquals(iterCount, report2.getIterationCount());
                                             if (collectPerformanceStats) {

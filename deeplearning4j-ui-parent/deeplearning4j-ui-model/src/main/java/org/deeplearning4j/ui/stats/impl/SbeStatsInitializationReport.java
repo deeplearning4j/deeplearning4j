@@ -1,10 +1,16 @@
 package org.deeplearning4j.ui.stats.impl;
 
 import lombok.Data;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.sbe.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * An implementation of {@link StatsInitializationReport} using Simple Binary Encoding (SBE)
@@ -13,6 +19,11 @@ import org.deeplearning4j.ui.stats.sbe.*;
  */
 @Data
 public class SbeStatsInitializationReport implements StatsInitializationReport {
+
+    private String sessionID;
+    private String typeID;
+    private String workerID;
+    private long timeStamp;
 
     private boolean hasSoftwareInfo;
     private boolean hasHardwareInfo;
@@ -42,6 +53,14 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private int modelNumLayers;
     private long modelNumParams;
 
+
+    @Override
+    public void reportIDs(String sessionID, String typeID, String workerID, long timeStamp) {
+        this.sessionID = sessionID;
+        this.typeID = typeID;
+        this.workerID = workerID;
+        this.timeStamp = timeStamp;
+    }
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
@@ -83,13 +102,67 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     @Override
-    public byte[] toByteArray() {
-        //Recall that the encoding order is VERY important for SBE... must follow the schema exactly
+    public boolean hasSoftwareInfo() {
+        return hasSoftwareInfo;
+    }
 
-        //TODO we could do this much more efficiently, with buffer re-use, etc.
-        MessageHeaderEncoder enc = new MessageHeaderEncoder();
-        StaticInfoEncoder sie = new StaticInfoEncoder();
+    @Override
+    public boolean hasHardwareInfo() {
+        return hasHardwareInfo;
+    }
 
+    @Override
+    public boolean hasModelInfo() {
+        return hasModelInfo;
+    }
+
+    private void clearHwFields(){
+        hwDeviceTotalMemory = null;
+        hwDeviceDescription = null;
+        hwHardwareUID = null;
+    }
+
+    private void clearSwFields() {
+        swArch = null;
+        swOsName = null;
+        swJvmName = null;
+        swJvmVersion = null;
+        swJvmSpecVersion = null;
+        swNd4jBackendClass = null;
+        swNd4jDataTypeName = null;
+        swHostname = null;
+        swJvmUID = null;
+    }
+
+    private void clearModelFields() {
+        modelClassName = null;
+        modelConfigJson = null;
+        modelParamNames = null;
+    }
+
+    @Override
+    public String getSessionID() {
+        return sessionID;
+    }
+
+    @Override
+    public String getTypeID() {
+        return typeID;
+    }
+
+    @Override
+    public String getWorkerID() {
+        return workerID;
+    }
+
+    @Override
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    @Override
+    public int encodingLengthBytes() {
+        //TODO reuse the byte[]s here, to avoid converting them twice...
 
         //First: need to determine how large a buffer to use.
         //Buffer is composed of:
@@ -99,6 +172,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
         //(e) Variable length fields: 12 String length fields. Size: 4 bytes header, plus content. 48 bytes header
         //Fixed length + repeating groups + variable length...
+        StaticInfoEncoder sie = new StaticInfoEncoder();
         int bufferSize = 8 + sie.sbeBlockLength() + 4 + 4 + 48; //header + fixed values + group headers + variable length headers
 
         //For variable length field lengths: easist way is simply to convert to UTF-8
@@ -146,10 +220,38 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += (bModelParamNames == null ? 0 : bModelParamNames.length * 4);   //uint32: 4 bytes per entry for var length header...
         }
 
+        return bufferSize;
+    }
 
-        //Now know the buffer size -> create appropriate sized byte array
-        byte[] bytes = new byte[bufferSize];
+    @Override
+    public byte[] encode() {
+        byte[] bytes = new byte[encodingLengthBytes()];
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        encode(buffer);
+        return bytes;
+    }
+
+    @Override
+    public void encode(MutableDirectBuffer buffer) {
+
+        MessageHeaderEncoder enc = new MessageHeaderEncoder();
+        StaticInfoEncoder sie = new StaticInfoEncoder();
+
+        byte[] bswArch = SbeUtil.toBytes(hasSoftwareInfo, swArch);
+        byte[] bswOsName = SbeUtil.toBytes(hasSoftwareInfo, swOsName);
+        byte[] bswJvmName = SbeUtil.toBytes(hasSoftwareInfo, swJvmName);
+        byte[] bswJvmVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmVersion);
+        byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
+        byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
+        byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
+        byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
+        byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
+        byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
+
+        byte[][] bhwDeviceDescription = SbeUtil.toBytes(hasHardwareInfo, hwDeviceDescription);
+        byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
 
         enc.wrap(buffer, 0)
                 .blockLength(sie.sbeBlockLength())
@@ -174,6 +276,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
                 .modelNumParams(modelNumParams);
         //Device info group...
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
+        int nHWDeviceStats = (hasHardwareInfo ? hwNumDevices : 0);
         for (int i = 0; i < nHWDeviceStats; i++) {
             long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? 0 : hwDeviceTotalMemory[i];
             byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
@@ -201,23 +304,25 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //Similar: !hasModelInfo -> empty byte[]
         sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length)
                 .putModelConfigJson(bmodelConfigJson, 0, bmodelConfigJson.length);
-
-        offset += sie.encodedLength();
-        if (offset != bytes.length) {
-            throw new RuntimeException();
-        }
-
-        return bytes;
     }
 
+    @Override
+    public void encode(OutputStream outputStream) throws IOException {
+        //TODO there may be more efficient way of doing this
+        outputStream.write(encode());
+    }
 
     @Override
-    public void fromByteArray(byte[] bytes) {
+    public void decode(byte[] decode) {
+        MutableDirectBuffer buffer = new UnsafeBuffer(decode);
+        decode(buffer);
+    }
+
+    @Override
+    public void decode(DirectBuffer buffer) {
         //TODO we could do this much more efficiently, with buffer re-use, etc.
         MessageHeaderDecoder dec = new MessageHeaderDecoder();
         StaticInfoDecoder sid = new StaticInfoDecoder();
-
-        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
         dec.wrap(buffer, 0);
 
         final int blockLength = dec.blockLength();
@@ -280,41 +385,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     @Override
-    public boolean hasSoftwareInfo() {
-        return hasSoftwareInfo;
-    }
-
-    @Override
-    public boolean hasHardwareInfo() {
-        return hasHardwareInfo;
-    }
-
-    @Override
-    public boolean hasModelInfo() {
-        return hasModelInfo;
-    }
-
-    private void clearHwFields(){
-        hwDeviceTotalMemory = null;
-        hwDeviceDescription = null;
-        hwHardwareUID = null;
-    }
-
-    private void clearSwFields() {
-        swArch = null;
-        swOsName = null;
-        swJvmName = null;
-        swJvmVersion = null;
-        swJvmSpecVersion = null;
-        swNd4jBackendClass = null;
-        swNd4jDataTypeName = null;
-        swHostname = null;
-        swJvmUID = null;
-    }
-
-    private void clearModelFields() {
-        modelClassName = null;
-        modelConfigJson = null;
-        modelParamNames = null;
+    public void decode(InputStream inputStream) throws IOException {
+        byte[] bytes = IOUtils.toByteArray(inputStream);
+        decode(bytes);
     }
 }

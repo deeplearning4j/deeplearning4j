@@ -1,8 +1,10 @@
 package org.deeplearning4j.ui.stats.impl;
 
 import lombok.*;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.Histogram;
@@ -25,8 +27,12 @@ public class SbeStatsReport implements StatsReport {
 
     private final String[] paramNames;
 
+    private String sessionID;
+    private String typeID;
+    private String workerID;
+    private long timeStamp;
+
     private int iterationCount;
-    private long time;
     private int statsCollectionDurationMs;
     private double score;
 
@@ -45,7 +51,7 @@ public class SbeStatsReport implements StatsReport {
 
     private List<GCStats> gcStats;
 
-    private Map<String,Double> learningRatesByParam;
+    private Map<String, Double> learningRatesByParam;
     private Map<StatsType, Map<String, Histogram>> histograms;
     private Map<StatsType, Map<String, Double>> meanValues;
     private Map<StatsType, Map<String, Double>> stdevValues;
@@ -66,19 +72,18 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
+    public void reportIDs(String sessionID, String typeID, String workerID, long timeStamp) {
+        this.sessionID = sessionID;
+        this.typeID = typeID;
+        this.workerID = workerID;
+        this.timeStamp = timeStamp;
+    }
+
+    @Override
     public void reportIterationCount(int iterationCount) {
         this.iterationCount = iterationCount;
     }
 
-    @Override
-    public void reportTime(long reportTime) {
-        this.time = reportTime;
-    }
-
-    @Override
-    public long getTime() {
-        return time;
-    }
 
     @Override
     public void reportStatsCollectionDurationMS(int statsCollectionDurationMS) {
@@ -189,7 +194,7 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public void reportDataSetMetaData(List<Serializable> dataSetMetaData, String metaDataClass) {
-        if(dataSetMetaData != null) {
+        if (dataSetMetaData != null) {
             this.dataSetMetaData = new ArrayList<>();
             for (Serializable s : dataSetMetaData) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -217,13 +222,13 @@ public class SbeStatsReport implements StatsReport {
 
     @Override
     public List<Serializable> getDataSetMetaData() {
-        if(dataSetMetaData == null || dataSetMetaData.size() == 0) return null;
+        if (dataSetMetaData == null || dataSetMetaData.size() == 0) return null;
 
         List<Serializable> l = new ArrayList<>();
-        for(byte[] b : dataSetMetaData){
-            try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b))){
-                l.add((Serializable)ois.readObject());
-            }catch (IOException | ClassNotFoundException e){
+        for (byte[] b : dataSetMetaData) {
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b))) {
+                l.add((Serializable) ois.readObject());
+            } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -282,279 +287,6 @@ public class SbeStatsReport implements StatsReport {
     @Override
     public boolean hasDataSetMetaData() {
         return dataSetMetaData != null || metaDataClassName != null;
-    }
-
-    @Override
-    public byte[] toByteArray() {
-
-        MessageHeaderEncoder enc = new MessageHeaderEncoder();
-        UpdateEncoder ue = new UpdateEncoder();
-
-        //--------------------------------------------------------------------------------------------------------------
-        //First: determine buffer size.
-        //(a) Header: 8 bytes (4x uint16 = 8 bytes)
-        //(b) Fixed length entries length (sie.BlockLength())
-        //(c) Group 1: Memory use.
-        //(d) Group 2: Performance stats
-        //(e) Group 3: GC stats
-        //(f) Group 4: Per parameter performance stats
-        //Here: no variable length String fields, outside of the GC name group...
-
-        int bufferSize = 8 + ue.sbeBlockLength();
-
-        //Memory use group length...
-        int memoryUseCount;
-        if (!memoryUsePresent) {
-            memoryUseCount = 0;
-        } else {
-            memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
-                    + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
-        }
-        bufferSize += 4 + 9 * memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 1+8 = 9 bytes
-
-        //Performance group length
-        bufferSize += 4 + (performanceStatsPresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
-
-        //GC stats group length
-        bufferSize += 4;    //Group header: always present
-        List<byte[]> gcStatsLabelBytes = null;
-        if (gcStats != null && gcStats.size() > 0) {
-            gcStatsLabelBytes = new ArrayList<>();
-            for (int i = 0; i < gcStats.size(); i++) {
-                GCStats stats = gcStats.get(i);
-                bufferSize += 12;    //Fixed per group entry: 2x int32 -> 8 bytes PLUS the header for the variable length GC name: another 4 bytes
-                byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
-                bufferSize += nameAsBytes.length;
-                gcStatsLabelBytes.add(nameAsBytes);
-            }
-        }
-
-        //Per parameter stats group length
-        bufferSize += 4;    //Per parameter stats group header: always present
-        int nParams = paramNames.length;
-        bufferSize += nParams * 14;  //Each parameter entry: has a param ID, learning rate -> uint16 + float -> 6 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
-        for (String s : paramNames) {
-            //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
-            int summaryStatsCount = 0;
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
-                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
-                    Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
-                    if (map.containsKey(s)) summaryStatsCount++;
-                }
-            }
-            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
-            bufferSize += summaryStatsCount * 10;
-
-            //Histograms for this parameter
-            int nHistogramsThisParam = 0;
-            if(histograms != null && histograms.size() > 0){
-                for(Map<String,Histogram> map : histograms.values()){
-                    if(map != null && map.containsKey(s)) nHistogramsThisParam++;
-                }
-            }
-            //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
-            bufferSize += 25 * nHistogramsThisParam;
-            //PLUS, the number of count values, given by nBins...
-            int nBinCountEntries = 0;
-            for (StatsType statsType : StatsType.values()) {
-                if (histograms == null || !histograms.containsKey(statsType)) continue;
-                Map<String, Histogram> map = histograms.get(statsType);
-                if ( map != null && map.containsKey(s)) { //If it doesn't: assume 0 count...
-                    nBinCountEntries += map.get(s).getNBins();
-                }
-            }
-            bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
-        }
-
-        //Metadata group:
-        bufferSize += 4;    //Metadata group header: always present
-        if(dataSetMetaData != null && dataSetMetaData.size() > 0){
-            for(byte[] b : dataSetMetaData){
-                bufferSize += 4 + b.length; //4 bytes header + content
-            }
-        }
-
-        //Metadata class name:
-        bufferSize += 4; // 4 bytes header (always present)
-        byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
-        bufferSize += metaDataClassNameBytes.length;
-
-        //End buffer size calculation
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //Start encoding
-
-        byte[] bytes = new byte[bufferSize];
-        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-        enc.wrap(buffer, 0)
-                .blockLength(ue.sbeBlockLength())
-                .templateId(ue.sbeTemplateId())
-                .schemaId(ue.sbeSchemaId())
-                .version(ue.sbeSchemaVersion());
-
-        int offset = enc.encodedLength();   //Expect 8 bytes
-        ue.wrap(buffer, offset);
-
-        //Fixed length fields: always encoded
-        ue.time(time)
-                .deltaTime(0)   //TODO
-                .iterationCount(iterationCount)
-                .fieldsPresent()
-                .score(scorePresent)
-                .memoryUse(memoryUsePresent)
-                .performance(performanceStatsPresent)
-                .garbageCollection(gcStats != null && !gcStats.isEmpty())
-                .histogramParameters(histograms != null && histograms.containsKey(StatsType.Parameters))
-                .histogramUpdates(histograms != null && histograms.containsKey(StatsType.Updates))
-                .histogramActivations(histograms != null && histograms.containsKey(StatsType.Activations))
-                .meanParameters(meanValues != null && meanValues.containsKey(StatsType.Parameters))
-                .meanUpdates(meanValues != null && meanValues.containsKey(StatsType.Updates))
-                .meanActivations(meanValues != null && meanValues.containsKey(StatsType.Activations))
-                .meanMagnitudeParameters(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Parameters))
-                .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
-                .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations))
-                .learningRatesPresent(learningRatesByParam != null)
-                .dataSetMetaDataPresent(hasDataSetMetaData());
-
-        ue.statsCollectionDuration(statsCollectionDurationMs)
-                .score(score);
-
-
-        UpdateEncoder.MemoryUseEncoder mue = ue.memoryUseCount(memoryUseCount);
-        if (memoryUsePresent) {
-            mue.next().memoryType(MemoryType.JvmCurrent).memoryBytes(jvmCurrentBytes)
-                    .next().memoryType(MemoryType.JvmMax).memoryBytes(jvmMaxBytes)
-                    .next().memoryType(MemoryType.OffHeapCurrent).memoryBytes(offHeapCurrentBytes)
-                    .next().memoryType(MemoryType.OffHeapMax).memoryBytes(offHeapMaxBytes);
-            if (deviceCurrentBytes != null) {
-                for (int i = 0; i < deviceCurrentBytes.length; i++) {
-                    mue.next().memoryType(MemoryType.DeviceCurrent).memoryBytes(deviceCurrentBytes[i]);
-                }
-            }
-            if (deviceMaxBytes != null) {
-                for (int i = 0; i < deviceMaxBytes.length; i++) {
-                    mue.next().memoryType(MemoryType.DeviceMax).memoryBytes(deviceMaxBytes[i]);
-                }
-            }
-        }
-
-        UpdateEncoder.PerformanceEncoder pe = ue.performanceCount(performanceStatsPresent ? 1 : 0);
-        if (performanceStatsPresent) {
-            pe.next().totalRuntimeMs(totalRuntimeMs)
-                    .totalExamples(totalExamples)
-                    .totalMinibatches(totalMinibatches)
-                    .examplesPerSecond((float) examplesPerSecond)
-                    .minibatchesPerSecond((float) minibatchesPerSecond);
-        }
-
-        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.size() == 0 ? 0 : gcStats.size());
-        if (gcStats != null && gcStats.size() > 0) {
-            int i = 0;
-            for (GCStats g : gcStats) {
-                byte[] gcLabelBytes = gcStatsLabelBytes.get(i++);
-                gce.next().deltaGCCount(g.deltaGCCount)
-                        .deltaGCTimeMs(g.deltaGCTime)
-                        .putGcName(gcLabelBytes, 0, gcLabelBytes.length);
-            }
-        }
-
-        // +++++ Per Parameter Stats +++++
-        UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(nParams);
-
-        int paramId = 0;
-        for (String s : paramNames) {
-            ppe = ppe.next();
-            float lr = 0.0f;
-            if(learningRatesByParam != null && learningRatesByParam.containsKey(s)){
-                lr = learningRatesByParam.get(s).floatValue();
-            }
-            ppe.paramID(paramId++)
-                    .learningRate(lr);
-
-            int summaryStatsCount = 0;
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
-                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
-                    Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
-                    if (map.containsKey(s)) summaryStatsCount++;
-                }
-            }
-
-            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
-
-            //Summary stats
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
-                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
-                    Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
-                    appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
-                }
-            }
-
-            int nHistogramsThisParam = 0;
-            if(histograms != null && histograms.size() > 0){
-                for(Map<String,Histogram> map : histograms.values()){
-                    if(map != null && map.containsKey(s)) nHistogramsThisParam++;
-                }
-            }
-
-            //Histograms
-            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistogramsThisParam);
-            if (nHistogramsThisParam > 0) {
-                for (StatsType statsType : StatsType.values()) {
-                    Map<String, Histogram> map = histograms.get(statsType);
-                    if (map == null) continue;
-                    Histogram h = map.get(s);   //Histogram for StatsType for this parameter
-                    double min;
-                    double max;
-                    int nBins;
-                    int[] binCounts;
-                    if (h == null) {
-                        min = 0.0;
-                        max = 0.0;
-                        nBins = 0;
-                        binCounts = null;
-                    } else {
-                        min = h.getMin();
-                        max = h.getMax();
-                        nBins = h.getNBins();
-                        binCounts = h.getBinCounts();
-                    }
-
-                    sshe = sshe.next().statType(translate(statsType)).minValue(min).maxValue(max).nBins(nBins);
-                    UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder.HistogramCountsEncoder histCountsEncoder = sshe.histogramCountsCount(nBins);
-                    for (int i = 0; i < nBins; i++) {
-                        int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
-                        histCountsEncoder.next().binCount(count);
-                    }
-                }
-            }
-        }
-
-        // +++ DataSet MetaData +++
-        UpdateEncoder.DataSetMetaDataBytesEncoder metaEnc = ue.dataSetMetaDataBytesCount(dataSetMetaData != null ? dataSetMetaData.size() : 0);
-        if(dataSetMetaData != null && dataSetMetaData.size() > 0) {
-            for (byte[] b : dataSetMetaData) {
-                metaEnc = metaEnc.next();
-                UpdateEncoder.DataSetMetaDataBytesEncoder.MetaDataBytesEncoder mdbe = metaEnc.metaDataBytesCount(b.length);
-                for (byte bb : b) {
-                    mdbe.next().bytes(bb);
-                }
-            }
-        }
-
-        //Class name for DataSet metadata
-        ue.putDataSetMetaDataClassName(metaDataClassNameBytes,0,metaDataClassNameBytes.length);
-
-        offset += ue.encodedLength();
-        if (offset != bytes.length) {
-            throw new RuntimeException("Unexpected offset: estimated buffer length (" + bytes.length
-                    + " bytes) does not match encoded length (" + offset + " bytes)");
-        }
-
-        return bytes;
     }
 
     private Map<String, Double> mapForTypes(StatsType statsType, SummaryType summaryType) {
@@ -651,15 +383,331 @@ public class SbeStatsReport implements StatsReport {
         }
     }
 
+    @Override
+    public String getSessionID() {
+        return sessionID;
+    }
 
     @Override
-    public void fromByteArray(byte[] bytes) {
+    public String getTypeID() {
+        return typeID;
+    }
 
-        //TODO we could do this much more efficiently, with buffer re-use, etc.
+    @Override
+    public String getWorkerID() {
+        return workerID;
+    }
+
+    @Override
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+
+    //================ Ser/de methods =================
+
+    @Override
+    public int encodingLengthBytes() {
+        //First: determine buffer size.
+        //(a) Header: 8 bytes (4x uint16 = 8 bytes)
+        //(b) Fixed length entries length (sie.BlockLength())
+        //(c) Group 1: Memory use.
+        //(d) Group 2: Performance stats
+        //(e) Group 3: GC stats
+        //(f) Group 4: Per parameter performance stats
+        //Here: no variable length String fields, outside of the GC name group...
+
+        UpdateEncoder ue = new UpdateEncoder();
+        int bufferSize = 8 + ue.sbeBlockLength();
+
+        //Memory use group length...
+        int memoryUseCount;
+        if (!memoryUsePresent) {
+            memoryUseCount = 0;
+        } else {
+            memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
+                    + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
+        }
+        bufferSize += 4 + 9 * memoryUseCount;    //Group header: 4 bytes (always present); Each entry in group - 1x MemoryType (uint8) + 1x int64 -> 1+8 = 9 bytes
+
+        //Performance group length
+        bufferSize += 4 + (performanceStatsPresent ? 32 : 0); //Group header: 4 bytes (always present); Only 1 group: 3xint64 + 2xfloat = 32 bytes
+
+        //GC stats group length
+        bufferSize += 4;    //Group header: always present
+        List<byte[]> gcStatsLabelBytes = null;
+        if (gcStats != null && gcStats.size() > 0) {
+            gcStatsLabelBytes = new ArrayList<>();
+            for (int i = 0; i < gcStats.size(); i++) {
+                GCStats stats = gcStats.get(i);
+                bufferSize += 12;    //Fixed per group entry: 2x int32 -> 8 bytes PLUS the header for the variable length GC name: another 4 bytes
+                byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
+                bufferSize += nameAsBytes.length;
+                gcStatsLabelBytes.add(nameAsBytes);
+            }
+        }
+
+        //Per parameter stats group length
+        bufferSize += 4;    //Per parameter stats group header: always present
+        int nParams = paramNames.length;
+        bufferSize += nParams * 14;  //Each parameter entry: has a param ID, learning rate -> uint16 + float -> 6 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
+        for (String s : paramNames) {
+            //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
+            int summaryStatsCount = 0;
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    if (map.containsKey(s)) summaryStatsCount++;
+                }
+            }
+            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
+            bufferSize += summaryStatsCount * 10;
+
+            //Histograms for this parameter
+            int nHistogramsThisParam = 0;
+            if (histograms != null && histograms.size() > 0) {
+                for (Map<String, Histogram> map : histograms.values()) {
+                    if (map != null && map.containsKey(s)) nHistogramsThisParam++;
+                }
+            }
+            //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
+            bufferSize += 25 * nHistogramsThisParam;
+            //PLUS, the number of count values, given by nBins...
+            int nBinCountEntries = 0;
+            for (StatsType statsType : StatsType.values()) {
+                if (histograms == null || !histograms.containsKey(statsType)) continue;
+                Map<String, Histogram> map = histograms.get(statsType);
+                if (map != null && map.containsKey(s)) { //If it doesn't: assume 0 count...
+                    nBinCountEntries += map.get(s).getNBins();
+                }
+            }
+            bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
+        }
+
+        //Metadata group:
+        bufferSize += 4;    //Metadata group header: always present
+        if (dataSetMetaData != null && dataSetMetaData.size() > 0) {
+            for (byte[] b : dataSetMetaData) {
+                bufferSize += 4 + b.length; //4 bytes header + content
+            }
+        }
+
+        //Metadata class name:
+        bufferSize += 4; // 4 bytes header (always present)
+        byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
+        bufferSize += metaDataClassNameBytes.length;
+
+        return bufferSize;
+    }
+
+    @Override
+    public byte[] encode() {
+        byte[] bytes = new byte[encodingLengthBytes()];
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        encode(buffer);
+        return bytes;
+    }
+
+    @Override
+    public void encode(MutableDirectBuffer buffer) {
+        MessageHeaderEncoder enc = new MessageHeaderEncoder();
+        UpdateEncoder ue = new UpdateEncoder();
+
+        enc.wrap(buffer, 0)
+                .blockLength(ue.sbeBlockLength())
+                .templateId(ue.sbeTemplateId())
+                .schemaId(ue.sbeSchemaId())
+                .version(ue.sbeSchemaVersion());
+
+        int offset = enc.encodedLength();   //Expect 8 bytes
+        ue.wrap(buffer, offset);
+
+        //Fixed length fields: always encoded
+        ue.time(timeStamp)
+                .deltaTime(0)   //TODO
+                .iterationCount(iterationCount)
+                .fieldsPresent()
+                .score(scorePresent)
+                .memoryUse(memoryUsePresent)
+                .performance(performanceStatsPresent)
+                .garbageCollection(gcStats != null && !gcStats.isEmpty())
+                .histogramParameters(histograms != null && histograms.containsKey(StatsType.Parameters))
+                .histogramUpdates(histograms != null && histograms.containsKey(StatsType.Updates))
+                .histogramActivations(histograms != null && histograms.containsKey(StatsType.Activations))
+                .meanParameters(meanValues != null && meanValues.containsKey(StatsType.Parameters))
+                .meanUpdates(meanValues != null && meanValues.containsKey(StatsType.Updates))
+                .meanActivations(meanValues != null && meanValues.containsKey(StatsType.Activations))
+                .meanMagnitudeParameters(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Parameters))
+                .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
+                .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations))
+                .learningRatesPresent(learningRatesByParam != null)
+                .dataSetMetaDataPresent(hasDataSetMetaData());
+
+        ue.statsCollectionDuration(statsCollectionDurationMs)
+                .score(score);
+
+        int memoryUseCount;
+        if (!memoryUsePresent) {
+            memoryUseCount = 0;
+        } else {
+            memoryUseCount = 4 + (deviceCurrentBytes == null ? 0 : deviceCurrentBytes.length)
+                    + (deviceMaxBytes == null ? 0 : deviceMaxBytes.length);
+        }
+
+        UpdateEncoder.MemoryUseEncoder mue = ue.memoryUseCount(memoryUseCount);
+        if (memoryUsePresent) {
+            mue.next().memoryType(MemoryType.JvmCurrent).memoryBytes(jvmCurrentBytes)
+                    .next().memoryType(MemoryType.JvmMax).memoryBytes(jvmMaxBytes)
+                    .next().memoryType(MemoryType.OffHeapCurrent).memoryBytes(offHeapCurrentBytes)
+                    .next().memoryType(MemoryType.OffHeapMax).memoryBytes(offHeapMaxBytes);
+            if (deviceCurrentBytes != null) {
+                for (int i = 0; i < deviceCurrentBytes.length; i++) {
+                    mue.next().memoryType(MemoryType.DeviceCurrent).memoryBytes(deviceCurrentBytes[i]);
+                }
+            }
+            if (deviceMaxBytes != null) {
+                for (int i = 0; i < deviceMaxBytes.length; i++) {
+                    mue.next().memoryType(MemoryType.DeviceMax).memoryBytes(deviceMaxBytes[i]);
+                }
+            }
+        }
+
+        UpdateEncoder.PerformanceEncoder pe = ue.performanceCount(performanceStatsPresent ? 1 : 0);
+        if (performanceStatsPresent) {
+            pe.next().totalRuntimeMs(totalRuntimeMs)
+                    .totalExamples(totalExamples)
+                    .totalMinibatches(totalMinibatches)
+                    .examplesPerSecond((float) examplesPerSecond)
+                    .minibatchesPerSecond((float) minibatchesPerSecond);
+        }
+
+        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.size() == 0 ? 0 : gcStats.size());
+        List<byte[]> gcStatsLabelBytes = null;
+        if (gcStats != null && gcStats.size() > 0) {
+            gcStatsLabelBytes = new ArrayList<>();
+            for (GCStats stats : gcStats) {
+                byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
+                gcStatsLabelBytes.add(nameAsBytes);
+            }
+        }
+        if (gcStats != null && gcStats.size() > 0) {
+            int i = 0;
+            for (GCStats g : gcStats) {
+                byte[] gcLabelBytes = gcStatsLabelBytes.get(i++);
+                gce.next().deltaGCCount(g.deltaGCCount)
+                        .deltaGCTimeMs(g.deltaGCTime)
+                        .putGcName(gcLabelBytes, 0, gcLabelBytes.length);
+            }
+        }
+
+        // +++++ Per Parameter Stats +++++
+        UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(paramNames.length);
+
+        int paramId = 0;
+        for (String s : paramNames) {
+            ppe = ppe.next();
+            float lr = 0.0f;
+            if (learningRatesByParam != null && learningRatesByParam.containsKey(s)) {
+                lr = learningRatesByParam.get(s).floatValue();
+            }
+            ppe.paramID(paramId++)
+                    .learningRate(lr);
+
+            int summaryStatsCount = 0;
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    if (map.containsKey(s)) summaryStatsCount++;
+                }
+            }
+
+            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
+
+            //Summary stats
+            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
+                }
+            }
+
+            int nHistogramsThisParam = 0;
+            if (histograms != null && histograms.size() > 0) {
+                for (Map<String, Histogram> map : histograms.values()) {
+                    if (map != null && map.containsKey(s)) nHistogramsThisParam++;
+                }
+            }
+
+            //Histograms
+            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistogramsThisParam);
+            if (nHistogramsThisParam > 0) {
+                for (StatsType statsType : StatsType.values()) {
+                    Map<String, Histogram> map = histograms.get(statsType);
+                    if (map == null) continue;
+                    Histogram h = map.get(s);   //Histogram for StatsType for this parameter
+                    double min;
+                    double max;
+                    int nBins;
+                    int[] binCounts;
+                    if (h == null) {
+                        min = 0.0;
+                        max = 0.0;
+                        nBins = 0;
+                        binCounts = null;
+                    } else {
+                        min = h.getMin();
+                        max = h.getMax();
+                        nBins = h.getNBins();
+                        binCounts = h.getBinCounts();
+                    }
+
+                    sshe = sshe.next().statType(translate(statsType)).minValue(min).maxValue(max).nBins(nBins);
+                    UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder.HistogramCountsEncoder histCountsEncoder = sshe.histogramCountsCount(nBins);
+                    for (int i = 0; i < nBins; i++) {
+                        int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
+                        histCountsEncoder.next().binCount(count);
+                    }
+                }
+            }
+        }
+
+        // +++ DataSet MetaData +++
+        UpdateEncoder.DataSetMetaDataBytesEncoder metaEnc = ue.dataSetMetaDataBytesCount(dataSetMetaData != null ? dataSetMetaData.size() : 0);
+        if (dataSetMetaData != null && dataSetMetaData.size() > 0) {
+            for (byte[] b : dataSetMetaData) {
+                metaEnc = metaEnc.next();
+                UpdateEncoder.DataSetMetaDataBytesEncoder.MetaDataBytesEncoder mdbe = metaEnc.metaDataBytesCount(b.length);
+                for (byte bb : b) {
+                    mdbe.next().bytes(bb);
+                }
+            }
+        }
+
+        //Class name for DataSet metadata
+        byte[] metaDataClassNameBytes = SbeUtil.toBytes(true, metaDataClassName);
+        ue.putDataSetMetaDataClassName(metaDataClassNameBytes, 0, metaDataClassNameBytes.length);
+    }
+
+    @Override
+    public void encode(OutputStream outputStream) throws IOException {
+        //TODO there may be more efficient way of doing this
+        outputStream.write(encode());
+    }
+
+    @Override
+    public void decode(byte[] decode) {
+        MutableDirectBuffer buffer = new UnsafeBuffer(decode);
+        decode(buffer);
+    }
+
+    @Override
+    public void decode(DirectBuffer buffer) {
+        //TODO we could do this more efficiently, with buffer re-use, etc.
         MessageHeaderDecoder dec = new MessageHeaderDecoder();
         UpdateDecoder ud = new UpdateDecoder();
-
-        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
         dec.wrap(buffer, 0);
 
         final int blockLength = dec.blockLength();
@@ -671,7 +719,7 @@ public class SbeStatsReport implements StatsReport {
         ud.wrap(buffer, headerLength, blockLength, version);
 
         //TODO iteration count
-        time = ud.time();
+        timeStamp = ud.time();
         long deltaTime = ud.deltaTime(); //TODO
         iterationCount = ud.iterationCount();
 
@@ -768,9 +816,9 @@ public class SbeStatsReport implements StatsReport {
             int paramID = ppsd.paramID();
             String paramName = paramNames[paramID];
             float lr = ppsd.learningRate();
-            if(learningRatesPresent){
-                if(learningRatesByParam == null) learningRatesByParam = new HashMap<>();
-                learningRatesByParam.put(paramName, (double)lr);
+            if (learningRatesPresent) {
+                if (learningRatesByParam == null) learningRatesByParam = new HashMap<>();
+                learningRatesByParam.put(paramName, (double) lr);
             }
 
             //Summary stats (mean/stdev/mean magnitude)
@@ -834,13 +882,13 @@ public class SbeStatsReport implements StatsReport {
         }
 
         //Final group: DataSet metadata
-        for(UpdateDecoder.DataSetMetaDataBytesDecoder metaDec : ud.dataSetMetaDataBytes() ){
-            if(this.dataSetMetaData == null) this.dataSetMetaData = new ArrayList<>();
+        for (UpdateDecoder.DataSetMetaDataBytesDecoder metaDec : ud.dataSetMetaDataBytes()) {
+            if (this.dataSetMetaData == null) this.dataSetMetaData = new ArrayList<>();
             UpdateDecoder.DataSetMetaDataBytesDecoder.MetaDataBytesDecoder mdbd = metaDec.metaDataBytes();
             int length = mdbd.count();
             byte[] b = new byte[length];
-            int i=0;
-            for(UpdateDecoder.DataSetMetaDataBytesDecoder.MetaDataBytesDecoder mdbd2 : mdbd ){
+            int i = 0;
+            for (UpdateDecoder.DataSetMetaDataBytesDecoder.MetaDataBytesDecoder mdbd2 : mdbd) {
                 b[i++] = mdbd2.bytes();
             }
             this.dataSetMetaData.add(b);
@@ -848,9 +896,15 @@ public class SbeStatsReport implements StatsReport {
 
         //Variable length: DataSet metadata class name
         this.metaDataClassName = ud.dataSetMetaDataClassName();
-        if(!metaDataPresent){
+        if (!metaDataPresent) {
             this.metaDataClassName = null;
         }
+    }
+
+    @Override
+    public void decode(InputStream inputStream) throws IOException {
+        byte[] bytes = IOUtils.toByteArray(inputStream);
+        decode(bytes);
     }
 
 
