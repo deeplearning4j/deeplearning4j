@@ -23,9 +23,9 @@ public class MapDBStatsStorage implements StatsStorage {
 
     private Set<String> sessionIDs;
     private Map<String, SessionMetaData> sessionMetaData;
-    private Map<SessionWorkerId, byte[]> staticInfo;
+    private Map<SessionTypeWorkerId, byte[]> staticInfo;
 
-    private Map<SessionWorkerId, Map<Long, byte[]>> updates = new HashMap<>();
+    private Map<SessionTypeWorkerId, Map<Long, byte[]>> updates = new HashMap<>();
 
     private List<StatsStorageListener> listeners = new ArrayList<>();
 
@@ -69,14 +69,14 @@ public class MapDBStatsStorage implements StatsStorage {
                         .open();
                 String[] arr = s.split(COMPOSITE_KEY_SEPARATOR);
                 arr[0] = arr[0].substring(COMPOSITE_KEY_HEADER.length());   //Remove header...
-                SessionWorkerId id = new SessionWorkerId(arr[0], arr[1]);
+                SessionTypeWorkerId id = new SessionTypeWorkerId(arr[0], arr[1]);
                 updates.put(id, m);
             }
         }
     }
 
     private synchronized Map<Long, byte[]> getUpdateMap(String sessionID, String workerID, boolean createIfRequired) {
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
         if (updates.containsKey(id)) {
             return updates.get(id);
         }
@@ -100,7 +100,7 @@ public class MapDBStatsStorage implements StatsStorage {
                 l.notifyNewWorkerID(sessionId, workerID);   //Must also be a new worker ID...
             }
         } else {
-            SessionWorkerId id = new SessionWorkerId(sessionId, workerID);
+            SessionTypeWorkerId id = new SessionTypeWorkerId(sessionId, workerID);
             if (getUpdateMap(sessionId,workerID,false) == null && !staticInfo.containsKey(id)) {
                 for (StatsStorageListener l : listeners) {
                     l.notifyNewWorkerID(sessionId, workerID);
@@ -133,14 +133,14 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public byte[] getStaticInfo(String sessionID, String workerID) {
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
         return staticInfo.get(id);
     }
 
     @Override
     public List<String> listWorkerIDsForSession(String sessionID) {
         List<String> out = new ArrayList<>();
-        for (SessionWorkerId ids : staticInfo.keySet()) {
+        for (SessionTypeWorkerId ids : staticInfo.keySet()) {
             if (sessionID.equals(ids.getSessionID())) {
                 out.add(ids.getWorkerID());
             }
@@ -151,7 +151,7 @@ public class MapDBStatsStorage implements StatsStorage {
     @Override
     public int getNumUpdateRecordsFor(String sessionID) {
         int count = 0;
-        for( SessionWorkerId id : updates.keySet() ){
+        for( SessionTypeWorkerId id : updates.keySet() ){
             if(sessionID.equals(id.getSessionID())){
                 Map<Long,byte[]> map = updates.get(id);
                 if(map != null) count += map.size();
@@ -162,7 +162,7 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public int getNumUpdateRecordsFor(String sessionID, String workerID) {
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
         Map<Long,byte[]> map = updates.get(id);
         if(map != null) return map.size();
         return 0;
@@ -170,7 +170,7 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public UpdateRecord getLatestUpdate(String sessionID, String workerID) {
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
         Map<Long,byte[]> map = updates.get(id);
         if(map == null) return null;
         long max = Long.MIN_VALUE;
@@ -182,7 +182,7 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public UpdateRecord getUpdate(String sessionID, String workerID, long timestamp) {
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
         Map<Long,byte[]> map = updates.get(id);
         if(map == null) return null;
 
@@ -193,7 +193,7 @@ public class MapDBStatsStorage implements StatsStorage {
     public List<UpdateRecord> getLatestUpdateAllWorkers(String sessionID) {
         List<UpdateRecord> list = new ArrayList<>();
 
-        for( SessionWorkerId id : updates.keySet() ){
+        for( SessionTypeWorkerId id : updates.keySet() ){
             if(sessionID.equals(id.getSessionID())){
                 UpdateRecord r = getLatestUpdate(sessionID, id.workerID);
                 if(r != null){
@@ -233,7 +233,7 @@ public class MapDBStatsStorage implements StatsStorage {
     @Override
     public void putStaticInfo(String sessionID, String workerID, byte[] staticInfo) {
         logIDs(sessionID, workerID);
-        SessionWorkerId id = new SessionWorkerId(sessionID, workerID);
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
 
         this.staticInfo.put(id, staticInfo);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
@@ -322,44 +322,47 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @AllArgsConstructor
     @Data
-    public static class SessionWorkerId implements Serializable, Comparable<SessionWorkerId> {
+    public static class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
         private final String sessionID;
+        private final String typeID;
         private final String workerID;
 
         @Override
-        public int compareTo(SessionWorkerId o) {
+        public int compareTo(SessionTypeWorkerId o) {
             int c = sessionID.compareTo(o.sessionID);
+            if (c != 0) return c;
+            c = typeID.compareTo(o.typeID);
             if (c != 0) return c;
             return workerID.compareTo(workerID);
         }
 
         @Override
         public String toString(){
-            return "(" + sessionID + "," + workerID + ")";
+            return "(" + sessionID + "," + typeID + "," + workerID + ")";
         }
     }
 
     //Simple serializer, based on MapDB's SerializerJava
-    private static class SessionWorkerIdSerializer implements Serializer<SessionWorkerId> {
+    private static class SessionWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull SessionWorkerId value) throws IOException {
+        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeWorkerId value) throws IOException {
             ObjectOutputStream out2 = new ObjectOutputStream(out);
             out2.writeObject(value);
             out2.flush();
         }
 
         @Override
-        public SessionWorkerId deserialize(@NotNull DataInput2 in, int available) throws IOException {
+        public SessionTypeWorkerId deserialize(@NotNull DataInput2 in, int available) throws IOException {
             try {
                 ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
-                return (SessionWorkerId) in2.readObject();
+                return (SessionTypeWorkerId) in2.readObject();
             } catch (ClassNotFoundException e) {
                 throw new IOException(e);
             }
         }
 
         @Override
-        public int compare(SessionWorkerId w1, SessionWorkerId w2){
+        public int compare(SessionTypeWorkerId w1, SessionTypeWorkerId w2){
             return w1.compareTo(w2);
         }
     }
