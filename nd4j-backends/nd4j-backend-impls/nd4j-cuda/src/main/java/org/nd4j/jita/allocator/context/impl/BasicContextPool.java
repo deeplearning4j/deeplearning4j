@@ -239,11 +239,11 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        Pointer  reductionPointer = nativeOps.mallocDevice(2049 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        Pointer  reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream());
+        nativeOps.memsetAsync(reductionPointer, 0, 16385 * sizeOf * 2, 0, context.getOldStream());
 
         context.syncOldStream();
 
