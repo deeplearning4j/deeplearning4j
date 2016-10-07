@@ -25,7 +25,7 @@ import java.util.*;
 @Data
 public class SbeStatsReport implements StatsReport {
 
-    private final String[] paramNames;
+    private String[] paramNames;
 
     private String sessionID;
     private String typeID;
@@ -69,6 +69,10 @@ public class SbeStatsReport implements StatsReport {
     public SbeStatsReport(String[] paramNames) {
         if (paramNames == null) paramNames = new String[0];
         this.paramNames = paramNames;
+    }
+
+    public SbeStatsReport(){
+        //No-Arg constructor only for deserialization
     }
 
     @Override
@@ -416,7 +420,8 @@ public class SbeStatsReport implements StatsReport {
         //(c) Group 1: Memory use.
         //(d) Group 2: Performance stats
         //(e) Group 3: GC stats
-        //(f) Group 4: Per parameter performance stats
+        //(f) Group 4: param names (variable length strings)
+        //(g) Group 5: Per parameter performance stats
         //Variable length String fields: 4 - session/type/worker IDs and metadata -> 4*4=16 bytes header, plus content
 
         UpdateEncoder ue = new UpdateEncoder();
@@ -449,10 +454,17 @@ public class SbeStatsReport implements StatsReport {
             }
         }
 
+        //Param names group
+        bufferSize += 4;    //Header; always present
+        for(String s : paramNames){
+            bufferSize += 4;    //header for each entry
+            bufferSize += SbeUtil.toBytes(true, s).length;  //Content
+        }
+
         //Per parameter stats group length
         bufferSize += 4;    //Per parameter stats group header: always present
         int nParams = paramNames.length;
-        bufferSize += nParams * 14;  //Each parameter entry: has a param ID, learning rate -> uint16 + float -> 6 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
+        bufferSize += nParams * 12;  //Each parameter entry: has  learning rate -> float -> 4 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
         for (String s : paramNames) {
             //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
             int summaryStatsCount = 0;
@@ -608,6 +620,12 @@ public class SbeStatsReport implements StatsReport {
             }
         }
 
+        //Param names
+        UpdateEncoder.ParamNamesEncoder pne = ue.paramNamesCount(paramNames.length);
+        for(String s : paramNames){
+            pne.next().paramName(s);
+        }
+
         // +++++ Per Parameter Stats +++++
         UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(paramNames.length);
 
@@ -618,8 +636,7 @@ public class SbeStatsReport implements StatsReport {
             if (learningRatesByParam != null && learningRatesByParam.containsKey(s)) {
                 lr = learningRatesByParam.get(s).floatValue();
             }
-            ppe.paramID(paramId++)
-                    .learningRate(lr);
+            ppe.learningRate(lr);
 
             int summaryStatsCount = 0;
             for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
@@ -826,11 +843,23 @@ public class SbeStatsReport implements StatsReport {
             gcStats.add(s);
         }
 
+        //Fourth group: param names
+        UpdateDecoder.ParamNamesDecoder pnd = ud.paramNames();
+        int nParams = pnd.count();
+        if(nParams > 0){
+            paramNames = new String[nParams];
+        }
+        int paramNum = 0;
+        for(UpdateDecoder.ParamNamesDecoder pndec : pnd){
+            paramNames[paramNum++] = pndec.paramName();
+        }
+
         //Fourth group: Per parameter stats (and histograms, etc)
+        paramNum = 0;
         for (UpdateDecoder.PerParameterStatsDecoder ppsd : ud.perParameterStats()) {
-            int paramID = ppsd.paramID();
-            String paramName = paramNames[paramID];
+            String paramName = paramNames[paramNum++];
             float lr = ppsd.learningRate();
+
             if (learningRatesPresent) {
                 if (learningRatesByParam == null) learningRatesByParam = new HashMap<>();
                 learningRatesByParam.put(paramName, (double) lr);
