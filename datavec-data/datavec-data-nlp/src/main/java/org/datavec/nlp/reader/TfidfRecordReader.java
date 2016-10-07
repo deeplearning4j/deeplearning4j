@@ -89,12 +89,19 @@ public class TfidfRecordReader extends FileRecordReader  {
                     recordLabels.add(new IntWritable(getCurrentLabel()).toInt());
                 records.add(RecordConverter.toRecord(tfidfVectorizer.transform(fileContents)));
             }
-            
+
             labelIter = recordLabels.iterator();
             recordIter = records.iterator();
         }
 
 
+    }
+
+    @Override
+    public void reset() {
+        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
+        labelIter = recordLabels.iterator();
+        recordIter = records.iterator();
     }
 
     @Override
