@@ -2,12 +2,16 @@ package org.deeplearning4j.ui.storage;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
@@ -34,12 +38,12 @@ public class TestMapDBStatsStore {
         assertEquals(1, ss.getListeners().size());
 
         assertEquals(0, ss.listSessionIDs().size());
-        assertNull(ss.getLatestUpdate("sessionID","workerID"));
+        assertNull(ss.getLatestUpdate("sessionID","typeID","workerID"));
         assertEquals(0, ss.listSessionIDs().size());
 
 
         byte[] b0 = randomBytes(123);
-        ss.putStaticInfo("sid0","wid0",b0);
+        ss.putStaticInfo("sid0","tid0","wid0",b0);
         assertEquals(1, l.countNewSession);
         assertEquals(1, l.countNewWorkerId);
         assertEquals(1, l.countStaticInfo);
@@ -134,6 +138,7 @@ public class TestMapDBStatsStore {
     private static class CountingListener implements StatsStorageListener {
 
         private int countNewSession;
+        private int countNewTypeID;
         private int countNewWorkerId;
         private int countStaticInfo;
         private int countUpdate;
@@ -145,23 +150,30 @@ public class TestMapDBStatsStore {
         }
 
         @Override
+        public void notifyNewTypeID(String sessionID, String typeID) {
+            countNewTypeID++;
+        }
+
+        @Override
         public void notifyNewWorkerID(String sessionID, String workerID) {
             countNewWorkerId++;
         }
 
         @Override
-        public void notifyStaticInfo(String sessionID, String workerID) {
+        public void notifyStaticInfo(String sessionID, String typeID, String workerID) {
             countStaticInfo++;
         }
 
         @Override
-        public void notifyStatusUpdate(String sessionID, String workerID, long timestamp) {
+        public void notifyStatusUpdate(String sessionID, String typeID, String workerID, long timestamp) {
             countUpdate++;
         }
 
         @Override
-        public void notifySessionMetaData(String sessionID) {
+        public void notifyStorageMetaData(String sessionID, String typeID) {
             countMetaData++;
         }
     }
+
+
 }

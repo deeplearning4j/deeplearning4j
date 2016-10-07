@@ -19,6 +19,8 @@ public interface Persistable extends Serializable {
 
     String getWorkerID();
 
+    long getTimeStamp();
+
 
     //SerDe methods:
 

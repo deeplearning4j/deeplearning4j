@@ -73,11 +73,11 @@ public class GroupSizeEncodingDecoder
     public StringBuilder appendTo(final StringBuilder builder)
     {
         builder.append('(');
-        //Token{signal=ENCODING, name='blockLength', description='null', id=-1, version=0, encodedLength=2, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='UTF-8', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=ENCODING, name='blockLength', description='Extra metadata bytes', id=-1, version=0, encodedLength=2, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='UTF-8', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("blockLength=");
         builder.append(blockLength());
         builder.append('|');
-        //Token{signal=ENCODING, name='numInGroup', description='null', id=-1, version=0, encodedLength=2, offset=2, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='UTF-8', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=ENCODING, name='numInGroup', description='Extra metadata bytes', id=-1, version=0, encodedLength=2, offset=2, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=UINT16, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='UTF-8', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("numInGroup=");
         builder.append(numInGroup());
         builder.append(')');

@@ -14,6 +14,7 @@ import org.deeplearning4j.ui.stats.sbe.StorageMetaDataEncoder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 /**
  * Created by Alex on 07/10/2016.
@@ -22,27 +23,42 @@ import java.io.OutputStream;
 public class StorageMetaData implements Persistable {
 
 
+    private long timeStamp;
     private String sessionID;
     private String typeID;
     private String workerID;
     private String initTypeClass;
     private String updateTypeClass;
+    //Store serialized; saves class exceptions if we don't have the right class, and don't care about deserializing
+    // on this machine, right now
+    private byte[] extraMetaData;
 
     public StorageMetaData(){
         //No arg constructor for serialization/deserialization
     }
 
-    public StorageMetaData(String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
-        this(sessionID, typeID, workerID, (initType != null ? initType.getName() : null),
+    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
+        this(timeStamp, sessionID, typeID, workerID, (initType != null ? initType.getName() : null),
                 (updateType != null ? updateType.getName() : null));
     }
 
-    public StorageMetaData(String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ){
+    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ) {
+        this(timeStamp, sessionID, typeID, workerID, initTypeClass, updateTypeClass, null);
+    }
+
+    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass,
+                           Serializable extraMetaData ) {
+        this.timeStamp = timeStamp;
         this.sessionID = sessionID;
         this.typeID = typeID;
         this.workerID = workerID;
         this.initTypeClass = initTypeClass;
         this.updateTypeClass = updateTypeClass;
+        this.extraMetaData = (extraMetaData == null ? null : SbeUtil.toBytesSerializable(extraMetaData));
+    }
+
+    public Serializable getExtraMetaData(){
+        return SbeUtil.fromBytesSerializable(extraMetaData);
     }
 
     @Override
@@ -50,16 +66,20 @@ public class StorageMetaData implements Persistable {
         //TODO store byte[]s so we don't end up calculating again in encode
         //SBE buffer is composed of:
         //(a) Header: 8 bytes (4x uint16 = 8 bytes)
+        //(b) timestamp: fixed length long value (8 bytes)
         //(b) 5 variable length fields. 4 bytes header (each) + content = 20 bytes + content
+        //(c) Variable length byte[]. 4 bytes header + content
 
-        int bufferSize = 8 + 20;
+        int bufferSize = 8 + 8 + 20 + 4;
         byte[] bSessionID = SbeUtil.toBytes(true, sessionID);
         byte[] bTypeID = SbeUtil.toBytes(true, typeID);
         byte[] bWorkerID = SbeUtil.toBytes(true, workerID);
         byte[] bInitTypeClass = SbeUtil.toBytes(true, initTypeClass);
         byte[] bUpdateTypeClass = SbeUtil.toBytes(true, updateTypeClass);
+        byte[] bExtraMetaData = SbeUtil.toBytesSerializable(extraMetaData);
 
-        bufferSize += bSessionID.length + bTypeID.length + bWorkerID.length + bInitTypeClass.length + bUpdateTypeClass.length;
+        bufferSize += bSessionID.length + bTypeID.length + bWorkerID.length + bInitTypeClass.length + bUpdateTypeClass.length
+                + bExtraMetaData.length;
 
         return bufferSize;
     }
@@ -92,9 +112,17 @@ public class StorageMetaData implements Persistable {
         byte[] bWorkerID = SbeUtil.toBytes(true, workerID);
         byte[] bInitTypeClass = SbeUtil.toBytes(true, initTypeClass);
         byte[] bUpdateTypeClass = SbeUtil.toBytes(true, updateTypeClass);
+        byte[] bExtraMetaData = SbeUtil.toBytesSerializable(extraMetaData);
 
         smde.wrap(buffer, offset)
-                .putSessionID(bSessionID, 0, bSessionID.length)
+                .timeStamp(timeStamp);
+
+        StorageMetaDataEncoder.ExtraMetaDataBytesEncoder ext = smde.extraMetaDataBytesCount(bExtraMetaData.length);
+        for(byte b : bExtraMetaData){
+            ext.next().bytes(b);
+        }
+
+        smde.putSessionID(bSessionID, 0, bSessionID.length)
                 .putTypeID(bTypeID, 0, bTypeID.length)
                 .putWorkerID(bWorkerID, 0, bWorkerID.length)
                 .putInitTypeClass(bInitTypeClass, 0, bInitTypeClass.length)
@@ -126,6 +154,17 @@ public class StorageMetaData implements Persistable {
 
         StorageMetaDataDecoder smdd = new StorageMetaDataDecoder();
         smdd.wrap(buffer, headerLength, blockLength, version);
+        timeStamp = smdd.timeStamp();
+
+        StorageMetaDataDecoder.ExtraMetaDataBytesDecoder ext = smdd.extraMetaDataBytes();
+        int length = ext.count();
+        if(length > 0){
+            extraMetaData = new byte[length];
+            int i = 0;
+            for(StorageMetaDataDecoder.ExtraMetaDataBytesDecoder d : ext){
+                extraMetaData[i] = d.next().bytes();
+            }
+        }
 
         sessionID = smdd.sessionID();
         typeID = smdd.typeID();

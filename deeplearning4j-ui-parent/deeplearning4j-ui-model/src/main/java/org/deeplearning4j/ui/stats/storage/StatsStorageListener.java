@@ -1,5 +1,7 @@
 package org.deeplearning4j.ui.stats.storage;
 
+import org.deeplearning4j.ui.storage.StorageMetaData;
+
 import java.io.Serializable;
 
 /**
@@ -17,6 +19,8 @@ public interface StatsStorageListener {
      */
     void notifyNewSession(String sessionID);
 
+    void notifyNewTypeID(String sessionID, String typeID);
+
     /**
      * Notify the listener that a new worker ID has been added, for the given session ID
      *
@@ -33,25 +37,26 @@ public interface StatsStorageListener {
      * @param sessionID Session ID for the new static info record
      * @param workerID  Worker ID for the new static info record
      */
-    void notifyStaticInfo(String sessionID, String workerID);
+    void notifyStaticInfo(String sessionID, String typeID, String workerID);
 
     /**
      * Notify the listener that a new update has been made available; i.e., that
      * {@link org.deeplearning4j.ui.storage.StatsStorage#putUpdate(String, String, long, byte[])} has been called
      *
      * @param sessionID Session ID for the new update
+     * @param typeID    Type ID for the new update
      * @param workerID  Worker ID for the new update
      * @param timestamp Timestamp for the new update
      */
-    void notifyStatusUpdate(String sessionID, String workerID, long timestamp);
+    void notifyStatusUpdate(String sessionID, String typeID, String workerID, long timestamp);
 
     /**
      * Notify the listener that session metadata has been posted; i.e., that
-     * {@link org.deeplearning4j.ui.storage.StatsStorage#putSessionMetaData(String, String, String, Serializable)} has
+     * {@link org.deeplearning4j.ui.storage.StatsStorage#putStorageMetaData(StorageMetaData)} has
      * been called
      *
      * @param sessionID Session ID for the new metadata
      */
-    void notifySessionMetaData(String sessionID);
+    void notifyStorageMetaData(String sessionID, String typeID);
 
 }

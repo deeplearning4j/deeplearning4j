@@ -6,7 +6,7 @@ package org.deeplearning4j.ui.storage;
 public interface StatsStorageRouter {
 
 
-    void putMetaData(StorageMetaData storageMetaData);  //TODO error handling
+    void putStorageMetaData(StorageMetaData storageMetaData);  //TODO error handling
 
     void putStaticInfo(Persistable persistable);    //TODO error handling
 
