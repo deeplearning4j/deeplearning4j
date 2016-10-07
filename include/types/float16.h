@@ -260,9 +260,11 @@ local_def half cpu_float2half_rn(float f)
 #else
     local_def bool  operator==(const float16& a, const float16& b) { return ishequ(a.data, b.data); }
 #endif
+    template <class T>
+    local_def bool  operator==(const float16& a, const T& b) { return (a == (float16) b); }
 
 #ifdef NATIVE_HALFS
-    local_def bool  operator==(const float16& a, const float16& b) { return !(__hequ(a.data, b.data)); }
+    local_def bool  operator!=(const float16& a, const float16& b) { return !(__hequ(a.data, b.data)); }
 #else
     local_def bool  operator!=(const float16& a, const float16& b) { return !(a == b); }
 #endif
@@ -279,11 +281,16 @@ local_def half cpu_float2half_rn(float f)
   local_def bool  operator>(const float16& a, const float16& b) { return (float)a > (float)b; }
 #endif
 
+    template <class T>
+    local_def bool  operator>(const float16& a, const T& b) { return (float)a > (float)b; }
+
 #ifdef NATIVE_HALFS
     local_def bool  operator<=(const float16& a, const float16& b) { return __hle(a.data, b.data); }
 #else
     local_def bool  operator<=(const float16& a, const float16& b) { return (float)a <= (float)b; }
 #endif
+    template <class T>
+    local_def bool  operator<=(const float16& a, const T& b) { return (float)a <= (float)b; }
 
 #ifdef NATIVE_HALFS
     local_def bool  operator>=(const float16& a, const float16& b) { return __hge(a.data, b.data); }
@@ -310,14 +317,21 @@ local_def half cpu_float2half_rn(float f)
     local_def float16 operator/(const float16& a, const float16& b) { return float16((float)a / (float)b); }
 #endif
 //
-//  template <class T>
-//  local_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
-//
-//  template <class T>
-//  local_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
-//
-//  template <class T>
-//  local_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
+  template <class T>
+  local_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
+
+  template <class T>
+  local_def float16 operator+(const T& a, const float16& b) { return float16((float)a + (float)b); }
+
+
+  template <class T>
+  local_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
+
+  template <class T>
+  local_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
+
+  template <class T>
+  local_def float16 operator*(const T& a, const float16& b) { return float16((float)a * (float)b); }
 
 
   // this operator is special case, for division by larger types, like int, long long etc
