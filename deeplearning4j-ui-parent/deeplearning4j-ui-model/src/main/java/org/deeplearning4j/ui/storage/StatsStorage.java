@@ -135,46 +135,12 @@ public interface StatsStorage extends StatsStorageRouter {
 
 
     /**
-     * Get the session metadata, if any has been registered via {@link #putSessionMetaData(String, String, String, Serializable)}
+     * Get the session metadata, if any has been registered via {@link #putStorageMetaData(StorageMetaData)}
      *
      * @param sessionID Session ID to get metadat
      * @return Session metadata, or null if none is available
      */
     StorageMetaData getStorageMetaData(String sessionID, String typeID);
-
-    // ----- Store new info -----
-
-    /**
-     * Optional method to store some additional metadata for each session. Idea: record the classes used to
-     * serialize and deserialize the static info and updates (as a class name).
-     * This is mainly used for debugging and validation.
-     *
-     * @param storageMetaData Storage metadata to store
-     */
-    void putStorageMetaData(StorageMetaData storageMetaData);
-
-//    /**
-//     * Put a new static info record to the stats storage instance. If static info for the given session/worker IDs
-//     * already exists, this will be replaced.
-//     *
-//     * @param sessionID  Session ID
-//     * @param typeID     Type ID (identifies listeners or stats type for a given session)
-//     * @param workerID   Worker ID
-//     * @param staticInfo Bytes to put
-//     */
-//    void putStaticInfo(String sessionID, String typeID, String workerID, byte[] staticInfo);
-//
-//    /**
-//     * Put a new update for the given session/type/worker/timestamp.
-//     *
-//     * @param sessionID Session ID
-//     * @param workerID  Worker ID
-//     * @param typeID    Type ID (identifies listeners or stats type for a given session)
-//     * @param timestamp Timestamp for the update
-//     * @param update    Update to store
-//     */
-//    void putUpdate(String sessionID, String typeID, String workerID, long timestamp, byte[] update);
-
 
     // ----- Listeners -----
 
@@ -204,61 +170,5 @@ public interface StatsStorage extends StatsStorageRouter {
      * @return List of listeners
      */
     List<StatsStorageListener> getListeners();
-
-//    /**
-//     * UpdateRecord is a simple object that stores a session ID, worker ID, timestamp and byte[] record
-//     */
-//    @AllArgsConstructor
-//    @Data
-//    class UpdateRecord implements Comparable<UpdateRecord>, Serializable {
-//        private final String sessionID;
-//        private final String workerID;
-//        private final long timestamp;
-//        private final byte[] record;
-//
-//        public String toString() {
-//            return "UpdateRecord(sessionID=" + this.sessionID + ", workerID=" + this.workerID + ", timestamp=" + this.timestamp + ", recordLength=" + this.record.length + ")";
-//        }
-//
-//        @Override
-//        public int compareTo(UpdateRecord o) {
-//            if (!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
-//            if (!workerID.equals(o.workerID)) return workerID.compareTo(o.workerID);
-//            if (timestamp != o.timestamp) return Long.compare(timestamp, o.timestamp);
-//            return 0;
-//        }
-//    }
-
-//    @AllArgsConstructor
-//    @Data
-//    class SessionMetaData implements Comparable<SessionMetaData>, Serializable {
-//        private final String sessionID;
-//        private final String staticInfoClass;
-//        private final String updateClass;
-//        private final Serializable otherMetaData;
-//
-//        @Override
-//        public String toString(){
-//            return "SessionMetaData(sessionID=" + sessionID + ",staticInfoClass=" + staticInfoClass + ",updateClass=" +
-//                    updateClass + "extraMetaData=" + otherMetaData + ")";
-//        }
-//
-//        @Override
-//        public int compareTo(SessionMetaData o) {
-//            if(!sessionID.equals(o.sessionID)) return sessionID.compareTo(o.sessionID);
-//            if(staticInfoClass == null && o.staticInfoClass != null) return 1;  //This object: 'greater than' o
-//            else if(staticInfoClass != null && o.staticInfoClass == null) return -1;
-//            //Both null, or neither are
-//            if(staticInfoClass != null ){
-//                if(!staticInfoClass.equals(o.staticInfoClass)) return staticInfoClass.compareTo(o.staticInfoClass);
-//            }
-//            if(updateClass == null && o.updateClass != null) return 1;
-//            else if(updateClass != null && o.updateClass == null) return -1;
-//            if(updateClass != null){
-//                return updateClass.compareTo(o.updateClass);
-//            }
-//            return 0;
-//        }
-//    }
 
 }
