@@ -126,18 +126,21 @@
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
          Also can't have variable length in composite types, hence separate data fields instead of grouped by sw/hw/model -->
-        <data name="swArch" id="100" type="VarDataUTF8"/>
-        <data name="swOsName" id="101" type="VarDataUTF8"/>
-        <data name="swJvmName" id="102" type="VarDataUTF8"/>
-        <data name="swJvmVersion" id="103" type="VarDataUTF8"/>
-        <data name="swJvmSpecVersion" id="104" type="VarDataUTF8"/>
-        <data name="swNd4jBackendClass" id="105" type="VarDataUTF8"/>
-        <data name="swNd4jDataTypeName" id="106" type="VarDataUTF8"/>
-        <data name="swHostName" id="107" type="VarDataUTF8"/>
-        <data name="swJvmUID" id="108" type="VarDataUTF8"/>
-        <data name="hwHardwareUID" id="200" type="VarDataUTF8"/>
-        <data name="modelConfigClassName" id="300" type="VarDataUTF8"/>
-        <data name="modelConfigJson" id="301" type="VarDataUTF8"/>
+        <data name="sessionID" id="100" type="VarDataUTF8"/>
+        <data name="typeID" id="101" type="VarDataUTF8"/>
+        <data name="workerID" id="102" type="VarDataUTF8"/>
+        <data name="swArch" id="201" type="VarDataUTF8"/>
+        <data name="swOsName" id="202" type="VarDataUTF8"/>
+        <data name="swJvmName" id="203" type="VarDataUTF8"/>
+        <data name="swJvmVersion" id="204" type="VarDataUTF8"/>
+        <data name="swJvmSpecVersion" id="205" type="VarDataUTF8"/>
+        <data name="swNd4jBackendClass" id="206" type="VarDataUTF8"/>
+        <data name="swNd4jDataTypeName" id="207" type="VarDataUTF8"/>
+        <data name="swHostName" id="208" type="VarDataUTF8"/>
+        <data name="swJvmUID" id="209" type="VarDataUTF8"/>
+        <data name="hwHardwareUID" id="300" type="VarDataUTF8"/>
+        <data name="modelConfigClassName" id="400" type="VarDataUTF8"/>
+        <data name="modelConfigJson" id="401" type="VarDataUTF8"/>
     </sbe:message>
 
     <!-- Message 2: Updates -->
@@ -192,6 +195,9 @@
             </group>
         </group>
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
+        <data name="sessionID" id="600" type="VarDataUTF8"/>
+        <data name="typeID" id="601" type="VarDataUTF8"/>
+        <data name="workerID" id="602" type="VarDataUTF8"/>
         <data name="dataSetMetaDataClassName" id="1100" type="VarDataUTF8"/>
     </sbe:message>
 

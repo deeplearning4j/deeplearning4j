@@ -570,9 +570,267 @@ public class StaticInfoEncoder
         }
     }
 
-    public static int swArchId()
+    public static int sessionIDId()
     {
         return 100;
+    }
+
+    public static String sessionIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int sessionIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public StaticInfoEncoder putSessionID(final DirectBuffer src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder putSessionID(final byte[] src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder sessionID(final String value)
+    {
+        final byte[] bytes;
+        try
+        {
+            bytes = value.getBytes("UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        final int length = bytes.length;
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+        return this;
+    }
+
+    public static int typeIDId()
+    {
+        return 101;
+    }
+
+    public static String typeIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int typeIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public StaticInfoEncoder putTypeID(final DirectBuffer src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder putTypeID(final byte[] src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder typeID(final String value)
+    {
+        final byte[] bytes;
+        try
+        {
+            bytes = value.getBytes("UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        final int length = bytes.length;
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+        return this;
+    }
+
+    public static int workerIDId()
+    {
+        return 102;
+    }
+
+    public static String workerIDCharacterEncoding()
+    {
+        return "UTF-8";
+    }
+
+    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute)
+    {
+        switch (metaAttribute)
+        {
+            case EPOCH: return "unix";
+            case TIME_UNIT: return "nanosecond";
+            case SEMANTIC_TYPE: return "";
+        }
+
+        return "";
+    }
+
+    public static int workerIDHeaderLength()
+    {
+        return 4;
+    }
+
+    public StaticInfoEncoder putWorkerID(final DirectBuffer src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder putWorkerID(final byte[] src, final int srcOffset, final int length)
+    {
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+        return this;
+    }
+
+    public StaticInfoEncoder workerID(final String value)
+    {
+        final byte[] bytes;
+        try
+        {
+            bytes = value.getBytes("UTF-8");
+        }
+        catch (final java.io.UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        final int length = bytes.length;
+        if (length > 1073741824)
+        {
+            throw new IllegalArgumentException("length > max value for type: " + length);
+        }
+
+        final int headerLength = 4;
+        final int limit = parentMessage.limit();
+        parentMessage.limit(limit + headerLength + length);
+        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+        return this;
+    }
+
+    public static int swArchId()
+    {
+        return 201;
     }
 
     public static String swArchCharacterEncoding()
@@ -658,7 +916,7 @@ public class StaticInfoEncoder
 
     public static int swOsNameId()
     {
-        return 101;
+        return 202;
     }
 
     public static String swOsNameCharacterEncoding()
@@ -744,7 +1002,7 @@ public class StaticInfoEncoder
 
     public static int swJvmNameId()
     {
-        return 102;
+        return 203;
     }
 
     public static String swJvmNameCharacterEncoding()
@@ -830,7 +1088,7 @@ public class StaticInfoEncoder
 
     public static int swJvmVersionId()
     {
-        return 103;
+        return 204;
     }
 
     public static String swJvmVersionCharacterEncoding()
@@ -916,7 +1174,7 @@ public class StaticInfoEncoder
 
     public static int swJvmSpecVersionId()
     {
-        return 104;
+        return 205;
     }
 
     public static String swJvmSpecVersionCharacterEncoding()
@@ -1002,7 +1260,7 @@ public class StaticInfoEncoder
 
     public static int swNd4jBackendClassId()
     {
-        return 105;
+        return 206;
     }
 
     public static String swNd4jBackendClassCharacterEncoding()
@@ -1088,7 +1346,7 @@ public class StaticInfoEncoder
 
     public static int swNd4jDataTypeNameId()
     {
-        return 106;
+        return 207;
     }
 
     public static String swNd4jDataTypeNameCharacterEncoding()
@@ -1174,7 +1432,7 @@ public class StaticInfoEncoder
 
     public static int swHostNameId()
     {
-        return 107;
+        return 208;
     }
 
     public static String swHostNameCharacterEncoding()
@@ -1260,7 +1518,7 @@ public class StaticInfoEncoder
 
     public static int swJvmUIDId()
     {
-        return 108;
+        return 209;
     }
 
     public static String swJvmUIDCharacterEncoding()
@@ -1346,7 +1604,7 @@ public class StaticInfoEncoder
 
     public static int hwHardwareUIDId()
     {
-        return 200;
+        return 300;
     }
 
     public static String hwHardwareUIDCharacterEncoding()
@@ -1432,7 +1690,7 @@ public class StaticInfoEncoder
 
     public static int modelConfigClassNameId()
     {
-        return 300;
+        return 400;
     }
 
     public static String modelConfigClassNameCharacterEncoding()
@@ -1518,7 +1776,7 @@ public class StaticInfoEncoder
 
     public static int modelConfigJsonId()
     {
-        return 301;
+        return 401;
     }
 
     public static String modelConfigJsonCharacterEncoding()

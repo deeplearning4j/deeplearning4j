@@ -17,7 +17,8 @@ public class TestStorageMetaData {
     public void testStorageMetaData(){
 
         Serializable extraMeta = "ExtraMetaData";
-        StorageMetaData m = new StorageMetaData(
+        long timeStamp = 123456;
+        StorageMetaData m = new StorageMetaData( timeStamp,
                 "sessionID", "typeID", "workerID", "org.some.class.InitType", "org.some.class.UpdateType", extraMeta);
 
         byte[] bytes = m.encode();
@@ -28,7 +29,7 @@ public class TestStorageMetaData {
         assertArrayEquals(bytes, m2.encode());
 
         //Sanity check: null values
-        m = new StorageMetaData(null,null,null,null,(String)null);
+        m = new StorageMetaData(0, null,null,null,null,(String)null);
         bytes = m.encode();
         m2 = new StorageMetaData();
         m2.decode(bytes);
