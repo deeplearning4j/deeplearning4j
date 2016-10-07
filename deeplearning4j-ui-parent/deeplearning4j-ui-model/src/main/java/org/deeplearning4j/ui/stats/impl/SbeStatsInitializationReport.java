@@ -223,7 +223,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         final int blockLength = dec.blockLength();
         final int version = dec.version();
 
-        int headerLength = dec.encodedLength();
+        final int headerLength = dec.encodedLength();
         //TODO: in general, we should check the header, version, schema etc. But we don't have any other versions yet.
 
         sid.wrap(buffer, headerLength, blockLength, version);
