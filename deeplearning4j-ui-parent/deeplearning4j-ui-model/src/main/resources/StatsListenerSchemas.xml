@@ -193,4 +193,16 @@
         <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
         <data name="dataSetMetaDataClassName" id="1100" type="VarDataUTF8"/>
     </sbe:message>
+
+    <!-- Message 3: Simple MetaData for class for StorageMetaData -->
+    <sbe:message name="StorageMetaData" id="3" description="StorageMetaData">
+        <!-- Fixed length fields: none -->
+        <!-- Groups: none -->
+        <!-- Variable length data -->
+        <data name="sessionID" id="1" type="VarDataUTF8"/>
+        <data name="typeID" id="2" type="VarDataUTF8"/>
+        <data name="workerID" id="3" type="VarDataUTF8"/>
+        <data name="initTypeClass" id="4" type="VarDataUTF8"/>
+        <data name="updateTypeClass" id="5" type="VarDataUTF8"/>
+    </sbe:message>
 </sbe:messageSchema>
