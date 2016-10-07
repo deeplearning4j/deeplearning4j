@@ -488,9 +488,8 @@ public class StatsListener implements IterationListener {
                     .build();
             INDArray bins = histogram.getBins();
             int[] count = new int[nBins];
-            int i = 0;
-            for (Map.Entry<BigDecimal, AtomicInteger> e : histogram.getData().entrySet()) {
-                count[i] = e.getValue().get();
+            for( int i=0; i<bins.length(); i++ ){
+                count[i] = (int)bins.getDouble(i);
             }
 
             double min = histogram.getMin();
