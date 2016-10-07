@@ -2,8 +2,10 @@ package org.deeplearning4j.ui.storage.mapdb;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.ui.storage.Persistable;
 import org.deeplearning4j.ui.storage.StatsStorage;
 import org.deeplearning4j.ui.stats.storage.StatsStorageListener;
+import org.deeplearning4j.ui.storage.StorageMetaData;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 
@@ -22,10 +24,10 @@ public class MapDBStatsStorage implements StatsStorage {
     private DB db;
 
     private Set<String> sessionIDs;
-    private Map<String, SessionMetaData> sessionMetaData;
-    private Map<SessionTypeWorkerId, byte[]> staticInfo;
+    private Map<SessionTypeId, StorageMetaData> storageMetaData;
+    private Map<SessionTypeWorkerId, Persistable> staticInfo;
 
-    private Map<SessionTypeWorkerId, Map<Long, byte[]>> updates = new HashMap<>();
+    private Map<SessionTypeWorkerId, Map<Long, Persistable>> updates = new HashMap<>();
 
     private List<StatsStorageListener> listeners = new ArrayList<>();
 
@@ -51,48 +53,48 @@ public class MapDBStatsStorage implements StatsStorage {
 
         //Initialize/open the required maps/lists
         sessionIDs = db.hashSet("sessionIDs", Serializer.STRING).createOrOpen();
-        sessionMetaData = db.hashMap("sessionMetaData")
-                .keySerializer(Serializer.STRING)
-                .valueSerializer(new SessionMetaDataSerializer())
+        storageMetaData = db.hashMap("storageMetaData")
+                .keySerializer(new SessionTypeIdSerializer())
+                .valueSerializer(new PersistableSerializer<StorageMetaData>())
                 .createOrOpen();
         staticInfo = db.hashMap("staticInfo")
-                .keySerializer(new SessionWorkerIdSerializer())
-                .valueSerializer(Serializer.BYTE_ARRAY)
+                .keySerializer(new SessionTypeWorkerIdSerializer())
+                .valueSerializer(new PersistableSerializer<>())
                 .createOrOpen();
 
         //Load up any saved update maps to the update map...
-        for(String s : db.getAllNames()){
-            if(s.startsWith(COMPOSITE_KEY_HEADER)){
-                Map<Long,byte[]> m = db.hashMap(s)
+        for (String s : db.getAllNames()) {
+            if (s.startsWith(COMPOSITE_KEY_HEADER)) {
+                Map<Long, Persistable> m = db.hashMap(s)
                         .keySerializer(Serializer.LONG)
-                        .valueSerializer(Serializer.BYTE_ARRAY)
+                        .valueSerializer(new PersistableSerializer<>())
                         .open();
                 String[] arr = s.split(COMPOSITE_KEY_SEPARATOR);
                 arr[0] = arr[0].substring(COMPOSITE_KEY_HEADER.length());   //Remove header...
-                SessionTypeWorkerId id = new SessionTypeWorkerId(arr[0], arr[1]);
+                SessionTypeWorkerId id = new SessionTypeWorkerId(arr[0], arr[1], arr[2]);
                 updates.put(id, m);
             }
         }
     }
 
-    private synchronized Map<Long, byte[]> getUpdateMap(String sessionID, String workerID, boolean createIfRequired) {
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
+    private synchronized Map<Long, Persistable> getUpdateMap(String sessionID, String typeID, String workerID, boolean createIfRequired) {
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         if (updates.containsKey(id)) {
             return updates.get(id);
         }
-        if(!createIfRequired){
+        if (!createIfRequired) {
             return null;
         }
-        String compositeKey = COMPOSITE_KEY_HEADER + sessionID + COMPOSITE_KEY_SEPARATOR + workerID;
-        Map<Long, byte[]> updateMap = db.hashMap(compositeKey)
+        String compositeKey = COMPOSITE_KEY_HEADER + sessionID + COMPOSITE_KEY_SEPARATOR + typeID + COMPOSITE_KEY_SEPARATOR + workerID;
+        Map<Long, Persistable> updateMap = db.hashMap(compositeKey)
                 .keySerializer(Serializer.LONG)
-                .valueSerializer(Serializer.BYTE_ARRAY)
+                .valueSerializer(new PersistableSerializer<>())
                 .createOrOpen();
         updates.put(id, updateMap);
         return updateMap;
     }
 
-    private void logIDs(String sessionId, String workerID) {
+    private void logIDs(String sessionId, String typeID, String workerID) {
         if (!sessionIDs.contains(sessionId)) {
             sessionIDs.add(sessionId);
             for (StatsStorageListener l : listeners) {
@@ -100,8 +102,8 @@ public class MapDBStatsStorage implements StatsStorage {
                 l.notifyNewWorkerID(sessionId, workerID);   //Must also be a new worker ID...
             }
         } else {
-            SessionTypeWorkerId id = new SessionTypeWorkerId(sessionId, workerID);
-            if (getUpdateMap(sessionId,workerID,false) == null && !staticInfo.containsKey(id)) {
+            SessionTypeWorkerId id = new SessionTypeWorkerId(sessionId, typeID, workerID);
+            if (getUpdateMap(sessionId, typeID, workerID, false) == null && !staticInfo.containsKey(id)) {
                 for (StatsStorageListener l : listeners) {
                     l.notifyNewWorkerID(sessionId, workerID);
                 }
@@ -132,8 +134,8 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
-    public byte[] getStaticInfo(String sessionID, String workerID) {
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
+    public Persistable getStaticInfo(String sessionID, String typeID, String workerID) {
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         return staticInfo.get(id);
     }
 
@@ -151,53 +153,54 @@ public class MapDBStatsStorage implements StatsStorage {
     @Override
     public int getNumUpdateRecordsFor(String sessionID) {
         int count = 0;
-        for( SessionTypeWorkerId id : updates.keySet() ){
-            if(sessionID.equals(id.getSessionID())){
-                Map<Long,byte[]> map = updates.get(id);
-                if(map != null) count += map.size();
+        for (SessionTypeWorkerId id : updates.keySet()) {
+            if (sessionID.equals(id.getSessionID())) {
+                Map<Long, Persistable> map = updates.get(id);
+                if (map != null) count += map.size();
             }
         }
         return count;
     }
 
     @Override
-    public int getNumUpdateRecordsFor(String sessionID, String workerID) {
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
-        Map<Long,byte[]> map = updates.get(id);
-        if(map != null) return map.size();
+    public int getNumUpdateRecordsFor(String sessionID, String typeID, String workerID) {
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
+        Map<Long, Persistable> map = updates.get(id);
+        if (map != null) return map.size();
         return 0;
     }
 
     @Override
-    public UpdateRecord getLatestUpdate(String sessionID, String workerID) {
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
-        Map<Long,byte[]> map = updates.get(id);
-        if(map == null) return null;
-        long max = Long.MIN_VALUE;
-        for(Long l : map.keySet()){
-            max = Math.max(max, l);
+    public Persistable getLatestUpdate(String sessionID, String typeID, String workerID) {
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
+        Map<Long, Persistable> map = updates.get(id);
+        if (map == null || map.isEmpty()) return null;
+        long maxTime = Long.MIN_VALUE;
+        for (Long l : map.keySet()) {
+            maxTime = Math.max(maxTime, l);
         }
-        return new UpdateRecord(sessionID, workerID, max, map.get(max));
+        return map.get(maxTime);
+//        return new UpdateRecord(sessionID, workerID, max, map.get(max));
     }
 
     @Override
-    public UpdateRecord getUpdate(String sessionID, String workerID, long timestamp) {
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
-        Map<Long,byte[]> map = updates.get(id);
-        if(map == null) return null;
+    public Persistable getUpdate(String sessionID, String typeID, String workerID, long timestamp) {
+        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
+        Map<Long, Persistable> map = updates.get(id);
+        if (map == null) return null;
 
-        return new UpdateRecord(sessionID, workerID, timestamp, map.get(timestamp));
+        return map.get(timestamp);
     }
 
     @Override
-    public List<UpdateRecord> getLatestUpdateAllWorkers(String sessionID) {
-        List<UpdateRecord> list = new ArrayList<>();
+    public List<Persistable> getLatestUpdateAllWorkers(String sessionID, String typeID) {
+        List<Persistable> list = new ArrayList<>();
 
-        for( SessionTypeWorkerId id : updates.keySet() ){
-            if(sessionID.equals(id.getSessionID())){
-                UpdateRecord r = getLatestUpdate(sessionID, id.workerID);
-                if(r != null){
-                    list.add(r);
+        for (SessionTypeWorkerId id : updates.keySet()) {
+            if (sessionID.equals(id.getSessionID()) && typeID.equals(id.getTypeID())) {
+                Persistable p = getLatestUpdate(sessionID, typeID, id.workerID);
+                if (p != null) {
+                    list.add(p);
                 }
             }
         }
@@ -206,61 +209,67 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
-    public List<UpdateRecord> getAllUpdatesAfter(String sessionID, String workerID, long timestamp) {
-        List<UpdateRecord> list = new ArrayList<>();
+    public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, String workerID, long timestamp) {
+        List<Persistable> list = new ArrayList<>();
 
-        Map<Long,byte[]> map = getUpdateMap(sessionID, workerID, false);
-        if(map == null) return list;
+        Map<Long, Persistable> map = getUpdateMap(sessionID, typeID, workerID, false);
+        if (map == null) return list;
 
-        for(Long time : map.keySet()){
-            if(time > timestamp){
-                list.add(new UpdateRecord(sessionID, workerID, time, map.get(time)));
+        for (Long time : map.keySet()) {
+            if (time > timestamp) {
+                list.add(map.get(time));
             }
         }
 
-        Collections.sort(list);
+        Collections.sort(list, new Comparator<Persistable>() {
+            @Override
+            public int compare(Persistable o1, Persistable o2) {
+                return Long.compare(o1.getTimeStamp(), o2.getTimeStamp());
+            }
+        });
 
         return list;
     }
 
     @Override
-    public SessionMetaData getSessionMetaData(String sessionID) {
-        return this.sessionMetaData.get(sessionID);
+    public StorageMetaData getStorageMetaData(String sessionID, String typeID) {
+        return this.storageMetaData.get(sessionID);
     }
 
     // ----- Store new info -----
 
     @Override
-    public void putStaticInfo(String sessionID, String workerID, byte[] staticInfo) {
-        logIDs(sessionID, workerID);
-        SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, workerID);
+    public void putStaticInfo(Persistable staticInfo) {
+        logIDs(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
+        SessionTypeWorkerId id = new SessionTypeWorkerId(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
 
         this.staticInfo.put(id, staticInfo);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
         for (StatsStorageListener l : listeners) {
-            l.notifyStaticInfo(sessionID, workerID);
+            l.notifyStaticInfo(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
         }
     }
 
     @Override
-    public void putUpdate(String sessionID, String workerID, long timestamp, byte[] update) {
-        logIDs(sessionID, workerID);
+    public void putUpdate(Persistable update) {
+        logIDs(update.getSessionID(), update.getWorkerID(), update.getTypeID());
 
-        Map<Long, byte[]> updateMap = getUpdateMap(sessionID, workerID, true);
-        updateMap.put(timestamp, update);
+        Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getWorkerID(), update.getTypeID(), true);
+        updateMap.put(update.getTimeStamp(), update);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
         for (StatsStorageListener l : listeners) {
-            l.notifyStatusUpdate(sessionID, workerID, timestamp);
+            l.notifyStatusUpdate(update.getSessionID(), update.getWorkerID(), update.getTypeID(), update.getTimeStamp());
         }
     }
 
     @Override
-    public void putSessionMetaData(String sessionID, String staticInfoClass, String updateClass, Serializable otherMetaData) {
-        this.sessionMetaData.put(sessionID, new SessionMetaData(sessionID, staticInfoClass, updateClass, otherMetaData));
-        for(StatsStorageListener l : listeners){
-            l.notifySessionMetaData(sessionID);
+    public void putStorageMetaData(StorageMetaData storageMetaData) {
+        SessionTypeId id = new SessionTypeId(storageMetaData.getSessionID(), storageMetaData.getTypeID());
+        this.storageMetaData.put(id, storageMetaData);
+        for (StatsStorageListener l : listeners) {
+            l.notifyStorageMetaData(storageMetaData.getSessionID(), storageMetaData.getTypeID());
         }
     }
 
@@ -337,13 +346,32 @@ public class MapDBStatsStorage implements StatsStorage {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "(" + sessionID + "," + typeID + "," + workerID + ")";
         }
     }
 
+    @AllArgsConstructor
+    @Data
+    public static class SessionTypeId implements Serializable, Comparable<SessionTypeId> {
+        private final String sessionID;
+        private final String typeID;
+
+        @Override
+        public int compareTo(SessionTypeId o) {
+            int c = sessionID.compareTo(o.sessionID);
+            if (c != 0) return c;
+            return typeID.compareTo(o.typeID);
+        }
+
+        @Override
+        public String toString() {
+            return "(" + sessionID + "," + typeID + ")";
+        }
+    }
+
     //Simple serializer, based on MapDB's SerializerJava
-    private static class SessionWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {
+    private static class SessionTypeWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {
         @Override
         public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeWorkerId value) throws IOException {
             ObjectOutputStream out2 = new ObjectOutputStream(out);
@@ -362,33 +390,109 @@ public class MapDBStatsStorage implements StatsStorage {
         }
 
         @Override
-        public int compare(SessionTypeWorkerId w1, SessionTypeWorkerId w2){
+        public int compare(SessionTypeWorkerId w1, SessionTypeWorkerId w2) {
             return w1.compareTo(w2);
         }
     }
 
-    private static class SessionMetaDataSerializer implements Serializer<SessionMetaData>{
-
+    //Simple serializer, based on MapDB's SerializerJava
+    private static class SessionTypeIdSerializer implements Serializer<SessionTypeId> {
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull SessionMetaData value) throws IOException {
+        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeId value) throws IOException {
             ObjectOutputStream out2 = new ObjectOutputStream(out);
             out2.writeObject(value);
             out2.flush();
         }
 
         @Override
-        public SessionMetaData deserialize(@NotNull DataInput2 in, int available) throws IOException {
+        public SessionTypeId deserialize(@NotNull DataInput2 in, int available) throws IOException {
             try {
                 ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
-                return (SessionMetaData) in2.readObject();
+                return (SessionTypeId) in2.readObject();
             } catch (ClassNotFoundException e) {
                 throw new IOException(e);
             }
         }
 
         @Override
-        public int compare(SessionMetaData m1, SessionMetaData m2){
-            return m1.compareTo(m2);
+        public int compare(SessionTypeId w1, SessionTypeId w2) {
+            return w1.compareTo(w2);
         }
     }
+
+//    private static class SessionMetaDataSerializer implements Serializer<SessionMetaData> {
+//
+//        @Override
+//        public void serialize(@NotNull DataOutput2 out, @NotNull SessionMetaData value) throws IOException {
+//            ObjectOutputStream out2 = new ObjectOutputStream(out);
+//            out2.writeObject(value);
+//            out2.flush();
+//        }
+//
+//        @Override
+//        public SessionMetaData deserialize(@NotNull DataInput2 in, int available) throws IOException {
+//            try {
+//                ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
+//                return (SessionMetaData) in2.readObject();
+//            } catch (ClassNotFoundException e) {
+//                throw new IOException(e);
+//            }
+//        }
+//
+//        @Override
+//        public int compare(SessionMetaData m1, SessionMetaData m2) {
+//            return m1.compareTo(m2);
+//        }
+//    }
+
+    private static class PersistableSerializer<T extends Persistable> implements Serializer<T>{
+
+        @Override
+        public void serialize(@NotNull DataOutput2 out, @NotNull Persistable value) throws IOException {
+            //Persistable values can't be decoded in isolation, i.e., without knowing the type
+            //So, we'll first write the class name, so we can decode it later...
+            String className = value.getClass().getName();
+            int length = className.length();
+            out.writeInt(length);
+            out.writeUTF(className);
+            value.encode(out);
+        }
+
+        @Override
+        public T deserialize(@NotNull DataInput2 input, int available) throws IOException {
+            int length = input.readInt();
+            byte[] classNameAsBytes = new byte[length];
+            input.readFully(classNameAsBytes);
+            String className = new String(classNameAsBytes, "UTF-8");
+            Class<?> clazz;
+            try{
+                clazz = Class.forName(className);
+            } catch (ClassNotFoundException e){
+                throw new RuntimeException(e);  //Shouldn't normally happen...
+            }
+            Persistable p;
+            try{
+                p = (Persistable)clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            int remainingLength = available - length;
+            byte[] temp = new byte[remainingLength];
+            input.readFully(temp);
+            p.decode(temp);
+            return (T)p;
+        }
+
+        @Override
+        public int compare(Persistable p1, Persistable p2){
+            int c = p1.getSessionID().compareTo(p2.getSessionID());
+            if(c != 0) return c;
+            c = p1.getTypeID().compareTo(p2.getTypeID());
+            if(c != 0) return c;
+            return p1.getWorkerID().compareTo(p2.getWorkerID());
+        }
+    }
+
+//    private static class StorageMetaDataSerializer implements Serial
+
 }
