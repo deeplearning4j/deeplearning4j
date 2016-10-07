@@ -325,14 +325,14 @@ template<typename OpType>
 				__syncthreads();
 
 				if (tid==0) {
-					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+					unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
 				    amLast = (ticket == gridDim.x-1);
 				}
 
 				__syncthreads();
 
 				if (amLast) {
-					tc[4096] = 0;
+					tc[16384] = 0;
 					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 
 
@@ -355,7 +355,7 @@ template<typename OpType>
 			} else {
 				if (tid == 0) {
 					unsigned int *tc = (unsigned *) reductionBuffer;
-					tc[4096] = 0;
+					tc[16384] = 0;
 					result[0] = (T) sPartials[0].index;
 				}
 			}

@@ -1394,7 +1394,7 @@ namespace simdOps {
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 			// FIXME: MAX_DIMENSION is lower then FP16 frame
-			if (extraParams == nullptr || extraParams[0] == (T) MAX_DIMENSION) {
+			if (extraParams == nullptr || (int) extraParams[0] == MAX_DIMENSION) {
 				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);
 			}
 		}

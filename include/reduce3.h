@@ -246,7 +246,7 @@ template<typename OpType>
 					__syncthreads();
 
 					if (threadIdx.x == 0) {
-						unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+						unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
 						amLast = (ticket == gridDim.x - 1);
 					}
 
@@ -254,7 +254,7 @@ template<typename OpType>
 					__syncthreads();
 
 					if (amLast) {
-						tc[4096] = 0;
+						tc[16384] = 0;
 
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
@@ -283,7 +283,7 @@ template<typename OpType>
 				} else {
 					if (tid == 0) {
 					    unsigned int *tc = (unsigned *)reductionBuffer;
-					    tc[4096] = 0;
+					    tc[16384] = 0;
 
 						result[0] = OpType::postProcess(sPartials[0], length, extraZ);
 					}
