@@ -2,8 +2,8 @@
 // Created by agibsonccc on 2/21/16.
 //
 
-int tad_threshold = 16;
-int element_threshold = 16384;
+int tad_threshold = 1;
+int element_threshold = 32;
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
@@ -2450,11 +2450,11 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                 float16 *extraParams,
                                 int *dimension,
                                 int dimensionLength) {
-    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
-
+//    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+//    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+//    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
+//    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    // no-op yet, halfs
 }
 
 const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
