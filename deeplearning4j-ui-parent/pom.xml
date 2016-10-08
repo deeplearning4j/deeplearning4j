@@ -25,6 +25,7 @@
         <module>deeplearning4j-ui-model</module>
         <module>deeplearning4j-ui-remote-iterationlisteners</module>
         <module>deeplearning4j-ui-resources</module>
+        <module>deeplearning4j-play</module>
     </modules>
 
 </project>
