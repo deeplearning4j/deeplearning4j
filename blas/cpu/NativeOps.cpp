@@ -2457,10 +2457,10 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
 
 }
 
-const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
     if (!nameSet) {
         name = (char *) malloc(256 * sizeof(char));
-        memset(name, 0, 256 * sizeof(char));
+        std::memset(name, 0, 256 * sizeof(char));
         nameSet = true;
 
         // TODO: provide proper CPU model name here
