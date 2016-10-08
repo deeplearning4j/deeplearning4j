@@ -34,7 +34,7 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startSlave(int parameterLength,String masterUrl,String mediaDriverDirectory) throws IOException, InterruptedException {
+    public static int startSlave(int parameterLength,String masterUrl,String mediaDriverDirectory) throws Exception {
         return exec(ParameterAveragingSubscriber.class,
                 mediaDriverDirectory,
                 "-l",
@@ -56,7 +56,7 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startSlave(int parameterLength,String mediaDriverDirectory) throws IOException, InterruptedException {
+    public static int startSlave(int parameterLength,String mediaDriverDirectory) throws Exception {
         return startSlave(parameterLength,"localhost:40123:11",mediaDriverDirectory);
     }
 
@@ -70,7 +70,7 @@ public class BackgroundDaemonStarter {
      * @return
      */
     public static String masterResponderUrl() {
-        return "localhost:40124:11";
+        return "localhost:40124:12";
     }
 
     /**
@@ -88,7 +88,7 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startMaster(int parameterLength,String mediaDriverDirectory) throws IOException, InterruptedException {
+    public static int startMaster(int parameterLength,String mediaDriverDirectory) throws Exception {
         return exec(ParameterAveragingSubscriber.class,
                 mediaDriverDirectory,
                 "-m","true",
@@ -98,16 +98,6 @@ public class BackgroundDaemonStarter {
                 "-id","11");
     }
 
-    /**
-     * Exec a java process in the background
-     * @param klass the main class to run
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    public static int exec(Class klass,String mediaDriverDirectory) throws IOException, InterruptedException {
-        return exec(klass,null);
-    }
 
     /**
      * Exec a java process in the background
@@ -118,7 +108,7 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int exec(Class klass,String mediaDriverDirectory,String...args) throws IOException, InterruptedException {
+    public static int exec(Class klass,String mediaDriverDirectory,String...args) throws Exception {
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome +
                 File.separator + "bin" +

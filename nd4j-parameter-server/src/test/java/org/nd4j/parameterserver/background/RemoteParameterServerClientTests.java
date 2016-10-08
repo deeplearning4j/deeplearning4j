@@ -12,7 +12,6 @@ import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.client.ParameterServerClient;
-import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingListener;
 
 import java.io.IOException;
 
@@ -43,9 +42,7 @@ public class RemoteParameterServerClientTests {
         Thread t = new Thread(() -> {
             try {
                 BackgroundDaemonStarter.startMaster(parameterLength,mediaDriver.aeronDirectoryName());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         });
@@ -55,9 +52,7 @@ public class RemoteParameterServerClientTests {
         Thread t2 = new Thread(() -> {
             try {
                 BackgroundDaemonStarter.startSlave(parameterLength,mediaDriver.aeronDirectoryName());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         });
@@ -92,7 +87,6 @@ public class RemoteParameterServerClientTests {
          */
         client.pushNDArray(Nd4j.ones(parameterLength));
         log.info("Pushed ndarray");
-        Thread.sleep(10000);
         INDArray arr = client.getArray();
         assertEquals(Nd4j.ones(1000),arr);
     }
