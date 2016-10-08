@@ -1,13 +1,19 @@
 package org.nd4j.parameterserver.background;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingSubscriber;
+import org.zeroturnaround.exec.ProcessExecutor;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Start background daemons for tests
@@ -15,6 +21,7 @@ import java.util.List;
  * http://stackoverflow.com/questions/636367/executing-a-java-application-in-a-separate-process
  * @author Adam Gibson
  */
+@Slf4j
 public class BackgroundDaemonStarter {
 
 
@@ -50,7 +57,28 @@ public class BackgroundDaemonStarter {
      * @throws InterruptedException
      */
     public static int startSlave(int parameterLength,String mediaDriverDirectory) throws IOException, InterruptedException {
-        return startSlave(parameterLength,mediaDriverDirectory,"localhost:40123:11");
+        return startSlave(parameterLength,"localhost:40123:11",mediaDriverDirectory);
+    }
+
+
+    public static String slaveConnectionUrl() {
+        return "localhost:40126:10";
+    }
+
+    /**
+     * Master connection url
+     * @return
+     */
+    public static String masterResponderUrl() {
+        return "localhost:40124:11";
+    }
+
+    /**
+     * Master connection url
+     * @return
+     */
+    public static String masterConnectionUrl() {
+        return "localhost:40123:11";
     }
 
     /**
@@ -98,23 +126,28 @@ public class BackgroundDaemonStarter {
         String classpath = System.getProperty("java.class.path");
         String className = klass.getCanonicalName();
         if(args == null || args.length < 1) {
-            ProcessBuilder builder = new ProcessBuilder(
-                    javaBin, "-cp", classpath, className);
-
-            Process process = builder.start();
-            process.waitFor();
-            return process.exitValue();
+            try {
+                return  new ProcessExecutor().command(javaBin, "-cp", classpath, className)
+                          .readOutput(true).redirectOutput(System.out)
+                          .redirectError(System.err).execute().getExitValue();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
         }
         else {
-            List<String> args2 = new ArrayList<>(Arrays.asList(javaBin, "-cp", classpath,"-md",mediaDriverDirectory, className));
+            List<String> args2 = new ArrayList<>(Arrays.asList(javaBin, "-cp", classpath,className,"-md",mediaDriverDirectory));
             args2.addAll(Arrays.asList(args));
-            ProcessBuilder builder = new ProcessBuilder(args2);
-            Process process = builder.start();
-            process.waitFor();
-            return process.exitValue();
+            try {
+                return  new ProcessExecutor().command(args2)
+                        .readOutput(true).redirectOutput(System.out)
+                        .redirectError(System.err).execute().getExitValue();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
         }
 
 
+        return 1;
     }
 
 

@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
@@ -454,6 +455,29 @@ public class Transforms {
      */
     public static INDArray max(INDArray ndArray, double k) {
         return max(ndArray, k, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Stabilize to be within a range of k
+     *
+     * @param ndArray tbe ndarray
+     * @param k
+     * @param dup
+     * @return
+     */
+    public static INDArray min(INDArray ndArray, double k, boolean dup) {
+        return exec(dup ? new ScalarMin(ndArray.dup(), k) : new ScalarMin(ndArray, k));
+    }
+
+    /**
+     * Stabilize to be within a range of k
+     *
+     * @param ndArray tbe ndarray
+     * @param k
+     * @return
+     */
+    public static INDArray min(INDArray ndArray, double k) {
+        return min(ndArray, k, Nd4j.copyOnOps);
     }
 
 

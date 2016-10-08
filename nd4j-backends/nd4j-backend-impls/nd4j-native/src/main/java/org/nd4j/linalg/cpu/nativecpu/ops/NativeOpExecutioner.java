@@ -23,6 +23,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 
 /**
@@ -764,5 +765,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
         }
+    }
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties properties = super.getEnvironmentInformation();
+
+        properties.put("backend","CPU");
+        properties.put("omp.threads", loop.ompGetMaxThreads());
+        properties.put("blas.threads", NativeOpsHolder.getInstance().getDeviceNativeBlas().getMaxThreads());
+        properties.put("blas.vendor", NativeOpsHolder.getInstance().getDeviceNativeBlas().getBlasVendor().toString());
+
+        return properties;
     }
 }

@@ -55,11 +55,11 @@
                         <includes>
                             <include>**/Nd4jTestSuite.java</include>
                         </includes>
-                        <excludes>
+<!--                        <excludes>
                             <exclude>**/Test*.java</exclude>
                             <exclude>**/*Test.java</exclude>
                             <exclude>**/*TestCase.java</exclude>
-                        </excludes>
+                        </excludes> -->
                     </configuration>
                 </plugin>
                 <plugin>

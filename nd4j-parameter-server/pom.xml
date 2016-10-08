@@ -63,5 +63,11 @@
             <artifactId>nd4j-aeron</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.zeroturnaround</groupId>
+            <artifactId>zt-exec</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

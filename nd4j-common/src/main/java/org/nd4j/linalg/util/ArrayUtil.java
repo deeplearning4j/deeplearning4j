@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -1597,20 +1598,75 @@ public class ArrayUtil {
      *
      * @return
      */
-    public static int[] buildHalfVector(Random rng, int from, int to) {
-        int[] result = new int[to - from];
-        for (int f = from; f < to; f++) {
-            result[f - from] = f;
+    public static int[] buildHalfVector(Random rng, int length) {
+        int[] result = new int[length];
+        List<Integer> indexes = new ArrayList<>();
+
+        // we add indexes from second half only
+        for (int i = result.length - 1; i >= result.length / 2; i--) {
+            indexes.add(i);
         }
 
-        for(int i=result.length-1; i>0; i-- ){
-            int j = rng.nextInt(i+1);
-            int temp = result[j];
-            result[j] = result[i];
-            result[i] = temp;
+        Collections.shuffle(indexes, rng);
+
+        for (int i = 0; i < result.length; i++) {
+            if (i < result.length / 2) {
+                result[i] = indexes.get(0);
+                indexes.remove(0);
+            } else result[i] = -1;
         }
 
         return result;
+    }
+
+    public static int[] buildInterleavedVector(Random rng, int length) {
+        int[] result = new int[length];
+
+        List<Integer> indexes = new ArrayList<>();
+        List<Integer> odds = new ArrayList<>();
+
+        // we add odd indexes only to list
+        for (int i = 1; i < result.length; i+=2) {
+            indexes.add(i);
+            odds.add(i - 1);
+        }
+
+        Collections.shuffle(indexes, rng);
+
+        // now all even elements will be interleaved with odd elements
+        for (int i = 0; i < result.length; i++) {
+            if (i % 2 == 0 && indexes.size() >= 1) {
+                int idx = indexes.get(0);
+                indexes.remove(0);
+                result[i] = idx;
+            } else result[i] = -1;
+        }
+
+        // for odd tad numbers, we add special random clause for last element
+        if (length % 2 != 0) {
+            int rndClause = odds.get(rng.nextInt(odds.size()));
+            int tmp = result[rndClause];
+            result[rndClause] = result[result.length - 1];
+            result[result.length - 1] = tmp;
+        }
+
+
+        return result;
+    }
+
+    protected static <T extends Object> void swap(List<T> objects, int idxA, int idxB) {
+        T tmpA = objects.get(idxA);
+        T tmpB = objects.get(idxB);
+        objects.set(idxA, tmpB);
+        objects.set(idxB, tmpA);
+    }
+
+    public static <T extends Object> void shuffleWithMap(List<T> objects, int[] map) {
+        for (int i = 0; i < map.length; i++) {
+            if (map[i] >= 0) {
+                swap(objects, i, map[i]);
+            }
+        }
     }
 
     public static int argMinOfMax(int[] first, int[] second){

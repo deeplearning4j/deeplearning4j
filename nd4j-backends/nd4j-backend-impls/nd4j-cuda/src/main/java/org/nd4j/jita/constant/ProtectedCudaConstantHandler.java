@@ -142,6 +142,17 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             long div = bytes / 4;
             if (div % 2 != 0)
                 bytes += 4;
+
+            // for possible changes of dtype in the same jvm, we skip few bytes in constant memory
+            div = currentOffset / 4;
+            while (div % 2 != 0) {
+                currentOffset = constantOffsets.get(deviceId).addAndGet(4);
+                div = currentOffset / 4;
+
+                // just break out, if we're stepped beyond constant memory space
+                if (currentOffset > MAX_CONSTANT_LENGTH)
+                    break;
+            }
         }
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);

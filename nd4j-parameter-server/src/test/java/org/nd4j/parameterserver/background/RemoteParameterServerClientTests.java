@@ -9,8 +9,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.client.ParameterServerClient;
+import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingListener;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 10/5/16.
@@ -58,7 +64,6 @@ public class RemoteParameterServerClientTests {
         t2.start();
         log.info("Started slave");
 
-        Thread.sleep(10000);
     }
 
 
@@ -68,8 +73,28 @@ public class RemoteParameterServerClientTests {
     }
 
     @Test
-    public void remoteTests() {
-
+    public void remoteTests() throws Exception {
+        ParameterServerClient client = ParameterServerClient
+                .builder()
+                .ctx(getContext())
+                .ndarrayRetrieveUrl(BackgroundDaemonStarter.masterResponderUrl())
+                .ndarraySendUrl(BackgroundDaemonStarter.slaveConnectionUrl())
+                .subscriberHost("localhost")
+                .subscriberPort(40125)
+                .subscriberStream(12).build();
+        assertEquals("localhost:40125:12",client.connectionUrl());
+        //flow 1:
+        /**
+         * Client (40125:12): sends array to listener on slave(40126:10)
+         * which publishes to master (40123:11)
+         * which adds the array for parameter averaging.
+         * In this case totalN should be 1.
+         */
+        client.pushNDArray(Nd4j.ones(parameterLength));
+        log.info("Pushed ndarray");
+        Thread.sleep(10000);
+        INDArray arr = client.getArray();
+        assertEquals(Nd4j.ones(1000),arr);
     }
 
 

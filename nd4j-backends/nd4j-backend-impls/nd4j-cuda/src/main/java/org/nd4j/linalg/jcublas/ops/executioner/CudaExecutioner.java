@@ -31,6 +31,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
@@ -48,10 +49,11 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.*;
 
 
 /**
@@ -73,6 +75,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+    protected volatile transient Properties properties;
 
     public CudaExecutioner() {
 
@@ -1863,6 +1866,45 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             ret.elementWiseStride();
 
         return null;
+    }
+
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public synchronized Properties getEnvironmentInformation() {
+        if (properties == null) {
+            Properties props = super.getEnvironmentInformation();
+
+            List<Map<String, Object>> devicesList = new ArrayList<>();
+            int currentDevice = nativeOps.getDevice();
+
+            for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
+                Map<String, Object> deviceProps = new HashMap<>();
+
+                CudaPointer devPtr = new CudaPointer(1);
+
+                deviceProps.put("cuda.deviceName", nativeOps.getDeviceName(devPtr));
+                deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(devPtr));
+                deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(devPtr));
+                deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(devPtr));
+                deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(devPtr));
+
+                devicesList.add(i, deviceProps);
+            }
+
+            props.put("backend", "CUDA");
+            props.put("cuda.availableDevices", nativeOps.getAvailableDevices());
+            props.put("cuda.devicesInformation", devicesList);
+            props.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
+
+            nativeOps.setDevice(new CudaPointer(currentDevice));
+            properties = props;
+        }
+        return properties;
     }
 }
 

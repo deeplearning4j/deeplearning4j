@@ -96,6 +96,7 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
 
     }
@@ -121,6 +122,7 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
