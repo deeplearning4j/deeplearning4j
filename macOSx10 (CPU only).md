@@ -9,7 +9,13 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 
 3. Make sure you have brew (if not get it http://brew.sh)
 
-4. run `brew install clang-omp openblas` in terminal (this will install clang (at time of writing 3.5.0)
+4. run `brew install llvm openblas` in terminal (this will install llvm/clang (at time of writing 3.8.0). Also please note: openblas is optional, Apple Accelerate library is supported as well.
+
+4.1 Add following symbolic links:
+```
+ln -s /usr/local/opt/llvm/bin/clang /usr/local/bin/clang-omp
+ln -s /usr/local/opt/llvm/bin/clang++ /usr/local/bin/clang-omp++
+```
 
 5. Clone the libnd4j repo from the deeplearning4j (and unzip if its not automatically done)
 
