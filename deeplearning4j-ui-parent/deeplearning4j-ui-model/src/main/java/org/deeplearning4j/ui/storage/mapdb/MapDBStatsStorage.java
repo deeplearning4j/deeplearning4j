@@ -3,10 +3,7 @@ package org.deeplearning4j.ui.storage.mapdb;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.ui.stats.impl.SbeUtil;
-import org.deeplearning4j.ui.storage.StatsStorageListener;
-import org.deeplearning4j.ui.storage.Persistable;
-import org.deeplearning4j.ui.storage.StatsStorage;
-import org.deeplearning4j.ui.storage.StorageMetaData;
+import org.deeplearning4j.ui.storage.*;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 
@@ -97,19 +94,83 @@ public class MapDBStatsStorage implements StatsStorage {
         return updateMap;
     }
 
-    private void logIDs(String sessionId, String typeID, String workerID) {
-        if (!sessionIDs.contains(sessionId)) {
-            sessionIDs.add(sessionId);
-            for (StatsStorageListener l : listeners) {
-                l.notifyNewSession(sessionId);
-                l.notifyNewWorkerID(sessionId, workerID);   //Must also be a new worker ID...
+    //Return any relevant storage events
+    //We want to return these so they can be logged later. Can't be logged immediately, as this may case a race
+    //condition with whatever is receiving the events: i.e., might get the event before the contents are actually
+    //available in the DB
+    private List<StatsStorageEvent> checkStorageEvents(Persistable p) {
+        if (listeners.size() == 0) return null;
+
+        int count = 0;
+        StatsStorageEvent newSID = null;
+        StatsStorageEvent newTID = null;
+        StatsStorageEvent newWID = null;
+
+        //Is this a new session ID?
+        if (!sessionIDs.contains(p.getSessionID())) {
+            sessionIDs.add(p.getSessionID());
+            newSID = new StatsStorageEvent(StatsStorageListener.EventType.NewSessionID,
+                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            count++;
+        }
+
+        //Check for new type and worker IDs
+        //TODO probably more efficient way to do this
+        boolean foundTypeId = false;
+        boolean foundWorkerId = false;
+        String typeId = p.getTypeID();
+        String wid = p.getWorkerID();
+        for (SessionTypeId ts : storageMetaData.keySet()) {
+            if (typeId.equals(ts.getTypeID())) {
+                foundTypeId = true;
+                break;
             }
-        } else {
-            SessionTypeWorkerId id = new SessionTypeWorkerId(sessionId, typeID, workerID);
-            if (getUpdateMap(sessionId, typeID, workerID, false) == null && !staticInfo.containsKey(id)) {
-                for (StatsStorageListener l : listeners) {
-                    l.notifyNewWorkerID(sessionId, workerID);
+        }
+        for (SessionTypeWorkerId stw : staticInfo.keySet()) {
+            if (!foundTypeId && typeId.equals(stw.getTypeID())) {
+                foundTypeId = true;
+            }
+            if (!foundWorkerId && wid.equals(stw.getWorkerID())) {
+                foundWorkerId = true;
+            }
+            if (foundTypeId && foundWorkerId) break;
+        }
+        if (!foundTypeId || !foundWorkerId) {
+            for (SessionTypeWorkerId stw : updates.keySet()) {
+                if (!foundTypeId && typeId.equals(stw.getTypeID())) {
+                    foundTypeId = true;
                 }
+                if (!foundWorkerId && wid.equals(stw.getWorkerID())) {
+                    foundWorkerId = true;
+                }
+                if (foundTypeId && foundWorkerId) break;
+            }
+        }
+        if (!foundTypeId) {
+            //New type ID
+            newTID = new StatsStorageEvent(StatsStorageListener.EventType.NewTypeID,
+                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            count++;
+        }
+        if (!foundWorkerId) {
+            //New worker ID
+            newWID = new StatsStorageEvent(StatsStorageListener.EventType.NewWorkerID,
+                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            count++;
+        }
+        if (count == 0) return null;
+        List<StatsStorageEvent> sses = new ArrayList<>(3);
+        if (newSID != null) sses.add(newSID);
+        if (newTID != null) sses.add(newTID);
+        if (newWID != null) sses.add(newWID);
+        return sses;
+    }
+
+    private void notifyListeners(List<StatsStorageEvent> sses) {
+        if (sses == null || sses.size() == 0 || listeners.size() == 0) return;
+        for (StatsStorageListener l : listeners) {
+            for (StatsStorageEvent e : sses) {
+                l.notify(e);
             }
         }
     }
@@ -145,17 +206,17 @@ public class MapDBStatsStorage implements StatsStorage {
     @Override
     public List<String> listTypeIDsForSession(String sessionID) {
         Set<String> typeIDs = new HashSet<>();
-        for(SessionTypeId st : storageMetaData.keySet()){
-            if(!sessionID.equals(st.getSessionID())) continue;
+        for (SessionTypeId st : storageMetaData.keySet()) {
+            if (!sessionID.equals(st.getSessionID())) continue;
             typeIDs.add(st.getTypeID());
         }
 
-        for(SessionTypeWorkerId stw : staticInfo.keySet()){
-            if(!sessionID.equals(stw.getSessionID())) continue;
+        for (SessionTypeWorkerId stw : staticInfo.keySet()) {
+            if (!sessionID.equals(stw.getSessionID())) continue;
             typeIDs.add(stw.getTypeID());
         }
-        for(SessionTypeWorkerId stw : updates.keySet()){
-            if(!sessionID.equals(stw.getSessionID())) continue;
+        for (SessionTypeWorkerId stw : updates.keySet()) {
+            if (!sessionID.equals(stw.getSessionID())) continue;
             typeIDs.add(stw.getTypeID());
         }
 
@@ -255,44 +316,59 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public StorageMetaData getStorageMetaData(String sessionID, String typeID) {
-        return this.storageMetaData.get(sessionID);
+        return this.storageMetaData.get(new SessionTypeId(sessionID, typeID));
     }
 
     // ----- Store new info -----
 
     @Override
     public void putStaticInfo(Persistable staticInfo) {
-        logIDs(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
+        List<StatsStorageEvent> sses = checkStorageEvents(staticInfo);
         SessionTypeWorkerId id = new SessionTypeWorkerId(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
 
         this.staticInfo.put(id, staticInfo);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
-
+        StatsStorageEvent sse = null;
+        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostStaticInfo,
+                staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID(), staticInfo.getTimeStamp());
         for (StatsStorageListener l : listeners) {
-            l.notifyStaticInfo(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
+            l.notify(sse);
         }
+
+        notifyListeners(sses);
     }
 
     @Override
     public void putUpdate(Persistable update) {
-        logIDs(update.getSessionID(), update.getTypeID(), update.getWorkerID());
-
+        List<StatsStorageEvent> sses = checkStorageEvents(update);
         Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getTypeID(), update.getWorkerID(), true);
         updateMap.put(update.getTimeStamp(), update);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
+        StatsStorageEvent sse = null;
+        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostUpdate,
+                update.getSessionID(), update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
         for (StatsStorageListener l : listeners) {
-            l.notifyStatusUpdate(update.getSessionID(), update.getWorkerID(), update.getTypeID(), update.getTimeStamp());
+            l.notify(sse);
         }
+
+        notifyListeners(sses);
     }
 
     @Override
     public void putStorageMetaData(StorageMetaData storageMetaData) {
+        List<StatsStorageEvent> sses = checkStorageEvents(storageMetaData);
         SessionTypeId id = new SessionTypeId(storageMetaData.getSessionID(), storageMetaData.getTypeID());
         this.storageMetaData.put(id, storageMetaData);
+
+        StatsStorageEvent sse = null;
+        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostMetaData,
+                storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
         for (StatsStorageListener l : listeners) {
-            l.notifyStorageMetaData(storageMetaData.getSessionID(), storageMetaData.getTypeID());
+            l.notify(sse);
         }
+
+        notifyListeners(sses);
     }
 
 
@@ -447,7 +523,7 @@ public class MapDBStatsStorage implements StatsStorage {
         }
     }
 
-    private static class PersistableSerializer<T extends Persistable> implements Serializer<T>{
+    private static class PersistableSerializer<T extends Persistable> implements Serializer<T> {
 
         @Override
         public void serialize(@NotNull DataOutput2 out, @NotNull Persistable value) throws IOException {
@@ -468,14 +544,14 @@ public class MapDBStatsStorage implements StatsStorage {
             input.readFully(classNameAsBytes);
             String className = new String(classNameAsBytes, "UTF-8");
             Class<?> clazz;
-            try{
+            try {
                 clazz = Class.forName(className);
-            } catch (ClassNotFoundException e){
+            } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);  //Shouldn't normally happen...
             }
             Persistable p;
-            try{
-                p = (Persistable)clazz.newInstance();
+            try {
+                p = (Persistable) clazz.newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -483,15 +559,15 @@ public class MapDBStatsStorage implements StatsStorage {
             byte[] temp = new byte[remainingLength];
             input.readFully(temp);
             p.decode(temp);
-            return (T)p;
+            return (T) p;
         }
 
         @Override
-        public int compare(Persistable p1, Persistable p2){
+        public int compare(Persistable p1, Persistable p2) {
             int c = p1.getSessionID().compareTo(p2.getSessionID());
-            if(c != 0) return c;
+            if (c != 0) return c;
             c = p1.getTypeID().compareTo(p2.getTypeID());
-            if(c != 0) return c;
+            if (c != 0) return c;
             return p1.getWorkerID().compareTo(p2.getWorkerID());
         }
     }

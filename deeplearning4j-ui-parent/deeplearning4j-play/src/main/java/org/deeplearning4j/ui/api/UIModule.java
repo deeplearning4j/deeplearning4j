@@ -9,6 +9,6 @@ public interface UIModule {
 
     List<String> getCallbackTypeIDs();
 
-
+    List<Route> getRoutes();
 
 }

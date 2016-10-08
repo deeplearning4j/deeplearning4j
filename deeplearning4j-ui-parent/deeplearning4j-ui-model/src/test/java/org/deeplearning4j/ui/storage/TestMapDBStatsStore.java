@@ -41,9 +41,6 @@ public class TestMapDBStatsStore {
         assertEquals(0, ss.listSessionIDs().size());
 
 
-        byte[] b0 = randomBytes(123);
-
-
         ss.putStaticInfo(getInitReport(0));
         assertEquals(1, l.countNewSession);
         assertEquals(1, l.countNewWorkerId);
@@ -104,13 +101,6 @@ public class TestMapDBStatsStore {
         assertEquals(2, ss.getLatestUpdateAllWorkers("sid0","tid0").size());
     }
 
-    private static byte[] randomBytes(int length){
-        Random r = new Random(12345);
-        byte[] bytes = new byte[length];
-        r.nextBytes(bytes);
-        return bytes;
-    }
-
     private static StatsInitializationReport getInitReport(int idNumber){
         StatsInitializationReport rep = new SbeStatsInitializationReport();
         rep.reportModelInfo("classname","jsonconfig",new String[]{"p0","p1"},1,10);
@@ -139,33 +129,28 @@ public class TestMapDBStatsStore {
         private int countMetaData;
 
         @Override
-        public void notifyNewSession(String sessionID) {
-            countNewSession++;
-        }
-
-        @Override
-        public void notifyNewTypeID(String sessionID, String typeID) {
-            countNewTypeID++;
-        }
-
-        @Override
-        public void notifyNewWorkerID(String sessionID, String workerID) {
-            countNewWorkerId++;
-        }
-
-        @Override
-        public void notifyStaticInfo(String sessionID, String typeID, String workerID) {
-            countStaticInfo++;
-        }
-
-        @Override
-        public void notifyStatusUpdate(String sessionID, String typeID, String workerID, long timestamp) {
-            countUpdate++;
-        }
-
-        @Override
-        public void notifyStorageMetaData(String sessionID, String typeID) {
-            countMetaData++;
+        public void notify(StatsStorageEvent event) {
+            System.out.println("Event: " + event);
+            switch (event.getEventType()){
+                case NewSessionID:
+                    countNewSession++;
+                    break;
+                case NewTypeID:
+                    countNewTypeID++;
+                    break;
+                case NewWorkerID:
+                    countNewWorkerId++;
+                    break;
+                case PostMetaData:
+                    countMetaData++;
+                    break;
+                case PostStaticInfo:
+                    countStaticInfo++;
+                    break;
+                case PostUpdate:
+                    countUpdate++;
+                    break;
+            }
         }
     }
 
