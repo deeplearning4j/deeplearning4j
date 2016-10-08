@@ -66,9 +66,14 @@ public class LossBinaryXENT implements ILossFunction {
         if ("softmax".equals(activationFn)) {
             grad = output.subi(labels);
         } else {
-            INDArray outputder = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            grad = outputder.muli(labels);
-            grad.divi(output).muli(-1);
+            // So, the derivative of XE(preoutput, label, activation) wrt preoutput is
+            // for sanity sake, we'll call activation(preoutput) = a and activation'(preoutput) = a'
+            // XE = label * log(a) + (1-label) * log(1-a)
+            // d XE/d preoutput = a' * (label - a) / (a * (1-a))
+            grad = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
+            INDArray numerator = output.sub(labels);
+            grad.muli(numerator).divi(denominator);
         }
 
         if (mask != null) {
