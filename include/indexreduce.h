@@ -458,7 +458,7 @@ template<typename OpType>
 							return startingIndex.index;
 						}
 						else {
-							BlockInformation info(length);
+							BlockInformation info(length, ELEMENT_THRESHOLD);
 
 #pragma omp parallel
 

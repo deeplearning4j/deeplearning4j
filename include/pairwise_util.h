@@ -231,9 +231,13 @@ public:
     int threads;
     Nd4jIndex chunks;
     Nd4jIndex modulo;
-    BlockInformation(Nd4jIndex length) {
+    BlockInformation(Nd4jIndex length, int threshold) {
 
-    threads = omp_get_num_threads();
+    int tadsPerThread = length / threshold;
+    int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+    threads = _threads;
     items = length / threads;
     if(items < 1)
         items = 1;
