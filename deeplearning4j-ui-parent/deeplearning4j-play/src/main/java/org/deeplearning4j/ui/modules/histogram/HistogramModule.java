@@ -5,7 +5,10 @@ import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.StatsStorage;
+import org.deeplearning4j.ui.storage.StatsStorageEvent;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,6 +27,14 @@ public class HistogramModule implements UIModule {
     public List<Route> getRoutes() {
         Route r = new Route("/histogram", HttpMethod.GET, FunctionType.Supplier, () -> ok("This is the histogram page"));
         return Collections.singletonList(r);
+    }
+
+    @Override
+    public void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events) {
+        //TODO actually process the events...
+
+
+        
     }
 
 

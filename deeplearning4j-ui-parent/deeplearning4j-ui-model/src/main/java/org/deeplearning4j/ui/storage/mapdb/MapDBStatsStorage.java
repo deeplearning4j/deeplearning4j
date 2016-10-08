@@ -108,7 +108,6 @@ public class MapDBStatsStorage implements StatsStorage {
 
         //Is this a new session ID?
         if (!sessionIDs.contains(p.getSessionID())) {
-            sessionIDs.add(p.getSessionID());
             newSID = new StatsStorageEvent(StatsStorageListener.EventType.NewSessionID,
                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
@@ -159,7 +158,7 @@ public class MapDBStatsStorage implements StatsStorage {
             count++;
         }
         if (count == 0) return null;
-        List<StatsStorageEvent> sses = new ArrayList<>(3);
+        List<StatsStorageEvent> sses = new ArrayList<>(count);
         if (newSID != null) sses.add(newSID);
         if (newTID != null) sses.add(newTID);
         if (newWID != null) sses.add(newWID);
@@ -324,6 +323,9 @@ public class MapDBStatsStorage implements StatsStorage {
     @Override
     public void putStaticInfo(Persistable staticInfo) {
         List<StatsStorageEvent> sses = checkStorageEvents(staticInfo);
+        if(!sessionIDs.contains(staticInfo.getSessionID())){
+            sessionIDs.add(staticInfo.getSessionID());
+        }
         SessionTypeWorkerId id = new SessionTypeWorkerId(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
 
         this.staticInfo.put(id, staticInfo);

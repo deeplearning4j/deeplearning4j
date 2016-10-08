@@ -24,8 +24,17 @@
     <appender-ref ref="STDOUT" />
   </appender>
 
-  <logger name="play" level="TRACE" />
-  <logger name="application" level="TRACE" />
+  <logger name="play" level="INFO" />
+  <logger name="application" level="INFO" />
+  <logger name="org.apache.catalina.core" level="DEBUG" />
+  <logger name="org.springframework" level="DEBUG" />
+  <logger name="org.deeplearning4j" level="INFO" />
+  <logger name="org.canova" level="INFO" />
+  <logger name="org.datavec" level="INFO" />
+  <logger name="org.nd4j" level="INFO" />
+  <logger name="opennlp.uima.util" level="OFF" />
+  <logger name="org.apache.uima" level="OFF" />
+  <logger name="org.cleartk" level="OFF" />
 
   <!-- Off these ones as they are annoying, and anyway we manage configuration ourself -->
   <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />
