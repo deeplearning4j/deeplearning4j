@@ -2450,17 +2450,17 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
                                 float16 *extraParams,
                                 int *dimension,
                                 int dimensionLength) {
-    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
-
+//    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+//    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+//    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
+//    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    // no-op yet, halfs
 }
 
-const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
     if (!nameSet) {
         name = (char *) malloc(256 * sizeof(char));
-        memset(name, 0, 256 * sizeof(char));
+        std::memset(name, 0, 256 * sizeof(char));
         nameSet = true;
 
         // TODO: provide proper CPU model name here

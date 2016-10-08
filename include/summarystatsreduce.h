@@ -224,9 +224,9 @@ namespace functions {
             //calculate an update of the reduce operation
             host_and_device static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
                                                               T *extraParams) {
-                if (x.n == 0 && y.n > 0)
+                if ((int) x.n == 0 && (int) y.n > 0)
                     return y;
-                else if (x.n > 0 && y.n == 0)
+                else if ((int) x.n > 0 && (int) y.n == 0)
                     return x;
                 SummaryStatsData<T> result;
                 T n = x.n + y.n;

@@ -5241,7 +5241,7 @@ int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
 }
 
 
-const char * getDeviceName(Nd4jPointer ptrToDeviceId) {
+const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
     int device = getDeviceId(ptrToDeviceId);
 
     return deviceProperties[device].name;

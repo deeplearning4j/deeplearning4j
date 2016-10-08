@@ -599,7 +599,7 @@ template<typename OpType>
 
 					else {
 						T finalVal = startingVal;
-						BlockInformation info(length);
+						BlockInformation info(length, ELEMENT_THRESHOLD);
 						T *blocks = new T[info.chunks];
 
                         int _threads = nd4j::math::nd4j_min<int>(info.threads, omp_get_max_threads());
@@ -665,11 +665,11 @@ template<typename OpType>
 					}
 
 					T finalVal = startingVal;
-					BlockInformation info(length);
+					BlockInformation info(length, ELEMENT_THRESHOLD);
 					T *blocks = new T[info.chunks];
 
 
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY)
 					{
 						T local = OpType::startingValue(x);
 						for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
