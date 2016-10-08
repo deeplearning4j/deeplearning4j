@@ -18,11 +18,10 @@ package org.datavec.nlp.vectorizer;
 
 
 import org.datavec.api.berkeley.Counter;
-import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.reader.TfidfRecordReader;
-import org.datavec.nlp.vectorizer.AbstractTfidfVectorizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,14 +38,13 @@ import java.util.List;
 public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     @Override
     public INDArray createVector(Object[] args) {
-        INDArray ret = Nd4j.create(cache.vocabWords().size());
         Counter<String> docFrequencies = (Counter<String>)args[0];
+        double[] vector = new double[cache.vocabWords().size()];
         for(int i = 0; i < cache.vocabWords().size(); i++) {
             double freq = docFrequencies.getCount(cache.wordAt(i));
-            double tfidf = cache.tfidf(cache.wordAt(i),freq);
-            ret.putScalar(i,tfidf);
+            vector[i] = cache.tfidf(cache.wordAt(i),freq);
         }
-        return ret;
+        return Nd4j.create(vector);
     }
 
     @Override
