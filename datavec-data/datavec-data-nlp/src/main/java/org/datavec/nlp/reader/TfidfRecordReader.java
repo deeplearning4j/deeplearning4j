@@ -159,5 +159,14 @@ public class TfidfRecordReader extends FileRecordReader  {
     public int getNumFeatures() {
         return numFeatures;
     }
+
+    public void shuffle(){
+        this.shuffle(new Random());
+    }
+
+    public void shuffle(Random random){
+        Collections.shuffle(this.records, random);
+        this.reset();
+    }
 }
 
