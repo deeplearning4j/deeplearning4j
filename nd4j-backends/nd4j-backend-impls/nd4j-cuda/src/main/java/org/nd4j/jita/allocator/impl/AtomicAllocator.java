@@ -26,6 +26,7 @@ import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -872,6 +873,11 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public AllocationPoint getAllocationPoint(DataBuffer buffer) {
+        if (buffer instanceof CompressedDataBuffer) {
+            log.warn("Trying to get AllocationPoint from CompressedDataBuffer");
+            throw new RuntimeException("AP CDB");
+        }
+
         return getAllocationPoint(buffer.getTrackingPoint());
     }
 

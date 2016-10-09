@@ -3,6 +3,8 @@ package org.nd4j.linalg.compression;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
 
 import java.util.Map;
@@ -130,6 +132,9 @@ public class BasicNDArrayCompressor {
     }
 
     public INDArray compress(INDArray array) {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         return compress(array, getDefaultCompression());
     }
 
@@ -139,6 +144,7 @@ public class BasicNDArrayCompressor {
      * @param array
      */
     public void compressi(INDArray array) {
+
         compressi(array, getDefaultCompression());
     }
 

@@ -1160,7 +1160,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
-        convertDataEx(typeSrc, AtomicAllocator.getInstance().getHostPointer(source), typeDst, AtomicAllocator.getInstance().getHostPointer(target), target.length());
+        convertDataEx(typeSrc,
+                source.addressPointer(),
+                typeDst,
+                target.addressPointer(),
+                target.length());
     }
 
     @Override

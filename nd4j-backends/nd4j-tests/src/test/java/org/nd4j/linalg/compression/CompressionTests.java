@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -197,17 +198,25 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testNoOpCompression1() {
         INDArray array = Nd4j.linspace(1, 10000, 20000);
-        INDArray exp = array.dup();
+        INDArray exp = Nd4j.linspace(1, 10000, 20000);
+        INDArray mps = Nd4j.linspace(1, 10000, 20000);
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
         assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertTrue(compr.isCompressed());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
-        assertEquals(exp, array);
+        assertEquals(DataBuffer.Type.FLOAT, decomp.data().dataType());
+        assertFalse(decomp.isCompressed());
+        assertFalse(decomp.data() instanceof CompressedDataBuffer);
+        assertFalse(exp.data() instanceof CompressedDataBuffer);
+        assertFalse(exp.isCompressed());
+        assertFalse(array.data() instanceof CompressedDataBuffer);
+
         assertEquals(exp, decomp);
     }
 
