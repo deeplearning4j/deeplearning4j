@@ -107,7 +107,8 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
         int nSamples = 500;
         int nFeatures = 3;
 
-        INDArray featureSet = Nd4j.randn(nSamples,nFeatures);
+        Nd4j.getRandom().setSeed(12345);
+        INDArray featureSet = Nd4j.rand(nSamples,nFeatures);
         INDArray labelSet = Nd4j.zeros(nSamples, 1);
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
