@@ -73,6 +73,8 @@
         <zookeeper.version>3.4.6</zookeeper.version>
         <kafka.version>0.8.2.2</kafka.version>
         <spark.version>1.5.2</spark.version>
+        <agrona.version>0.5.4</agrona.version>
+        <mapdb.version>3.0.2</mapdb.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
     </properties>
