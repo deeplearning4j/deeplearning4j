@@ -38,6 +38,8 @@ public class PlayUIServer extends UIServer {
     public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
     public static final int DEFAULT_UI_PORT = 9000;
 
+    public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
+
     private Server server;
     private final BlockingQueue<Pair<StatsStorage, StatsStorageEvent>> eventQueue = new LinkedBlockingQueue<>();
     private List<Pair<StatsStorage, StatsStorageListener>> listeners = new ArrayList<>();
@@ -58,7 +60,7 @@ public class PlayUIServer extends UIServer {
 
         //Set up index page and assets routing
         routingDsl.GET("/").routeTo(new Index());
-        routingDsl.GET("/assets/*file").routeTo(new Assets());
+        routingDsl.GET("/assets/*file").routeTo(new Assets(ASSETS_ROOT_DIRECTORY));
 
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
 
@@ -71,6 +73,8 @@ public class PlayUIServer extends UIServer {
                         ppm.routeTo(r.getSupplier());
                         break;
                     case Function:
+                        ppm.routeTo(r.getFunction());
+                        break;
                     case BiFunction:
                     case Function3:
                     default:
