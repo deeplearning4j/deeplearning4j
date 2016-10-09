@@ -54,16 +54,22 @@ public class VectorsConfiguration implements Serializable {
     // overall model info
     private int vocabSize;
 
+    private static ObjectMapper mapper;
+    private static final Object lock = new Object();
+
     private static ObjectMapper mapper() {
-        /*
-              DO NOT ENABLE INDENT_OUTPUT FEATURE
-              we need THIS json to be single-line
-          */
-        ObjectMapper ret = new ObjectMapper();
-        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        return ret;
+        if (mapper == null) {
+            synchronized (lock) {
+                if (mapper == null) {
+                    mapper = new ObjectMapper();
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                    mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+                    return mapper;
+                }
+            }
+        }
+        return mapper;
     }
 
     public String toJson() {

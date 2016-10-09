@@ -41,7 +41,7 @@ import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingEleme
 import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementCombineFunction;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.util.SparkUtils;
-import org.deeplearning4j.spark.util.UIDProvider;
+import org.deeplearning4j.util.UIDProvider;
 import org.deeplearning4j.spark.util.serde.StorageLevelDeserializer;
 import org.deeplearning4j.spark.util.serde.StorageLevelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
