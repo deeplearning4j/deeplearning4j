@@ -17,18 +17,17 @@ public interface AbstractStorage<T extends Object> {
 
     /**
      * Store object into storage, if it doesn't exist
-     *
-     * @param key
+     *  @param key
      * @param object
      */
-    void storeIfAbsent(T key, INDArray object);
+    boolean storeIfAbsent(T key, INDArray object);
 
     /**
      * Get object from the storage, by key
      *
      * @param key
      */
-    void get(T key);
+    INDArray get(T key);
 
     /**
      * This method checks, if storage contains specified key
@@ -37,4 +36,15 @@ public interface AbstractStorage<T extends Object> {
      * @return
      */
     boolean containsKey(T key);
+
+    /**
+     * This method purges everything from storage
+     */
+    void clear();
+
+
+    /**
+     * This method removes value by specified key
+     */
+    void drop(T key);
 }
