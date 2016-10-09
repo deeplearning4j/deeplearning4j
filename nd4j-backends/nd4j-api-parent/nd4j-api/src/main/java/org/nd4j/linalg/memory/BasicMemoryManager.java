@@ -1,6 +1,7 @@
 package org.nd4j.linalg.memory;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -38,5 +39,10 @@ public class BasicMemoryManager implements MemoryManager {
     @Override
     public void purgeCaches() {
 
+    }
+
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(), srcBuffer.length() * srcBuffer.getElementSize());
     }
 }

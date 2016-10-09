@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
@@ -91,5 +92,16 @@ public class CudaMemoryManager extends BasicMemoryManager {
         // purge memory cache
         AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
 
+    }
+
+    /**
+     * This method provides basic memcpy functionality with respect to target environment
+     *
+     * @param dstBuffer
+     * @param srcBuffer
+     */
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        throw new UnsupportedOperationException("Not Implemented Yet");
     }
 }

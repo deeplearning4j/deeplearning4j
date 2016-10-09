@@ -203,7 +203,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
-        assertNotEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -231,6 +231,55 @@ public class CompressionTests extends BaseNd4jTest {
         assertEquals(3.0f, decomp.getFloat(2), 0.01f);
         assertEquals(4.0f, decomp.getFloat(3), 0.01f);
         assertEquals(5.0f, decomp.getFloat(4), 0.01f);
+    }
+
+
+    @Test
+    public void testJVMCompression1() throws Exception {
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT16");
+
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
+        assertNotEquals(null, compressed.data());
+        assertNotEquals(null, compressed.shapeInfoDataBuffer());
+        assertTrue(compressed.isCompressed());
+
+        INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
+
+        assertEquals(exp, decomp);
+    }
+
+    @Test
+    public void testJVMCompression2() throws Exception {
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
+
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
+        assertNotEquals(null, compressed.data());
+        assertNotEquals(null, compressed.shapeInfoDataBuffer());
+        assertTrue(compressed.isCompressed());
+
+        INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
+
+        assertEquals(exp, decomp);
+    }
+
+    @Test
+    public void testJVMCompression3() throws Exception {
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
+
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
+        assertNotEquals(null, compressed.data());
+        assertNotEquals(null, compressed.shapeInfoDataBuffer());
+        assertTrue(compressed.isCompressed());
+
+        INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
+
+        assertEquals(exp, decomp);
     }
 
     @Override

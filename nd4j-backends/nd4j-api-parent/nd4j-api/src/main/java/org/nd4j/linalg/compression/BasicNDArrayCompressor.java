@@ -246,4 +246,24 @@ public class BasicNDArrayCompressor {
         if (array.isCompressed())
             decompressi(array);
     }
+
+    /**
+     * This method returns compressed INDArray instance which contains JVM array passed in
+     *
+     * @param array
+     * @return
+     */
+    public INDArray compress(float[] array) {
+        return codecs.get(defaultCompression).compress(array);
+    }
+
+    /**
+     * This method returns compressed INDArray instance which contains JVM array passed in
+     *
+     * @param array
+     * @return
+     */
+    public INDArray compress(double[] array) {
+        return codecs.get(defaultCompression).compress(array);
+    }
 }
