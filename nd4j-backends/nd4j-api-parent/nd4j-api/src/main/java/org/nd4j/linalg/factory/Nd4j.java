@@ -2247,7 +2247,11 @@ public class Nd4j {
     public static INDArray createArrayFromShapeBuffer(DataBuffer data,DataBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
         int offset = Shape.offset(shapeInfo);
-        return Nd4j.create(data,toIntArray(rank, Shape.shapeOf(shapeInfo)),toIntArray(rank,Shape.stride(shapeInfo)),offset,Shape.order(shapeInfo));
+        INDArray result = Nd4j.create(data,toIntArray(rank, Shape.shapeOf(shapeInfo)),toIntArray(rank,Shape.stride(shapeInfo)),offset,Shape.order(shapeInfo));
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
     }
 
 

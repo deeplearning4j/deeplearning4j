@@ -20,6 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -1743,4 +1744,6 @@ public interface NDArrayFactory {
     DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
 
     void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
 }

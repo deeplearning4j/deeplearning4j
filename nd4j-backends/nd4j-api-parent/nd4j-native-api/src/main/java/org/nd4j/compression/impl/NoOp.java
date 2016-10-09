@@ -1,6 +1,8 @@
 package org.nd4j.compression.impl;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionType;
 
 /**
@@ -37,5 +39,10 @@ public class NoOp extends AbstractCompressor {
     @Override
     public DataBuffer compress(DataBuffer buffer) {
         return buffer.dup();
+    }
+
+    @Override
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+        return null;
     }
 }

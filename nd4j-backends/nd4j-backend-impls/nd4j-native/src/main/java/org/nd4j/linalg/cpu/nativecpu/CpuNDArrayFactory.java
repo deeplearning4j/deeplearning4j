@@ -1023,20 +1023,25 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             buffer = Nd4j.createBuffer(source.length(), false);
         }
 
-        nativeOps.convertTypes(
-                null,
-                typeSrc.ordinal(),
-                source.addressPointer(),
-                source.length(),
-                typeDst.ordinal(),
-                buffer.addressPointer()
-        );
+        convertDataEx(typeSrc, source, typeDst, buffer);
 
         return buffer;
     }
 
     @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
+        nativeOps.convertTypes(
+                null,
+                typeSrc.ordinal(),
+                source,
+                length,
+                typeDst.ordinal(),
+                target
+        );
+    }
+
+    @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
-        // no-op
+        convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
     }
 }
