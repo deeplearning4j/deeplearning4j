@@ -10,8 +10,7 @@ import java.util.Queue;
 
 /**
  * A very simple {@link StatsStorageListener}, that adds the {@link StatsStorageEvent} instances and the specified
- * {@link StatsStorage} instance (i.e., the source) to the specified queue
- * for later processing.
+ * {@link StatsStorage} instance (i.e., the source) to the specified queue for later processing.
  *
  * @author Alex Black
  */
