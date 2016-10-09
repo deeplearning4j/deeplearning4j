@@ -60,7 +60,7 @@
         <slf4j.version>1.7.12</slf4j.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
-        <jackson.version>2.5.1</jackson.version>    <!-- Issues: Dropwizard requires 2.5.1; Spark (local) requires 2.4.4 (spark submit will package correct version) -->
+        <jackson.version>2.5.1</jackson.version>
         <lombok.version>1.16.4</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <dropwizard.version>0.8.0</dropwizard.version>
@@ -78,6 +78,10 @@
         <playframework.version>2.5.8</playframework.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
+        <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
+        <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
+        <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
+        <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
     </properties>
 
     <profiles>
