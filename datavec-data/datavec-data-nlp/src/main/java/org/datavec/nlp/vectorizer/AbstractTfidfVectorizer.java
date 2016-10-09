@@ -38,11 +38,13 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
         Set<String> seen = new HashSet<>();
         while(tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken();
-            cache.incrementCount(token);
-            if(!seen.contains(token)) {
-                cache.incrementDocCount(token);
+            if(!stopWords.contains(token)) {
+                cache.incrementCount(token);
+                if (!seen.contains(token)) {
+                    cache.incrementDocCount(token);
+                }
+                seen.add(token);
             }
-            seen.add(token);
         }
     }
 
