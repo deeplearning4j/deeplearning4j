@@ -44,6 +44,11 @@ public class DefaultVocabCache implements VocabCache {
         this.minWordFrequency = minWordFrequency;
     }
 
+    /*
+     * Constructor for use with initialize()
+     */
+    public DefaultVocabCache(){}
+
     @Override
     public void incrementNumDocs(double by) {
         numDocs += by;
