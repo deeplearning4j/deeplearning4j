@@ -48,4 +48,17 @@ public interface UIModule {
      */
     void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events);
 
+    /**
+     * Notify the UI module that the given {@link StatsStorage} instance has been attached to the UI
+     *
+     * @param statsStorage    Stats storage that has been attached
+     */
+    void onAttach(StatsStorage statsStorage);
+
+    /**
+     * Notify the UI module that the given {@link StatsStorage} instance has been detached from the UI
+     *
+     * @param statsStorage    Stats storage that has been detached
+     */
+    void onDetach(StatsStorage statsStorage);
 }

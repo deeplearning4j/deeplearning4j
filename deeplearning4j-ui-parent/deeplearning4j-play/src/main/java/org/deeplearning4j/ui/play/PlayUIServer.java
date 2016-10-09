@@ -6,14 +6,13 @@ import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.modules.histogram.HistogramModule;
+import org.deeplearning4j.ui.play.staticroutes.Assets;
+import org.deeplearning4j.ui.play.staticroutes.Index;
 import org.deeplearning4j.ui.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.StatsStorageEvent;
 import org.deeplearning4j.ui.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
-import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
-import org.nd4j.linalg.util.MultiValueMap;
 import play.Mode;
-import play.mvc.Result;
 import play.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
@@ -23,11 +22,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static play.mvc.Results.ok;
 
 /**
  * A UI server based on the Play framework
@@ -36,6 +30,13 @@ import static play.mvc.Results.ok;
  */
 @Slf4j
 public class PlayUIServer extends UIServer {
+
+    /**
+     * System property for setting the UI port. Defaults to 9000.
+     * Set to 0 to use a random port
+     */
+    public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
+    public static final int DEFAULT_UI_PORT = 9000;
 
     private Server server;
     private final BlockingQueue<Pair<StatsStorage, StatsStorageEvent>> eventQueue = new LinkedBlockingQueue<>();
@@ -49,11 +50,15 @@ public class PlayUIServer extends UIServer {
     private long uiProcessingDelay = 500;   //500ms. TODO make configurable
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
+    private Thread uiEventRoutingThread;
+
     public PlayUIServer() {
 
         RoutingDsl routingDsl = new RoutingDsl();
 
+        //Set up index page and assets routing
         routingDsl.GET("/").routeTo(new Index());
+        routingDsl.GET("/assets/*file").routeTo(new Assets());
 
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
 
@@ -85,27 +90,47 @@ public class PlayUIServer extends UIServer {
             }
         }
 
+        String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
+        int port = DEFAULT_UI_PORT;
+        if(portProperty != null){
+            try{
+                port = Integer.parseInt(portProperty);
+            }catch(NumberFormatException e){
+                log.warn("Could not parse {} property: NumberFormatException for property value \"{}\". Defaulting to port {}. Set property to 0 for random port",
+                        UI_SERVER_PORT_PROPERTY, portProperty, port);
+            }
+        }
 
         Router router = routingDsl.build();
-        int port = 9000;    //TODO don't hard-code...
         server = Server.forRouter(router, Mode.DEV, port);
 
         log.info("UI Server started at {}", server.mainAddress());
+
+        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
+        uiEventRoutingThread.setDaemon(true);
+        uiEventRoutingThread.start();
     }
 
     @Override
     public synchronized void attach(StatsStorage statsStorage) {
         if (statsStorage == null) throw new IllegalArgumentException("StatsStorage cannot be null");
+        if (statsStorageInstances.contains(statsStorage)) return;
         StatsStorageListener listener = new QueuePairStatsStorageListener(statsStorage, eventQueue);
         listeners.add(new Pair<>(statsStorage, listener));
         statsStorage.registerStatsStorageListener(listener);
         statsStorageInstances.add(statsStorage);
+
+        for (UIModule uiModule : uiModules) {
+            uiModule.onAttach(statsStorage);
+        }
+
         log.info("StatsStorage instance attached to UI: {}", statsStorage);
     }
 
     @Override
     public synchronized void detach(StatsStorage statsStorage) {
         if (statsStorage == null) throw new IllegalArgumentException("StatsStorage cannot be null");
+        if (!statsStorageInstances.contains(statsStorage)) return;   //No op
         boolean found = false;
         for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
             if (p.getFirst() == statsStorage) {       //Same object, not equality
@@ -113,6 +138,9 @@ public class PlayUIServer extends UIServer {
                 listeners.remove(p);
                 found = true;
             }
+        }
+        for (UIModule uiModule : uiModules) {
+            uiModule.onDetach(statsStorage);
         }
         if (found) {
             log.info("StatsStorage instance detached from UI: {}", statsStorage);
@@ -132,7 +160,6 @@ public class PlayUIServer extends UIServer {
 
     private class StatsEventRouterRunnable implements Runnable {
 
-
         @Override
         public void run() {
             try {
@@ -146,16 +173,16 @@ public class PlayUIServer extends UIServer {
             //Idea: collect all event stats, and route them to the appropriate modules
             while (!shutdown.get()) {
 
-                List<Pair<StatsStorage,StatsStorageEvent>> events = new ArrayList<>();
-                Pair<StatsStorage,StatsStorageEvent> sse = eventQueue.take();  //Blocking operation
+                List<Pair<StatsStorage, StatsStorageEvent>> events = new ArrayList<>();
+                Pair<StatsStorage, StatsStorageEvent> sse = eventQueue.take();  //Blocking operation
                 events.add(sse);
                 eventQueue.drainTo(events); //Non-blocking
 
                 //First: group by StatsStorage
                 Map<StatsStorage, List<StatsStorageEvent>> eventsBySource = new HashMap<>();
-                for(Pair<StatsStorage, StatsStorageEvent> p : events){
+                for (Pair<StatsStorage, StatsStorageEvent> p : events) {
                     List<StatsStorageEvent> list = eventsBySource.get(p.getFirst());
-                    if(list == null){
+                    if (list == null) {
                         list = new ArrayList<>();
                         eventsBySource.put(p.getFirst(), list);
                     }
@@ -165,10 +192,10 @@ public class PlayUIServer extends UIServer {
                 //Second: for each StatsStorage instance, sort by UI module and route to the appropriate locations...
                 int count = 0;
                 int skipped = 0;
-                for(Map.Entry<StatsStorage, List<StatsStorageEvent>> entry : eventsBySource.entrySet()){
+                for (Map.Entry<StatsStorage, List<StatsStorageEvent>> entry : eventsBySource.entrySet()) {
 
                     Map<UIModule, List<StatsStorageEvent>> eventsByModule = new HashMap<>();
-                    for (Pair<StatsStorage,StatsStorageEvent> event : events) {
+                    for (Pair<StatsStorage, StatsStorageEvent> event : events) {
                         String typeID = event.getSecond().getTypeID();
                         if (!typeIDModuleMap.containsKey(typeID)) {
                             skipped++;
@@ -204,7 +231,6 @@ public class PlayUIServer extends UIServer {
                     }
                 }
             }
-
         }
     }
 }
