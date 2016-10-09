@@ -34,8 +34,16 @@ public class HistogramModule implements UIModule {
         //TODO actually process the events...
 
 
-        
+
     }
 
+    @Override
+    public void onAttach(StatsStorage statsStorage) {
+        //TODO
+    }
 
+    @Override
+    public void onDetach(StatsStorage statsStorage) {
+        //TODO
+    }
 }

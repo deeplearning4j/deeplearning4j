@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.play;
+package org.deeplearning4j.ui.play.staticroutes;
 
 import play.mvc.Result;
 
