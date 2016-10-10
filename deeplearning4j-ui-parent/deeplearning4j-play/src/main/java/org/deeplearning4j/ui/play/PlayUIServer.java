@@ -6,6 +6,7 @@ import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.modules.histogram.HistogramModule;
+import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.Index;
 import org.deeplearning4j.ui.storage.StatsStorage;
@@ -13,7 +14,7 @@ import org.deeplearning4j.ui.storage.StatsStorageEvent;
 import org.deeplearning4j.ui.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
 import play.Mode;
-import play.routing.Router;
+import play.api.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
@@ -59,8 +60,12 @@ public class PlayUIServer extends UIServer {
         RoutingDsl routingDsl = new RoutingDsl();
 
         //Set up index page and assets routing
-        routingDsl.GET("/").routeTo(new Index());
-        routingDsl.GET("/assets/*file").routeTo(new Assets(ASSETS_ROOT_DIRECTORY));
+        //The definitions and FunctionUtil may look a bit weird here... this is used to translate implementation independent
+        // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
+        //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
+        // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
+        routingDsl.GET("/").routeTo(FunctionUtil.function0(new Index()));
+        routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
 
@@ -70,10 +75,10 @@ public class PlayUIServer extends UIServer {
                 RoutingDsl.PathPatternMatcher ppm = routingDsl.match(r.getHttpMethod().name(), r.getRoute());
                 switch (r.getFunctionType()) {
                     case Supplier:
-                        ppm.routeTo(r.getSupplier());
+                        ppm.routeTo(FunctionUtil.function0(r.getSupplier()));
                         break;
                     case Function:
-                        ppm.routeTo(r.getFunction());
+                        ppm.routeTo(FunctionUtil.function(r.getFunction()));
                         break;
                     case BiFunction:
                     case Function3:

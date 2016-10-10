@@ -22,11 +22,14 @@ public class TestPlayUI {
 
     @Test
     public void testUI() throws Exception {
-
         StatsStorage ss = new MapDBStatsStorage();  //In-memory
 
         UIServer uiServer = UIServer.getInstance();
         uiServer.attach(ss);
+
+//        System.out.println("TITLE: " + Messages.get("home.title"));
+//        System.out.println("TITLE EN: " + Messages.get(new Lang(Lang.forCode("en")),"home.title"));
+//        System.out.println("TITLE JP: " + Messages.get(new Lang(Lang.forCode("jp")),"home.title"));
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
