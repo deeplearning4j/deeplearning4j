@@ -39,7 +39,7 @@ public class HistogramModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/weights", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.histogram.Histogram.apply()));
+        Route r = new Route("/weights", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.histogram.Histogram.apply()));
         Route r2 = new Route("/weights/listSessions", HttpMethod.GET, FunctionType.Supplier, () -> ok(toJson(knownSessionIDs)));
 
         return Arrays.asList(r, r2);

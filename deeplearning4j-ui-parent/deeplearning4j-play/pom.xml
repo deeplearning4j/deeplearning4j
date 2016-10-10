@@ -51,23 +51,6 @@
 
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                        <includes>
-                            <include>src/main/java/**/*</include>
-                        </includes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
         <plugins>
 
             <!-- Build helper plugin: used to add the multiple independent source directories (Java, Scala, HTML templates) -->
@@ -84,14 +67,18 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>src/main/java</source>
                                 <source>src/main/scala</source>
+                                <source>src/main/java</source>
                                 <source>src/main/views</source>
                             </sources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+
+
+
 
             <plugin>
                 <groupId>com.google.code.play2-maven-plugin</groupId>
@@ -101,12 +88,12 @@
                 <!-- Generate Scala Page Templates
                 The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
                 data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
-                code generation. This is done during the Maven compile phase.
+                code generation. This is done here during the Maven compile phase.
                 However, the Maven Play framework plugin does not allow proper customization of the output directory. Thus,
                 we generate these Scala classes in the default location (in the target/twirl/main/ directory) and use the
                 maven resources plugin to copy them to the actual location we want.
                 To generate the latest versions of these templates (after modifying or adding a new template), just run
-                 "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
+                "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
                 -->
                 <executions>
                     <execution>
@@ -121,6 +108,7 @@
                 </executions>
             </plugin>
 
+            <!-- Copy the generated Scala templates to the appropriate directory. See templates comment above. -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>${maven-resources-plugin.version}</version>
@@ -132,7 +120,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/src/main/scala/org/deeplearning4j/ui/views</outputDirectory>
+                            <outputDirectory>${basedir}/src/main/scala/org/deeplearning4j/ui/views/html</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${basedir}/target/twirl/main/org/deeplearning4j/ui/views/html</directory>
@@ -150,7 +138,16 @@
                 <version>${sbt-compiler-maven-plugin.version}</version>
             </plugin>
 
-
+            <!-- Maven compiler plugin last: should ensure Scala code is compiled before Java code -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
