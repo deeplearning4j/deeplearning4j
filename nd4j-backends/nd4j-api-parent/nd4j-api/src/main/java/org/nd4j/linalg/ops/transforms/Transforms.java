@@ -65,6 +65,15 @@ public class Transforms {
         return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult().doubleValue();
     }
 
+    public static double manhattanDistance(INDArray d1, INDArray d2){
+        return d1.distance1(d2);
+    }
+
+    public static double euclideanDistance(INDArray d1, INDArray d2){
+        return d1.distance2(d2);
+    }
+
+
     /**
      * Normalize data to zero mean and unit variance
      * substract by the mean and divide by the standard deviation
