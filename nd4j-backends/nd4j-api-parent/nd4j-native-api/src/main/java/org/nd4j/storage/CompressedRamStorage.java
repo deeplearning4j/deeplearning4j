@@ -156,6 +156,22 @@ public class CompressedRamStorage<T extends Object> implements AbstractStorage<T
             lock.writeLock().unlock();
     }
 
+    /**
+     * This method returns number of entries available in storage
+     */
+    @Override
+    public long size() {
+        try {
+            if(emulateIsAbsent)
+                lock.readLock().lock();
+
+            return compressedEntries.size();
+        } finally {
+            if (emulateIsAbsent)
+                lock.readLock().unlock();
+        }
+    }
+
     public static class Builder<T> {
         // we use NoOp as default compressor
         private NDArrayCompressor compressor = new NoOp();
