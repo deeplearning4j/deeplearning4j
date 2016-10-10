@@ -1,19 +1,39 @@
 package org.deeplearning4j.models.word2vec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.AbstractStorage;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * This is special limited Word2Vec implementation, suited for serving as lookup table in concurrent multi-gpu environment
+ * This implementation DOES NOT load all vectors onto any of gpus, instead of that it holds vectors in, optionally, compressed state in host memory.
+ * This implementation DOES NOT provide some of original Word2Vec methods, such as wordsNearest or wordsNearestSum.
+ *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class StaticWord2Vec implements WordVectors {
+    private List<Map<Integer, INDArray>>  cacheWrtDevice = new ArrayList<>();
+    private AbstractStorage<Integer> storage;
+    private long cachePerDevice = 0L;
+    private VocabCache<VocabWord> vocabCache;
+
+    private StaticWord2Vec() {
+
+    }
+
     @Override
     public String getUNK() {
         return null;
@@ -21,7 +41,20 @@ public class StaticWord2Vec implements WordVectors {
 
     @Override
     public void setUNK(String newUNK) {
+        // no-op
+    }
 
+    /**
+     * Init method validates configuration defined using
+     */
+    protected void init() {
+        if (storage.size() != vocabCache.numWords())
+            throw new RuntimeException("Number of words in Vocab isn't matching number of stored Vectors");
+
+        // initializing device cache
+        for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); i++) {
+            cacheWrtDevice.add(new ConcurrentHashMap<Integer, INDArray>());
+        }
     }
 
     /**
@@ -32,7 +65,7 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public boolean hasWord(String word) {
-        return false;
+        return vocabCache.containsWord(word);
     }
 
     @Override
@@ -113,7 +146,7 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public double[] getWordVector(String word) {
-        return new double[0];
+        return getWordVectorMatrix(word).data().asDouble();
     }
 
     /**
@@ -124,7 +157,7 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public INDArray getWordVectorMatrixNormalized(String word) {
-        return null;
+        return Transforms.unitVec(getWordVectorMatrix(word));
     }
 
     /**
@@ -135,7 +168,32 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public INDArray getWordVectorMatrix(String word) {
-        return null;
+        // TODO: add variable UNK here
+        int idx = 0;
+        if (hasWord(word))
+            idx = vocabCache.indexOf(word);
+        else
+            if (getUNK() != null)
+                idx = vocabCache.indexOf(getUNK());
+            else
+                return null;
+
+        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        INDArray array = null;
+
+        if (cachePerDevice > 0 && cacheWrtDevice.get(deviceId).containsKey(idx))
+            return cacheWrtDevice.get(Nd4j.getAffinityManager().getDeviceForCurrentThread()).get(idx);
+
+        array = storage.get(idx);
+
+        if (cachePerDevice > 0){
+            // TODO: add cache here
+            long arrayBytes = array.length() * array.data().getElementSize();
+            if ((arrayBytes * cacheWrtDevice.get(deviceId).size()) + arrayBytes < cachePerDevice)
+                cacheWrtDevice.get(deviceId).put(idx, array);
+        }
+
+        return array;
     }
 
     /**
@@ -146,7 +204,13 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public INDArray getWordVectors(Collection<String> labels) {
-        return null;
+        List<INDArray> words = new ArrayList<>();
+        for (String label: labels) {
+            if (hasWord(label) || getUNK() != null)
+                words.add(getWordVectorMatrix(label));
+        }
+
+        return Nd4j.vstack(words);
     }
 
     /**
@@ -157,7 +221,10 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public INDArray getWordVectorsMean(Collection<String> labels) {
-        return null;
+        INDArray matrix = getWordVectors(labels);
+
+        // TODO: check this (1)
+        return matrix.mean(1);
     }
 
     /**
@@ -190,13 +257,31 @@ public class StaticWord2Vec implements WordVectors {
     /**
      * Returns the similarity of 2 words
      *
-     * @param word  the first word
-     * @param word2 the second word
+     * @param label1  the first word
+     * @param label2 the second word
      * @return a normalized similarity (cosine similarity)
      */
     @Override
-    public double similarity(String word, String word2) {
-        return 0;
+    public double similarity(String label1, String label2) {
+        if (label1 == null || label2 == null) {
+            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
+            return Double.NaN;
+        }
+
+        INDArray vec1 = getWordVectorMatrix(label1).dup();
+        INDArray vec2 = getWordVectorMatrix(label2).dup();
+
+        if (vec1 == null || vec2 == null) {
+            log.debug(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
+            return Double.NaN;
+        }
+
+        if (label1.equals(label2)) return 1.0;
+
+        vec1 = Transforms.unitVec(vec1);
+        vec2 = Transforms.unitVec(vec2);
+
+        return Transforms.cosineSim(vec1, vec2);
     }
 
     /**
@@ -206,7 +291,7 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public VocabCache vocab() {
-        return null;
+        return vocabCache;
     }
 
     /**
@@ -228,6 +313,53 @@ public class StaticWord2Vec implements WordVectors {
      */
     @Override
     public void setModelUtils(ModelUtils utils) {
+        // no-op
+    }
 
+    public static class Builder {
+
+        private AbstractStorage<Integer> storage;
+        private long cachePerDevice = 0L;
+        private VocabCache<VocabWord> vocabCache;
+
+        /**
+         *
+         * @param storage AbstractStorage implementation, key has to be Integer, index of vocabWords
+         * @param vocabCache VocabCache implementation, which will be used to lookup word indexes
+         */
+        public Builder(AbstractStorage<Integer> storage, VocabCache<VocabWord> vocabCache) {
+            this.storage = storage;
+            this.vocabCache = vocabCache;
+        }
+
+
+        /**
+         * This method lets you to define if decompressed values will be cached, to avoid excessive decompressions.
+         * If bytes == 0 - no cache will be used.
+         *
+         * @param bytes
+         * @return
+         */
+        public Builder setCachePerDevice(long bytes) {
+            this.cachePerDevice = bytes;
+            return this;
+        }
+
+
+        /**
+         * This method returns Static Word2Vec implementation, which is suitable for tasks like neural nets feeding.
+         *
+         * @return
+         */
+        public StaticWord2Vec build() {
+            StaticWord2Vec word2Vec = new StaticWord2Vec();
+            word2Vec.cachePerDevice = this.cachePerDevice;
+            word2Vec.storage = this.storage;
+            word2Vec.vocabCache = this.vocabCache;
+
+            word2Vec.init();
+
+            return word2Vec;
+        }
     }
 }
