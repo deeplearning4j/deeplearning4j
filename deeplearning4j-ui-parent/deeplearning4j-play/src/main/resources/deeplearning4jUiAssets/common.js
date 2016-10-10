@@ -1,6 +1,11 @@
 function buildSessionSelector(event) {
+    buildSessionSelector2("/sessions?event=",event);
+}
+
+function buildSessionSelector2(urlPath, event){
   $.ajax({
-                              url:"/sessions?event=" + event,
+                              /*url:"/sessions?event=" + event,*/
+                              url:urlPath + event,
                               async: true,
                               error: function (query, status, error) {
                                   /*$.notify({
