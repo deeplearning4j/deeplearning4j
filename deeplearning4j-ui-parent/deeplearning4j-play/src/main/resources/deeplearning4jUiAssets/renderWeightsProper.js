@@ -552,7 +552,7 @@ var timed = function() {
                     if (sid == undefined) sid = 0;
 
                     $.ajax({
-                        url:"/weights" + "/updated?sid=" + sid,
+                        url:"/weights" + "/updated/" + sid,
                         async: true,
                         error: function (query, status, error) {
                             $.notify({
@@ -571,7 +571,8 @@ var timed = function() {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
                                     */
-                                    d3.json("/weights"+'/data?sid=' + sid,function(error,json) {
+                                    // d3.json("/weights"+'/data?sid=' + sid,function(error,json) {
+                                d3.json("/weights"+'/data/' + sid,function(error,json) {
 
                                         //Get last update time; do nothing if not a new update
                                         var updateTime = json['lastUpdateTime'];
