@@ -40,10 +40,11 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- For Play 2.5: should use play-logback -->
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-logback_2.11</artifactId>
-            <version>${playframework.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
 
