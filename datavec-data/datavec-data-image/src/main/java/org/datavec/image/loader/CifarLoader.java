@@ -202,13 +202,13 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 DataSet result = convertDataSet(numToConvertDS);
                 result.save(new File(trainFilesSerialized + i + ".ser"));
             }
-            for (int i = 1; i <= (TRAINFILENAMES.length); i++){
-                normalizeCifar(new File(trainFilesSerialized + i + ".ser"));
-            }
+//            for (int i = 1; i <= (TRAINFILENAMES.length); i++){
+//                normalizeCifar(new File(trainFilesSerialized + i + ".ser"));
+//            }
             inputStream = testInputStream;
             DataSet result = convertDataSet(numToConvertDS);
             result.save(new File(testFilesSerialized));
-            normalizeCifar(new File(testFilesSerialized));
+//            normalizeCifar(new File(testFilesSerialized));
         }
         setInputStream();
     }
@@ -311,9 +311,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             imageData.put(3 * i + 1, byteFeature[i + 1 + height * width]); // green
             imageData.put(3 * i + 2, byteFeature[i + 1]); // red
         }
-        if (useSpecialPreProcessCifar) {
-            image = convertCifar(image);
-        }
+//        if (useSpecialPreProcessCifar) {
+//            image = convertCifar(image);
+//        }
 
         return new Pair<>(label, image);
     }
@@ -357,6 +357,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     vTempMean = vChannel.mean(new int[] {0,2,3}).getDouble(0);
                     vStd += varManual(vChannel, vTempMean);
                     vMean += vTempMean;
+                    data.setFeatures(data.getFeatureMatrix().div(255));
                 } else {
                     // normalize if just input stream and not special preprocess
                     data.setFeatures(data.getFeatureMatrix().div(255));
