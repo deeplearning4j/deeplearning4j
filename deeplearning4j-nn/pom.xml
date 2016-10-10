@@ -18,11 +18,18 @@
     </properties>
 
     <dependencies>
-        <!-- TODO: Do we want this here? -->
+        <!-- TODO: Do we want this here? Used only in Evaluation metadata...-->
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${datavec.version}</version>
+        </dependency>
+
+        <!-- ND4J API -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <!-- ND4J Shaded Jackson Dependency -->
@@ -36,12 +43,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

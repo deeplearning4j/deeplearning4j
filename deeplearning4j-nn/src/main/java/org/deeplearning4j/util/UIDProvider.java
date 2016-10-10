@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.util;
+package org.deeplearning4j.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
