@@ -19,6 +19,22 @@ public interface AbstractStorage<T extends Object> {
     void store(T key, INDArray object);
 
     /**
+     * Store object into storage
+     *
+     * @param key
+     * @param array
+     */
+    void store(T key, float[] array);
+
+    /**
+     * Store object into storage
+     *
+     * @param key
+     * @param array
+     */
+    void store(T key, double[] array);
+
+    /**
      * Store object into storage, if it doesn't exist
      *  @param key
      * @param object

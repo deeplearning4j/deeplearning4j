@@ -58,6 +58,44 @@ public class CompressedRamStorage<T extends Object> implements AbstractStorage<T
     }
 
     /**
+     * Store object into storage
+     *
+     * @param key
+     * @param array
+     */
+    @Override
+    public void store(T key, float[] array) {
+        INDArray toStore = compressor.compress(array);
+
+        if (emulateIsAbsent)
+            lock.writeLock().lock();
+
+        compressedEntries.put(key, toStore);
+
+        if (emulateIsAbsent)
+            lock.writeLock().unlock();
+    }
+
+    /**
+     * Store object into storage
+     *
+     * @param key
+     * @param array
+     */
+    @Override
+    public void store(T key, double[] array) {
+        INDArray toStore = compressor.compress(array);
+
+        if (emulateIsAbsent)
+            lock.writeLock().lock();
+
+        compressedEntries.put(key, toStore);
+
+        if (emulateIsAbsent)
+            lock.writeLock().unlock();
+    }
+
+    /**
      * Store object into storage, if it doesn't exist
      *
      * @param key
