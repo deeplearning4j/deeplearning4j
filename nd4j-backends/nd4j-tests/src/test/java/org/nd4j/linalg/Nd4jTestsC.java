@@ -3247,6 +3247,28 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testDistance1and2(){
+        double[] d1 = new double[]{-1, 3, 2};
+        double[] d2 = new double[]{0,1.5,-3.5};
+        INDArray arr1 = Nd4j.create(d1);
+        INDArray arr2 = Nd4j.create(d2);
+
+        double expD1 = 0.0;
+        double expD2 = 0.0;
+        for(int i=0; i<d1.length; i++ ){
+            double diff = d1[i]-d2[i];
+            expD1 += Math.abs(diff);
+            expD2 += diff*diff;
+        }
+        expD2 = Math.sqrt(expD2);
+
+        assertEquals(expD1, arr1.distance1(arr2), 1e-5);
+        assertEquals(expD2, arr1.distance2(arr2), 1e-5);
+        assertEquals(expD2*expD2, arr1.squaredDistance(arr2), 1e-5);
+    }
+
+
     @Override
     public char ordering() {
         return 'c';

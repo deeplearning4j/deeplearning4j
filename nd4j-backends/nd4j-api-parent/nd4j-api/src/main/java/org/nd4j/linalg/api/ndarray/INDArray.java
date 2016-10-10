@@ -989,7 +989,7 @@ public interface INDArray extends Serializable  {
     int index(int row, int column);
 
     /**
-     * Returns the squared (Euclidean) distance.
+     * Returns the square of the Euclidean distance.
      */
     double squaredDistance(INDArray other);
 

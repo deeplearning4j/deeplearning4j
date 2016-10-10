@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
@@ -1795,16 +1797,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     /**
-     * Returns the squared (Euclidean) distance.
+     * Returns the square of the Euclidean distance.
      */
     @Override
     public double squaredDistance(INDArray other) {
-        double sd = 0.0;
-        for (int i = 0; i < length; i++) {
-            double d = getDouble(i) - other.getDouble(i);
-            sd += d * d;
-        }
-        return sd;
+        double d2 = distance2(other);
+        return d2*d2;
     }
 
     /**
@@ -1812,7 +1810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance2(INDArray other) {
-        return Math.sqrt(squaredDistance(other));
+        return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this,other)).getFinalResult().doubleValue();
     }
 
     /**
@@ -1820,7 +1818,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance1(INDArray other) {
-        return other.sub(this).sum(Integer.MAX_VALUE).getDouble(0);
+        return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this,other)).getFinalResult().doubleValue();
     }
 
 
