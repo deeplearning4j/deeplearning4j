@@ -538,7 +538,7 @@ public class WordVectorSerializerTest {
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         long time1 = System.currentTimeMillis();
-        WordVectors vectors = WordVectorSerializer.getWordVectorsAsStaticLookup(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
+        WordVectors vectors = WordVectorSerializer.loadStaticModel(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
         long time2 = System.currentTimeMillis();
 
         logger.info("Loading time: {} ms", (time2 - time1));
@@ -555,7 +555,7 @@ public class WordVectorSerializerTest {
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
-        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(binaryFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(binaryFile);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
@@ -574,7 +574,7 @@ public class WordVectorSerializerTest {
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
-        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(textFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(textFile);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
@@ -595,7 +595,7 @@ public class WordVectorSerializerTest {
         File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
 
         WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
-        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(w2v);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(w2v);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("night");
