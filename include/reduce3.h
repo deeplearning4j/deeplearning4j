@@ -170,11 +170,16 @@ template<typename OpType>
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extraZ[2];
+				__shared__ T extraZ[3];
 				if (threadIdx.x == 0) {
-					extraZ[0] = (T) 0.0;
-					extraZ[1] = (T) 0.0;
+					extraZ[0] = (T) 0.0f;
+					extraZ[1] = (T) 0.0f;
+
+					if (extraParams != NULL) {
+                        extraZ[2] = extraParams[0];
+                    } else extraZ[2] = (T) 0.0f;
 				}
+
 				__syncthreads();
 
 				T startingVal = OpType::startingValue(dx);
@@ -573,7 +578,11 @@ template<typename OpType>
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-				T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
+				T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                // it's possible case for EqualsWithEps op
+				if (extraParams != NULL) {
+                    extraParamsVals[2] = extraParams[0];
+                }
 
 
 				char xOrder = shape::order(xShapeInfo);
