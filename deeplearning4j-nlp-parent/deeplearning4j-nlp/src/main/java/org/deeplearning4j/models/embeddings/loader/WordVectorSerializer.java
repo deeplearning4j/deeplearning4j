@@ -2075,6 +2075,7 @@ public class WordVectorSerializer {
         // now we need to define which file format we have here
         // if zip - that's dl4j format
         try {
+            log.debug("Trying DL4j format...");
             File tmpFileSyn0 = File.createTempFile("word2vec","syn");
 
             ZipFile zipFile = new ZipFile(file);
@@ -2082,6 +2083,7 @@ public class WordVectorSerializer {
             InputStream stream = zipFile.getInputStream(syn0);
 
             Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            storage.clear();
 
             try(Reader reader = new CSVReader(tmpFileSyn0)) {
                 while (reader.hasNext()) {
@@ -2099,6 +2101,9 @@ public class WordVectorSerializer {
             //
             try {
                 // try to load file as text csv
+                vocabCache = new AbstractCache.Builder<VocabWord>().build();
+                storage.clear();
+                log.debug("Trying CSVReader...");
                 try(Reader reader = new CSVReader(file)) {
                     while (reader.hasNext()) {
                         Pair<VocabWord, float[]> pair = reader.next();
@@ -2114,10 +2119,14 @@ public class WordVectorSerializer {
                 }
             } catch (Exception ex) {
                 // otherwise it's probably google model. which might be compressed or not
+                log.debug("Trying BinaryReader...");
+                vocabCache = new AbstractCache.Builder<VocabWord>().build();
+                storage.clear();
                 try(Reader reader = new BinaryReader(file)) {
                     while (reader.hasNext()) {
                         Pair<VocabWord, float[]> pair = reader.next();
                         VocabWord word = pair.getFirst();
+
                         storage.store(word.getIndex(), pair.getSecond());
 
                         vocabCache.addToken(word);

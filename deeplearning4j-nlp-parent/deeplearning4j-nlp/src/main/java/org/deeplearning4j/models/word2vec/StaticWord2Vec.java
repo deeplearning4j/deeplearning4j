@@ -50,7 +50,7 @@ public class StaticWord2Vec implements WordVectors {
      */
     protected void init() {
         if (storage.size() != vocabCache.numWords())
-            throw new RuntimeException("Number of words in Vocab isn't matching number of stored Vectors");
+            throw new RuntimeException("Number of words in Vocab isn't matching number of stored Vectors. vocab: ["+ vocabCache.numWords()+"]; storage: ["+storage.size()+"]");
 
         // initializing device cache
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); i++) {
