@@ -30,24 +30,24 @@ import org.nd4j.linalg.api.ops.Op;
  * @author raver119@gmail.com
  */
 public class EqualsWithEps extends BaseAccumulation {
+    private double eps;
 
     public EqualsWithEps() {
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, long n) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, long n, double eps) {
         super(x, y, z, n);
+        this.extraArgs = new Object[]{eps};
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, long n) {
+    public EqualsWithEps(INDArray x, INDArray y, long n, double eps) {
         super(x, y, n);
+        this.extraArgs = new Object[]{eps};
     }
 
-    public EqualsWithEps(INDArray x) {
-        super(x);
-    }
-
-    public EqualsWithEps(INDArray x, INDArray y) {
+    public EqualsWithEps(INDArray x, INDArray y, double eps) {
         super(x, y);
+        this.extraArgs = new Object[]{eps};
     }
 
     @Override
@@ -66,8 +66,7 @@ public class EqualsWithEps extends BaseAccumulation {
         if (y() != null)
             return new EqualsWithEps(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new EqualsWithEps(x.vectorAlongDimension(index, dimension));
-
+            throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
     }
 
     @Override
@@ -76,7 +75,7 @@ public class EqualsWithEps extends BaseAccumulation {
         if (y() != null)
             return new EqualsWithEps(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new EqualsWithEps(x.tensorAlongDimension(index, dimension));
+            throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
     }
 
     @Override

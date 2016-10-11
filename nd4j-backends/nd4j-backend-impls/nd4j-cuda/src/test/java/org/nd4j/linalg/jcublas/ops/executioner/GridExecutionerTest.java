@@ -203,7 +203,7 @@ public class GridExecutionerTest {
         INDArray arrayX = Nd4j.create(10);
         INDArray arrayY = Nd4j.create(new float[] {1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
 
-        EqualsWithEps op = new EqualsWithEps(arrayX, arrayY);
+        EqualsWithEps op = new EqualsWithEps(arrayX, arrayY, Nd4j.EPS_THRESHOLD);
 
         executioner.exec(op);
 
