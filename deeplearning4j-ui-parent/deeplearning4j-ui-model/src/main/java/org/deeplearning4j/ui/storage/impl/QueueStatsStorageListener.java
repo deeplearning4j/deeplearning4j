@@ -1,8 +1,8 @@
 package org.deeplearning4j.ui.storage.impl;
 
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.ui.storage.StatsStorageEvent;
-import org.deeplearning4j.ui.storage.StatsStorageListener;
+import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 
 import java.util.Queue;
 

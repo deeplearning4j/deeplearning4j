@@ -1,4 +1,7 @@
-package org.deeplearning4j.ui.storage;
+package org.deeplearning4j.api.storage;
+
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
 
 /**
  * StatsStorageRouter is intended to route static info, metadata and updates to a {@link StatsStorage} implementation.
