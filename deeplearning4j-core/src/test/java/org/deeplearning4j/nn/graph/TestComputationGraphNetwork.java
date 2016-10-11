@@ -6,6 +6,7 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -739,7 +740,29 @@ public class TestComputationGraphNetwork {
         assertEquals(3, l.getNIn());
         assertNull( lv.getPreProcessor() );
 
-
     }
 
+    @Test
+    public void testCGEvaluation(){
+
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
+        ComputationGraph graph = new ComputationGraph(configuration);
+        graph.init();
+
+        MultiLayerConfiguration mlnConfig = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlnConfig);
+        net.init();
+
+        DataSetIterator iris = new IrisDataSetIterator(75,150);
+
+        net.fit(iris);
+        iris.reset();
+        graph.fit(iris);
+
+        iris.reset();
+        Evaluation evalExpected = net.evaluate(iris);
+        Evaluation evalActual = graph.evaluate(iris);
+
+        assertEquals(evalExpected, evalActual);
+    }
 }
