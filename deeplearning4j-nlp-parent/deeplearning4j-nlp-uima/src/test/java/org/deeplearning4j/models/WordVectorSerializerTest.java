@@ -544,6 +544,11 @@ public class WordVectorSerializerTest {
         logger.info("Loading time: {} ms", (time2 - time1));
     }
 
+    /**
+     * This method tests binary file loading as static model
+     *
+     * @throws Exception
+     */
     @Test
     public void testStaticLoaderBinary() throws Exception {
 
@@ -559,6 +564,11 @@ public class WordVectorSerializerTest {
         assertEquals(arrayLive, arrayStatic);
     }
 
+    /**
+     * This method tests CSV file loading as static model
+     *
+     * @throws Exception
+     */
     @Test
     public void testStaticLoaderText() throws Exception {
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
@@ -573,6 +583,11 @@ public class WordVectorSerializerTest {
         assertEquals(arrayLive, arrayStatic);
     }
 
+    /**
+     * This method tests ZIP file loading as static model
+     *
+     * @throws Exception
+     */
     @Test
     public void testStaticLoaderArchive() throws Exception {
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
@@ -581,8 +596,6 @@ public class WordVectorSerializerTest {
 
         WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
         WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(w2v);
-
-
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("night");
