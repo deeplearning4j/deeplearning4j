@@ -685,7 +685,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-        public WeightLookupTable<T> build() {
+        public InMemoryLookupTable<T> build() {
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 

@@ -603,4 +603,83 @@ public class WordVectorSerializerTest {
         assertNotEquals(null, arrayLive);
         assertEquals(arrayLive, arrayStatic);
     }
+
+    @Test
+    public void testUnifiedLoaderArchive1() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(w2v, false);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1Neg());
+    }
+
+    @Test
+    public void testUnifiedLoaderArchive2() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(w2v, true);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        assertNotEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+    }
+
+    /**
+     * This method tests CSV file loading via unified loader
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUnifiedLoaderText() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(textFile, true);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        // we're trying EXTENDED model, but file doesn't have syn1/huffman info, so it should be silently degraded to simplified model
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+    }
+
+    /**
+     * This method tests binary file loading via unified loader
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUnifiedLoaderBinary() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsStatic = WordVectorSerializer.readWord2VecModel(binaryFile, false);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
 }
