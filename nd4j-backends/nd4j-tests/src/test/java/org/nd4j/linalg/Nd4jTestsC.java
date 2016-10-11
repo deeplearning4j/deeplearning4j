@@ -3268,6 +3268,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expD2*expD2, arr1.squaredDistance(arr2), 1e-5);
     }
 
+    @Test
+    public void testEqualsWithEps1() throws Exception {
+        INDArray array1 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
+        INDArray array2 = Nd4j.create(new float[]{0f, 1f, 2f, 3f, 4f});
+        INDArray array3 = Nd4j.create(new float[]{0f, 1.000001f, 2f, 3f, 4f});
+
+
+        assertFalse(array1.equalsWithEps(array2, Nd4j.EPS_THRESHOLD));
+        assertTrue(array2.equalsWithEps(array3, Nd4j.EPS_THRESHOLD));
+        assertTrue(array1.equalsWithEps(array2, 0.7f));
+        assertEquals(array2, array3);
+    }
 
     @Override
     public char ordering() {

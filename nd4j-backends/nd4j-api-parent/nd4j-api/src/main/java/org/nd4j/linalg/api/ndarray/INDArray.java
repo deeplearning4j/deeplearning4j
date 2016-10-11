@@ -2275,6 +2275,14 @@ public interface INDArray extends Serializable  {
      */
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
+   /**
+    * This method checks 2 INDArrays equality with given eps
+    *
+    * @param o
+    * @param eps
+    * @return
+    */
+   boolean equalsWithEps(Object o, double eps);
 
    INDArray unsafeDuplication();
 }

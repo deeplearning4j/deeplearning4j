@@ -3928,18 +3928,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-
-
-
     /**
-     * Compare two matrices. Returns true if and only if other is also a
-     * DoubleMatrix which has the same size and the maximal absolute
-     * difference in matrix elements is smaller than 1e-6.
+     * This method allows you to compare INDArray against other INDArray, with variable eps
      *
      * @param o
+     * @param eps
+     * @return
      */
-    @Override
-    public boolean equals(Object o) {
+    public boolean equalsWithEps(Object o, double eps) {
         if (o == null)
             return false;
 
@@ -3952,8 +3948,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
 
-
-
         //epsilon equals
         if (isScalar() && n.isScalar()) {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
@@ -3963,7 +3957,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
-                return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
+                return Math.abs(val - val2) < eps;
             } else {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
@@ -3971,42 +3965,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
-                return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
+                return Math.abs(val - val2) < eps;
             }
 
         } else if (isVector() && n.isVector()) {
 
-            EqualsWithEps op = new EqualsWithEps(this, n);
+            EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
             double diff = op.getFinalResult().doubleValue();
 
             return diff < 0.5;
-
-/*
-            for (int i = 0; i < length; i++) {
-                if (data.dataType() == DataBuffer.Type.FLOAT) {
-                    double curr = getDouble(i);
-                    double comp = n.getDouble(i);
-
-                    if (Double.isNaN(curr) != Double.isNaN(comp))
-                        return false;
-
-                    if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
-                        return false;
-                } else {
-                    double curr = getDouble(i);
-                    double comp = n.getDouble(i);
-
-                    if (Double.isNaN(curr) != Double.isNaN(comp))
-                        return false;
-
-                    if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
-                        return false;
-                }
-            }
-
-            return true;
-*/
         }
 
         if (!Arrays.equals(this.shape(), n.shape()))
@@ -4022,52 +3990,31 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         if(n.ordering() == ordering()) {
-            EqualsWithEps op = new EqualsWithEps(this, n);
+            EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
             double diff =  op.getFinalResult().doubleValue();
 
             return diff < 0.5;
-
-/*
-            for(int i = 0; i < length(); i++) {
-                double val = getDouble(i);
-                double val2 = n.getDouble(i);
-
-                if (Double.isNaN(val) != Double.isNaN(val2)) {
-                    return false;
-                }
-
-                if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
-                    return false;
-                }
-            }
-            return true;
-*/
         }
         else {
-            EqualsWithEps op = new EqualsWithEps(this, n);
+            EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
             double diff = op.getFinalResult().doubleValue();
 
             return diff < 0.5;
-/*
-            NdIndexIterator iter = new NdIndexIterator(n.shape());
-            while(iter.hasNext()) {
-                int[] next = iter.next();
-                double val = getDouble(next);
-                double val2 = n.getDouble(next);
-
-                if (Double.isNaN(val) != Double.isNaN(val2))
-                    return false;
-
-                if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
-                    return false;
-                }
-            }
-
-            return true;
-*/
         }
+    }
+
+    /**
+     * Compare two matrices. Returns true if and only if other is also a
+     * DoubleMatrix which has the same size and the maximal absolute
+     * difference in matrix elements is smaller than 1e-5.
+     *
+     * @param o
+     */
+    @Override
+    public boolean equals(Object o) {
+        return equalsWithEps(o, Nd4j.EPS_THRESHOLD);
     }
 
     @Override
