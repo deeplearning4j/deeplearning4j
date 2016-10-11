@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui.api;
 
 import org.deeplearning4j.ui.play.PlayUIServer;
-import org.deeplearning4j.ui.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorage;
 
 import java.util.List;
 

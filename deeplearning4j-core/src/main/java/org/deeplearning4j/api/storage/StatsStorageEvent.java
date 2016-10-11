@@ -1,12 +1,14 @@
-package org.deeplearning4j.ui.storage;
+package org.deeplearning4j.api.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 
 /**
  * StatsStorageEvent: use with {@link StatsStorageListener} to specify when the state of the {@link StatsStorage}
  * implementation changes.<br>
- * Note that depending on the {@link org.deeplearning4j.ui.storage.StatsStorageListener.EventType}, some of the
+ * Note that depending on the {@link StatsStorageListener.EventType}, some of the
  * field may be null.
  *
  * @author Alex Black

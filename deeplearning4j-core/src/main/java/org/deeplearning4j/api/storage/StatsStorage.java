@@ -1,7 +1,8 @@
-package org.deeplearning4j.ui.storage;
+package org.deeplearning4j.api.storage;
+
+import org.deeplearning4j.api.storage.Persistable;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 
 /**
