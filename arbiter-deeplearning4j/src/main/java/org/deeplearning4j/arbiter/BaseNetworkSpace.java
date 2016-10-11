@@ -226,6 +226,11 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (adamMeanDecay != null) list.addAll(adamMeanDecay.collectLeaves());
         if (adamVarDecay != null) list.addAll(adamVarDecay.collectLeaves());
+        if (backprop != null) list.add(backprop);
+        if (pretrain != null) list.add(pretrain);
+        if (backpropType != null) list.add(backpropType);
+        if (tbpttBwdLength != null) list.add(tbpttBwdLength);
+        if (tbpttFwdLength != null) list.add(tbpttFwdLength);
         return list;
     }
 
