@@ -524,4 +524,45 @@ public class WordVectorSerializerTest {
         return  Nd4j.getBlasWrapper().dot(vector, vector2);
 
     }
+
+
+    /**
+     * This method here is only to test real google model few gigabytes worth
+     *
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testStaticLoaderGoogleModel() throws Exception {
+        WordVectors vectors = WordVectorSerializer.getWordVectorsAsStaticLookup(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
+
+
+    }
+
+    @Test
+    public void testStaticLoaderBinary() throws Exception {
+        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(binaryFile);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Test
+    public void testStaticLoaderText() throws Exception {
+        WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
+        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(textFile);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Test
+    public void testStaticLoaderArchive() throws Exception {
+
+    }
 }
