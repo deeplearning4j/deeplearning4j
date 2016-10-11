@@ -103,6 +103,7 @@ public class WordVectorSerializer {
      * @return the loaded model
      * @throws IOException
      */
+    @Deprecated
     public static WordVectors loadGoogleModel(File modelFile, boolean binary)
             throws IOException {
         return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
@@ -123,6 +124,7 @@ public class WordVectorSerializer {
      * @throws IOException
      * @author Carsten Schnober
      */
+    @Deprecated
     public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
             throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks, true) : WordVectorSerializer.fromPair(loadTxt(modelFile));
@@ -140,6 +142,7 @@ public class WordVectorSerializer {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static WordVectors loadGoogleModelNonNormalized(File modelFile, boolean binary, boolean lineBreaks) throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks, false) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
@@ -814,7 +817,7 @@ public class WordVectorSerializer {
 
     /**
      * This method allows you to read ParagraphVectors from externaly originated vectors and syn1.
-     * I.e. Gensim uses 3 files per model.
+     * So, technically this method is compatible with any other w2v implementation
      *
      * @param vectors   text file with words and their wieghts, aka Syn0
      * @param hs    text file HS layers, aka Syn1
@@ -892,6 +895,7 @@ public class WordVectorSerializer {
      * @param path Path to file that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(path));
@@ -906,6 +910,7 @@ public class WordVectorSerializer {
      * @param file File that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(file));
@@ -921,6 +926,7 @@ public class WordVectorSerializer {
      * @param stream InputStream that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
@@ -1378,6 +1384,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
@@ -1397,6 +1404,7 @@ public class WordVectorSerializer {
      *            the file to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
@@ -1416,6 +1424,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
         BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
 
@@ -1435,6 +1444,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
@@ -1506,6 +1516,7 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException
      *             if the file does not exist
      */
+    @Deprecated
     public static WordVectors loadTxtVectors(File vectorsFile)
             throws FileNotFoundException, UnsupportedEncodingException
     {
@@ -1626,6 +1637,7 @@ public class WordVectorSerializer {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -2051,6 +2063,22 @@ public class WordVectorSerializer {
         }
     }
 
+    /**
+     * This method
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * Please note: if extended data isn't available, only weights will be loaded instead.
+     *
+     * @param file
+     * @param extendedModel if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
+     * @return
+     */
+    public static Word2Vec readWord2Vec(File file, boolean extendedModel) {
+
+        return null;
+    }
 
     /**
      * This method restores previously saved w2v model. File can be in one of the following formats:
@@ -2058,11 +2086,13 @@ public class WordVectorSerializer {
      * 2) Popular CSV word2vec text format
      * 3) DL4j compressed format
      *
+     * In return you get StaticWord2Vec model, which might be used as lookup table only in multi-gpu environment.
+     *
      * @param file File should point to previously saved w2v model
      * @return
      */
     // TODO: this method needs better name :)
-    public static WordVectors getWordVectorsAsStaticLookup(File file) {
+    public static WordVectors loadStaticModel(File file) {
         CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
                 .useInplaceCompression(false)
                 .setCompressor(new NoOp())
@@ -2261,4 +2291,7 @@ public class WordVectorSerializer {
                 reader.close();
         }
     }
+
+
+
 }
