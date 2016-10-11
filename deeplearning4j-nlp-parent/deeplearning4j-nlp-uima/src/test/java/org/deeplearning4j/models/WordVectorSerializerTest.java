@@ -528,41 +528,66 @@ public class WordVectorSerializerTest {
 
     /**
      * This method here is only to test real google model few gigabytes worth
+     * Keep it ignored, since it requirs full google model being present in system, which is 1.6gb compressed
      *
      * @throws Exception
      */
     @Test
     @Ignore
     public void testStaticLoaderGoogleModel() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        long time1 = System.currentTimeMillis();
         WordVectors vectors = WordVectorSerializer.getWordVectorsAsStaticLookup(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
+        long time2 = System.currentTimeMillis();
 
-
+        logger.info("Loading time: {} ms", (time2 - time1));
     }
 
     @Test
     public void testStaticLoaderBinary() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
         WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(binaryFile);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
 
+        assertNotEquals(null, arrayLive);
         assertEquals(arrayLive, arrayStatic);
     }
 
     @Test
     public void testStaticLoaderText() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
         WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
         WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(textFile);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
 
+        assertNotEquals(null, arrayLive);
         assertEquals(arrayLive, arrayStatic);
     }
 
     @Test
     public void testStaticLoaderArchive() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsStatic = WordVectorSerializer.getWordVectorsAsStaticLookup(w2v);
+
+
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
     }
 }
