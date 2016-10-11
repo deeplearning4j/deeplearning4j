@@ -29,6 +29,7 @@ public class StaticWord2Vec implements WordVectors {
     private AbstractStorage<Integer> storage;
     private long cachePerDevice = 0L;
     private VocabCache<VocabWord> vocabCache;
+    private String unk = null;
 
     private StaticWord2Vec() {
 
@@ -36,12 +37,12 @@ public class StaticWord2Vec implements WordVectors {
 
     @Override
     public String getUNK() {
-        return null;
+        return unk;
     }
 
     @Override
     public void setUNK(String newUNK) {
-        // no-op
+        this.unk = newUNK;
     }
 
     /**
@@ -121,7 +122,7 @@ public class StaticWord2Vec implements WordVectors {
 
     @Override
     public int indexOf(String word) {
-        return 0;
+        return vocabCache.indexOf(word);
     }
 
     /**
