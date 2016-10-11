@@ -1291,14 +1291,15 @@ namespace simdOps {
             T abs1 = nd4j::math::nd4j_abs<T>(d1);
             T abs2 = nd4j::math::nd4j_abs<T>(d2);
             T diff = nd4j::math::nd4j_abs<T>(d1 - d2);
+            T eps = extraParamsRef[0];
 
             if (d1 == d2) {
                 return 0.0f;
             } else if (d1 == (T) 0.0f || d2 == (T) 0.0f || diff < (T) FLOAT_MIN_NORMAL) {
-                return diff <  (T) (EPS * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+                return diff <  (T) (eps * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
             } else {
                 T xDiff = (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE));
-                return  xDiff < (T) EPS ? 0.0f : 1.0f;
+                return  xDiff < eps ? 0.0f : 1.0f;
             }
         }
 
