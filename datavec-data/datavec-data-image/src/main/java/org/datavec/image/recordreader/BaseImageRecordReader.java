@@ -73,17 +73,16 @@ public abstract class BaseImageRecordReader extends BaseRecordReader implements 
     }
 
     public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
-        this(height, width, channels,labelGenerator, null, 0.0);
+        this(height, width, channels,labelGenerator, null);
     }
 
-    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator, ImageTransform imageTransform, double normalizeValue) {
+    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator, ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
         this.channels = channels;
         this.labelGenerator = labelGenerator;
         this.imageTransform = imageTransform;
         this.appendLabel = labelGenerator !=null? true: false;
-        this.normalizeValue = normalizeValue;
     }
 
     protected boolean containsFormat(String format) {
@@ -97,7 +96,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader implements 
     @Override
     public void initialize(InputSplit split) throws IOException {
         if (imageLoader == null) {
-            imageLoader = new NativeImageLoader(height, width, channels, imageTransform, normalizeValue);
+            imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         inputSplit = split;
         Collection<File> allFiles;
@@ -155,7 +154,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader implements 
         if ("imageio".equals(conf.get(IMAGE_LOADER))) {
             this.imageLoader = new ImageLoader(height, width, channels, cropImage);
         } else {
-            this.imageLoader = new NativeImageLoader(height, width, channels, imageTransform, normalizeValue);
+            this.imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         this.conf = conf;
         initialize(split);

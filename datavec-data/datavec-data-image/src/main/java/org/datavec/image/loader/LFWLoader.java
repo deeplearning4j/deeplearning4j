@@ -78,19 +78,18 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     public LFWLoader(){this(false);}
 
     public LFWLoader(boolean useSubset){
-        this(new int[] {HEIGHT, WIDTH, CHANNELS,}, null, 0, useSubset);
+        this(new int[] {HEIGHT, WIDTH, CHANNELS,}, null, useSubset);
     }
 
     public LFWLoader(int[] imgDim, boolean useSubset){
-        this(imgDim, null, 0, useSubset);
+        this(imgDim, null, useSubset);
     }
 
-    public LFWLoader(int[] imgDim, ImageTransform imgTransform, int normalizeValue, boolean useSubset){
+    public LFWLoader(int[] imgDim, ImageTransform imgTransform, boolean useSubset){
         this.height = imgDim[0];
         this.width = imgDim[1];
         this.channels = imgDim[2];
         this.imageTransform  = imgTransform;
-        this.normalizeValue = normalizeValue;
         this.useSubset = useSubset;
         this.localDir = useSubset? localSubDir: localDir;
         this.fullDir = new File(BASE_DIR, localDir);
@@ -178,7 +177,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
 
     public RecordReader getRecordReader(int batchSize, int numExamples, int[]imgDim, int numLabels, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest, Random rng) {
         load(batchSize, numExamples, numLabels, labelGenerator, splitTrainTest, rng);
-        RecordReader recordReader = new ImageRecordReader(imgDim[0], imgDim[1], imgDim[2], labelGenerator, imageTransform, normalizeValue);
+        RecordReader recordReader = new ImageRecordReader(imgDim[0], imgDim[1], imgDim[2], labelGenerator, imageTransform);
 
         try {
             InputSplit data = train? inputSplit[0]: inputSplit[1];

@@ -46,8 +46,6 @@ public abstract class BaseImageLoader implements Serializable {
     protected int width = -1;
     protected int channels = -1;
     protected boolean centerCropIfNeeded = false;
-    protected double normalizeValue = 0.0;
-    protected boolean normalizeIfNeeded = false;
     protected ImageTransform imageTransform = null;
 
     public String[] getAllowedFormats() {
