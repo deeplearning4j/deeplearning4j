@@ -2084,17 +2084,13 @@ public class WordVectorSerializer {
             Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
             try(Reader reader = new CSVReader(tmpFileSyn0)) {
-                int idx = 0;
                 while (reader.hasNext()) {
-                    Pair<VocabWord, double[]> pair = reader.next();
-                    storage.store(idx, pair.getSecond());
-
+                    Pair<VocabWord, float[]> pair = reader.next();
                     VocabWord word = pair.getFirst();
+                    storage.store(word.getIndex(), pair.getSecond());
 
                     vocabCache.addToken(word);
                     vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
-
-                    idx++;
                 }
             } catch (Exception e) {
 
@@ -2104,27 +2100,35 @@ public class WordVectorSerializer {
             try {
                 // try to load file as text csv
                 try(Reader reader = new CSVReader(file)) {
-                    int idx = 0;
                     while (reader.hasNext()) {
-                        Pair<VocabWord, double[]> pair = reader.next();
-                        storage.store(idx, pair.getSecond());
-
+                        Pair<VocabWord, float[]> pair = reader.next();
                         VocabWord word = pair.getFirst();
+                        storage.store(word.getIndex(), pair.getSecond());
 
                         vocabCache.addToken(word);
                         vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
-
-                        idx++;
                     }
                 } catch (Exception ef) {
                     // we throw away this exception, and trying to load data as binary model
                     throw new RuntimeException(ef);
                 }
             } catch (Exception ex) {
+                // otherwise it's probably google model. which might be compressed or not
+                try(Reader reader = new BinaryReader(file)) {
+                    while (reader.hasNext()) {
+                        Pair<VocabWord, float[]> pair = reader.next();
+                        VocabWord word = pair.getFirst();
+                        storage.store(word.getIndex(), pair.getSecond());
 
+                        vocabCache.addToken(word);
+                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                    }
+                } catch (Exception ez) {
+                    throw new RuntimeException("Unable to guess input file format");
+                }
             }
         }
-        // otherwise it's probably google model. which might be compressed or not
+
 
 
         StaticWord2Vec word2Vec = new StaticWord2Vec.Builder(storage, vocabCache).build();
@@ -2134,11 +2138,8 @@ public class WordVectorSerializer {
 
 
     protected interface Reader extends AutoCloseable {
-
         boolean hasNext();
-
-        Pair<VocabWord, double[]> next();
-
+        Pair<VocabWord, float[]> next();
     }
 
 
@@ -2146,11 +2147,19 @@ public class WordVectorSerializer {
 
         protected DataInputStream stream;
         protected String nextWord;
+        protected int numWords;
+        protected int vectorLength;
+        protected AtomicInteger idxCounter = new AtomicInteger(0);
 
         protected BinaryReader(@NonNull File file) {
             try {
-                stream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+                stream = new DataInputStream(new BufferedInputStream(
+                        GzipUtils.isCompressedFilename(file.getName())
+                                ? new GZIPInputStream(new FileInputStream(file))
+                                : new FileInputStream(file)));
 
+                numWords = Integer.parseInt(readString(stream));
+                vectorLength = Integer.parseInt(readString(stream));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -2158,12 +2167,26 @@ public class WordVectorSerializer {
 
         @Override
         public boolean hasNext() {
-            return false;
+            return idxCounter.get() < numWords;
         }
 
         @Override
-        public Pair<VocabWord, double[]> next() {
-            return null;
+        public Pair<VocabWord, float[]> next() {
+            try {
+                String word = readString(stream);
+                VocabWord element = new VocabWord(1.0, word);
+                element.setIndex(idxCounter.getAndIncrement());
+
+
+                float[] vector = new float[vectorLength];
+                for (int i = 0; i < vectorLength; i++) {
+                    vector[i] = readFloat(stream);
+                }
+
+                return Pair.makePair(element, vector);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -2202,16 +2225,16 @@ public class WordVectorSerializer {
             return nextLine != null;
         }
 
-        public Pair<VocabWord, double[]> next() {
+        public Pair<VocabWord, float[]> next() {
 
             String[] split = nextLine.split(" ");
 
             VocabWord word = new VocabWord(1.0, split[0]);
             word.setIndex(idxCounter.getAndIncrement());
 
-            double[] vector = new double[split.length - 1];
+            float[] vector = new float[split.length - 1];
             for (int i = 1; i < split.length; i++) {
-                vector[i-1] = Double.parseDouble(split[i]);
+                vector[i-1] = Float.parseFloat(split[i]);
             }
 
             try {
