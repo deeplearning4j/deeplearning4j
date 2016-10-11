@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.models.word2vec.StaticWord2Vec;
+import org.nd4j.compression.impl.NoOp;
+import org.nd4j.linalg.compression.AbstractStorage;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -55,6 +58,7 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.storage.CompressedRamStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2044,6 +2048,185 @@ public class WordVectorSerializer {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+
+    /**
+     * This method restores previously saved w2v model. File can be in one of the following formats:
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * @param file File should point to previously saved w2v model
+     * @return
+     */
+    // TODO: this method needs better name :)
+    public static WordVectors getWordVectorsAsStaticLookup(File file) {
+        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
+                .useInplaceCompression(false)
+                .setCompressor(new NoOp())
+                .emulateIsAbsent(false)
+                .build();
+
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+
+        // now we need to define which file format we have here
+        // if zip - that's dl4j format
+        try {
+            File tmpFileSyn0 = File.createTempFile("word2vec","syn");
+
+            ZipFile zipFile = new ZipFile(file);
+            ZipEntry syn0 = zipFile.getEntry("syn0.txt");
+            InputStream stream = zipFile.getInputStream(syn0);
+
+            Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+            try(Reader reader = new CSVReader(tmpFileSyn0)) {
+                int idx = 0;
+                while (reader.hasNext()) {
+                    Pair<VocabWord, double[]> pair = reader.next();
+                    storage.store(idx, pair.getSecond());
+
+                    VocabWord word = pair.getFirst();
+
+                    vocabCache.addToken(word);
+                    vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                    idx++;
+                }
+            } catch (Exception e) {
+
+            }
+        } catch (IOException e) {
+            //
+            try {
+                // try to load file as text csv
+                try(Reader reader = new CSVReader(file)) {
+                    int idx = 0;
+                    while (reader.hasNext()) {
+                        Pair<VocabWord, double[]> pair = reader.next();
+                        storage.store(idx, pair.getSecond());
+
+                        VocabWord word = pair.getFirst();
+
+                        vocabCache.addToken(word);
+                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                        idx++;
+                    }
+                } catch (Exception ef) {
+                    // we throw away this exception, and trying to load data as binary model
+                    throw new RuntimeException(ef);
+                }
+            } catch (Exception ex) {
+
+            }
+        }
+        // otherwise it's probably google model. which might be compressed or not
+
+
+        StaticWord2Vec word2Vec = new StaticWord2Vec.Builder(storage, vocabCache).build();
+
+        return word2Vec;
+    }
+
+
+    protected interface Reader extends AutoCloseable {
+
+        boolean hasNext();
+
+        Pair<VocabWord, double[]> next();
+
+    }
+
+
+    protected static class BinaryReader implements Reader {
+
+        protected DataInputStream stream;
+        protected String nextWord;
+
+        protected BinaryReader(@NonNull File file) {
+            try {
+                stream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Pair<VocabWord, double[]> next() {
+            return null;
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (stream != null)
+                stream.close();
+        }
+    }
+
+    protected static class CSVReader implements Reader {
+        private BufferedReader reader;
+        private AtomicInteger idxCounter = new AtomicInteger(0);
+        private String nextLine;
+
+        protected CSVReader(@NonNull File file) {
+            try {
+                reader = new BufferedReader(new FileReader(file));
+                nextLine = reader.readLine();
+
+                // checking if there's header inside
+                String[] split = nextLine.split(" ");
+                try {
+                    if (Integer.parseInt(split[0]) > 0 && split.length <= 5) {
+                        // this is header. skip it.
+                        nextLine = reader.readLine();
+                    }
+                } catch (Exception e) {
+                    // this is proper string, do nothing
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public boolean hasNext() {
+            return nextLine != null;
+        }
+
+        public Pair<VocabWord, double[]> next() {
+
+            String[] split = nextLine.split(" ");
+
+            VocabWord word = new VocabWord(1.0, split[0]);
+            word.setIndex(idxCounter.getAndIncrement());
+
+            double[] vector = new double[split.length - 1];
+            for (int i = 1; i < split.length; i++) {
+                vector[i-1] = Double.parseDouble(split[i]);
+            }
+
+            try {
+                nextLine = reader.readLine();
+            } catch (Exception e) {
+                nextLine = null;
+            }
+
+            return Pair.makePair(word, vector);
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (reader != null)
+                reader.close();
         }
     }
 }
