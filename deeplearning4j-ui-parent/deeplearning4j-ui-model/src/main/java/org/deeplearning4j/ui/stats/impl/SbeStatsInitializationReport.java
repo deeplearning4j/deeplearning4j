@@ -7,10 +7,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.sbe.*;
+import org.deeplearning4j.ui.storage.AgronaPersistable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * An implementation of {@link StatsInitializationReport} using Simple Binary Encoding (SBE)
@@ -18,7 +20,7 @@ import java.io.OutputStream;
  * @author Alex Black
  */
 @Data
-public class SbeStatsInitializationReport implements StatsInitializationReport {
+public class SbeStatsInitializationReport implements StatsInitializationReport, AgronaPersistable {
 
     private String sessionID;
     private String typeID;
@@ -237,6 +239,11 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     @Override
+    public void encode(ByteBuffer buffer) {
+        encode(new UnsafeBuffer(buffer));
+    }
+
+    @Override
     public void encode(MutableDirectBuffer buffer) {
 
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
@@ -328,6 +335,11 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     public void decode(byte[] decode) {
         MutableDirectBuffer buffer = new UnsafeBuffer(decode);
         decode(buffer);
+    }
+
+    @Override
+    public void decode(ByteBuffer buffer) {
+        decode(new UnsafeBuffer(buffer));
     }
 
     @Override

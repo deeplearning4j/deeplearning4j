@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -17,8 +18,8 @@ import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.stats.temp.HistogramBin;
-import org.deeplearning4j.ui.storage.StatsStorageRouter;
-import org.deeplearning4j.ui.storage.StorageMetaData;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,9 +32,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
-import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
@@ -412,7 +411,7 @@ public class StatsListener implements IterationListener {
             initReport.reportModelInfo(model.getClass().getName(), jsonConf, paramNames, numLayers, numParams);
         }
 
-        StorageMetaData meta = new StorageMetaData(
+        StorageMetaData meta = new SbeStorageMetaData(
                 initTime, sessionID, TYPE_ID, workerID,
                 SbeStatsInitializationReport.class, SbeStatsReport.class);
 

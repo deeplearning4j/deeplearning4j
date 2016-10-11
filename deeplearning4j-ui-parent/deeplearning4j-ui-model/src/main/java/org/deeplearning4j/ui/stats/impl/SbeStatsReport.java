@@ -11,8 +11,10 @@ import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.SummaryType;
 import org.deeplearning4j.ui.stats.sbe.*;
+import org.deeplearning4j.ui.storage.AgronaPersistable;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -23,7 +25,7 @@ import java.util.*;
 @EqualsAndHashCode
 @ToString
 @Data
-public class SbeStatsReport implements StatsReport {
+public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
     private String[] paramNames;
 
@@ -529,6 +531,11 @@ public class SbeStatsReport implements StatsReport {
     }
 
     @Override
+    public void encode(ByteBuffer buffer) {
+        encode(new UnsafeBuffer(buffer));
+    }
+
+    @Override
     public void encode(MutableDirectBuffer buffer) {
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
         UpdateEncoder ue = new UpdateEncoder();
@@ -734,6 +741,11 @@ public class SbeStatsReport implements StatsReport {
     public void decode(byte[] decode) {
         MutableDirectBuffer buffer = new UnsafeBuffer(decode);
         decode(buffer);
+    }
+
+    @Override
+    public void decode(ByteBuffer buffer) {
+        decode(new UnsafeBuffer(buffer));
     }
 
     @Override

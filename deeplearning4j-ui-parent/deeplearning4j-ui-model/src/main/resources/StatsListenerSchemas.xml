@@ -11,7 +11,7 @@
     Two schemas are defined here:
     (a) StaticInfo - once-off information, passed once upon initialization
     (b) Update - posted periodically
-    (c) Meta data - type information, for use with the Java StorageMetaData class
+    (c) Meta data - type information, for use with the Java SbeStorageMetaData class
 
     SBE uses code generation to create high-performance binary encoding/decoding classes. These are generated directly
     from this XML data schema (for Java or C++), using the SBE Java tool.
@@ -204,7 +204,7 @@
         <data name="dataSetMetaDataClassName" id="1300" type="VarDataUTF8"/>
     </sbe:message>
 
-    <!-- Message 3: Simple MetaData for class for StorageMetaData -->
+    <!-- Message 3: Simple MetaData for class for SbeStorageMetaData -->
     <sbe:message name="StorageMetaData" id="3" description="StorageMetaData">
         <!-- Fixed length fields: only timestamp -->
         <field name="timeStamp" id="1" type="int64"/>

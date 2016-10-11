@@ -2,6 +2,10 @@ package org.deeplearning4j.ui.storage;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
@@ -14,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.*;
 

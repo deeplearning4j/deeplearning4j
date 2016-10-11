@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.storage;
+package org.deeplearning4j.ui.storage.impl;
 
 import lombok.Data;
 import org.agrona.DirectBuffer;
@@ -10,19 +10,21 @@ import org.deeplearning4j.ui.stats.sbe.MessageHeaderDecoder;
 import org.deeplearning4j.ui.stats.sbe.MessageHeaderEncoder;
 import org.deeplearning4j.ui.stats.sbe.StorageMetaDataDecoder;
 import org.deeplearning4j.ui.stats.sbe.StorageMetaDataEncoder;
+import org.deeplearning4j.ui.storage.AgronaPersistable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
- * StorageMetaData: stores information about a given session: for example, the types of the static and update information.
+ * SbeStorageMetaData: stores information about a given session: for example, the types of the static and update information.
  *
  * @author Alex Black
  */
 @Data
-public class StorageMetaData implements Persistable {
+public class SbeStorageMetaData implements org.deeplearning4j.api.storage.StorageMetaData, AgronaPersistable {
 
 
     private long timeStamp;
@@ -35,21 +37,21 @@ public class StorageMetaData implements Persistable {
     // on this machine, right now
     private byte[] extraMeta;
 
-    public StorageMetaData(){
+    public SbeStorageMetaData(){
         //No arg constructor for serialization/deserialization
     }
 
-    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
         this(timeStamp, sessionID, typeID, workerID, (initType != null ? initType.getName() : null),
                 (updateType != null ? updateType.getName() : null));
     }
 
-    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ) {
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ) {
         this(timeStamp, sessionID, typeID, workerID, initTypeClass, updateTypeClass, null);
     }
 
-    public StorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass,
-                           Serializable extraMetaData ) {
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass,
+                              Serializable extraMetaData ) {
         this.timeStamp = timeStamp;
         this.sessionID = sessionID;
         this.typeID = typeID;
@@ -92,6 +94,11 @@ public class StorageMetaData implements Persistable {
         MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
         encode(buffer);
         return bytes;
+    }
+
+    @Override
+    public void encode(ByteBuffer buffer) {
+        encode(new UnsafeBuffer(buffer));
     }
 
     @Override
@@ -140,6 +147,11 @@ public class StorageMetaData implements Persistable {
     public void decode(byte[] decode) {
         MutableDirectBuffer buffer = new UnsafeBuffer(decode);
         decode(buffer);
+    }
+
+    @Override
+    public void decode(ByteBuffer buffer) {
+        decode(new UnsafeBuffer(buffer));
     }
 
     @Override
