@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -45,7 +46,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -59,6 +59,8 @@ import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.dataset.api.DataSet;
+
 
 import java.io.Serializable;
 import java.util.*;
@@ -2097,4 +2099,61 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
     }
+
+    /**
+     * Evaluate the network (classification performance)
+     *
+     * @param iterator Iterator to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(DataSetIterator iterator) {
+        return evaluate(iterator, null);
+    }
+
+    /**
+     * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+     *
+     * @param iterator Data to undertake evaluation on
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList) {
+        return evaluate(iterator, labelsList, 1);
+    }
+
+    /**
+     * Evaluate the network (for classification) on the provided data set, with top N accuracy in addition to standard accuracy.
+     * For 'standard' accuracy evaluation only, use topN = 1
+     *
+     * @param iterator   Iterator (data) to evaluate on
+     * @param labelsList List of labels. May be null.
+     * @param topN       N value for top N accuracy evaluation
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList, int topN) {
+        if(layers == null || !(getOutputLayer(getNumLayers()) instanceof IOutputLayer)){
+            throw new IllegalStateException("Cannot evaluate network with no output layer");
+        }
+
+        if (labelsList == null)
+            labelsList = iterator.getLabels();
+
+        Evaluation e = new Evaluation(labelsList, topN);
+        while(iterator.hasNext()){
+            org.nd4j.linalg.dataset.DataSet next = iterator.next();
+
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
+
+            INDArray[] out;
+            out = output(false, features);
+            if(labels.rank() == 3 ) e.evalTimeSeries(labels,out[0]);
+            else e.eval(labels,out[0]);
+        }
+        return null;
+    }
+
+
 }
