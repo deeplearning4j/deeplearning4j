@@ -761,8 +761,9 @@ public class TestComputationGraphNetwork {
 
         iris.reset();
         Evaluation evalExpected = net.evaluate(iris);
+        iris.reset();
         Evaluation evalActual = graph.evaluate(iris);
 
-        assertEquals(evalExpected, evalActual);
+        assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 0e-4);
     }
 }
