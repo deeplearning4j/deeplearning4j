@@ -30,6 +30,8 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     public CompressedDataBuffer(Pointer pointer, @NonNull CompressionDescriptor descriptor) {
         this.compressionDescriptor = descriptor;
         this.pointer = pointer;
+        this.length = descriptor.getNumberOfElements();
+        this.elementSize = (int) descriptor.getOriginalElementSize();
 
         initTypeAndSize();
     }
@@ -39,7 +41,6 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        elementSize = -1;
         type = Type.COMPRESSED;
         allocationMode = AllocationMode.JAVACPP;
     }

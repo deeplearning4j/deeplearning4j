@@ -1145,16 +1145,26 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return source;
     }
 
+
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
         nativeOps.convertTypes(
                 null,
                 typeSrc.ordinal(),
-                AtomicAllocator.getInstance().getHostPointer(source),
-                source.length(),
+                source,
+                length,
                 typeDst.ordinal(),
-                target.addressPointer()
+                target
         );
+    }
+
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+        convertDataEx(typeSrc,
+                source.addressPointer(),
+                typeDst,
+                target.addressPointer(),
+                target.length());
     }
 
     @Override
@@ -1193,18 +1203,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             point.tickHostWrite();
         }
 
-        nativeOps.convertTypes(
-                null,
-                typeSrc.ordinal(),
-                source.addressPointer(),
-                source.length(),
-                typeDst.ordinal(),
-                buffer.addressPointer()
-        );
-
-
-
-        //     INDArray converted = Nd4j.createArrayFromShapeBuffer(buffer, source.shapeInfoDataBuffer());
+        convertDataEx(typeSrc, source, typeDst, buffer);
 
         return buffer;
     }

@@ -1,11 +1,15 @@
 package org.nd4j.jita.memory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryKind;
@@ -16,6 +20,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CudaMemoryManager extends BasicMemoryManager {
 
     /**
@@ -91,5 +96,55 @@ public class CudaMemoryManager extends BasicMemoryManager {
         // purge memory cache
         AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
 
+    }
+
+    /**
+     * This method provides basic memcpy functionality with respect to target environment
+     *
+     * @param dstBuffer
+     * @param srcBuffer
+     */
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        if (dstBuffer instanceof CompressedDataBuffer && !(srcBuffer instanceof CompressedDataBuffer)) {
+            // destination is compressed, source isn't
+            AllocationPoint srcPoint = AtomicAllocator.getInstance().getAllocationPoint(srcBuffer);
+            long size = srcBuffer.getElementSize() * srcBuffer.length();
+            if (!srcPoint.isActualOnHostSide()) {
+                // copying device -> host
+
+                AtomicAllocator.getInstance().synchronizeHostData(srcBuffer);
+
+               // Pointer src = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
+
+               // NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstBuffer.addressPointer(), src, size, 2, context.getSpecialStream());
+               // context.syncSpecialStream();
+
+            }// else {
+                // copying host -> host
+                Pointer src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
+
+                Pointer.memcpy(dstBuffer.addressPointer(), src, size);
+           // }
+
+        } else if (!(dstBuffer instanceof CompressedDataBuffer) && srcBuffer instanceof CompressedDataBuffer) {
+            // destination is NOT compressed, source is compressed
+            AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(dstBuffer);
+            long size = srcBuffer.getElementSize() * srcBuffer.length();
+
+            Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(), size);
+            dstPoint.tickHostWrite();
+
+        } else if (dstBuffer instanceof CompressedDataBuffer && srcBuffer instanceof CompressedDataBuffer) {
+            // both buffers are compressed, just fire memcpy
+
+
+            Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(), srcBuffer.length() * srcBuffer.getElementSize());
+        } else {
+            // both buffers are NOT compressed
+            AtomicAllocator.getInstance().memcpy(dstBuffer, srcBuffer);
+        }
     }
 }

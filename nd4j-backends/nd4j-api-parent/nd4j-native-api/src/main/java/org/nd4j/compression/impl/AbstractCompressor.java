@@ -1,7 +1,15 @@
 package org.nd4j.compression.impl;
 
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -16,6 +24,10 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     @Override
     public INDArray compress(INDArray array) {
         INDArray dup = array.dup(array.ordering());
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         dup.setData(compress(dup.data()));
         dup.markAsCompressed(true);
 
@@ -80,4 +92,66 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
 
         return convertType(type);
     }
+
+    /**
+     * This method creates compressed INDArray from Java float array, skipping usual INDArray instantiation routines
+     * Please note: This method compresses input data as vector
+     *
+     * @param data
+     * @return
+     */
+    @Override
+    public INDArray compress(float[] data) {
+        return compress(data, new int[]{1, data.length}, Nd4j.order());
+    }
+
+    /**
+     * This method creates compressed INDArray from Java double array, skipping usual INDArray instantiation routines
+     * Please note: This method compresses input data as vector
+     *
+     * @param data
+     * @return
+     */
+    @Override
+    public INDArray compress(double[] data) {
+        return compress(data, new int[]{1, data.length}, Nd4j.order());
+    }
+
+    /**
+     * This method creates compressed INDArray from Java float array, skipping usual INDArray instantiation routines
+     *
+     * @param data
+     * @param shape
+     * @param order
+     * @return
+     */
+    @Override
+    public INDArray compress(float[] data, int[] shape, char order) {
+        FloatPointer pointer = new FloatPointer(data);
+
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order);
+        DataBuffer buffer = compressPointer(DataBuffer.TypeEx.FLOAT, pointer, data.length, 4);
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
+    }
+
+    /**
+     * This method creates compressed INDArray from Java double array, skipping usual INDArray instantiation routines
+     *
+     * @param data
+     * @param shape
+     * @param order
+     * @return
+     */
+    @Override
+    public INDArray compress(double[] data, int[] shape, char order) {
+        DoublePointer pointer = new DoublePointer(data);
+
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order);
+        DataBuffer buffer = compressPointer(DataBuffer.TypeEx.DOUBLE, pointer, data.length, 8);
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
+    }
+
+    protected abstract CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize);
 }

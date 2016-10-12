@@ -74,5 +74,39 @@ public interface NDArrayCompressor {
      */
     DataBuffer decompress(DataBuffer buffer);
 
+    /**
+     * This method creates compressed INDArray from Java float array, skipping usual INDArray instantiation routines
+     * Please note: This method compresses input data as vector
+     *
+     * @param data
+     * @return
+     */
+    INDArray compress(float[] data);
 
+    /**
+     * This method creates compressed INDArray from Java double array, skipping usual INDArray instantiation routines
+     * Please note: This method compresses input data as vector
+     *
+     * @param data
+     * @return
+     */
+    INDArray compress(double[] data);
+
+    /**
+     * This method creates compressed INDArray from Java float array, skipping usual INDArray instantiation routines
+     *
+     * @param data
+     * @param shape
+     * @return
+     */
+    INDArray compress(float[] data, int[] shape, char order);
+
+    /**
+     * This method creates compressed INDArray from Java double array, skipping usual INDArray instantiation routines
+     *
+     * @param data
+     * @param shape
+     * @return
+     */
+    INDArray compress(double[] data, int[] shape, char order);
 }
