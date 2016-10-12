@@ -1226,6 +1226,188 @@ public class UpdateDecoder
         }
     }
 
+    private final LayerNamesDecoder layerNames = new LayerNamesDecoder();
+
+    public static long layerNamesDecoderId()
+    {
+        return 351;
+    }
+
+    public LayerNamesDecoder layerNames()
+    {
+        layerNames.wrap(parentMessage, buffer);
+        return layerNames;
+    }
+
+    public static class LayerNamesDecoder
+        implements Iterable<LayerNamesDecoder>, java.util.Iterator<LayerNamesDecoder>
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
+        private UpdateDecoder parentMessage;
+        private DirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final UpdateDecoder parentMessage, final DirectBuffer buffer)
+        {
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            dimensions.wrap(buffer, parentMessage.limit());
+            blockLength = dimensions.blockLength();
+            count = dimensions.numInGroup();
+            index = -1;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public int actingBlockLength()
+        {
+            return blockLength;
+        }
+
+        public int count()
+        {
+            return count;
+        }
+
+        public java.util.Iterator<LayerNamesDecoder> iterator()
+        {
+            return this;
+        }
+
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public boolean hasNext()
+        {
+            return (index + 1) < count;
+        }
+
+        public LayerNamesDecoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        public static int layerNameId()
+        {
+            return 1101;
+        }
+
+        public static String layerNameCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String layerNameMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int layerNameHeaderLength()
+        {
+            return 4;
+        }
+
+        public int layerNameLength()
+        {
+            final int limit = parentMessage.limit();
+            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        }
+
+        public int getLayerName(final MutableDirectBuffer dst, final int dstOffset, final int length)
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int bytesCopied = Math.min(length, dataLength);
+            parentMessage.limit(limit + headerLength + dataLength);
+            buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+            return bytesCopied;
+        }
+
+        public int getLayerName(final byte[] dst, final int dstOffset, final int length)
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int bytesCopied = Math.min(length, dataLength);
+            parentMessage.limit(limit + headerLength + dataLength);
+            buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
+
+            return bytesCopied;
+        }
+
+        public String layerName()
+        {
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            parentMessage.limit(limit + headerLength + dataLength);
+            final byte[] tmp = new byte[dataLength];
+            buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
+
+            final String value;
+            try
+            {
+                value = new String(tmp, "UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            return value;
+        }
+
+        public String toString()
+        {
+            return appendTo(new StringBuilder(100)).toString();
+        }
+
+        public StringBuilder appendTo(final StringBuilder builder)
+        {
+            builder.append('(');
+            //Token{signal=BEGIN_VAR_DATA, name='layerName', description='null', id=1101, version=0, encodedLength=0, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+            builder.append("layerName=");
+            builder.append(layerName());
+            builder.append(')');
+            return builder;
+        }
+    }
+
     private final PerParameterStatsDecoder perParameterStats = new PerParameterStatsDecoder();
 
     public static long perParameterStatsDecoderId()
@@ -2685,6 +2867,20 @@ public class UpdateDecoder
             while (paramNames.hasNext())
             {
                 paramNames.next().appendTo(builder);
+                builder.append(',');
+            }
+            builder.setLength(builder.length() - 1);
+        }
+        builder.append(']');
+        builder.append('|');
+        //Token{signal=BEGIN_GROUP, name='layerNames', description='null', id=351, version=0, encodedLength=0, offset=-1, componentTokenCount=12, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        builder.append("layerNames=[");
+        LayerNamesDecoder layerNames = layerNames();
+        if (layerNames.count() > 0)
+        {
+            while (layerNames.hasNext())
+            {
+                layerNames.next().appendTo(builder);
                 builder.append(',');
             }
             builder.setLength(builder.length() - 1);

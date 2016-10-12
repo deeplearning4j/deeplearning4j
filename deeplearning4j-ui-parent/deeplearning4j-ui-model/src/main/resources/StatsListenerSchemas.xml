@@ -173,9 +173,13 @@
         <group name="paramNames" id="350" dimensionType="groupSizeEncoding">
             <data name="paramName" id="1100" type="VarDataUTF8"/>
         </group>
-        <!-- Per parameter stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations; histograms for params/updates/activations -->
+        <group name="layerNames" id="351" dimensionType="groupSizeEncoding">
+            <data name="layerName" id="1101" type="VarDataUTF8"/>
+        </group>
+        <!-- Per parameter and per stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations;
+         histograms for params/updates/activations. Assumption here is that per param stats are encoded first, followed by
+          per layer stats-->
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
-            <!--<field name="paramID" id="401" type="uint16"/>-->
             <field name="learningRate" id="401" type="float"/>
             <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
                 <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
