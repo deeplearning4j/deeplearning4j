@@ -119,6 +119,12 @@ public class WeightInitUtil {
             case XAVIER:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0] + shape[1]));
                 break;
+            case XAVIER_CAFFE:
+                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0]));
+                break;
+            case XAVIER_TORCH:
+                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / shape[0] + shape[1]));
+                break;
             case ZERO:
                 ret = Nd4j.create(shape, order);
                 break;
