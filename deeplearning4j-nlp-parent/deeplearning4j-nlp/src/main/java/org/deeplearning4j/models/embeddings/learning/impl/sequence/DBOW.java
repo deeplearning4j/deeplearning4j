@@ -115,7 +115,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
      * @return
      */
     @Override
-    public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate) {
+    public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations) {
         throw new UnsupportedOperationException("not implemented for DBOW, please use DM instead");
     }
 }
