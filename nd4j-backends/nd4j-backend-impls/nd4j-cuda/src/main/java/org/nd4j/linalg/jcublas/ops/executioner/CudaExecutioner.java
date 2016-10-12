@@ -33,6 +33,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1868,6 +1869,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return null;
     }
 
+    @Override
+    public void exec(Aggregate op) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
     /**
      * This method return set of key/value and key/key/value objects, describing current environment

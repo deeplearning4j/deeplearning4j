@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
@@ -765,6 +766,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
         }
+    }
+
+    @Override
+    public void exec(Aggregate op) {
+
     }
 
     /**

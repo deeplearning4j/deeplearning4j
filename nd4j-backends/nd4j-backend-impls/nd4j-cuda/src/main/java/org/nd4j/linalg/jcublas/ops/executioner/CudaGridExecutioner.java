@@ -15,6 +15,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
@@ -932,7 +933,14 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         watchdog.add(new WatchdogPair(array, tag));
     }
 
-/*
+    @Override
+    public void exec(Aggregate op) {
+        flushQueue();
+
+        super.exec(op);
+    }
+
+    /*
     @Override
     public INDArray execAndReturn(BroadcastOp op) {
         flushQueue();
