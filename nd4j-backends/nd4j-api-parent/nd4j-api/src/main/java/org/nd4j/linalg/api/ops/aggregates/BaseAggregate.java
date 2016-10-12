@@ -11,8 +11,20 @@ import java.util.List;
  */
 public abstract class BaseAggregate implements Aggregate {
     protected List<INDArray> arguments;
+    protected List<Integer> indexingArguments;
+    protected List<Double> realArguments;
 
     public List<INDArray> getArguments() {
         return arguments;
+    }
+
+    @Override
+    public List<Integer> getIndexingArguments() {
+        return indexingArguments;
+    }
+
+    @Override
+    public List<Double> getRealArguments() {
+        return realArguments;
     }
 }

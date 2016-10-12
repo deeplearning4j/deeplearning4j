@@ -18,4 +18,8 @@ public interface Aggregate {
     int opNum();
 
     List<INDArray> getArguments();
+
+    List<Integer> getIndexingArguments();
+
+    List<Double> getRealArguments();
 }
