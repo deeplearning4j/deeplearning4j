@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * NDArray publisher for aeron
@@ -94,26 +95,29 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         long result;
         log.debug("Begin publish " + channel + " and stream " + streamId);
         while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
-            if (result == Publication.BACK_PRESSURED)
-            {
+            if (result == Publication.BACK_PRESSURED) {
                 log.debug(" Offer failed due to back pressure");
             }
-            else if (result == Publication.NOT_CONNECTED)
-            {
+            else if (result == Publication.NOT_CONNECTED) {
                 log.debug(" Offer failed because publisher is not connected to subscriber");
             }
-            else if (result == Publication.ADMIN_ACTION)
-            {
+            else if (result == Publication.ADMIN_ACTION) {
                 log.debug("Offer failed because of an administration action in the system");
             }
-            else if (result == Publication.CLOSED)
-            {
+            else if (result == Publication.CLOSED) {
                 log.debug("Offer failed publication is closed");
             }
-            else
-            {
+            else {
                 log.debug(" Offer failed due to unknown reason");
             }
+
+
+            if (!publication.isConnected()) {
+                log.debug("No active subscribers detected");
+            }
+
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+
         }
 
 

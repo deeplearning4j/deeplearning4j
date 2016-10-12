@@ -246,10 +246,12 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
-        <module>nd4j-parameter-server</module>
+        <module>nd4j-parameter-server-parent</module>
     </modules>
 
     <properties>
+        <playframework.version>2.5.8</playframework.version>
+        <lombok.version>1.16.4</lombok.version>
         <jackson.version>2.5.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>

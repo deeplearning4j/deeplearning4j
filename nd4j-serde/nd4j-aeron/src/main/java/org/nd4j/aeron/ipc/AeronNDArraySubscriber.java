@@ -36,6 +36,7 @@ public class AeronNDArraySubscriber {
     private static Logger log = LoggerFactory.getLogger(AeronNDArraySubscriber.class);
     private NDArrayCallback ndArrayCallback;
     private Aeron aeron;
+    private Subscription subscription;
     private AtomicBoolean launched = new AtomicBoolean(false);
 
 
@@ -55,6 +56,11 @@ public class AeronNDArraySubscriber {
     }
 
 
+    /**
+     * Returns true if the subscriber
+     * is launched or not
+     * @return true if the subscriber is launched, false otherwise
+     */
     public synchronized  boolean launched() {
         if(launched == null)
             launched = new AtomicBoolean(false);
@@ -93,6 +99,7 @@ public class AeronNDArraySubscriber {
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                     this.aeron = aeron;
+                    this.subscription = subscription;
                     log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
                     AeronUtil.subscriberLoop(
                             new NDArrayFragmentHandler(ndArrayCallback),

@@ -11,6 +11,14 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 public interface NDArrayHolder extends Serializable {
+
+    /**
+     * The number of updates
+     * that have been sent to this older.
+     * @return
+     */
+    int totalUpdates();
+
     /**
      * Retrieve an ndarray
      * @return

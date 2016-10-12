@@ -4,6 +4,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.aeron.ipc.AeronNDArrayPublisher;
 import org.slf4j.Logger;
@@ -85,11 +86,7 @@ public class HostPortPublisher implements AutoCloseable {
 
             else if(timesFailed % 1000 == 0)
                 log.info("Offer failed due to unknown reason on channel " + channel + " and stream " + streamId);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            Thread.yield();
             timesFailed++;
 
         }
@@ -146,8 +143,8 @@ public class HostPortPublisher implements AutoCloseable {
     @Override
     public void close() throws Exception {
         if(aeron != null)
-            aeron.close();
+            CloseHelper.quietClose(aeron);
         if(publication != null)
-            publication.close();
+            CloseHelper.quietClose(publication);
     }
 }

@@ -94,10 +94,11 @@ public class AeronNDArrayResponder {
                     this.aeron = aeron;
                     log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
                     AeronUtil.subscriberLoop(NDArrayResponseFragmentHandler.builder()
-                            .aeron(aeron)
-                            .context(ctx).streamId(responseStreamId)
-                            .holder(ndArrayHolder)
-                            .build(), fragmentLimitCount, running
+                                    .aeron(aeron)
+                                    .context(ctx)
+                                    .streamId(responseStreamId)
+                                    .holder(ndArrayHolder)
+                                    .build(), fragmentLimitCount, running
                             ,launched)
                             .accept(subscription);
                     started = true;
