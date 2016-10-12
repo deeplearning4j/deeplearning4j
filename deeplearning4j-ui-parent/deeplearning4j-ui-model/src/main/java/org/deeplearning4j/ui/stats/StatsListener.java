@@ -143,7 +143,7 @@ public class StatsListener implements RoutingIterationListener {
             return;
         }
 
-        StatsReport report = new SbeStatsReport(paramNames);
+        StatsReport report = new SbeStatsReport();
         report.reportIDs(sessionID, TYPE_ID, workerID, System.currentTimeMillis()); //TODO support NTP time
 
         //--- Performance and System Stats ---
@@ -219,22 +219,31 @@ public class StatsListener implements RoutingIterationListener {
         report.reportScore(model.score());  //Always report score
 
         if (config.collectLearningRates()) {
-            Layer[] layers = null;
+            Map<String,Double> lrs = new HashMap<>();
             if(model instanceof MultiLayerNetwork){
-                layers = ((MultiLayerNetwork) model).getLayers();
-            } else if(model instanceof ComputationGraph){
-                ((ComputationGraph) model).getLayers();
-            }
-
-            if(layers != null){
-                Map<String,Double> lrs = new HashMap<>();
-                for(Layer l : layers){
+                //Need to append "0_", "1_" etc to param names from layers...
+                int layerIdx = 0;
+                for(Layer l : ((MultiLayerNetwork) model).getLayers()){
                     NeuralNetConfiguration conf = l.conf();
+                    Map<String,Double> layerLrs = conf.getLearningRateByParam();
+                    for(Map.Entry<String,Double> entry : layerLrs.entrySet()){
+                        lrs.put(layerIdx + "_" + entry.getKey(), entry.getValue());
+                    }
+                    layerIdx++;
+                }
+            } else if(model instanceof ComputationGraph){
+                for(Layer l : ((ComputationGraph) model).getLayers()){
+                    //Need to append layer name
+                    NeuralNetConfiguration conf = l.conf();
+                    Map<String,Double> layerLrs = conf.getLearningRateByParam();
+                    String layerName = conf.getLayer().getLayerName();
+                    for(Map.Entry<String,Double> entry : layerLrs.entrySet()){
+                        lrs.put(layerName + "_" + entry.getKey(), entry.getValue());
+                    }
                     lrs.putAll(conf.getLearningRateByParam());
                 }
-
-                report.reportLearningRates(lrs);
             }
+            report.reportLearningRates(lrs);
         }
 
 

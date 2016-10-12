@@ -277,6 +277,8 @@ public class TestStatsSBE {
 
         String[] paramNames = new String[]{"param0", "param1"};
 
+        String[] layerNames = new String[]{"layer0", "layer1"};
+
         //IDs
         String sessionID = "sid";
         String typeID = "tid";
@@ -320,8 +322,8 @@ public class TestStatsSBE {
         uHist.put(paramNames[0], new Histogram(32, 33, 2, new int[]{34, 35}));
         uHist.put(paramNames[1], new Histogram(36, 37, 3, new int[]{38, 39, 40}));
         Map<String, Histogram> aHist = new HashMap<>();
-        aHist.put(paramNames[0], new Histogram(41, 42, 2, new int[]{43, 44}));
-        aHist.put(paramNames[1], new Histogram(45, 46, 3, new int[]{47, 48, 47}));
+        aHist.put(layerNames[0], new Histogram(41, 42, 2, new int[]{43, 44}));
+        aHist.put(layerNames[1], new Histogram(45, 46, 3, new int[]{47, 48, 47}));
 
         Map<String, Double> pMean = new HashMap<>();
         pMean.put(paramNames[0], 49.0);
@@ -330,8 +332,8 @@ public class TestStatsSBE {
         uMean.put(paramNames[0], 51.0);
         uMean.put(paramNames[1], 52.0);
         Map<String, Double> aMean = new HashMap<>();
-        aMean.put(paramNames[0], 53.0);
-        aMean.put(paramNames[1], 54.0);
+        aMean.put(layerNames[0], 53.0);
+        aMean.put(layerNames[1], 54.0);
 
         Map<String, Double> pStd = new HashMap<>();
         pStd.put(paramNames[0], 55.0);
@@ -340,8 +342,8 @@ public class TestStatsSBE {
         uStd.put(paramNames[0], 57.0);
         uStd.put(paramNames[1], 58.0);
         Map<String, Double> aStd = new HashMap<>();
-        aStd.put(paramNames[0], 59.0);
-        aStd.put(paramNames[1], 60.0);
+        aStd.put(layerNames[0], 59.0);
+        aStd.put(layerNames[1], 60.0);
 
         Map<String, Double> pMM = new HashMap<>();
         pMM.put(paramNames[0], 61.0);
@@ -350,8 +352,8 @@ public class TestStatsSBE {
         uMM.put(paramNames[0], 63.0);
         uMM.put(paramNames[1], 64.0);
         Map<String, Double> aMM = new HashMap<>();
-        aMM.put(paramNames[0], 65.0);
-        aMM.put(paramNames[1], 66.0);
+        aMM.put(layerNames[0], 65.0);
+        aMM.put(layerNames[1], 66.0);
 
         List<Serializable> metaDataList = new ArrayList<>();
         metaDataList.add("meta1");
@@ -380,7 +382,7 @@ public class TestStatsSBE {
                                     for (boolean[] collectMeanStdev : tf3) {
                                         for (boolean[] collectMM : tf3) {
 
-                                            SbeStatsReport report = new SbeStatsReport(paramNames);
+                                            SbeStatsReport report = new SbeStatsReport();
                                             report.reportIDs(sessionID, typeID, workerID, time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
@@ -444,7 +446,7 @@ public class TestStatsSBE {
 
                                             byte[] bytes = report.encode();
 
-                                            StatsReport report2 = new SbeStatsReport(paramNames);
+                                            StatsReport report2 = new SbeStatsReport();
                                             report2.decode(bytes);
 
                                             assertEquals(report, report2);
@@ -682,7 +684,7 @@ public class TestStatsSBE {
                                     for (boolean[] collectMeanStdev : tf3) {
                                         for (boolean[] collectMM : tf3) {
 
-                                            SbeStatsReport report = new SbeStatsReport(paramNames);
+                                            SbeStatsReport report = new SbeStatsReport();
                                             report.reportIDs(null, null, null, time);
                                             report.reportStatsCollectionDurationMS(duration);
                                             report.reportIterationCount(iterCount);
@@ -746,7 +748,7 @@ public class TestStatsSBE {
 
                                             byte[] bytes = report.encode();
 
-                                            StatsReport report2 = new SbeStatsReport(paramNames);
+                                            StatsReport report2 = new SbeStatsReport();
                                             report2.decode(bytes);
 
                                             assertEquals(time, report2.getTimeStamp());

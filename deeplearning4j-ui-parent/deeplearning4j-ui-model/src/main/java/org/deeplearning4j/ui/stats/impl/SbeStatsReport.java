@@ -26,9 +26,6 @@ import java.util.*;
 @ToString
 @Data
 public class SbeStatsReport implements StatsReport, AgronaPersistable {
-
-    private String[] paramNames;
-
     private String sessionID;
     private String typeID;
     private String workerID;
@@ -67,11 +64,6 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
     private boolean scorePresent;
     private boolean memoryUsePresent;
     private boolean performanceStatsPresent;
-
-    public SbeStatsReport(String[] paramNames) {
-        if (paramNames == null) paramNames = new String[0];
-        this.paramNames = paramNames;
-    }
 
     public SbeStatsReport(){
         //No-Arg constructor only for deserialization
@@ -423,7 +415,8 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         //(d) Group 2: Performance stats
         //(e) Group 3: GC stats
         //(f) Group 4: param names (variable length strings)
-        //(g) Group 5: Per parameter performance stats
+        //(g) Group 5: layer names (variable length strings)
+        //(g) Group 6: Per parameter performance stats
         //Variable length String fields: 4 - session/type/worker IDs and metadata -> 4*4=16 bytes header, plus content
 
         UpdateEncoder ue = new UpdateEncoder();
@@ -458,48 +451,26 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
         //Param names group
         bufferSize += 4;    //Header; always present
+        List<String> paramNames = getParamNames();
         for(String s : paramNames){
             bufferSize += 4;    //header for each entry
             bufferSize += SbeUtil.toBytes(true, s).length;  //Content
         }
 
-        //Per parameter stats group length
-        bufferSize += 4;    //Per parameter stats group header: always present
-        int nParams = paramNames.length;
-        bufferSize += nParams * 12;  //Each parameter entry: has  learning rate -> float -> 4 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 10 bytes
-        for (String s : paramNames) {
-            //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
-            int summaryStatsCount = 0;
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
-                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
-                    Map<String, Double> map = mapForTypes(statsType, summaryType);
-                    if (map == null) continue;
-                    if (map.containsKey(s)) summaryStatsCount++;
-                }
-            }
-            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
-            bufferSize += summaryStatsCount * 10;
-
-            //Histograms for this parameter
-            int nHistogramsThisParam = 0;
-            if (histograms != null && histograms.size() > 0) {
-                for (Map<String, Histogram> map : histograms.values()) {
-                    if (map != null && map.containsKey(s)) nHistogramsThisParam++;
-                }
-            }
-            //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
-            bufferSize += 25 * nHistogramsThisParam;
-            //PLUS, the number of count values, given by nBins...
-            int nBinCountEntries = 0;
-            for (StatsType statsType : StatsType.values()) {
-                if (histograms == null || !histograms.containsKey(statsType)) continue;
-                Map<String, Histogram> map = histograms.get(statsType);
-                if (map != null && map.containsKey(s)) { //If it doesn't: assume 0 count...
-                    nBinCountEntries += map.get(s).getNBins();
-                }
-            }
-            bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
+        //Layer names group
+        bufferSize += 4;    //Header; always present
+        List<String> layerNames = getlayerNames();
+        for(String s: layerNames){
+            bufferSize += 4;
+            bufferSize += SbeUtil.toBytes(true, s).length;  //Content
         }
+
+        //Per parameter and per layer (activations) stats group length
+        bufferSize += 4;    //Per parameter/layer stats group header: always present
+        int nEntries = paramNames.size() + layerNames.size();
+        bufferSize += nEntries * 12;  //Each parameter/layer entry: has learning rate -> float -> 4 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 12 bytes total
+        bufferSize += entrySize(paramNames, StatsType.Parameters, StatsType.Updates);
+        bufferSize += entrySize(layerNames, StatsType.Activations);
 
         //Metadata group:
         bufferSize += 4;    //Metadata group header: always present
@@ -520,6 +491,88 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         bufferSize += metaDataClassNameBytes.length;
 
         return bufferSize;
+    }
+
+    private int entrySize(List<String> entryNames, StatsType... statsTypes){
+        int bufferSize = 0;
+        for (String s : entryNames) {
+            //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
+            int summaryStatsCount = 0;
+            for (StatsType statsType : statsTypes) { //Parameters, updates, activations
+                for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                    Map<String, Double> map = mapForTypes(statsType, summaryType);
+                    if (map == null) continue;
+                    if (map.containsKey(s)) summaryStatsCount++;
+                }
+            }
+            //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
+            bufferSize += summaryStatsCount * 10;
+
+            //Histograms for this parameter
+            int nHistogramsThisParam = 0;
+            if (histograms != null && histograms.size() > 0) {
+                for (Map<String, Histogram> map : histograms.values()) {
+                    if (map != null && map.containsKey(s)) nHistogramsThisParam++;
+                }
+            }
+            //For each histogram: StatsType (uint8) + 2x double + int32 -> 1 + 2*8 + 4 = 21 bytes PLUS counts group header (4 bytes) -> 25 bytes fixed per histogram
+            bufferSize += 25 * nHistogramsThisParam;
+            //PLUS, the number of count values, given by nBins...
+            int nBinCountEntries = 0;
+            for (StatsType statsType : statsTypes) {
+                if (histograms == null || !histograms.containsKey(statsType)) continue;
+                Map<String, Histogram> map = histograms.get(statsType);
+                if (map != null && map.containsKey(s)) { //If it doesn't: assume 0 count...
+                    nBinCountEntries += map.get(s).getNBins();
+                }
+            }
+            bufferSize += 4 * nBinCountEntries; //Each entry: uint32 -> 4 bytes
+        }
+        return bufferSize;
+    }
+
+    private List<String> getParamNames(){
+        Set<String> paramNames = new LinkedHashSet<>();
+        if(learningRatesByParam != null) paramNames.addAll(learningRatesByParam.keySet());
+        if(histograms != null){
+            addToSet(paramNames, histograms.get(StatsType.Parameters));
+            addToSet(paramNames, histograms.get(StatsType.Updates));
+        }
+        if(meanValues != null){
+            addToSet(paramNames, meanValues.get(StatsType.Parameters));
+            addToSet(paramNames, meanValues.get(StatsType.Updates));
+        }
+        if(stdevValues != null){
+            addToSet(paramNames, stdevValues.get(StatsType.Parameters));
+            addToSet(paramNames, stdevValues.get(StatsType.Updates));
+        }
+        if(meanMagnitudeValues != null){
+            addToSet(paramNames, meanMagnitudeValues.get(StatsType.Parameters));
+            addToSet(paramNames, meanMagnitudeValues.get(StatsType.Updates));
+        }
+        return new ArrayList<>(paramNames);
+    }
+
+    private List<String> getlayerNames(){
+        Set<String> layerNames = new LinkedHashSet<>();
+        if(histograms != null){
+            addToSet(layerNames, histograms.get(StatsType.Activations));
+        }
+        if(meanValues != null){
+            addToSet(layerNames, meanValues.get(StatsType.Activations));
+        }
+        if(stdevValues != null){
+            addToSet(layerNames, stdevValues.get(StatsType.Activations));
+        }
+        if(meanMagnitudeValues != null){
+            addToSet(layerNames, meanMagnitudeValues.get(StatsType.Activations));
+        }
+        return new ArrayList<>(layerNames);
+    }
+
+    private void addToSet(Set<String> set, Map<String,?> map){
+        if(map == null) return;
+        set.addAll(map.keySet());
     }
 
     @Override
@@ -628,15 +681,22 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         }
 
         //Param names
-        UpdateEncoder.ParamNamesEncoder pne = ue.paramNamesCount(paramNames.length);
+        List<String> paramNames = getParamNames();
+        UpdateEncoder.ParamNamesEncoder pne = ue.paramNamesCount(paramNames.size());
         for(String s : paramNames){
             pne.next().paramName(s);
         }
 
-        // +++++ Per Parameter Stats +++++
-        UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(paramNames.length);
+        //Layer names
+        List<String> layerNames = getlayerNames();
+        UpdateEncoder.LayerNamesEncoder lne = ue.layerNamesCount(layerNames.size());
+        for(String s : layerNames){
+            lne.next().layerName(s);
+        }
 
-        int paramId = 0;
+        // +++++ Per Parameter Stats +++++
+        UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(paramNames.size() + layerNames.size());
+        StatsType[] st = new StatsType[]{StatsType.Parameters, StatsType.Updates};
         for (String s : paramNames) {
             ppe = ppe.next();
             float lr = 0.0f;
@@ -646,7 +706,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
             ppe.learningRate(lr);
 
             int summaryStatsCount = 0;
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+            for (StatsType statsType : st) { //Parameters, updates
                 for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null || map.size() == 0) continue;
@@ -657,27 +717,29 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
             UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
 
             //Summary stats
-            int tempCount = 0;
-            for (StatsType statsType : StatsType.values()) { //Parameters, updates, activations
+            for (StatsType statsType : st) { //Parameters, updates
                 for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null || map.size() == 0) continue;
                     appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
-                    tempCount++;
                 }
             }
 
             int nHistogramsThisParam = 0;
-            if (histograms != null && histograms.size() > 0) {
-                for (Map<String, Histogram> map : histograms.values()) {
-                    if (map != null && map.containsKey(s)) nHistogramsThisParam++;
+            if(histograms != null && histograms.size() > 0){
+                for(StatsType statsType : st ){ //Parameters, updates
+                    Map<String,Histogram> map = histograms.get(statsType);
+                    if(map == null) continue;
+                    if(map.containsKey(s)) nHistogramsThisParam++;
                 }
             }
+
+
 
             //Histograms
             UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistogramsThisParam);
             if (nHistogramsThisParam > 0) {
-                for (StatsType statsType : StatsType.values()) {
+                for (StatsType statsType : st) {
                     Map<String, Histogram> map = histograms.get(statsType);
                     if (map == null || !map.containsKey(s)) continue;
                     Histogram h = map.get(s);   //Histogram for StatsType for this parameter
@@ -703,6 +765,64 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                         int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
                         histCountsEncoder.next().binCount(count);
                     }
+                }
+            }
+        }
+
+        for (String s : layerNames) {
+            ppe = ppe.next();
+            ppe.learningRate(0.0f); //Not applicable
+
+            int summaryStatsCount = 0;
+            for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                Map<String, Double> map = mapForTypes(StatsType.Activations, summaryType);
+                if (map == null || map.size() == 0) continue;
+                if (map.containsKey(s)) summaryStatsCount++;
+            }
+
+            UpdateEncoder.PerParameterStatsEncoder.SummaryStatEncoder sse = ppe.summaryStatCount(summaryStatsCount);
+
+            //Summary stats
+            for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
+                Map<String, Double> map = mapForTypes(StatsType.Activations, summaryType);
+                if (map == null || map.size() == 0) continue;
+                appendOrDefault(sse, s, StatsType.Activations, summaryType, map, Double.NaN);
+            }
+
+            int nHistogramsThisLayer = 0;
+            if (histograms != null && histograms.size() > 0) {
+                for (Map<String, Histogram> map : histograms.values()) {
+                    if (map != null && map.containsKey(s)) nHistogramsThisLayer++;
+                }
+            }
+
+            //Histograms
+            UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder sshe = ppe.histogramsCount(nHistogramsThisLayer);
+            if (nHistogramsThisLayer > 0) {
+                Map<String, Histogram> map = histograms.get(StatsType.Activations);
+                if (map == null || !map.containsKey(s)) continue;
+                Histogram h = map.get(s);   //Histogram for StatsType for this parameter
+                double min;
+                double max;
+                int nBins;
+                int[] binCounts;
+                if (h == null) {
+                    min = 0.0;
+                    max = 0.0;
+                    nBins = 0;
+                    binCounts = null;
+                } else {
+                    min = h.getMin();
+                    max = h.getMax();
+                    nBins = h.getNBins();
+                    binCounts = h.getBinCounts();
+                }
+
+                sshe = sshe.next().statType(translate(StatsType.Activations)).minValue(min).maxValue(max).nBins(nBins);
+                UpdateEncoder.PerParameterStatsEncoder.HistogramsEncoder.HistogramCountsEncoder histCountsEncoder = sshe.histogramCountsCount(nBins);
+                for (int i = 0; i < nBins; i++) {
+                    int count = (binCounts == null || binCounts.length <= i ? 0 : binCounts[i]);
+                    histCountsEncoder.next().binCount(count);
                 }
             }
         }
@@ -860,23 +980,38 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         //Fourth group: param names
         UpdateDecoder.ParamNamesDecoder pnd = ud.paramNames();
         int nParams = pnd.count();
+        List<String> paramNames = null;
         if(nParams > 0){
-            paramNames = new String[nParams];
+            paramNames = new ArrayList<>(nParams);
         }
-        int paramNum = 0;
         for(UpdateDecoder.ParamNamesDecoder pndec : pnd){
-            paramNames[paramNum++] = pndec.paramName();
+            paramNames.add(pndec.paramName());
         }
 
-        //Fourth group: Per parameter stats (and histograms, etc)
-        paramNum = 0;
+        //Fifth group: layer names
+        UpdateDecoder.LayerNamesDecoder lnd = ud.layerNames();
+        int nLayers = lnd.count();
+        List<String> layerNames = null;
+        if(nLayers > 0){
+            layerNames = new ArrayList<>(nLayers);
+        }
+        for(UpdateDecoder.LayerNamesDecoder l : lnd){
+            layerNames.add(l.layerName());
+        }
+
+
+        //Fourth group: Per parameter stats (and histograms, etc) AND per layer stats
+        int entryNum = 0;
         for (UpdateDecoder.PerParameterStatsDecoder ppsd : ud.perParameterStats()) {
-            String paramName = paramNames[paramNum++];
+            boolean isParam = entryNum < nParams;
+            String name = (isParam ? paramNames.get(entryNum) : layerNames.get(entryNum-nParams));
+            entryNum++;
+
             float lr = ppsd.learningRate();
 
-            if (learningRatesPresent) {
+            if (learningRatesPresent && isParam) {
                 if (learningRatesByParam == null) learningRatesByParam = new HashMap<>();
-                learningRatesByParam.put(paramName, (double) lr);
+                learningRatesByParam.put(name, (double) lr);
             }
 
             //Summary stats (mean/stdev/mean magnitude)
@@ -893,7 +1028,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                             map = new HashMap<>();
                             meanValues.put(st, map);
                         }
-                        map.put(paramName, value);
+                        map.put(name, value);
                         break;
                     case Stdev:
                         if (stdevValues == null) stdevValues = new HashMap<>();
@@ -902,7 +1037,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                             map2 = new HashMap<>();
                             stdevValues.put(st, map2);
                         }
-                        map2.put(paramName, value);
+                        map2.put(name, value);
                         break;
                     case MeanMagnitudes:
                         if (meanMagnitudeValues == null) meanMagnitudeValues = new HashMap<>();
@@ -911,7 +1046,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                             map3 = new HashMap<>();
                             meanMagnitudeValues.put(st, map3);
                         }
-                        map3.put(paramName, value);
+                        map3.put(name, value);
                         break;
                 }
             }
@@ -935,7 +1070,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     map = new HashMap<>();
                     histograms.put(st, map);
                 }
-                map.put(paramName, h);
+                map.put(name, h);
             }
         }
 
