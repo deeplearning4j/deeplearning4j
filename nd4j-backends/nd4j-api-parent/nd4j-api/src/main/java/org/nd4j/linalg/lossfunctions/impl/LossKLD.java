@@ -8,8 +8,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by susaneraly on 8/9/16.
@@ -19,6 +17,11 @@ public class LossKLD implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+
+        // Clip output and labels to be between Nd4j.EPS_THREsHOLD and 1, i.e. a valid non-zero probability
+        output = Transforms.min(Transforms.max(output, Nd4j.EPS_THRESHOLD, false), 1, false);
+        labels = Transforms.min(Transforms.max(labels, Nd4j.EPS_THRESHOLD, true), 1, false);
+
         INDArray logRatio = Transforms.log(output.rdivi(labels), false);
 
         INDArray scoreArr = logRatio.muli(labels);
