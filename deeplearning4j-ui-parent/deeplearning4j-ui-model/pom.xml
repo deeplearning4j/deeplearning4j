@@ -18,19 +18,64 @@
 
     <dependencies>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+
+        <!-- ND4J APIs -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+
+        <!-- Agrona. Used for Stats listener encoding/decoding via SBE -->
+        <dependency>
+            <groupId>org.agrona</groupId>
+            <artifactId>Agrona</artifactId>
+            <version>${agrona.version}</version>
+        </dependency>
+
+        <!-- MapDB - Used for StatsListener storage -->
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>${mapdb.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
