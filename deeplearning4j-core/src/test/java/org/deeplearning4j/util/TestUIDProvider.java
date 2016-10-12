@@ -1,5 +1,6 @@
-package org.deeplearning4j.spark.util;
+package org.deeplearning4j.util;
 
+import org.deeplearning4j.util.UIDProvider;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
