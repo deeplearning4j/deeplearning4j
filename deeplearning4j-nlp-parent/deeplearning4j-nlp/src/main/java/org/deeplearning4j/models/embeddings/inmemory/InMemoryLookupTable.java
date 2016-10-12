@@ -241,8 +241,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
 
-    protected void initNegative() {
-        if(negative > 0) {
+    public synchronized void initNegative() {
+        if(negative > 0 && syn1Neg == null) {
             syn1Neg = Nd4j.zeros(syn0.shape());
             makeTable(Math.max(expTable.length, 100000),0.75);
         }
@@ -685,7 +685,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-        public WeightLookupTable<T> build() {
+        public InMemoryLookupTable<T> build() {
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 

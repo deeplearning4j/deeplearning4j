@@ -524,4 +524,162 @@ public class WordVectorSerializerTest {
         return  Nd4j.getBlasWrapper().dot(vector, vector2);
 
     }
+
+
+    /**
+     * This method here is only to test real google model few gigabytes worth
+     * Keep it ignored, since it requirs full google model being present in system, which is 1.6gb compressed
+     *
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testStaticLoaderGoogleModel() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        long time1 = System.currentTimeMillis();
+        WordVectors vectors = WordVectorSerializer.loadStaticModel(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
+        long time2 = System.currentTimeMillis();
+
+        logger.info("Loading time: {} ms", (time2 - time1));
+    }
+
+    /**
+     * This method tests binary file loading as static model
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testStaticLoaderBinary() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(binaryFile);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    /**
+     * This method tests CSV file loading as static model
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testStaticLoaderText() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(textFile);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    /**
+     * This method tests ZIP file loading as static model
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testStaticLoaderArchive() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(w2v);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Test
+    public void testUnifiedLoaderArchive1() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(w2v, false);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1Neg());
+    }
+
+    @Test
+    public void testUnifiedLoaderArchive2() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2Vec(w2v);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(w2v, true);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("night");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("night");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        assertNotEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+    }
+
+    /**
+     * This method tests CSV file loading via unified loader
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUnifiedLoaderText() throws Exception {
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
+        WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(textFile, true);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsUnified.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+
+        // we're trying EXTENDED model, but file doesn't have syn1/huffman info, so it should be silently degraded to simplified model
+        assertEquals(null, ((InMemoryLookupTable)vectorsUnified.lookupTable()).getSyn1());
+    }
+
+    /**
+     * This method tests binary file loading via unified loader
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUnifiedLoaderBinary() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsStatic = WordVectorSerializer.readWord2VecModel(binaryFile, false);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
 }
