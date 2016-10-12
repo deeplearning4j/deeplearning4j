@@ -34,6 +34,7 @@ public class VectorsConfiguration implements Serializable {
     private int window = 5;
     private long seed;
     private double negative = 0.0d;
+    private boolean useHierarchicSoftmax = true;
     private double sampling = 0.0d;
     private int learningRateDecayWords;
     private int[] variableWindows;

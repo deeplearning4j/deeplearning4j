@@ -54,7 +54,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient T unknownElement;
     protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
     protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
-
+    protected transient boolean configured = false;
 
 
     @Setter protected transient Set<VectorsListener<T>> eventListeners;
@@ -125,6 +125,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
+    protected void initLearners() {
+        if (!configured) {
+            log.info("Building learning algorithms:");
+            if (trainElementsVectors && elementsLearningAlgorithm != null) {
+                log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
+                elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
+                elementsLearningAlgorithm.pretrain(iterator);
+            }
+            if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
+                log.info("          building SequenceLearningAlgorithm: [" + sequenceLearningAlgorithm.getCodeName() + "]");
+                sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+                sequenceLearningAlgorithm.pretrain(this.iterator);
+            }
+            configured = true;
+        }
+    }
 
     /**
      * Starts training over
@@ -148,17 +164,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             lookupTable.resetWeights(true);
         }
 
-        log.info("Building learning algorithms:");
-        if (trainElementsVectors && elementsLearningAlgorithm != null) {
-            log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
-            elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
-            elementsLearningAlgorithm.pretrain(iterator);
-        }
-        if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
-            log.info("          building SequenceLearningAlgorithm: [" +sequenceLearningAlgorithm.getCodeName()+ "]");
-            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
-            sequenceLearningAlgorithm.pretrain(this.iterator);
-        }
+        initLearners();
 
         log.info("Starting learning process...");
         if (this.stopWords == null) this.stopWords = new ArrayList<>();
@@ -258,6 +264,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean resetModel = true;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected boolean useUnknown = false;
+        protected boolean useHierarchicSoftmax = true;
         protected int[] variableWindows;
 
         protected boolean trainSequenceVectors = false;
@@ -300,6 +307,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.UNK = configuration.getUNK();
             this.STOP = configuration.getSTOP();
             this.variableWindows = configuration.getVariableWindows();
+            this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
 
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
@@ -431,6 +439,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> workers(int numWorkers) {
             this.workers = numWorkers;
+            return this;
+        }
+
+        /**
+         * Enable/disable hierarchic softmax
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> useHierarchicSoftmax(boolean reallyUse) {
+            this.useHierarchicSoftmax = reallyUse;
             return this;
         }
 
@@ -609,6 +628,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> seed(long randomSeed) {
             // has no effect in original w2v actually
+            this.seed = randomSeed;
             return this;
         }
 
@@ -774,6 +794,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUNK(this.UNK);
             this.configuration.setVariableWindows(variableWindows);
+            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
 
             vectors.configuration = this.configuration;
 

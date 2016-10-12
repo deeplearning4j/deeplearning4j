@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.models.word2vec.StaticWord2Vec;
+import org.nd4j.compression.impl.NoOp;
+import org.nd4j.linalg.compression.AbstractStorage;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -55,6 +58,7 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.storage.CompressedRamStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +103,8 @@ public class WordVectorSerializer {
      * @return the loaded model
      * @throws IOException
      */
-    public static WordVectors loadGoogleModel(File modelFile, boolean binary)
+    @Deprecated
+    public static Word2Vec loadGoogleModel(File modelFile, boolean binary)
             throws IOException {
         return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
     }
@@ -119,7 +124,8 @@ public class WordVectorSerializer {
      * @throws IOException
      * @author Carsten Schnober
      */
-    public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
+    @Deprecated
+    public static Word2Vec loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
             throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks, true) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
@@ -136,6 +142,7 @@ public class WordVectorSerializer {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static WordVectors loadGoogleModelNonNormalized(File modelFile, boolean binary, boolean lineBreaks) throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks, false) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
@@ -738,6 +745,7 @@ public class WordVectorSerializer {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static Word2Vec readWord2Vec(File file) throws IOException {
         File tmpFileSyn0 = File.createTempFile("word2vec", "0");
         File tmpFileSyn1 = File.createTempFile("word2vec", "1");
@@ -810,7 +818,7 @@ public class WordVectorSerializer {
 
     /**
      * This method allows you to read ParagraphVectors from externaly originated vectors and syn1.
-     * I.e. Gensim uses 3 files per model.
+     * So, technically this method is compatible with any other w2v implementation
      *
      * @param vectors   text file with words and their wieghts, aka Syn0
      * @param hs    text file HS layers, aka Syn1
@@ -822,6 +830,8 @@ public class WordVectorSerializer {
         // first we load syn0
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
         InMemoryLookupTable lookupTable = pair.getFirst();
+        lookupTable.setNegative(configuration.getNegative());
+        lookupTable.initNegative();
         VocabCache<VocabWord> vocab = (VocabCache<VocabWord>) pair.getSecond();
 
         // now we load syn1
@@ -886,6 +896,7 @@ public class WordVectorSerializer {
      * @param path Path to file that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(path));
@@ -900,6 +911,7 @@ public class WordVectorSerializer {
      * @param file File that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(file));
@@ -915,6 +927,7 @@ public class WordVectorSerializer {
      * @param stream InputStream that contains previously serialized model
      * @return
      */
+    @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
@@ -1372,6 +1385,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
@@ -1391,6 +1405,7 @@ public class WordVectorSerializer {
      *            the file to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
@@ -1410,6 +1425,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
         BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
 
@@ -1429,6 +1445,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
+    @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
@@ -1482,9 +1499,9 @@ public class WordVectorSerializer {
      *            the given pair
      * @return a read only word vectors impl based on the given lookup table and vocab
      */
-    public static WordVectors fromPair(Pair<InMemoryLookupTable, VocabCache> pair)
+    public static Word2Vec fromPair(Pair<InMemoryLookupTable, VocabCache> pair)
     {
-        WordVectorsImpl vectors = new WordVectorsImpl();
+        Word2Vec vectors = new Word2Vec();
         vectors.setLookupTable(pair.getFirst());
         vectors.setVocab(pair.getSecond());
         vectors.setModelUtils(new BasicModelUtils());
@@ -1500,6 +1517,7 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException
      *             if the file does not exist
      */
+    @Deprecated
     public static WordVectors loadTxtVectors(File vectorsFile)
             throws FileNotFoundException, UnsupportedEncodingException
     {
@@ -1526,7 +1544,7 @@ public class WordVectorSerializer {
             line = iter.nextLine();    // skip header line
             //look for spaces
             if(!line.contains(" ")) {
-                log.info("Skipping first line");
+                log.debug("Skipping first line");
                 hasHeader = true;
             } else {
                 // we should check for something that looks like proper word vectors here. i.e: 1 word at the 0 position, and bunch of floats further
@@ -1620,6 +1638,7 @@ public class WordVectorSerializer {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -2044,4 +2063,332 @@ public class WordVectorSerializer {
             }
         }
     }
+
+    /**
+     * This method
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * Please note: Only weights will be loaded by this method.
+     *
+     * @param file
+     * @return
+     */
+    public static Word2Vec readWord2VecModel(File file) {
+        return readWord2VecModel(file, false);
+    }
+
+    /**
+     * This method
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * Please note: if extended data isn't available, only weights will be loaded instead.
+     *
+     * @param file
+     * @param extendedModel if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
+     * @return
+     */
+    public static Word2Vec readWord2VecModel(File file, boolean extendedModel) {
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>();
+        AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+        Word2Vec vec;
+        INDArray syn0;
+        // try to load zip format
+        try {
+            if (extendedModel) {
+                log.debug("Trying full model restoration...");
+                // this method just loads full compressed model
+                return readWord2Vec(file);
+            } else {
+                log.debug("Trying simplified model restoration...");
+
+                File tmpFileSyn0 = File.createTempFile("word2vec","syn");
+                // we don't need full model, so we go directly to syn0 file
+
+                ZipFile zipFile = new ZipFile(file);
+                ZipEntry syn = zipFile.getEntry("syn0.txt");
+                InputStream stream = zipFile.getInputStream(syn);
+
+                Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+                // basically read up everything, call vstacl and then return model
+                List<INDArray> arrays = new ArrayList<>();
+                try(Reader reader = new CSVReader(tmpFileSyn0)) {
+                    while (reader.hasNext()) {
+                        Pair<VocabWord, float[]> pair = reader.next();
+                        VocabWord word = pair.getFirst();
+                        arrays.add(Nd4j.create(pair.getSecond()));
+
+                        vocabCache.addToken(word);
+                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                syn0 = Nd4j.vstack(arrays);
+
+                lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
+                        .cache(vocabCache)
+                        .vectorLength(syn0.columns())
+                        .useAdaGrad(false)
+                        .build();
+
+                lookupTable.setSyn0(syn0);
+            }
+        } catch (Exception e) {
+            // let's try to load this file as csv file
+            try {
+                log.debug("Trying CSV model restoration...");
+
+                Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(file);
+                lookupTable = pair.getFirst();
+                vocabCache = (AbstractCache<VocabWord>) pair.getSecond();
+            } catch (Exception ex) {
+                // we fallback to trying binary model instead
+                try {
+                    log.debug("Trying binary model restoration...");
+
+                    vec = loadGoogleModel(file, true, true);
+                    return vec;
+                } catch (Exception ey) {
+                    // try to load without linebreaks
+                    try {
+                        vec = loadGoogleModel(file, true, false);
+                        return vec;
+                    } catch (Exception ez) {
+                        throw new RuntimeException("Unable to guess input file format. Please use corresponding loader directly");
+                    }
+                }
+            }
+        }
+
+
+        vec = new Word2Vec.Builder()
+                .lookupTable(lookupTable)
+                .useAdaGrad(false)
+                .vocabCache(vocabCache)
+                .layerSize(lookupTable.layerSize())
+                .build();
+
+        return vec;
+    }
+
+    /**
+     * This method restores previously saved w2v model. File can be in one of the following formats:
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * In return you get StaticWord2Vec model, which might be used as lookup table only in multi-gpu environment.
+     *
+     * @param file File should point to previously saved w2v model
+     * @return
+     */
+    // TODO: this method needs better name :)
+    public static WordVectors loadStaticModel(File file) {
+        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
+                .useInplaceCompression(false)
+                .setCompressor(new NoOp())
+                .emulateIsAbsent(false)
+                .build();
+
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+
+        // now we need to define which file format we have here
+        // if zip - that's dl4j format
+        try {
+            log.debug("Trying DL4j format...");
+            File tmpFileSyn0 = File.createTempFile("word2vec","syn");
+
+            ZipFile zipFile = new ZipFile(file);
+            ZipEntry syn0 = zipFile.getEntry("syn0.txt");
+            InputStream stream = zipFile.getInputStream(syn0);
+
+            Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            storage.clear();
+
+            try(Reader reader = new CSVReader(tmpFileSyn0)) {
+                while (reader.hasNext()) {
+                    Pair<VocabWord, float[]> pair = reader.next();
+                    VocabWord word = pair.getFirst();
+                    storage.store(word.getIndex(), pair.getSecond());
+
+                    vocabCache.addToken(word);
+                    vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Exception e) {
+            //
+            try {
+                // try to load file as text csv
+                vocabCache = new AbstractCache.Builder<VocabWord>().build();
+                storage.clear();
+                log.debug("Trying CSVReader...");
+                try(Reader reader = new CSVReader(file)) {
+                    while (reader.hasNext()) {
+                        Pair<VocabWord, float[]> pair = reader.next();
+                        VocabWord word = pair.getFirst();
+                        storage.store(word.getIndex(), pair.getSecond());
+
+                        vocabCache.addToken(word);
+                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                    }
+                } catch (Exception ef) {
+                    // we throw away this exception, and trying to load data as binary model
+                    throw new RuntimeException(ef);
+                }
+            } catch (Exception ex) {
+                // otherwise it's probably google model. which might be compressed or not
+                log.debug("Trying BinaryReader...");
+                vocabCache = new AbstractCache.Builder<VocabWord>().build();
+                storage.clear();
+                try(Reader reader = new BinaryReader(file)) {
+                    while (reader.hasNext()) {
+                        Pair<VocabWord, float[]> pair = reader.next();
+                        VocabWord word = pair.getFirst();
+
+                        storage.store(word.getIndex(), pair.getSecond());
+
+                        vocabCache.addToken(word);
+                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                    }
+                } catch (Exception ez) {
+                    throw new RuntimeException("Unable to guess input file format");
+                }
+            }
+        }
+
+
+
+        StaticWord2Vec word2Vec = new StaticWord2Vec.Builder(storage, vocabCache).build();
+
+        return word2Vec;
+    }
+
+
+    protected interface Reader extends AutoCloseable {
+        boolean hasNext();
+        Pair<VocabWord, float[]> next();
+    }
+
+
+    protected static class BinaryReader implements Reader {
+
+        protected DataInputStream stream;
+        protected String nextWord;
+        protected int numWords;
+        protected int vectorLength;
+        protected AtomicInteger idxCounter = new AtomicInteger(0);
+
+        protected BinaryReader(@NonNull File file) {
+            try {
+                stream = new DataInputStream(new BufferedInputStream(
+                        GzipUtils.isCompressedFilename(file.getName())
+                                ? new GZIPInputStream(new FileInputStream(file))
+                                : new FileInputStream(file)));
+
+                numWords = Integer.parseInt(readString(stream));
+                vectorLength = Integer.parseInt(readString(stream));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return idxCounter.get() < numWords;
+        }
+
+        @Override
+        public Pair<VocabWord, float[]> next() {
+            try {
+                String word = readString(stream);
+                VocabWord element = new VocabWord(1.0, word);
+                element.setIndex(idxCounter.getAndIncrement());
+
+
+                float[] vector = new float[vectorLength];
+                for (int i = 0; i < vectorLength; i++) {
+                    vector[i] = readFloat(stream);
+                }
+
+                return Pair.makePair(element, vector);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (stream != null)
+                stream.close();
+        }
+    }
+
+    protected static class CSVReader implements Reader {
+        private BufferedReader reader;
+        private AtomicInteger idxCounter = new AtomicInteger(0);
+        private String nextLine;
+
+        protected CSVReader(@NonNull File file) {
+            try {
+                reader = new BufferedReader(new FileReader(file));
+                nextLine = reader.readLine();
+
+                // checking if there's header inside
+                String[] split = nextLine.split(" ");
+                try {
+                    if (Integer.parseInt(split[0]) > 0 && split.length <= 5) {
+                        // this is header. skip it.
+                        nextLine = reader.readLine();
+                    }
+                } catch (Exception e) {
+                    // this is proper string, do nothing
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public boolean hasNext() {
+            return nextLine != null;
+        }
+
+        public Pair<VocabWord, float[]> next() {
+
+            String[] split = nextLine.split(" ");
+
+            VocabWord word = new VocabWord(1.0, split[0]);
+            word.setIndex(idxCounter.getAndIncrement());
+
+            float[] vector = new float[split.length - 1];
+            for (int i = 1; i < split.length; i++) {
+                vector[i-1] = Float.parseFloat(split[i]);
+            }
+
+            try {
+                nextLine = reader.readLine();
+            } catch (Exception e) {
+                nextLine = null;
+            }
+
+            return Pair.makePair(word, vector);
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (reader != null)
+                reader.close();
+        }
+    }
+
+
+
 }
