@@ -1,5 +1,7 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -84,7 +86,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
     private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
-    private Collection<IterationListener> listeners;
     private int iterationCount = 0;
     private Repartition repartition;
     private RepartitionStrategy repartitionStrategy;
@@ -102,6 +103,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     private int lastExportedRDDId = Integer.MIN_VALUE;
     private String lastRDDExportPath;
     private final String trainingMasterUID;
+
+    //Listeners etc
+    private Collection<IterationListener> listeners;
+    private StatsStorageRouterProvider routerProvider;
 
     private ParameterAveragingTrainingMaster() {
         // no-arg constructor for Jackson
@@ -294,7 +299,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(false, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
-        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList, listeners, routerProvider);
     }
 
     @Override
@@ -308,7 +313,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(true, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
-        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList);
+        return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration,trainingHookList, listeners, routerProvider);
     }
 
     private int numObjectsEachWorker(int numExamplesEachRddObject) {
@@ -612,6 +617,17 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     public SparkTrainingStats getTrainingStats() {
         if (stats != null) return stats.build();
         return null;
+    }
+
+    @Override
+    public void setListeners(Collection<IterationListener> listeners){
+        setListeners(null, listeners);
+    }
+
+    @Override
+    public void setListeners(StatsStorageRouterProvider routerProvider, Collection<IterationListener> listeners) {
+        this.routerProvider = routerProvider;
+        this.listeners = listeners;
     }
 
     @Override
@@ -973,10 +989,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * with the desired hooks for training.
          * This can allow for tings like parameter servers
          * and async updates as well as collecting statistics.
-         * @param trainingHooks the training hooks to ad
+         * @param hooks the training hooks to ad
          * @return
          */
-        public Builder trainingHooks(TrainingHook...hooks) {
+        public Builder trainingHooks(TrainingHook... hooks) {
             this.trainingHooks = Arrays.asList(hooks);
             return this;
         }

@@ -1,11 +1,14 @@
 package org.deeplearning4j.spark.impl.paramavg.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
+import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collection;
 
 /**
  * Add function for parameter averaging
@@ -17,7 +20,8 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
     @Override
     public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple tuple, ParameterAveragingTrainingResult result) throws Exception {
         if (tuple == null) {
-            return new ParameterAveragingAggregationTuple(result.getParameters(), result.getUpdaterState(), result.getScore(), 1, result.getSparkTrainingStats());
+            return new ParameterAveragingAggregationTuple(result.getParameters(), result.getUpdaterState(), result.getScore(), 1,
+                    result.getSparkTrainingStats(), result.getListenerUpdates());
         }
 
         INDArray params = tuple.getParametersSum().addi(result.getParameters());
@@ -39,6 +43,14 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
-        return new ParameterAveragingAggregationTuple(params, updaterStateSum, scoreSum, tuple.getAggregationsCount() + 1, stats);
+        Collection<Persistable> listenerUpdates = tuple.getListenerUpdates();
+        if(listenerUpdates == null) listenerUpdates = result.getListenerUpdates();
+        else {
+            Collection<Persistable> newUpdates = result.getListenerUpdates();
+            if(newUpdates != null) listenerUpdates.addAll(newUpdates);
+        }
+
+        return new ParameterAveragingAggregationTuple(params, updaterStateSum, scoreSum, tuple.getAggregationsCount() + 1,
+                stats, listenerUpdates);
     }
 }
