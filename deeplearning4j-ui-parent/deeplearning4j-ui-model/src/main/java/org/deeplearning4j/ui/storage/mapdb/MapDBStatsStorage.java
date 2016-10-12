@@ -341,6 +341,13 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
+    public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
+        for(Persistable p : staticInfo){
+            putStaticInfo(p);
+        }
+    }
+
+    @Override
     public void putUpdate(Persistable update) {
         List<StatsStorageEvent> sses = checkStorageEvents(update);
         Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getTypeID(), update.getWorkerID(), true);
@@ -358,6 +365,13 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
+    public void putUpdate(Collection<? extends Persistable> updates) {
+        for(Persistable p : updates){
+            putUpdate(p);
+        }
+    }
+
+    @Override
     public void putStorageMetaData(StorageMetaData storageMetaData) {
         List<StatsStorageEvent> sses = checkStorageEvents(storageMetaData);
         SessionTypeId id = new SessionTypeId(storageMetaData.getSessionID(), storageMetaData.getTypeID());
@@ -371,6 +385,13 @@ public class MapDBStatsStorage implements StatsStorage {
         }
 
         notifyListeners(sses);
+    }
+
+    @Override
+    public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
+        for(StorageMetaData m : storageMetaData){
+            putStorageMetaData(m);
+        }
     }
 
 

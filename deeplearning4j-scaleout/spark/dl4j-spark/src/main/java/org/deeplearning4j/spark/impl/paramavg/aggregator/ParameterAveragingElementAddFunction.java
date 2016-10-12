@@ -2,6 +2,7 @@ package org.deeplearning4j.spark.impl.paramavg.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -21,7 +22,7 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
     public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple tuple, ParameterAveragingTrainingResult result) throws Exception {
         if (tuple == null) {
             return new ParameterAveragingAggregationTuple(result.getParameters(), result.getUpdaterState(), result.getScore(), 1,
-                    result.getSparkTrainingStats(), result.getListenerUpdates());
+                    result.getSparkTrainingStats(), result.getListenerMetaData(), result.getListenerStaticInfo(), result.getListenerUpdates());
         }
 
         INDArray params = tuple.getParametersSum().addi(result.getParameters());
@@ -43,6 +44,20 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
+        Collection<StorageMetaData> listenerMetaData = tuple.getListenerMetaData();
+        if(listenerMetaData == null) listenerMetaData = result.getListenerMetaData();
+        else {
+            Collection<StorageMetaData> newMeta = result.getListenerMetaData();
+            if(newMeta != null) listenerMetaData.addAll(newMeta);
+        }
+
+        Collection<Persistable> listenerStaticInfo = tuple.getListenerStaticInfo();
+        if(listenerStaticInfo == null) listenerStaticInfo = result.getListenerStaticInfo();
+        else {
+            Collection<Persistable> newStatic = tuple.getListenerStaticInfo();
+            if(newStatic != null) listenerStaticInfo.addAll(newStatic);
+        }
+
         Collection<Persistable> listenerUpdates = tuple.getListenerUpdates();
         if(listenerUpdates == null) listenerUpdates = result.getListenerUpdates();
         else {
@@ -50,7 +65,9 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
             if(newUpdates != null) listenerUpdates.addAll(newUpdates);
         }
 
+
+
         return new ParameterAveragingAggregationTuple(params, updaterStateSum, scoreSum, tuple.getAggregationsCount() + 1,
-                stats, listenerUpdates);
+                stats, listenerMetaData, listenerStaticInfo, listenerUpdates);
     }
 }
