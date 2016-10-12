@@ -75,7 +75,7 @@ public abstract class BaseInputSplit implements InputSplit {
     public InputSplit[] sample(PathFilter pathFilter, double... weights) {
         URI[] paths = pathFilter != null ? pathFilter.filter(locations()) : locations();
 
-        if (weights != null && weights.length > 0) {
+        if (weights != null && weights.length > 0 && weights[0] != 1.0) {
             InputSplit[] splits = new InputSplit[weights.length];
             double totalWeight = 0;
             for (int i = 0; i < weights.length; i++) {

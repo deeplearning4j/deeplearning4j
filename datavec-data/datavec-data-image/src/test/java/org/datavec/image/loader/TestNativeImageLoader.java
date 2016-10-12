@@ -158,17 +158,6 @@ public class TestNativeImageLoader {
         assertEquals(img2.channels(), cropped2.channels());
     }
 
-    @Test
-    public void testNormalizeIfNeeded() throws Exception {
-        int normVal = 255;
-        int w1 = 6, h1 = 10, ch1 = 1;
-        NativeImageLoader loader = new NativeImageLoader(h1, w1, ch1, null, normVal);
-
-        INDArray imgExample = Nd4j.linspace(0, 59, 60);
-        INDArray actualResult = loader.normalizeIfNeeded(imgExample);
-        INDArray expectedResult = imgExample.div(normVal);
-        assertEquals(expectedResult, actualResult);
-    }
 
     Mat makeRandomImage(int height, int width, int channels) {
         if (height <= 0) {

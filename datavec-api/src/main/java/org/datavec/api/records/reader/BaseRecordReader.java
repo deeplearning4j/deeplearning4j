@@ -49,4 +49,5 @@ public abstract class BaseRecordReader implements RecordReader {
     public void setListeners(RecordListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
+
 }

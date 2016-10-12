@@ -114,23 +114,6 @@ public class NativeImageLoader extends BaseImageLoader {
         this.converter = new OpenCVFrameConverter.ToMat();
     }
 
-
-    /**
-     * Instantiate an image with the given
-     * height and width
-     * @param height the height to load
-     * @param width  the width to load
-     * @param channels the number of channels for the image*
-     * @param imageTransform to use before rescaling and converting
-     * @param normalizeValue after rescaling and converting
-     */
-    public NativeImageLoader(int height, int width, int channels, ImageTransform imageTransform, double normalizeValue) {
-        this(height, width, channels, imageTransform);
-        normalizeIfNeeded = (normalizeValue > 0)? true: false;
-        this.normalizeValue = normalizeValue;
-        this.converter = new OpenCVFrameConverter.ToMat();
-    }
-
     @Override
     public String[] getAllowedFormats() {
         return ALLOWED_FORMATS;
@@ -363,14 +346,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
         }
         image.data(); // dummy call to make sure it does not get deallocated prematurely
-        if (normalizeIfNeeded) {
-            ret = normalizeIfNeeded(ret);
-        }
         return ret.reshape(ArrayUtil.combine(new int[]{1},ret.shape()));
-    }
-
-    protected INDArray normalizeIfNeeded(INDArray image){
-        return image.div(normalizeValue);
     }
 
     // TODO build flexibility on where to crop the image
