@@ -115,6 +115,31 @@ public class WeightInitUtilTest {
         assertEquals(weightsExpected, weightsActual);
     }
 
+    @Test
+    public void testXavierCaffe(){
+        INDArray params = Nd4j.create(shape,'f');
+        INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.XAVIER_CAFFE, dist, params);
+
+        // expected calculation
+        Nd4j.getRandom().setSeed(123);
+        INDArray weightsExpected = Nd4j.randn('f',shape);
+        weightsExpected.divi(FastMath.sqrt(shape[0]));
+
+        assertEquals(weightsExpected, weightsActual);
+    }
+
+    @Test
+    public void testXavierTorch(){
+        INDArray params = Nd4j.create(shape,'f');
+        INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.XAVIER_TORCH, dist, params);
+
+        // expected calculation
+        Nd4j.getRandom().setSeed(123);
+        INDArray weightsExpected = Nd4j.randn('f',shape);
+        weightsExpected.muli(FastMath.sqrt(2.0 / shape[0] + shape[1]));
+
+        assertEquals(weightsExpected, weightsActual);
+    }
 
     @Test
     public void testZero(){
