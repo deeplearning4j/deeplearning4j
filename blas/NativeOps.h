@@ -1263,6 +1263,11 @@ public:
     bool isExperimentalEnabled();
 
     /**
+     * Aggregate
+     */
+    void execAggregateFloat(Nd4jPointer *extraPointers,int opNum, float **arguments, int numArguments, int *indexArguments, int numIndexArguments, float *realArguments, int numRealArguments);
+
+    /**
      * Grid operations
      */
 

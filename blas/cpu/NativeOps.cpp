@@ -2471,3 +2471,15 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
     return name;
 }
+
+
+void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
+                                   float **arguments,
+                                   int numArguments,
+                                   int *indexArguments,
+                                   int numIndexArguments,
+                                   float *realArguments,
+                                   int numRealArguments) {
+
+    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
+}

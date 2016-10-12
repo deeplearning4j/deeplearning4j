@@ -10,7 +10,7 @@
 #define AGGREGATE_OPS \
         (0, aggregateOps::HierarchicSoftmax)
 
-#ifdef __CUDACC__
+
 namespace functions {
     namespace aggregate {
 
@@ -29,9 +29,15 @@ namespace functions {
             inline static void exec(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
                 OpClass::executeAggregate(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
             }
+
+            inline static void exec(int opNum, T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+                DISPATCH_BY_OPNUM(exec, PARAMS(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), AGGREGATE_OPS);
+            }
 		};
     }
 }
+
+#ifdef __CUDACC__
 
 template <typename T, typename OpClass>
 __device__ void aggregateGeneric(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {

@@ -5913,3 +5913,22 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
+                                   float **arguments,
+                                   int numArguments,
+                                   int *indexArguments,
+                                   int numIndexArguments,
+                                   float *realArguments,
+                                   int numRealArguments) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    // TODO: proper launch dims required here
+    dim3 launchDims = dim3(256, 256, 4096);
+
+    DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
