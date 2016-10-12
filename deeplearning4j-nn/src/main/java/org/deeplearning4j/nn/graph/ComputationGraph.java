@@ -2130,7 +2130,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList, int topN) {
-        if(layers == null || !(getOutputLayer(getNumLayers()) instanceof IOutputLayer)){
+        if(layers == null || !(getOutputLayer(getNumLayers()-2) instanceof IOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
@@ -2152,7 +2152,7 @@ public class ComputationGraph implements Serializable, Model {
             if(labels.rank() == 3 ) e.evalTimeSeries(labels,out[0]);
             else e.eval(labels,out[0]);
         }
-        return null;
+        return e;
     }
 
 
