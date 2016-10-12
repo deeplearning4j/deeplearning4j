@@ -30,6 +30,7 @@ int element_threshold = 32;
 #include <type_conversions.h>
 #include <op_boilerplate.h>
 #include <grid.h>
+#include <aggregates.h>
 //#include <sys/time.h>
 
 

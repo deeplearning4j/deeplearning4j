@@ -7,10 +7,10 @@
 #include <ops.h>
 #include <templatemath.h>
 
-#define HS_MAX_EXP 6
+#define HS_MAX_EXP 6.0f
 
 #ifdef __CUDACC__
-#define aggregate_def __host__ __device__ inline static
+#define aggregate_def __device__ inline static
 #else
 #define aggregate_def inline static
 #endif
@@ -73,7 +73,7 @@ namespace aggregateOps {
 
             // axpy2
 #pragma omp simd
-            for (int x = 0; x < vectorLength; x++x) {
+            for (int x = 0; x < vectorLength; x++) {
                 syn1[x] = g * syn0[x] + syn1[x];
             }
         }
@@ -109,7 +109,7 @@ namespace aggregateOps {
 
                 syn0 = arguments[0] + (idxSyn0 * vectorLength);
                 syn1 = arguments[1] + (idxSyn1 * vectorLength);
-                expTable; = arguments[2];
+                expTable = arguments[2];
                 neu1e = arguments[3];
 
                 alpha = realArguments[0];
@@ -119,13 +119,13 @@ namespace aggregateOps {
             // dot
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 T prod = syn0[x] * syn1[x];
-                nd4j::math::nd4j_atomicAdd(&dot, prod);
+                nd4j::math::atomics::nd4j_atomicAdd<T>(&dot, prod);
             }
 
 
             // gradient
             __syncthreads();
-            if (dot < - HS_MAX_EXP || dot >= HS_MAX_EXP)
+            if (dot < - (T) HS_MAX_EXP || dot >= (T) HS_MAX_EXP)
                 return;
 
             int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
@@ -137,7 +137,7 @@ namespace aggregateOps {
             if (threadIdx.x == 0) {
                 // gradient calculation
                 f = expTable[idx];
-                g = (1 - code - f) * alpha;
+                g = ((T) 1.0f - (T) code - f) * alpha;
             }
             __syncthreads();
 
