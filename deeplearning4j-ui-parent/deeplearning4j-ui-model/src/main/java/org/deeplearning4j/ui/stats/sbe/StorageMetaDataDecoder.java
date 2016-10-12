@@ -661,7 +661,7 @@ public class StorageMetaDataDecoder
     {
         final int originalLimit = limit();
         limit(offset + actingBlockLength);
-        builder.append("[SbeStorageMetaData](sbeTemplateId=");
+        builder.append("[StorageMetaData](sbeTemplateId=");
         builder.append(TEMPLATE_ID);
         builder.append("|sbeSchemaId=");
         builder.append(SCHEMA_ID);

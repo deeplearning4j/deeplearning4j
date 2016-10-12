@@ -114,7 +114,7 @@ public class TestMapDBStatsStore {
     }
 
     private static StatsReport getReport(int sid, int tid, int wid, long time){
-        StatsReport rep = new SbeStatsReport(new String[]{"p0","p1"});
+        StatsReport rep = new SbeStatsReport();
         rep.reportIDs("sid"+sid,"tid"+tid,"wid"+wid,time);
         rep.reportScore(100.0);
         rep.reportPerformance(1000,1001,1002,1003.0,1004.0);
