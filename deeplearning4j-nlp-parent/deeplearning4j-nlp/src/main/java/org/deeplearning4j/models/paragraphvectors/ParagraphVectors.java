@@ -135,8 +135,8 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(LabelledDocument document, double learningRate, double minLearningRate, int iterations) {
         if (document.getReferencedContent() != null) {
-            return inferVector(document.getReferencedContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
-        } else return inferVector(document.getContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+            return inferVector(document.getReferencedContent(), learningRate, minLearningRate, iterations);
+        } else return inferVector(document.getContent(), learningRate, minLearningRate, iterations);
     }
 
     /**
@@ -160,7 +160,9 @@ public class ParagraphVectors extends Word2Vec {
             sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
         }*/
 
-        INDArray inf = learner.inferSequence(sequence, 119, learningRate);
+        initLearners();
+
+        INDArray inf = learner.inferSequence(sequence, 119, learningRate, minLearningRate, iterations);
 
         return inf;
     }
@@ -172,7 +174,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(String text) {
-        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
@@ -182,7 +184,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(LabelledDocument document) {
-        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
@@ -192,7 +194,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(List<VocabWord> document) {
-        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
     /**
@@ -702,6 +704,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.workers = this.workers;
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
+            ret.seed = this.seed;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;
@@ -732,6 +735,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
 
             ret.configuration = this.configuration;
 
@@ -1030,6 +1034,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder sequenceLearningAlgorithm(String algorithm) {
             super.sequenceLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder useHierarchicSoftmax(boolean reallyUse) {
+            super.useHierarchicSoftmax(reallyUse);
             return this;
         }
 
