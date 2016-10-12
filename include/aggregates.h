@@ -18,15 +18,16 @@ namespace functions {
         class AggregatedFunction {
 
         public:
-            template<typename OpClass>
 #ifdef __CUDACC__
+            template<typename OpClass>
             __device__ inline static void execCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
                 OpClass::executeAggregateCuda(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
             }
 #endif
 
+            template<typename OpClass>
             inline static void exec(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
-
+                OpClass::executeAggregate(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
             }
 		};
     }

@@ -12,6 +12,7 @@ int element_threshold = 32;
 #include <templatemath.h>
 #include <types/float8.h>
 #include <type_conversions.h>
+#include <aggregates.h>
 
 char *name;
 bool nameSet = false;

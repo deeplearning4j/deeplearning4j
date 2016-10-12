@@ -43,6 +43,7 @@ namespace aggregateOps {
             T dot = (T) 0.0f;
             T g = (T) 0.0f;
             T f = (T) 0.0f;
+            T alpha = realArguments[0];
 
             // dot
 // TODO: simd reduction required here
@@ -111,6 +112,8 @@ namespace aggregateOps {
                 syn1 = arguments[1] + (idxSyn1 * vectorLength);
                 expTable = arguments[2];
                 neu1e = arguments[3];
+
+                dot = (T) 0.0f;
 
                 alpha = realArguments[0];
             }
