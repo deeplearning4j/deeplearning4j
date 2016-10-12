@@ -663,6 +663,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null || map.size() == 0) continue;
                     appendOrDefault(sse, s, statsType, summaryType, map, Double.NaN);
+                    tempCount++;
                 }
             }
 
@@ -972,7 +973,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
     @AllArgsConstructor
     @Data
-    private static class GCStats {
+    private static class GCStats implements Serializable {
         private String gcName;
         private int deltaGCCount;
         private int deltaGCTime;

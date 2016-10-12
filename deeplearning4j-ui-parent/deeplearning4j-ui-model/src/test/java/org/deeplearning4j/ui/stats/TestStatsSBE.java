@@ -10,7 +10,7 @@ import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 public class TestStatsSBE {
 
     @Test
-    public void testSbeStatsInitializationReport() {
+    public void testSbeStatsInitializationReport() throws Exception {
 
         boolean[] tf = new boolean[]{true, false};
 
@@ -130,6 +130,19 @@ public class TestStatsSBE {
                     } else {
                         assertFalse(report2.hasModelInfo());
                     }
+
+
+                    //Check standard Java serialization
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(report);
+                    oos.close();
+
+                    byte[] javaBytes = baos.toByteArray();
+                    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(javaBytes));
+                    SbeStatsInitializationReport report3 = (SbeStatsInitializationReport) ois.readObject();
+
+                    assertEquals(report, report3);
                 }
             }
         }
@@ -137,7 +150,7 @@ public class TestStatsSBE {
 
 
     @Test
-    public void testSbeStatsInitializationReportNullValues() {
+    public void testSbeStatsInitializationReportNullValues() throws Exception {
         //Sanity check: shouldn't have any issues with encoding/decoding null values...
         boolean[] tf = new boolean[]{true, false};
 
@@ -234,6 +247,18 @@ public class TestStatsSBE {
                     } else {
                         assertFalse(report2.hasModelInfo());
                     }
+
+                    //Check standard Java serialization
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(report);
+                    oos.close();
+
+                    byte[] javaBytes = baos.toByteArray();
+                    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(javaBytes));
+                    SbeStatsInitializationReport report3 = (SbeStatsInitializationReport) ois.readObject();
+
+                    assertEquals(report, report3);
                 }
             }
         }
@@ -248,7 +273,7 @@ public class TestStatsSBE {
     }
 
     @Test
-    public void testSbeStatsUpdate() {
+    public void testSbeStatsUpdate() throws Exception {
 
         String[] paramNames = new String[]{"param0", "param1"};
 
@@ -547,22 +572,31 @@ public class TestStatsSBE {
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
                                             } else {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
-                                                ;
                                             }
                                             if (collectMM[1]) {
                                                 assertEquals(uMM, report2.getMeanMagnitudes(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
                                             } else {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
-                                                ;
                                             }
                                             if (collectMM[2]) {
                                                 assertEquals(aMM, report2.getMeanMagnitudes(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
                                             } else {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
-                                                ;
                                             }
+
+                                            //Check standard Java serialization
+                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                            ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                            oos.writeObject(report);
+                                            oos.close();
+
+                                            byte[] javaBytes = baos.toByteArray();
+                                            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(javaBytes));
+                                            SbeStatsReport report3 = (SbeStatsReport)ois.readObject();
+
+                                            assertEquals(report, report3);
 
                                             testCount++;
                                         }
@@ -579,7 +613,7 @@ public class TestStatsSBE {
     }
 
     @Test
-    public void testSbeStatsUpdateNullValues() {
+    public void testSbeStatsUpdateNullValues() throws Exception {
 
         String[] paramNames = null; //new String[]{"param0", "param1"};
 
@@ -797,15 +831,24 @@ public class TestStatsSBE {
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Parameters));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
-                                            ;
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Updates));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
-                                            ;
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Activations));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
-                                            ;
+
+                                            //Check standard Java serialization
+                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                            ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                            oos.writeObject(report);
+                                            oos.close();
+
+                                            byte[] javaBytes = baos.toByteArray();
+                                            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(javaBytes));
+                                            SbeStatsReport report3 = (SbeStatsReport)ois.readObject();
+
+                                            assertEquals(report, report3);
 
                                             testCount++;
                                         }

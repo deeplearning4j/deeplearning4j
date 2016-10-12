@@ -30,6 +30,8 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -39,6 +41,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
@@ -294,9 +297,10 @@ public class SparkDl4jMultiLayer implements Serializable {
         setListeners(null, listeners);
     }
 
-    public void setListeners(StatsStorage statsStorage, Collection<? extends IterationListener> listeners){
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners){
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
-        if(listeners != null && statsStorage == null){
+        StatsStorageRouterProvider routerProvider = null;
+        if(listeners != null ){
             for(IterationListener l : listeners){
                 if(l instanceof RoutingIterationListener){
                     RoutingIterationListener rl = (RoutingIterationListener)l;
@@ -306,13 +310,18 @@ public class SparkDl4jMultiLayer implements Serializable {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
                     }
+
+                    //Need to give workers a router provider...
+                    if(routerProvider == null){
+                        routerProvider = new VanillaStatsStorageRouterProvider();
+                    }
                 }
             }
         }
         this.listeners.clear();
         if(listeners != null) {
             this.listeners.addAll(listeners);
-            if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
+            if (trainingMaster != null) trainingMaster.setListeners(statsStorage, this.listeners);
         }
     }
 

@@ -5,6 +5,7 @@ import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -42,16 +43,17 @@ import java.util.*;
  * @author Alex Black
  */
 @Slf4j
-public class StatsListener implements IterationListener {
+public class StatsListener implements RoutingIterationListener {
 
     public static String TYPE_ID = "StatsListener";
+
     private enum StatType {Mean, Stdev, MeanMagnitude}
 
 //    public enum ErrorHandling {LogAndContinue, Fail};
 //    private ErrorHandling errorHandling = ErrorHandling.LogAndContinue;
 //    private int maxErrorMessages = 10;
 //    private int printedErrorMessages = 0;
-    private final StatsStorageRouter router;
+    private StatsStorageRouter router;
     private final StatsInitializationConfiguration initConfig;
     private final StatsUpdateConfiguration updateConfig;
     private final String sessionID;
@@ -100,6 +102,16 @@ public class StatsListener implements IterationListener {
         } else {
             this.workerID = workerID;
         }
+    }
+
+    @Override
+    public void setStorageRouter(StatsStorageRouter router) {
+        this.router = router;
+    }
+
+    @Override
+    public StatsStorageRouter getStorageRouter() {
+        return router;
     }
 
     @Override
@@ -398,7 +410,8 @@ public class StatsListener implements IterationListener {
                 numLayers = cg.getNumLayers();
                 numParams = cg.numParams();
             } else {
-                throw new RuntimeException();
+                throw new RuntimeException("Invalid model: Expected MultiLayerNetwork or ComputationGraph. Got: "
+                        + (model == null ? null : model.getClass()));
             }
 
             Map<String,INDArray> paramMap = model.paramTable();

@@ -46,6 +46,7 @@ public class LossFunctionGradientCheck {
 
         ILossFunction[] lossFunctions = new ILossFunction[]{
                 new LossBinaryXENT(),
+                new LossBinaryXENT(),
                 new LossCosineProximity(),
                 new LossHinge(),
                 new LossKLD(),
@@ -70,6 +71,7 @@ public class LossFunctionGradientCheck {
         };
 
         String[] outputActivationFn = new String[]{
+                "sigmoid",  //xent
                 "sigmoid",  //xent
                 "tanh",     //cosine
                 "tanh",     //hinge -> trying to predict 1 or -1
@@ -96,6 +98,7 @@ public class LossFunctionGradientCheck {
 
         int[] nOut = new int[]{
                 1,          //xent
+                3,          //xent
                 5,          //cosine
                 3,          //hinge
                 3,          //kld
