@@ -29,6 +29,8 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -80,6 +82,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private double lastScore;
 
     private List<IterationListener> listeners = new ArrayList<>();
+    private StatsStorage statsStorage;
 
     /**
      * Instantiate a multi layer spark instance
@@ -285,9 +288,32 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param listeners
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
+//        this.listeners.clear();
+//        this.listeners.addAll(listeners);
+//        if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
+        setListeners(null, listeners);
+    }
+
+    public void setListeners(StatsStorage statsStorage, Collection<? extends IterationListener> listeners){
+        //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
+        if(listeners != null && statsStorage == null){
+            for(IterationListener l : listeners){
+                if(l instanceof RoutingIterationListener){
+                    RoutingIterationListener rl = (RoutingIterationListener)l;
+                    if(rl.getStorageRouter() == null){
+                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)){
+                        //Spark would throw a (probably cryptic) serialization exception later anyway...
+                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
+                    }
+                }
+            }
+        }
         this.listeners.clear();
-        this.listeners.addAll(listeners);
-        if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
+        if(listeners != null) {
+            this.listeners.addAll(listeners);
+            if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
+        }
     }
 
     protected void invokeListeners(MultiLayerNetwork network, int iteration) {

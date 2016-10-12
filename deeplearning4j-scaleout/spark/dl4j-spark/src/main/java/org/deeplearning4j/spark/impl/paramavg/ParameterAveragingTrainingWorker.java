@@ -1,18 +1,26 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingHook;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
+import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouter;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -22,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * ParameterAveragingTrainingWorker
@@ -37,16 +46,19 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     private Collection<TrainingHook> trainingHooks;
     private final WorkerConfiguration configuration;
     private ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper stats = null;
+    private Collection<IterationListener> iterationListeners;
+    private StatsStorageRouterProvider listenerRouterProvider;
 
-    public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration) {
-        this(broadcast,saveUpdater,configuration,new ArrayList<TrainingHook>());
-    }
+    public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration,
+                                            Collection<TrainingHook> trainingHooks, Collection<IterationListener> listeners,
+                                            StatsStorageRouterProvider routerProvider){
 
-    public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration,Collection<TrainingHook> trainingHooks) {
         this.broadcast = broadcast;
         this.saveUpdater = saveUpdater;
         this.configuration = configuration;
         this.trainingHooks = trainingHooks;
+        this.iterationListeners = listeners;
+        this.listenerRouterProvider = routerProvider;
     }
 
     /**
@@ -86,10 +98,12 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication()));  //Can't have shared updater state
         }
 
-        if(configuration.isCollectTrainingStats()) stats.logInitEnd();
-
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+        configureListeners(net);
+
+        if(configuration.isCollectTrainingStats()) stats.logInitEnd();
 
         return net;
     }
@@ -113,9 +127,28 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
+        configureListeners(net);
+
         if(configuration.isCollectTrainingStats()) stats.logInitEnd();
 
         return net;
+    }
+
+    private void configureListeners(Model m){
+        if(iterationListeners != null){
+            List<IterationListener> list = new ArrayList<>(iterationListeners.size());
+            for(IterationListener l : iterationListeners){
+                if(listenerRouterProvider != null && l instanceof RoutingIterationListener){
+                    RoutingIterationListener rl = (RoutingIterationListener)l;
+                    rl.setStorageRouter(listenerRouterProvider.getRouter());
+                } else {
+                    //TODO are there some situations where we need to clone listeners? i.e., those with state...
+                    list.add(l);
+                }
+            }
+            if(m instanceof MultiLayerNetwork) ((MultiLayerNetwork) m).setListeners(list);
+            else ((ComputationGraph)m).setListeners(list);
+        }
     }
 
     @Override
@@ -206,7 +239,20 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
-        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
+        Collection<StorageMetaData> storageMetaData = null;
+        Collection<Persistable> listenerStaticInfo = null;
+        Collection<Persistable> listenerUpdates = null;
+        if(listenerRouterProvider != null){
+            StatsStorageRouter r = listenerRouterProvider.getRouter();
+            if(r instanceof VanillaStatsStorageRouter){ //TODO this is ugly... need to find a better solution
+                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter)r;
+                storageMetaData = ssr.getStorageMetaData();
+                listenerStaticInfo = ssr.getStaticInfo();
+                listenerUpdates = ssr.getUpdates();
+            }
+        }
+        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score(),
+                storageMetaData, listenerStaticInfo, listenerUpdates);
     }
 
     @Override
@@ -220,17 +266,31 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
 
-        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score());
+        Collection<StorageMetaData> storageMetaData = null;
+        Collection<Persistable> listenerStaticInfo = null;
+        Collection<Persistable> listenerUpdates = null;
+        if(listenerRouterProvider != null){
+            StatsStorageRouter r = listenerRouterProvider.getRouter();
+            if(r instanceof VanillaStatsStorageRouter){ //TODO this is ugly... need to find a better solution
+                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter)r;
+                storageMetaData = ssr.getStorageMetaData();
+                listenerStaticInfo = ssr.getStaticInfo();
+                listenerUpdates = ssr.getUpdates();
+            }
+        }
+
+        return new ParameterAveragingTrainingResult(network.params(), updaterState, network.score(),
+                storageMetaData, listenerStaticInfo, listenerUpdates);
     }
 
     @Override
     public ParameterAveragingTrainingResult getFinalResultNoData(){
-        return new ParameterAveragingTrainingResult(null, null, 0.0, null);
+        return new ParameterAveragingTrainingResult(null, null, 0.0, null, null, null);
     }
 
     @Override
     public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats(){
-        return new Pair<>(new ParameterAveragingTrainingResult(null, null, 0.0, null),null);
+        return new Pair<>(getFinalResultNoData(),null);
     }
 
     @Override
