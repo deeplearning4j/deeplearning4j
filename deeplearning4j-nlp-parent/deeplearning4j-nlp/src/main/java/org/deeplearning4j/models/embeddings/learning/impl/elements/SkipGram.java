@@ -177,6 +177,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     public double iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
         if(w1 == null || w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
             return 0.0;
+
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
