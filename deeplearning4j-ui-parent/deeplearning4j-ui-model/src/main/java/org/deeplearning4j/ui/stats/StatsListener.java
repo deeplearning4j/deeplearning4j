@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.berkeley.Pair;
@@ -12,14 +13,12 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.stats.temp.HistogramBin;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -56,8 +55,8 @@ public class StatsListener implements RoutingIterationListener {
     private StatsStorageRouter router;
     private final StatsInitializationConfiguration initConfig;
     private final StatsUpdateConfiguration updateConfig;
-    private final String sessionID;
-    private final String workerID;
+    private String sessionID;
+    private String workerID;
 
     private int iterCount = 0;
 
@@ -112,6 +111,26 @@ public class StatsListener implements RoutingIterationListener {
     @Override
     public StatsStorageRouter getStorageRouter() {
         return router;
+    }
+
+    @Override
+    public void setWorkerID(String workerID) {
+        this.workerID = workerID;
+    }
+
+    @Override
+    public String getWorkerID() {
+        return workerID;
+    }
+
+    @Override
+    public void setSessionID(String sessionID) {
+        this.sessionID = sessionID;
+    }
+
+    @Override
+    public String getSessionID() {
+        return sessionID;
     }
 
     @Override

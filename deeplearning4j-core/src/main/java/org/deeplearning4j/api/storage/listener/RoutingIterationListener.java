@@ -19,4 +19,12 @@ public interface RoutingIterationListener extends IterationListener, Cloneable {
 
     StatsStorageRouter getStorageRouter();
 
+    void setWorkerID(String workerID);
+
+    String getWorkerID();
+
+    void setSessionID(String sessionID);
+
+    String getSessionID();
+
 }

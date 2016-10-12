@@ -22,6 +22,7 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouter;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -102,7 +103,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
-        configureListeners(net);
+        configureListeners(net, tuple.getCounter().getAndIncrement());
 
         if (configuration.isCollectTrainingStats()) stats.logInitEnd();
 
@@ -129,23 +130,24 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
-        configureListeners(net);
+        configureListeners(net, tuple.getCounter().getAndIncrement());
 
         if (configuration.isCollectTrainingStats()) stats.logInitEnd();
 
         return net;
     }
 
-    private void configureListeners(Model m) {
+    private void configureListeners(Model m, int counter) {
         if (iterationListeners != null) {
             List<IterationListener> list = new ArrayList<>(iterationListeners.size());
             for (IterationListener l : iterationListeners) {
                 if (listenerRouterProvider != null && l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     rl.setStorageRouter(listenerRouterProvider.getRouter());
+                    String workerID = UIDProvider.getJVMUID() + "_" + counter;
+                    rl.setWorkerID(workerID);
                 }
-                //TODO are there some situations where we need to clone listeners? i.e., those with state...
-                list.add(l);
+                list.add(l);    //Don't need to clone listeners: not from broadcast, so deserialization handles
             }
             if (m instanceof MultiLayerNetwork) ((MultiLayerNetwork) m).setListeners(list);
             else ((ComputationGraph) m).setListeners(list);
