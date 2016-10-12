@@ -445,6 +445,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder useHierarchicSoftmax(boolean reallyUse) {
+            super.useHierarchicSoftmax(reallyUse);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -479,7 +485,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
             ret.variableWindows = this.variableWindows;
-
+            ret.seed = this.seed;
 
 
             ret.iterator = this.iterator;
@@ -506,6 +512,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
             this.configuration.setVariableWindows(variableWindows);
+            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
 
             ret.configuration = this.configuration;
 
