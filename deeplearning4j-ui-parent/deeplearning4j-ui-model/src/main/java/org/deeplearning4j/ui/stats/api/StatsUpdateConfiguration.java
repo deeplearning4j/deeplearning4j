@@ -1,5 +1,7 @@
 package org.deeplearning4j.ui.stats.api;
 
+import java.io.Serializable;
+
 /**
  * Similar to {@link StatsInitializationConfiguration}, StatsUpdateConfiguration is an interface defining the stats
  * that should be collected and reported periodically.
@@ -7,7 +9,7 @@ package org.deeplearning4j.ui.stats.api;
  *
  * @author Alex Black
  */
-public interface StatsUpdateConfiguration {
+public interface StatsUpdateConfiguration extends Serializable {
 
     /**
      * Get the reporting frequency, in terms of listener calls

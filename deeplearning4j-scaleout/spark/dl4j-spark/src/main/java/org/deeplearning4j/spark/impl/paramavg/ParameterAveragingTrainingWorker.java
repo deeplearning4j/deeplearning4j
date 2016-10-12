@@ -51,7 +51,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration,
                                             Collection<TrainingHook> trainingHooks, Collection<IterationListener> listeners,
-                                            StatsStorageRouterProvider routerProvider){
+                                            StatsStorageRouterProvider routerProvider) {
 
         this.broadcast = broadcast;
         this.saveUpdater = saveUpdater;
@@ -84,92 +84,97 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     @Override
     public MultiLayerNetwork getInitialModel() {
-        if(configuration.isCollectTrainingStats()) stats = new ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper();
+        if (configuration.isCollectTrainingStats())
+            stats = new ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper();
 
-        if(configuration.isCollectTrainingStats()) stats.logBroadcastGetValueStart();
+        if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueStart();
         NetBroadcastTuple tuple = broadcast.getValue();
-        if(configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
+        if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
 
         MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters().unsafeDuplication(), false);
 
-        if(tuple.getUpdaterState() != null){
+        if (tuple.getUpdaterState() != null) {
             net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication()));  //Can't have shared updater state
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         configureListeners(net);
 
-        if(configuration.isCollectTrainingStats()) stats.logInitEnd();
+        if (configuration.isCollectTrainingStats()) stats.logInitEnd();
 
         return net;
     }
 
     @Override
     public ComputationGraph getInitialModelGraph() {
-        if(configuration.isCollectTrainingStats()) stats = new ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper();
+        if (configuration.isCollectTrainingStats())
+            stats = new ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper();
 
-        if(configuration.isCollectTrainingStats()) stats.logBroadcastGetValueStart();
+        if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueStart();
         NetBroadcastTuple tuple = broadcast.getValue();
-        if(configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
+        if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
 
         ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters().unsafeDuplication(), false);
 
-        if(tuple.getUpdaterState() != null){
+        if (tuple.getUpdaterState() != null) {
             net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         configureListeners(net);
 
-        if(configuration.isCollectTrainingStats()) stats.logInitEnd();
+        if (configuration.isCollectTrainingStats()) stats.logInitEnd();
 
         return net;
     }
 
-    private void configureListeners(Model m){
-        if(iterationListeners != null){
+    private void configureListeners(Model m) {
+        if (iterationListeners != null) {
             List<IterationListener> list = new ArrayList<>(iterationListeners.size());
-            for(IterationListener l : iterationListeners){
-                if(listenerRouterProvider != null && l instanceof RoutingIterationListener){
-                    RoutingIterationListener rl = (RoutingIterationListener)l;
+            for (IterationListener l : iterationListeners) {
+                if (listenerRouterProvider != null && l instanceof RoutingIterationListener) {
+                    RoutingIterationListener rl = (RoutingIterationListener) l;
                     rl.setStorageRouter(listenerRouterProvider.getRouter());
-                } else {
-                    //TODO are there some situations where we need to clone listeners? i.e., those with state...
-                    list.add(l);
                 }
+                //TODO are there some situations where we need to clone listeners? i.e., those with state...
+                list.add(l);
             }
-            if(m instanceof MultiLayerNetwork) ((MultiLayerNetwork) m).setListeners(list);
-            else ((ComputationGraph)m).setListeners(list);
+            if (m instanceof MultiLayerNetwork) ((MultiLayerNetwork) m).setListeners(list);
+            else ((ComputationGraph) m).setListeners(list);
         }
     }
 
     @Override
     public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        if(configuration.isCollectTrainingStats()) stats.logFitStart();
+        if (configuration.isCollectTrainingStats()) stats.logFitStart();
 
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.preUpdate(dataSet,network);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks)
+                trainingHook.preUpdate(dataSet, network);
+        }
 
         network.fit(dataSet);
 
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.postUpdate(dataSet,network);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks)
+                trainingHook.postUpdate(dataSet, network);
+        }
 
 
-        if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
+        if (configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
-        if(isLast) return getFinalResult(network);
+        if (isLast) return getFinalResult(network);
 
         return null;
     }
@@ -181,34 +186,37 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     @Override
     public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        if(configuration.isCollectTrainingStats()) stats.logFitStart();
-       //pre training hooks
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.preUpdate(dataSet,graph);
+        if (configuration.isCollectTrainingStats()) stats.logFitStart();
+        //pre training hooks
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks)
+                trainingHook.preUpdate(dataSet, graph);
+        }
 
         graph.fit(dataSet);
 
         //post training hooks
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.postUpdate(dataSet,graph);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks)
+                trainingHook.postUpdate(dataSet, graph);
+        }
 
 
-        if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));
+        if (configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
-        if(isLast) return getFinalResult(graph);
+        if (isLast) return getFinalResult(graph);
 
         return null;
     }
 
 
-
     @Override
     public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        ParameterAveragingTrainingResult result = processMinibatch(dataSet,network,isLast);
-        if(result == null) return null;
+        ParameterAveragingTrainingResult result = processMinibatch(dataSet, network, isLast);
+        if (result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
         return new Pair<>(result, statsToReturn);
@@ -221,8 +229,8 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     @Override
     public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        ParameterAveragingTrainingResult result = processMinibatch(dataSet,graph,isLast);
-        if(result == null) return null;
+        ParameterAveragingTrainingResult result = processMinibatch(dataSet, graph, isLast);
+        if (result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
         return new Pair<>(result, statsToReturn);
@@ -231,21 +239,21 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     @Override
     public ParameterAveragingTrainingResult getFinalResult(MultiLayerNetwork network) {
         INDArray updaterState = null;
-        if(saveUpdater){
+        if (saveUpdater) {
             Updater u = network.getUpdater();
-            if(u != null) updaterState = u.getStateViewArray();
+            if (u != null) updaterState = u.getStateViewArray();
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;
         Collection<Persistable> listenerUpdates = null;
-        if(listenerRouterProvider != null){
+        if (listenerRouterProvider != null) {
             StatsStorageRouter r = listenerRouterProvider.getRouter();
-            if(r instanceof VanillaStatsStorageRouter){ //TODO this is ugly... need to find a better solution
-                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter)r;
+            if (r instanceof VanillaStatsStorageRouter) { //TODO this is ugly... need to find a better solution
+                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter) r;
                 storageMetaData = ssr.getStorageMetaData();
                 listenerStaticInfo = ssr.getStaticInfo();
                 listenerUpdates = ssr.getUpdates();
@@ -258,21 +266,21 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     @Override
     public ParameterAveragingTrainingResult getFinalResult(ComputationGraph network) {
         INDArray updaterState = null;
-        if(saveUpdater){
+        if (saveUpdater) {
             ComputationGraphUpdater u = network.getUpdater();
-            if(u != null) updaterState = u.getStateViewArray();
+            if (u != null) updaterState = u.getStateViewArray();
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;
         Collection<Persistable> listenerUpdates = null;
-        if(listenerRouterProvider != null){
+        if (listenerRouterProvider != null) {
             StatsStorageRouter r = listenerRouterProvider.getRouter();
-            if(r instanceof VanillaStatsStorageRouter){ //TODO this is ugly... need to find a better solution
-                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter)r;
+            if (r instanceof VanillaStatsStorageRouter) { //TODO this is ugly... need to find a better solution
+                VanillaStatsStorageRouter ssr = (VanillaStatsStorageRouter) r;
                 storageMetaData = ssr.getStorageMetaData();
                 listenerStaticInfo = ssr.getStaticInfo();
                 listenerUpdates = ssr.getUpdates();
@@ -284,38 +292,37 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     }
 
     @Override
-    public ParameterAveragingTrainingResult getFinalResultNoData(){
+    public ParameterAveragingTrainingResult getFinalResultNoData() {
         return new ParameterAveragingTrainingResult(null, null, 0.0, null, null, null);
     }
 
     @Override
-    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats(){
-        return new Pair<>(getFinalResultNoData(),null);
+    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats() {
+        return new Pair<>(getFinalResultNoData(), null);
     }
 
     @Override
-    public Pair<ParameterAveragingTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
+    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
         ParameterAveragingTrainingResult result = getFinalResult(network);
-        if(result == null) return null;
+        if (result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
-        return new Pair<>(result,statsToReturn);
+        return new Pair<>(result, statsToReturn);
     }
 
     @Override
-    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultWithStats(ComputationGraph graph){
+    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> getFinalResultWithStats(ComputationGraph graph) {
         ParameterAveragingTrainingResult result = getFinalResult(graph);
-        if(result == null) return null;
+        if (result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
-        return new Pair<>(result,statsToReturn);
+        return new Pair<>(result, statsToReturn);
     }
 
     @Override
     public WorkerConfiguration getDataConfiguration() {
         return configuration;
     }
-
 
 
 }

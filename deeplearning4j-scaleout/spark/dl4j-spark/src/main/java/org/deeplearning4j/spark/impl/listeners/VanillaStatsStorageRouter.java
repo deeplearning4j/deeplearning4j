@@ -7,6 +7,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.StorageMetaData;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,12 +27,27 @@ public class VanillaStatsStorageRouter implements StatsStorageRouter {
     }
 
     @Override
+    public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
+        this.storageMetaData.addAll(storageMetaData);
+    }
+
+    @Override
     public void putStaticInfo(Persistable staticInfo) {
         this.staticInfo.add(staticInfo);
     }
 
     @Override
+    public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
+        this.staticInfo.addAll(staticInfo);
+    }
+
+    @Override
     public void putUpdate(Persistable update) {
         this.updates.add(update);
+    }
+
+    @Override
+    public void putUpdate(Collection<? extends Persistable> updates) {
+        this.updates.addAll(updates);
     }
 }
