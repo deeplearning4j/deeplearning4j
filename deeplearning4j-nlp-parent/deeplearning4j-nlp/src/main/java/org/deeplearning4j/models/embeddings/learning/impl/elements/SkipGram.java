@@ -10,6 +10,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected VectorsConfiguration configuration;
 
     protected static double MAX_EXP = 6;
-    protected double[] expTable;
+    //protected double[] expTable;
 
     protected int window;
     protected boolean useAdaGrad;
@@ -34,7 +35,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double sampling;
     protected int[] variableWindows;
 
-    protected INDArray syn0, syn1, syn1Neg, table;
+    protected INDArray syn0, syn1, syn1Neg, table, expTable;
 
     /**
      * Dummy construction is required for reflection
@@ -66,7 +67,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.lookupTable = lookupTable;
         this.configuration = configuration;
 
-        this.expTable = ((InMemoryLookupTable<T>) lookupTable).getExpTable();
+        this.expTable = Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable());
         this.syn0 = ((InMemoryLookupTable<T>) lookupTable).getSyn0();
         this.syn1 = ((InMemoryLookupTable<T>) lookupTable).getSyn1();
         this.syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
@@ -194,8 +195,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int point = w1.getPoints().get(i);
                 if(point >= syn0.rows() || point < 0)
                     throw new IllegalStateException("Illegal point " + point);
-                //other word vector
 
+                // we wrap current hs round into aggregate op, that'll be executed eventually. maybe.
+                HierarchicSoftmax hs = new HierarchicSoftmax(syn0, syn1, expTable, w2.getIndex(), point, alpha);
+
+                // We don't have this exec(Aggregate) method implemented yet
+                //Nd4j.getExecutioner().exec(hs);
+
+                /*
                 INDArray syn1 = this.syn1.slice(point);
 
 
@@ -218,6 +225,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
                 Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
                 Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
+                */
             }
 
         int target = w1.getIndex();
@@ -256,11 +264,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 else if (f < -MAX_EXP)
                     g = label * (useAdaGrad ? lookupTable.getGradient(target, alpha) : alpha);
                 else {
-                    int idx = (int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2));
-                    if (idx >= expTable.length)
+                    int idx = (int) ((f + MAX_EXP) * (expTable.length() / MAX_EXP / 2));
+                    if (idx >= expTable.length())
                         continue;
 
-                    g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[idx]) : (label - expTable[idx]) * alpha;
+                    g = useAdaGrad ? lookupTable.getGradient(target, label - expTable.getDouble(idx)) : (label - expTable.getDouble(idx)) * alpha;
                 }
 
                 Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target), neu1e);
