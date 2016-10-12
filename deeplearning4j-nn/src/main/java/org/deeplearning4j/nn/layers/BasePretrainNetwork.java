@@ -25,11 +25,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossCalculation;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,19 +105,16 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
-            create.exec();
-            score = create.getFinalResult().doubleValue();
-        }
+        if( input == null || z == null)
+            throw new IllegalStateException("Cannot calculate score without input and labels");
+        ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
-        else {
-            score = LossCalculation.builder()
-                    .l1(calcL1()).l2(calcL2())
-                    .labels(input).z(z).lossFunction(layerConf().getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(input.size(0))
-                    .useRegularization(conf.isUseRegularization()).build().score();
-        }
+        double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
+        score += calcL1() + calcL2();
+        score /= getInputMiniBatchSize();
+
+        this.score = score;
+
     }
 
     public INDArray params() {
