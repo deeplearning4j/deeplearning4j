@@ -197,7 +197,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     throw new IllegalStateException("Illegal point " + point);
 
                 // we wrap current hs round into aggregate op, that'll be executed eventually. maybe.
-                HierarchicSoftmax hs = new HierarchicSoftmax(syn0, syn1, expTable, w2.getIndex(), point, alpha);
+                HierarchicSoftmax hs = new HierarchicSoftmax(syn0, syn1, expTable, neu1e, w2.getIndex(), point, code, alpha);
 
                 // We don't have this exec(Aggregate) method implemented yet
                 //Nd4j.getExecutioner().exec(hs);
