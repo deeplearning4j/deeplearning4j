@@ -10,9 +10,11 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
  */
 public class AggregateAxpy extends BaseAggregate {
 
-    public AggregateAxpy(INDArray x, INDArray y) {
+    public AggregateAxpy(INDArray x, INDArray y, double alpha) {
         this.arguments.add(x);
         this.arguments.add(y);
+
+        this.realArguments.add(alpha);
     }
 
     @Override
