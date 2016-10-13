@@ -8,7 +8,9 @@
 #include <aggregate_ops.h>
 
 #define AGGREGATE_OPS \
-        (0, aggregateOps::HierarchicSoftmax)
+        (0, aggregateOps::HierarchicSoftmax) ,\
+        (1, aggregateOps::Dot) ,\
+        (2, aggregateOps::Axpy)
 
 
 namespace functions {

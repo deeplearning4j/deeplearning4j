@@ -18,7 +18,9 @@
  *
  *
  * Aggregate Ops are special things suited for CUDA mostly. They are meant to be executed within single block ONLY.
- * So, when batched, they should provide proper parallelism levels on poorly parallel tasks otherwise
+ * So, when batched, they should provide proper parallelism levels on poorly parallel tasks otherwise.
+ *
+ * On CPU aggregate ops are trying to minimize OpenMP multi-threading use, only SIMD is enforced
  *
  *
  */
@@ -46,7 +48,6 @@ namespace aggregateOps {
             T alpha = realArguments[0];
 
             // dot
-// TODO: simd reduction required here
 #pragma omp simd reduction(+:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1[x];
@@ -159,6 +160,87 @@ namespace aggregateOps {
             }
             __syncthreads();
 
+        }
+#endif
+    };
+
+    template<typename T>
+    class Dot {
+    public:
+
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            T *vecX = arguments[0];
+            T *vecY = arguments[1];
+            T *vecZ = arguments[2];
+
+            T dot = (T) 0.0f;
+
+            int vectorLength = indexArguments[0];
+
+#pragma omp simd reduction(+:dot)
+            for (int x = 0; x < vectorLength; x++) {
+                dot += vecX[x] * vecY[x];
+            }
+
+            vecZ[0] = dot;
+        };
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            T *vecX = arguments[0];
+            T *vecY = arguments[1];
+            T *vecZ = arguments[2];
+
+            int vectorLength = indexArguments[0];
+
+            __shared__ T dot;
+            if (threadIdx.x == 0)
+                dot = (T) 0.0f;
+            __syncthreads();
+
+            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                T prod = vecX[x] * vecY[x];
+                nd4j::math::atomics::nd4j_atomicAdd<T>(&dot, prod);
+            }
+            __syncthreads();
+
+            if (threadIdx.x == 0)
+                vecZ[0] = dot;
+        }
+#endif
+    };
+
+    template<typename T>
+    class Axpy {
+    public:
+
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            T *vecX = arguments[0];
+            T *vecY = arguments[1];
+
+            T alpha = realArguments[0];
+
+            int vectorLength = indexArguments[0];
+
+#pragma omp simd
+            for (int x = 0; x < vectorLength; x++) {
+                vecY[x] = alpha * vecX[x] + vecY[x];
+            }
+        };
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            T *vecX = arguments[0];
+            T *vecY = arguments[1];
+
+            T alpha = realArguments[0];
+
+            int vectorLength = indexArguments[0];
+
+            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                vecY[x] = alpha * vecX[x] + vecY[x];
+            }
+            __syncthreads();
         }
 #endif
     };
