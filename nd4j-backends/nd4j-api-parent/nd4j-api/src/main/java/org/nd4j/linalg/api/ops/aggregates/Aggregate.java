@@ -17,6 +17,11 @@ public interface Aggregate {
 
     int opNum();
 
+
+    void setFinalResult(Number result);
+
+    Number getFinalResult();
+
     List<INDArray> getArguments();
 
     List<Integer> getIndexingArguments();

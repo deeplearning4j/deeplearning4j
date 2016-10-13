@@ -15,8 +15,20 @@ public abstract class BaseAggregate implements Aggregate {
     protected List<Integer> indexingArguments = new ArrayList<>();
     protected List<Double> realArguments = new ArrayList<>();
 
+    protected Number finalResult = 0.0;
+
     public List<INDArray> getArguments() {
         return arguments;
+    }
+
+    @Override
+    public Number getFinalResult() {
+        return finalResult;
+    }
+
+    @Override
+    public void setFinalResult(Number result) {
+        this.finalResult = result;
     }
 
     @Override

@@ -5,7 +5,8 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 /**
  * @author raver119@gmail.com
  */
-public class NegativeSampling extends BaseAggregate {
+@Deprecated
+public abstract class NegativeSampling extends BaseAggregate {
 
     @Override
     public String name() {
@@ -14,6 +15,8 @@ public class NegativeSampling extends BaseAggregate {
 
     @Override
     public int opNum() {
-        return 1;
+        return -1;
     }
+
+
 }

@@ -33,6 +33,6 @@ public class HierarchicSoftmax extends BaseAggregate {
 
     @Override
     public String name() {
-        return "hs";
+        return "aggregate_hs";
     }
 }
