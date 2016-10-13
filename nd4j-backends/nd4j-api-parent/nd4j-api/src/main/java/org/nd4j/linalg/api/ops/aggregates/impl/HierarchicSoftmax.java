@@ -11,8 +11,19 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
  */
 public class HierarchicSoftmax extends BaseAggregate {
 
-    public HierarchicSoftmax(INDArray syn0, INDArray syn1, INDArray expTable, int idxSyn0, int idxSyn1, double lr) {
+    public HierarchicSoftmax(INDArray syn0, INDArray syn1, INDArray expTable, INDArray neu1e, int idxSyn0, int idxSyn1, int code, double lr) {
+        arguments.add(syn0);
+        arguments.add(syn1);
+        arguments.add(expTable);
+        arguments.add(neu1e);
 
+        indexingArguments.add(idxSyn0);
+        indexingArguments.add(idxSyn1);
+        indexingArguments.add(neu1e.length());
+        indexingArguments.add(expTable.length());
+        indexingArguments.add(code);
+
+        realArguments.add(lr);
     }
 
     @Override

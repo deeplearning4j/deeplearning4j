@@ -771,6 +771,43 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void exec(Aggregate op) {
 
+        int numArguments = op.getArguments().size();
+        int numIndexArguments = op.getIndexingArguments().size();
+        int numRealArguments = op.getRealArguments().size();
+
+        PointerPointer arguments = new PointerPointer(numArguments);
+
+        for (int x = 0; x < numArguments; x++ ) {
+            arguments.put(x, op.getArguments().get(x).data().addressPointer());
+        }
+
+        int[] indexes = new int[numIndexArguments];
+        for (int x = 0; x < numIndexArguments; x++) {
+            indexes[x] = op.getIndexingArguments().get(x);
+        }
+
+        IntPointer pointer = new IntPointer(indexes);
+
+        double[] reals = new double[numRealArguments];
+        for (int x = 0; x < numRealArguments; x++) {
+            reals[x] = op.getRealArguments().get(x);
+        }
+
+        INDArray realsBuffer = Nd4j.create(reals);
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            loop.execAggregateFloat(null, op.opNum(),
+                    arguments,
+                    numArguments,
+                    pointer,
+                    numIndexArguments,
+                    (FloatPointer) realsBuffer.data().addressPointer(),
+                    numRealArguments
+                    );
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+
+        }
     }
 
     /**

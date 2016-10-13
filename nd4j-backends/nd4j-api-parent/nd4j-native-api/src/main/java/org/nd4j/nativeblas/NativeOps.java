@@ -1422,4 +1422,15 @@ public class NativeOps extends Pointer {
                                                     float scalarA,
                                                     float scalarB,
                                                     boolean scalarReturned);
+
+
+    /////////////////////////
+
+    public native void execAggregateFloat(PointerPointer extras,int opNum,
+                                          @Cast("float **") PointerPointer arguments,
+                                          int numArguments,
+                                          IntPointer indexArguments,
+                                          int numIndexArguments,
+                                          FloatPointer realArguments,
+                                          int numRealArguments);
 }

@@ -23,12 +23,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
-import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -46,6 +41,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -1871,7 +1867,58 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void exec(Aggregate op) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        int numArguments = op.getArguments().size();
+        int numIndexArguments = op.getIndexingArguments().size();
+        int numRealArguments = op.getRealArguments().size();
+
+
+
+
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        PointerPointer extraArgs = new PointerPointer(32);
+        extraArgs.put(0, null);
+        extraArgs.put(1, context.getOldStream());
+
+        long arguments[] = new long[numArguments];
+
+        for (int x = 0; x < numArguments; x++ ) {
+            arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x).data(), context).address();
+        }
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arguments.length);
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(arguments), arguments.length * 8, 0);
+        PointerPointer xPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
+
+
+        int[] indexes = new int[numIndexArguments];
+        for (int x = 0; x < numIndexArguments; x++) {
+            indexes[x] = op.getIndexingArguments().get(x);
+        }
+
+        DataBuffer intBuffer = Nd4j.getDataBufferFactory().createInt(indexes);
+
+        double[] reals = new double[numRealArguments];
+        for (int x = 0; x < numRealArguments; x++) {
+            reals[x] = op.getRealArguments().get(x);
+        }
+
+        INDArray realsBuffer = Nd4j.create(reals);
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.execAggregateFloat(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+
+        }
     }
 
     /**
