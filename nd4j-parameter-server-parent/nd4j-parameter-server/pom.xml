@@ -85,7 +85,7 @@
     </build>
 
     <properties>
-        <playframework.version>2.5.8</playframework.version>
+        <playframework.version>2.4.8</playframework.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
@@ -101,21 +101,16 @@
             <artifactId>nd4j-parameter-server-model</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-logback_2.11</artifactId>
-            <version>${playframework.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
+            <artifactId>play-java_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
+            <artifactId>play-netty-server_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 
@@ -160,7 +155,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server-model</artifactId>
-            <version>0.6.1-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
