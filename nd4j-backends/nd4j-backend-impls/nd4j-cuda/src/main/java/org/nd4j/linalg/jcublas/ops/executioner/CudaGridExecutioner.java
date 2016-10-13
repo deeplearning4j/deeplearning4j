@@ -27,14 +27,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.aggregates.AggregateDescriptor;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -60,16 +59,26 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 //    private ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     private ThreadLocal<Deque<OpDescriptor>> deviceQueues = new ThreadLocal<>();
 
+    private ThreadLocal<AtomicLong> opCounter = new ThreadLocal<>();
+
     private AtomicLong metaCounter = new AtomicLong(0);
     private AtomicLong execCounter = new AtomicLong(0);
 
     private List<WatchdogPair> watchdog = new CopyOnWriteArrayList<>();
+
+    private List<Queue<AggregateDescriptor>> aggregates = new ArrayList<>();
 
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
     public CudaGridExecutioner() {
 //        extraz.set(new PointerPointer(10));
         deviceQueues.set(new ArrayDeque<OpDescriptor>());
+
+        int numDevices = nativeOps.getAvailableDevices();
+
+        for (int x = 0; x < numDevices; x++) {
+            aggregates.add(new ConcurrentLinkedQueue<AggregateDescriptor>());
+        }
     }
 
     /**
@@ -938,6 +947,38 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         flushQueue();
 
         super.exec(op);
+    }
+
+    /**
+     * This method enqueues aggregate op for future invocation with respect to thread and op order
+     * This method uses current thread Id as aggregation key.
+     *
+     * @param op
+     */
+    @Override
+    public void aggregate(Aggregate op) {
+        aggregate(op, Thread.currentThread().getId());
+    }
+
+    /**
+     * This method enqueues aggregate op for future invocation.
+     * Key value will be used to batch individual ops
+     *
+     * @param op
+     * @param key
+     */
+    @Override
+    public void aggregate(Aggregate op, long key) {
+        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (opCounter.get() == null)
+            opCounter.set(new AtomicLong(0));
+
+        // we enqueue op for specific device here
+        aggregates.get(deviceId).add(new AggregateDescriptor(op, key, opCounter.get().getAndIncrement()));
+    }
+
+    protected void buildAggregation() {
+
     }
 
     /*
