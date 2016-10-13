@@ -129,6 +129,7 @@ namespace aggregateOps {
 
             // gradient
             __syncthreads();
+
             if (dot < - (T) HS_MAX_EXP || dot >= (T) HS_MAX_EXP)
                 return;
 
@@ -157,6 +158,7 @@ namespace aggregateOps {
                 syn1[x] = g * syn0[x] + syn1[x];
             }
             __syncthreads();
+
         }
 #endif
     };

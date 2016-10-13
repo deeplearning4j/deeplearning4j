@@ -5925,7 +5925,7 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     // TODO: proper launch dims required here
-    dim3 launchDims = dim3(256, 256, 4096);
+    dim3 launchDims = dim3(1, 256, 4096);
 
     DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
