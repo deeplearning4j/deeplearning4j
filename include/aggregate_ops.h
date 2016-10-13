@@ -47,10 +47,9 @@ namespace aggregateOps {
 
             // dot
 // TODO: simd reduction required here
-//#pragma omp simd
+#pragma omp simd reduction(+:dot)
             for (int x = 0; x < vectorLength; x++) {
-                T prod = syn0[x] * syn1[x];
-                dot += prod;
+                dot += syn0[x] * syn1[x];
             }
 
             // gradient
@@ -119,6 +118,8 @@ namespace aggregateOps {
             }
             __syncthreads();
 
+
+            // TODO: it would be great to implement dot without atomicAdd call. like aggregateParticles, or something like that
             // dot
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 T prod = syn0[x] * syn1[x];
@@ -143,7 +144,6 @@ namespace aggregateOps {
                 g = ((T) 1.0f - (T) code - f) * alpha;
             }
             __syncthreads();
-
 
 
             // axpy1
