@@ -148,7 +148,7 @@ public class Join implements Serializable {
 
         List<Writable> out = new ArrayList<>();
         if(leftExample == null){
-            if(rightExample == null) throw new IllegalArgumentException("Both examples are null (max 1 allowed to be null)");
+            if(rightExample == null) throw new IllegalArgumentException("Cannot join examples: Both examples are null (max 1 allowed to be null)");
 
             //Insert a set of null writables...
             //Complication here: the **key values** should still exist (we have to extract them from second value)

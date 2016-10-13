@@ -23,6 +23,8 @@ import org.datavec.api.transform.join.Join;
 import org.datavec.api.transform.schema.Schema;
 import scala.Tuple2;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,33 +33,39 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class MapToJoinValuesFunction implements PairFunction<List<Writable>,String,JoinValue> {
+public class MapToJoinValuesFunction implements PairFunction<List<Writable>,List<Writable>,JoinValue> {
 
     private boolean left;
     private Join join;
 
     @Override
-    public Tuple2<String, JoinValue> call(List<Writable> writables) throws Exception {
+    public Tuple2<List<Writable>, JoinValue> call(List<Writable> writables) throws Exception {
 
         Schema schema;
         String[] keyColumns;
+
         if(left){
             schema = join.getLeftSchema();
             keyColumns = join.getKeyColumnsLeft();
+
         } else {
             schema = join.getRightSchema();
             keyColumns = join.getKeyColumnsRight();
         }
 
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(String key : keyColumns){
-            int idx = schema.getIndexOfColumn(key);
-            if(!first) sb.append("_");
-            sb.append(writables.get(idx).toString());
-            first = false;
+
+        List<Writable> keyValues;
+        if(keyColumns.length == 1){
+            keyValues = Collections.singletonList(writables.get(schema.getIndexOfColumn(keyColumns[0])));
+        } else {
+            keyValues = new ArrayList<>(keyColumns.length);
+            for(String s : keyColumns){
+                keyValues.add(writables.get(schema.getIndexOfColumn(s)));
+            }
         }
 
-        return new Tuple2<>(sb.toString(), new JoinValue(left,writables));
+
+
+        return new Tuple2<>(keyValues, new JoinValue(left,writables));
     }
 }

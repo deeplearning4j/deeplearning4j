@@ -27,9 +27,7 @@ import org.datavec.spark.transform.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -73,11 +71,20 @@ public class TestJoin extends BaseSparkTest {
         expected.add(Arrays.<Writable>asList(new LongWritable(98765),new Text("Customer98765"), new LongWritable(1000002), new DoubleWritable(30.00)));
 
 
+
         JavaRDD<List<Writable>> info = sc.parallelize(infoList);
         JavaRDD<List<Writable>> purchases = sc.parallelize(purchaseList);
 
         JavaRDD<List<Writable>> joined = SparkTransformExecutor.executeJoin(join, info, purchases);
         List<List<Writable>> joinedList = joined.collect();
+        //Sort by order ID (column 3, index 2)
+        Collections.sort(joinedList, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Long.compare(o1.get(2).toLong(), o2.get(2).toLong());
+            }
+        });
+        assertEquals(expected, joinedList);
 
         assertEquals(3, joinedList.size());
 
@@ -95,9 +102,24 @@ public class TestJoin extends BaseSparkTest {
 
         JavaRDD<List<Writable>> joined2 = SparkTransformExecutor.executeJoin(join2, purchases, info);
         List<List<Writable>> joinedList2 = joined2.collect();
+        //Sort by order ID (column 0)
+        Collections.sort(joinedList2, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Long.compare(o1.get(0).toLong(), o2.get(0).toLong());
+            }
+        });
         assertEquals(3, joinedList2.size());
 
-        
+        assertEquals(expectedManyToOne, joinedList2);
+    }
+
+
+    @Test
+    public void testJoinManyToMany(){
+
+        List<List<Writable>> first = new ArrayList<>();
+
     }
 
 }

@@ -241,16 +241,12 @@ public class SparkTransformExecutor {
 
         //Extract out the keys, then join
         //This gives us a JavaPairRDD<String,JoinValue>
-        JavaPairRDD<String, JoinValue> leftJV = left.mapToPair(new MapToJoinValuesFunction(true, join));
-        JavaPairRDD<String, JoinValue> rightJV = right.mapToPair(new MapToJoinValuesFunction(false, join));
+        JavaPairRDD<List<Writable>, JoinValue> leftJV = left.mapToPair(new MapToJoinValuesFunction(true, join));
+        JavaPairRDD<List<Writable>, JoinValue> rightJV = right.mapToPair(new MapToJoinValuesFunction(false, join));
 
-        //Then merge, collect by key, execute the join. This is essentially an outer join
-        JavaPairRDD<String, JoinValue> both = leftJV.union(rightJV);
-        JavaPairRDD<String, Iterable<JoinValue>> grouped = both.groupByKey();
-        JavaRDD<JoinedValue> joined = grouped.map(new ExecuteJoinFunction(join));
-
-        //Filter out values where we don't have one or the other (i.e., for inner, and left/right joins)
-        // and also flatten the JoinedValue -> List<Writable>.
-        return joined.flatMap(new FilterAndFlattenJoinedValues(join.getJoinType()));
+        //Then merge, collect by key, execute the join
+        JavaPairRDD<List<Writable>, JoinValue> both = leftJV.union(rightJV);
+        JavaPairRDD<List<Writable>, Iterable<JoinValue>> grouped = both.groupByKey();
+        return grouped.flatMap(new ExecuteJoinFlatMapFunction(join));
     }
 }
