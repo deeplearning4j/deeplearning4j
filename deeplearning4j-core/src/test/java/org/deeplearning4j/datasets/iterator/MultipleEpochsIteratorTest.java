@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -98,6 +99,7 @@ public class MultipleEpochsIteratorTest {
                 .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
+                .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(20, 20, 1))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
