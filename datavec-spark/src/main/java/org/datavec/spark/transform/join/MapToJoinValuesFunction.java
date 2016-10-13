@@ -46,11 +46,11 @@ public class MapToJoinValuesFunction implements PairFunction<List<Writable>,List
 
         if(left){
             schema = join.getLeftSchema();
-            keyColumns = join.getKeyColumnsLeft();
+            keyColumns = join.getJoinColumnsLeft();
 
         } else {
             schema = join.getRightSchema();
-            keyColumns = join.getKeyColumnsRight();
+            keyColumns = join.getJoinColumnsRight();
         }
 
 

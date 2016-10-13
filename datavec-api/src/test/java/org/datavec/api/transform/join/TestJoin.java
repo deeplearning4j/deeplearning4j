@@ -54,7 +54,7 @@ public class TestJoin {
         second.add(Arrays.asList((Writable)new Text("key1"), new IntWritable(110)));
 
         Join join = new Join.Builder(Join.JoinType.Inner)
-                .setKeyColumns("keyColumn")
+                .setJoinColumns("keyColumn")
                 .setSchemas(firstSchema, secondSchema)
                 .build();
 

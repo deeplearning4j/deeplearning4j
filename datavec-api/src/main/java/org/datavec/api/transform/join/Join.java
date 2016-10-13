@@ -24,35 +24,41 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Created by Alex on 18/04/2016.
+ * Join class: used to specify a join (like an SQL join)
+ *
+ * @author Alex Black
  */
 @Data
 public class Join implements Serializable {
 
     /**
-     * Type of join
+     * Type of join<br>
+     * Inner: Return examples where the join column values occur in both
+     * LeftOuter: Return all examples from left data, whether there is a matching right value or not.
+     * (If not: right values will have NullWritable instead)<br>
+     * RightOuter: Return all examples from the right data, whether there is a matching left value or not.
+     * (If not: left values will have NullWritable instead)<br>
+     * FullOuter: return all examples from both left/right, whether there is a matching value from the other side or not.
+     * (If not: other values will have NullWritable instead)
      */
     public enum JoinType {Inner, LeftOuter, RightOuter, FullOuter};
 
     private JoinType joinType;
     private Schema leftSchema;
     private Schema rightSchema;
-    private String[] keyColumnsLeft;
-    private String[] keyColumnsRight;
+    private String[] joinColumnsLeft;
+    private String[] joinColumnsRight;
 
 
     private Join(Builder builder){
         this.joinType = builder.joinType;
         this.leftSchema = builder.leftSchema;
         this.rightSchema = builder.rightSchema;
-        this.keyColumnsLeft = builder.keyColumnsLeft;
-        this.keyColumnsRight = builder.keyColumnsRight;
+        this.joinColumnsLeft = builder.joinColumnsLeft;
+        this.joinColumnsRight = builder.joinColumnsRight;
     }
 
 
@@ -61,8 +67,8 @@ public class Join implements Serializable {
         private JoinType joinType;
         private Schema leftSchema;
         private Schema rightSchema;
-        private String[] keyColumnsLeft;
-        private String[] keyColumnsRight;
+        private String[] joinColumnsLeft;
+        private String[] joinColumnsRight;
 
         public Builder(JoinType type){
             this.joinType = type;
@@ -74,23 +80,59 @@ public class Join implements Serializable {
             return this;
         }
 
-        /** Specify the columns to use as the key. (With multiple columns: compound key)
-         * Here, we are assuming that both data sources have the same key column names. If this is not the case,
-         * use {@link #setKeyColumnsLeft(String...)} and {@link #setKeyColumnsRight(String...)}.
-         * @param keyColumnNames    Name of the columns to use as the key to join on
+
+        /**
+         * @deprecated Use {@link #setJoinColumns(String...)}
          */
+        @Deprecated
         public Builder setKeyColumns(String... keyColumnNames){
-            setKeyColumnsLeft(keyColumnNames);
-            return setKeyColumnsRight(keyColumnNames);
+            return setJoinColumns(keyColumnNames);
         }
 
+        /**
+         * @deprecated Use {@link #setJoinColumnsLeft(String...)}
+         */
+        @Deprecated
         public Builder setKeyColumnsLeft(String... keyColumnNames){
-            this.keyColumnsLeft = keyColumnNames;
+            return setJoinColumnsLeft(keyColumnNames);
+        }
+
+        /**
+         * @deprecated Use {@link #setJoinColumnsRight(String...)}
+         */
+        @Deprecated
+        public Builder setKeyColumnsRight(String... keyColumnNames){
+            return setJoinColumnsRight(keyColumnNames);
+        }
+
+        /** Specify the column(s) to join on.
+         * Here, we are assuming that both data sources have the same column names. If this is not the case,
+         * use {@link #setJoinColumnsLeft(String...)} and {@link #setJoinColumnsRight(String...)}.
+         * The idea: join examples where firstDataValues(joinColumNames[i]) == secondDataValues(joinColumnNames[i]) for all i
+         * @param joinColumnNames    Name of the columns to use as the key to join on
+         */
+        public Builder setJoinColumns(String... joinColumnNames){
+            setJoinColumnsLeft(joinColumnNames);
+            return setJoinColumnsRight(joinColumnNames);
+        }
+
+        /**
+         * Specify the names of the columns to join on, for the left data)
+         * The idea: join examples where firstDataValues(joinColumNamesLeft[i]) == secondDataValues(joinColumnNamesRight[i]) for all i
+         * @param joinColumnNames Names of the columns to join on (for left data)
+         */
+        public Builder setJoinColumnsLeft(String... joinColumnNames){
+            this.joinColumnsLeft = joinColumnNames;
             return this;
         }
 
-        public Builder setKeyColumnsRight(String... keyColumnNames){
-            this.keyColumnsRight = keyColumnNames;
+        /**
+         * Specify the names of the columns to join on, for the right data)
+         * The idea: join examples where firstDataValues(joinColumNamesLeft[i]) == secondDataValues(joinColumnNamesRight[i]) for all i
+         * @param joinColumnNames Names of the columns to join on (for left data)
+         */
+        public Builder setJoinColumnsRight(String... joinColumnNames){
+            this.joinColumnsRight = joinColumnNames;
             return this;
         }
 
@@ -105,32 +147,18 @@ public class Join implements Serializable {
     public Schema getOutputSchema(){
         if(leftSchema == null) throw new IllegalStateException("Left schema is not set (null)");
         if(rightSchema == null) throw new IllegalStateException("Right schema is not set (null)");
-        if(keyColumnsLeft == null) throw new IllegalStateException("Left key columns are not set (null)");
-        if(keyColumnsRight == null) throw new IllegalArgumentException("Right key columns are not set (null");
+        if(joinColumnsLeft == null) throw new IllegalStateException("Left key columns are not set (null)");
+        if(joinColumnsRight == null) throw new IllegalArgumentException("Right key columns are not set (null");
 
-        List<ColumnMetaData> metaDataOut = new ArrayList<>();
-        Set<String> columnNamesSeenSoFar = new HashSet<>();
+        //Approach here: take the left schema, plus the right schema (excluding the key columns from the right schema)
+        List<ColumnMetaData> metaDataOut = new ArrayList<>(leftSchema.getColumnMetaData());
 
-        List<String> columnNamesLeft = leftSchema.getColumnNames();
-        List<String> columnNamesRight = rightSchema.getColumnNames();
-        List<ColumnMetaData> metaDataLeft = leftSchema.getColumnMetaData();
-        List<ColumnMetaData> metaDataRight = rightSchema.getColumnMetaData();
+        Set<String> keySetRight = new HashSet<>();
+        Collections.addAll(keySetRight, joinColumnsRight);
 
-        for( int i=0; i<columnNamesLeft.size(); i++ ){
-            String name = columnNamesLeft.get(i);
-            metaDataOut.add(metaDataLeft.get(i));
-
-            columnNamesSeenSoFar.add(name);
-        }
-
-        for( int i=0; i<columnNamesRight.size(); i++ ){
-            String name = columnNamesRight.get(i);
-            if(ArrayUtils.contains(keyColumnsRight,name)) continue; //Skip the right key column
-            if(columnNamesSeenSoFar.contains(name)){
-                throw new IllegalStateException("Cannot produce output schema: columns with name \"" + name +
-                        "\" appear in both left and right schemas (and is not a key column for right schema)");
-            }
-            metaDataOut.add(metaDataRight.get(i));
+        for(ColumnMetaData rightMeta : rightSchema.getColumnMetaData()){
+            if(keySetRight.contains(rightMeta.getName())) continue;;
+            metaDataOut.add(rightMeta);
         }
 
         return leftSchema.newSchema(metaDataOut);
@@ -157,10 +185,10 @@ public class Join implements Serializable {
             int keysSoFar = 0;
             for( int i=0; i<nLeft; i++ ){
                 String name = leftNames.get(i);
-                if(ArrayUtils.contains(keyColumnsLeft,name)){
+                if(ArrayUtils.contains(joinColumnsLeft,name)){
                     //This would normally be where the left key came from...
                     //So let's get the key value from the *right* example
-                    String rightKeyName = keyColumnsRight[keysSoFar];
+                    String rightKeyName = joinColumnsRight[keysSoFar];
                     int idxOfRightKey = rightSchema.getIndexOfColumn(rightKeyName);
                     out.add(rightExample.get(idxOfRightKey));
                 } else {
@@ -178,14 +206,14 @@ public class Join implements Serializable {
             int nRight = rightSchema.numColumns();
             for( int i=0; i<nRight; i++ ){
                 String name = rightNames.get(i);
-                if(ArrayUtils.contains(keyColumnsRight,name)) continue; //Skip the key column value
+                if(ArrayUtils.contains(joinColumnsRight,name)) continue; //Skip the key column value
                 out.add(NullWritable.INSTANCE);
             }
         } else {
             //Add all values from right, except for key columns...
             for(int i=0; i<rightExample.size(); i++){
                 String name = rightNames.get(i);
-                if(ArrayUtils.contains(keyColumnsRight,name)) continue; //Skip the key column value
+                if(ArrayUtils.contains(joinColumnsRight,name)) continue; //Skip the key column value
                 out.add(rightExample.get(i));
             }
         }

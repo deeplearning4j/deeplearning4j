@@ -238,7 +238,6 @@ public class SparkTransformExecutor {
      * @return Joined data
      */
     public static JavaRDD<List<Writable>> executeJoin(Join join, JavaRDD<List<Writable>> left, JavaRDD<List<Writable>> right) {
-
         //Extract out the keys, then join
         //This gives us a JavaPairRDD<String,JoinValue>
         JavaPairRDD<List<Writable>, JoinValue> leftJV = left.mapToPair(new MapToJoinValuesFunction(true, join));
