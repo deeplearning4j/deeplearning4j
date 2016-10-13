@@ -20,7 +20,6 @@ package org.deeplearning4j.models.embeddings.loader;
 
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.nd4j.compression.impl.NoOp;
-import org.nd4j.linalg.compression.AbstractStorage;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
