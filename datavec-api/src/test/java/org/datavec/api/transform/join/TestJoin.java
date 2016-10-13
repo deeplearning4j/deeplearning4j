@@ -16,12 +16,9 @@
 
 package org.datavec.api.transform.join;
 
-import org.datavec.api.writable.NullWritable;
+import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -90,5 +87,4 @@ public class TestJoin {
             assertEquals(expected.get(i), out);
         }
     }
-
 }
