@@ -15,10 +15,7 @@
  */
 package org.datavec.image.loader;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteOrder;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.DoublePointer;
@@ -175,7 +172,9 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public INDArray asMatrix(File f) throws IOException {
-        return asMatrix(new FileInputStream(f));
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            return asMatrix(bis);
+        }
     }
 
     @Override
