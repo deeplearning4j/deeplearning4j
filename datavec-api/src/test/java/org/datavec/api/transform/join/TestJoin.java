@@ -16,12 +16,9 @@
 
 package org.datavec.api.transform.join;
 
-import org.datavec.api.writable.NullWritable;
+import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -57,7 +54,7 @@ public class TestJoin {
         second.add(Arrays.asList((Writable)new Text("key1"), new IntWritable(110)));
 
         Join join = new Join.Builder(Join.JoinType.Inner)
-                .setKeyColumns("keyColumn")
+                .setJoinColumns("keyColumn")
                 .setSchemas(firstSchema, secondSchema)
                 .build();
 
@@ -90,5 +87,4 @@ public class TestJoin {
             assertEquals(expected.get(i), out);
         }
     }
-
 }
