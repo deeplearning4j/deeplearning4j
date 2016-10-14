@@ -773,10 +773,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return;
 
         int[] ops = new int[batch.size()];
+        int[] numShapes = new int[batch.size()];
         int[] numArguments = new int[batch.size()];
         int[] numIndexingArguments = new int[batch.size()];
         int[] numRealArguments = new int[batch.size()];
         PointerPointer argumentsPointer = new PointerPointer(batch.size());
+        PointerPointer shapesPointer = new PointerPointer(batch.size());
         PointerPointer indexingPointer = new PointerPointer(batch.size());
         PointerPointer realPointer = new PointerPointer(batch.size());
 
@@ -794,11 +796,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             long[] arguments = new long[numArguments[e]];
 
             for (int x = 0; x < numArguments[e]; x++ ) {
-                //arguments.put(x, op.getArguments().get(x).data().addressPointer());
                 arguments[x] = op.getArguments().get(x).data().addressPointer().address();
             }
 
             argumentsPointer.put(e, new LongPointer(arguments));
+
+            long[] shapes = new long[numShapes[e]];
+            for (int x = 0; x < numShapes[e]; x++ ) {
+                shapes[x] = op.getShapes().get(x).addressPointer().address();
+            }
+
+            shapesPointer.put(e, new LongPointer(shapes));
 
             int[] indexes = new int[numIndexingArguments[e]];
             for (int x = 0; x < numIndexingArguments[e]; x++) {
@@ -829,6 +837,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     new IntPointer(ops),
                     argumentsPointer,
                     new IntPointer(numArguments),
+                    shapesPointer,
+                    new IntPointer(numShapes),
                     indexingPointer,
                     new IntPointer(numIndexingArguments),
                     realPointer,
@@ -851,11 +861,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int numArguments = op.getArguments().size();
         int numIndexArguments = op.getIndexingArguments().size();
         int numRealArguments = op.getRealArguments().size();
+        int numShapes = op.getShapes().size();
 
         PointerPointer arguments = new PointerPointer(numArguments);
 
         for (int x = 0; x < numArguments; x++ ) {
             arguments.put(x, op.getArguments().get(x).data().addressPointer());
+        }
+
+        PointerPointer shapes = new PointerPointer(numShapes);
+
+        for (int x = 0; x < numShapes; x++ ) {
+            if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
+                throw new RuntimeException("ShapeBuffers should have INT data type");
+
+            shapes.put(x, op.getShapes().get(x).addressPointer());
         }
 
         int[] indexes = new int[numIndexArguments];
@@ -877,6 +897,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             loop.execAggregateFloat(null, op.opNum(),
                     arguments,
                     numArguments,
+                    shapes,
+                    numShapes,
                     pointer,
                     numIndexArguments,
                     (FloatPointer) realsBuffer.data().addressPointer(),

@@ -1911,6 +1911,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             nativeOps.execAggregateFloat(extraArgs, op.opNum(),
                     xPtr,
                     numArguments,
+                    null,
+                    0,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),

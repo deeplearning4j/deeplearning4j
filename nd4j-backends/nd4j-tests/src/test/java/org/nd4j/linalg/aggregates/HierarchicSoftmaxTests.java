@@ -7,8 +7,11 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
+import org.nd4j.linalg.api.ops.aggregates.impl.SkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -62,6 +65,65 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         // we hadn't modified syn0 at all yet
         assertEquals(expSyn0, syn0row);
+    }
+
+    @Test
+    public void testSGGradient1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+
+        double lr = 0.001;
+
+        int idxSyn0 = 0;
+
+        INDArray expSyn0 = Nd4j.create(10).assign(0.01001f);
+        INDArray expSyn1_1 = Nd4j.create(10).assign(0.020005);
+
+        INDArray syn0row = syn0.getRow(idxSyn0);
+
+        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(expSyn0, syn0row);
+        assertEquals(expSyn1_1, syn1.getRow(1));
+    }
+
+    @Test
+    public void testSGGradient2() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+
+        double lr = 0.001;
+
+        int idxSyn0 = 0;
+
+        INDArray expSyn0 = Nd4j.create(10).assign(0.01f);
+        INDArray expSyn1_1 = Nd4j.create(10).assign(0.020005); // gradient is 0.00005
+        INDArray expSyn1_2 = Nd4j.create(10).assign(0.019995f); // gradient is -0.00005
+
+
+        INDArray syn0row = syn0.getRow(idxSyn0);
+
+        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr);
+
+        Nd4j.getExecutioner().exec(op);
+
+        /*
+            Since expTable contains all-equal values, and only difference for ANY index is code being 0 or 1, syn0 row will stay intact,
+            because neu1e will be full of 0.0f, and axpy will have no actual effect
+         */
+        assertEquals(expSyn0, syn0row);
+
+        // syn1 row 1 modified only once
+        assertEquals(expSyn1_1, syn1.getRow(1));
+
+        // syn1 row 2 modified only once
+        assertEquals(expSyn1_2, syn1.getRow(2));
     }
 
 
