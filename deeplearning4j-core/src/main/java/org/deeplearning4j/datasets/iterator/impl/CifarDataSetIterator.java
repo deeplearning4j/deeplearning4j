@@ -106,7 +106,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         exampleCount += batchSize;
         batchNum++;
 
-        if((result == null || result == new DataSet()) || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
+        if((result.getFeatureMatrix() == null || result == new DataSet()) || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
             overshot = true;
             return last;
         }
@@ -163,7 +163,12 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         this.train = false;
         this.loader.test();
         this.numExamples = numExamples;
-        reset();
+        this.totalExamples = CifarLoader.NUM_TEST_IMAGES;
+        exampleCount = 0;
+        overshot = false;
+        batchNum = 0;
+
+//        reset();
     }
 
 

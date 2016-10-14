@@ -18,6 +18,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -43,8 +46,11 @@ public class BNGradientCheckTest {
 
     @Test
     public void testGradient2dSimple(){
-        DataSet ds = new IrisDataSetIterator(150,150).next();
-        ds.normalizeZeroMeanZeroUnitVariance();
+        DataNormalization scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+        iter.setPreProcessor(scaler);
+        DataSet ds = iter.next();
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
@@ -331,8 +337,11 @@ public class BNGradientCheckTest {
 
     @Test
     public void testGradient2dFixedGammaBeta(){
-        DataSet ds = new IrisDataSetIterator(150,150).next();
-        ds.normalizeZeroMeanZeroUnitVariance();
+        DataNormalization scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+        iter.setPreProcessor(scaler);
+        DataSet ds = iter.next();
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
