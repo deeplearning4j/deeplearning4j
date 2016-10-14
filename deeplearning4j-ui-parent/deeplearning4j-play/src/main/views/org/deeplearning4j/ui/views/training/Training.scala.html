@@ -1,7 +1,7 @@
-@(i18n:org.deeplearning4j.ui.api.I18N)
+@(i18n: org.deeplearning4j.ui.api.I18N)
 <html>
     <head>
-        <link rel="stylesheet" type="text/css" href="assets/css/training.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="assets/css/train.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
         <title>Document</title>
     </head>
     <body>
@@ -9,9 +9,19 @@
         <div class="outerDiv">
 
             <div class="navDiv">
-                <div class="navElement">First Nav Element</div>
-                <div class="navElement">Second Nav Element</div>
-
+                <div class="navTopSpacer"></div>
+                <div class="navElement">
+                    <img src="assets/img/train/nav_icon_home_32.png">
+                        @i18n.getMessage("train.nav.overview")
+                </div>
+                <div class="navElement">
+                    <img src="assets/img/train/nav_icon_model_32.png">
+                    @i18n.getMessage("train.nav.model")
+                </div>
+                <div class="navElement">
+                @i18n.getMessage("train.nav.hwsw")
+                </div>
+                <div class="navElement">@i18n.getMessage("train.nav.help")</div>
             </div>
             <div class="contentDiv">
                 Content Div<br>
