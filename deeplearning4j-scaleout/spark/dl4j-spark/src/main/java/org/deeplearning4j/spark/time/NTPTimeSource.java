@@ -10,7 +10,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 /**
- * A {@link TimeSource} that utilizen Network Time Protocol to determine the system clock offset<br>
+ * A {@link TimeSource} that utilize Network Time Protocol to determine the system clock offset<br>
  * Instances should be obvained via {@link #getInstance()} or {@link TimeSourceProvider}; one instance may be
  * used per machine<br>
  *
