@@ -1433,4 +1433,14 @@ public class NativeOps extends Pointer {
                                           int numIndexArguments,
                                           FloatPointer realArguments,
                                           int numRealArguments);
+
+    // TODO: fix call name
+    public native void execAggregateBatchFloat(PointerPointer extras, int numAggregates,
+                                                IntPointer opNums,
+                                                PointerPointer ptrToArguments,
+                                                IntPointer numArguments,
+                                                @Cast("int **") PointerPointer indexArguments,
+                                                IntPointer numIndexArguments,
+                                                @Cast("float **") PointerPointer realArguments,
+                                                IntPointer numRealArguments);
 }

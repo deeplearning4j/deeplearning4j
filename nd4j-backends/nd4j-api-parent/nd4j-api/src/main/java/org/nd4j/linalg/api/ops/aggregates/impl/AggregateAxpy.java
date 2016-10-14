@@ -14,6 +14,8 @@ public class AggregateAxpy extends BaseAggregate {
         this.arguments.add(x);
         this.arguments.add(y);
 
+        this.indexingArguments.add(x.length());
+
         this.realArguments.add(alpha);
     }
 

@@ -3,16 +3,13 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
@@ -23,7 +20,9 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 
@@ -766,6 +765,84 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
         }
+    }
+
+    @Override
+    public void exec(Batch batch) {
+        if (batch.size() == 0)
+            return;
+
+        int[] ops = new int[batch.size()];
+        int[] numArguments = new int[batch.size()];
+        int[] numIndexingArguments = new int[batch.size()];
+        int[] numRealArguments = new int[batch.size()];
+        PointerPointer argumentsPointer = new PointerPointer(batch.size());
+        PointerPointer indexingPointer = new PointerPointer(batch.size());
+        PointerPointer realPointer = new PointerPointer(batch.size());
+
+        List<INDArray> arraysHolder = new ArrayList<>();
+        List<Pointer> pointersHolder = new ArrayList<>();
+        List<double[]> realsHolder = new ArrayList<>();
+
+        for (int e = 0; e < batch.size(); e++) {
+            Aggregate op = batch.getAggregates().get(e);
+            ops[e] = op.opNum();
+            numArguments[e] = op.getArguments().size();
+            numIndexingArguments[e] = op.getIndexingArguments().size();
+            numRealArguments[e] = op.getRealArguments().size();
+
+            long[] arguments = new long[numArguments[e]];
+
+            for (int x = 0; x < numArguments[e]; x++ ) {
+                //arguments.put(x, op.getArguments().get(x).data().addressPointer());
+                arguments[x] = op.getArguments().get(x).data().addressPointer().address();
+            }
+
+            argumentsPointer.put(e, new LongPointer(arguments));
+
+            int[] indexes = new int[numIndexingArguments[e]];
+            for (int x = 0; x < numIndexingArguments[e]; x++) {
+                indexes[x] = op.getIndexingArguments().get(x);
+            }
+
+            IntPointer idxPointer = new IntPointer(indexes);
+            indexingPointer.put(e, idxPointer);
+            pointersHolder.add(idxPointer);
+
+            double[] reals = new double[numRealArguments[e]];
+            for (int x = 0; x < numRealArguments[e]; x++) {
+                reals[x] = op.getRealArguments().get(x);
+            }
+
+            INDArray realsBuffer = Nd4j.create(reals);
+            arraysHolder.add(realsBuffer);
+
+            realsHolder.add(reals);
+
+            realPointer.put(e, realsBuffer.data().addressPointer());
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            loop.execAggregateBatchFloat(
+                    null,
+                    batch.size(),
+                    new IntPointer(ops),
+                    argumentsPointer,
+                    new IntPointer(numArguments),
+                    indexingPointer,
+                    new IntPointer(numIndexingArguments),
+                    realPointer,
+                    new IntPointer(numRealArguments)
+            );
+        } else {
+            throw new RuntimeException("DOUBLE not implemented here yet");
+        }
+
+        argumentsPointer.sizeof();
+        arraysHolder.size();
+        indexingPointer.sizeof();
+        realPointer.sizeof();
+        batch.size();
     }
 
     @Override

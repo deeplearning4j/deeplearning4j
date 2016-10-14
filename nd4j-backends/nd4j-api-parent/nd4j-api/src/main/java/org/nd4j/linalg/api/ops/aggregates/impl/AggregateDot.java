@@ -13,6 +13,8 @@ public class AggregateDot extends BaseAggregate {
     public AggregateDot(INDArray x, INDArray y) {
         this.arguments.add(x);
         this.arguments.add(y);
+
+        this.indexingArguments.add(x.length());
     }
 
     @Override
