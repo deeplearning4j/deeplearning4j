@@ -30,7 +30,7 @@ namespace aggregateOps {
     class HierarchicSoftmax {
         public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             int idxSyn0 = indexArguments[0];
             int idxSyn1 = indexArguments[1];
             int vectorLength = indexArguments[2];
@@ -65,7 +65,6 @@ namespace aggregateOps {
             f = expTable[idx];
             g = (1 - code - f) * alpha;
 
-
             // axpy1
 #pragma omp simd
             for (int x = 0; x < vectorLength; x++) {
@@ -80,7 +79,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
@@ -168,7 +167,7 @@ namespace aggregateOps {
     class Dot {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -186,7 +185,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -214,7 +213,7 @@ namespace aggregateOps {
     class Axpy {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -229,7 +228,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -241,6 +240,88 @@ namespace aggregateOps {
                 vecY[x] = alpha * vecX[x] + vecY[x];
             }
             __syncthreads();
+        }
+#endif
+    };
+
+
+    template<typename T>
+    class SkipGram {
+    public:
+
+        aggregate_def void
+        executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments,
+                         int numRealArguments) {
+            int syn0Row = indexArguments[0];
+            int vectorLength = indexArguments[1];
+            int hsRounds = indexArguments[2];
+            int ngRounds = indexArguments[3];
+            int expLength = indexArguments[4];
+            int vocabSize = indexArguments[5];
+            int ngStarter = indexArguments[6];
+
+
+
+            T *neu1e = new T[vectorLength];
+            std::memset(neu1e, 0, sizeof(T) * vectorLength);
+
+            T **args = new T *[4];
+            int *idxArgs = new int[5];
+            args[0] = arguments[0]; // syn0
+            args[1] = arguments[1]; // syn1
+            args[2] = arguments[2]; // expTable
+            args[3] = neu1e;
+
+
+            idxArgs[0] = indexArguments[0]; // syn0 row
+            idxArgs[2] = indexArguments[1]; // vectorLength
+            idxArgs[3] = indexArguments[4]; // expLength
+
+            T *syn0 = arguments[0] + (syn0Row * vectorLength);
+
+            int *idxSyn1 = shapeArguments[0];
+            int *codes = shapeArguments[1];
+
+            for (int r = 0; r < hsRounds; r++) {
+                idxArgs[1] = idxSyn1[r]; // syn1 row
+                idxArgs[4] = codes[r];  // code for row
+
+                HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+            }
+
+            args[1] = arguments[3]; // syn1Neg instead of syn1
+
+            if (ngRounds > 0)
+                for (int r = 0; r < ngRounds + 1; r++) {
+                    if (r == 0) {
+                        idxArgs[1] = ngStarter;
+                        idxArgs[4] = 1;
+                    } else {
+                        int target;
+
+
+                        if (target == ngStarter)
+                            continue;
+
+                        idxArgs[1] = 1;
+                        idxArgs[4] = 0;
+                    }
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                }
+
+#pragma omp simd
+            for (int x = 0; x < vectorLength; x++) {
+                syn0[x] += neu1e[x];
+            }
+
+            delete[] neu1e;
+            delete[] args;
+            delete[] idxArgs;
+        }
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+
         }
 #endif
     };

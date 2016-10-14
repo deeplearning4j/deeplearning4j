@@ -2476,15 +2476,17 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    float **arguments,
                                    int numArguments,
+                                   int **shapeArguments,
+                                   int numShapeArguments,
                                    int *indexArguments,
                                    int numIndexArguments,
                                    float *realArguments,
                                    int numRealArguments) {
 
-    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
+    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
 }
 
-void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments) {
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments) {
 
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
@@ -2492,9 +2494,10 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
 #pragma omp parallel for num_threads(_threads) schedule(guided)
     for (int i = 0; i < numAggregates; i++) {
         float **arguments = reinterpret_cast<float **>(ptrToArguments[i]);
+        int **shapes = reinterpret_cast<int **>(ptrToShapes[i]);
         int *idxArg = indexArguments[i];
         float *realArg = realArguments[i];
 
-        execAggregateFloat(extraPointers, ops[i], arguments, numArguments[i], idxArg, numIndexArguments[i], realArg, numRealArguments[i]);
+        execAggregateFloat(extraPointers, ops[i], arguments, numArguments[i], shapes, numShapes[i], idxArg, numIndexArguments[i], realArg, numRealArguments[i]);
     }
 }
