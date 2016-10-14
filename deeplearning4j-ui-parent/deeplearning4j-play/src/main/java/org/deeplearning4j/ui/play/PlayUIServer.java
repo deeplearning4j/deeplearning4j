@@ -5,6 +5,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.module.training.TrainingModule;
 import org.deeplearning4j.ui.modules.histogram.HistogramModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
@@ -68,6 +69,7 @@ public class PlayUIServer extends UIServer {
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
+        uiModules.add(new TrainingModule());
 
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
