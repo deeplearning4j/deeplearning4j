@@ -17,15 +17,15 @@ import play.api.data._
 class Training extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template1[org.deeplearning4j.ui.api.I18N,play.twirl.api.HtmlFormat.Appendable] {
 
   /**/
-  def apply/*1.2*/(i18n:org.deeplearning4j.ui.api.I18N):play.twirl.api.HtmlFormat.Appendable = {
+  def apply/*1.2*/(i18n: org.deeplearning4j.ui.api.I18N):play.twirl.api.HtmlFormat.Appendable = {
     _display_ {
       {
 
 
-Seq[Any](format.raw/*1.39*/("""
+Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<html>
     <head>
-        <link rel="stylesheet" type="text/css" href="assets/css/training.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="assets/css/train.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
         <title>Document</title>
     </head>
     <body>
@@ -33,14 +33,24 @@ Seq[Any](format.raw/*1.39*/("""
         <div class="outerDiv">
 
             <div class="navDiv">
-                <div class="navElement">First Nav Element</div>
-                <div class="navElement">Second Nav Element</div>
-                
+                <div class="navTopSpacer"></div>
+                <div class="navElement">
+                    <img src="assets/img/train/nav_icon_home_32.png">
+                        """),_display_(/*15.26*/i18n/*15.30*/.getMessage("train.nav.overview")),format.raw/*15.63*/("""
+                """),format.raw/*16.17*/("""</div>
+                <div class="navElement">
+                    <img src="assets/img/train/nav_icon_model_32.png">
+                    """),_display_(/*19.22*/i18n/*19.26*/.getMessage("train.nav.model")),format.raw/*19.56*/("""
+                """),format.raw/*20.17*/("""</div>
+                <div class="navElement">
+                """),_display_(/*22.18*/i18n/*22.22*/.getMessage("train.nav.hwsw")),format.raw/*22.51*/("""
+                """),format.raw/*23.17*/("""</div>
+                <div class="navElement">"""),_display_(/*24.42*/i18n/*24.46*/.getMessage("train.nav.help")),format.raw/*24.75*/("""</div>
             </div>
             <div class="contentDiv">
                 Content Div<br>
-                Language: """),_display_(/*18.28*/i18n/*18.32*/.getDefaultLanguage),format.raw/*18.51*/("""
-            """),format.raw/*19.13*/("""</div>
+                Language: """),_display_(/*28.28*/i18n/*28.32*/.getDefaultLanguage),format.raw/*28.51*/("""
+            """),format.raw/*29.13*/("""</div>
         </div>
     </body>
 </html>"""))
@@ -63,11 +73,11 @@ Seq[Any](format.raw/*1.39*/("""
 object Training extends Training_Scope0.Training
               /*
                   -- GENERATED --
-                  DATE: Fri Oct 14 20:50:02 AEDT 2016
+                  DATE: Sat Oct 15 00:41:23 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/Training.scala.html
-                  HASH: 1d9d50794144df7a599ca6521e4b9cd591c4f5d0
-                  MATRIX: 588->1|720->38|748->40|1337->602|1350->606|1390->625|1432->639
-                  LINES: 20->1|25->1|26->2|42->18|42->18|42->18|43->19
+                  HASH: 95f33592e732de7bef37f42365879f36105cc34f
+                  MATRIX: 588->1|721->39|749->41|1256->521|1269->525|1323->558|1369->576|1539->719|1552->723|1603->753|1649->771|1743->838|1756->842|1806->871|1852->889|1928->938|1941->942|1991->971|2144->1097|2157->1101|2197->1120|2239->1134
+                  LINES: 20->1|25->1|26->2|39->15|39->15|39->15|40->16|43->19|43->19|43->19|44->20|46->22|46->22|46->22|47->23|48->24|48->24|48->24|52->28|52->28|52->28|53->29
                   -- GENERATED --
               */
           

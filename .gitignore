@@ -5,7 +5,6 @@ dependency-reduced-pom.xml
 *.ser
 application.home_IS_UNDEFINEiD
 README.md~
-*.png
 *.bin
 *.releaseBackup
 *.out
