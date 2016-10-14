@@ -265,7 +265,8 @@ For more details, see the [Spark Tuning Guide - Data Locality](http://spark.apac
 Deeplearning4j's Spark training implementation has the ability to collect performance information (such as how long it takes to create the inital network, receive broadcast data, perform network fitting operations, etc).
 This information can be useful to isolate and debug any performance issues when training a network with Deeplearning4j on Spark.
 
-To collect these performance statistics, use the following:
+To collect and export these performance statistics, use the following:
+
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(...);
     sparkNet.setCollectTrainingStats(true);     //Enable collection
@@ -275,7 +276,7 @@ To collect these performance statistics, use the following:
     StatsUtils.exportStatsAsHtml(stats, "SparkStats.html", sc);     //Export it to a stand-alone HTML file
 ```
 
-Note that as of 0.6.0, the current HTML rendering implementation doesn't scale well to a large amount of stats: i.e., large clusters and long-running jobs. This is being worked on.
+Note that as of Deeplearning4j version 0.6.0, the current HTML rendering implementation doesn't scale well to a large amount of stats: i.e., large clusters and long-running jobs. This is being worked on and will be improved in future releases.
 
 Timeline information available via Spark training stats collection functionality:
 
@@ -293,12 +294,12 @@ One of the charts (Worker fit(DataSet) times) available via Spark Stats
 By default, the Spark training performance stats rely on a Network Time Protocal (NTP) implementation to ensure that the event timestamps correspond across machines.
 Without this, there is no guarantee that clocks on each worker machine are accurate - they could be incorrect by an arbitrary/unknown amount. Without a NTP implementation, accurately plotting of timeline information (shown in the timeline figure above) is impossible.
 
-It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these are transient (later retries will work) and can be ignored.
-However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (NTP server), all retries can fail.
+It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these failures are transient (later retries will work) and can be ignored.
+However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (or specifically, the NTP server), all retries can fail.
 
 Two solutions are available:
 
-1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality optional (not required for training), and is disabled by default
+1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
 2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
 
 To use the system clock time source, add the following  to Spark submit:
