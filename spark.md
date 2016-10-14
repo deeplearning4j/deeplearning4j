@@ -22,6 +22,8 @@ Data parallelism shards large datasets and hands those pieces to separate neural
     * [How YARN Manages Memory](#memory2)
     * [Configuring Memory for Deeplearning4j Spark Training on YARN](#memory3)
 * [Spark Locality Configuration for Improved Training Performance](#locality)
+* [Performance Debugging and Collecting Training Performance Information](#sparkstats)
+    * [Debugging "Error querying NTP server" when collecting performance information](#sparkstatsntp)
 * [Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;](#caching)
 * [Using Kryo Serialization with Deeplearning4j](#kryo)
 * [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
@@ -128,14 +130,14 @@ The ParameterAveragingTrainingMaster defines a number of configuration options t
 * **saveUpdater**: In DL4J, training methods such as momentum, RMSProp and AdaGrad are known as 'updaters'. Most of these updaters have internal history or state.
     * If saveUpdater is set to true: the updater state (at each worker) will be averaged and returned to the master along with the parameters; the current updater state will also be distributed from the master to the workers. This adds extra time and network traffic, but may improve training results.
     * If saveUpdater is set to false: the updater state (at each worker) is discarded, and the updater is reset/reinitialized in each worker.
-* [DL4J 0.5.1 and later only] **rddTrainingApproach**: As of version 0.5.1 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct``` 
+* **rddTrainingApproach**: As of version 0.6.0 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct``` 
     * Export: (Default) This first saves the ```RDD<DataSet>``` to disk, in batched and serialized form. The executors then load the DataSet objects asynchronously, as required. This approach performs better than the Direct approach, especially for large data sets and multiple epochs. It avoids the split and repartitioning overhead of the Direct method, and also uses less memory. Temporary files can be deleted using ```TrainingMaster.deleteTempFiles()```
     * Direct: This is how DL4J operated in earlier releases. It may provide good performance for small data sets that fit entirely into memory.
-* [DL4J 0.5.1 and later only] **exportDirectory**: only used with the Export training approach (above). This controls where the temporary data files are stored. Default: use ```{hadoop.tmp.dir}/dl4j/``` directory, where ```{hadoop.tmp.dir}``` is the Hadoop temporary directory property value.
-* [DL4J 0.5.1 and later only] **storageLevel**: Only applies when (a) using Direct training approach, and (b) training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. This is the storage level that DL4J will persist the RDDs at. Default: StorageLevel.MEMORY_ONLY_SER.
-* [DL4J 0.5.1 and later only] **storageLevelStreams**: Only applies when using the ```fitPaths(RDD<String>)``` method. This is the storage level that DL4J will use for persisting the ```RDD<String>```. Default: StorageLevel.MEMORY_ONLY. The default value should be ok in almost all circumstances.
+* **exportDirectory**: only used with the Export training approach (above). This controls where the temporary data files are stored. Default: use ```{hadoop.tmp.dir}/dl4j/``` directory, where ```{hadoop.tmp.dir}``` is the Hadoop temporary directory property value.
+* **storageLevel**: Only applies when (a) using Direct training approach, and (b) training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. This is the storage level that DL4J will persist the RDDs at. Default: StorageLevel.MEMORY_ONLY_SER.
+* **storageLevelStreams**: Only applies when using the ```fitPaths(RDD<String>)``` method. This is the storage level that DL4J will use for persisting the ```RDD<String>```. Default: StorageLevel.MEMORY_ONLY. The default value should be ok in almost all circumstances.
 * **repartition**: Configuration setting for when data should be repartitioned. The ParameterAveragingTrainingMaster does a mapParititons operation; consequently, the number of partitions (and, the values in each partition) matters a lot for proper cluster utilization. However, repartitioning is not a free operation, as some data necessarily has to be copied across the network. The following options are available:
-    * Always: Default option. That is, repartition data to ensure the correct number of partitions. Recommended, especially with RDDTrainingApproach.Export (default as of 0.5.1) or ```fitPaths(RDD<String>)```
+    * Always: Default option. That is, repartition data to ensure the correct number of partitions. Recommended, especially with RDDTrainingApproach.Export (default as of 0.6.0) or ```fitPaths(RDD<String>)```
     * Never: Never repartition the data, no matter how imbalanced the partitions may be.
     * NumPartitionsWorkersDiffers: Repartition only if the number of partitions and the number of workers (total number of cores) differs. Note however that even if the number of partitions is equal to the total number of cores, this does not guarantee that the correct number of DataSet objects is present in each partition: some partitions may be much larger or smaller than others.
 * **repartitionStrategy**: Strategy by which repartitioning should be done
@@ -257,6 +259,53 @@ Deep learning is computationally intensive, and hence the amount of computation 
 The way we can instruct Spark to do this is to add ```--conf spark.locality.wait=0``` to our Spark submit configuration.
 
 For more details, see the [Spark Tuning Guide - Data Locality](http://spark.apache.org/docs/latest/tuning.html#data-locality) and [Spark Configuration Guide](http://spark.apache.org/docs/1.6.2/configuration.html#scheduling).
+
+## <a name="sparkstats">Performance Debugging and Collecting Training Performance Information</a>
+
+Deeplearning4j's Spark training implementation has the ability to collect performance information (such as how long it takes to create the inital network, receive broadcast data, perform network fitting operations, etc).
+This information can be useful to isolate and debug any performance issues when training a network with Deeplearning4j on Spark.
+
+To collect these performance statistics, use the following:
+```
+    SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(...);
+    sparkNet.setCollectTrainingStats(true);     //Enable collection
+    sparkNet.fit(trainData);    //Train network in the normal way
+
+    SparkTrainingStats stats = sparkNet.getSparkTrainingStats();    //Get the collect stats information
+    StatsUtils.exportStatsAsHtml(stats, "SparkStats.html", sc);     //Export it to a stand-alone HTML file
+```
+
+Note that as of 0.6.0, the current HTML rendering implementation doesn't scale well to a large amount of stats: i.e., large clusters and long-running jobs. This is being worked on.
+
+Timeline information available via Spark training stats collection functionality:
+
+![Spark Stats](./img/spark_stats_v060.png)
+
+One of the charts (Worker fit(DataSet) times) available via Spark Stats
+
+![Spark Stats](./img/spark_stats_v060_2.png)
+
+
+
+
+### <a name="sparkstatsntp">Debugging "Error querying NTP server" when collecting performance information</a>
+
+By default, the Spark training performance stats rely on a Network Time Protocal (NTP) implementation to ensure that the event timestamps correspond across machines.
+Without this, there is no guarantee that clocks on each worker machine are accurate - they could be incorrect by an arbitrary/unknown amount. Without a NTP implementation, accurately plotting of timeline information (shown in the timeline figure above) is impossible.
+
+It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these are transient (later retries will work) and can be ignored.
+However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (NTP server), all retries can fail.
+
+Two solutions are available:
+
+1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality optional (not required for training), and is disabled by default
+2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
+
+To use the system clock time source, add the following  to Spark submit:
+```
+--conf spark.driver.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+--conf spark.executor.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+```
 
 
 ## <a name="caching">Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;</a>
