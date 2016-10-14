@@ -92,11 +92,12 @@ public class DefaultI18N implements I18N {
 
     @Override
     public String getDefaultLanguage() {
-        return null;
+        return currentLanguage;
     }
 
     @Override
     public void setDefaultLanguage(String langCode) {
-
+        //TODO Validation
+        this.currentLanguage = langCode;
     }
 }
