@@ -288,7 +288,7 @@
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>3.2.2</version>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>2.10.6</scalaVersion>
                     <args>
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
