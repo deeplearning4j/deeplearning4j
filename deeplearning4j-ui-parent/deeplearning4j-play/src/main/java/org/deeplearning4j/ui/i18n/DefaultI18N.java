@@ -1,17 +1,18 @@
 package org.deeplearning4j.ui.i18n;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.ui.api.I18N;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Default internationalization implementation.
@@ -39,7 +40,11 @@ public class DefaultI18N implements I18N {
     public static final String DEFAULT_LANGUAGE = "en";
     public static final String DEFAULT_I8N_RESOURCES_DIR = "dl4j_i18n";
 
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+
     private static DefaultI18N instance;
+
+    private Map<String,Map<String,String>> messagesByLanguage = new HashMap<>();
 
     public static synchronized I18N getInstance(){
         if(instance == null) instance = new DefaultI18N();
@@ -65,19 +70,62 @@ public class DefaultI18N implements I18N {
 
         URL url = null;
         try{
-            url = new File(DEFAULT_I8N_RESOURCES_DIR).toURI().toURL();
+            url = new File("").toURI().toURL();
         }catch (MalformedURLException e){
-            log.error("Could not load internationalization content from directory {}", DEFAULT_I8N_RESOURCES_DIR);
+            throw new RuntimeException(e);  //Should never happen
         }
 
         Reflections reflections = new Reflections(
                 new ConfigurationBuilder()
                 .setScanners(new ResourcesScanner())
-                .setUrls()
+                .setUrls(url)
         );
 
+        String pattern = ".*" + languageCode;
+        Set<String> resources = reflections.getResources(Pattern.compile(pattern));
+
+        String regex = ".*/" + DEFAULT_I8N_RESOURCES_DIR + "/.*" + languageCode;
+
+        Map<String,String> messages = new HashMap<>();
+
+        for(String s : resources){
+            if(!s.matches(regex)) continue;
+
+            log.info("Attempting to parse file: {}", s);
+            parseFile(new File(s), messages);
+        }
+
+        messagesByLanguage.put(languageCode, messages);
 
         loadedLanguages.add(languageCode);
+    }
+
+    private void parseFile(File f, Map<String,String> results){
+        String str;
+        try{
+            str = FileUtils.readFileToString(f);
+        } catch (IOException e){
+            log.warn("Error parsing UI I18N content file; skipping: {}", f.getName(), e.getMessage());
+            return;
+        }
+
+        //TODO need to think more carefully about how to parse this, with multi-line messages, etc
+        int count = 0;
+        String[] lines = str.split(LINE_SEPARATOR);
+        for(String line : lines){
+            if(!line.matches(".+=.*")){
+                log.warn("Invalid line in I18N file: {}, \"{}\"", f, line);
+                continue;
+            }
+            int idx = line.indexOf('=');
+            String key = line.substring(0, idx);
+            String value = line.substring(Math.min(idx+1,line.length()));
+            results.put(key,value);
+            count++;
+        }
+
+        //TODO don't log (only for development)
+        log.info("Loaded {} messages from file {}",count,f);
     }
 
     @Override
@@ -87,7 +135,18 @@ public class DefaultI18N implements I18N {
 
     @Override
     public String getMessage(String langCode, String key) {
-        return null;
+        Map<String,String> messagesForLanguage = messagesByLanguage.get(langCode);
+        if(messagesForLanguage == null){
+            synchronized (this){
+                //Synchronized to avoid loading multiple times in case of multi-threaded requests
+                if(messagesByLanguage.get(langCode) == null){
+                    loadLanguageResources(langCode);
+                }
+            }
+            messagesForLanguage = messagesByLanguage.get(langCode);
+        }
+
+        return messagesForLanguage == null ? null : messagesForLanguage.get(key);
     }
 
     @Override

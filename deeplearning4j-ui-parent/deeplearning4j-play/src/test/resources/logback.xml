@@ -1,50 +1,35 @@
-<!-- https://www.playframework.com/documentation/latest/SettingsLogger -->
 <configuration>
 
-  <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application.log</file>
+        <encoder>
+            <pattern>%date - [%level] - from %logger in %thread
+                %n%message%n%xException%n</pattern>
+        </encoder>
+    </appender>
 
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-     <file>${application.home:-.}/logs/application.log</file>
-     <encoder>
-       <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
-     </encoder>
-  </appender>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern> %logger{15} - %message%n%xException{5}
+            </pattern>
+        </encoder>
+    </appender>
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
-    </encoder>
-  </appender>
+    <logger name="org.apache.catalina.core" level="DEBUG" />
+    <logger name="org.springframework" level="DEBUG" />
+    <logger name="org.deeplearning4j" level="INFO" />
+    <logger name="org.canova" level="INFO" />
+    <logger name="org.datavec" level="INFO" />
+    <logger name="org.nd4j" level="INFO" />
+    <logger name="opennlp.uima.util" level="OFF" />
+    <logger name="org.apache.uima" level="OFF" />
+    <logger name="org.cleartk" level="OFF" />
 
-  <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
-    <appender-ref ref="FILE" />
-  </appender>
 
-  <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
-    <appender-ref ref="STDOUT" />
-  </appender>
 
-  <logger name="play" level="INFO" />
-  <logger name="application" level="INFO" />
-  <logger name="org.apache.catalina.core" level="DEBUG" />
-  <logger name="org.springframework" level="DEBUG" />
-  <logger name="org.deeplearning4j" level="DEBUG" />
-  <logger name="org.canova" level="INFO" />
-  <logger name="org.datavec" level="INFO" />
-  <logger name="org.nd4j" level="INFO" />
-  <logger name="opennlp.uima.util" level="OFF" />
-  <logger name="org.apache.uima" level="OFF" />
-  <logger name="org.cleartk" level="OFF" />
-
-  <!-- Off these ones as they are annoying, and anyway we manage configuration ourself -->
-  <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />
-  <logger name="com.avaje.ebeaninternal.server.core.XmlConfigLoader" level="OFF" />
-  <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF" />
-  <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
-
-  <root level="WARN">
-    <appender-ref ref="ASYNCFILE" />
-    <appender-ref ref="ASYNCSTDOUT" />
-  </root>
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
 
 </configuration>
