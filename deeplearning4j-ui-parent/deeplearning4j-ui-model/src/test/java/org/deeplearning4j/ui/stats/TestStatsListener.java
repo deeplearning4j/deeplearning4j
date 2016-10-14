@@ -48,7 +48,7 @@ public class TestStatsListener {
         }
 
         List<String> sids = ss.listSessionIDs();
-        assertEquals(1, ss.listSessionIDs().size());
+        assertEquals(1, sids.size());
         String sessionID = ss.listSessionIDs().get(0);
         assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
         String typeID = ss.listTypeIDsForSession(sessionID).get(0);
