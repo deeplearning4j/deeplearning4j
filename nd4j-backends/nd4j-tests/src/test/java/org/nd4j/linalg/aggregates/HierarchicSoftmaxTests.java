@@ -16,6 +16,8 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 
 /**
+ * This tests pack covers simple gradient checks for SkipGram, CBOW and HierarchicSoftmax
+ *
  * @author raver119@gmail.com
  */
 @RunWith(Parameterized.class)
