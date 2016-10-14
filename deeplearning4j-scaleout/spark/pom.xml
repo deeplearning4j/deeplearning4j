@@ -55,7 +55,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>2.10.6</scalaVersion>
                 </configuration>
             </plugin>
 
@@ -78,17 +78,17 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_2.11</artifactId>
+            <artifactId>spark-mllib_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.7</version>
+            <version>2.10.6</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <exclusions>
 
