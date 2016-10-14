@@ -5932,3 +5932,7 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments) {
+    // not implemented yet
+}
