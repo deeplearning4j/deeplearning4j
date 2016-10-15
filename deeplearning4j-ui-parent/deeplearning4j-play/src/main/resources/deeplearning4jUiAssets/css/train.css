@@ -22,7 +22,7 @@ body {
 }
 .navDiv {
     width: 210px;
-    height: 100%;
+    height: calc(100% - 45px);
     background-color: #37373C;
     /*position: absolute;*/
     /*left: 0;*/
@@ -65,6 +65,9 @@ body {
     /*margin-left: 10px;*/
     /*margin-right: 5px;*/
 }
+.navElementSelected {
+    border-left-color: #787882;
+}
 .navElement:hover {
     background-color: #64646E;
     border-right-color: #64646E;
@@ -90,6 +93,13 @@ body {
 .textlink:visited {
     color: #64646E;
     text-decoration: none;
+}
+.languageSelect {
+    /*background: transparent;*/
+    background-color: #37373C;
+    color: #64646E;
+    /*border-color: #4B4B55;*/
+    border-color: #64646E;
 }
 .contentDiv {
     /*width: 100%;*/

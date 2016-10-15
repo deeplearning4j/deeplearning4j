@@ -4,3 +4,7 @@ train.nav.model=Model
 train.nav.hwsw=System
 train.nav.help=User Guide
 train.nav.errormsg=Error loading page: could not connect to UI server
+train.nav.langChangeErrorMsg=Cannot change language: could not connect to UI server
+train.nav.language=Language
+train.nav.websitelink=http://www.deeplearning4j.org/
+train.nav.websitelinktext=deeplearning4j.org

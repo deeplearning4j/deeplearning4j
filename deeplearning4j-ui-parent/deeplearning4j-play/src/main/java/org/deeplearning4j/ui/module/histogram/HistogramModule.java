@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.modules.histogram;
+package org.deeplearning4j.ui.module.histogram;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.ui.api.FunctionType;
