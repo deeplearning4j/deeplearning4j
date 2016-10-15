@@ -2,49 +2,58 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="assets/css/train.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-        <title>Document</title>
+        <title>@i18n.getMessage("train.pagetitle")</title>
+            <!-- jQuery, D3.js, etc -->
+        <script src="/assets/jquery-2.2.0.min.js"></script>
+        <script src="/assets/notify.js"></script>
+            <!-- Custom assets compiled from Typescript -->
+        <script src="/assets/js/dl4j-play-ui.js"></script>
     </head>
     <body>
 
         <div class="outerDiv">
+            <div class="topBarDiv">
+                <div class="topBarDivContent"><a href="/"><img src="/assets/deeplearning4j.img" border="0"/></a></div>
+                <div class="topBarDivContent">Deeplearning4j UI</div>
+            </div>
 
             <div class="navDiv">
                 <div class="navTopSpacer">(TODO: Session Selection Here)</div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('home', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_home_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.overview")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('model', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_model_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.model")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('system', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_system_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.hwsw")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('help', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_help_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.help")
                 </div>
                 <div class="navBottom">
-                    (TODO Language Selection Here)
+                    (TODO Language Selection)
                     <div class="navElementSpacer"></div>
                     <a href="http://www.deeplearning4j.org/" class="textlink">deeplearning4j.org</a>
                     <div class="navElementSpacer"></div>
                 </div>
             </div>
-            <div class="contentDiv">
+            <div class="contentDiv" id="mainContentDiv">
                 Content Div<br>
                 Language: @i18n.getDefaultLanguage
             </div>

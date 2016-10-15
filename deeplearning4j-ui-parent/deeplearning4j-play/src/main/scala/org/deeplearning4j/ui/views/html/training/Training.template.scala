@@ -26,52 +26,61 @@ Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<html>
     <head>
         <link rel="stylesheet" type="text/css" href="assets/css/train.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-        <title>Document</title>
+        <title>"""),_display_(/*5.17*/i18n/*5.21*/.getMessage("train.pagetitle")),format.raw/*5.51*/("""</title>
+            <!-- jQuery, D3.js, etc -->
+        <script src="/assets/jquery-2.2.0.min.js"></script>
+        <script src="/assets/notify.js"></script>
+            <!-- Custom assets compiled from Typescript -->
+        <script src="/assets/js/dl4j-play-ui.js"></script>
     </head>
     <body>
 
         <div class="outerDiv">
+            <div class="topBarDiv">
+                <div class="topBarDivContent"><a href="/"><img src="/assets/deeplearning4j.img" border="0"/></a></div>
+                <div class="topBarDivContent">Deeplearning4j UI</div>
+            </div>
 
             <div class="navDiv">
                 <div class="navTopSpacer">(TODO: Session Selection Here)</div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('home', '"""),_display_(/*22.71*/i18n/*22.75*/.getMessage("train.nav.errormsg")),format.raw/*22.108*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_home_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*17.22*/i18n/*17.26*/.getMessage("train.nav.overview")),format.raw/*17.59*/("""
-                """),format.raw/*18.17*/("""</div>
+                    """),_display_(/*26.22*/i18n/*26.26*/.getMessage("train.nav.overview")),format.raw/*26.59*/("""
+                """),format.raw/*27.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('model', '"""),_display_(/*29.72*/i18n/*29.76*/.getMessage("train.nav.errormsg")),format.raw/*29.109*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_model_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*24.22*/i18n/*24.26*/.getMessage("train.nav.model")),format.raw/*24.56*/("""
-                """),format.raw/*25.17*/("""</div>
+                    """),_display_(/*33.22*/i18n/*33.26*/.getMessage("train.nav.model")),format.raw/*33.56*/("""
+                """),format.raw/*34.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('system', '"""),_display_(/*36.73*/i18n/*36.77*/.getMessage("train.nav.errormsg")),format.raw/*36.110*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_system_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*31.22*/i18n/*31.26*/.getMessage("train.nav.hwsw")),format.raw/*31.55*/("""
-                """),format.raw/*32.17*/("""</div>
+                    """),_display_(/*40.22*/i18n/*40.26*/.getMessage("train.nav.hwsw")),format.raw/*40.55*/("""
+                """),format.raw/*41.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement">
+                <div class="navElement" onclick="onNavClick('help', '"""),_display_(/*43.71*/i18n/*43.75*/.getMessage("train.nav.errormsg")),format.raw/*43.108*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_help_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*38.22*/i18n/*38.26*/.getMessage("train.nav.help")),format.raw/*38.55*/("""
-                """),format.raw/*39.17*/("""</div>
+                    """),_display_(/*47.22*/i18n/*47.26*/.getMessage("train.nav.help")),format.raw/*47.55*/("""
+                """),format.raw/*48.17*/("""</div>
                 <div class="navBottom">
-                    (TODO Language Selection Here)
+                    (TODO Language Selection)
                     <div class="navElementSpacer"></div>
                     <a href="http://www.deeplearning4j.org/" class="textlink">deeplearning4j.org</a>
                     <div class="navElementSpacer"></div>
                 </div>
             </div>
-            <div class="contentDiv">
+            <div class="contentDiv" id="mainContentDiv">
                 Content Div<br>
-                Language: """),_display_(/*49.28*/i18n/*49.32*/.getDefaultLanguage),format.raw/*49.51*/("""
-            """),format.raw/*50.13*/("""</div>
+                Language: """),_display_(/*58.28*/i18n/*58.32*/.getDefaultLanguage),format.raw/*58.51*/("""
+            """),format.raw/*59.13*/("""</div>
         </div>
     </body>
 </html>"""))
@@ -94,11 +103,11 @@ Seq[Any](format.raw/*1.40*/("""
 object Training extends Training_Scope0.Training
               /*
                   -- GENERATED --
-                  DATE: Sat Oct 15 11:35:46 AEDT 2016
+                  DATE: Sat Oct 15 15:56:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/Training.scala.html
-                  HASH: 70dd1f57d6d6b31e6b7ba18fa6c8c9def42f906c
-                  MATRIX: 588->1|721->39|749->41|1404->669|1417->673|1471->706|1517->724|1863->1043|1876->1047|1927->1077|1973->1095|2320->1415|2333->1419|2383->1448|2429->1466|2774->1784|2787->1788|2837->1817|2883->1835|3371->2296|3384->2300|3424->2319|3466->2333
-                  LINES: 20->1|25->1|26->2|41->17|41->17|41->17|42->18|48->24|48->24|48->24|49->25|55->31|55->31|55->31|56->32|62->38|62->38|62->38|63->39|73->49|73->49|73->49|74->50
+                  HASH: eb9937724213107a7bf1c0b4f3310943b6ea52ba
+                  MATRIX: 588->1|721->39|749->41|955->221|967->225|1017->255|1821->1032|1834->1036|1889->1069|2136->1289|2149->1293|2203->1326|2249->1344|2409->1477|2422->1481|2477->1514|2725->1735|2738->1739|2789->1769|2835->1787|2996->1921|3009->1925|3064->1958|3313->2180|3326->2184|3376->2213|3422->2231|3581->2363|3594->2367|3649->2400|3896->2620|3909->2624|3959->2653|4005->2671|4508->3147|4521->3151|4561->3170|4603->3184
+                  LINES: 20->1|25->1|26->2|29->5|29->5|29->5|46->22|46->22|46->22|50->26|50->26|50->26|51->27|53->29|53->29|53->29|57->33|57->33|57->33|58->34|60->36|60->36|60->36|64->40|64->40|64->40|65->41|67->43|67->43|67->43|71->47|71->47|71->47|72->48|82->58|82->58|82->58|83->59
                   -- GENERATED --
               */
           
