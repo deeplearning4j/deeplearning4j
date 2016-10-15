@@ -1,4 +1,5 @@
 train.pagetitle=Deeplearning4j UI
+train.nav.sessionid=Session ID
 train.nav.overview=Overview
 train.nav.model=Model
 train.nav.hwsw=System

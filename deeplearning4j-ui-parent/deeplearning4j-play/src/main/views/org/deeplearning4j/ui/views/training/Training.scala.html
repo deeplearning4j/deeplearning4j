@@ -13,6 +13,7 @@
         function onPageLoad(){
             onNavClick('home', '@i18n.getMessage("train.nav.errormsg")');
             setLanguageSelectorValue();
+            setInterval(getAndProcessUpdate,2000);
         }
     </script>
     <body onload="onPageLoad()">
@@ -24,7 +25,12 @@
             </div>
 
             <div class="navDiv">
-                <div class="navTopSpacer">(TODO: Session Selection Here)</div>
+                <div class="navTopSpacer"></div>
+                <div class="navSessionID">
+                    <strong>@i18n.getMessage("train.nav.sessionid"):</strong><br>
+                    TODO<br>
+                </div>
+                <div class="navTopSpacer"></div>
                 <div class="navElement" id="homeNavDiv" onclick="onNavClick('home', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_home_28.png">
@@ -68,8 +74,7 @@
 
 
             <div class="contentDiv" id="mainContentDiv">
-                Content Div<br>
-                Language: @i18n.getDefaultLanguage
+
             </div>
         </div>
     </body>
