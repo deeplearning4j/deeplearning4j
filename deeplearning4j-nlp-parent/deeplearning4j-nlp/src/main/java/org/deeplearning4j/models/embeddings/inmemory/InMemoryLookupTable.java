@@ -464,7 +464,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     protected void makeTable(int tableSize,double power) {
         int vocabSize = syn0.rows();
-        table = Nd4j.create(new FloatBuffer(tableSize));
+        table = Nd4j.create(tableSize);
         double trainWordsPow = 0.0;
         for(String word : vocab.words()) {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);

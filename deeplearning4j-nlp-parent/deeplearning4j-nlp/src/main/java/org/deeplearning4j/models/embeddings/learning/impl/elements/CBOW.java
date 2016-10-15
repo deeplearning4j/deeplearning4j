@@ -76,6 +76,11 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     @Override
+    public void finish() {
+        logger.info("CBOW finalizer...");
+    }
+
+    @Override
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
