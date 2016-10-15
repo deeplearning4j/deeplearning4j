@@ -9,7 +9,13 @@
             <!-- Custom assets compiled from Typescript -->
         <script src="/assets/js/dl4j-play-ui.js"></script>
     </head>
-    <body>
+    <script>
+        function onPageLoad(){
+            onNavClick('home', '@i18n.getMessage("train.nav.errormsg")');
+            setLanguageSelectorValue();
+        }
+    </script>
+    <body onload="onPageLoad()">
 
         <div class="outerDiv">
             <div class="topBarDiv">
@@ -19,40 +25,48 @@
 
             <div class="navDiv">
                 <div class="navTopSpacer">(TODO: Session Selection Here)</div>
-                <div class="navElement" onclick="onNavClick('home', '@i18n.getMessage("train.nav.errormsg")')">
+                <div class="navElement" id="homeNavDiv" onclick="onNavClick('home', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_home_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.overview")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" onclick="onNavClick('model', '@i18n.getMessage("train.nav.errormsg")')">
+                <div class="navElement" id="modelNavDiv" onclick="onNavClick('model', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_model_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.model")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" onclick="onNavClick('system', '@i18n.getMessage("train.nav.errormsg")')">
+                <div class="navElement" id="systemNavDiv" onclick="onNavClick('system', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_system_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.hwsw")
                 </div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" onclick="onNavClick('help', '@i18n.getMessage("train.nav.errormsg")')">
+                <div class="navElement" id="helpNavDiv" onclick="onNavClick('help', '@i18n.getMessage("train.nav.errormsg")')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_help_28.png">
                     <div class="navHorizontalSpacer"></div>
                     @i18n.getMessage("train.nav.help")
                 </div>
                 <div class="navBottom">
-                    (TODO Language Selection)
+                    @i18n.getMessage("train.nav.language"):
+                    <select class="languageSelect" id="navLangSelect" onchange="changeLanguage('@i18n.getMessage("train.nav.langChangeErrorMsg")')">
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="zh">中文</option>
+                        <option value="kr">한글</option>
+                    </select>
                     <div class="navElementSpacer"></div>
-                    <a href="http://www.deeplearning4j.org/" class="textlink">deeplearning4j.org</a>
+                    <a href="@i18n.getMessage("train.nav.websitelink")" class="textlink">@i18n.getMessage("train.nav.websitelinktext")</a>
                     <div class="navElementSpacer"></div>
                 </div>
             </div>
+
+
             <div class="contentDiv" id="mainContentDiv">
                 Content Div<br>
                 Language: @i18n.getDefaultLanguage
