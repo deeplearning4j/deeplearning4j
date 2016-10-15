@@ -37,4 +37,29 @@ function setLanguageSelectorValue() {
         }
     });
 }
+function getAndProcessUpdate() {
+    console.log("Updating");
+    if ($("#homeNavDiv").hasClass("navElementSelected")) {
+        getAndProcessUpdateOverview();
+    }
+    else if ($("#modelNavDiv").hasClass("navElementSelected")) {
+    }
+    else if ($("#systemNavDiv").hasClass("navElementSelected")) {
+    }
+    else if ($("#helpNavDiv").hasClass("navElementSelected")) {
+    }
+}
+function getAndProcessUpdateOverview() {
+    $.ajax({
+        url: "train/home/data",
+        success: function (data) {
+            console.log("DATA: " + data);
+            console.log(data.scores);
+            console.log(data.scoresIterCount);
+        },
+        error: function (query, status, error) {
+            $.notify("Error", "error");
+        }
+    });
+}
 //# sourceMappingURL=dl4j-play-ui.js.map

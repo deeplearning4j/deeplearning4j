@@ -23,8 +23,16 @@ class TrainingOverview extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appen
 
 
 Seq[Any](format.raw/*1.40*/("""
-"""),format.raw/*2.1*/("""<div>
-    Overview page content here!
+"""),format.raw/*2.1*/("""<div class="overviewOuterDiv">
+    <div class="overviewScoreChartDiv">
+        Score chart here
+    </div>
+    <div class="overviewTableDiv">
+        Performance Info Here
+    </div>
+    <div class="overviewTableDiv">
+        Model Information Here
+    </div>
 </div>"""))
       }
     }
@@ -45,9 +53,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Sat Oct 15 12:44:38 AEDT 2016
+                  DATE: Sat Oct 15 22:30:26 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: da4b63db3fc8e1e4e8f845814a84f2b3fa60707f
+                  HASH: ddae22b6abfb3bcc04578fb69487c34b056f88e6
                   MATRIX: 604->1|737->39|765->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

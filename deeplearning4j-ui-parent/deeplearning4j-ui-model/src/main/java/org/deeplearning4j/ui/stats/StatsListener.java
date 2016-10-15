@@ -342,6 +342,7 @@ public class StatsListener implements RoutingIterationListener {
         report.reportStatsCollectionDurationMS((int)(endTime-currentTime));    //Amount of time required to alculate all histograms, means etc.
         lastReportTime = currentTime;
         lastReportIteration = iterCount;
+        report.reportIterationCount(iterCount);
 
         this.router.putUpdate(report);
 
@@ -362,6 +363,7 @@ public class StatsListener implements RoutingIterationListener {
 //            }
 //        }
         iterCount++;
+
     }
 
     private long getTime() {
