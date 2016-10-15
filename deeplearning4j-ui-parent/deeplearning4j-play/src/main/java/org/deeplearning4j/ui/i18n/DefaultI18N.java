@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 public class DefaultI18N implements I18N {
 
     public static final String DEFAULT_LANGUAGE = "en";
+    public static final String FALLBACK_LANGUAGE = "en";    //use this if the specified language doesn't have the requested message
     public static final String DEFAULT_I8N_RESOURCES_DIR = "dl4j_i18n";
 
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
@@ -68,7 +69,7 @@ public class DefaultI18N implements I18N {
 
         //Scan classpath for resources in the /dl4j_i18n/ directory...
 
-        URL url = null;
+        URL url;
         try{
             url = new File("").toURI().toURL();
         }catch (MalformedURLException e){
@@ -146,7 +147,13 @@ public class DefaultI18N implements I18N {
             messagesForLanguage = messagesByLanguage.get(langCode);
         }
 
-        return messagesForLanguage == null ? null : messagesForLanguage.get(key);
+        String msg = messagesForLanguage.get(key);
+        if(msg == null && !FALLBACK_LANGUAGE.equals(langCode)){
+            //Try getting the result from the fallback language
+            return getMessage(FALLBACK_LANGUAGE, key);
+        }
+
+        return msg;
     }
 
     @Override
@@ -158,5 +165,6 @@ public class DefaultI18N implements I18N {
     public void setDefaultLanguage(String langCode) {
         //TODO Validation
         this.currentLanguage = langCode;
+        log.info("UI: Set language to {}",langCode);
     }
 }

@@ -1,6 +1,5 @@
 package org.deeplearning4j.ui.play.staticroutes;
 
-import play.libs.F;
 import play.mvc.Result;
 
 import java.util.function.Supplier;
