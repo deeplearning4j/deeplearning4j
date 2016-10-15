@@ -246,7 +246,10 @@ public class MLLibUtil {
     }
 
     /**
-     * Convert a rdd labeled point to a rdd dataset with continuous features
+     * Convert rdd labeled points to a rdd dataset with continuous features
+     * @param sc The java spark context used for creating the new rdd
+     * @param data the java rdd labeled points ready to convert
+     * @return a JavaRDD<Dataset> with a continuous label
      */
     public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
         List<LabeledPoint> labeledPoints = data.collect();
