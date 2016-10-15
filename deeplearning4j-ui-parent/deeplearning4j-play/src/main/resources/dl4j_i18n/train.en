@@ -1,5 +1,6 @@
-train.pagetitle=Deeplearning4j Training Interface
+train.pagetitle=Deeplearning4j UI
 train.nav.overview=Overview
 train.nav.model=Model
 train.nav.hwsw=System
 train.nav.help=User Guide
+train.nav.errormsg=Error loading page: could not connect to UI server
