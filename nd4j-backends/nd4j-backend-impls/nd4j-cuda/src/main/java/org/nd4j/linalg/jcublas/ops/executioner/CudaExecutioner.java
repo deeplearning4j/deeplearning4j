@@ -30,8 +30,6 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1868,9 +1866,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public void exec(Batch batch) {
+    public void exec(List<Aggregate> batch) {
         if (batch.size() == 0)
             return;
+
+        log.info("Executing batch of [{}] Aggregates...", batch.size());
 
         int[] ops = new int[batch.size()];
         int[] numShapes = new int[batch.size()];
@@ -1893,10 +1893,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extraArgs = new PointerPointer(32);
         extraArgs.put(0, null);
         extraArgs.put(1, context.getOldStream());
-        extraArgs.put(2, new CudaPointer(batch.getAggregates().get(0).opNum()));
+        extraArgs.put(2, new CudaPointer(batch.get(0).opNum()));
 
         for (int e = 0; e < batch.size(); e++) {
-            Aggregate op = batch.getAggregates().get(e);
+            Aggregate op = batch.get(e);
             ops[e] = op.opNum();
             numArguments[e] = op.getArguments().size();
             numShapes[e] = op.getShapes().size();
@@ -1906,9 +1906,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             long[] arguments = new long[numArguments[e]];
 
             for (int x = 0; x < numArguments[e]; x++ ) {
-                arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x),context).address();
+                arguments[x] = op.getArguments().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getArguments().get(x),context).address();
 
-                AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
+                if (op.getArguments().get(x) != null)
+                    AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
             }
 
             DataBuffer ptrArg = AllocationUtils.getPointersBuffer(arguments);
@@ -1917,9 +1918,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             long[] shapes = new long[numShapes[e]];
             for (int x = 0; x < numShapes[e]; x++ ) {
-                shapes[x] = AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
+                shapes[x] = op.getShapes().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
 
-                AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
+                if (op.getShapes().get(x) != null)
+                    AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
             }
 
             DataBuffer ptrShapes = AllocationUtils.getPointersBuffer(shapes);

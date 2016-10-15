@@ -5,11 +5,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateAxpy;
 import org.nd4j.linalg.api.ops.aggregates.impl.SkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -52,9 +55,9 @@ public class AggregatesTests extends BaseNd4jTest {
         AggregateAxpy axpy1 = new AggregateAxpy(arrayX1, arrayY1, 1.0f);
         AggregateAxpy axpy2 = new AggregateAxpy(arrayX2, arrayY2, 1.0f);
 
-        Batch batch = new Batch();
-        batch.enqueueAggregate(axpy1);
-        batch.enqueueAggregate(axpy2);
+        List<Aggregate> batch = new ArrayList<>();
+        batch.add(axpy1);
+        batch.add(axpy2);
 
         Nd4j.getExecutioner().exec(batch);
 
@@ -81,10 +84,10 @@ public class AggregatesTests extends BaseNd4jTest {
         AggregateAxpy axpy2 = new AggregateAxpy(arrayX2, arrayY2, 1.0f);
         AggregateAxpy axpy3 = new AggregateAxpy(arrayX3, arrayY3, 2.0f);
 
-        Batch batch = new Batch();
-        batch.enqueueAggregate(axpy1);
-        batch.enqueueAggregate(axpy2);
-        batch.enqueueAggregate(axpy3);
+        List<Aggregate> batch = new ArrayList<>();
+        batch.add(axpy1);
+        batch.add(axpy2);
+        batch.add(axpy3);
 
         Nd4j.getExecutioner().exec(batch);
 
@@ -117,9 +120,9 @@ public class AggregatesTests extends BaseNd4jTest {
         SkipGram op2 = new SkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_2, new int[]{4, 5}, new int[]{0, 1}, 0, 0, 10, lr, 1L);
 
 
-        Batch batch = new Batch();
-        batch.enqueueAggregate(op1);
-        batch.enqueueAggregate(op2);
+        List<Aggregate> batch = new ArrayList<>();
+        batch.add(op1);
+        batch.add(op2);
 
         Nd4j.getExecutioner().exec(batch);
 

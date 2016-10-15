@@ -16,7 +16,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
@@ -944,7 +943,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     @Override
-    public void exec(Batch batch) {
+    public void exec(List<Aggregate> batch) {
         flushQueue();
 
         super.exec(batch);

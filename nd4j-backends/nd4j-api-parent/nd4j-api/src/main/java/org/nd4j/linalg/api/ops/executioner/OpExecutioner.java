@@ -22,9 +22,9 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -181,7 +181,7 @@ public interface OpExecutioner {
      *
      * @param batch
      */
-    void exec(Batch batch);
+    void exec(List<Aggregate> batch);
 
     /**
      * This method return set of key/value and key/key/value objects, describing current environment
