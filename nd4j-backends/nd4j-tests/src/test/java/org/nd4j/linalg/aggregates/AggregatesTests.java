@@ -7,6 +7,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateAxpy;
+import org.nd4j.linalg.api.ops.aggregates.impl.SkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -90,6 +91,52 @@ public class AggregatesTests extends BaseNd4jTest {
         assertEquals(exp1, arrayY1);
         assertEquals(exp2, arrayY2);
         assertEquals(exp3, arrayY3);
+    }
+
+    @Test
+    public void testBatchedSkipGram1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+
+        double lr = 0.001;
+
+        int idxSyn0_1 = 0;
+        int idxSyn0_2 = 3;
+
+        INDArray expSyn0 = Nd4j.create(10).assign(0.01f);
+        INDArray expSyn1_1 = Nd4j.create(10).assign(0.020005); // gradient is 0.00005
+        INDArray expSyn1_2 = Nd4j.create(10).assign(0.019995f); // gradient is -0.00005
+
+
+        INDArray syn0row_1 = syn0.getRow(idxSyn0_1);
+        INDArray syn0row_2 = syn0.getRow(idxSyn0_2);
+
+        SkipGram op1 = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0_1, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr);
+        SkipGram op2 = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0_2, new int[]{4, 5}, new int[]{0, 1}, 0, 0, 10, lr);
+
+
+        Batch batch = new Batch();
+        batch.enqueueAggregate(op1);
+        batch.enqueueAggregate(op2);
+
+        Nd4j.getExecutioner().exec(batch);
+
+        /*
+            Since expTable contains all-equal values, and only difference for ANY index is code being 0 or 1, syn0 row will stay intact,
+            because neu1e will be full of 0.0f, and axpy will have no actual effect
+         */
+        assertEquals(expSyn0, syn0row_1);
+        assertEquals(expSyn0, syn0row_2);
+
+        // syn1 row 1 modified only once
+        assertEquals(expSyn1_1, syn1.getRow(1));
+        assertEquals(expSyn1_1, syn1.getRow(4));
+
+        // syn1 row 2 modified only once
+        assertEquals(expSyn1_2, syn1.getRow(2));
+        assertEquals(expSyn1_2, syn1.getRow(5));
     }
 
     @Override

@@ -790,8 +790,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Aggregate op = batch.getAggregates().get(e);
             ops[e] = op.opNum();
             numArguments[e] = op.getArguments().size();
+            numShapes[e] = op.getShapes().size();
             numIndexingArguments[e] = op.getIndexingArguments().size();
             numRealArguments[e] = op.getRealArguments().size();
+
 
             long[] arguments = new long[numArguments[e]];
 
