@@ -849,12 +849,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             throw new RuntimeException("DOUBLE not implemented here yet");
         }
-
-        argumentsPointer.sizeof();
-        arraysHolder.size();
-        indexingPointer.sizeof();
-        realPointer.sizeof();
-        batch.size();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.aggregates;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -20,6 +22,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
@@ -85,9 +88,13 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         INDArray syn0row = syn0.getRow(idxSyn0);
 
+        log.info("syn0row before: {}", Arrays.toString(syn0row.dup().data().asFloat()));
+
         SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr);
 
         Nd4j.getExecutioner().exec(op);
+
+        log.info("syn0row after: {}", Arrays.toString(syn0row.dup().data().asFloat()));
 
         assertEquals(expSyn0, syn0row);
         assertEquals(expSyn1_1, syn1.getRow(1));
@@ -111,6 +118,9 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         INDArray syn0row = syn0.getRow(idxSyn0);
 
+
+        log.info("syn1row2 before: {}", Arrays.toString(syn1.getRow(2).dup().data().asFloat()));
+
         SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr);
 
         Nd4j.getExecutioner().exec(op);
@@ -122,10 +132,12 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         assertEquals(expSyn0, syn0row);
 
         // syn1 row 1 modified only once
-        assertEquals(expSyn1_1, syn1.getRow(1));
+        assertArrayEquals(expSyn1_1.data().asFloat(), syn1.getRow(1).dup().data().asFloat(), 1e-7f);
+
+        log.info("syn1row2 after: {}", Arrays.toString(syn1.getRow(2).dup().data().asFloat()));
 
         // syn1 row 2 modified only once
-        assertEquals(expSyn1_2, syn1.getRow(2));
+        assertArrayEquals(expSyn1_2.data().asFloat(), syn1.getRow(2).dup().data().asFloat(), 1e-7f);
     }
 
 

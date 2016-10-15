@@ -28,7 +28,9 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1866,14 +1868,118 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public void exec(Batch batch) {
+        if (batch.size() == 0)
+            return;
+
+        int[] ops = new int[batch.size()];
+        int[] numShapes = new int[batch.size()];
+        int[] numArguments = new int[batch.size()];
+        int[] numIndexingArguments = new int[batch.size()];
+        int[] numRealArguments = new int[batch.size()];
+
+        long[] argumentsPointers = new long[batch.size()];
+        long[] shapesPointers = new long[batch.size()];
+        long[] indexingPointers = new long[batch.size()];
+        long[] realPointers = new long[batch.size()];
+
+
+        List<INDArray> arraysHolder = new ArrayList<>();
+        List<Pointer> pointersHolder = new ArrayList<>();
+        List<DataBuffer> buffersHolder = new ArrayList<>();
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        PointerPointer extraArgs = new PointerPointer(32);
+        extraArgs.put(0, null);
+        extraArgs.put(1, context.getOldStream());
+        extraArgs.put(2, new CudaPointer(batch.getAggregates().get(0).opNum()));
+
+        for (int e = 0; e < batch.size(); e++) {
+            Aggregate op = batch.getAggregates().get(e);
+            ops[e] = op.opNum();
+            numArguments[e] = op.getArguments().size();
+            numShapes[e] = op.getShapes().size();
+            numIndexingArguments[e] = op.getIndexingArguments().size();
+            numRealArguments[e] = op.getRealArguments().size();
+
+            long[] arguments = new long[numArguments[e]];
+
+            for (int x = 0; x < numArguments[e]; x++ ) {
+                arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x),context).address();
+
+                AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
+            }
+
+            DataBuffer ptrArg = AllocationUtils.getPointersBuffer(arguments);
+            argumentsPointers[e] = AtomicAllocator.getInstance().getPointer(ptrArg, context).address();
+            buffersHolder.add(ptrArg);
+
+            long[] shapes = new long[numShapes[e]];
+            for (int x = 0; x < numShapes[e]; x++ ) {
+                shapes[x] = AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
+
+                AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
+            }
+
+            DataBuffer ptrShapes = AllocationUtils.getPointersBuffer(shapes);
+            shapesPointers[e] = AtomicAllocator.getInstance().getPointer(ptrShapes, context).address();
+            buffersHolder.add(ptrShapes);
+
+
+            int[] indexes = new int[numIndexingArguments[e]];
+            for (int x = 0; x < numIndexingArguments[e]; x++) {
+                indexes[x] = op.getIndexingArguments().get(x);
+            }
+
+
+            DataBuffer idxBuffer = Nd4j.getDataBufferFactory().createInt(indexes);
+            indexingPointers[e] = AtomicAllocator.getInstance().getPointer(idxBuffer, context).address();
+            buffersHolder.add(idxBuffer);
+
+            double[] reals = new double[numRealArguments[e]];
+            for (int x = 0; x < numRealArguments[e]; x++) {
+                reals[x] = op.getRealArguments().get(x);
+            }
+
+            INDArray realsBuffer = Nd4j.create(reals);
+            arraysHolder.add(realsBuffer);
+
+            realPointers[e] = AtomicAllocator.getInstance().getPointer(realsBuffer, context).address();
+        }
+
+
+
+        PointerPointer argumentsPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(argumentsPointers),context));
+        PointerPointer shapesPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(shapesPointers),context));
+        PointerPointer indexingPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(indexingPointers),context));
+        PointerPointer realPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(realPointers),context));
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.execAggregateBatchFloat(
+                    extraArgs,
+                    batch.size(),
+                    new IntPointer(ops), // TODO: fix this, it should be device pointer somewhere soon with dynamic parallelism involved
+                    argumentsPointer,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numArguments), context),
+                    shapesPointer,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numShapes), context),
+                    indexingPointer,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numIndexingArguments), context),
+                    realPointer,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numRealArguments), context)
+            );
+        } else {
+            throw new RuntimeException("DOUBLE not implemented here yet");
+        }
+    }
+
+    @Override
     public void exec(Aggregate op) {
         int numArguments = op.getArguments().size();
+        int numShapeArguments = op.getShapes().size();
         int numIndexArguments = op.getIndexingArguments().size();
         int numRealArguments = op.getRealArguments().size();
-
-
-
-
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
@@ -1884,12 +1990,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long arguments[] = new long[numArguments];
 
         for (int x = 0; x < numArguments; x++ ) {
-            arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x).data(), context).address();
+            arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x), context).address();
+
+            AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
         }
 
-        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arguments.length);
-        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(arguments), arguments.length * 8, 0);
+        DataBuffer tempX = AllocationUtils.getPointersBuffer(arguments);
         PointerPointer xPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
+
+
+        long shapes[] = new long[numShapeArguments];
+        for (int x = 0; x < numShapeArguments; x++ ) {
+            shapes[x] = AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
+
+            AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
+        }
+
+        DataBuffer tempS = AllocationUtils.getPointersBuffer(shapes);
+        PointerPointer sPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempS, context));
 
 
         int[] indexes = new int[numIndexArguments];
@@ -1911,8 +2029,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             nativeOps.execAggregateFloat(extraArgs, op.opNum(),
                     xPtr,
                     numArguments,
-                    null,
-                    0,
+                    sPtr,
+                    numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
