@@ -26,6 +26,10 @@
  */
 namespace aggregateOps {
 
+    /**
+     * We don't include this class into ops directly, since it won't be ever used directly,
+     * Only as part of SkipGram or CBOW
+     */
     template<typename T>
     class HierarchicSoftmax {
         public:
@@ -54,13 +58,15 @@ namespace aggregateOps {
             }
 
             // gradient
-            if (dot < - HS_MAX_EXP || dot >= HS_MAX_EXP)
+            if (dot < - HS_MAX_EXP || dot >= HS_MAX_EXP) {
                 return;
+            }
 
             int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
 
-            if (idx >= expLength)
+            if (idx >= expLength) {
                 return;
+            }
 
             f = expTable[idx];
             g = (1 - code - f) * alpha;
@@ -146,7 +152,6 @@ namespace aggregateOps {
             }
             __syncthreads();
 
-
             // axpy1
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 neu1e[x] = g * syn1[x] + neu1e[x];
@@ -156,6 +161,145 @@ namespace aggregateOps {
             // axpy2
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 syn1[x] = g * syn0[x] + syn1[x];
+            }
+            __syncthreads();
+
+        }
+#endif
+    };
+
+    /**
+     * We don't include this class into ops directly, since it won't be ever used directly,
+     * Only as part of SkipGram or CBOW
+     */
+    template<typename T>
+    class NegativeSampling {
+    public:
+
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            int idxSyn0 = indexArguments[0];
+            int idxSyn1 = indexArguments[1];
+            int vectorLength = indexArguments[2];
+            int expLength = indexArguments[3];
+            int code = indexArguments[4];
+
+            T *syn0 = arguments[0] + (idxSyn0 * vectorLength);
+            T *syn1Neg = arguments[1] + (idxSyn1 * vectorLength);
+            T *expTable = arguments[2];
+            T *neu1e = arguments[3];
+
+            T dot = (T) 0.0f;
+            T g = (T) 0.0f;
+            T alpha = realArguments[0];
+
+            // dot
+#pragma omp simd reduction(+:dot)
+            for (int x = 0; x < vectorLength; x++) {
+                dot += syn0[x] * syn1Neg[x];
+            }
+
+            if (dot > HS_MAX_EXP)
+                g = (code - 1) * alpha;
+            else if (dot < - HS_MAX_EXP)
+                g = (code - 0) * alpha;
+            else {
+                int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
+                if (idx >= expLength)
+                    return;
+
+                g = (code - expTable[idx]) * alpha;
+            }
+
+            // axpy1
+#pragma omp simd
+            for (int x = 0; x < vectorLength; x++) {
+                neu1e[x] = g * syn1Neg[x] + neu1e[x];
+            }
+
+            // axpy2
+#pragma omp simd
+            for (int x = 0; x < vectorLength; x++) {
+                syn1Neg[x] = g * syn0[x] + syn1Neg[x];
+            }
+        }
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            /*
+                We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
+            */
+
+            __shared__ int idxSyn0;
+            __shared__ int idxSyn1;
+            __shared__ int vectorLength;
+            __shared__ int expLength;
+            __shared__ int code;
+
+            __shared__ T *syn0;
+            __shared__ T *syn1Neg;
+            __shared__ T *expTable;
+
+            __shared__ T *neu1e;
+            __shared__ T dot;
+            __shared__ T g;
+            __shared__ T f;
+            __shared__ T alpha;
+
+            if (threadIdx.x == 0) {
+                idxSyn0 = indexArguments[0];
+                idxSyn1 = indexArguments[1];
+                vectorLength = indexArguments[2];
+                expLength = indexArguments[3];
+                code = indexArguments[4];
+
+                syn0 = arguments[0] + (idxSyn0 * vectorLength);
+                syn1Neg = arguments[1] + (idxSyn1 * vectorLength);
+                expTable = arguments[2];
+                neu1e = arguments[3];
+
+                dot = (T) 0.0f;
+
+                alpha = realArguments[0];
+            }
+            __syncthreads();
+
+
+            // TODO: it would be great to implement dot without atomicAdd call. like aggregateParticles, or something like that
+            // dot
+            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                T prod = syn0[x] * syn1Neg[x];
+                nd4j::math::atomics::nd4j_atomicAdd<T>(&dot, prod);
+            }
+
+
+            // gradient
+            __syncthreads();
+
+            if (dot < - (T) HS_MAX_EXP || dot >= (T) HS_MAX_EXP)
+                return;
+
+            int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
+
+            if (idx >= expLength)
+                return;
+
+
+            if (threadIdx.x == 0) {
+                // gradient calculation
+                f = expTable[idx];
+                g = ((T) 1.0f - (T) code - f) * alpha;
+            }
+            __syncthreads();
+
+            // axpy1
+            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                neu1e[x] = g * syn1Neg[x] + neu1e[x];
+            }
+            __syncthreads();
+
+            // axpy2
+            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                syn1Neg[x] = g * syn0[x] + syn1Neg[x];
             }
             __syncthreads();
 
@@ -259,6 +403,8 @@ namespace aggregateOps {
             int expLength = indexArguments[4];
             int vocabSize = indexArguments[5];
             int ngStarter = indexArguments[6];
+            int negTableLength = indexArguments[7];
+
 
 
 
@@ -279,34 +425,42 @@ namespace aggregateOps {
 
             T *syn0 = arguments[0] + (syn0Row * vectorLength);
 
+            T *negTable = arguments[4];
+
             int *idxSyn1 = shapeArguments[0];
             int *codes = shapeArguments[1];
 
-            for (int r = 0; r < hsRounds; r++) {
-                idxArgs[1] = idxSyn1[r]; // syn1 row
-                idxArgs[4] = codes[r];  // code for row
+            unsigned long long next_random = (long) realArguments[1];
 
-                HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
-            }
+            if (hsRounds > 0)
+                for (int r = 0; r < hsRounds; r++) {
+                    idxArgs[1] = idxSyn1[r]; // syn1 row
+                    idxArgs[4] = codes[r];  // code for row
+
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                }
 
             args[1] = arguments[3]; // syn1Neg instead of syn1
 
+            int target = ngStarter;
             if (ngRounds > 0)
                 for (int r = 0; r < ngRounds + 1; r++) {
                     if (r == 0) {
                         idxArgs[1] = ngStarter;
                         idxArgs[4] = 1;
                     } else {
-                        int target;
+                        next_random = next_random * (unsigned long long)25214903917 + 11;
+                        target = negTable[(next_random >> 16) % negTableLength];
 
-
+                        if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
                         if (target == ngStarter)
                             continue;
 
-                        idxArgs[1] = 1;
+                        idxArgs[1] = target;
                         idxArgs[4] = 0;
                     }
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+
+                    NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
                 }
 
 #pragma omp simd
@@ -328,10 +482,15 @@ namespace aggregateOps {
             __shared__ int expLength;
             __shared__ int vocabSize;
             __shared__ int ngStarter;
+            __shared__ int negTableLength;
 
             __shared__ T *neu1e;
             __shared__ T *args[4];
             __shared__ int idxArgs[5];
+
+            __shared__ unsigned long long next_random;
+
+            __shared__ T *negTable;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
@@ -344,11 +503,16 @@ namespace aggregateOps {
                 expLength = indexArguments[4];
                 vocabSize = indexArguments[5];
                 ngStarter = indexArguments[6];
+                negTableLength = indexArguments[7];
+
+                next_random = (unsigned long long) realArguments[1];
 
                 args[0] = arguments[0]; // syn0
                 args[1] = arguments[1]; // syn1
                 args[2] = arguments[2]; // expTable
                 args[3] = neu1e;
+
+                negTable = arguments[4];
 
                 idxArgs[0] = syn0Row; // syn0 row
                 idxArgs[2] = vectorLength; // vectorLength
@@ -373,7 +537,7 @@ namespace aggregateOps {
                 }
                 __syncthreads();
 
-                HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
                 __syncthreads();
             }
             __syncthreads();
@@ -386,10 +550,18 @@ namespace aggregateOps {
                 for (int r = 0; r < ngRounds + 1; r++) {
                     if (threadIdx.x == 0) {
                         if (r == 0) {
+                            // this line isn't a mistake
+                            target = ngStarter + 1;
+
                             idxArgs[1] = ngStarter;
                             idxArgs[4] = 1;
                         } else {
-                            idxArgs[1] = 1; // should be random here
+                            next_random = next_random * (unsigned long long)25214903917 + 11 + blockIdx.x;
+                            target = negTable[(next_random >> 16) % negTableLength];
+
+                            if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
+
+                            idxArgs[1] = target; // should be random here
                             idxArgs[4] = 0;
                         }
                     }
@@ -398,7 +570,7 @@ namespace aggregateOps {
                     if (target == ngStarter)
                             continue;
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
                     __syncthreads();
                 }
 
