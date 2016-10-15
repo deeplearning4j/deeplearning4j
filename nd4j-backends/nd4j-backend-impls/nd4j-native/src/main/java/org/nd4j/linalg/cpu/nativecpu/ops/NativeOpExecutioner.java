@@ -798,14 +798,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             long[] arguments = new long[numArguments[e]];
 
             for (int x = 0; x < numArguments[e]; x++ ) {
-                arguments[x] = op.getArguments().get(x).data().addressPointer().address();
+                arguments[x] = op.getArguments().get(x) == null ? 0 : op.getArguments().get(x).data().addressPointer().address();
             }
 
             argumentsPointer.put(e, new LongPointer(arguments));
 
             long[] shapes = new long[numShapes[e]];
             for (int x = 0; x < numShapes[e]; x++ ) {
-                shapes[x] = op.getShapes().get(x).addressPointer().address();
+                shapes[x] = op.getShapes().get(x) == null ? 0 : op.getShapes().get(x).addressPointer().address();
             }
 
             shapesPointer.put(e, new LongPointer(shapes));
@@ -862,7 +862,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer arguments = new PointerPointer(numArguments);
 
         for (int x = 0; x < numArguments; x++ ) {
-            arguments.put(x, op.getArguments().get(x).data().addressPointer());
+            arguments.put(x, op.getArguments().get(x) == null ? null : op.getArguments().get(x).data().addressPointer());
         }
 
         PointerPointer shapes = new PointerPointer(numShapes);
@@ -871,7 +871,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
                 throw new RuntimeException("ShapeBuffers should have INT data type");
 
-            shapes.put(x, op.getShapes().get(x).addressPointer());
+            shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
         }
 
         int[] indexes = new int[numIndexArguments];

@@ -90,7 +90,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         log.info("syn0row before: {}", Arrays.toString(syn0row.dup().data().asFloat()));
 
-        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr);
+        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr, 1L);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -121,7 +121,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         log.info("syn1row2 before: {}", Arrays.toString(syn1.getRow(2).dup().data().asFloat()));
 
-        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr);
+        SkipGram op = new SkipGram(syn0, syn1, null, expTable, null, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr, 1L);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -140,6 +140,59 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         assertArrayEquals(expSyn1_2.data().asFloat(), syn1.getRow(2).dup().data().asFloat(), 1e-7f);
     }
 
+    /**
+     * This particular test does nothing: neither HS or Neh is executed
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSGGradientNoOp() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = null;
+
+        double lr = 0.001;
+
+        int idxSyn0 = 0;
+        INDArray expSyn0 = Nd4j.create(10).assign(0.01f);
+        INDArray expSyn1 = syn1.dup();
+
+        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 0, 0, 10, lr, 1L);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(expSyn0, syn0.getRow(idxSyn0));
+        assertEquals(expSyn1, syn1);
+    }
+
+    @Test
+    public void testSGGradientNegative1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = Nd4j.create(100000);
+
+        double lr = 0.001;
+
+        INDArray expSyn0 = Nd4j.create(10).assign(0.01f);
+
+        int idxSyn0 = 1;
+
+        log.info("syn0row1 after: {}", Arrays.toString(syn0.getRow(idxSyn0).dup().data().asFloat()));
+
+
+        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 1, 3, 10, lr, 2L);
+
+        Nd4j.getExecutioner().exec(op);
+
+        log.info("syn0row1 after: {}", Arrays.toString(syn0.getRow(idxSyn0).dup().data().asFloat()));
+
+        // we expect syn0 to be equal, since 2 rounds with +- gradients give the same output value for neu1e
+        assertEquals(expSyn0, syn0.getRow(idxSyn0));
+    }
 
     @Override
     public char ordering() {

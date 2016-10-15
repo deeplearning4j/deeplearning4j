@@ -113,8 +113,8 @@ public class AggregatesTests extends BaseNd4jTest {
         INDArray syn0row_1 = syn0.getRow(idxSyn0_1);
         INDArray syn0row_2 = syn0.getRow(idxSyn0_2);
 
-        SkipGram op1 = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0_1, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr);
-        SkipGram op2 = new SkipGram(syn0, syn1, syn1Neg, expTable, idxSyn0_2, new int[]{4, 5}, new int[]{0, 1}, 0, 0, 10, lr);
+        SkipGram op1 = new SkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_1, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr, 1L);
+        SkipGram op2 = new SkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_2, new int[]{4, 5}, new int[]{0, 1}, 0, 0, 10, lr, 1L);
 
 
         Batch batch = new Batch();
@@ -138,6 +138,7 @@ public class AggregatesTests extends BaseNd4jTest {
         assertEquals(expSyn1_2, syn1.getRow(2));
         assertEquals(expSyn1_2, syn1.getRow(5));
     }
+
 
     @Override
     public char ordering() {

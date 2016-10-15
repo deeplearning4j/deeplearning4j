@@ -1990,9 +1990,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long arguments[] = new long[numArguments];
 
         for (int x = 0; x < numArguments; x++ ) {
-            arguments[x] = AtomicAllocator.getInstance().getPointer(op.getArguments().get(x), context).address();
+            arguments[x] = op.getArguments().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getArguments().get(x), context).address();
 
-            AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
+            if (op.getArguments().get(x) != null)
+                AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
         }
 
         DataBuffer tempX = AllocationUtils.getPointersBuffer(arguments);
@@ -2001,8 +2002,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         long shapes[] = new long[numShapeArguments];
         for (int x = 0; x < numShapeArguments; x++ ) {
-            shapes[x] = AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
+            shapes[x] = op.getShapes().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
 
+            if (op.getShapes().get(x) != null)
             AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
         }
 
