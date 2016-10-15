@@ -321,7 +321,93 @@ namespace aggregateOps {
 
 #ifdef __CUDACC__
         aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+            __shared__ int syn0Row;
+            __shared__ int vectorLength;
+            __shared__ int hsRounds;
+            __shared__ int ngRounds;
+            __shared__ int expLength;
+            __shared__ int vocabSize;
+            __shared__ int ngStarter;
 
+            __shared__ T *neu1e;
+            __shared__ T *args[4];
+            __shared__ int idxArgs[5];
+
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                neu1e = (T *) shmem;
+
+                syn0Row = indexArguments[0];
+                vectorLength = indexArguments[1];
+                hsRounds = indexArguments[2];
+                ngRounds = indexArguments[3];
+                expLength = indexArguments[4];
+                vocabSize = indexArguments[5];
+                ngStarter = indexArguments[6];
+
+                args[0] = arguments[0]; // syn0
+                args[1] = arguments[1]; // syn1
+                args[2] = arguments[2]; // expTable
+                args[3] = neu1e;
+
+                idxArgs[0] = syn0Row; // syn0 row
+                idxArgs[2] = vectorLength; // vectorLength
+                idxArgs[3] = expLength; // expLength
+            }
+            __syncthreads();
+
+            T *syn0 = arguments[0] + (syn0Row * vectorLength);
+
+            for (int i = threadIdx.x; i < vectorLength; i+=blockDim.x) {
+                neu1e[i] = (T) 0.0f;
+            }
+
+            int *idxSyn1 = shapeArguments[0];
+            int *codes = shapeArguments[1];
+
+
+            for (int r = 0; r < hsRounds; r++) {
+                if (threadIdx.x == 0) {
+                    idxArgs[1] = idxSyn1[r]; // syn1 row
+                    idxArgs[4] = codes[r];  // code for row
+                }
+                __syncthreads();
+
+                HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                __syncthreads();
+            }
+            __syncthreads();
+
+            if (threadIdx.x == 0)
+                args[1] = arguments[3]; // syn1Neg instead of syn1
+
+            __shared__ int target;
+            if (ngRounds > 0)
+                for (int r = 0; r < ngRounds + 1; r++) {
+                    if (threadIdx.x == 0) {
+                        if (r == 0) {
+                            idxArgs[1] = ngStarter;
+                            idxArgs[4] = 1;
+                        } else {
+                            idxArgs[1] = 1; // should be random here
+                            idxArgs[4] = 0;
+                        }
+                    }
+                    __syncthreads;
+
+                    if (target == ngStarter)
+                            continue;
+
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                    __syncthreads();
+                }
+
+
+
+            // final axpy with 1.0f as alpha
+            for (int x = threadIdx.x; x < vectorLength; x+= blockDim.x) {
+                syn0[x] += neu1e[x];
+            }
         }
 #endif
     };

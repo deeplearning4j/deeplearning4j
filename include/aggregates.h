@@ -47,9 +47,29 @@ __device__ void aggregateGeneric(T **arguments, int numArguments, int **shapeArg
     functions::aggregate::AggregatedFunction<T>:: template execCuda<OpClass>(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
 };
 
+
+template <typename T, typename OpClass>
+__device__ void aggregateBatchGeneric(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, T **realArguments, int *numRealArguments) {
+
+    for(int r = blockIdx.x; r < numAggregates; r += gridDim.x) {
+        T **arguments = reinterpret_cast<T **>(ptrToArguments[r]);
+        int **shapes = reinterpret_cast<int **>(ptrToShapes[r]);
+        int *idxArg = indexArguments[r];
+        T *realArg = realArguments[r];
+
+        functions::aggregate::AggregatedFunction<T>:: template execCuda<OpClass>(arguments, numArguments[r], shapes, numShapes[r], idxArg, numIndexArguments[r], realArg, numRealArguments[r]);
+    }
+};
+
+// simple aggregates
 DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, float, INPUT(float **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, float *realArguments, int numRealArguments), PARAMS(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, double, INPUT(double **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, double *realArguments, int numRealArguments), PARAMS(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
-DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, float16, INPUT(float16 **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, float16 *realArguments, int numRealArguments), PARAMS(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+//DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, float16, INPUT(float16 **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, float16 *realArguments, int numRealArguments), PARAMS(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+
+// batched aggregates
+DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, float, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+//DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, double, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, double **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+//DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, float16, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float16 **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
 #endif
 

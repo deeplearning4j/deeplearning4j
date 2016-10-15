@@ -2491,7 +2491,8 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(_threads) schedule(guided)
+    // special case here, we prefer spread arrangement here, all threads are detached from each other
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
         float **arguments = reinterpret_cast<float **>(ptrToArguments[i]);
         int **shapes = reinterpret_cast<int **>(ptrToShapes[i]);
