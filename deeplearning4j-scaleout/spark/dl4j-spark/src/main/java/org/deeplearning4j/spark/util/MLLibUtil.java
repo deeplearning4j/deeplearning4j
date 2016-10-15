@@ -246,6 +246,24 @@ public class MLLibUtil {
     }
 
     /**
+     * Convert a rdd labeled point to a rdd dataset with continuous features
+     */
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
+        List<LabeledPoint> labeledPoints = data.collect();
+        List<DataSet> dataSets = new ArrayList<>();
+        for (LabeledPoint labeledPoint : labeledPoints) {
+            dataSets.add(convertToDataset(labeledPoint));
+        }
+        return sc.parallelize(dataSets);
+    }
+
+    private static DataSet convertToDataset(LabeledPoint lp){
+        Vector features = lp.features();
+        double label = lp.label();
+        return new DataSet(Nd4j.create(features.toArray()), Nd4j.create(new double[]{label}));
+    }
+
+    /**
      * Convert an rdd of data set in to labeled point
      * @param sc the spark context to use
      * @param data the dataset to convert
@@ -255,7 +273,6 @@ public class MLLibUtil {
         List<LabeledPoint> list  = toLabeledPoint(data.collect());
         return sc.parallelize(list);
     }
-
 
     /**
      * Convert a list of dataset in to a list of labeled points
