@@ -257,7 +257,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected int layerSize = 100;
         protected int window = 5;
         protected boolean hugeModelExpected = false;
-        protected int batchSize = 100;
+        protected int batchSize = 512;
         protected int learningRateDecayWords;
         protected long seed;
         protected boolean useAdaGrad = false;
@@ -985,6 +985,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 } catch (Exception  e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            if (trainElementsVectors) {
+                elementsLearningAlgorithm.finish();
             }
         }
     }

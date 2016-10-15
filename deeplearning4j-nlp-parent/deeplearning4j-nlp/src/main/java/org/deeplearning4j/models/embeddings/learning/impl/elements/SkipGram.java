@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -10,9 +11,11 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
@@ -34,8 +38,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double negative;
     protected double sampling;
     protected int[] variableWindows;
+    protected int vectorLength;
 
     protected INDArray syn0, syn1, syn1Neg, table, expTable;
+
+    protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
     /**
      * Dummy construction is required for reflection
@@ -78,6 +85,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.negative = configuration.getNegative();
         this.sampling = configuration.getSampling();
         this.variableWindows = configuration.getVariableWindows();
+
+        this.vectorLength = configuration.getLayersSize();
     }
 
     /**
@@ -139,7 +148,21 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
         }
 
+        if (batches.get().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(batches.get());
+            batches.get().clear();
+        }
+
         return score;
+    }
+
+    @Override
+    public void finish() {
+        log.info("Finalizing epoch...");
+        if (batches.get().size() > 0){
+            Nd4j.getExecutioner().exec(batches.get());
+            batches.get().clear();
+        }
     }
 
     /**
@@ -179,105 +202,44 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if(w1 == null || w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
             return 0.0;
 
-        //current word vector
-        INDArray l1 = this.syn0.slice(w2.getIndex());
 
         double score = 0.0;
 
-        //error for current word and context
-        INDArray neu1e = Nd4j.create(configuration.getLayersSize());
-
-      //  System.out.println("--------------------------");
-
-        if (configuration.isUseHierarchicSoftmax())
-            for(int i = 0; i < w1.getCodeLength(); i++) {
+        int [] idxSyn1 = null;
+        int [] codes = null;
+        if (configuration.isUseHierarchicSoftmax()) {
+            idxSyn1 = new int[w1.getCodeLength()];
+            codes = new int[w1.getCodeLength()];
+            for (int i = 0; i < w1.getCodeLength(); i++) {
                 int code = w1.getCodes().get(i);
                 int point = w1.getPoints().get(i);
-                if(point >= syn0.rows() || point < 0)
+                if (point >= syn0.rows() || point < 0)
                     throw new IllegalStateException("Illegal point " + point);
 
-                // we wrap current hs round into aggregate op, that'll be executed eventually. maybe.
-                HierarchicSoftmax hs = new HierarchicSoftmax(syn0, syn1, expTable, neu1e, w2.getIndex(), point, code, alpha);
-
-                // We don't have this exec(Aggregate) method implemented yet
-                //Nd4j.getExecutioner().exec(hs);
-
-                /*
-                INDArray syn1 = this.syn1.slice(point);
-
-
-                double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
-
-                if(dot < -MAX_EXP || dot >= MAX_EXP)
-                    continue;
-
-
-                int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-                if(idx >= expTable.length)
-                    continue;
-
-                //score
-                double f = expTable[idx];
-
-
-                //gradient
-                double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
-
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
-                */
+                codes[i] = code;
+                idxSyn1[i] = point;
             }
+        } else {
+            idxSyn1 = new int[0];
+            codes = new int[0];
+        }
+
 
         int target = w1.getIndex();
-        int label;
         //negative sampling
         if(negative > 0) {
             if (syn1Neg == null) {
                 ((InMemoryLookupTable<T>) lookupTable).initNegative();
                 syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
             }
-
-            for (int d = 0; d < negative + 1; d++) {
-                if (d == 0)
-                    label = 1;
-                else {
-                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                    int idx = Math.abs((int) (nextRandom.get() >> 16) % table.length());
-
-                    target = table.getInt(idx);
-                    if (target <= 0)
-                        target = (int) nextRandom.get() % (vocabCache.numWords() - 1) + 1;
-
-                    if (target == w1.getIndex())
-                        continue;
-                    label = 0;
-                }
-
-                if (target >= syn1Neg.rows() || target < 0)
-                    continue;
-
-                double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg.slice(target));
-
-                double g;
-                if (f > MAX_EXP)
-                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) * alpha;
-                else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ? lookupTable.getGradient(target, alpha) : alpha);
-                else {
-                    int idx = (int) ((f + MAX_EXP) * (expTable.length() / MAX_EXP / 2));
-                    if (idx >= expTable.length())
-                        continue;
-
-                    g = useAdaGrad ? lookupTable.getGradient(target, label - expTable.getDouble(idx)) : (label - expTable.getDouble(idx)) * alpha;
-                }
-
-                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target), neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, l1, syn1Neg.slice(target));
-            }
-
         }
 
-        Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0,neu1e,l1);
+        if (batches.get() == null)
+            batches.set(new ArrayList<Aggregate>());
+
+        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0, syn1, syn1Neg, expTable, table, w2.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get());
+
+        batches.get().add(sg);
 
         return score;
     }

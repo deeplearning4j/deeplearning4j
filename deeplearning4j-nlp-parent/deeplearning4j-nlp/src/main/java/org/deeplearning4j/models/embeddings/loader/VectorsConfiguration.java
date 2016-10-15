@@ -28,7 +28,7 @@ public class VectorsConfiguration implements Serializable {
     private double minLearningRate = 0.0001;
     private int layersSize = 200;
     private boolean useAdaGrad = false;
-    private int batchSize = 1000;
+    private int batchSize = 512;
     private int iterations = 1;
     private int epochs = 1;
     private int window = 5;

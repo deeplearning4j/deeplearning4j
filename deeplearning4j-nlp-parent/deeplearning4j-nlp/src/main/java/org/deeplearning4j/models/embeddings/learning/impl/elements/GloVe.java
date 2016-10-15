@@ -66,6 +66,11 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     }
 
     @Override
+    public void finish() {
+        log.info("GloVe finalizer...");
+    }
+
+    @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
