@@ -38,7 +38,6 @@ class ChartLine extends Chart implements Renderable {
         this.seriesNames = json['seriesNames'];
     }
 
-
     render = (appendToObject: JQuery) => {
 
         var nSeries: number = (!this.xData ? 0 : this.xData.length);

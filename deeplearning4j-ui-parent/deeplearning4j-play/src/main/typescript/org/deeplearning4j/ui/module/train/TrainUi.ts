@@ -46,3 +46,33 @@ function setLanguageSelectorValue(){
         }
     });
 }
+
+function getAndProcessUpdate(){
+    console.log("Updating");
+
+    if($("#homeNavDiv").hasClass("navElementSelected")){
+        getAndProcessUpdateOverview();
+    } else if($("#modelNavDiv").hasClass("navElementSelected")){
+
+    } else if($("#systemNavDiv").hasClass("navElementSelected")){
+
+    } else if($("#helpNavDiv").hasClass("navElementSelected")){
+
+    }
+}
+
+function getAndProcessUpdateOverview(){
+    $.ajax({
+        url: "train/home/data",
+        success: function ( data ) {
+            console.log("DATA: " + data);
+            console.log(data.scores);
+            console.log(data.scoresIterCount);
+            // console.log("DATA keys: " + data.keys());
+            // var scores: number[] = json['']
+        },
+        error: function (query, status, error) {
+            $.notify("Error","error");  //TODO
+        }
+    });
+}
