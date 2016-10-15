@@ -13,10 +13,19 @@ body {
 }
 .navTopSpacer {
     width: 100%;
-    height:80px;
+    height:100px;
+    color: #64646E;
+}
+.navElementSpacer {
+    width:100%;
+    height:3px;
+}
+.navHorizontalSpacer {
+    width: 10px;
+    height:50px;
 }
 .navElement {
-    width: 190px;   /*250 - 2*border */
+    width: 200px;   /*210 - 2*border */
     height: 50px;
     background-color: #4B4B55;
     /* Text */
@@ -27,10 +36,10 @@ body {
     font-size: 18px;
     /* Borders */
     border-style: solid;
-    border-bottom-width: 1px;
-    border-top-width: 1px;
-    border-left-width: 10px;
-    border-right-width: 10px;
+    border-bottom-width: 0;
+    border-top-width: 0;
+    border-left-width: 5px;
+    border-right-width: 5px;
     border-bottom-color: #37373C;
     border-top-color: #37373C;
     border-left-color: #4B4B55;
@@ -38,6 +47,32 @@ body {
     /* Padding */
     /*margin-left: 10px;*/
     /*margin-right: 5px;*/
+}
+.navElement:hover {
+    background-color: #64646E;
+    border-right-color: #64646E;
+    border-left-color: #f6f6f6;
+}
+.navBottom {
+    width: 210px;
+    position: absolute;
+    bottom: 5px;
+    text-align: center;
+    color: #64646E;
+}
+.textlink {
+    display: block;
+    margin:auto;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+}
+.textlink:link {
+    color: #64646E;
+    text-decoration: none;
+}
+.textlink:visited {
+    color: #64646E;
+    text-decoration: none;
 }
 .contentDiv {
     width: auto;
