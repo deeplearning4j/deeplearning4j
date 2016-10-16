@@ -24,14 +24,26 @@ class TrainingOverview extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appen
 
 Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<div class="overviewOuterDiv">
-    <div class="overviewScoreChartDiv">
-        Score chart here
+    <div class="overviewScoreChartDiv" id="scoreChartDiv">
+        <p>Score chart here</p>
+        <p>Data from: train/overview/data</p>
+        <p>x-axis values: "scoresIter"</p>
+        <p>y-axis values: "scores"</p>
     </div>
     <div class="overviewTableDiv">
-        Performance Info Here
-    </div>
-    <div class="overviewTableDiv">
-        Model Information Here
+        <p>Performance and Model Info Here</p>
+        <p>This will change every iteration</p>
+        <p>Source: /train/overview/data -> "perf" and "model"</p>
+        <table class="overviewTable">
+            <tr>
+                <td>Performance</td>
+                <td>data</td>
+            </tr>
+            <tr>
+                <td>goes</td>
+                <td>here</td>
+            </tr>
+        </table>
     </div>
 </div>"""))
       }
@@ -53,9 +65,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Sat Oct 15 22:30:26 AEDT 2016
+                  DATE: Sun Oct 16 12:14:21 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: ddae22b6abfb3bcc04578fb69487c34b056f88e6
+                  HASH: 5c570e1de495df0d7eac32bb009c90e8437c530f
                   MATRIX: 604->1|737->39|765->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

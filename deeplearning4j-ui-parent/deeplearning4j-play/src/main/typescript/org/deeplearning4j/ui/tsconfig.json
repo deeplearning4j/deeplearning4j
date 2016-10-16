@@ -2,7 +2,8 @@
    "compilerOptions": {
       "outFile": "../../../../resources/deeplearning4jUiAssets/js/dl4j-play-ui.js",
       "removeComments": true,
-      "sourceMap": true
+      "sourceMap": true,
+      "declaration": true
    },
    "filesGlob": [
       "**/*.ts"
