@@ -272,6 +272,10 @@ public class TrainModule implements UIModule {
         activationMap.put("stdev", activationsData.getThird());
         result.put("activations", activationMap);
 
+        //Get learning rate vs. time chart for layer
+        Map<String,Object> lrs = getLayerLearningRates(layerID, updates);
+        result.put("learningRates", lrs);
+
         //Parameters histogram data
         Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size() - 1) : null);
         Map<String, Object> paramHistograms = getHistograms(layerID, StatsType.Parameters, lastUpdate);
@@ -498,6 +502,46 @@ public class TrainModule implements UIModule {
         }
 
         return new Triple<>(iterCounts, mean, stdev);
+    }
+
+    private Map<String,Object> getLayerLearningRates(String paramName, List<Persistable> updates) {
+
+        int size = (updates == null ? 0 : updates.size());
+        int[] iterCounts = new int[size];
+        Map<String,float[]> byName = new HashMap<>();
+        int used = 0;
+        if (updates != null) {
+            for (Persistable u : updates) {
+                if (!(u instanceof StatsReport)) continue;
+                StatsReport sp = (StatsReport) u;
+                iterCounts[used] = sp.getIterationCount();
+
+                //TODO PROPER VALIDATION ETC, ERROR HANDLING
+                Map<String,Double> lrs = sp.getLearningRates();
+
+                for(String p : lrs.keySet()){
+                    if(p.startsWith(paramName + "_")){
+                        String layerParamName = p.substring(Math.min(p.length(), paramName.length() + 1));
+                        if(!byName.containsKey(layerParamName)){
+                            byName.put(layerParamName,new float[size]);
+                        }
+                        float[] lrThisParam = byName.get(layerParamName);
+                        lrThisParam[used] = lrs.get(p).floatValue();
+                    }
+                }
+                used++;
+            }
+        }
+
+        List<String> paramNames = new ArrayList<>(byName.keySet());
+        Collections.sort(paramNames);   //Sorted for consistency
+
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("iterCounts", iterCounts);
+        ret.put("paramNames", paramNames);
+        ret.put("lrs", byName);
+
+        return ret;
     }
 
 
