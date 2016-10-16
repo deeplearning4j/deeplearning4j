@@ -1,0 +1,9 @@
+train.overview.perftable.startTime=Start Time
+train.overview.perftable.totalRuntime=Total Runtime
+train.overview.perftable.lastUpdate=Last Update
+train.overview.perftable.totalParamUpdates=Total Parameter Updates
+train.overview.perftable.updatesPerSec=Updates/sec (last)
+train.overview.perftable.examplesPerSec=Examples/sec (last)
+train.overview.modeltable.modeltype=Model Type
+train.overview.modeltable.nParams=# Parameters
+train.overview.modeltable.nLayers=# Layers

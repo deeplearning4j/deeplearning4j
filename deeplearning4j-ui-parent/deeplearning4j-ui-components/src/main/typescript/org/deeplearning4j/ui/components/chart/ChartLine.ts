@@ -32,7 +32,6 @@ class ChartLine extends Chart implements Renderable {
         var json = JSON.parse(jsonStr);
         if(!json["componentType"]) json = json[ComponentType[ComponentType.ChartLine]];
 
-
         this.xData = json['x'];
         this.yData = json['y'];
         this.seriesNames = json['seriesNames'];

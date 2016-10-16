@@ -1,12 +1,24 @@
 @(i18n: org.deeplearning4j.ui.api.I18N)
 <div class="overviewOuterDiv">
-    <div class="overviewScoreChartDiv">
-        Score chart here
+    <div class="overviewScoreChartDiv" id="scoreChartDiv">
+        <p>Score chart here</p>
+        <p>Data from: train/overview/data</p>
+        <p>x-axis values: "scoresIter"</p>
+        <p>y-axis values: "scores"</p>
     </div>
     <div class="overviewTableDiv">
-        Performance Info Here
-    </div>
-    <div class="overviewTableDiv">
-        Model Information Here
+        <p>Performance and Model Info Here</p>
+        <p>This will change every iteration</p>
+        <p>Source: /train/overview/data -> "perf" and "model"</p>
+        <table class="overviewTable">
+            <tr>
+                <td>Performance</td>
+                <td>data</td>
+            </tr>
+            <tr>
+                <td>goes</td>
+                <td>here</td>
+            </tr>
+        </table>
     </div>
 </div>

@@ -18,7 +18,6 @@
             <version>${project.version}</version>
         </dependency>
 
-
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.11</artifactId>
