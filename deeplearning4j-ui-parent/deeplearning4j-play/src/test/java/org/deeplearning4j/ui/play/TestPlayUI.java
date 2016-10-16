@@ -22,6 +22,7 @@ public class TestPlayUI {
 
     @Test
     public void testUI() throws Exception {
+
         StatsStorage ss = new MapDBStatsStorage();  //In-memory
 
         UIServer uiServer = UIServer.getInstance();
