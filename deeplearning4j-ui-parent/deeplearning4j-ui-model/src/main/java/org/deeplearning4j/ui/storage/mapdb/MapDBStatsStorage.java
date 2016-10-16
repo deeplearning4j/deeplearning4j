@@ -326,7 +326,29 @@ public class MapDBStatsStorage implements StatsStorage {
 
     @Override
     public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp) {
-        throw new RuntimeException("Not yet implemented");
+        List<Persistable> list = new ArrayList<>();
+
+        for(SessionTypeWorkerId stw : staticInfo.keySet()){
+            if(stw.getSessionID().equals(sessionID) && stw.getTypeID().equals(typeID)){
+                Map<Long,Persistable> u = updates.get(stw);
+                if(u == null) continue;
+                for(long l : u.keySet()){
+                    if(l > timestamp){
+                        list.add(u.get(l));
+                    }
+                }
+            }
+        }
+
+        //Sort by time stamp
+        Collections.sort(list, new Comparator<Persistable>() {
+            @Override
+            public int compare(Persistable o1, Persistable o2) {
+                return Long.compare(o1.getTimeStamp(), o2.getTimeStamp());
+            }
+        });
+
+        return list;
     }
 
     @Override

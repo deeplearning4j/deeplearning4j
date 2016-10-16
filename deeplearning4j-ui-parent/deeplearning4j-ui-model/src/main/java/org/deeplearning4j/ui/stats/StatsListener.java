@@ -383,7 +383,7 @@ public class StatsListener implements RoutingIterationListener {
             String arch = osBean.getArch();
             String osName = osBean.getName();
             String jvmName = runtime.getVmName();
-            String jvmVersion = runtime.getVmVersion();
+            String jvmVersion = System.getProperty("java.version");
             String jvmSpecVersion = runtime.getSpecVersion();
 
             String nd4jBackendClass = Nd4j.getNDArrayFactory().getClass().getName();
