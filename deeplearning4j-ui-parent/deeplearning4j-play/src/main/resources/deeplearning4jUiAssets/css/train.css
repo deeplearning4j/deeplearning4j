@@ -174,7 +174,7 @@ body {
     height: 300px;
     min-width:300px;
     max-width: 600px;
-    background-color: #2e6da4; /** Temp for layout debugging */
+    background-color: #e0e0e0; /** Temp for layout debugging */
     float: left;
 }
 
@@ -187,6 +187,6 @@ body {
     height: 300px;
     min-width:300px;
     max-width: 600px;
-    background-color: #2e6da4; /** Temp for layout debugging */
+    background-color: #9acfea; /** Temp for layout debugging */
     float: left;
 }

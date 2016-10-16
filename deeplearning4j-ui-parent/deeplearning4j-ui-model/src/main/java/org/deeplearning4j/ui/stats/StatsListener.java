@@ -301,6 +301,7 @@ public class StatsListener implements RoutingIterationListener {
             Map<String, INDArray> activations = getActivationArraysMap(model);
             Map<String, Double> meanActivations = calculateSummaryStats(activations, StatType.Mean);
             report.reportMean(StatsType.Activations, meanActivations);
+            System.out.println("ACTIVATIONS MEAN MAGNITUDES REPORTED");
         }
 
 

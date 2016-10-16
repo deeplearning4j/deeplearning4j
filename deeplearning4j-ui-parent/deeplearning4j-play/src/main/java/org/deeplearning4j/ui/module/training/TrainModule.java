@@ -6,6 +6,8 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -22,6 +24,7 @@ import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
+import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.views.html.training.*;
 import play.libs.Json;
 import play.mvc.Result;
@@ -242,17 +245,50 @@ public class TrainModule implements UIModule {
 
         Map<String, Object> result = new HashMap<>();
 
-//        String[][] layerInfoTable = new String[][]{
-//                {i18N.getMessage("train.model.layerinfotable.layerName"),layerID},
-//                {i18N.getMessage("train.model.layerinfotable.layerType"),""},
-//                {}
-//        };
 
+        // Get static layer info
+        String[][] layerInfoTable = getLayerInfoTable(layerID, i18N, noData, ss, wid);
+
+        result.put("layerInfo", layerInfoTable);
+
+        //Get mean magnitudes line chart
+        List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        Pair<List<Integer>,Map<String,List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerID, updates);
+        Map<String,Object> mmRatioMap = new HashMap<>();
+        mmRatioMap.put("layerParamNames",meanMagnitudes.getSecond().keySet());
+        mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
+        for(Map.Entry<String,List<Double>> entry : meanMagnitudes.getSecond().entrySet()){
+            mmRatioMap.put(entry.getKey(), entry.getValue());
+        }
+        result.put("meanMagRatio",mmRatioMap);
+
+        //Get activations line chart for layer
+        Triple<int[],float[],float[]> activationsData = getLayerActivations(layerID, updates);
+        Map<String,Object> activationMap = new HashMap<>();
+        activationMap.put("iterCount", activationsData.getFirst());
+        activationMap.put("mean", activationsData.getSecond());
+        activationMap.put("stdev", activationsData.getThird());
+        result.put("activations",activationMap);
+
+        return ok(Json.toJson(result));
+    }
+
+    private static String getLayerType(Layer layer) {
+        String layerType = "n/a";
+        if (layer != null) {
+            try {
+                layerType = layer.getClass().getSimpleName().replaceAll("Layer$", "");
+            } catch (Exception e) {
+            }
+        }
+        return layerType;
+    }
+
+    private String[][] getLayerInfoTable(String layerID, I18N i18N, boolean noData, StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), layerID});
         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerType"), ""});
 
-        // ----- Get static layer info -----
         if (!noData) {
             Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
             if (p != null) {
@@ -294,7 +330,7 @@ public class TrainModule implements UIModule {
                     if (nParams > 0) {
                         WeightInit wi = layer.getWeightInit();
                         String str = wi.toString();
-                        if(wi == WeightInit.DISTRIBUTION){
+                        if (wi == WeightInit.DISTRIBUTION) {
                             str += layer.getDist();
                         }
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
@@ -328,7 +364,7 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnPadding"), Arrays.toString(padding)});
                     }
 
-                    if(activationFn != null){
+                    if (activationFn != null) {
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerActivationFn"), activationFn});
                     }
                 }
@@ -336,22 +372,85 @@ public class TrainModule implements UIModule {
             }
         }
 
-        String[][] layerInfoTable = layerInfoRows.toArray(new String[layerInfoRows.size()][0]);
-
-        result.put("layerInfo", layerInfoTable);
-
-
-        return ok(Json.toJson(result));
+        return layerInfoRows.toArray(new String[layerInfoRows.size()][0]);
     }
 
-    private static String getLayerType(Layer layer) {
-        String layerType = "n/a";
-        if (layer != null) {
-            try {
-                layerType = layer.getClass().getSimpleName().replaceAll("Layer$", "");
-            } catch (Exception e) {
+    //TODO float precision for smaller transfers?
+    private Pair<List<Integer>,Map<String,List<Double>>> getLayerMeanMagnitudes(String layerID, List<Persistable> updates){
+
+        List<Integer> iterCounts = new ArrayList<>();
+        Map<String,List<Double>> ratioValues = new HashMap<>();
+
+        if(updates != null) {
+            for (Persistable u : updates) {
+                if (!(u instanceof StatsReport)) continue;
+                StatsReport sp = (StatsReport) u;
+                int iterCount = sp.getIterationCount();
+                iterCounts.add(iterCount);
+
+                //Info we want, for each parameter in this layer: mean magnitudes for parameters, updates AND the ratio of these
+                Map<String, Double> paramMM = sp.getMeanMagnitudes(StatsType.Parameters);
+                Map<String, Double> updateMM = sp.getMeanMagnitudes(StatsType.Updates);
+                for (String s : paramMM.keySet()) {
+                    String prefix = layerID + "_";
+                    if (s.startsWith(prefix)) {
+                        //Relevant parameter for this layer...
+                        String layerParam = s.substring(prefix.length());
+                        //TODO check and handle not collected case...
+                        double pmm = paramMM.get(s);
+                        double umm = updateMM.get(s);
+                        double ratio = umm / pmm;
+                        List<Double> list = ratioValues.get(layerParam);
+                        if (list == null) {
+                            list = new ArrayList<>();
+                            ratioValues.put(layerParam, list);
+                        }
+                        list.add(ratio);
+                    }
+                }
             }
         }
-        return layerType;
+
+        return new Pair<>(iterCounts, ratioValues);
+    }
+
+
+    private Triple<int[],float[],float[]> getLayerActivations(String paramName, List<Persistable> updates){
+
+        int size = (updates == null ? 0 : updates.size());
+        int[] iterCounts = new int[size];
+        float[] mean = new float[size];
+        float[] stdev = new float[size];
+        int used = 0;
+        if(updates != null) {
+            for (Persistable u : updates) {
+                if (!(u instanceof StatsReport)) continue;
+                StatsReport sp = (StatsReport) u;
+                iterCounts[used] = sp.getIterationCount();
+
+                Map<String, Double> means = sp.getMean(StatsType.Activations);
+                Map<String, Double> stdevs = sp.getStdev(StatsType.Activations);
+
+                //TODO PROPER VALIDATION ETC, ERROR HANDLING
+                if (means.containsKey(paramName)) {
+                    mean[used] = means.get(paramName).floatValue();
+                    stdev[used] = stdevs.get(paramName).floatValue();
+                } else {
+                    mean[used] = 0.0f;
+                    stdev[used] = 1.0f;
+                }
+
+
+                used++;
+            }
+        }
+
+        if(used != iterCounts.length){
+            iterCounts = Arrays.copyOf(iterCounts,used);
+            mean = Arrays.copyOf(mean, used);
+            stdev = Arrays.copyOf(stdev, used);
+        }
+
+        return new Triple<>(iterCounts, mean, stdev);
     }
 }
