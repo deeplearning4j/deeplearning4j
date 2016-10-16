@@ -94,15 +94,16 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                     temp[i] = s.readByte();
                 }
 
-                Pointer pointer = new BytePointer(temp);
-                CompressionDescriptor descriptor = new CompressionDescriptor();
-                descriptor.setCompressedLength(compressedLength);
-                descriptor.setCompressionAlgorithm(compressionAlgorithm);
-                descriptor.setOriginalLength(originalLength);
-                descriptor.setNumberOfElements(numberOfElements);
+                try(Pointer pointer = new BytePointer(temp)){
+                    CompressionDescriptor descriptor = new CompressionDescriptor();
+                    descriptor.setCompressedLength(compressedLength);
+                    descriptor.setCompressionAlgorithm(compressionAlgorithm);
+                    descriptor.setOriginalLength(originalLength);
+                    descriptor.setNumberOfElements(numberOfElements);
 
-                CompressedDataBuffer compressedBuffer = new CompressedDataBuffer(pointer, descriptor);
-                return Nd4j.getCompressor().decompress(compressedBuffer);
+                    CompressedDataBuffer compressedBuffer = new CompressedDataBuffer(pointer, descriptor);
+                    return Nd4j.getCompressor().decompress(compressedBuffer);
+                }
 
             } catch (Exception e) {
                 throw new RuntimeException(e);

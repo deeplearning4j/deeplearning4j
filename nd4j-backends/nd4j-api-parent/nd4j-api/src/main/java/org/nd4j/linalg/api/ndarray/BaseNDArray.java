@@ -3857,7 +3857,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         int[] shape = resolution.getShapes();
 
-        if(indexes[0] instanceof SpecifiedIndex) {
+        if(shape != null && indexes[0] instanceof SpecifiedIndex) {
             INDArray ret = create(shape);
             int count = 0;
             if(isVector()) {

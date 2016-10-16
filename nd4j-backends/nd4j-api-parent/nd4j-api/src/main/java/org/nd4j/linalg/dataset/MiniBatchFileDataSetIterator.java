@@ -198,7 +198,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         DataOutputStream dosLabels = new DataOutputStream(dataOutLabels);
         Nd4j.write(write.getLabels(), dosLabels);
         dosLabels.flush();
-        dos.close();
+        dosLabels.close();
         ret[0] = new File(rootDir,dataSetId + ".bin").getAbsolutePath();
         ret[1] = new File(rootDir,dataSetId + ".labels.bin").getAbsolutePath();
         return ret;

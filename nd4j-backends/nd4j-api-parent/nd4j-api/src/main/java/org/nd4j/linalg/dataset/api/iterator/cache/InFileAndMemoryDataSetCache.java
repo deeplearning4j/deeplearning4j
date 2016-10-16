@@ -48,7 +48,7 @@ public class InFileAndMemoryDataSetCache implements DataSetCache {
             }
         } else if (fileCache.contains(key)) {
             dataSet = fileCache.get(key);
-            if (!memoryCache.contains(key)) {
+            if (dataSet != null && !memoryCache.contains(key)) {
                 memoryCache.put(key, dataSet);
             }
         }
