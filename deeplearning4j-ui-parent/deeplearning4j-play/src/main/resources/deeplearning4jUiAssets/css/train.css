@@ -160,7 +160,6 @@ body {
 /* ----- Specific to Model page ----- */
 .modelOuterDiv {
     width: 100%;
-
 }
 .modelGraphDiv {
     width:40%;
@@ -172,6 +171,19 @@ body {
 }
 .modelContentDiv {
     width: 30%;
+    height: 300px;
+    min-width:300px;
+    max-width: 600px;
+    background-color: #2e6da4; /** Temp for layout debugging */
+    float: left;
+}
+
+/* ----- Specific to System page ----- */
+.systemOuterDiv {
+    width: 100%;
+}
+.systemContentDiv {
+    width: 25%;
     height: 300px;
     min-width:300px;
     max-width: 600px;

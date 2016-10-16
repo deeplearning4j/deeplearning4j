@@ -1,10 +1,16 @@
 @(i18n: org.deeplearning4j.ui.api.I18N)
 <div class="modelOuterDiv">
     <div class="modelGraphDiv" id="modelGraph">
-        View of model goes here!
+        <p>View of network goes here - from the current FlowIterationListener</p>
+        <p>User clicks on one of the nodes, and it loads the relevant data on the right</p>
     </div>
     <div class="modelContentDiv" id="modelLayerInfo">
-        Layer info table here
+        <p>
+            Layer info table here
+        </p>
+        <p>
+            Layer info available as a 2d array at /train/model/data/layerId -> "layerInfo"
+        </p>
     </div>
     <div class="modelContentDiv" id="modelMeanMagnitudes">
         <p>Mean magnitudes line chart</p>
