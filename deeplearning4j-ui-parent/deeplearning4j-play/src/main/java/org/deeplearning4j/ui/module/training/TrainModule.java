@@ -69,10 +69,11 @@ public class TrainModule implements UIModule {
         Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
         Route r3a = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
         Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
+        Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
         Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
         Route r6 = new Route("/train/currentSessionID", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r4, r5, r6);
+        return Arrays.asList(r, r2, r2a, r3, r3a, r4, r4a, r5, r6);
     }
 
     @Override
@@ -254,33 +255,69 @@ public class TrainModule implements UIModule {
 
         //Get mean magnitudes line chart
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-        Pair<List<Integer>,Map<String,List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerID, updates);
-        Map<String,Object> mmRatioMap = new HashMap<>();
-        mmRatioMap.put("layerParamNames",meanMagnitudes.getSecond().keySet());
+        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerID, updates);
+        Map<String, Object> mmRatioMap = new HashMap<>();
+        mmRatioMap.put("layerParamNames", meanMagnitudes.getSecond().keySet());
         mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
-        for(Map.Entry<String,List<Double>> entry : meanMagnitudes.getSecond().entrySet()){
+        for (Map.Entry<String, List<Double>> entry : meanMagnitudes.getSecond().entrySet()) {
             mmRatioMap.put(entry.getKey(), entry.getValue());
         }
-        result.put("meanMagRatio",mmRatioMap);
+        result.put("meanMagRatio", mmRatioMap);
 
         //Get activations line chart for layer
-        Triple<int[],float[],float[]> activationsData = getLayerActivations(layerID, updates);
-        Map<String,Object> activationMap = new HashMap<>();
+        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerID, updates);
+        Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
         activationMap.put("mean", activationsData.getSecond());
         activationMap.put("stdev", activationsData.getThird());
-        result.put("activations",activationMap);
+        result.put("activations", activationMap);
 
         //Parameters histogram data
-        Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size()-1) : null);
-        Map<String,Object> paramHistograms = getHistograms(layerID, StatsType.Parameters, lastUpdate);
+        Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size() - 1) : null);
+        Map<String, Object> paramHistograms = getHistograms(layerID, StatsType.Parameters, lastUpdate);
         result.put("paramHist", paramHistograms);
 
         //Updates histogram data
-        Map<String,Object> updateHistograms = getHistograms(layerID, StatsType.Updates, lastUpdate);
+        Map<String, Object> updateHistograms = getHistograms(layerID, StatsType.Updates, lastUpdate);
         result.put("updateHist", updateHistograms);
 
         return ok(Json.toJson(result));
+    }
+
+    public Result getSystemData() {
+        I18N i18n = I18NProvider.getInstance();
+
+        //First: get the MOST RECENT update...
+        //Then get all updates from most recent - 5 minutes -> TODO make this configurable...
+
+        boolean noData = currentSessionID == null;
+        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+        List<Persistable> latestUpdates = (noData ? Collections.EMPTY_LIST : ss.getLatestUpdateAllWorkers(currentSessionID, StatsListener.TYPE_ID));
+
+        long lastUpdateTime = -1;
+        if (latestUpdates == null || latestUpdates.size() == 0) {
+            noData = true;
+        } else {
+            for (Persistable p : latestUpdates) {
+                lastUpdateTime = Math.max(lastUpdateTime, p.getTimeStamp());
+            }
+        }
+
+        long fromTime = lastUpdateTime - 5 * 60 * 1000; //TODO Make configurable
+        List<Persistable> lastNMinutes = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, fromTime));
+
+        Map<String, Object> mem = getMemory(allStatic, lastNMinutes, i18n);
+        Pair<Map<String, Object>, Map<String, Object>> hwSwInfo = getHardwareSoftwareInfo(allStatic, i18n);
+
+        Map<String, Object> ret = new HashMap<>();
+        ret.put("memory", mem);
+        ret.put("hardware", hwSwInfo.getFirst());
+        ret.put("software", hwSwInfo.getSecond());
+
+
+        return ok(Json.toJson(ret));
     }
 
     private static String getLayerType(Layer layer) {
@@ -386,12 +423,12 @@ public class TrainModule implements UIModule {
     }
 
     //TODO float precision for smaller transfers?
-    private Pair<List<Integer>,Map<String,List<Double>>> getLayerMeanMagnitudes(String layerID, List<Persistable> updates){
+    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(String layerID, List<Persistable> updates) {
 
         List<Integer> iterCounts = new ArrayList<>();
-        Map<String,List<Double>> ratioValues = new HashMap<>();
+        Map<String, List<Double>> ratioValues = new HashMap<>();
 
-        if(updates != null) {
+        if (updates != null) {
             for (Persistable u : updates) {
                 if (!(u instanceof StatsReport)) continue;
                 StatsReport sp = (StatsReport) u;
@@ -425,14 +462,14 @@ public class TrainModule implements UIModule {
     }
 
 
-    private Triple<int[],float[],float[]> getLayerActivations(String paramName, List<Persistable> updates){
+    private Triple<int[], float[], float[]> getLayerActivations(String paramName, List<Persistable> updates) {
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
         float[] mean = new float[size];
         float[] stdev = new float[size];
         int used = 0;
-        if(updates != null) {
+        if (updates != null) {
             for (Persistable u : updates) {
                 if (!(u instanceof StatsReport)) continue;
                 StatsReport sp = (StatsReport) u;
@@ -454,8 +491,8 @@ public class TrainModule implements UIModule {
             }
         }
 
-        if(used != iterCounts.length){
-            iterCounts = Arrays.copyOf(iterCounts,used);
+        if (used != iterCounts.length) {
+            iterCounts = Arrays.copyOf(iterCounts, used);
             mean = Arrays.copyOf(mean, used);
             stdev = Arrays.copyOf(stdev, used);
         }
@@ -464,32 +501,219 @@ public class TrainModule implements UIModule {
     }
 
 
-    private static Map<String,Object> getHistograms(String layerName, StatsType statsType, Persistable p){
-        if(p == null) return null;
-        if(!(p instanceof StatsReport)) return null;
-        StatsReport sr = (StatsReport)p;
+    private static Map<String, Object> getHistograms(String layerName, StatsType statsType, Persistable p) {
+        if (p == null) return null;
+        if (!(p instanceof StatsReport)) return null;
+        StatsReport sr = (StatsReport) p;
 
 
-        Map<String,Histogram> map = sr.getHistograms(statsType);
+        Map<String, Histogram> map = sr.getHistograms(statsType);
 
         List<String> paramNames = new ArrayList<>();
 
-        Map<String,Object> ret = new HashMap<>();
-        for(String s : map.keySet()){
-            if(s.startsWith(layerName)){
-                String paramName = s.substring(layerName.length()+1);
+        Map<String, Object> ret = new HashMap<>();
+        for (String s : map.keySet()) {
+            if (s.startsWith(layerName)) {
+                String paramName = s.substring(layerName.length() + 1);
                 paramNames.add(paramName);
                 Histogram h = map.get(s);
-                Map<String,Object> thisHist = new HashMap<>();
-                thisHist.put("min",h.getMin());
-                thisHist.put("max",h.getMax());
-                thisHist.put("bins",h.getNBins());
-                thisHist.put("counts",h.getBinCounts());
+                Map<String, Object> thisHist = new HashMap<>();
+                thisHist.put("min", h.getMin());
+                thisHist.put("max", h.getMax());
+                thisHist.put("bins", h.getNBins());
+                thisHist.put("counts", h.getBinCounts());
                 ret.put(paramName, thisHist);
             }
         }
-        ret.put("paramNames",paramNames);
+        ret.put("paramNames", paramNames);
 
         return ret;
+    }
+
+    private static Map<String, Object> getMemory(List<Persistable> staticInfoAllWorkers, List<Persistable> updatesLastNMinutes, I18N i18n) {
+
+        Map<String, Object> ret = new HashMap<>();
+
+        //First: map workers to JVMs
+        Set<String> jvmIDs = new HashSet<>();
+        Map<String, String> workersToJvms = new HashMap<>();
+        Map<String, Integer> workerNumDevices = new HashMap<>();
+        Map<String, String[]> deviceNames = new HashMap<>();
+        for (Persistable p : staticInfoAllWorkers) {
+            //TODO validation/checks
+            StatsInitializationReport init = (StatsInitializationReport) p;
+            String jvmuid = init.getSwJvmUID();
+            workersToJvms.put(p.getWorkerID(), jvmuid);
+            jvmIDs.add(jvmuid);
+
+            int nDevices = init.getHwNumDevices();
+            workerNumDevices.put(p.getWorkerID(), nDevices);
+
+            if (nDevices > 0) {
+                String[] deviceNamesArr = init.getHwDeviceDescription();
+                deviceNames.put(p.getWorkerID(), deviceNamesArr);
+            }
+        }
+
+        List<String> jvmList = new ArrayList<>(jvmIDs);
+        Collections.sort(jvmList);
+
+        //For each unique JVM, collect memory info
+        //Do this by selecting the first worker
+        int count = 0;
+        for (String jvm : jvmList) {
+            List<String> workersForJvm = new ArrayList<>();
+            for (String s : workersToJvms.keySet()) {
+                if (workersToJvms.get(s).equals(jvm)) {
+                    workersForJvm.add(s);
+                }
+            }
+            Collections.sort(workersForJvm);
+            String wid = workersForJvm.get(0);
+
+            int numDevices = workerNumDevices.get(wid);
+
+            Map<String, Object> jvmData = new HashMap<>();
+
+            List<Long> timestamps = new ArrayList<>();
+            List<Float> fracJvm = new ArrayList<>();
+            List<Float> fracOffHeap = new ArrayList<>();
+            long[] lastBytes = new long[2];
+            long[] lastMaxBytes = new long[2];
+
+            List<List<Float>> fracDeviceMem = null;
+            if (numDevices > 0) {
+                fracDeviceMem = new ArrayList<>(numDevices);
+                for (int i = 0; i < numDevices; i++) {
+                    fracDeviceMem.add(new ArrayList<>());
+                }
+            }
+
+            for (Persistable p : updatesLastNMinutes) {
+                //TODO single pass
+                if (!p.getWorkerID().equals(wid)) continue;
+                if (!(p instanceof StatsReport)) continue;
+
+                StatsReport sp = (StatsReport) p;
+
+                timestamps.add(sp.getTimeStamp());
+
+                long jvmCurrentBytes = sp.getJvmCurrentBytes();
+                long jvmMaxBytes = sp.getJvmMaxBytes();
+                long ohCurrentBytes = sp.getOffHeapCurrentBytes();
+                long ohMaxBytes = sp.getOffHeapMaxBytes();
+
+                double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
+                double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
+                fracJvm.add((float) jvmFrac);
+                fracOffHeap.add((float) offheapFrac);
+
+                lastBytes[0] = jvmCurrentBytes;
+                lastBytes[1] = ohCurrentBytes;
+
+                lastMaxBytes[0] = jvmCurrentBytes;
+                lastMaxBytes[1] = ohMaxBytes;
+
+                if (numDevices > 0) {
+                    long[] devBytes = sp.getDeviceCurrentBytes();
+                    long[] devMaxBytes = sp.getDeviceMaxBytes();
+                    for (int i = 0; i < numDevices; i++) {
+                        double frac = devBytes[i] / ((double) devMaxBytes[i]);
+                        fracDeviceMem.get(i).add((float) frac);
+                    }
+                }
+
+            }
+
+            List<List<Float>> fracUtilized = new ArrayList<>();
+            fracUtilized.add(fracJvm);
+            fracUtilized.add(fracOffHeap);
+
+            String[] seriesNames = new String[2 + numDevices];
+            seriesNames[0] = i18n.getMessage("train.system.memory.onHeapName");
+            seriesNames[1] = i18n.getMessage("train.system.memory.offHeapName");
+            boolean[] isDevice = new boolean[2 + numDevices];
+            String[] devNames = deviceNames.get(wid);
+            for (int i = 0; i < numDevices; i++) {
+                seriesNames[2 + i] = devNames != null && devNames.length > i ? devNames[i] : "";
+                fracUtilized.add(fracDeviceMem.get(i));
+                isDevice[2 + i] = true;
+            }
+
+            jvmData.put("times", timestamps);
+            jvmData.put("isDevice", isDevice);
+            jvmData.put("seriesNames", seriesNames);
+            jvmData.put("values", Arrays.asList(fracJvm, fracOffHeap));
+            jvmData.put("currentBytes", lastBytes);
+            jvmData.put("maxBytes", lastMaxBytes);
+            ret.put(String.valueOf(count), jvmData);
+
+            count++;
+        }
+
+        return ret;
+    }
+
+    private static Pair<Map<String, Object>, Map<String, Object>> getHardwareSoftwareInfo(List<Persistable> staticInfoAllWorkers, I18N i18n) {
+        Map<String, Object> retHw = new HashMap<>();
+        Map<String, Object> retSw = new HashMap<>();
+
+        //First: map workers to JVMs
+        Set<String> jvmIDs = new HashSet<>();
+        Map<String, StatsInitializationReport> staticByJvm = new HashMap<>();
+        for (Persistable p : staticInfoAllWorkers) {
+            //TODO validation/checks
+            StatsInitializationReport init = (StatsInitializationReport) p;
+            String jvmuid = init.getSwJvmUID();
+            jvmIDs.add(jvmuid);
+            staticByJvm.put(jvmuid, init);
+        }
+
+        List<String> jvmList = new ArrayList<>(jvmIDs);
+        Collections.sort(jvmList);
+
+        //For each unique JVM, collect hardware info
+        int count = 0;
+        for (String jvm : jvmList) {
+            StatsInitializationReport sr = staticByJvm.get(jvm);
+
+            //---- Harware Info ----
+            List<String[]> hwInfo = new ArrayList<>();
+            int numDevices = sr.getHwNumDevices();
+            String[] deviceDescription = sr.getHwDeviceDescription();
+            long[] devTotalMem = sr.getHwDeviceTotalMemory();
+
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmMaxMem"), String.valueOf(sr.getHwJvmMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmMaxMem"), String.valueOf(sr.getHwOffHeapMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmprocs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.numDevices"), String.valueOf(numDevices)});
+            for (int i = 0; i < numDevices; i++) {
+                String label = i18n.getMessage("train.system.hardwareinfo.deviceName") + " (" + i + ")";
+                String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i) : deviceDescription[i]);
+                hwInfo.add(new String[]{label, name});
+
+                String memLabel = i18n.getMessage("train.system.hardwareinfo.deviceMemory") + " (" + i + ")";
+                String memBytes = (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
+                hwInfo.add(new String[]{memLabel, memBytes});
+            }
+
+            retHw.put(String.valueOf(count), hwInfo);
+
+            //---- Software Info -----
+            List<String[]> swInfo = new ArrayList<>();
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.os"), sr.getSwOsName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.hostname"), sr.getSwHostName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.architecture"), sr.getSwArch()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.jvmName"), sr.getSwJvmName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.jvmVersion"), sr.getSwJvmVersion()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.nd4jBackend"), sr.getSwNd4jBackendClass()});     //TODO proper formatting
+            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.nd4jDataType"), sr.getSwNd4jDataTypeName()});
+
+            retSw.put(String.valueOf(count), swInfo);
+
+            count++;
+        }
+
+        return new Pair<>(retHw, retSw);
     }
 }

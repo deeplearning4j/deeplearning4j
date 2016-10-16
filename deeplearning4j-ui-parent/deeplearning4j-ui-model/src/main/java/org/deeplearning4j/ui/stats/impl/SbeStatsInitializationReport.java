@@ -38,7 +38,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
     private String swJvmSpecVersion;
     private String swNd4jBackendClass;
     private String swNd4jDataTypeName;
-    private String swHostname;
+    private String swHostName;
     private String swJvmUID;
 
     private int hwJvmAvailableProcessors;
@@ -73,7 +73,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         this.swJvmSpecVersion = jvmSpecVersion;
         this.swNd4jBackendClass = nd4jBackendClass;
         this.swNd4jDataTypeName = nd4jDataTypeName;
-        this.swHostname = hostname;
+        this.swHostName = hostname;
         this.swJvmUID = jvmUid;
         hasSoftwareInfo = true;
     }
@@ -117,6 +117,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         return hasModelInfo;
     }
 
+
+
     private void clearHwFields(){
         hwDeviceTotalMemory = null;
         hwDeviceDescription = null;
@@ -131,7 +133,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         swJvmSpecVersion = null;
         swNd4jBackendClass = null;
         swNd4jDataTypeName = null;
-        swHostname = null;
+        swHostName = null;
         swJvmUID = null;
     }
 
@@ -189,7 +191,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
-        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostName);
         byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
         byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
@@ -260,7 +262,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
-        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostName);
         byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
         byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
@@ -401,7 +403,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         swJvmSpecVersion = sid.swJvmSpecVersion();
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
-        swHostname = sid.swHostName();
+        swHostName = sid.swHostName();
         swJvmUID = sid.swJvmUID();
         if (!hasSoftwareInfo) clearSwFields();
         hwHardwareUID = sid.hwHardwareUID();

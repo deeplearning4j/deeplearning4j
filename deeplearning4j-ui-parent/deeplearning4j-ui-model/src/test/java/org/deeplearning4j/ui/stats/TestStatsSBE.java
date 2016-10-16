@@ -115,6 +115,7 @@ public class TestStatsSBE {
                         assertEquals(nd4jBackendClass, report2.getSwNd4jBackendClass());
                         assertEquals(nd4jDataTypeName, report2.getSwNd4jDataTypeName());
                         assertEquals(jvmUID, report2.getSwJvmUID());
+                        assertEquals(hostname, report2.getSwHostName());
                         assertTrue(report2.hasSoftwareInfo());
                     } else {
                         assertFalse(report2.hasSoftwareInfo());
