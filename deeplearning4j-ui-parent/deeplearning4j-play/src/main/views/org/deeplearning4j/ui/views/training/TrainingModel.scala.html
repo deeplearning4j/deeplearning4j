@@ -40,8 +40,14 @@
         </p>
     </div>
     <div class="modelContentDiv" id="modelLearningRates">
-        <p>Learning rates line chart</p>
+        <p>Learning rates multi-line chart</p>
         <p>Shows learning rates (by parameter type) over time</p>
+        <p>
+            /train/model/data/layerId -> "learningRates"
+            "paramNames" - names of parameters for the layer (order will be consistent between calls)
+            "iterCounts" - x axis values
+            "lrs": map with array of learning rate values, one per paramName. y-axis values
+        </p>
     </div>
     <div class="modelContentDiv" id="modelParamHistogram">
         <p>Parameters histogram</p>
