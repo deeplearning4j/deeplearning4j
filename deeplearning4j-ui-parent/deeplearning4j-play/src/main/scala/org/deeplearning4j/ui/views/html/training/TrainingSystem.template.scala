@@ -25,19 +25,33 @@ class TrainingSystem extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appenda
 Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<div class="systemOuterDiv">
     <div class="systemContentDiv" id="systemMemoryUtilization">
-        <p>Memory utilization chart (0 to 100%, last N minutes?) goes here</p>
+        <p>Memory utilization multi-chart (0 to 100%, last N minutes?) goes here</p>
         <p>Note that in general for this page: will be showing stats/info from MULTIPLE systems</p>
         <p>Single machine training will have 1; Spark etc. training will have one row like this for each machine/JVM</p>
+
+        Source: /train/system/data -> "memory"
+        "nEntries": integer, for number of memory info charts we have
+
+        For each of the n entries: "0", "1", ..., "n-1" with values:
+            "seriesNames": names of the series
+            "isDevice": for each series, whether it is a device memory (second chart) or standard (1st chart)
+            "times": timestamps for the entries (millisecond epoch format)
+            "values": the actual memory utilization fraction over time, values 0.0 to 1.0
+            "currentBytes": the currently utilized memory, for each series (at most recent time step)
+            "maxBytes": the maximum available bytes, for each series (at most recent time step)
     </div>
     <div class="systemContentDiv" id="systemDeviceMemory">
         <p>Memory utilization for GPUs (0 to 100%, last N minutes?) goes here</p>
         <p>For machines without any GPUs/devices, we shouldn't show this div/chart</p>
+        Source: same as memory above, but with isDevice[i] = true
     </div>
     <div class="systemContentDiv" id="systemHardwareInfo">
         <p>Hardware information table for this machine/JVM</p>
+        Source: /train/system/data -> "hardware"
     </div>
     <div class="systemContentDiv" id="systemHardwareInfo">
         <p>Software information table for this machine/JVM</p>
+        Source: /train/system/data -> "software"
     </div>
 </div>"""))
       }
@@ -59,9 +73,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 13:32:31 AEDT 2016
+                  DATE: Sun Oct 16 22:13:59 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 2fa53382daa00608b8fd23e3492223dcb2f06955
+                  HASH: f7c3e7a4c5e4fab723e9850922624d9f4aa7c28b
                   MATRIX: 600->1|733->39|761->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

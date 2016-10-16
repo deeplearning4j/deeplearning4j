@@ -1,0 +1,15 @@
+train.system.memory.onHeapName=JVM Memory
+train.system.memory.offHeapName=Off-Heap Memory
+train.system.hardwareinfo.jvmprocs=JVM Available Processors
+train.system.hardwareinfo.jvmMaxMem=JVM Max Memory
+train.system.hardwareinfo.ohMaxMem=Off-Heap Max Memory
+train.system.hardwareinfo.numDevices=# Compute Devices
+train.system.hardwareinfo.deviceName=Device Name
+train.system.hardwareinfo.deviceMemory=Device Total Memory
+train.system.softwareinfo.architecture=OS Architecture
+train.system.softwareinfo.os=OS
+train.system.softwareinfo.hostname=Host Name
+train.system.softwareinfo.jvmName=JVM Name
+train.system.softwareinfo.jvmVersion=JVM Version
+train.system.softwareinfo.nd4jBackend=ND4J Backend
+train.system.softwareinfo.nd4jDataType=ND4J Data Type
