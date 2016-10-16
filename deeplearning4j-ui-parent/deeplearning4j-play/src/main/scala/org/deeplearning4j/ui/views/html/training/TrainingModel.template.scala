@@ -25,10 +25,16 @@ class TrainingModel extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendab
 Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<div class="modelOuterDiv">
     <div class="modelGraphDiv" id="modelGraph">
-        View of model goes here!
+        <p>View of network goes here - from the current FlowIterationListener</p>
+        <p>User clicks on one of the nodes, and it loads the relevant data on the right</p>
     </div>
     <div class="modelContentDiv" id="modelLayerInfo">
-        Layer info table here
+        <p>
+            Layer info table here
+        </p>
+        <p>
+            Layer info available as a 2d array at /train/model/data/layerId -> "layerInfo"
+        </p>
     </div>
     <div class="modelContentDiv" id="modelMeanMagnitudes">
         <p>Mean magnitudes line chart</p>
@@ -71,9 +77,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 12:59:08 AEDT 2016
+                  DATE: Sun Oct 16 15:55:40 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 6016954dd1217c1ac6520c18b3e968fa348a6a4a
+                  HASH: 106663ac19fa95d88f93e00338d029a5476322eb
                   MATRIX: 598->1|731->39|759->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

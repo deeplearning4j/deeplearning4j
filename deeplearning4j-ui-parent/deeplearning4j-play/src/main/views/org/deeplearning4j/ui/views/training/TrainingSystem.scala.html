@@ -1,4 +1,18 @@
 @(i18n: org.deeplearning4j.ui.api.I18N)
-<div>
-    System page content here!
+<div class="systemOuterDiv">
+    <div class="systemContentDiv" id="systemMemoryUtilization">
+        <p>Memory utilization chart (0 to 100%, last N minutes?) goes here</p>
+        <p>Note that in general for this page: will be showing stats/info from MULTIPLE systems</p>
+        <p>Single machine training will have 1; Spark etc. training will have one row like this for each machine/JVM</p>
+    </div>
+    <div class="systemContentDiv" id="systemDeviceMemory">
+        <p>Memory utilization for GPUs (0 to 100%, last N minutes?) goes here</p>
+        <p>For machines without any GPUs/devices, we shouldn't show this div/chart</p>
+    </div>
+    <div class="systemContentDiv" id="systemHardwareInfo">
+        <p>Hardware information table for this machine/JVM</p>
+    </div>
+    <div class="systemContentDiv" id="systemHardwareInfo">
+        <p>Software information table for this machine/JVM</p>
+    </div>
 </div>
