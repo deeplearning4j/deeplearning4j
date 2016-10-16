@@ -24,7 +24,11 @@ class TrainingHelp extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendabl
 
 Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<div>
-    Help/User Guide page content here!
+    <p>Help/User Guide page content here</p>
+    <p>
+        Idea: explain the basics to users - enough to understand what they are looking at and get started.
+        Then direct them to the relevant resources on the website.
+    </p>
 </div>"""))
       }
     }
@@ -45,9 +49,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sat Oct 15 12:44:38 AEDT 2016
+                  DATE: Sun Oct 16 13:32:31 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: e01178a343ac5528c4f75889c62c2cd627f93604
+                  HASH: 6492911519c48658c576a79c1717959d22d62ccf
                   MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
