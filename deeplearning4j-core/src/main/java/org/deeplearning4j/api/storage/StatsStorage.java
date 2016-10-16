@@ -137,6 +137,16 @@ public interface StatsStorage extends StatsStorageRouter {
      */
     List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, String workerID, long timestamp);
 
+    /**
+     * Get all updates for the given session ID (all worker IDs), that occur after (not including) the given timestamp.
+     * Results should be sorted by time.
+     *
+     * @param sessionID Session ID
+     * @param timestamp Timestamp
+     * @return List of records occurring after the given timestamp
+     */
+    List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp);
+
 
     /**
      * Get the session metadata, if any has been registered via {@link #putStorageMetaData(StorageMetaData)}

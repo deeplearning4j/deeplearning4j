@@ -78,6 +78,8 @@ public interface StatsInitializationReport extends Persistable {
 
     String getSwNd4jDataTypeName();
 
+    String getSwHostName();
+
     String getSwJvmUID();
 
     int getHwJvmAvailableProcessors();

@@ -325,6 +325,11 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
+    public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
     public StorageMetaData getStorageMetaData(String sessionID, String typeID) {
         return this.storageMetaData.get(new SessionTypeId(sessionID, typeID));
     }
