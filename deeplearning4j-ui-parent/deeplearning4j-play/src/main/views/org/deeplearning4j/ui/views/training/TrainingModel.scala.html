@@ -46,9 +46,18 @@
     <div class="modelContentDiv" id="modelParamHistogram">
         <p>Parameters histogram</p>
         <p>Histogram of the parameters in the network</p>
+        <p>
+            /train/model/data/layerId -> "paramHist"
+            "paramNames": names of parameters
+            one key for each param name: min,max,bins,counts fields. This defines the histogram content.
+            i.e., each histogram has "bins" entries of size (max-min)/bins.
+        </p>
     </div>
     <div class="modelContentDiv" id="modelParamHistogram">
         <p>Updates histogram</p>
         <p>Histogram of the updates in the network</p>
+        <p>
+            As per params histograms, but "updateHist"
+        </p>
     </div>
 </div>

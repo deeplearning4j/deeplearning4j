@@ -70,10 +70,19 @@ Seq[Any](format.raw/*1.40*/("""
     <div class="modelContentDiv" id="modelParamHistogram">
         <p>Parameters histogram</p>
         <p>Histogram of the parameters in the network</p>
+        <p>
+            /train/model/data/layerId -> "paramHist"
+            "paramNames": names of parameters
+            one key for each param name: min,max,bins,counts fields. This defines the histogram content.
+            i.e., each histogram has "bins" entries of size (max-min)/bins.
+        </p>
     </div>
     <div class="modelContentDiv" id="modelParamHistogram">
         <p>Updates histogram</p>
         <p>Histogram of the updates in the network</p>
+        <p>
+            As per params histograms, but "updateHist"
+        </p>
     </div>
 </div>"""))
       }
@@ -95,9 +104,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 16:44:48 AEDT 2016
+                  DATE: Sun Oct 16 17:36:07 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: ed048523d0d5426a28e2ca2710ded90fa1e52a07
+                  HASH: 44335fbfdc0243d8bd3971f521f2b6b56c2e3c19
                   MATRIX: 598->1|731->39|759->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

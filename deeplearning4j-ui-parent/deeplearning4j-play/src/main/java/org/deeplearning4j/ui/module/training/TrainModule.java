@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
@@ -270,6 +271,15 @@ public class TrainModule implements UIModule {
         activationMap.put("stdev", activationsData.getThird());
         result.put("activations",activationMap);
 
+        //Parameters histogram data
+        Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size()-1) : null);
+        Map<String,Object> paramHistograms = getHistograms(layerID, StatsType.Parameters, lastUpdate);
+        result.put("paramHist", paramHistograms);
+
+        //Updates histogram data
+        Map<String,Object> updateHistograms = getHistograms(layerID, StatsType.Updates, lastUpdate);
+        result.put("updateHist", updateHistograms);
+
         return ok(Json.toJson(result));
     }
 
@@ -432,14 +442,13 @@ public class TrainModule implements UIModule {
                 Map<String, Double> stdevs = sp.getStdev(StatsType.Activations);
 
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
-                if (means.containsKey(paramName)) {
+                if (means != null && means.containsKey(paramName)) {
                     mean[used] = means.get(paramName).floatValue();
                     stdev[used] = stdevs.get(paramName).floatValue();
                 } else {
                     mean[used] = 0.0f;
                     stdev[used] = 1.0f;
                 }
-
 
                 used++;
             }
@@ -452,5 +461,35 @@ public class TrainModule implements UIModule {
         }
 
         return new Triple<>(iterCounts, mean, stdev);
+    }
+
+
+    private static Map<String,Object> getHistograms(String layerName, StatsType statsType, Persistable p){
+        if(p == null) return null;
+        if(!(p instanceof StatsReport)) return null;
+        StatsReport sr = (StatsReport)p;
+
+
+        Map<String,Histogram> map = sr.getHistograms(statsType);
+
+        List<String> paramNames = new ArrayList<>();
+
+        Map<String,Object> ret = new HashMap<>();
+        for(String s : map.keySet()){
+            if(s.startsWith(layerName)){
+                String paramName = s.substring(layerName.length()+1);
+                paramNames.add(paramName);
+                Histogram h = map.get(s);
+                Map<String,Object> thisHist = new HashMap<>();
+                thisHist.put("min",h.getMin());
+                thisHist.put("max",h.getMax());
+                thisHist.put("bins",h.getNBins());
+                thisHist.put("counts",h.getBinCounts());
+                ret.put(paramName, thisHist);
+            }
+        }
+        ret.put("paramNames",paramNames);
+
+        return ret;
     }
 }
