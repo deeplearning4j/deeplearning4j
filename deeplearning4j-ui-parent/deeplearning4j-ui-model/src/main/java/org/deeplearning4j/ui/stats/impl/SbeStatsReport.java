@@ -1000,7 +1000,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         }
 
 
-        //Fourth group: Per parameter stats (and histograms, etc) AND per layer stats
+        //Sixth group: Per parameter stats (and histograms, etc) AND per layer stats
         int entryNum = 0;
         for (UpdateDecoder.PerParameterStatsDecoder ppsd : ud.perParameterStats()) {
             boolean isParam = entryNum < nParams;

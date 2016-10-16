@@ -37,13 +37,31 @@ Seq[Any](format.raw/*1.40*/("""
         </p>
     </div>
     <div class="modelContentDiv" id="modelMeanMagnitudes">
-        <p>Mean magnitudes line chart</p>
-        <p>Line chart of mean magnitudes</p>
-        <p>Selection box with: ratio of params (default), parameters mean magnitudes (1 per param type), updates mean magnitude (1 per param type)</p>
+        <p>Mean magnitudes multi line chart</p>
+        <p>
+            For now: multi-line chart of ratio of (mean(abs(updates))/mean(abs(parameters))) vs. time.
+            One line for each parameter (weights, biases)
+        </p>
+        <p>
+            /train/model/data/layerId -> "meanMagRatio"
+            Contents:
+            "layerParamNames": Names of the parameters for each parameter
+            "iterCounts": iteration numbers (x axis values) for the ratio data points
+            "someParamName": (key by contents of layerParamNames): y-axis values for ratios
+        </p>
+        <p>Maybe later, add the 'pre ratio' information: parameters mean magnitudes (1 per param type), updates mean magnitude (1 per param type)</p>
     </div>
     <div class="modelContentDiv" id="modelActivations">
         <p>Activations line chart</p>
         <p>Shows mean activations value over time +/- 2 standard deviations</p>
+        <p>
+            /train/model/data/layerId -> "activations"
+            Properties:
+            "iterCount": iterations at which the corresponding mean/stdev values occur (x axis values)
+            "mean": mean values (y axis values)
+            "stdev": standard deviation values
+            Note that the mean + 2*stdev and mean - 2*stdev need to be calculated from these
+        </p>
     </div>
     <div class="modelContentDiv" id="modelLearningRates">
         <p>Learning rates line chart</p>
@@ -77,9 +95,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 15:55:40 AEDT 2016
+                  DATE: Sun Oct 16 16:44:48 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 106663ac19fa95d88f93e00338d029a5476322eb
+                  HASH: ed048523d0d5426a28e2ca2710ded90fa1e52a07
                   MATRIX: 598->1|731->39|759->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
