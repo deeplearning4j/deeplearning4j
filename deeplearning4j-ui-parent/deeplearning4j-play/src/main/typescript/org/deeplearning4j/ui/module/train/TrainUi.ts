@@ -1,5 +1,6 @@
 /// <reference path="../../typedefs/jquery.d.ts" />
 /// <reference path="../../typedefs/notify.d.ts" />
+/// <reference path="../../typedefs/dl4j-ui.d.ts" />
 
 function onNavClick(source: String, errorMsg: String) {
 
@@ -63,13 +64,12 @@ function getAndProcessUpdate(){
 
 function getAndProcessUpdateOverview(){
     $.ajax({
-        url: "train/home/data",
+        url: "train/overview/data",
         success: function ( data ) {
-            console.log("DATA: " + data);
-            console.log(data.scores);
-            console.log(data.scoresIterCount);
-            // console.log("DATA keys: " + data.keys());
-            // var scores: number[] = json['']
+            console.log("Overview data: " + data);
+
+            //TODO process data
+
         },
         error: function (query, status, error) {
             $.notify("Error","error");  //TODO

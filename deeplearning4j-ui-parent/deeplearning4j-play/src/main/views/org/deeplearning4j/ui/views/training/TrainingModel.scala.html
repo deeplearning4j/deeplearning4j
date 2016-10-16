@@ -1,4 +1,30 @@
 @(i18n: org.deeplearning4j.ui.api.I18N)
-<div>
-    Model page content here!
+<div class="modelOuterDiv">
+    <div class="modelGraphDiv" id="modelGraph">
+        View of model goes here!
+    </div>
+    <div class="modelContentDiv" id="modelLayerInfo">
+        Layer info table here
+    </div>
+    <div class="modelContentDiv" id="modelMeanMagnitudes">
+        <p>Mean magnitudes line chart</p>
+        <p>Line chart of mean magnitudes</p>
+        <p>Selection box with: ratio of params (default), parameters mean magnitudes (1 per param type), updates mean magnitude (1 per param type)</p>
+    </div>
+    <div class="modelContentDiv" id="modelActivations">
+        <p>Activations line chart</p>
+        <p>Shows mean activations value over time +/- 2 standard deviations</p>
+    </div>
+    <div class="modelContentDiv" id="modelLearningRates">
+        <p>Learning rates line chart</p>
+        <p>Shows learning rates (by parameter type) over time</p>
+    </div>
+    <div class="modelContentDiv" id="modelParamHistogram">
+        <p>Parameters histogram</p>
+        <p>Histogram of the parameters in the network</p>
+    </div>
+    <div class="modelContentDiv" id="modelParamHistogram">
+        <p>Updates histogram</p>
+        <p>Histogram of the updates in the network</p>
+    </div>
 </div>

@@ -51,11 +51,9 @@ function getAndProcessUpdate() {
 }
 function getAndProcessUpdateOverview() {
     $.ajax({
-        url: "train/home/data",
+        url: "train/overview/data",
         success: function (data) {
-            console.log("DATA: " + data);
-            console.log(data.scores);
-            console.log(data.scoresIterCount);
+            console.log("Overview data: " + data);
         },
         error: function (query, status, error) {
             $.notify("Error", "error");
