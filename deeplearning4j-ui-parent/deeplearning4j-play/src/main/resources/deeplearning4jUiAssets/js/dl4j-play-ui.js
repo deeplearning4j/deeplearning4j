@@ -4,7 +4,7 @@ function onNavClick(source, errorMsg) {
     $.ajax({
         url: reqURL,
         success: function (data) {
-            $("#homeNavDiv").removeClass("navElementSelected");
+            $("#overviewNavDiv").removeClass("navElementSelected");
             $("#modelNavDiv").removeClass("navElementSelected");
             $("#systemNavDiv").removeClass("navElementSelected");
             $("#helpNavDiv").removeClass("navElementSelected");
