@@ -12,6 +12,7 @@
     <script>
         function onPageLoad(){
             onNavClick('overview', '@i18n.getMessage("train.nav.errormsg")');
+            setSessionIDDivContents();
             setLanguageSelectorValue();
             setInterval(getAndProcessUpdate,2000);
         }
@@ -28,7 +29,9 @@
                 <div class="navTopSpacer"></div>
                 <div class="navSessionID">
                     <strong>@i18n.getMessage("train.nav.sessionid"):</strong><br>
-                    TODO<br>
+                </div>
+                <div class="navSessionID" id="navSessionIDValue">
+                    -
                 </div>
                 <div class="navTopSpacer"></div>
                 <div class="navElement" id="overviewNavDiv" onclick="onNavClick('overview', '@i18n.getMessage("train.nav.errormsg")')">

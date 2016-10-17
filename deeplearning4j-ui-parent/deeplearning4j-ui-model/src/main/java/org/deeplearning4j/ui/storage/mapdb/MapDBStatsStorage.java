@@ -245,6 +245,17 @@ public class MapDBStatsStorage implements StatsStorage {
     }
 
     @Override
+    public List<String> listWorkerIDsForSessionAndType(String sessionID, String typeID) {
+        List<String> out = new ArrayList<>();
+        for (SessionTypeWorkerId ids : staticInfo.keySet()) {
+            if (sessionID.equals(ids.getSessionID()) && typeID.equals(ids.getTypeID())) {
+                out.add(ids.getWorkerID());
+            }
+        }
+        return out;
+    }
+
+    @Override
     public int getNumUpdateRecordsFor(String sessionID) {
         int count = 0;
         for (SessionTypeWorkerId id : updates.keySet()) {

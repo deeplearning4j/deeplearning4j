@@ -44,17 +44,6 @@ public class TrainModule implements UIModule {
     private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
     private String currentSessionID;
 
-    private static final String[][] EMPTY_TABLE = new String[2][0];
-
-//    private static final JsonNode NO_DATA;
-//    static {
-//        Map<String,Object> noDataMap = new HashMap<>();
-//        noDataMap.put("lastScore",0.0);
-//        noDataMap.put("scores",Collections.EMPTY_LIST);
-//        noDataMap.put("scoresIterCount",Collections.EMPTY_LIST);
-//        noDataMap.put("performanceTable", new String[2][0]);
-//        NO_DATA = Json.toJson(noDataMap);
-//    }
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -71,9 +60,12 @@ public class TrainModule implements UIModule {
         Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
         Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
         Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
-        Route r6 = new Route("/train/currentSessionID", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
+        Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
+        Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions );
+        Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo );
+        Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession );
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r4, r4a, r5, r6);
+        return Arrays.asList(r, r2, r2a, r3, r3a, r4, r4a, r5, r6, r6a, r6b, r6c);
     }
 
     @Override
@@ -123,6 +115,73 @@ public class TrainModule implements UIModule {
 
         if (sessionID != null) {
             currentSessionID = sessionID;
+        }
+    }
+
+    private Result listSessions(){
+        return Results.ok(Json.toJson(knownSessionIDs.keySet()));
+    }
+
+    private Result sessionInfo(){
+        //Display, for each session: session ID, start time, number of workers, last update
+        Map<String,Object> dataEachSession = new HashMap<>();
+        for(Map.Entry<String,StatsStorage> entry : knownSessionIDs.entrySet()){
+            Map<String,Object> dataThisSession = new HashMap<>();
+            String sid = entry.getKey();
+            StatsStorage ss = entry.getValue();
+            List<String> workerIDs = ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID);
+            int workerCount = (workerIDs == null ? 0 : workerIDs.size());
+            List<Persistable> staticInfo = ss.getAllStaticInfos(sid, StatsListener.TYPE_ID);
+            long initTime = Long.MAX_VALUE;
+            if(staticInfo != null) {
+                for (Persistable p : staticInfo) {
+                    initTime = Math.min(p.getTimeStamp(), initTime);
+                }
+            }
+
+            long lastUpdateTime = Long.MIN_VALUE;
+            List<Persistable> lastUpdatesAllWorkers = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
+            for(Persistable p : lastUpdatesAllWorkers){
+                lastUpdateTime = Math.max(lastUpdateTime, p.getTimeStamp());
+            }
+
+            dataThisSession.put("numWorkers", workerCount);
+            dataThisSession.put("initTime", initTime == Long.MAX_VALUE ? "" : initTime);
+            dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
+
+            //Model info: type, # layers, # params...
+            if(staticInfo != null && staticInfo.size() > 0){
+                StatsInitializationReport sr = (StatsInitializationReport)staticInfo.get(0);
+                String modelClassName = sr.getModelClassName();
+                if(modelClassName.endsWith("MultiLayerNetwork")){
+                    modelClassName = "MultiLayerNetwork";
+                } else if(modelClassName.endsWith("ComputationGraph")){
+                    modelClassName = "ComputationGraph";
+                }
+                int numLayers = sr.getModelNumLayers();
+                long numParams = sr.getModelNumParams();
+
+                dataThisSession.put("modelType", modelClassName);
+                dataThisSession.put("numLayers", numLayers);
+                dataThisSession.put("numParams", numParams);
+            } else {
+                dataThisSession.put("modelType", "");
+                dataThisSession.put("numLayers", "");
+                dataThisSession.put("numParams", "");
+            }
+
+            dataEachSession.put(sid, dataThisSession);
+        }
+
+        return ok(Json.toJson(dataEachSession));
+    }
+
+    private Result setSession(String newSessionID){
+        if(knownSessionIDs.containsKey(newSessionID)){
+            currentSessionID = newSessionID;
+            return ok();
+        } else {
+            return Results.badRequest("Unknown session ID: " + newSessionID);
         }
     }
 

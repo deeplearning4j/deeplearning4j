@@ -82,6 +82,15 @@ public interface StatsStorage extends StatsStorageRouter {
     List<String> listWorkerIDsForSession(String sessionID);
 
     /**
+     * For a given session ID and type ID, list all of the known worker IDs
+     *
+     * @param sessionID Session ID
+     * @param typeID Type ID
+     * @return List of worker IDs, or possibly null if session ID is unknown
+     */
+    List<String> listWorkerIDsForSessionAndType(String sessionID, String typeID);
+
+    /**
      * Return the number of update records for the given session ID (all workers)
      *
      * @param sessionID Session ID

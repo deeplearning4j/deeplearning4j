@@ -36,10 +36,11 @@ Seq[Any](format.raw/*1.40*/("""
     <script>
         function onPageLoad()"""),format.raw/*13.30*/("""{"""),format.raw/*13.31*/("""
             """),format.raw/*14.13*/("""onNavClick('overview', '"""),_display_(/*14.38*/i18n/*14.42*/.getMessage("train.nav.errormsg")),format.raw/*14.75*/("""');
+            setSessionIDDivContents();
             setLanguageSelectorValue();
             setInterval(getAndProcessUpdate,2000);
-        """),format.raw/*17.9*/("""}"""),format.raw/*17.10*/("""
-    """),format.raw/*18.5*/("""</script>
+        """),format.raw/*18.9*/("""}"""),format.raw/*18.10*/("""
+    """),format.raw/*19.5*/("""</script>
     <body onload="onPageLoad()">
 
         <div class="outerDiv">
@@ -51,47 +52,49 @@ Seq[Any](format.raw/*1.40*/("""
             <div class="navDiv">
                 <div class="navTopSpacer"></div>
                 <div class="navSessionID">
-                    <strong>"""),_display_(/*30.30*/i18n/*30.34*/.getMessage("train.nav.sessionid")),format.raw/*30.68*/(""":</strong><br>
-                    TODO<br>
+                    <strong>"""),_display_(/*31.30*/i18n/*31.34*/.getMessage("train.nav.sessionid")),format.raw/*31.68*/(""":</strong><br>
+                </div>
+                <div class="navSessionID" id="navSessionIDValue">
+                    -
                 </div>
                 <div class="navTopSpacer"></div>
-                <div class="navElement" id="overviewNavDiv" onclick="onNavClick('overview', '"""),_display_(/*34.95*/i18n/*34.99*/.getMessage("train.nav.errormsg")),format.raw/*34.132*/("""')">
+                <div class="navElement" id="overviewNavDiv" onclick="onNavClick('overview', '"""),_display_(/*37.95*/i18n/*37.99*/.getMessage("train.nav.errormsg")),format.raw/*37.132*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_home_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*38.22*/i18n/*38.26*/.getMessage("train.nav.overview")),format.raw/*38.59*/("""
-                """),format.raw/*39.17*/("""</div>
+                    """),_display_(/*41.22*/i18n/*41.26*/.getMessage("train.nav.overview")),format.raw/*41.59*/("""
+                """),format.raw/*42.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" id="modelNavDiv" onclick="onNavClick('model', '"""),_display_(/*41.89*/i18n/*41.93*/.getMessage("train.nav.errormsg")),format.raw/*41.126*/("""')">
+                <div class="navElement" id="modelNavDiv" onclick="onNavClick('model', '"""),_display_(/*44.89*/i18n/*44.93*/.getMessage("train.nav.errormsg")),format.raw/*44.126*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_model_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*45.22*/i18n/*45.26*/.getMessage("train.nav.model")),format.raw/*45.56*/("""
-                """),format.raw/*46.17*/("""</div>
+                    """),_display_(/*48.22*/i18n/*48.26*/.getMessage("train.nav.model")),format.raw/*48.56*/("""
+                """),format.raw/*49.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" id="systemNavDiv" onclick="onNavClick('system', '"""),_display_(/*48.91*/i18n/*48.95*/.getMessage("train.nav.errormsg")),format.raw/*48.128*/("""')">
+                <div class="navElement" id="systemNavDiv" onclick="onNavClick('system', '"""),_display_(/*51.91*/i18n/*51.95*/.getMessage("train.nav.errormsg")),format.raw/*51.128*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_system_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*52.22*/i18n/*52.26*/.getMessage("train.nav.hwsw")),format.raw/*52.55*/("""
-                """),format.raw/*53.17*/("""</div>
+                    """),_display_(/*55.22*/i18n/*55.26*/.getMessage("train.nav.hwsw")),format.raw/*55.55*/("""
+                """),format.raw/*56.17*/("""</div>
                 <div class="navElementSpacer"></div>
-                <div class="navElement" id="helpNavDiv" onclick="onNavClick('help', '"""),_display_(/*55.87*/i18n/*55.91*/.getMessage("train.nav.errormsg")),format.raw/*55.124*/("""')">
+                <div class="navElement" id="helpNavDiv" onclick="onNavClick('help', '"""),_display_(/*58.87*/i18n/*58.91*/.getMessage("train.nav.errormsg")),format.raw/*58.124*/("""')">
                     <div class="navHorizontalSpacer"></div>
                     <img src="assets/img/train/nav_icon_help_28.png">
                     <div class="navHorizontalSpacer"></div>
-                    """),_display_(/*59.22*/i18n/*59.26*/.getMessage("train.nav.help")),format.raw/*59.55*/("""
-                """),format.raw/*60.17*/("""</div>
+                    """),_display_(/*62.22*/i18n/*62.26*/.getMessage("train.nav.help")),format.raw/*62.55*/("""
+                """),format.raw/*63.17*/("""</div>
                 <div class="navBottom">
-                    """),_display_(/*62.22*/i18n/*62.26*/.getMessage("train.nav.language")),format.raw/*62.59*/(""":
-                    <select class="languageSelect" id="navLangSelect" onchange="changeLanguage('"""),_display_(/*63.98*/i18n/*63.102*/.getMessage("train.nav.langChangeErrorMsg")),format.raw/*63.145*/("""')">
+                    """),_display_(/*65.22*/i18n/*65.26*/.getMessage("train.nav.language")),format.raw/*65.59*/(""":
+                    <select class="languageSelect" id="navLangSelect" onchange="changeLanguage('"""),_display_(/*66.98*/i18n/*66.102*/.getMessage("train.nav.langChangeErrorMsg")),format.raw/*66.145*/("""')">
                         <option value="en">English</option>
                         <option value="ja">日本語</option>
                         <option value="zh">中文</option>
                         <option value="kr">한글</option>
                     </select>
                     <div class="navElementSpacer"></div>
-                    <a href=""""),_display_(/*70.31*/i18n/*70.35*/.getMessage("train.nav.websitelink")),format.raw/*70.71*/("""" class="textlink">"""),_display_(/*70.91*/i18n/*70.95*/.getMessage("train.nav.websitelinktext")),format.raw/*70.135*/("""</a>
+                    <a href=""""),_display_(/*73.31*/i18n/*73.35*/.getMessage("train.nav.websitelink")),format.raw/*73.71*/("""" class="textlink">"""),_display_(/*73.91*/i18n/*73.95*/.getMessage("train.nav.websitelinktext")),format.raw/*73.135*/("""</a>
                     <div class="navElementSpacer"></div>
                 </div>
             </div>
@@ -122,11 +125,11 @@ Seq[Any](format.raw/*1.40*/("""
 object Training extends Training_Scope0.Training
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 22:49:22 AEDT 2016
+                  DATE: Mon Oct 17 11:06:45 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/Training.scala.html
-                  HASH: 5eae0de0889cc65a280512b7e00cdd426791880b
-                  MATRIX: 588->1|721->39|749->41|955->221|967->225|1017->255|1385->595|1414->596|1456->610|1508->635|1521->639|1575->672|1708->778|1737->779|1770->785|2283->1271|2296->1275|2351->1309|2592->1523|2605->1527|2660->1560|2907->1780|2920->1784|2974->1817|3020->1835|3197->1985|3210->1989|3265->2022|3513->2243|3526->2247|3577->2277|3623->2295|3802->2447|3815->2451|3870->2484|4119->2706|4132->2710|4182->2739|4228->2757|4403->2905|4416->2909|4471->2942|4718->3162|4731->3166|4781->3195|4827->3213|4924->3283|4937->3287|4991->3320|5118->3420|5132->3424|5197->3467|5579->3822|5592->3826|5649->3862|5696->3882|5709->3886|5771->3926
-                  LINES: 20->1|25->1|26->2|29->5|29->5|29->5|37->13|37->13|38->14|38->14|38->14|38->14|41->17|41->17|42->18|54->30|54->30|54->30|58->34|58->34|58->34|62->38|62->38|62->38|63->39|65->41|65->41|65->41|69->45|69->45|69->45|70->46|72->48|72->48|72->48|76->52|76->52|76->52|77->53|79->55|79->55|79->55|83->59|83->59|83->59|84->60|86->62|86->62|86->62|87->63|87->63|87->63|94->70|94->70|94->70|94->70|94->70|94->70
+                  HASH: 3130ff3ed4041696b9d0607e48a17ce019870f26
+                  MATRIX: 588->1|721->39|749->41|955->221|967->225|1017->255|1385->595|1414->596|1456->610|1508->635|1521->639|1575->672|1748->818|1777->819|1810->825|2323->1311|2336->1315|2391->1349|2716->1647|2729->1651|2784->1684|3031->1904|3044->1908|3098->1941|3144->1959|3321->2109|3334->2113|3389->2146|3637->2367|3650->2371|3701->2401|3747->2419|3926->2571|3939->2575|3994->2608|4243->2830|4256->2834|4306->2863|4352->2881|4527->3029|4540->3033|4595->3066|4842->3286|4855->3290|4905->3319|4951->3337|5048->3407|5061->3411|5115->3444|5242->3544|5256->3548|5321->3591|5703->3946|5716->3950|5773->3986|5820->4006|5833->4010|5895->4050
+                  LINES: 20->1|25->1|26->2|29->5|29->5|29->5|37->13|37->13|38->14|38->14|38->14|38->14|42->18|42->18|43->19|55->31|55->31|55->31|61->37|61->37|61->37|65->41|65->41|65->41|66->42|68->44|68->44|68->44|72->48|72->48|72->48|73->49|75->51|75->51|75->51|79->55|79->55|79->55|80->56|82->58|82->58|82->58|86->62|86->62|86->62|87->63|89->65|89->65|89->65|90->66|90->66|90->66|97->73|97->73|97->73|97->73|97->73|97->73
                   -- GENERATED --
               */
           
