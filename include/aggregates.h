@@ -6,6 +6,7 @@
 #define LIBND4J_AGGREGATES_H
 
 #include <aggregate_ops.h>
+#include <helper_ptrmap.h>
 
 #define AGGREGATE_OPS \
         (0, aggregateOps::HierarchicSoftmax) ,\
@@ -49,15 +50,18 @@ __device__ void aggregateGeneric(T **arguments, int numArguments, int **shapeArg
 
 
 template <typename T, typename OpClass>
-__device__ void aggregateBatchGeneric(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, T **realArguments, int *numRealArguments) {
+__device__ void aggregateBatchGeneric(int numAggregates, int opNum, void *ptrToArguments) {
+
+    // helper should be in __shared__ memory probably, no sense using stack here
+    nd4j::PointersHelper<T> helper(ptrToArguments, numAggregates);
 
     for(int r = blockIdx.x; r < numAggregates; r += gridDim.x) {
-        T **arguments = reinterpret_cast<T **>(ptrToArguments[r]);
-        int **shapes = reinterpret_cast<int **>(ptrToShapes[r]);
-        int *idxArg = indexArguments[r];
-        T *realArg = realArguments[r];
+        T **arguments = helper.getArguments(r);
+        int **shapes = helper.getShapeArguments(r);
+        int *idxArg = helper.getIndexArguments(r);
+        T *realArg = helper.getRealArguments(r);
 
-        functions::aggregate::AggregatedFunction<T>:: template execCuda<OpClass>(arguments, numArguments[r], shapes, numShapes[r], idxArg, numIndexArguments[r], realArg, numRealArguments[r]);
+        //functions::aggregate::AggregatedFunction<T>:: template execCuda<OpClass>(arguments, numArguments[r], shapes, numShapes[r], idxArg, numIndexArguments[r], realArg, numRealArguments[r]);
     }
 };
 
@@ -67,7 +71,7 @@ DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, double, INPUT(double 
 //DISPATCH_KERNEL_SIMPLE(aggregateSimple_, aggregateGeneric, float16, INPUT(float16 **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, float16 *realArguments, int numRealArguments), PARAMS(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
 // batched aggregates
-DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, float, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, float, INPUT(int numAggregates, int ops, void *ptrToArguments), PARAMS(numAggregates, ops, ptrToArguments), OPS_A(AGGREGATE_OPS))
 //DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, double, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, double **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 //DISPATCH_KERNEL_SIMPLE(aggregateBatchSimple_, aggregateBatchGeneric, float16, INPUT(int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float16 **realArguments, int *numRealArguments), PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 

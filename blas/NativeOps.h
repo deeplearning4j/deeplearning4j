@@ -1267,7 +1267,7 @@ public:
      */
     void execAggregateFloat(Nd4jPointer *extraPointers,int opNum, float **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, float *realArguments, int numRealArguments);
 
-    void execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments);
+    void execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, void *ptrToArguments);
 
     /**
      * Grid operations

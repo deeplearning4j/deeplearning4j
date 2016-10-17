@@ -17,8 +17,8 @@ namespace nd4j {
      * [0] we put numbers for num*Arguments
      * [1] then we put indexing arguments, since their size is constant
      * [2] then we put real arguments
-     * [3] then we put shape pointers
-     * [4] then we put arguments pointers
+     * [3] then we put arguments pointers
+     * [4] then we put shape pointers
      *
      */
     template <typename T>
@@ -70,7 +70,9 @@ namespace nd4j {
          * @return
          */
         T **getArguments(int aggregateIdx) {
-            return NULL;
+            T **aPtr = (T **) getRealArguments(batchLimit);
+
+            return aPtr + (aggregateIdx * maxArguments);
         }
 
         /**
@@ -91,7 +93,9 @@ namespace nd4j {
          * @return
          */
         int **getShapeArguments(int aggregateIdx) {
-            return NULL;
+            int **sPtr = (int **)getArguments(batchLimit);
+
+            return sPtr + (aggregateIdx * maxShapeArguments);
         }
 
         /**

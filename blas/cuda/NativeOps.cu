@@ -5935,17 +5935,14 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int *ops, Nd4jPointer *ptrToArguments, int *numArguments, Nd4jPointer *ptrToShapes, int *numShapes, int **indexArguments, int *numIndexArguments, float **realArguments, int *numRealArguments) {
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, void *ptrToArguments) {
     // not implemented yet
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     // TODO: fix this, we want something better then fixed number of threads per block
     dim3 launchDims = dim3(numAggregates, 256, 2048);
 
-    // TODO: fix this
-    int opNum = ops[0];
-
-    DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, ops, ptrToArguments, numArguments, ptrToShapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+    DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, opNum, ptrToArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
