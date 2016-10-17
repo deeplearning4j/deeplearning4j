@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,7 +43,7 @@ import java.util.Properties;
  *
  * @author Adam Gibson
  */
-public  class DefaultOpExecutioner implements OpExecutioner {
+public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
@@ -351,6 +352,10 @@ public  class DefaultOpExecutioner implements OpExecutioner {
         return environment;
     }
 
+    @Override
+    public void exec(Batch batch) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void exec(Aggregate op) {

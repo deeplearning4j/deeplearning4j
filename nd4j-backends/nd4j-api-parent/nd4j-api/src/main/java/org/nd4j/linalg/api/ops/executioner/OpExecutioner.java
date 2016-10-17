@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import java.util.List;
@@ -177,7 +178,14 @@ public interface OpExecutioner {
     void exec(Aggregate op);
 
     /**
-     * This method executes manually built batch of Aggregates
+     * This method executes previously built batch
+     *
+     * @param batch
+     */
+    void exec(Batch batch);
+
+    /**
+     * This method takes abritrary sized list of aggregates, and packs them into batches
      *
      * @param batch
      */

@@ -18,17 +18,32 @@ import java.util.List;
  */
 @Slf4j
 public class Batch<T extends Aggregate> {
-    // we
-    @Getter @Setter private Pointer paramsSurface;
-    @Getter private List<T> aggregates;
+    /**
+     * This batchLimit should be equal to its counterpart at helper_ptrmap.h
+     *
+     */
     @Getter private static final int batchLimit = 512;
+
+    /*
+        We declare single pointer to params of the whole batch.
+        Format of this memory chunk is explained in libnd4j/includes/helper_ptrmap.h
+    */
+    @Getter @Setter private Pointer paramsSurface;
+
+    // all aggregates within this batch
+    @Getter private List<T> aggregates;
+
     private T sample;
     @Getter private int numAggregates;
 
-
+    /**
+     * This constructor takes List of Aggregates, and builds Batch instance, usable with Nd4j executioner.
+     *
+     * @param aggregates
+     */
     public Batch(List<T> aggregates) {
         if (aggregates.size() > batchLimit)
-            throw new RuntimeException("Number of aggregates is higher then 512 elements, multiple batches should be issued.");
+            throw new RuntimeException("Number of aggregates is higher then " + batchLimit + " elements, multiple batches should be issued.");
 
         this.aggregates = aggregates;
         this.numAggregates = aggregates.size();
@@ -58,6 +73,7 @@ public class Batch<T extends Aggregate> {
     public boolean isFull() {
         return batchLimit == numAggregates;
     }
+
 
     /**
      * Helper method to create batch from list of aggregates, for cases when list of aggregates is higher then batchLimit

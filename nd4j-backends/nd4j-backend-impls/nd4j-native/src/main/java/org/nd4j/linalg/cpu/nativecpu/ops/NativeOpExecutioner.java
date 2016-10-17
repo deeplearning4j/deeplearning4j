@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
@@ -766,87 +767,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
+    /**
+     * This method executes previously built batch
+     *
+     * @param batch
+     */
+    @Override
+    public void exec(Batch batch) {
+
+
+    }
+
+    /**
+     * This method takes abritrary sized list of aggregates, and packs them into batches
+     *
+     * @param batch
+     */
     @Override
     public void exec(List<Aggregate> batch) {
         if (batch.size() == 0)
             return;
 
-        int[] ops = new int[batch.size()];
-        int[] numShapes = new int[batch.size()];
-        int[] numArguments = new int[batch.size()];
-        int[] numIndexingArguments = new int[batch.size()];
-        int[] numRealArguments = new int[batch.size()];
-        PointerPointer argumentsPointer = new PointerPointer(batch.size());
-        PointerPointer shapesPointer = new PointerPointer(batch.size());
-        PointerPointer indexingPointer = new PointerPointer(batch.size());
-        PointerPointer realPointer = new PointerPointer(batch.size());
-
-        List<INDArray> arraysHolder = new ArrayList<>();
-        List<Pointer> pointersHolder = new ArrayList<>();
-        List<double[]> realsHolder = new ArrayList<>();
-
-        for (int e = 0; e < batch.size(); e++) {
-            Aggregate op = batch.get(e);
-            ops[e] = op.opNum();
-            numArguments[e] = op.getArguments().size();
-            numShapes[e] = op.getShapes().size();
-            numIndexingArguments[e] = op.getIndexingArguments().size();
-            numRealArguments[e] = op.getRealArguments().size();
-
-
-            long[] arguments = new long[numArguments[e]];
-
-            for (int x = 0; x < numArguments[e]; x++ ) {
-                arguments[x] = op.getArguments().get(x) == null ? 0 : op.getArguments().get(x).data().addressPointer().address();
-            }
-
-            argumentsPointer.put(e, new LongPointer(arguments));
-
-            long[] shapes = new long[numShapes[e]];
-            for (int x = 0; x < numShapes[e]; x++ ) {
-                shapes[x] = op.getShapes().get(x) == null ? 0 : op.getShapes().get(x).addressPointer().address();
-            }
-
-            shapesPointer.put(e, new LongPointer(shapes));
-
-            int[] indexes = new int[numIndexingArguments[e]];
-            for (int x = 0; x < numIndexingArguments[e]; x++) {
-                indexes[x] = op.getIndexingArguments().get(x);
-            }
-
-            IntPointer idxPointer = new IntPointer(indexes);
-            indexingPointer.put(e, idxPointer);
-            pointersHolder.add(idxPointer);
-
-            double[] reals = new double[numRealArguments[e]];
-            for (int x = 0; x < numRealArguments[e]; x++) {
-                reals[x] = op.getRealArguments().get(x);
-            }
-
-            INDArray realsBuffer = Nd4j.create(reals);
-            arraysHolder.add(realsBuffer);
-
-            realsHolder.add(reals);
-
-            realPointer.put(e, realsBuffer.data().addressPointer());
-        }
-
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            loop.execAggregateBatchFloat(
-                    null,
-                    batch.size(),
-                    new IntPointer(ops),
-                    argumentsPointer,
-                    new IntPointer(numArguments),
-                    shapesPointer,
-                    new IntPointer(numShapes),
-                    indexingPointer,
-                    new IntPointer(numIndexingArguments),
-                    realPointer,
-                    new IntPointer(numRealArguments)
-            );
-        } else {
-            throw new RuntimeException("DOUBLE not implemented here yet");
+        List<Batch<Aggregate>> batches = Batch.getBatches(batch);
+        for (Batch<Aggregate> single: batches) {
+            this.exec(single);
         }
     }
 

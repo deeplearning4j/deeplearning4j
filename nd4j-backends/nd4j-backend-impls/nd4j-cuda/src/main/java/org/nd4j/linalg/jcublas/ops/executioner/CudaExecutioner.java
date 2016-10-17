@@ -30,6 +30,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1870,109 +1871,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (batch.size() == 0)
             return;
 
-        log.info("Executing batch of [{}] Aggregates...", batch.size());
-
-        int[] ops = new int[batch.size()];
-        int[] numShapes = new int[batch.size()];
-        int[] numArguments = new int[batch.size()];
-        int[] numIndexingArguments = new int[batch.size()];
-        int[] numRealArguments = new int[batch.size()];
-
-        long[] argumentsPointers = new long[batch.size()];
-        long[] shapesPointers = new long[batch.size()];
-        long[] indexingPointers = new long[batch.size()];
-        long[] realPointers = new long[batch.size()];
-
-
-        List<INDArray> arraysHolder = new ArrayList<>();
-        List<Pointer> pointersHolder = new ArrayList<>();
-        List<DataBuffer> buffersHolder = new ArrayList<>();
-
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
-        PointerPointer extraArgs = new PointerPointer(32);
-        extraArgs.put(0, null);
-        extraArgs.put(1, context.getOldStream());
-        extraArgs.put(2, new CudaPointer(batch.get(0).opNum()));
-
-        for (int e = 0; e < batch.size(); e++) {
-            Aggregate op = batch.get(e);
-            ops[e] = op.opNum();
-            numArguments[e] = op.getArguments().size();
-            numShapes[e] = op.getShapes().size();
-            numIndexingArguments[e] = op.getIndexingArguments().size();
-            numRealArguments[e] = op.getRealArguments().size();
-
-            long[] arguments = new long[numArguments[e]];
-
-            for (int x = 0; x < numArguments[e]; x++ ) {
-                arguments[x] = op.getArguments().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getArguments().get(x),context).address();
-
-                if (op.getArguments().get(x) != null)
-                    AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
-            }
-
-            DataBuffer ptrArg = AllocationUtils.getPointersBuffer(arguments);
-            argumentsPointers[e] = AtomicAllocator.getInstance().getPointer(ptrArg, context).address();
-            buffersHolder.add(ptrArg);
-
-            long[] shapes = new long[numShapes[e]];
-            for (int x = 0; x < numShapes[e]; x++ ) {
-                shapes[x] = op.getShapes().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
-
-                if (op.getShapes().get(x) != null)
-                    AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
-            }
-
-            DataBuffer ptrShapes = AllocationUtils.getPointersBuffer(shapes);
-            shapesPointers[e] = AtomicAllocator.getInstance().getPointer(ptrShapes, context).address();
-            buffersHolder.add(ptrShapes);
-
-
-            int[] indexes = new int[numIndexingArguments[e]];
-            for (int x = 0; x < numIndexingArguments[e]; x++) {
-                indexes[x] = op.getIndexingArguments().get(x);
-            }
-
-
-            DataBuffer idxBuffer = Nd4j.getDataBufferFactory().createInt(indexes);
-            indexingPointers[e] = AtomicAllocator.getInstance().getPointer(idxBuffer, context).address();
-            buffersHolder.add(idxBuffer);
-
-            double[] reals = new double[numRealArguments[e]];
-            for (int x = 0; x < numRealArguments[e]; x++) {
-                reals[x] = op.getRealArguments().get(x);
-            }
-
-            INDArray realsBuffer = Nd4j.create(reals);
-            arraysHolder.add(realsBuffer);
-
-            realPointers[e] = AtomicAllocator.getInstance().getPointer(realsBuffer, context).address();
-        }
-
-
-
-        PointerPointer argumentsPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(argumentsPointers),context));
-        PointerPointer shapesPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(shapesPointers),context));
-        PointerPointer indexingPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(indexingPointers),context));
-        PointerPointer realPointer = new PointerPointer(AtomicAllocator.getInstance().getPointer(AllocationUtils.getPointersBuffer(realPointers),context));
-
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.execAggregateBatchFloat(
-                    extraArgs,
-                    batch.size(),
-                    new IntPointer(ops), // TODO: fix this, it should be device pointer somewhere soon with dynamic parallelism involved
-                    argumentsPointer,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numArguments), context),
-                    shapesPointer,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numShapes), context),
-                    indexingPointer,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numIndexingArguments), context),
-                    realPointer,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(Nd4j.getDataBufferFactory().createInt(numRealArguments), context)
-            );
-        } else {
-            throw new RuntimeException("DOUBLE not implemented here yet");
+        List<Batch<Aggregate>> batches = Batch.getBatches(batch);
+        for (Batch<Aggregate> single: batches) {
+            this.exec(single);
         }
     }
 
