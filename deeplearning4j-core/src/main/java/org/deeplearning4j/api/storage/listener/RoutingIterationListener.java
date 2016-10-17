@@ -2,6 +2,7 @@ package org.deeplearning4j.api.storage.listener;
 
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 
 /**
  * An extension of the {@link IterationListener} interface for those listeners that pass data off to a
@@ -13,7 +14,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
  *
  * @author Alex Black
  */
-public interface RoutingIterationListener extends IterationListener, Cloneable {
+public interface RoutingIterationListener extends TrainingListener, Cloneable {
 
     void setStorageRouter(StatsStorageRouter router);
 
