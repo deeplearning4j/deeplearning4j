@@ -3,6 +3,8 @@ package org.deeplearning4j.ui.stats.api;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.Persistable;
 
+import java.util.Map;
+
 /**
  * An interface used with {@link StatsListener} for reporting static information.
  * The idea is that this information will be reported only once, at the first call of the StatsListener. Comparatively,
@@ -28,9 +30,11 @@ public interface StatsInitializationReport extends Persistable {
      * @param hostname         Hostname for the machine, if available
      * @param jvmUID           A unique identified for the current JVM. Should be shared by all instances in the same JVM.
      *                         Should vary for different JVMs on the same machine.
+     * @param swEnvironmentInfo Environment information: Usually from Nd4j.getExecutioner().getEnvironmentInformation()
      */
     void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                            String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUID);
+                            String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUID,
+                            Map<String,String> swEnvironmentInfo);
 
     /**
      * @param jvmAvailableProcessors Number of available processor cores according to the JVM
@@ -81,6 +85,8 @@ public interface StatsInitializationReport extends Persistable {
     String getSwHostName();
 
     String getSwJvmUID();
+
+    Map<String,String> getSwEnvironmentInfo();
 
     int getHwJvmAvailableProcessors();
 

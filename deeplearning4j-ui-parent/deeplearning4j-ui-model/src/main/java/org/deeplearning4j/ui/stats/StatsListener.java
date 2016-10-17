@@ -399,9 +399,16 @@ public class StatsListener implements RoutingIterationListener {
                 }catch(Exception e){ }
             }
 
+            Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+            Map<String,String> envInfo = new HashMap<>();
+            for( Map.Entry<Object,Object> e : p.entrySet()){
+                Object v = e.getValue();
+                String value = (v == null ? "" : v.toString());
+                envInfo.put(e.getKey().toString(), value);
+            }
 
             initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion,
-                    nd4jBackendClass, nd4jDataTypeName, hostname, UIDProvider.getJVMUID());
+                    nd4jBackendClass, nd4jDataTypeName, hostname, UIDProvider.getJVMUID(), envInfo);
         }
 
         if(initConfig.collectHardwareInfo()){
