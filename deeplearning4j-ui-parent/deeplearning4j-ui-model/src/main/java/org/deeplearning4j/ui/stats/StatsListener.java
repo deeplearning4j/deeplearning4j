@@ -73,6 +73,8 @@ public class StatsListener implements RoutingIterationListener {
     private List<GarbageCollectorMXBean> gcBeans;
     private Map<String,Pair<Long,Long>> gcStatsAtLastReport;
 
+    private Map<String,INDArray> activationsMap;
+
     public StatsListener(StatsStorageRouter router) {
         this(router, null, null, null, null);
     }
@@ -141,6 +143,47 @@ public class StatsListener implements RoutingIterationListener {
     @Override
     public void invoke() {
 
+    }
+
+    @Override
+    public void onEpochStart(Model model) {
+
+    }
+
+    @Override
+    public void onEpochEnd(Model model) {
+
+    }
+
+    @Override
+    public void onForwardPass(Model model, List<INDArray> activations) {
+        if(storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)){
+            //Assumption: we have input, layer 0, layer 1, ...
+            activationsMap = new HashMap<>();
+            int count = 0;
+            for(INDArray arr : activations){
+                String layerName = (count == 0 ? "input" : String.valueOf(count-1));
+                activationsMap.put(layerName,arr);
+                count++;
+            }
+        }
+    }
+
+    @Override
+    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+        if(storeActivations() && updateConfig.reportingFrequency() > 1 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)){
+            activationsMap = activations;
+        }
+    }
+
+    private boolean storeActivations(){
+        return updateConfig.collectMean(StatsType.Activations) || updateConfig.collectStdev(StatsType.Activations)
+                || updateConfig.collectMeanMagnitudes(StatsType.Activations) || updateConfig.collectHistograms(StatsType.Activations);
+    }
+
+    @Override
+    public void onBackwardPass(Model model) {
+        //No op
     }
 
     @Override
@@ -279,8 +322,7 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         if (config.collectHistograms(StatsType.Activations)) {
-            Map<String, INDArray> activations = getActivationArraysMap(model);
-            Map<String, Histogram> activationHistograms = getHistograms(activations, config.numHistogramBins(StatsType.Activations));
+            Map<String, Histogram> activationHistograms = getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
             report.reportHistograms(StatsType.Activations, activationHistograms);
         }
 
@@ -298,8 +340,7 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         if (config.collectMean(StatsType.Activations)) {
-            Map<String, INDArray> activations = getActivationArraysMap(model);
-            Map<String, Double> meanActivations = calculateSummaryStats(activations, StatType.Mean);
+            Map<String, Double> meanActivations = calculateSummaryStats(activationsMap, StatType.Mean);
             report.reportMean(StatsType.Activations, meanActivations);
         }
 
@@ -315,8 +356,7 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         if (config.collectStdev(StatsType.Activations)) {
-            Map<String, INDArray> activations = getActivationArraysMap(model);
-            Map<String, Double> stdevActivations = calculateSummaryStats(activations, StatType.Stdev);
+            Map<String, Double> stdevActivations = calculateSummaryStats(activationsMap, StatType.Stdev);
             report.reportStdev(StatsType.Activations, stdevActivations);
         }
 
@@ -332,8 +372,7 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         if (config.collectMeanMagnitudes(StatsType.Activations)) {
-            Map<String, INDArray> activations = getActivationArraysMap(model);
-            Map<String, Double> meanMagActivations = calculateSummaryStats(activations, StatType.MeanMagnitude);
+            Map<String, Double> meanMagActivations = calculateSummaryStats(activationsMap, StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Activations, meanMagActivations);
         }
 
@@ -362,8 +401,9 @@ public class StatsListener implements RoutingIterationListener {
 //                    throw new RuntimeException(e);
 //            }
 //        }
-        iterCount++;
 
+        iterCount++;
+        activationsMap = null;
     }
 
     private long getTime() {
@@ -527,7 +567,7 @@ public class StatsListener implements RoutingIterationListener {
     }
 
     private static Map<String, Histogram> getHistograms(Map<String, INDArray> map, int nBins) {
-        //TODO This is temporary approach...
+        //TODO This is temporary approach... update to native histogram code later
         Map<String, Histogram> out = new LinkedHashMap<>();
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
@@ -549,27 +589,5 @@ public class StatsListener implements RoutingIterationListener {
             out.put(entry.getKey(), h);
         }
         return out;
-    }
-
-    private static Map<String, INDArray> getActivationArraysMap(Model model) {
-        Map<String, INDArray> map = new LinkedHashMap<>();
-        if (model instanceof MultiLayerNetwork) {
-            MultiLayerNetwork net = (MultiLayerNetwork) model;
-
-            Layer[] layers = net.getLayers();
-            //Activations for layer i are stored as input to layer i+1
-            //TODO handle output activations...
-            //Also: complication here - things like batch norm...
-            for (int i = 1; i < layers.length; i++) {
-                String name = String.valueOf(i - 1);
-                map.put(name, layers[i].input());
-            }
-
-        } else {
-            //Compgraph is more complex: output from one layer might go to multiple other layers/vertices, etc.
-            throw new UnsupportedOperationException("Not yet implemented");
-        }
-
-        return map;
     }
 }
