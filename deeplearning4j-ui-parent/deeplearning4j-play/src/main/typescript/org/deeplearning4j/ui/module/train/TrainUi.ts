@@ -39,6 +39,15 @@ function changeLanguage(errorMsg: string){
     });
 }
 
+function setSessionIDDivContents() {
+    $.ajax({
+        url: "/train/sessions/current",
+        success: function(data){
+            $("#navSessionIDValue").html(data);
+        }
+    });
+}
+
 function setLanguageSelectorValue(){
     $.ajax({
         url: "/lang/getCurrent",
