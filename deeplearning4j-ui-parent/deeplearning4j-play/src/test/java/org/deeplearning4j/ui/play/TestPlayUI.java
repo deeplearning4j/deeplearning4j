@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.play;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -9,6 +10,9 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.deeplearning4j.ui.module.training.TrainModule;
+import org.deeplearning4j.ui.module.training.TrainModuleUtils;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
@@ -39,6 +43,8 @@ public class TestPlayUI {
                 .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
                 .pretrain(false).backprop(true).build();
 
+        ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
@@ -54,6 +60,31 @@ public class TestPlayUI {
 
 
         Thread.sleep(100000);
+    }
+
+    @Test
+    public void testModelInfo(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
+                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
+                .pretrain(false).backprop(true).build();
+
+        ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+
+        System.out.println(mi);
+        System.out.println();
+
+
+        ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build(), "in")
+                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build(), "0")
+                .pretrain(false).backprop(true)
+                .build();
     }
 
 }
