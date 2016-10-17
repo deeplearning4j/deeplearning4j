@@ -53,6 +53,10 @@ public class TestStatsSBE {
         String nd4jDataTypeName = "15";
         String hostname = "15a";
         String jvmUID = "15b";
+        Map<String,String> swEnvInfo = new HashMap<>();
+        swEnvInfo.put("env15c-1", "SomeData");
+        swEnvInfo.put("env15c-2", "OtherData");
+        swEnvInfo.put("env15c-3", "EvenMoreData");
 
         //Model info
         String modelClassName = "16";
@@ -74,7 +78,7 @@ public class TestStatsSBE {
                     }
 
                     if (hasSoftwareInfo) {
-                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname, jvmUID);
+                        report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass, nd4jDataTypeName, hostname, jvmUID, swEnvInfo);
                     }
 
                     if (hasModelInfo) {
@@ -116,6 +120,7 @@ public class TestStatsSBE {
                         assertEquals(nd4jDataTypeName, report2.getSwNd4jDataTypeName());
                         assertEquals(jvmUID, report2.getSwJvmUID());
                         assertEquals(hostname, report2.getSwHostName());
+                        assertEquals(swEnvInfo, report2.getSwEnvironmentInfo());
                         assertTrue(report2.hasSoftwareInfo());
                     } else {
                         assertFalse(report2.hasSoftwareInfo());
@@ -174,6 +179,7 @@ public class TestStatsSBE {
         String nd4jDataTypeName = null;
         String hostname = null;
         String jvmUID = null;
+        Map<String,String> swEnvInfo = null;
 
         //Model info
         String modelClassName = null;
@@ -199,7 +205,7 @@ public class TestStatsSBE {
 
                     if (hasSoftwareInfo) {
                         report.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass,
-                                nd4jDataTypeName, hostname, jvmUID);
+                                nd4jDataTypeName, hostname, jvmUID, swEnvInfo);
                     }
 
                     if (hasModelInfo) {
@@ -233,6 +239,7 @@ public class TestStatsSBE {
                         assertNullOrZeroLength(report2.getSwNd4jBackendClass());
                         assertNullOrZeroLength(report2.getSwNd4jDataTypeName());
                         assertNullOrZeroLength(report2.getSwJvmUID());
+                        assertNull(report2.getSwEnvironmentInfo());
                         assertTrue(report2.hasSoftwareInfo());
                     } else {
                         assertFalse(report2.hasSoftwareInfo());

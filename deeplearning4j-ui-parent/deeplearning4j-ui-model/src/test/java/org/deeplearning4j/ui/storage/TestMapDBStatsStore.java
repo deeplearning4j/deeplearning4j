@@ -17,7 +17,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -109,7 +111,10 @@ public class TestMapDBStatsStore {
         rep.reportModelInfo("classname","jsonconfig",new String[]{"p0","p1"},1,10);
         rep.reportIDs("sid"+idNumber,"tid"+idNumber,"wid"+idNumber,12345);
         rep.reportHardwareInfo(0,2,1000,2000,new long[]{3000,4000},new String[]{"dev0","dev1"},"hardwareuid");
-        rep.reportSoftwareInfo("arch","osName","jvmName","jvmVersion","1.8","backend","dtype","hostname","jvmuid");
+        Map<String,String> envInfo = new HashMap<>();
+        envInfo.put("envInfo0","value0");
+        envInfo.put("envInfo1", "value1");
+        rep.reportSoftwareInfo("arch","osName","jvmName","jvmVersion","1.8","backend","dtype","hostname","jvmuid", envInfo);
         return rep;
     }
 

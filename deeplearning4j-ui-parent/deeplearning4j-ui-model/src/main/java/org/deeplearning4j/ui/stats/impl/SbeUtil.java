@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.stats.impl;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 /**
  * Utilities for use in {@link SbeStatsInitializationReport} and {@link SbeStatsReport}
@@ -29,6 +30,15 @@ public class SbeUtil {
         return count;
     }
 
+    public static int length(byte[][][] bytes) {
+        if(bytes == null) return 0;
+        int count = 0;
+        for(byte[][] arr : bytes ){
+            count += length(arr);
+        }
+        return count;
+    }
+
     public static int length(String str) {
         if (str == null) return 0;
         return str.length();
@@ -52,6 +62,18 @@ public class SbeUtil {
         for (int i = 0; i < str.length; i++) {
             if (str[i] == null) continue;
             b[i] = toBytes(present, str[i]);
+        }
+        return b;
+    }
+
+    public static byte[][][] toBytes(Map<String,String> map) {
+        if (map == null) return null;
+        byte[][][] b = new byte[map.size()][2][0];
+        int i=0;
+        for(Map.Entry<String,String> entry : map.entrySet()){
+            b[i][0] = toBytes(true,entry.getKey());
+            b[i][1] = toBytes(true, entry.getValue());
+            i++;
         }
         return b;
     }
