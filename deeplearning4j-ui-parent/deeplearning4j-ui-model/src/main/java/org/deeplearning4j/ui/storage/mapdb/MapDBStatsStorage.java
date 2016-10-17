@@ -3,7 +3,6 @@ package org.deeplearning4j.ui.storage.mapdb;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.api.storage.*;
-import org.deeplearning4j.ui.stats.impl.SbeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 
@@ -26,6 +25,9 @@ public class MapDBStatsStorage implements StatsStorage {
     private Set<String> sessionIDs;
     private Map<SessionTypeId, StorageMetaData> storageMetaData;
     private Map<SessionTypeWorkerId, Persistable> staticInfo;
+    private Map<String,Integer> classToInteger;   //For storage
+    private Map<Integer,String> integerToClass;   //For storage
+    private Atomic.Integer classCounter;
 
     private Map<SessionTypeWorkerId, Map<Long, Persistable>> updates = new HashMap<>();
 
@@ -61,6 +63,18 @@ public class MapDBStatsStorage implements StatsStorage {
                 .keySerializer(new SessionTypeWorkerIdSerializer())
                 .valueSerializer(new PersistableSerializer<>())
                 .createOrOpen();
+
+        classToInteger = db.hashMap("classToInteger")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .createOrOpen();
+
+        integerToClass = db.hashMap("integerToClass")
+                .keySerializer(Serializer.INTEGER)
+                .valueSerializer(Serializer.STRING)
+                .createOrOpen();
+
+        classCounter = db.atomicInteger("classCounter").createOrOpen();
 
         //Load up any saved update maps to the update map...
         for (String s : db.getAllNames()) {
@@ -526,6 +540,25 @@ public class MapDBStatsStorage implements StatsStorage {
         }
     }
 
+
+    private synchronized int getIntForClass(Class<?> c){
+        String str = c.getName();
+        if(classToInteger.containsKey(str)){
+            return classToInteger.get(str);
+        }
+        int idx = classCounter.getAndIncrement();
+        classToInteger.put(str,idx);
+        integerToClass.put(idx,str);
+        db.commit();
+        return idx;
+    }
+
+    private synchronized String getClassForInt(int integer){
+        String c = integerToClass.get(integer);
+        if(c == null) throw new RuntimeException("Unknown class index: " + integer);    //Should never happen
+        return c;
+    }
+
     @AllArgsConstructor
     @Data
     public static class SessionTypeId implements Serializable, Comparable<SessionTypeId> {
@@ -595,26 +628,21 @@ public class MapDBStatsStorage implements StatsStorage {
         }
     }
 
-    private static class PersistableSerializer<T extends Persistable> implements Serializer<T> {
+    private class PersistableSerializer<T extends Persistable> implements Serializer<T> {
 
         @Override
         public void serialize(@NotNull DataOutput2 out, @NotNull Persistable value) throws IOException {
             //Persistable values can't be decoded in isolation, i.e., without knowing the type
-            //So, we'll first write the class name, so we can decode it later...
-            String className = value.getClass().getName();
-            int length = className.length();
-            out.writeInt(length);
-            byte[] b = SbeUtil.toBytes(true, className);
-            out.write(b);
+            //So, we'll first write an integer representing the class name, so we can decode it later...
+            int classIdx = getIntForClass(value.getClass());
+            out.writeInt(classIdx);
             value.encode(out);
         }
 
         @Override
         public T deserialize(@NotNull DataInput2 input, int available) throws IOException {
-            int length = input.readInt();
-            byte[] classNameAsBytes = new byte[length];
-            input.readFully(classNameAsBytes);
-            String className = new String(classNameAsBytes, "UTF-8");
+            int classIdx = input.readInt();
+            String className = getClassForInt(classIdx);
             Class<?> clazz;
             try {
                 clazz = Class.forName(className);
@@ -627,7 +655,7 @@ public class MapDBStatsStorage implements StatsStorage {
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-            int remainingLength = available - length - 4;   //-4 for int length value
+            int remainingLength = available - 4;   //-4 for int class index
             byte[] temp = new byte[remainingLength];
             input.readFully(temp);
             p.decode(temp);
