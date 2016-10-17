@@ -12,36 +12,61 @@ namespace nd4j {
     /**
      * This class is a simple wrapper to represent batch arguments as single surface of parameters.
      * So we pass batch parameters as single surface, and then we use this helper to extract arguments for each aggregates.
+     *
+     * Surface map format is simple:
+     * [0] we put numbers for num*Arguments
+     * [1] then we put indexing arguments, since their size is constant
+     * [2] then we put real arguments
+     * [3] then we put shape pointers
+     * [4] then we put arguments pointers
+     *
      */
     template <typename T>
     class PointersHelper {
     private:
         int aggregates;
         void *ptrGeneral;
-        int ptrSize;
-        int aggregateWidth;
+
+        // we enforce maximal batch size limit, to simplify
+        const int batchLimit = 512;
+
+        // we have 4 diff kinds of arguments: arguments, shapeArguments, indexArguments, realArguments
+        const int argTypes = 4;
+
+        // right now we hardcode maximas, but we'll probably change that later
+        const int maxIndexArguments = 32;
+        const int maxRealArguments = 32;
+
+        // since that's pointers (which is 64-bit on 64bit systems), we limit number of maximum arguments to 1/2 of maxIndex arguments
+        const int maxArguments = 16;
+        const int maxShapeArguments = 16;
+
+        int sizeT;
+        int sizePtr;
     public:
 
         /**
          * We accept single memory chunk and number of jobs stored.
          *
          * @param ptrToParams pointer to "surface"
-         * @param numAggregates number of aggregates being passed in
-         * @param width
+         * @param numAggregates actual number of aggregates being passed in
          * @return
          */
-        PointersHelper(void *ptrToParams, int numAggregates, int width) {
+        PointersHelper(void *ptrToParams, int numAggregates) {
             aggregates = numAggregates;
             ptrGeneral = ptrToParams;
-            aggregateWidth = width;
 
-            ptrSize = sizeof(ptrToParams);
+            // ptrSize for hypothetical 32-bit compatibility
+            sizePtr = sizeof(ptrToParams);
+
+            // unfortunately we have to know sizeOf(T)
+            sizeT = sizeof(T);
         }
 
         /**
          * This method returns point
          *
-         * @param jobId
+         * @param aggregateIdx
          * @return
          */
         T **getArguments(int aggregateIdx) {
@@ -51,11 +76,12 @@ namespace nd4j {
         /**
          * This method returns number of array arguments for specified aggregate
          *
-         * @param jobId
+         * @param aggregateIdx
          * @return
          */
         int getNumArguments(int aggregateIdx) {
-            return 0;
+            int *tPtr = (int *) ptrGeneral;
+            return tPtr[aggregateIdx * argTypes];
         }
 
         /**
@@ -71,11 +97,12 @@ namespace nd4j {
         /**
          * This methor returns number of shape arguments for specified aggregate
          *
-         * @param jobId
+         * @param aggregateIdx
          * @return
          */
         int getNumShapeArguments(int aggregateIdx) {
-            return 0;
+            int *tPtr = (int *) ptrGeneral;
+            return tPtr[aggregateIdx * argTypes + 1];
         }
 
         /**
@@ -85,7 +112,11 @@ namespace nd4j {
          * @return
          */
         int *getIndexArguments(int aggregateIdx) {
-            return NULL;
+            // we skip first numeric num*arguments
+            int *ptr = ((int *) ptrGeneral) + (batchLimit * argTypes);
+
+            // and return index for requested aggregate
+            return ptr + (aggregateIdx * maxIndexArguments) ;
         }
 
         /**
@@ -95,7 +126,8 @@ namespace nd4j {
          * @return
          */
         int getNumIndexArguments(int aggregateIdx) {
-            return 0;
+            int *tPtr = (int *) ptrGeneral;
+            return tPtr[aggregateIdx * argTypes + 2];
         }
 
         /**
@@ -105,17 +137,21 @@ namespace nd4j {
          * @return
          */
         T *getRealArguments(int aggregateIdx) {
-            return NULL;
+            // we get pointer for last batchElement + 1, so that'll be pointer for 0 realArgument
+            T *ptr = (T * )getIndexArguments(batchLimit);
+
+            return ptr + (aggregateIdx * maxRealArguments);
         }
 
         /**
          * This methor returns number of real arguments for specified aggregate
          *
-         * @param jobId
+         * @param aggregateIdx
          * @return
          */
         int getNumRealArguments(int aggregateIdx) {
-            return 0;
+            int *tPtr = (int *) ptrGeneral;
+            return tPtr[aggregateIdx * argTypes + 3];
         }
     };
 }

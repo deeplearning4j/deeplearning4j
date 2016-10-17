@@ -13,6 +13,7 @@ int element_threshold = 32;
 #include <types/float8.h>
 #include <type_conversions.h>
 #include <aggregates.h>
+#include <helper_ptrmap.h>
 
 char *name;
 bool nameSet = false;
@@ -2490,6 +2491,8 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
 
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
+
+    nd4j::PointersHelper<float> helper(ptrToArguments, 10);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
 #pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
