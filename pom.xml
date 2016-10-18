@@ -193,6 +193,7 @@
         <module>deeplearning4j-cuda</module>
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
+        <module>deeplearning4j-modelimport</module>
     </modules>
 
     <licenses>
