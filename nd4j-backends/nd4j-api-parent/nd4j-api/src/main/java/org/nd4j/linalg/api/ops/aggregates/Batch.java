@@ -53,6 +53,14 @@ public class Batch<T extends Aggregate> {
     }
 
     /**
+     * This method returns opNum for batched aggregate
+     * @return
+     */
+    public int opNum() {
+        return sample.opNum();
+    }
+
+    /**
      * This method tries to append aggregate to the current batch, if it has free room
      *
      * @param aggregate

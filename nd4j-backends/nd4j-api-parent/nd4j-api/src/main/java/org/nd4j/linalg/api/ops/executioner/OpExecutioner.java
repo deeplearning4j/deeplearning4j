@@ -182,7 +182,7 @@ public interface OpExecutioner {
      *
      * @param batch
      */
-    void exec(Batch batch);
+    <T extends Aggregate> void exec(Batch<T> batch);
 
     /**
      * This method takes abritrary sized list of aggregates, and packs them into batches

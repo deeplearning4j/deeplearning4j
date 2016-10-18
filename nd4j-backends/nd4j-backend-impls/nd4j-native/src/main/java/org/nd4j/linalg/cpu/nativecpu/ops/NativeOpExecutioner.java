@@ -773,9 +773,66 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param batch
      */
     @Override
-    public void exec(Batch batch) {
+    public <T extends Aggregate> void exec(Batch<T> batch) {
+
+        IntPointer pointer = new IntPointer(128000);
+
+        int maxTypes = 4;
+        int maxArgs = 32;
+        int maxPtr = 16;
+        int indexPos = maxTypes * Batch.getBatchLimit();
+        int realPos = indexPos + (maxArgs * Batch.getBatchLimit());
+        int argsPos = (realPos + (maxArgs * Batch.getBatchLimit())) / 2;
+        int shapesPos = argsPos + (maxPtr * Batch.getBatchLimit());
+        for (int i = 0; i < batch.getNumAggregates(); i++) {
+            T op = batch.getAggregates().get(i);
+
+            // put num arguments
+            int idx = i * maxTypes;
+            pointer.put(idx, op.getArguments().size());
+            pointer.put(idx + 1, op.getShapes().size());
+            pointer.put(idx + 2, op.getIndexingArguments().size());
+            pointer.put(idx + 3, op.getRealArguments().size());
 
 
+            // putting indexing arguments
+            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
+                idx = indexPos + i * maxArgs;
+                pointer.put(idx + e, op.getIndexingArguments().get(e));
+            }
+
+            // TODO: variable datatype should be handled here
+            // putting real arguments
+            FloatPointer realPtr = new FloatPointer(pointer);
+            for (int e = 0; e < op.getRealArguments().size(); e++) {
+                idx = realPos + i * maxArgs;
+                realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+            }
+
+
+            // putting arguments pointers
+            PointerPointer ptrPtr = new PointerPointer(pointer);
+            for (int e = 0; e < op.getArguments().size(); e++) {
+                idx = argsPos + i * maxPtr;
+                if (op.getArguments().get(e) != null)
+                    ptrPtr.put(idx + e, op.getArguments().get(e).data().addressPointer());
+            }
+
+
+            // putting shape pointers
+            for (int e = 0; e < op.getShapes().size(); e++) {
+                idx = shapesPos + i * maxPtr;
+
+                if (op.getShapes().get(e) != null)
+                    ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
+            }
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(), pointer);
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+
+        }
     }
 
     /**

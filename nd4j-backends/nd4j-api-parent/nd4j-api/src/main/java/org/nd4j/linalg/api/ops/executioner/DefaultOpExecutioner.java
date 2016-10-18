@@ -353,7 +353,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public void exec(Batch batch) {
+    public <T extends Aggregate> void exec(Batch<T> batch) {
         throw new UnsupportedOperationException();
     }
 
