@@ -34,7 +34,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -108,7 +107,7 @@ public class Word2VecTests {
 
     @Test
     public void testWord2VecAdaGrad() throws Exception {
-        CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(false);
+        //CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(false);
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -120,7 +119,7 @@ public class Word2VecTests {
                 .learningRate(0.025)
                 .layerSize(100)
                 .seed(42)
-                .batchSize(1024)
+                .batchSize(128)
                 .sampling(0)
                 .negativeSample(5)
                 .windowSize(5)
@@ -128,7 +127,7 @@ public class Word2VecTests {
                 .useAdaGrad(false)
                 .useHierarchicSoftmax(true)
                 .iterate(iter)
-                .workers(2)
+                .workers(4)
                 .tokenizerFactory(t)
                 .build();
 
