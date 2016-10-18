@@ -34,7 +34,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>1.0.4</hadoop.version>
-        <spark.version>1.5.2</spark.version>
+        <spark.version>1.6.2</spark.version>
     </properties>
 
     <profiles>
