@@ -24,6 +24,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,6 +43,8 @@ import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
  * Created by davekale on 10/10/16.
  */
 public class KerasModels {
+    private static Logger log = LoggerFactory.getLogger(KerasModels.class);
+
     private KerasModels() {}
 
     public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename) throws IOException {
@@ -157,7 +161,7 @@ public class KerasModels {
                     if (!layerConfig.get("activation").equals(layerConfig.get("inner_activation")))
                         throw new IncompatibleKerasConfigurationException("Specifying different activation for inner cells not supported.");
                     if (!layerConfig.get("init").equals(layerConfig.get("inner_init")))
-                        System.err.println("Specifying different initialization for inner cells not supported.");
+                        log.warn("Specifying different initialization for inner cells not supported.");
                     if ((Float)layerConfig.get("dropout_U") > 0f)
                         throw new IncompatibleKerasConfigurationException("Recurrent dropout of " + (float) layerConfig.get("dropout_U") + " not supported.");
                     layerConfig.put("dropout", layerConfig.get("dropout_W"));
@@ -213,7 +217,7 @@ public class KerasModels {
                     lastLayer = layerConfig;
                     break;
                 case "Flatten":
-                    System.err.println("DL4J adds reshaping layers during model compilation");
+                    log.warn("DL4J adds reshaping layers during model compilation");
                     continue;
                 default:
                     throw new IncompatibleKerasConfigurationException("Unsupported keras layer type " + kerasClass);
@@ -230,7 +234,7 @@ public class KerasModels {
                 double newDropout = 1.0 - (1.0 - dropout) * (1.0 - oldDropout);
                 layerConfig.put("dropout", newDropout);
                 if (oldDropout > 0)
-                    System.err.println("Changed layer-defined dropout " + oldDropout + " to " + newDropout +
+                    log.warn("Changed layer-defined dropout " + oldDropout + " to " + newDropout +
                                        " because of previous Dropout=" + dropout + " layer");
             }
             dropout = 0;
@@ -314,12 +318,12 @@ public class KerasModels {
                             ((GravesLSTM.Builder)builder).forgetGateBiasInit(1.0);
                             break;
                         default:
-                            System.err.println("Unsupported bias initialization: " + forgetBiasInit + ".");
+                            log.warn("Unsupported bias initialization: " + forgetBiasInit + ".");
                             break;
                     }
                     // TODO: should we print a warning if unroll is false?
                     if (sequenceLength <= 0)
-                        System.err.println("WARNING: input sequence length must be specified for truncated BPTT!");
+                        log.warn("WARNING: input sequence length must be specified for truncated BPTT!");
                     // TODO: do we need to do anything with return_sequences?
                     break;
                 default:
@@ -357,7 +361,7 @@ public class KerasModels {
                     case "he_normal":
                     case "he_uniform":
                     default:
-                        System.err.println("Unknown keras weight distribution " + init);
+                        log.warn("Unknown keras weight distribution " + init);
                         builder.weightInit(WeightInit.XAVIER);
                         break;
                 }
