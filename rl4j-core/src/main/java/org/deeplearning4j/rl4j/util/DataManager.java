@@ -59,13 +59,16 @@ public class DataManager {
     }
 
     public static void save(String path, Learning learning) {
-        BufferedOutputStream os = null;
-        try {
-            os = new BufferedOutputStream(new FileOutputStream(path));
-        } catch (FileNotFoundException e) {
+        try (BufferedOutputStream os =
+             new BufferedOutputStream(new FileOutputStream(path))) {
+            save(os, learning);
+        }
+        catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        save(os, learning);
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void save(OutputStream os, Learning learning) {
@@ -119,8 +122,7 @@ public class DataManager {
 
         C conf = null;
         IDQN dqn = null;
-        try {
-            ZipFile zipFile = new ZipFile(file);
+        try (ZipFile zipFile = new ZipFile(file)) {
             ZipEntry config = zipFile.getEntry("configuration.json");
             InputStream stream = zipFile.getInputStream(config);
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
@@ -142,7 +144,6 @@ public class DataManager {
             Files.copy(dqnstream, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
             dqn = new DQN(ModelSerializer.restoreMultiLayerNetwork(tmpFile));
             dqnstream.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
