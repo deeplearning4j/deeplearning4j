@@ -38,16 +38,16 @@ namespace nd4j {
         // we have 5 diff kinds of arguments: arguments, shapeArguments, intArrayArguments, indexArguments, realArguments
         const int argTypes = 5;
 
-        const int maxIntArrays = 8;
-        const int maxArraySize = 32;
+        int maxIntArrays;
+        int maxArraySize;
 
         // right now we hardcode maximas, but we'll probably change that later
-        const int maxIndexArguments = 32;
-        const int maxRealArguments = 32;
+        int maxIndexArguments;
+        int maxRealArguments;
 
         // since that's pointers (which is 64-bit on 64bit systems), we limit number of maximum arguments to 1/2 of maxIndex arguments
-        const int maxArguments = 16;
-        const int maxShapeArguments = 16;
+        int maxArguments;
+        int maxShapeArguments;
 
         int sizeT;
         int sizePtr;
@@ -63,7 +63,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        PointersHelper(void *ptrToParams, int numAggregates) {
+        PointersHelper(void *ptrToParams, int numAggregates, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals) {
             aggregates = numAggregates;
             ptrGeneral = ptrToParams;
 
@@ -72,6 +72,13 @@ namespace nd4j {
 
             // unfortunately we have to know sizeOf(T)
             sizeT = sizeof(T);
+
+            this->maxIntArrays = maxIntArrays;
+            this->maxArraySize = maxIntArraySize;
+            this->maxIndexArguments = maxIdx;
+            this->maxArguments = maxArgs;
+            this->maxShapeArguments = maxShapes;
+            this->maxRealArguments = maxReals;
         }
 
         /**

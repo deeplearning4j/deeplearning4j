@@ -2489,24 +2489,26 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
 }
 
-void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, void *ptrToArguments) {
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
 
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
-    nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates);
+    nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
 
-    int *intArrays[8];
+
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) private(intArrays) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
         float **arguments = helper.getArguments(i);
         int **shapes = helper.getShapeArguments(i);
         int *idxArg = helper.getIndexArguments(i);
         float *realArg = helper.getRealArguments(i);
 
-        for (int e = 0; e < 8; e++) {
+        int *intArrays[8];
+
+        for (int e = 0; e < maxIntArrays; e++) {
             intArrays[e] = helper.getIntArrayArguments(i, e);
         }
 
@@ -2519,6 +2521,7 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
 
         printf("\n");
 */
+
         execAggregateFloat(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
     }
 }

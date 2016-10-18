@@ -436,6 +436,8 @@ namespace aggregateOps {
                     idxArgs[1] = idxSyn1[r]; // syn1 row
                     idxArgs[4] = codes[r];  // code for row
 
+                    //printf("idx syn1: [%i]; code: [%i]\n", idxArgs[1], idxArgs[4]);
+
                     HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
 
