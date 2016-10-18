@@ -146,6 +146,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
+        AtomicLong timeSpent = new AtomicLong(0);
         if (!trainElementsVectors && !trainSequenceVectors) throw new IllegalStateException("You should define at least one training goal 'trainElementsRepresentation' or 'trainSequenceRepresentation'");
         if (iterator == null) throw new IllegalStateException("You can't fit() data without SequenceIterator defined");
 
@@ -167,6 +168,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         initLearners();
 
         log.info("Starting learning process...");
+        timeSpent.set(System.currentTimeMillis());
         if (this.stopWords == null) this.stopWords = new ArrayList<>();
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
             final AtomicLong linesCounter = new AtomicLong(0);
@@ -218,6 +220,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 }
             }
         }
+
+        log.info("Time spent on training: {} ms", System.currentTimeMillis() - timeSpent.get());
     }
 
 
