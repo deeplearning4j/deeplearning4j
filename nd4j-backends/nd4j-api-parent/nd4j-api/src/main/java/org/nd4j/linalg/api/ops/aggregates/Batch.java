@@ -33,7 +33,7 @@ public class Batch<T extends Aggregate> {
     // all aggregates within this batch
     @Getter private List<T> aggregates;
 
-    private T sample;
+    @Getter private T sample;
     @Getter private int numAggregates;
 
     /**

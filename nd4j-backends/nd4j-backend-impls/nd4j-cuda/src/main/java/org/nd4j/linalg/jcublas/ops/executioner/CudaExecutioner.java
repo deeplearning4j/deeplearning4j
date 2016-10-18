@@ -1924,7 +1924,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
-            reals[x] = op.getRealArguments().get(x);
+            reals[x] = op.getRealArguments().get(x).doubleValue();
         }
 
         INDArray realsBuffer = Nd4j.create(reals);
@@ -1938,6 +1938,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments,
+                    null,
+                    0,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments
             );

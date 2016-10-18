@@ -1433,8 +1433,10 @@ public class NativeOps extends Pointer {
                                           int numShapes,
                                           IntPointer indexArguments,
                                           int numIndexArguments,
+                                          @Cast("int **") PointerPointer intArrays,
+                                          int numIntArrays,
                                           FloatPointer realArguments,
                                           int numRealArguments);
 
-    public native void execAggregateBatchFloat(PointerPointer extras, int numAggregates, int opNum, Pointer ptrToArguments);
+    public native void execAggregateBatchFloat(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
 }

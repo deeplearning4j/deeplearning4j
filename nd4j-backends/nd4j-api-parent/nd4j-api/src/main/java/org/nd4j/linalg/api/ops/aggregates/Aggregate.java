@@ -29,5 +29,55 @@ public interface Aggregate {
 
     List<Integer> getIndexingArguments();
 
-    List<Double> getRealArguments();
+    List<Number> getRealArguments();
+
+    List<int[]> getIntArrayArguments();
+
+    /*
+       Methods related to batch memory manipulations
+     */
+
+    /**
+     * This method returns maximum number of shapes being passed per Aggregate
+     *
+     * @return
+     */
+    int maxArguments();
+
+    /**
+     * This method returns maximum number of shapes being passed per Aggregate
+     *
+     * @return
+     */
+    int maxShapes();
+
+    /**
+     * This method returns maximum number of IntArrays being passed per Aggregate
+     *
+     * @return
+     */
+    int maxIntArrays();
+
+    /**
+     * This method returns maximum length for IntArrays, if any
+     *
+     * @return
+     */
+    int maxIntArraySize();
+
+    /**
+     * This method returns maximum number of IndexArguments per Aggregate
+     *
+     * @return
+     */
+    int maxIndexArguments();
+
+    /**
+     * This method returns maximum number of real (float/double) per Aggregate
+     *
+     * @return
+     */
+    int maxRealArguments();
+
+    long getRequiredBatchMemorySize();
 }

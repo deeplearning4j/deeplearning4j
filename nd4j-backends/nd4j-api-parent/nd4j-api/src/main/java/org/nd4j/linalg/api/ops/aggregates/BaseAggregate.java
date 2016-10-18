@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +15,9 @@ import java.util.List;
 public abstract class BaseAggregate implements Aggregate {
     protected List<INDArray> arguments = new ArrayList<>();
     protected List<DataBuffer> shapes = new ArrayList<>();
+    protected List<int[]> intArrayArguments = new ArrayList<>();
     protected List<Integer> indexingArguments = new ArrayList<>();
-    protected List<Double> realArguments = new ArrayList<>();
-
+    protected List<Number> realArguments = new ArrayList<>();
 
     protected Number finalResult = 0.0;
 
@@ -45,7 +46,24 @@ public abstract class BaseAggregate implements Aggregate {
     }
 
     @Override
-    public List<Double> getRealArguments() {
+    public List<Number> getRealArguments() {
         return realArguments;
+    }
+
+    @Override
+    public List<int[]> getIntArrayArguments() {
+        return intArrayArguments;
+    }
+
+    @Override
+    public long getRequiredBatchMemorySize() {
+        long result = maxIntArrays() * maxIntArraySize() * 4;
+        result += maxArguments() * 8; // pointers
+        result += maxShapes() * 8; // pointers
+        result += maxIndexArguments() * 4;
+        result += maxRealArguments() * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2);
+        result += 5 * 4; // numArgs
+
+        return result * Batch.getBatchLimit();
     }
 }

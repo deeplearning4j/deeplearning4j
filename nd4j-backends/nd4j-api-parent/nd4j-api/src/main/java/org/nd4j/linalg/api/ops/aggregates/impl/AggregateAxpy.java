@@ -28,4 +28,35 @@ public class AggregateAxpy extends BaseAggregate {
     public int opNum() {
         return 2;
     }
+
+
+    @Override
+    public int maxArguments() {
+        return 2;
+    }
+
+    @Override
+    public int maxShapes() {
+        return 0;
+    }
+
+    @Override
+    public int maxIntArrays() {
+        return 0;
+    }
+
+    @Override
+    public int maxIntArraySize() {
+        return 0;
+    }
+
+    @Override
+    public int maxIndexArguments() {
+        return 1;
+    }
+
+    @Override
+    public int maxRealArguments() {
+        return 1;
+    }
 }

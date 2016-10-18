@@ -20,10 +20,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
@@ -38,6 +35,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter private CpuTADManager tadManager = new CpuTADManager();
+
+    /**
+     * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
+     * Since for NativeOpExecutioner all executions are synchronous
+     */
+    private ThreadLocal<Map<Integer, Pointer>> batchPointers = new ThreadLocal<>();
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
@@ -767,6 +770,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
+
+    protected <T extends Aggregate> Pointer getPointer(Batch<T> batch) {
+        if (batchPointers.get() == null)
+            batchPointers.set(new HashMap<Integer, Pointer>());
+
+        if (!batchPointers.get().containsKey(batch.opNum())) {
+            IntPointer pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4);
+            batchPointers.get().put(batch.opNum(), pointer);
+            return pointer;
+        }
+
+        return batchPointers.get().get(batch.opNum());
+    }
+
+
     /**
      * This method executes previously built batch
      *
@@ -775,15 +793,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
 
-        IntPointer pointer = new IntPointer(128000);
+        IntPointer pointer = (IntPointer) getPointer(batch);
 
-        int maxTypes = 4;
-        int maxArgs = 32;
-        int maxPtr = 16;
+        int maxTypes = 5;
+
+        int maxIntArrays = batch.getSample().maxIntArrays();
+
+        int maxArraySize = batch.getSample().maxIntArraySize();
+
+
         int indexPos = maxTypes * Batch.getBatchLimit();
-        int realPos = indexPos + (maxArgs * Batch.getBatchLimit());
-        int argsPos = (realPos + (maxArgs * Batch.getBatchLimit())) / 2;
-        int shapesPos = argsPos + (maxPtr * Batch.getBatchLimit());
+        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
+        int realPos = intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit());
+        int argsPos = (realPos + (batch.getSample().maxRealArguments() * Batch.getBatchLimit())) / 2;
+        int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
 
@@ -793,27 +816,39 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             pointer.put(idx + 1, op.getShapes().size());
             pointer.put(idx + 2, op.getIndexingArguments().size());
             pointer.put(idx + 3, op.getRealArguments().size());
+            pointer.put(idx + 4, op.getIntArrayArguments().size());
 
 
             // putting indexing arguments
             for (int e = 0; e < op.getIndexingArguments().size(); e++) {
-                idx = indexPos + i * maxArgs;
+                idx = indexPos + i * batch.getSample().maxIndexArguments();
                 pointer.put(idx + e, op.getIndexingArguments().get(e));
+            }
+
+            // putting intArray values
+            int bsize = maxIntArrays * maxArraySize;
+            for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
+                int step = (i * bsize) + (e * maxArraySize);
+                if (op.getIntArrayArguments().get(e) != null)
+                    for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
+                        idx = intArraysPos + step + x;
+                        pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
+                    }
             }
 
             // TODO: variable datatype should be handled here
             // putting real arguments
             FloatPointer realPtr = new FloatPointer(pointer);
             for (int e = 0; e < op.getRealArguments().size(); e++) {
-                idx = realPos + i * maxArgs;
+                idx = realPos + i * op.maxRealArguments();
                 realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
             }
-
 
             // putting arguments pointers
             PointerPointer ptrPtr = new PointerPointer(pointer);
             for (int e = 0; e < op.getArguments().size(); e++) {
-                idx = argsPos + i * maxPtr;
+                idx = argsPos + i * batch.getSample().maxArguments();
+
                 if (op.getArguments().get(e) != null)
                     ptrPtr.put(idx + e, op.getArguments().get(e).data().addressPointer());
             }
@@ -821,7 +856,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             // putting shape pointers
             for (int e = 0; e < op.getShapes().size(); e++) {
-                idx = shapesPos + i * maxPtr;
+                idx = shapesPos + i * batch.getSample().maxShapes();
 
                 if (op.getShapes().get(e) != null)
                     ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
@@ -829,7 +864,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(), pointer);
+            loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    pointer);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
 
         }
@@ -858,8 +900,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int numIndexArguments = op.getIndexingArguments().size();
         int numRealArguments = op.getRealArguments().size();
         int numShapes = op.getShapes().size();
+        int numIntArrays = op.getIntArrayArguments().size();
 
         PointerPointer arguments = new PointerPointer(numArguments);
+        List<IntPointer> pointers = new ArrayList<>();
+        PointerPointer intArrays = new PointerPointer(numIntArrays);
 
         for (int x = 0; x < numArguments; x++ ) {
             arguments.put(x, op.getArguments().get(x) == null ? null : op.getArguments().get(x).data().addressPointer());
@@ -883,7 +928,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
-            reals[x] = op.getRealArguments().get(x);
+            reals[x] = op.getRealArguments().get(x).doubleValue();
+        }
+
+        for (int x = 0; x < numIntArrays; x++) {
+            IntPointer intPtr = new IntPointer(op.getIntArrayArguments().get(x));
+            intArrays.put(x, intPtr);
+            pointers.add(intPtr);
         }
 
         INDArray realsBuffer = Nd4j.create(reals);
@@ -897,6 +948,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numShapes,
                     pointer,
                     numIndexArguments,
+                    intArrays,
+                    numIntArrays,
                     (FloatPointer) realsBuffer.data().addressPointer(),
                     numRealArguments
                     );

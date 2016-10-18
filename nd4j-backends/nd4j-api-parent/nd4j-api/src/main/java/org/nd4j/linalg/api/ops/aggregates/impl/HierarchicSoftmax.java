@@ -35,4 +35,34 @@ public class HierarchicSoftmax extends BaseAggregate {
     public String name() {
         return "aggregate_hs";
     }
+
+    @Override
+    public int maxArguments() {
+        return 4;
+    }
+
+    @Override
+    public int maxShapes() {
+        return 0;
+    }
+
+    @Override
+    public int maxIntArrays() {
+        return 0;
+    }
+
+    @Override
+    public int maxIntArraySize() {
+        return 0;
+    }
+
+    @Override
+    public int maxIndexArguments() {
+        return 5;
+    }
+
+    @Override
+    public int maxRealArguments() {
+        return 1;
+    }
 }
