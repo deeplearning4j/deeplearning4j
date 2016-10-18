@@ -34,7 +34,7 @@ namespace aggregateOps {
     class HierarchicSoftmax {
         public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int idxSyn0 = indexArguments[0];
             int idxSyn1 = indexArguments[1];
             int vectorLength = indexArguments[2];
@@ -85,7 +85,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
@@ -176,7 +176,7 @@ namespace aggregateOps {
     class NegativeSampling {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int idxSyn0 = indexArguments[0];
             int idxSyn1 = indexArguments[1];
             int vectorLength = indexArguments[2];
@@ -224,7 +224,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
@@ -311,7 +311,7 @@ namespace aggregateOps {
     class Dot {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -329,7 +329,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -357,7 +357,7 @@ namespace aggregateOps {
     class Axpy {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -372,7 +372,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -394,8 +394,7 @@ namespace aggregateOps {
     public:
 
         aggregate_def void
-        executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments,
-                         int numRealArguments) {
+        executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int syn0Row = indexArguments[0];
             int vectorLength = indexArguments[1];
             int hsRounds = indexArguments[2];
@@ -427,8 +426,8 @@ namespace aggregateOps {
 
             T *negTable = arguments[4];
 
-            int *idxSyn1 = shapeArguments[0];
-            int *codes = shapeArguments[1];
+            int *idxSyn1 = intArrays[0];
+            int *codes = intArrays[1];
 
             unsigned long long next_random = (long) realArguments[1];
 
@@ -437,7 +436,7 @@ namespace aggregateOps {
                     idxArgs[1] = idxSyn1[r]; // syn1 row
                     idxArgs[4] = codes[r];  // code for row
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
 
             args[1] = arguments[3]; // syn1Neg instead of syn1
@@ -460,7 +459,7 @@ namespace aggregateOps {
                         idxArgs[4] = 0;
                     }
 
-                    NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                    NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
 
 #pragma omp simd
@@ -474,7 +473,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             __shared__ int syn0Row;
             __shared__ int vectorLength;
             __shared__ int hsRounds;
@@ -526,8 +525,8 @@ namespace aggregateOps {
                 neu1e[i] = (T) 0.0f;
             }
 
-            int *idxSyn1 = shapeArguments[0];
-            int *codes = shapeArguments[1];
+            int *idxSyn1 = intArrays[0];
+            int *codes = intArrays[1];
 
 
             for (int r = 0; r < hsRounds; r++) {
@@ -537,7 +536,7 @@ namespace aggregateOps {
                 }
                 __syncthreads();
 
-                HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0,  realArguments, 1);
                 __syncthreads();
             }
             __syncthreads();
@@ -570,7 +569,7 @@ namespace aggregateOps {
                     if (target == ngStarter)
                             continue;
 
-                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, realArguments, 1);
+                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                     __syncthreads();
                 }
 

@@ -2481,10 +2481,12 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    int numShapeArguments,
                                    int *indexArguments,
                                    int numIndexArguments,
+                                   int **intArrays,
+                                   int numIntArrays,
                                    float *realArguments,
                                    int numRealArguments) {
 
-    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
+    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
 }
 
 void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, void *ptrToArguments) {
@@ -2494,14 +2496,29 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
 
     nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates);
 
+    int *intArrays[8];
+
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) private(intArrays) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
         float **arguments = helper.getArguments(i);
         int **shapes = helper.getShapeArguments(i);
         int *idxArg = helper.getIndexArguments(i);
         float *realArg = helper.getRealArguments(i);
 
-        execAggregateFloat(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), realArg, helper.getNumRealArguments(i));
+        for (int e = 0; e < 8; e++) {
+            intArrays[e] = helper.getIntArrayArguments(i, e);
+        }
+
+/*
+        printf("NA: [%i]; NS: [%i]; NI: [%i]; NR: [%i]\n", helper.getNumArguments(i), helper.getNumShapeArguments(i), helper.getNumIndexArguments(i), helper.getNumRealArguments(i));
+        printf("IndexArgs[0]: [%i]\n", helper.getIndexArguments(i)[0]);
+        printf("RealArgs[0]: [%f]\n", helper.getRealArguments(i)[0]);
+        printf("Args[0][0]: [%f], Args[0][1]: [%f]\n", helper.getArguments(i)[0][0], helper.getArguments(i)[0][1]);
+        printf("Args[1][0]: [%f], Args[1][1]: [%f]\n", helper.getArguments(i)[1][0], helper.getArguments(i)[1][1]);
+
+        printf("\n");
+*/
+        execAggregateFloat(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
     }
 }

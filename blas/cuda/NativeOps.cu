@@ -5921,6 +5921,8 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    int numShapes,
                                    int *indexArguments,
                                    int numIndexArguments,
+                                   int **intArrays,
+                                   int numIntArrays,
                                    float *realArguments,
                                    int numRealArguments) {
 
@@ -5929,7 +5931,7 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     // TODO: proper launch dims required here
     dim3 launchDims = dim3(1, 256, 4096);
 
-    DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+    DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));

@@ -5,7 +5,11 @@
 #ifndef LIBND4J_HELPER_PTRMAP_H
 #define LIBND4J_HELPER_PTRMAP_H
 
-
+#ifdef __CUDACC__
+#define ptr_def __host__ __device__ inline
+#else
+#define ptr_def inline
+#endif
 
 namespace nd4j {
 
@@ -16,9 +20,10 @@ namespace nd4j {
      * Surface map format is simple:
      * [0] we put numbers for num*Arguments
      * [1] then we put indexing arguments, since their size is constant
-     * [2] then we put real arguments
-     * [3] then we put arguments pointers
-     * [4] then we put shape pointers
+     * [2] here we put block of JVM IntArrays by value, batchLimit * maxIntArrays * maxArraySize;
+     * [3] then we put real arguments
+     * [4] then we put arguments pointers
+     * [5] then we put shape pointers
      *
      */
     template <typename T>
@@ -30,8 +35,11 @@ namespace nd4j {
         // we enforce maximal batch size limit, to simplify
         const int batchLimit = 512;
 
-        // we have 4 diff kinds of arguments: arguments, shapeArguments, indexArguments, realArguments
-        const int argTypes = 4;
+        // we have 5 diff kinds of arguments: arguments, shapeArguments, intArrayArguments, indexArguments, realArguments
+        const int argTypes = 5;
+
+        const int maxIntArrays = 8;
+        const int maxArraySize = 32;
 
         // right now we hardcode maximas, but we'll probably change that later
         const int maxIndexArguments = 32;
@@ -52,6 +60,9 @@ namespace nd4j {
          * @param numAggregates actual number of aggregates being passed in
          * @return
          */
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
         PointersHelper(void *ptrToParams, int numAggregates) {
             aggregates = numAggregates;
             ptrGeneral = ptrToParams;
@@ -69,7 +80,8 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        T **getArguments(int aggregateIdx) {
+
+        ptr_def T **getArguments(int aggregateIdx) {
             T **aPtr = (T **) getRealArguments(batchLimit);
 
             return aPtr + (aggregateIdx * maxArguments);
@@ -81,7 +93,7 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int getNumArguments(int aggregateIdx) {
+        ptr_def int getNumArguments(int aggregateIdx) {
             int *tPtr = (int *) ptrGeneral;
             return tPtr[aggregateIdx * argTypes];
         }
@@ -92,7 +104,7 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int **getShapeArguments(int aggregateIdx) {
+        ptr_def int **getShapeArguments(int aggregateIdx) {
             int **sPtr = (int **)getArguments(batchLimit);
 
             return sPtr + (aggregateIdx * maxShapeArguments);
@@ -104,7 +116,7 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int getNumShapeArguments(int aggregateIdx) {
+        ptr_def int getNumShapeArguments(int aggregateIdx) {
             int *tPtr = (int *) ptrGeneral;
             return tPtr[aggregateIdx * argTypes + 1];
         }
@@ -115,7 +127,7 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int *getIndexArguments(int aggregateIdx) {
+        ptr_def int *getIndexArguments(int aggregateIdx) {
             // we skip first numeric num*arguments
             int *ptr = ((int *) ptrGeneral) + (batchLimit * argTypes);
 
@@ -129,9 +141,26 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int getNumIndexArguments(int aggregateIdx) {
+        ptr_def int getNumIndexArguments(int aggregateIdx) {
             int *tPtr = (int *) ptrGeneral;
             return tPtr[aggregateIdx * argTypes + 2];
+        }
+
+        /**
+         * This method returns pointer to array of jvm IntArray arguments
+         */
+        ptr_def int *getIntArrayArguments(int aggregateIdx, int argumentIdx) {
+            int *ptr = (int * )getIndexArguments(batchLimit);
+
+            return ptr + (aggregateIdx * maxIntArrays * maxArraySize) + (argumentIdx * maxArraySize);
+        }
+
+        /**
+         * This method returns number of jvm IntArray arguments
+         */
+        ptr_def int getNumIntArrayArguments(int aggregateIdx) {
+            int *tPtr = (int *) ptrGeneral;
+            return tPtr[aggregateIdx * argTypes + 4];
         }
 
         /**
@@ -140,9 +169,9 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        T *getRealArguments(int aggregateIdx) {
+        ptr_def T *getRealArguments(int aggregateIdx) {
             // we get pointer for last batchElement + 1, so that'll be pointer for 0 realArgument
-            T *ptr = (T * )getIndexArguments(batchLimit);
+            T *ptr = (T * ) getIntArrayArguments(batchLimit, 0);
 
             return ptr + (aggregateIdx * maxRealArguments);
         }
@@ -153,7 +182,7 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        int getNumRealArguments(int aggregateIdx) {
+        ptr_def int getNumRealArguments(int aggregateIdx) {
             int *tPtr = (int *) ptrGeneral;
             return tPtr[aggregateIdx * argTypes + 3];
         }

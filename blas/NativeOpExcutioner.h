@@ -536,8 +536,8 @@ public:
     }
 
 
-	static void execAggregate(int opNum, T **arguments, int numArguments,  int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, T *realArguments, int numRealArguments) {
-		functions::aggregate::AggregatedFunction<T>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, realArguments, numRealArguments);
+	static void execAggregate(int opNum, T **arguments, int numArguments,  int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+		functions::aggregate::AggregatedFunction<T>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
 	}
 };
 
