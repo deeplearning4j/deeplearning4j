@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected int[] variableWindows;
     protected int vectorLength;
 
-    protected INDArray syn0, syn1, syn1Neg, table, expTable;
+    protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
@@ -74,11 +75,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.lookupTable = lookupTable;
         this.configuration = configuration;
 
-        this.expTable = Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable());
-        this.syn0 = ((InMemoryLookupTable<T>) lookupTable).getSyn0();
-        this.syn1 = ((InMemoryLookupTable<T>) lookupTable).getSyn1();
-        this.syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
-        this.table = ((InMemoryLookupTable<T>) lookupTable).getTable();
+        this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
+        this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
+        this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
+
+        log.info("Is View: {}", ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg().isView());
+
+        this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
+        this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
@@ -158,7 +162,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     @Override
     public void finish() {
-        log.info("Finalizing epoch...");
         if (batches.get().size() > 0){
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
@@ -213,7 +216,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             for (int i = 0; i < w1.getCodeLength(); i++) {
                 int code = w1.getCodes().get(i);
                 int point = w1.getPoints().get(i);
-                if (point >= syn0.rows() || point < 0)
+                if (point >= vocabCache.numWords() || point < 0)
                     throw new IllegalStateException("Illegal point " + point);
 
                 codes[i] = code;
@@ -230,14 +233,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if(negative > 0) {
             if (syn1Neg == null) {
                 ((InMemoryLookupTable<T>) lookupTable).initNegative();
-                syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
+                syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
             }
         }
 
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0, syn1, syn1Neg, expTable, table, w2.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get());
+        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), w2.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
 
         batches.get().add(sg);
 
