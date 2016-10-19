@@ -79,5 +79,25 @@ public interface Aggregate {
      */
     int maxRealArguments();
 
+    /**
+     * This method returns amount of memory required for batch creation for this specific Aggregate
+     * @return
+     */
     long getRequiredBatchMemorySize();
+
+    /**
+     * This method returns amount of shared memory required for this specific Aggregate.
+     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     *
+     * @return
+     */
+    int getSharedMemorySize();
+
+    /**
+     * This method returns desired number of threads per Aggregate instance
+     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     *
+     * @return
+     */
+    int getThreadsPerInstance();
 }

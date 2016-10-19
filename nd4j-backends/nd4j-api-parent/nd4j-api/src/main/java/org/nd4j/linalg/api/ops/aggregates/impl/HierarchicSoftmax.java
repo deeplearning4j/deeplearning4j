@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.aggregates.impl;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * This Op describes HS round for SkipGram/CBOW Hierarchic Softmax
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
  * @author raver119@gmail.com
  */
 public class HierarchicSoftmax extends BaseAggregate {
+    private int vectorLength;
 
     public HierarchicSoftmax(INDArray syn0, INDArray syn1, INDArray expTable, INDArray neu1e, int idxSyn0, int idxSyn1, int code, double lr) {
         arguments.add(syn0);
@@ -24,6 +26,33 @@ public class HierarchicSoftmax extends BaseAggregate {
         indexingArguments.add(code);
 
         realArguments.add(lr);
+
+        this.vectorLength = neu1e.length();
+    }
+
+    /**
+     * This method returns amount of shared memory required for this specific Aggregate.
+     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     *
+     * @return
+     */
+    @Override
+    public int getSharedMemorySize() {
+        return (getThreadsPerInstance() * Nd4j.sizeOfDataType()) + 512;
+    }
+
+    /**
+     * This method returns desired number of threads per Aggregate instance
+     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     *
+     * @return
+     */
+    @Override
+    public int getThreadsPerInstance() {
+        if (vectorLength > 768)
+            return 768;
+
+        return vectorLength;
     }
 
     @Override

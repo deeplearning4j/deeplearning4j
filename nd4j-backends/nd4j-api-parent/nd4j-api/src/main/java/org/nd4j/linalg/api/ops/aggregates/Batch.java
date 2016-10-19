@@ -4,8 +4,6 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 
 import java.util.ArrayList;
@@ -24,12 +22,6 @@ public class Batch<T extends Aggregate> {
      */
     @Getter private static final int batchLimit = 512;
 
-    /*
-        We declare single pointer to params of the whole batch.
-        Format of this memory chunk is explained in libnd4j/includes/helper_ptrmap.h
-    */
-    @Getter @Setter private Pointer paramsSurface;
-
     // all aggregates within this batch
     @Getter private List<T> aggregates;
 
@@ -42,8 +34,8 @@ public class Batch<T extends Aggregate> {
      * @param aggregates
      */
     public Batch(List<T> aggregates) {
-        if (aggregates.size() > batchLimit)
-            throw new RuntimeException("Number of aggregates is higher then " + batchLimit + " elements, multiple batches should be issued.");
+        //if (aggregates.size() > batchLimit)
+        //    throw new RuntimeException("Number of aggregates is higher then " + batchLimit + " elements, multiple batches should be issued.");
 
         this.aggregates = aggregates;
         this.numAggregates = aggregates.size();
@@ -91,7 +83,18 @@ public class Batch<T extends Aggregate> {
      * @return
      */
     public static <U extends Aggregate> List<Batch<U>> getBatches(List<U> list) {
-        List<List<U>> partitions =  Lists.partition(list, batchLimit);
+        return getBatches(list, batchLimit);
+    }
+
+    /**
+     * Helper method to create batch from list of aggregates, for cases when list of aggregates is higher then batchLimit
+     *
+     * @param list
+     * @param <U>
+     * @return
+     */
+    public static <U extends Aggregate> List<Batch<U>> getBatches(List<U> list, int partitionSize) {
+        List<List<U>> partitions =  Lists.partition(list, partitionSize);
         List<Batch<U>> split = new ArrayList<>();
 
         for (List<U> partition: partitions) {
