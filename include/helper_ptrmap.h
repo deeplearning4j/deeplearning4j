@@ -34,7 +34,7 @@ namespace nd4j {
 
         // we enforce maximal batch size limit, to simplify
 #ifdef __CUDACC__
-        const int batchLimit = 2048;
+        const int batchLimit = 8192;
 #else
         const int batchLimit = 512;
 #endif

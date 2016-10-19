@@ -52,24 +52,36 @@ __device__ void aggregateGeneric(T **arguments, int numArguments, int **shapeArg
 template <typename T, typename OpClass>
 __device__ void aggregateBatchGeneric(int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
 
+    __shared__ char mem[512];
     // helper should be in __shared__ memory probably, no sense using stack here
-    nd4j::PointersHelper<T> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+    __shared__ nd4j::PointersHelper<T> *helper;
+    if (threadIdx.x == 0) {
+        helper = new (mem) nd4j::PointersHelper<T>(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+    }
+    __syncthreads();
 
     // TODO: we probably should lift this restriction
     __shared__ int *intArrays[32];
 
+    __shared__ T **arguments;
+    __shared__ int **shapes;
+    __shared__ int *idxArg;
+    __shared__ T *realArg;
+
     for(int r = blockIdx.x; r < numAggregates; r += gridDim.x) {
-        T **arguments = helper.getArguments(r);
-        int **shapes = helper.getShapeArguments(r);
-        int *idxArg = helper.getIndexArguments(r);
-        T *realArg = helper.getRealArguments(r);
+        if (threadIdx.x == 0) {
+            arguments = helper->getArguments(r);
+            shapes = helper->getShapeArguments(r);
+            idxArg = helper->getIndexArguments(r);
+            realArg = helper->getRealArguments(r);
+        }
 
         if (threadIdx.x < 32 && threadIdx.x < maxIntArrays) {
-            intArrays[threadIdx.x] = helper.getIntArrayArguments(r, threadIdx.x);
+            intArrays[threadIdx.x] = helper->getIntArrayArguments(r, threadIdx.x);
         }
         __syncthreads();
 
-        functions::aggregate::AggregatedFunction<T>::template execCuda<OpClass>(arguments, helper.getNumArguments(r), shapes, helper.getNumShapeArguments(r), idxArg, helper.getNumIndexArguments(r), intArrays, helper.getNumIntArrayArguments(r), realArg, helper.getNumRealArguments(r));
+        functions::aggregate::AggregatedFunction<T>::template execCuda<OpClass>(arguments, helper->getNumArguments(r), shapes, helper->getNumShapeArguments(r), idxArg, helper->getNumIndexArguments(r), intArrays, helper->getNumIntArrayArguments(r), realArg, helper->getNumRealArguments(r));
     }
 };
 
