@@ -243,7 +243,7 @@ copy mkl_rt.dll libblas3.dll
 
 ### Build Script
 
-A community-provided script [build-dl4j-stack.sh](https://gist.github.com/treo/6e243d616ba1ff8ac201444f8e910471) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
+A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
 Use the build script as follows for CPU architectures:
 
