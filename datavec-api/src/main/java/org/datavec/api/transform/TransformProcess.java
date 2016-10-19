@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -72,7 +73,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
-@Data
+@Data @Slf4j
 public class TransformProcess implements Serializable {
 
     private final Schema initialSchema;
@@ -590,7 +591,17 @@ public class TransformProcess implements Serializable {
 
                     //mean including min value: (sum/totalCount)
                     //mean excluding min value: (sum - countMin*min)/(totalCount - countMin)
-                    double meanExMin = (mean * ca.getCountTotal() - countMin * min) / (ca.getCountTotal() - countMin);
+                    double meanExMin;
+                    if(ca.getCountTotal() - countMin == 0){
+                        if(ca.getCountTotal() == 0){
+                            log.warn("Normalizing with Log2MeanExcludingMin but 0 records present in analysis");
+                        } else {
+                            log.warn("Normalizing with Log2MeanExcludingMin but all records are the same value");
+                        }
+                        meanExMin = mean;
+                    } else {
+                        meanExMin = (mean * ca.getCountTotal() - countMin * min) / (ca.getCountTotal() - countMin);
+                    }
                     return transform(new Log2Normalizer(column, meanExMin, min, 0.5));
                 default:
                     throw new RuntimeException("Unknown/not implemented normalization type: " + type);
