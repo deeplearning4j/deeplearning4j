@@ -120,12 +120,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
@@ -151,11 +145,6 @@
             <artifactId>zt-exec</artifactId>
             <version>1.9</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-model</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
