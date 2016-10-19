@@ -40,7 +40,7 @@ public class Log2Normalizer extends BaseDoubleTransform {
                           @JsonProperty("columnMin") double columnMin, @JsonProperty("scalingFactor") double scalingFactor) {
         super(columnName);
         if (Double.isNaN(columnMean) || Double.isInfinite(columnMean))
-            throw new IllegalArgumentException("Invalid input");
+            throw new IllegalArgumentException("Invalid input: column mean cannot be null/infinite (is: " + columnMean + ")");
         this.columnMean = columnMean;
         this.columnMin = columnMin;
         this.scalingFactor = scalingFactor;
