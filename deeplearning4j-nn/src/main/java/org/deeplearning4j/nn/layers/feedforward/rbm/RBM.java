@@ -185,10 +185,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         setScoreWithZ(delta);
     }
 
-
-
-
-
+    @Deprecated
     @Override
     public Layer transpose() {
         RBM r = (RBM) super.transpose();
@@ -314,6 +311,16 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * @param v the visible layer
      * @return the approximated activations of the visible layer
      */
+    public INDArray propUp(INDArray v) {
+        return propUp(v,true);
+    }
+
+    /**
+     * Calculates the activation of the visible :
+     * sigmoid(v * W + hbias)
+     * @param v the visible layer
+     * @return the approximated activations of the visible layer
+     */
     public INDArray propUp(INDArray v, boolean training) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         if(training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
@@ -341,17 +348,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
         }
 
-    }
-
-
-    /**
-     * Calculates the activation of the visible :
-     * sigmoid(v * W + hbias)
-     * @param v the visible layer
-     * @return the approximated activations of the visible layer
-     */
-    public INDArray propUp(INDArray v) {
-        return propUp(v,true);
     }
 
     /**
