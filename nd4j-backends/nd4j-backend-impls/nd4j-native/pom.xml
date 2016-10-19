@@ -52,7 +52,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
                 <configuration>
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>

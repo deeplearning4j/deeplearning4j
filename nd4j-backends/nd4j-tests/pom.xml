@@ -34,7 +34,6 @@
 
     <properties>
         <scala.binary.version>2.10</scala.binary.version>
-        <junit.version>4.12</junit.version>
     </properties>
     <build>
         <plugins>
@@ -52,7 +51,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
         </dependency>
 
         <dependency>
