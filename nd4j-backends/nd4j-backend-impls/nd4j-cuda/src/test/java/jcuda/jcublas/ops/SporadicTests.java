@@ -276,4 +276,107 @@ public class SporadicTests {
 
         assertEquals(1f, buffer2.getFloat(0), 0.001f);
     }
+
+
+    @Test
+    public void testReplicate3() throws Exception {
+        INDArray array = Nd4j.ones(10, 10);
+        INDArray exp = Nd4j.create(10).assign(10f);
+
+        log.error("Array length: {}", array.length());
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get());
+                    log.error("Point deviceId: {}; current deviceId: {}", point.getDeviceId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+
+                    INDArray sum = locals.get().sum(1);
+                    INDArray localExp = Nd4j.create(10).assign(10f);
+
+                    assertEquals(localExp, sum);
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+
+            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get(t));
+            log.error("Point deviceId: {}; current deviceId: {}", point.getDeviceId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+            exp.addi(0.0f);
+            assertEquals(exp, locals.get(t).sum(0));
+
+            log.error("Point after: {}", point.getDeviceId());
+        }
+    }
+
+
+    @Test
+    public void testReplicate4() throws Exception {
+        INDArray array = Nd4j.create(3,3);
+
+        array.getRow(1).putScalar(0, 1f);
+        array.getRow(1).putScalar(1, 1f);
+        array.getRow(1).putScalar(2, 1f);
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int t = 0; t < numDevices; t++) {
+            assertEquals(3, locals.get(t).sumNumber().floatValue(), 0.001f);
+        }
+    }
+
+
+    @Test
+    public void testReplicate5() throws Exception {
+        INDArray array = Nd4j.create(3, 3);
+
+        log.error("Original: Host pt: {}; Dev pt: {}", AtomicAllocator.getInstance().getAllocationPoint(array).getPointers().getHostPointer().address(), AtomicAllocator.getInstance().getAllocationPoint(array).getPointers().getDevicePointer().address());
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int t = 0; t < numDevices; t++) {
+            log.error("deviceId: {}; Host pt: {}; Dev pt: {}", t, AtomicAllocator.getInstance().getAllocationPoint(locals.get(t)).getPointers().getHostPointer().address(), AtomicAllocator.getInstance().getAllocationPoint(locals.get(t)).getPointers().getDevicePointer().address());
+        }
+
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get());
+                    log.error("deviceId: {}; Host pt: {}; Dev pt: {}", Nd4j.getAffinityManager().getDeviceForCurrentThread(), point.getPointers().getHostPointer().address(), point.getPointers().getDevicePointer().address());
+
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+    }
+
 }

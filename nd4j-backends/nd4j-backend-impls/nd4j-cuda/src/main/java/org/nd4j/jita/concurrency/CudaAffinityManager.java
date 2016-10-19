@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -171,6 +172,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
         char ordering = array.ordering();
         int length = array.length();
 
+        // we use this call to get device memory updated
+        AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
 
         int currentDeviceId = getDeviceForCurrentThread();
 
@@ -181,8 +184,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         DataBuffer newDataBuffer =  replicateToDevice(deviceId, array.data());
         DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, elementWiseStride, ordering);
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
-
-//        INDArray result = Nd4j.create(length);
 
         attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));

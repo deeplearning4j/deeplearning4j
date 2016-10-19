@@ -1966,6 +1966,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
 
+        log.info("Executing batch...");
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.execAggregateBatchFloat(extraArgs, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(),
