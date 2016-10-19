@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import org.deeplearning4j.berkeley.Iterators;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -32,20 +33,23 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertTrue;
 
 
 /**
  * Created by agibsonccc on 8/27/14.
+ * @Author agibsoncc & nyghtowl
  */
 public class RBMTests {
     private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
@@ -80,7 +84,7 @@ public class RBMTests {
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .nIn(d.numInputs()).nOut(nOut)
                         .weightInit(WeightInit.VI)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .build())
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(1e-3f)
@@ -105,7 +109,7 @@ public class RBMTests {
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(
                         org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .nIn(d.numInputs()).nOut(3)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -208,7 +212,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -241,7 +245,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -252,8 +256,6 @@ public class RBMTests {
         value = rbm.score();
 
     }
-
-
 
 
     @Test
@@ -276,7 +278,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -289,6 +291,45 @@ public class RBMTests {
         Gradient grad2 = rbm.gradient();
 
     }
+
+    @Test
+    public void testPropUpBinary(){
+        INDArray input = Nd4j.linspace(1,10,10);
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                        .nIn(10).nOut(1)
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
+                .build();
+
+        INDArray params = Nd4j.create(new double[] {
+                1,2,3,4,5,6,7,8,9,10,1,1,1,1,1,1,1,1,1,1,1
+        });
+
+        RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,false);
+        INDArray actualParams = rbm.params();
+        assertEquals(params, actualParams);
+
+        INDArray expectedOut = Transforms.sigmoid(Nd4j.create(new double[] {386.}));
+
+        INDArray actualOut = rbm.propUp(input);
+        assertEquals(expectedOut, actualOut);
+    }
+
+    // TODO remove after confim Gaussian to use
+//    @Test
+//    public void testGaussian() {
+//        INDArray input = Nd4j.linspace(1,10,10);
+//        INDArray add = Nd4j.randn(input.rows(), input.columns(), 42);
+//        Distribution add2 = Nd4j.getDistributions().createNormal(input, 1);
+//        add2.reseedRandomGenerator(42);
+//        INDArray t = add2.sample(input.shape());
+//        Distribution add3 = Nd4j.getDistributions().createNormal(input, 1);
+//        add3.reseedRandomGenerator(42);
+//        INDArray s = add3.sample(input.shape());
+//        assertEquals(add, add2);
+//    }
 
 
 
