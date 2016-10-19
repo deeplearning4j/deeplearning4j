@@ -120,12 +120,12 @@ public class RBM extends BasePretrainNetwork {
         	this.k = k;
         	return this;
         }
-        
+
         public Builder hiddenUnit(HiddenUnit hiddenUnit){
         	this.hiddenUnit =  hiddenUnit;
         	return this;
         }
-        
+
         public Builder visibleUnit(VisibleUnit visibleUnit){
         	this.visibleUnit = visibleUnit;
         	return this;
@@ -135,5 +135,7 @@ public class RBM extends BasePretrainNetwork {
             this.sparsity = sparsity;
             return this;
         }
+
+
     }
 }

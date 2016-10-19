@@ -21,7 +21,10 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -37,11 +40,10 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         return INSTANCE;
     }
 
-    public final static String VISIBLE_BIAS_KEY = DefaultParamInitializer.BIAS_KEY + "B";
+    public final static String VISIBLE_BIAS_KEY = "v" + DefaultParamInitializer.BIAS_KEY;
 
     @Override
     public int numParams(NeuralNetConfiguration conf, boolean backprop){
-        if(backprop) return super.numParams(conf,backprop);
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         return super.numParams(conf,backprop) + layerConf.getNIn();
@@ -50,15 +52,28 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     @Override
     public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String,INDArray> params = super.init(conf, paramsView, initializeParams);
+
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
+        int nIn = layerConf.getNIn();
+        int nOut = layerConf.getNOut();
+        int nWeightParams = nIn*nOut;
 
-
-        params.put(VISIBLE_BIAS_KEY, Nd4j.valueArrayOf(layerConf.getNIn(),0.0));
+        INDArray visibleBiasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams + nOut,nWeightParams + nOut + nIn));
+        params.put(VISIBLE_BIAS_KEY, createVisibleBias(conf, visibleBiasView, initializeParams));
         conf.addVariable(VISIBLE_BIAS_KEY);
 
         return params;
     }
 
+    protected INDArray createVisibleBias(NeuralNetConfiguration conf, INDArray visibleBiasView, boolean initializeParameters) {
+        org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
+                (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
+        if(initializeParameters) {
+            INDArray ret = Nd4j.valueArrayOf(layerConf.getNIn(), layerConf.getVisibleBiasInit());
+            visibleBiasView.assign(ret);
+        }
+        return visibleBiasView;
+    }
 
 }
