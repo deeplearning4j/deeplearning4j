@@ -5927,9 +5927,12 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    int numRealArguments) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
 
     // TODO: proper launch dims required here
-    dim3 launchDims = dim3(1, 256, 4096);
+    dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
     DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
@@ -5940,9 +5943,14 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
 void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,  void *ptrToArguments) {
     // not implemented yet
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
 
     // TODO: fix this, we want something better then fixed number of threads per block
-    dim3 launchDims = dim3(numAggregates, 256, 2048);
+    dim3 launchDims = dim3(numAggregates, numThreads, shmem);
+
+    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
 
     DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
 

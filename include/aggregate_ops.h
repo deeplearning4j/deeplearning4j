@@ -156,14 +156,11 @@ namespace aggregateOps {
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 neu1e[x] = g * syn1[x] + neu1e[x];
             }
-            __syncthreads();
 
             // axpy2
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 syn1[x] = g * syn0[x] + syn1[x];
             }
-            __syncthreads();
-
         }
 #endif
     };
@@ -539,7 +536,6 @@ namespace aggregateOps {
                 __syncthreads();
 
                 HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0,  realArguments, 1);
-                __syncthreads();
             }
             __syncthreads();
 
@@ -572,7 +568,6 @@ namespace aggregateOps {
                             continue;
 
                     NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
-                    __syncthreads();
                 }
 
 

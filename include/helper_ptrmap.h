@@ -33,7 +33,11 @@ namespace nd4j {
         void *ptrGeneral;
 
         // we enforce maximal batch size limit, to simplify
+#ifdef __CUDACC__
+        const int batchLimit = 2048;
+#else
         const int batchLimit = 512;
+#endif
 
         // we have 5 diff kinds of arguments: arguments, shapeArguments, intArrayArguments, indexArguments, realArguments
         const int argTypes = 5;

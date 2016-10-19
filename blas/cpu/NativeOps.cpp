@@ -2495,18 +2495,18 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
     nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
-
-
+    // TODO: this limitation should be lifted in future
+    int *intArrays[32];
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) private(intArrays) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
         float **arguments = helper.getArguments(i);
         int **shapes = helper.getShapeArguments(i);
         int *idxArg = helper.getIndexArguments(i);
         float *realArg = helper.getRealArguments(i);
 
-        int *intArrays[8];
+
 
         for (int e = 0; e < maxIntArrays; e++) {
             intArrays[e] = helper.getIntArrayArguments(i, e);
