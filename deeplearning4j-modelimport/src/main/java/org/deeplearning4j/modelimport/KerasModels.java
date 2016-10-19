@@ -27,6 +27,8 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -47,15 +49,60 @@ public class KerasModels {
 
     private KerasModels() {}
 
+    public static void main(String[] args) {
+        String configFn  = "/Users/davekale/skymind/models/keras/cnn_config.json";
+        String weightsFn = "/Users/davekale/skymind/models/keras/cnn_weights.h5";
+        String modelFn = "/Users/davekale/skymind/models/keras/cnn_model.h5";
+        MultiLayerNetwork model = null;
+        try {
+            model = importSequentialModel(modelFn);
+//            BufferedWriter writer = new BufferedWriter(new FileWriter("/Users/davekale/skymind/models/imported/cnn_config.json"));
+//            writer.write(model.getLayerWiseConfigurations().toJson());
+//            writer.close();
+        } catch(IOException e) {
+            System.err.println("IO: " + e.toString());
+            System.err.println(e.getStackTrace());
+            System.exit(-1);
+        } catch(IncompatibleKerasConfigurationException e) {
+            System.err.println("IK: " + e.toString());
+            System.err.println(e.getStackTrace());
+            System.exit(-1);
+        } catch(NotImplementedException e) {
+            System.err.println("NI: " + e.toString());
+            System.err.println(e.getStackTrace());
+            System.exit(-1);
+        }
+    }
+
+    /* For loading Keras models saved using model.save_model(...). This combines
+     * config and weights into one HDF5 archive with this structure:
+     *
+     *   / (attribute) model_config: model config as JSON string
+     *   / (attribute) training_config: training config as JSON string
+     *   /model_weights/[layer name]/[param name] -> weights array
+     *   /optimizer_weights/param_[#] -> per parameter learning rates, etc.
+     */
     public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename) throws IOException {
-        H5File file = new H5File();
-        file.openFile(modelHdf5Filename, H5F_ACC_RDONLY);
+        return importSequentialModel(modelHdf5Filename, false);
+    }
+    public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename, boolean training) throws IOException {
+        /* Open model HDF5 file. */
+        H5File file = new H5File(modelHdf5Filename, H5F_ACC_RDONLY);
+        /* Read model config JSON string from "model_config" attribute. */
         Attribute attr = file.openAttribute("model_config");
         VarLenType vl = attr.getVarLenType();
         int bufferSizeMult = 1;
         String configJson = null;
+        /* TODO: find a less hacky way to do this.
+         * Reading variable length strings (from attributes) is a giant
+         * pain. There does not appear to be any way to determine the
+         * length of the string in advance, so we use a hack: choose a
+         * buffer size and read the config. If Jackson fails to parse
+         * it, then we must not have read the entire config. Increase
+         * buffer and repeat.
+         */
         while (true) {
-            byte[] attrBuffer = new byte[bufferSizeMult * 500];
+            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
             BytePointer attrPointer = new BytePointer(attrBuffer);
             attr.read(vl, attrPointer);
             attrPointer.get(attrBuffer);
@@ -67,23 +114,39 @@ public class KerasModels {
                 break;
             } catch (IOException e) {}
             bufferSizeMult++;
+            if (bufferSizeMult > 100) {
+                throw new IncompatibleKerasConfigurationException("Could not read abnormally long Keras config. Please file an issue!");
+            }
         }
-        MultiLayerNetwork model = importSequentialModel(configJson, file.asCommonFG().openGroup("model_weights"));
+        MultiLayerNetwork model = importSequentialModel(configJson, file.asCommonFG().openGroup("model_weights"), training);
         file.close();
         return model;
     }
 
+    /* For loading Keras models where the config and weights were saved
+     * separately using calls to model.to_json() and model.save_weights(...).
+     * In this setting, the weights are stored at the root note of the
+     * HDF5 archive.
+     */
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
         throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
-        String configJson = readTextFile(configJsonFilename);
+        String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
         H5File file = new H5File();
         file.openFile(weightsHdf5Filename, H5F_ACC_RDONLY);
-        MultiLayerNetwork model = importSequentialModel(configJson, file.asCommonFG().openGroup("/"));
+        MultiLayerNetwork model = importSequentialModel(configJson, file.asCommonFG().openGroup("/"), false);
         file.close();
         return model;
     }
 
+    /* Parse Keras JSON config string.
+     * TODO: refactor this into separate functions for each layer.
+     */
     public static MultiLayerConfiguration importSequentialConfig(String jsonConfig)
+            throws IncompatibleKerasConfigurationException, NotImplementedException, IOException {
+        return importSequentialConfig(jsonConfig, false);
+    }
+
+    public static MultiLayerConfiguration importSequentialConfig(String jsonConfig, boolean training)
         throws IncompatibleKerasConfigurationException, NotImplementedException, IOException {
         Map<String,Object> modelConfig = parseJsonString(jsonConfig);
         String arch = (String)modelConfig.get("class_name");
@@ -140,7 +203,7 @@ public class KerasModels {
                     continue;
                 case "Dropout":
                     /* Merge dropout into subsequent layer
-                     * TODO: change this -- we actually DO support plain Activation layers
+                     * TODO: change this once we support plain Dropout layers
                      */
                     dropout = (Double)layerConfig.get("p");
                     continue;
@@ -160,8 +223,8 @@ public class KerasModels {
                     }
                     if (!layerConfig.get("activation").equals(layerConfig.get("inner_activation")))
                         throw new IncompatibleKerasConfigurationException("Specifying different activation for inner cells not supported.");
-                    if (!layerConfig.get("init").equals(layerConfig.get("inner_init")))
-                        log.warn("Specifying different initialization for inner cells not supported.");
+                    if (training && !layerConfig.get("init").equals(layerConfig.get("inner_init")))
+                        throw new IncompatibleKerasConfigurationException("Specifying different initialization for inner cells not supported.");
                     if ((Float)layerConfig.get("dropout_U") > 0f)
                         throw new IncompatibleKerasConfigurationException("Recurrent dropout of " + (float) layerConfig.get("dropout_U") + " not supported.");
                     layerConfig.put("dropout", layerConfig.get("dropout_W"));
@@ -214,6 +277,7 @@ public class KerasModels {
                         default:
                             throw new IncompatibleKerasConfigurationException("Unknown keras dim ordering in convolutional layer: " + poolDimOrder);
                     }
+                    layerConfig.put("pooling", SubsamplingLayer.PoolingType.MAX);
                     lastLayer = layerConfig;
                     break;
                 case "Flatten":
@@ -282,9 +346,11 @@ public class KerasModels {
             /* Do layer type-specific stuff here. */
             switch (dl4jClass) {
                 case "OutputLayer":
+                    //TODO: get loss from training config
                     builder = new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT);
                     break;
                 case "RnnOutputLayer":
+                    //TODO: get loss from training config
                     builder = new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT);
                     break;
                 case "DenseLayer":
@@ -302,7 +368,7 @@ public class KerasModels {
                 case "SubsamplingLayer":
                     stride = (List<Integer>)layerConfig.get("strides");
                     List<Integer> pool = (List<Integer>)layerConfig.get("pool_size");
-                    builder = new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                    builder = new SubsamplingLayer.Builder((SubsamplingLayer.PoolingType)layerConfig.get("pooling"))
                             .kernelSize(pool.get(0), pool.get(1))
                             .stride(stride.get(0), stride.get(1));
                     break;
@@ -318,12 +384,13 @@ public class KerasModels {
                             ((GravesLSTM.Builder)builder).forgetGateBiasInit(1.0);
                             break;
                         default:
-                            log.warn("Unsupported bias initialization: " + forgetBiasInit + ".");
+                            if (training)
+                                throw new IncompatibleKerasConfigurationException("Unsupported bias initialization: " + forgetBiasInit + ".");
                             break;
                     }
                     // TODO: should we print a warning if unroll is false?
                     if (sequenceLength <= 0)
-                        log.warn("WARNING: input sequence length must be specified for truncated BPTT!");
+                        throw new IncompatibleKerasConfigurationException("WARNING: input sequence length must be specified for truncated BPTT!");
                     // TODO: do we need to do anything with return_sequences?
                     break;
                 default:
@@ -361,7 +428,8 @@ public class KerasModels {
                     case "he_normal":
                     case "he_uniform":
                     default:
-                        log.warn("Unknown keras weight distribution " + init);
+                        if (training)
+                            log.warn("Unknown keras weight distribution " + init);
                         builder.weightInit(WeightInit.XAVIER);
                         break;
                 }
@@ -388,11 +456,12 @@ public class KerasModels {
                         case "name":
                             break;
                         default:
-                            throw new IncompatibleKerasConfigurationException("Unknown regularization field: " + k);
+                            if (training)
+                                throw new IncompatibleKerasConfigurationException("Unknown regularization field: " + k);
                     }
                 }
             }
-            if (layerConfig.get("b_regularizer") != null)
+            if (training && layerConfig.get("b_regularizer") != null)
                 throw new NotImplementedException("Bias regularization not implemented");
 
             //TODO: add exceptions for other unsupported things
@@ -411,20 +480,20 @@ public class KerasModels {
         return listBuilder.build();
     }
 
+    /* Helper function to parse JSON strings into nested Map<String,Object>
+     */
     private static Map<String,Object> parseJsonString(String json) throws IOException {
-        /* Parse config JSON string into nested Map<String,Object>. */
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
     }
 
-    private static String readTextFile(String filename) throws IOException {
-        return new String(Files.readAllBytes(Paths.get(filename)));
-    }
-
-    private static MultiLayerNetwork importSequentialModel(String configJson, Group weightsGroup)
+    /* Import Keras model from config JSON string and HDF5 Group containing
+     * per-layer weights.
+     */
+    private static MultiLayerNetwork importSequentialModel(String configJson, Group weightsGroup, boolean training)
         throws IOException {
-        MultiLayerConfiguration config = importSequentialConfig(configJson);
+        MultiLayerConfiguration config = importSequentialConfig(configJson, training);
         MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
         Map<String,Object> weightsMetadata = extractWeightsMetadataFromConfig(configJson);
@@ -433,6 +502,10 @@ public class KerasModels {
         return model;
     }
 
+    /* Pull out certain metadata about Keras model needed to properly interpret weights.
+     * For example, the backend (Theano or Tensorflow) impacts the ordering of
+     * dimensions in convolutional layers.
+     */
     private static Map<String, Object> extractWeightsMetadataFromConfig(String configJson) throws IOException {
         Map<String,Object> weightsMetadata = new HashMap<>();
         Map<String,Object> kerasConfig = parseJsonString(configJson);
@@ -445,6 +518,7 @@ public class KerasModels {
         return weightsMetadata;
     }
 
+    /* Read weights from Keras model HDF5 archive and store in Map. */
     private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(Group weightsGroup) {
         Map<String,Map<String,INDArray>> weightsMap = new HashMap<String,Map<String,INDArray>>();
 
@@ -507,6 +581,11 @@ public class KerasModels {
                                 throw new IncompatibleKerasConfigurationException("Cannot import weights with rank " + nbDims);
 
                         }
+                        String[] tokens = objName.split("/");
+                        String layerParamName = tokens[tokens.length-1];
+                        tokens = layerParamName.split("_");
+                        String paramName = tokens[tokens.length-1];
+
 //                        weightsMap.put(objName, weights);
                         d.close();
                         break;
